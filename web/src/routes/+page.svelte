@@ -7,6 +7,8 @@
 	import { countUp, parseStat } from '#lib/ui.svelte.ts';
 	import { firstName, initials, inr } from '#lib/util.ts';
 	import BrandTopbar from '#lib/components/BrandTopbar.svelte';
+	import Audience from '#lib/components/Audience.svelte';
+	import { compact, fmt } from '#lib/util.ts';
 	import Icon from '#lib/components/Icon.svelte';
 
 	const preview = $derived(page.url.searchParams.has('preview'));
@@ -27,6 +29,7 @@
 			? [
 					{ raw: p.followers, label: 'followers' },
 					{ raw: p.engagement, label: 'avg. engagement' },
+					...(p.instagram?.avg_views ? [{ raw: compact(p.instagram.avg_views), label: 'avg. views per post' }] : []),
 					{ raw: p.reply_time, label: 'typical reply time' }
 				].filter((s) => s.raw)
 			: []
@@ -68,12 +71,17 @@
 					{/each}
 				</div>
 			{/if}
+			{#if p.instagram}
+				<p class="live-chip rv" style="--i:4"><span class="dt pulse k-live"></span>Live from Instagram{p.instagram.updated_at ? ` · updated ${fmt(p.instagram.updated_at.slice(0, 10))}` : ''}</p>
+			{/if}
 			{#if p.worked_with.length}
 				<div class="marquee rv" style="--i:5">
 					<span class="mq-l">Worked with</span>
 					<div class="mq"><div class="mq-track">{#each [0, 1, 2, 3] as k (k)}{#each p.worked_with as n (n)}<span>{n}</span>{/each}{/each}</div></div>
 				</div>
 			{/if}
+
+			{#if p.instagram?.demographics}<Audience demo={p.instagram.demographics} />{/if}
 
 			<section class="panel rv" style="--i:6;overflow:hidden">
 				<div class="bsec">

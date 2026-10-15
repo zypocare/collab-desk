@@ -242,3 +242,11 @@ export function clashes(c: Collab, all: Collab[], windowDays: number, notes: Rec
 	}
 	return out.sort((a, b) => a.days - b.days);
 }
+
+/** 251340 -> "251.3K" */
+export const compact = (n: number | null | undefined) => {
+	if (n === null || n === undefined) return '—';
+	if (n >= 1e6) return `${+(n / 1e6).toFixed(1)}M`;
+	if (n >= 1e3) return `${+(n / 1e3).toFixed(1)}K`;
+	return String(Math.round(n));
+};

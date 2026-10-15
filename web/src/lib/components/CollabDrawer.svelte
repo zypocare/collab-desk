@@ -34,6 +34,7 @@
 	import Icon from './Icon.svelte';
 	import Mono from './Mono.svelte';
 	import QuoteDialog from './QuoteDialog.svelte';
+	import CollabPosts from './CollabPosts.svelte';
 	import {
 		CHECKLIST,
 		DRAFT_STATUS,
@@ -374,6 +375,8 @@
 					<p class="hint" style="margin-top:8px">Indian advertising rules (ASCI) need paid posts and gifted products to be clearly marked.</p>
 				</section>
 			{/if}
+
+			<CollabPosts {c} />
 
 			{#if isPaid(c)}
 				<section class="sec">

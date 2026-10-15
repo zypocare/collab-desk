@@ -30,6 +30,8 @@
 	{#if signedIn}
 		<span class="who-chip"><span>{auth.account?.email}</span></span>
 		<button class="btn sm" onclick={logout}><Icon name="logout" />Sign out</button>
+	{:else if auth.account?.role === 'creator'}
+		<a class="btn sm" href="/studio"><Icon name="back" />Back to studio</a>
 	{:else}
 		<a class="btn sm" href="/login?next=/brand">Sign in</a>
 	{/if}

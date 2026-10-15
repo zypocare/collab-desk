@@ -1,7 +1,7 @@
 // The creator's data: loads everything once, keeps it live with realtime, and saves edits.
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import { supabase } from './supabase';
-import type { BankAlert, Brand, BrandPrivate, Checklist, Collab, Deliverable, Quote, Settings, Stage } from './types';
+import type { BankAlert, Brand, BrandPrivate, BrandReport, Checklist, Collab, Deliverable, IgAccount, IgMedia, Quote, Settings, Stage } from './types';
 import { balanceDue, normaliseInvoice, type Invoice, type InvoiceItem } from './invoice';
 import { confetti, toast } from './ui.svelte';
 import { errMessage, inr, stageLabel, todayIso } from './util';
@@ -14,9 +14,12 @@ export const studio = $state<{
 	notes: Record<string, BrandPrivate>;
 	settings: Settings | null;
 	alerts: BankAlert[];
-}>({ loaded: false, error: '', collabs: [], brands: [], notes: {}, settings: null, alerts: [] });
+	ig: IgAccount | null;
+	media: IgMedia[];
+	followersHistory: { day: string; followers: number }[];
+}>({ loaded: false, error: '', collabs: [], brands: [], notes: {}, settings: null, alerts: [], ig: null, media: [], followersHistory: [] });
 
-const COLLAB_SELECT = '*, brand:brands(*), deliverables(*), events:collab_events(*), quotes(*), drafts(*), invoices(*)';
+const COLLAB_SELECT = '*, brand:brands(*), deliverables(*), events:collab_events(*), quotes(*), drafts(*), invoices(*), posts:collab_posts(matched_by, media:ig_media(*)), reports:brand_reports(*)';
 
 function normalise(c: Collab): Collab {
 	c.fee = Number(c.fee) || 0;
@@ -30,6 +33,8 @@ function normalise(c: Collab): Collab {
 	c.drafts = (c.drafts ?? []).sort((a, b) => b.round - a.round);
 	c.invoices = (c.invoices ?? []).map((i) => normaliseInvoice(i)).sort((a, b) => b.created_at.localeCompare(a.created_at));
 	c.checklist = c.checklist ?? {};
+	c.posts = (c.posts ?? []).filter((p) => p.media).sort((a, b) => a.media.posted_at.localeCompare(b.media.posted_at));
+	c.reports = (c.reports ?? []).sort((a, b) => b.created_at.localeCompare(a.created_at));
 	return c;
 }
 
@@ -41,6 +46,7 @@ export async function loadStudio() {
 		supabase.from('creator_settings').select('*').eq('id', 1).single()
 	]);
 	loadAlerts();
+	loadInstagram();
 	const err = collabs.error || brands.error || notes.error || settings.error;
 	if (err) {
 		studio.error = errMessage(err);
@@ -82,6 +88,9 @@ export function watchStudio() {
 		})
 		.on('postgres_changes', { event: '*', schema: 'public', table: 'drafts' }, schedule)
 		.on('postgres_changes', { event: '*', schema: 'public', table: 'invoices' }, schedule)
+		.on('postgres_changes', { event: '*', schema: 'public', table: 'collab_posts' }, schedule)
+		.on('postgres_changes', { event: '*', schema: 'public', table: 'brand_reports' }, schedule)
+		.on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'ig_account' }, () => loadInstagram())
 		.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'bank_alerts' }, () => {
 			toast('Your bank reported a payment', 'wallet');
 			loadAlerts();
@@ -357,4 +366,85 @@ export async function assignAlert(a: BankAlert, inv: Invoice) {
 export async function ignoreAlert(a: BankAlert) {
 	await supabase.from('bank_alerts').update({ status: 'ignored' }).eq('id', a.id);
 	await loadAlerts();
+}
+
+// ---- Instagram ----
+export async function loadInstagram() {
+	const [acct, media, hist] = await Promise.all([
+		supabase.from('ig_account').select('*').eq('id', 1).single(),
+		supabase.from('ig_media').select('*').order('posted_at', { ascending: false }).limit(40),
+		supabase.from('ig_followers_history').select('*').order('day', { ascending: false }).limit(60)
+	]);
+	studio.ig = (acct.data as IgAccount) ?? null;
+	studio.media = (media.data as IgMedia[]) ?? [];
+	studio.followersHistory = ((hist.data as { day: string; followers: number }[]) ?? []).reverse();
+}
+
+async function invokeFn(name: string, body: Record<string, unknown>) {
+	const { data, error } = await supabase.functions.invoke(name, { body });
+	if (error) {
+		let msg = errMessage(error);
+		try {
+			const b = await (error as { context?: Response }).context?.json();
+			if (b?.error) msg = b.error;
+		} catch {
+			/* keep the generic message */
+		}
+		throw new Error(msg);
+	}
+	return data;
+}
+
+/** Pulls fresh numbers from Instagram now (or makes a fresh report for one collab). */
+export async function igSync(reportFor?: string) {
+	try {
+		const r = await invokeFn('instagram-sync', reportFor ? { report_for: reportFor } : {});
+		await Promise.all([loadInstagram(), reloadCollabs()]);
+		if (reportFor) toast('Fresh results report ready', 'chart');
+		else toast(r?.detected ? `Synced. ${r.detected} new collab post${r.detected > 1 ? 's' : ''} spotted.` : 'Instagram numbers updated', 'refresh');
+		return true;
+	} catch (e) {
+		toast(`Instagram: ${errMessage(e)}`, 'alert');
+		return false;
+	}
+}
+
+export async function igConnect(code: string, redirectUri: string) {
+	await invokeFn('instagram-auth', { code, redirect_uri: redirectUri });
+	await Promise.all([loadInstagram(), reloadCollabs()]);
+}
+
+export async function igDisconnect() {
+	try {
+		await invokeFn('instagram-auth', { action: 'disconnect' });
+		await loadInstagram();
+		toast('Instagram disconnected');
+	} catch (e) {
+		toast(errMessage(e), 'alert');
+	}
+}
+
+/** Links a post to a collab by hand (when the brand wasn't @mentioned). */
+export async function linkPost(c: Collab, m: IgMedia) {
+	const { error } = await supabase.from('collab_posts').insert({ collab_id: c.id, media_id: m.id, matched_by: 'manual' });
+	if (error) return toast(`Couldn't link the post: ${errMessage(error)}`, 'alert');
+	if (['confirmed', 'creating'].includes(c.stage)) {
+		await updateCollab(c.id, { stage: 'live', live_date: m.posted_at.slice(0, 10) });
+		await supabase.from('deliverables').update({ done: true }).eq('collab_id', c.id);
+	}
+	await reloadOne(c.id);
+	toast('Post linked');
+}
+
+export async function unlinkPost(c: Collab, mediaId: string) {
+	await supabase.from('collab_posts').delete().eq('collab_id', c.id).eq('media_id', mediaId);
+	await reloadOne(c.id);
+}
+
+export async function sendReport(r: BrandReport) {
+	const { error } = await supabase.from('brand_reports').update({ status: 'sent' }).eq('id', r.id);
+	if (error) return toast(`Couldn't send: ${errMessage(error)}`, 'alert');
+	await reloadOne(r.collab_id);
+	confetti();
+	toast('Results report sent to the brand', 'send');
 }

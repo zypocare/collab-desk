@@ -106,7 +106,63 @@ export type Collab = {
 	quotes: Quote[];
 	drafts: Draft[];
 	invoices: Invoice[];
+	posts: { matched_by: 'auto' | 'manual'; media: IgMedia }[];
+	reports: BrandReport[];
 };
+
+export type IgMedia = {
+	id: string;
+	caption: string;
+	media_type: string;
+	product_type: string;
+	permalink: string;
+	posted_at: string;
+	thumbnail_url: string;
+	likes: number | null;
+	comments: number | null;
+	saves: number | null;
+	shares: number | null;
+	reach: number | null;
+	views: number | null;
+	interactions: number | null;
+	insights_at: string | null;
+};
+
+export type IgAccount = {
+	connected: boolean;
+	username: string;
+	name: string;
+	profile_picture_url: string;
+	followers: number | null;
+	follows: number | null;
+	media_count: number | null;
+	engagement_rate: number | null;
+	avg_views: number | null;
+	avg_reach: number | null;
+	demographics: Partial<Record<'age' | 'gender' | 'city', Record<string, number>>>;
+	token_expires_at: string | null;
+	last_sync_at: string | null;
+	last_error: string;
+};
+
+export type ReportPost = {
+	permalink: string; type: string; posted_at: string; thumbnail: string;
+	views: number | null; reach: number | null; likes: number | null; comments: number | null; saves: number | null; shares: number | null; interactions: number | null;
+};
+export type ReportData = {
+	brand: string;
+	brand_handle: string;
+	code: string;
+	creator: { name: string; handle: string; followers: number | null };
+	deliverables: string;
+	days_after: number;
+	posts: ReportPost[];
+	totals: { views: number | null; reach: number | null; likes: number; comments: number; saves: number | null; shares: number | null; interactions: number };
+	engagement_rate: number | null;
+	generated_at: string;
+	created_at?: string;
+};
+export type BrandReport = { id: string; collab_id: string; public_token: string; status: 'ready' | 'sent'; data: ReportData; created_at: string; sent_at: string | null };
 
 export type BankAlert = {
 	id: string;
@@ -156,6 +212,7 @@ export type Settings = {
 	invoice_footer: string;
 	reminders_enabled: boolean;
 	inbox_token: string;
+	report_mode: 'review' | 'auto' | 'off';
 };
 
 export type PublicPage = {
@@ -170,6 +227,16 @@ export type PublicPage = {
 	accepting: boolean;
 	rates: Record<string, number> | null;
 	worked_with: string[];
+	instagram: {
+		username: string;
+		followers: number | null;
+		engagement_rate: number | null;
+		avg_views: number | null;
+		avg_reach: number | null;
+		demographics: Partial<Record<'age' | 'gender' | 'city', Record<string, number>>>;
+		profile_picture_url: string;
+		updated_at: string | null;
+	} | null;
 };
 
 export type Account =

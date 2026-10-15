@@ -114,6 +114,8 @@ This deploys all server functions:
 | `calendar` | The private calendar link for Google Calendar or iPhone |
 | `payment-reminders` | Polite payment reminders to brands (10 AM daily) |
 | `bank-alert` | Matches bank "credited" emails to invoices |
+| `instagram-auth` | Connects her Instagram |
+| `instagram-sync` | Daily Instagram numbers, go-live detection and results reports (6 AM) |
 
 ### c) Telegram (optional, for the 9 AM summary on her phone)
 
@@ -144,6 +146,38 @@ on conflict (key) do update set value = excluded.value;
    is marked paid and you get an email (and a Telegram message, if connected). Anything else waits in
    **Payments → Bank credits** for you to match by hand.
 
+### e) Instagram (live stats, automatic go-live, results reports)
+
+Do this after the website is online (step 5): Instagram only sends people back to an `https://` address.
+
+1. **Her Instagram account:** Instagram app → Settings → Account type and tools → **Switch to professional account → Creator**. Free, and nothing changes for her followers.
+2. **Create the Meta app:** go to <https://developers.facebook.com/apps> → **Create app**. Choose the Instagram use case ("Manage messaging & content on Instagram") and app type **Business**.
+3. In the app: **Instagram → API setup with Instagram login**.
+   - Under **Set up Instagram business login → Business login settings**, add the redirect address
+     `https://your-domain.com/studio/instagram` (use your real address, exactly).
+   - Copy the **Instagram app ID** and **Instagram app secret** shown there (not the Facebook app ID).
+4. **App roles → Roles → Add people → Instagram tester** → her Instagram username. She accepts it in the
+   Instagram app (Settings → Website permissions → Apps and websites → Tester invites).
+   The app can stay in **Development** mode because only her own account uses it; no review by Meta is needed.
+5. Give the server the app keys and deploy the functions:
+
+   ```bash
+   npx supabase secrets set INSTAGRAM_APP_ID=PASTE-APP-ID INSTAGRAM_APP_SECRET=PASTE-APP-SECRET
+   npx supabase functions deploy
+   ```
+
+6. In Cloudflare Pages, add the environment variable `VITE_INSTAGRAM_APP_ID` with the same app ID, and redeploy.
+7. In the app: **My page → Instagram → Connect Instagram**, sign in, allow access. Done.
+
+From then on, every morning at 6:
+- her follower count, engagement and average views update on the brand page, with the audience (age, gender, top cities) once she has 100+ followers;
+- a post that @mentions a brand she has a confirmed collab with moves that collab to **Live**, tells the brand, and checks the caption for #ad;
+- 7 days after a collab post, a **results report** is made. By default she checks it and presses **Send to brand** (she can switch to automatic in My page).
+
+The 60-day Instagram access renews itself. If Instagram ever refuses it (for example after a password change), My page shows it and she presses **Reconnect**.
+
+> Local development uses a simulated Instagram account (`IG_MOCK=1` in `supabase/functions/.env`). Never set `IG_MOCK` on the live server.
+
 ## 4. Bot protection (Cloudflare Turnstile)
 
 1. In Cloudflare → **Turnstile → Add widget**. Hostnames: your domain and `*.pages.dev`. Mode: **Managed**.
@@ -165,6 +199,7 @@ on conflict (key) do update set value = excluded.value;
    | `VITE_SUPABASE_URL` | Project URL from step 2 |
    | `VITE_SUPABASE_ANON_KEY` | anon / publishable key |
    | `VITE_TURNSTILE_SITE_KEY` | Turnstile site key |
+   | `VITE_INSTAGRAM_APP_ID` | Instagram app ID (step 3e, can be added later) |
    | `NODE_VERSION` | `22` |
 
 4. **Save and deploy.** You'll get an address like `collab-desk.pages.dev`.

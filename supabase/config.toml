@@ -437,3 +437,7 @@ verify_jwt = false
 # Called by the Gmail watcher script, protected by the private inbox token.
 [functions.bank-alert]
 verify_jwt = false
+
+# Daily Instagram sync: called by cron (shared secret) or by the creator (checked inside).
+[functions.instagram-sync]
+verify_jwt = false

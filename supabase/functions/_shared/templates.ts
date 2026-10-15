@@ -222,5 +222,49 @@ export function render(kind: string, p: Payload, s: Settings): Omit<Mail, 'to'> 
     };
   }
 
+  const num = (v: unknown) => (v === null || v === undefined || v === '' ? '' : Math.round(Number(v)).toLocaleString('en-IN'));
+
+  if (kind === 'post_detected') {
+    const missing = p.missing_ad === true;
+    return {
+      subject: missing ? `Add #ad to your ${brand} post` : `Your ${brand} post is live`,
+      html: layout(
+        s,
+        missing ? 'Your post is live, but needs #ad' : 'Your post is live',
+        `<p style="margin:0">We spotted your post for <b>${esc(brand)}</b> (${esc(code)}) on Instagram and moved the collab to Live. The brand has been told.</p>
+         ${missing ? quoteBox('Action needed', 'The first line of the caption has no #ad or #collab. Indian advertising rules (ASCI) need paid and gifted posts to be clearly marked. Edit the caption and turn on the "Paid partnership" label.') : ''}`,
+        { label: 'Open the post', href: String(p.permalink) },
+      ),
+      text: `Your ${brand} post is live: ${p.permalink}${missing ? '. Add #ad to the first line of the caption.' : ''}`,
+    };
+  }
+
+  if (kind === 'report_ready') {
+    return {
+      subject: `Results report ready for ${brand}`,
+      html: layout(
+        s,
+        `${brand}: results are in`,
+        `<p style="margin:0">7 days after posting: <b>${esc(num(p.views) || '—')}</b> views and <b>${esc(num(p.reach) || '—')}</b> accounts reached. Check the report and send it to the brand from the collab panel.</p>`,
+        { label: 'Review and send', href: url(s, `/studio/collabs?open=${encodeURIComponent(code)}`) },
+      ),
+      text: `Results report for ${brand} (${code}) is ready to review and send.`,
+    };
+  }
+
+  if (kind === 'brand_report') {
+    return {
+      subject: `Results for ${code}: ${num(p.views) ? `${num(p.views)} views` : 'your campaign report'}`,
+      html: layout(
+        s,
+        `How your collaboration performed`,
+        `<p style="margin:0">Hi ${esc(firstOf(p.contact))}, here are the results of your collaboration with ${esc(s.display_name)} (${esc(code)}), straight from Instagram.</p>
+         <table role="presentation" cellpadding="0" cellspacing="0" style="margin-top:10px">${row('Views', num(p.views))}${row('Accounts reached', num(p.reach))}</table>`,
+        { label: 'See the full report', href: String(p.link) },
+      ),
+      text: `Results for ${code}: ${num(p.views)} views, ${num(p.reach)} reached. Full report: ${p.link}`,
+    };
+  }
+
   throw new Error(`Unknown email kind: ${kind}`);
 }

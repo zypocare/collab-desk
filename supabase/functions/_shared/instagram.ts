@@ -1,0 +1,128 @@
+// Instagram API with Instagram Login (free, for her own professional account).
+// With IG_MOCK=1 (local development only) a simulated account is used instead, so everything can be
+// tested without a Meta app.
+const GRAPH = 'https://graph.instagram.com';
+const APP_ID = Deno.env.get('INSTAGRAM_APP_ID') ?? '';
+const APP_SECRET = Deno.env.get('INSTAGRAM_APP_SECRET') ?? '';
+export const MOCK = Deno.env.get('IG_MOCK') === '1';
+
+export type Profile = { user_id: string; username: string; name: string; profile_picture_url: string; followers_count: number; follows_count: number; media_count: number };
+export type Media = {
+  id: string; caption?: string; media_type: string; media_product_type?: string; permalink: string; timestamp: string;
+  thumbnail_url?: string; media_url?: string; like_count?: number; comments_count?: number;
+};
+export type Insights = { views?: number; reach?: number; saved?: number; shares?: number; likes?: number; comments?: number; total_interactions?: number };
+export type Demographics = Record<'age' | 'gender' | 'city', Record<string, number>>;
+
+export class IgError extends Error {
+  constructor(message: string, public code?: number) {
+    super(message);
+  }
+}
+
+async function get(path: string, params: Record<string, string>) {
+  const u = new URL(GRAPH + path);
+  for (const [k, v] of Object.entries(params)) u.searchParams.set(k, v);
+  const res = await fetch(u);
+  const json = await res.json();
+  if (json.error) throw new IgError(json.error.message ?? 'Instagram error', json.error.code);
+  return json;
+}
+
+// ---------------------------------------------------------------------------
+// Real client
+// ---------------------------------------------------------------------------
+const real = {
+  configured: APP_ID !== '' && APP_SECRET !== '',
+
+  async exchangeCode(code: string, redirectUri: string) {
+    const form = new URLSearchParams({ client_id: APP_ID, client_secret: APP_SECRET, grant_type: 'authorization_code', redirect_uri: redirectUri, code });
+    const res = await fetch('https://api.instagram.com/oauth/access_token', { method: 'POST', body: form });
+    const short = await res.json();
+    if (!short.access_token) throw new IgError(short.error_message ?? short.error?.message ?? 'Instagram did not accept the sign-in code.');
+    const long = await get('/access_token', { grant_type: 'ig_exchange_token', client_secret: APP_SECRET, access_token: short.access_token });
+    return { token: long.access_token as string, expiresIn: Number(long.expires_in) || 5184000 };
+  },
+
+  async refresh(token: string) {
+    const r = await get('/refresh_access_token', { grant_type: 'ig_refresh_token', access_token: token });
+    return { token: r.access_token as string, expiresIn: Number(r.expires_in) || 5184000 };
+  },
+
+  profile: (token: string): Promise<Profile> =>
+    get('/me', { fields: 'user_id,username,name,profile_picture_url,followers_count,follows_count,media_count', access_token: token }),
+
+  async media(token: string, limit = 40): Promise<Media[]> {
+    const r = await get('/me/media', {
+      fields: 'id,caption,media_type,media_product_type,permalink,timestamp,thumbnail_url,media_url,like_count,comments_count',
+      limit: String(limit), access_token: token,
+    });
+    return r.data ?? [];
+  },
+
+  // Not every metric exists for every post type, and asking for one that doesn't fails the whole call,
+  // so we try the full set first and fall back to smaller ones.
+  async insights(token: string, mediaId: string): Promise<Insights> {
+    const sets = ['views,reach,saved,shares,likes,comments,total_interactions', 'views,reach,likes,comments', 'reach'];
+    for (const metric of sets) {
+      try {
+        const r = await get(`/${mediaId}/insights`, { metric, access_token: token });
+        const out: Insights = {};
+        for (const m of r.data ?? []) {
+          const v = m.values?.[0]?.value ?? m.total_value?.value;
+          if (typeof v === 'number') (out as Record<string, number>)[m.name] = v;
+        }
+        return out;
+      } catch (e) {
+        if (!(e instanceof IgError)) throw e;
+      }
+    }
+    return {};
+  },
+
+  // Needs at least 100 followers; returns {} if Instagram has no data.
+  async demographics(token: string): Promise<Partial<Demographics>> {
+    const out: Partial<Demographics> = {};
+    for (const breakdown of ['age', 'gender', 'city'] as const) {
+      try {
+        const r = await get('/me/insights', { metric: 'follower_demographics', period: 'lifetime', metric_type: 'total_value', breakdown, access_token: token });
+        const results = r.data?.[0]?.total_value?.breakdowns?.[0]?.results ?? [];
+        out[breakdown] = Object.fromEntries(results.map((x: { dimension_values: string[]; value: number }) => [x.dimension_values[0], x.value]));
+      } catch {
+        // No demographics available (small account or permission missing).
+      }
+    }
+    return out;
+  },
+};
+
+// ---------------------------------------------------------------------------
+// Simulated account (local development)
+// ---------------------------------------------------------------------------
+const daysAgo = (n: number) => new Date(Date.now() - n * 864e5).toISOString();
+const MOCK_MEDIA: Media[] = [
+  { id: 'm1', caption: '#ad Morning run, new routine. Gear from @kora.active ❤️ #running', media_type: 'VIDEO', media_product_type: 'REELS', permalink: 'https://www.instagram.com/reel/mock1/', timestamp: daysAgo(0.3), thumbnail_url: '', like_count: 4210, comments_count: 188 },
+  { id: 'm2', caption: 'Night routine with the new Vitamin C serum from @lumiere.skin ✨', media_type: 'VIDEO', media_product_type: 'REELS', permalink: 'https://www.instagram.com/reel/mock2/', timestamp: daysAgo(1), thumbnail_url: '', like_count: 2950, comments_count: 97 },
+  { id: 'm3', caption: 'Sunday in Coorg 🌧️', media_type: 'CAROUSEL_ALBUM', media_product_type: 'FEED', permalink: 'https://www.instagram.com/p/mock3/', timestamp: daysAgo(3), thumbnail_url: '', like_count: 5120, comments_count: 230 },
+  { id: 'm4', caption: 'What I wore this week', media_type: 'VIDEO', media_product_type: 'REELS', permalink: 'https://www.instagram.com/reel/mock4/', timestamp: daysAgo(6), thumbnail_url: '', like_count: 3880, comments_count: 141 },
+  { id: 'm5', caption: '#collab Monsoon weekend in Coorg with @northstar.trips. Full itinerary in the carousel!', media_type: 'CAROUSEL_ALBUM', media_product_type: 'FEED', permalink: 'https://www.instagram.com/p/mock5/', timestamp: daysAgo(9), thumbnail_url: '', like_count: 6120, comments_count: 312 },
+];
+const mock = {
+  configured: true,
+  exchangeCode: async (_c: string, _r: string) => ({ token: 'mock-token', expiresIn: 5184000 }),
+  refresh: async (_t: string) => ({ token: 'mock-token', expiresIn: 5184000 }),
+  profile: async (_t: string): Promise<Profile> => ({ user_id: '1784000000', username: 'nicks_universe_it_is', name: 'Niveditha', profile_picture_url: '', followers_count: 251340, follows_count: 812, media_count: 642 }),
+  media: async (_t: string) => MOCK_MEDIA,
+  insights: async (_t: string, id: string): Promise<Insights> => {
+    const seed = id.charCodeAt(1) * 7919;
+    const views = 60000 + (seed % 90000);
+    return { views, reach: Math.round(views * 0.62), saved: 300 + (seed % 900), shares: 120 + (seed % 400), likes: 3000 + (seed % 2000), comments: 90 + (seed % 120) };
+  },
+  demographics: async (_t: string): Promise<Partial<Demographics>> => ({
+    age: { '18-24': 31200, '25-34': 118400, '35-44': 52100, '45-54': 14800 },
+    gender: { F: 172300, M: 76100, U: 2900 },
+    city: { 'Bengaluru, Karnataka': 41200, 'Mumbai, Maharashtra': 33800, 'Delhi, Delhi': 22100, 'Hyderabad, Telangana': 15600, 'Pune, Maharashtra': 11900 },
+  }),
+};
+
+export const ig = MOCK ? mock : real;

@@ -26,6 +26,7 @@
 		type Task
 	} from '#lib/util.ts';
 	import Icon from '#lib/components/Icon.svelte';
+	import InstagramPanel from '#lib/components/InstagramPanel.svelte';
 
 	const s = $derived(studio.settings!);
 	const list = $derived(studio.collabs);
@@ -216,3 +217,5 @@
 		</div>
 	</div>
 </section>
+
+<InstagramPanel />

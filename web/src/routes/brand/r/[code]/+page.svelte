@@ -33,6 +33,12 @@
 	const expired = $derived(!!openQuote?.valid_until && openQuote.valid_until < todayIso());
 	const pendingDraft = $derived(r?.drafts?.find((d) => d.status === 'pending'));
 
+	let reports = $state<{ code: string; token: string; sent_at: string }[]>([]);
+	$effect(() => {
+		supabase.rpc('my_reports').then(({ data }) => (reports = (data as typeof reports) ?? []));
+	});
+	const myReports = $derived(reports.filter((x) => r && x.code === r.code));
+
 	let mode = $state<'' | 'accept' | 'changes'>('');
 	let signName = $state(auth.account?.role === 'brand' ? auth.account.full_name : '');
 	let note = $state('');
@@ -222,6 +228,15 @@
 			<a class="btn" style="margin-top:16px" href="/agreement/{accepted.id}"><Icon name="check" />View agreement · accepted {fmt(accepted.responded_at)}</a>
 		{/if}
 	</section>
+
+	{#if myReports.length}
+		<section class="panel rv action-panel" style="--i:3;margin-top:18px">
+			<div class="panel-h"><h2>Results</h2><span class="pill tint k-live">From Instagram</span></div>
+			{#each myReports as rep (rep.token)}
+				<a class="prod-row" href="/report/{rep.token}" style="text-decoration:none"><div><b>Campaign results report</b><small>Shared {fmt(rep.sent_at?.slice(0, 10))}</small></div><Icon name="arrow" /></a>
+			{/each}
+		</section>
+	{/if}
 
 	{#if r.invoices?.length}
 		<section class="panel rv" style="--i:4;margin-top:18px">

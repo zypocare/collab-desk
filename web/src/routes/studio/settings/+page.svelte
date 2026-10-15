@@ -6,6 +6,7 @@
 	import Icon from '#lib/components/Icon.svelte';
 	import NotificationSettings from '#lib/components/NotificationSettings.svelte';
 	import BillingSettings from '#lib/components/BillingSettings.svelte';
+	import InstagramSettings from '#lib/components/InstagramSettings.svelte';
 
 	const s = $derived(studio.settings!);
 	const link = $derived(s.site_url.replace(/\/$/, ''));
@@ -77,6 +78,7 @@
 		<BillingSettings />
 	</div>
 	<div class="stack">
+		<InstagramSettings />
 		<section class="panel rv" style="--i:3">
 			<div class="panel-h"><h2>Rate card</h2><small>starting price per deliverable</small></div>
 			{#each KINDS as k (k)}
