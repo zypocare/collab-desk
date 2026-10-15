@@ -1,0 +1,11 @@
+// Cloudflare deploys the built website (the "build" folder) as static files.
+// Every address that isn't a file (like /studio/collabs) gets index.html, and the app handles it.
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "collab-desk",
+	"compatibility_date": "2026-10-01",
+	"assets": {
+		"directory": "./build",
+		"not_found_handling": "single-page-application"
+	}
+}
