@@ -33,6 +33,6 @@
 	{:else if auth.account?.role === 'creator'}
 		<a class="btn sm" href="/studio"><Icon name="back" />Back to studio</a>
 	{:else}
-		<a class="btn sm" href="/login?next=/brand">Sign in</a>
+		<a class="btn sm" href="/login">Sign in</a>
 	{/if}
 </header>
