@@ -1,0 +1,226 @@
+// Email templates for the outbox. Each kind turns a payload into a subject, HTML and plain text.
+import type { Mail } from './mailer.ts';
+
+export type Settings = { app_name: string; display_name: string; site_url: string; reply_time: string };
+type Payload = Record<string, unknown>;
+
+const esc = (v: unknown) =>
+  String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
+const inr = (n: unknown) => '₹' + Math.round(Number(n) || 0).toLocaleString('en-IN');
+const first = (name: string) => (name || '').split(' ')[0] || 'there';
+const url = (s: Settings, path: string) => s.site_url.replace(/\/$/, '') + path;
+
+function layout(s: Settings, heading: string, bodyHtml: string, button?: { label: string; href: string }) {
+  return `<!doctype html><html><body style="margin:0;padding:0;background:#f7f4f4;font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:#1e171c">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f7f4f4;padding:32px 16px"><tr><td align="center">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#ffffff;border-radius:20px;border:1px solid #eae2e2">
+<tr><td style="padding:30px 32px 6px">
+<div style="height:6px;width:56px;border-radius:6px;background:linear-gradient(115deg,#6b3fd4,#d4296a 52%,#f2994a)"></div>
+<h1 style="margin:22px 0 10px;font-size:22px;line-height:1.25;font-weight:700">${esc(heading)}</h1>
+<div style="font-size:15px;line-height:1.6;color:#3b3238">${bodyHtml}</div>
+</td></tr>
+${button ? `<tr><td style="padding:14px 32px 6px"><a href="${esc(button.href)}" style="display:inline-block;background:#1e171c;color:#ffffff;text-decoration:none;font-weight:600;font-size:14px;padding:12px 20px;border-radius:12px">${esc(button.label)}</a></td></tr>` : ''}
+<tr><td style="padding:22px 32px 28px;color:#8c8288;font-size:12.5px;line-height:1.5">Sent by ${esc(s.app_name)} for ${esc(s.display_name)}.</td></tr>
+</table></td></tr></table></body></html>`;
+}
+
+const row = (label: string, value: unknown) =>
+  value === '' || value == null
+    ? ''
+    : `<tr><td style="padding:6px 12px 6px 0;color:#8c8288;font-size:13px;white-space:nowrap;vertical-align:top">${esc(label)}</td><td style="padding:6px 0;font-size:14px">${esc(value)}</td></tr>`;
+
+export function render(kind: string, p: Payload, s: Settings): Omit<Mail, 'to'> {
+  const code = String(p.code ?? '');
+  const brand = String(p.brand ?? '');
+
+  if (kind === 'request_received_brand') {
+    const subject = `We've received your request ${code}`;
+    const html = layout(
+      s,
+      `Thanks, ${first(String(p.contact ?? ''))}! Your request is in.`,
+      `<p style="margin:0 0 12px">${esc(s.display_name)} usually replies within ${esc(s.reply_time)}. You can check the status any time by signing in with this email address.</p>
+       <table role="presentation" cellpadding="0" cellspacing="0" style="margin:6px 0 4px">${row('Request code', code)}${row('Brand', brand)}${row('Deliverables', p.deliverables)}</table>`,
+      { label: 'Track your request', href: url(s, '/brand') },
+    );
+    const text = `Thanks! ${s.display_name} has received your request ${code} (${p.deliverables}). Track it at ${url(s, '/brand')}`;
+    return { subject, html, text };
+  }
+
+  if (kind === 'request_received_creator') {
+    const money = p.type === 'barter' ? `Barter: ${p.product}` : `${Number(p.fee) ? inr(p.fee) : 'Asked for a quote'}${p.type === 'hybrid' ? ` + ${p.product}` : ''}`;
+    const subject = `New collab request from ${brand}`;
+    const html = layout(
+      s,
+      `New request from ${brand}`,
+      `<table role="presentation" cellpadding="0" cellspacing="0">${row('Code', code)}${row('Contact', p.contact)}${row('Email', p.email)}${row('Phone', p.phone)}${row('Deliverables', p.deliverables)}${row('Offer', money)}</table>
+       ${p.brief ? `<p style="margin:14px 0 0;padding:12px 14px;background:#f2eded;border-radius:12px;font-size:14px">${esc(p.brief)}</p>` : ''}`,
+      { label: 'Open in your studio', href: url(s, `/studio/collabs?open=${encodeURIComponent(code)}`) },
+    );
+    const text = `New request ${code} from ${brand} (${p.contact}, ${p.email}). ${p.deliverables}. ${money}.`;
+    return { subject, html, text };
+  }
+
+  if (kind === 'stage_changed') {
+    const label = String(p.stage_label ?? '');
+    const subject = `${code}: ${label}`;
+    const note = String(p.note ?? '');
+    const html = layout(
+      s,
+      `Update on your collaboration with ${s.display_name}`,
+      `<p style="margin:0 0 12px">Hi ${esc(first(String(p.contact ?? '')))}, your request <b>${esc(code)}</b> is now: <b>${esc(label)}</b>.</p>
+       ${note ? `<p style="margin:0;padding:12px 14px;background:#f2eded;border-radius:12px;font-size:14px"><span style="display:block;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#8c8288;margin-bottom:4px">Latest from ${esc(first(s.display_name))}</span>${esc(note)}</p>` : ''}`,
+      { label: 'See full status', href: url(s, '/brand') },
+    );
+    const text = `Your request ${code} with ${s.display_name} is now: ${label}. ${note} ${url(s, '/brand')}`;
+    return { subject, html, text };
+  }
+
+  const firstOf = (v: unknown) => first(String(v ?? ''));
+  const quoteBox = (label: string, text: unknown) =>
+    text ? `<p style="margin:14px 0 0;padding:12px 14px;background:#f2eded;border-radius:12px;font-size:14px"><span style="display:block;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#8c8288;margin-bottom:4px">${esc(label)}</span>${esc(text)}</p>` : '';
+
+  if (kind === 'quote_sent') {
+    return {
+      subject: `${code}: quote from ${s.display_name} (${inr(p.total)})`,
+      html: layout(
+        s,
+        `Your quote is ready`,
+        `<p style="margin:0">Hi ${esc(firstOf(p.contact))}, ${esc(s.display_name)} has sent a quote of <b>${esc(inr(p.total))}</b> for request <b>${esc(code)}</b>. Review the details and accept it, or ask for changes.</p>`,
+        { label: 'Review the quote', href: url(s, `/brand/r/${encodeURIComponent(code)}`) },
+      ),
+      text: `${s.display_name} sent a quote of ${inr(p.total)} for ${code}. Review it at ${url(s, `/brand/r/${code}`)}`,
+    };
+  }
+
+  if (kind === 'agreement_confirmed') {
+    return {
+      subject: `${code}: agreement confirmed`,
+      html: layout(
+        s,
+        `Agreement confirmed`,
+        `<p style="margin:0">Thanks, ${esc(firstOf(p.contact))}. You accepted the quote of <b>${esc(inr(p.total))}</b> for <b>${esc(code)}</b>. The agreement is saved in your account, with the date and time you accepted it.</p>`,
+        { label: 'View the agreement', href: url(s, `/agreement/${p.quote_id}`) },
+      ),
+      text: `You accepted the quote of ${inr(p.total)} for ${code}. View the agreement at ${url(s, `/agreement/${p.quote_id}`)}`,
+    };
+  }
+
+  if (kind === 'quote_accepted') {
+    return {
+      subject: `${brand} accepted your quote (${inr(p.total)})`,
+      html: layout(
+        s,
+        `${brand} accepted your quote`,
+        `<p style="margin:0">${esc(p.name)} accepted <b>${esc(inr(p.total))}</b> for <b>${esc(code)}</b>. The deal is now confirmed.</p>${quoteBox('Their note', p.note)}`,
+        { label: 'Open in your studio', href: url(s, `/studio/collabs?open=${encodeURIComponent(code)}`) },
+      ),
+      text: `${brand} (${p.name}) accepted your quote of ${inr(p.total)} for ${code}.`,
+    };
+  }
+
+  if (kind === 'quote_changes') {
+    return {
+      subject: `${brand} asked for changes to your quote`,
+      html: layout(
+        s,
+        `${brand} would like changes`,
+        `<p style="margin:0">${esc(p.name || brand)} replied to your quote for <b>${esc(code)}</b>.</p>${quoteBox('What they asked', p.note)}`,
+        { label: 'Revise the quote', href: url(s, `/studio/collabs?open=${encodeURIComponent(code)}`) },
+      ),
+      text: `${brand} asked for changes to your quote for ${code}: ${p.note}`,
+    };
+  }
+
+  if (kind === 'draft_ready') {
+    return {
+      subject: `${code}: draft ${p.round} ready for your review`,
+      html: layout(
+        s,
+        `A draft is ready for you`,
+        `<p style="margin:0">Hi ${esc(firstOf(p.contact))}, ${esc(s.display_name)} has shared draft round ${esc(p.round)} for <b>${esc(code)}</b>. Approve it or ask for changes.</p>${quoteBox(`Note from ${first(s.display_name)}`, p.note)}`,
+        { label: 'Review the draft', href: url(s, `/brand/r/${encodeURIComponent(code)}`) },
+      ),
+      text: `Draft round ${p.round} for ${code} is ready for review: ${url(s, `/brand/r/${code}`)}`,
+    };
+  }
+
+  if (kind === 'draft_reviewed') {
+    const ok = p.approved === true;
+    return {
+      subject: ok ? `${brand} approved draft ${p.round}` : `${brand} asked for changes on draft ${p.round}`,
+      html: layout(
+        s,
+        ok ? `Draft ${p.round} approved` : `Changes requested on draft ${p.round}`,
+        `<p style="margin:0">${esc(p.name)} from ${esc(brand)} ${ok ? 'approved' : 'reviewed'} draft round ${esc(p.round)} for <b>${esc(code)}</b>.</p>${quoteBox('Their feedback', p.feedback)}`,
+        { label: 'Open in your studio', href: url(s, `/studio/collabs?open=${encodeURIComponent(code)}`) },
+      ),
+      text: `${brand} ${ok ? 'approved' : 'asked for changes on'} draft ${p.round} for ${code}. ${p.feedback ?? ''}`,
+    };
+  }
+
+  const fmtDate = (d: unknown) =>
+    d ? new Date(String(d) + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+  const tdsNote = Number(p.total) !== Number(p.payable) ? ` (${inr(p.total)} less TDS)` : '';
+
+  if (kind === 'invoice_sent') {
+    return {
+      subject: `Invoice ${p.number} from ${s.display_name}`,
+      html: layout(
+        s,
+        `Invoice ${p.number}`,
+        `<p style="margin:0 0 12px">Hi ${esc(firstOf(p.contact))}, here is the invoice for <b>${esc(code)}</b>.</p>
+         <table role="presentation" cellpadding="0" cellspacing="0">${row('Amount payable', inr(p.payable) + tdsNote)}${row('Due', fmtDate(p.due))}</table>
+         <p style="margin:14px 0 0">You can download the PDF and pay by UPI (scan the QR code) or bank transfer from the invoice page.</p>`,
+        { label: 'View and pay invoice', href: String(p.link) },
+      ),
+      text: `Invoice ${p.number} for ${code}: ${inr(p.payable)} due ${fmtDate(p.due)}. View and pay: ${p.link}`,
+    };
+  }
+
+  if (kind === 'payment_reminder') {
+    const late = Number(p.days_late) || 0;
+    const when = late > 0 ? `was due on ${fmtDate(p.due)}, ${late} day${late > 1 ? 's' : ''} ago` : late === 0 ? 'is due today' : `is due on ${fmtDate(p.due)}`;
+    return {
+      subject: late > 0 ? `Reminder: invoice ${p.number} is overdue` : `Reminder: invoice ${p.number} ${late === 0 ? 'is due today' : 'is due soon'}`,
+      html: layout(
+        s,
+        late > 0 ? 'A gentle reminder' : 'Friendly reminder',
+        `<p style="margin:0">Hi ${esc(firstOf(p.contact))}, invoice <b>${esc(p.number)}</b> for <b>${esc(code)}</b> (${esc(inr(p.due_amount))}) ${esc(when)}.
+         If it's already paid, thank you, and please ignore this email.</p>`,
+        { label: 'View and pay invoice', href: String(p.link) },
+      ),
+      text: `Invoice ${p.number} (${inr(p.due_amount)}) ${when}. View and pay: ${p.link}`,
+    };
+  }
+
+  if (kind === 'payment_thanks') {
+    return {
+      subject: `Payment received for ${p.number}. Thank you!`,
+      html: layout(
+        s,
+        'Payment received',
+        `<p style="margin:0">Hi ${esc(firstOf(p.contact))}, we've received the payment for invoice <b>${esc(p.number)}</b>. Thank you, it was lovely working with you.</p>`,
+        { label: 'View receipt', href: String(p.link) },
+      ),
+      text: `Payment received for ${p.number}. Thank you! ${p.link}`,
+    };
+  }
+
+  if (kind === 'bank_matched' || kind === 'bank_unmatched') {
+    const matched = kind === 'bank_matched';
+    return {
+      subject: matched ? `${inr(p.amount)} received from ${brand} (${p.number})` : `${inr(p.amount)} credited: which invoice is it?`,
+      html: layout(
+        s,
+        matched ? `${inr(p.amount)} from ${brand}` : `Money in: ${inr(p.amount)}`,
+        matched
+          ? `<p style="margin:0">Your bank reported a credit that matches invoice <b>${esc(p.number)}</b>. It's marked as paid.</p>`
+          : `<p style="margin:0">Your bank reported a credit we couldn't match to an invoice. Open Payments to assign it.</p>${quoteBox('From the bank email', p.excerpt)}`,
+        { label: 'Open payments', href: url(s, '/studio/payments') },
+      ),
+      text: matched ? `${inr(p.amount)} matched to ${p.number} (${brand}).` : `${inr(p.amount)} credited but not matched. ${url(s, '/studio/payments')}`,
+    };
+  }
+
+  throw new Error(`Unknown email kind: ${kind}`);
+}

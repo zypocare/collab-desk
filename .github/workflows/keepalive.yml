@@ -1,0 +1,22 @@
+# Supabase pauses free projects after about a week without activity.
+# This calls the public page function once a day so the project stays awake.
+name: Keep database awake
+
+on:
+  schedule:
+    - cron: '17 3 * * *' # every day, 08:47 IST
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call the public page function
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          status=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$SUPABASE_URL/rest/v1/rpc/public_page" \
+            -H "apikey: $SUPABASE_ANON_KEY" -H "Content-Type: application/json" -d '{}')
+          echo "Supabase answered $status"
+          test "$status" = "200"

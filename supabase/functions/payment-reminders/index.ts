@@ -1,0 +1,48 @@
+// Polite payment reminders to brands: 2 days before the due date, on the day, then 3, 7 and 14 days late.
+// Runs every morning at 10:00 IST from the database cron job, protected by the shared secret.
+import { admin, cronAllowed, daysBetween, todayIST } from '../_shared/admin.ts';
+
+const STEPS = [-2, 0, 3, 7, 14];
+
+Deno.serve(async (req) => {
+  if (!cronAllowed(req)) return new Response('Forbidden', { status: 403 });
+  const db = admin();
+
+  const { data: s } = await db.from('creator_settings').select('reminders_enabled, site_url').eq('id', 1).single();
+  if (!s?.reminders_enabled) return Response.json({ skipped: 'reminders are turned off' });
+
+  const { data: invoices, error } = await db
+    .from('invoices')
+    .select('id, collab_id, number, public_token, due_date, total, payable, amount_received, tds_deducted, reminders_sent, send_to, collab:collabs(code, contact_name, contact_email)')
+    .in('status', ['sent', 'partly_paid'])
+    .eq('auto_remind', true)
+    .not('due_date', 'is', null);
+  if (error) return Response.json({ error: error.message }, { status: 500 });
+
+  const today = todayIST();
+  let queued = 0;
+  for (const inv of invoices ?? []) {
+    const daysLate = daysBetween(inv.due_date, today);
+    // The latest step that has been reached, if it was reached in the last 2 days (no burst of old reminders).
+    const step = [...STEPS].reverse().find((st) => daysLate >= st && daysLate - st <= 2);
+    if (step === undefined || (inv.reminders_sent ?? []).includes(step)) continue;
+
+    const collab = inv.collab as unknown as { code: string; contact_name: string; contact_email: string };
+    const recipients = [...new Set([collab.contact_email, inv.send_to].map((e) => (e ?? '').trim()).filter(Boolean))];
+    if (!recipients.length) continue;
+
+    const dueAmount = Math.max(0, Number(inv.payable) - Number(inv.amount_received));
+    const payload = {
+      code: collab.code, number: inv.number, contact: collab.contact_name, due: inv.due_date, days_late: daysLate,
+      due_amount: dueAmount, link: `${String(s.site_url).replace(/\/$/, '')}/invoice/${inv.public_token}`,
+    };
+    await db.from('outbox').insert(recipients.map((to) => ({ kind: 'payment_reminder', to_email: to, payload })));
+    await db.from('invoices').update({ reminders_sent: [...(inv.reminders_sent ?? []), step], last_reminded_at: new Date().toISOString() }).eq('id', inv.id);
+    await db.from('collab_events').insert({
+      collab_id: inv.collab_id,
+      kind: 'reminder', text: `Payment reminder sent for ${inv.number}`, visible_to_brand: true,
+    });
+    queued++;
+  }
+  return Response.json({ checked: invoices?.length ?? 0, reminders: queued });
+});
