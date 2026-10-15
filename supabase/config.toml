@@ -441,3 +441,26 @@ verify_jwt = false
 # Daily Instagram sync: called by cron (shared secret) or by the creator (checked inside).
 [functions.instagram-sync]
 verify_jwt = false
+
+# ---------------------------------------------------------------------------
+# Live project (supabase config push --project-ref qzsfuvcxpqaavmwkxutt).
+# Email login details come from supabase/.env, which is never committed.
+# ---------------------------------------------------------------------------
+[remotes.production]
+project_id = "qzsfuvcxpqaavmwkxutt"
+
+[remotes.production.auth]
+site_url = "https://collab-desk.pages.dev"
+additional_redirect_urls = ["https://collab-desk.pages.dev"]
+
+[remotes.production.auth.rate_limit]
+email_sent = 30
+
+[remotes.production.auth.email.smtp]
+enabled = true
+host = "env(SMTP_HOST)"
+port = 465
+user = "env(SMTP_USER)"
+pass = "env(SMTP_PASS)"
+admin_email = "env(SMTP_USER)"
+sender_name = "env(SMTP_SENDER_NAME)"
