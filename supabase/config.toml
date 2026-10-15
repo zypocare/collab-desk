@@ -450,8 +450,8 @@ verify_jwt = false
 project_id = "qzsfuvcxpqaavmwkxutt"
 
 [remotes.production.auth]
-site_url = "https://collab-desk.pages.dev"
-additional_redirect_urls = ["https://collab-desk.pages.dev"]
+site_url = "https://collab-desk.zypocare.workers.dev"
+additional_redirect_urls = ["https://collab-desk.zypocare.workers.dev"]
 
 [remotes.production.auth.rate_limit]
 email_sent = 30
