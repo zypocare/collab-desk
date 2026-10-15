@@ -40,20 +40,22 @@
 			tax_mode: editing?.tax_mode ?? (s.gst_registered ? (sameState ? 'intra' : 'inter') : 'none'),
 			due: editing?.due_date ?? due,
 			invoicedSoFar,
-			fee
+			fee,
+			e: editing,
+			accounts: c.brand.accounts_email ?? ''
 		};
 	});
 
-	let kind = $state<Invoice['kind']>(editing?.kind ?? start.kind);
+	let kind = $state<Invoice['kind']>(start.e?.kind ?? start.kind);
 	let items = $state<InvoiceItem[]>(start.items);
 	let taxMode = $state<Invoice['tax_mode']>(start.tax_mode as Invoice['tax_mode']);
-	let gstRate = $state(editing?.gst_rate || s.gst_rate || 18);
-	let tdsRate = $state(editing?.tds_rate ?? 0);
-	let issueDate = $state(editing?.issue_date ?? todayIso());
+	let gstRate = $state(start.e?.gst_rate || s.gst_rate || 18);
+	let tdsRate = $state(start.e?.tds_rate ?? 0);
+	let issueDate = $state(start.e?.issue_date ?? todayIso());
 	let dueDate = $state(start.due);
-	let sendTo = $state(editing?.send_to ?? c.brand.accounts_email ?? '');
-	let notes = $state(editing?.notes ?? '');
-	let autoRemind = $state(editing?.auto_remind ?? true);
+	let sendTo = $state(start.e?.send_to ?? start.accounts);
+	let notes = $state(start.e?.notes ?? '');
+	let autoRemind = $state(start.e?.auto_remind ?? true);
 	let busy = $state(false);
 
 	const subtotal = $derived(items.reduce((a, i) => a + Math.max(0, Number(i.qty) || 0) * Math.max(0, Number(i.rate) || 0), 0));

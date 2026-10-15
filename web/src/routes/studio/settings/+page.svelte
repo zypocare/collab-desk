@@ -5,6 +5,7 @@
 	import { KINDS } from '#lib/util.ts';
 	import Icon from '#lib/components/Icon.svelte';
 	import NotificationSettings from '#lib/components/NotificationSettings.svelte';
+	import BillingSettings from '#lib/components/BillingSettings.svelte';
 
 	const s = $derived(studio.settings!);
 	const link = $derived(s.site_url.replace(/\/$/, ''));
@@ -73,6 +74,7 @@
 				<input type="checkbox" class="tgl" checked={s.show_rates} aria-label="Show starting rates" onchange={(e) => toggle('show_rates', (e.currentTarget as HTMLInputElement).checked)} />
 			</div>
 		</section>
+		<BillingSettings />
 	</div>
 	<div class="stack">
 		<section class="panel rv" style="--i:3">

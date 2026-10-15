@@ -6,6 +6,7 @@
 	import Mono from '#lib/components/Mono.svelte';
 	import PayPill from '#lib/components/PayPill.svelte';
 	import Segmented from '#lib/components/Segmented.svelte';
+	import BankCredits from '#lib/components/BankCredits.svelte';
 
 	let filter = $state<'all' | 'due' | 'overdue' | 'paid'>('all');
 	let swapKey = $state(0);
@@ -54,6 +55,8 @@
 		<div><div class="lbl">Overdue</div><div class="big" class:late={od > 0} use:countUp={{ value: od, money: true }}>{inr(od)}</div><div class="sub">{nOd} invoice{nOd === 1 ? '' : 's'} past due date</div></div>
 	</div>
 </section>
+
+<BankCredits />
 
 <div class="toolbar rv" style="--i:4">
 	<Segmented

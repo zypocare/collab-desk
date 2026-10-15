@@ -22,6 +22,7 @@
 		todayIso
 	} from '#lib/util.ts';
 	import Icon from '#lib/components/Icon.svelte';
+	import { INVOICE_STATUS } from '#lib/invoice.ts';
 
 	const r = $derived(brandData.requests.find((x) => x.code.toUpperCase() === (page.params.code ?? '').toUpperCase()));
 	const si = $derived(r ? (r.stage === 'declined' ? -1 : stageIndex(r.stage)) : 0);
@@ -221,6 +222,19 @@
 			<a class="btn" style="margin-top:16px" href="/agreement/{accepted.id}"><Icon name="check" />View agreement · accepted {fmt(accepted.responded_at)}</a>
 		{/if}
 	</section>
+
+	{#if r.invoices?.length}
+		<section class="panel rv" style="--i:4;margin-top:18px">
+			<div class="panel-h"><h2>Invoices</h2></div>
+			{#each r.invoices as inv (inv.token)}
+				<a class="prod-row" href="/invoice/{inv.token}" style="text-decoration:none">
+					<div><b>{inv.number}</b><small>{fmt(inv.issue_date)}{inv.status !== 'paid' && inv.due_date ? ` · due ${fmt(inv.due_date)}` : ''}</small></div>
+					<span class="v">{inr(inv.payable)}</span>
+					<span class="pill tint {INVOICE_STATUS[inv.status as keyof typeof INVOICE_STATUS]?.k ?? 'plain'}">{INVOICE_STATUS[inv.status as keyof typeof INVOICE_STATUS]?.label ?? inv.status}</span>
+				</a>
+			{/each}
+		</section>
+	{/if}
 
 	{#if r.drafts.length && !(r.drafts.length === 1 && pendingDraft)}
 		<section class="panel rv" style="--i:4;margin-top:18px">

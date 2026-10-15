@@ -112,6 +112,8 @@ This deploys all server functions:
 | `daily-digest` | The 9 AM summary by email and Telegram |
 | `telegram-connect` | Connects her Telegram from the **My page** screen |
 | `calendar` | The private calendar link for Google Calendar or iPhone |
+| `payment-reminders` | Polite payment reminders to brands (10 AM daily) |
+| `bank-alert` | Matches bank "credited" emails to invoices |
 
 ### c) Telegram (optional, for the 9 AM summary on her phone)
 
@@ -132,6 +134,15 @@ insert into private.job_config (key, value) values
   ('cron_secret',   'PASTE-THE-SAME-LONG-RANDOM-TEXT')
 on conflict (key) do update set value = excluded.value;
 ```
+
+### d) Bank alerts (optional, marks invoices paid automatically)
+
+1. Make sure your bank emails you when money is credited (most banks have this in net banking → alerts).
+2. Follow the steps at the top of `apps-script/gmail-watcher.gs`. You copy two values from the app
+   (**My page → Billing and invoices → Address / Private key**) into the script.
+3. When a credit matches an invoice (by invoice number in the UPI note, or by the exact amount), the invoice
+   is marked paid and you get an email (and a Telegram message, if connected). Anything else waits in
+   **Payments → Bank credits** for you to match by hand.
 
 ## 4. Bot protection (Cloudflare Turnstile)
 

@@ -19,6 +19,7 @@
 		{ href: '/studio/calendar', label: 'Calendar', icon: 'cal' },
 		{ href: '/studio/payments', label: 'Payments', icon: 'wallet' },
 		{ href: '/studio/brands', label: 'Brands', icon: 'users' },
+		{ href: '/studio/reports', label: 'Reports', icon: 'chart' },
 		{ href: '/studio/settings', label: 'My page', icon: 'link' }
 	];
 	const current = $derived(

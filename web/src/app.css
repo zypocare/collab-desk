@@ -916,3 +916,26 @@ a{color:inherit}
 .doc-table tfoot tr.sub td{font-weight:500;border-top:0;font-size:13.5px;color:var(--ink-2)}
 .doc-table tfoot tr:not(.sub) td{border-top:1.5px solid var(--ink)}
 @media (max-width: 640px){ .inv-meta{grid-template-columns:repeat(2,auto)} .pay-card{padding:20px} }
+.inv-row{padding:12px 14px;border-radius:14px;background:var(--surface-2);margin-bottom:10px;display:flex;flex-direction:column;gap:4px}
+.inv-row.muted{opacity:.55}
+.inv-row-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.inv-row-h b{font-size:14px}
+.q-row.inv{grid-template-columns:minmax(0,2.4fr) 64px minmax(0,1fr) 28px}
+.bill-details{margin-top:14px;padding:12px 14px;border-radius:14px;background:var(--surface-2);font-size:13px}
+.bill-details summary{cursor:pointer;font-weight:600;color:var(--ink-2)}
+.alert-row{display:flex;gap:12px;align-items:center;padding:12px 20px;border-top:1px solid var(--line);flex-wrap:wrap}
+.alert-row.done{opacity:.8}
+.alert-body{flex:1;min-width:200px}
+.alert-body b{font-family:var(--f-display);font-size:17px}
+.alert-body small{display:block;color:var(--ink-3);font-size:12px;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:520px}
+.alert-acts{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.alert-acts .inp{height:32px;width:auto;max-width:260px;font-size:12.5px}
+.rep-table td,.rep-table th{white-space:nowrap}
+.rep-table tr.empty td{color:var(--ink-3)}
+.export-list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;padding:0 20px 20px}
+.export{display:flex;gap:12px;align-items:flex-start;text-align:left;padding:14px;border-radius:16px;border:1px solid var(--line);background:var(--surface);transition:transform .3s var(--spring),border-color .2s,box-shadow .3s}
+.export:hover{transform:translateY(-2px);border-color:var(--line-strong);box-shadow:var(--shadow)}
+.export .ic{width:22px;height:22px;color:var(--accent);margin-top:2px}
+.export b{display:block;font-size:14px}
+.export small{display:block;color:var(--ink-3);font-size:12.5px;margin-top:2px}
+@media (max-width: 900px){ .export-list{grid-template-columns:minmax(0,1fr)} .nav span{font-size:9.5px} }
