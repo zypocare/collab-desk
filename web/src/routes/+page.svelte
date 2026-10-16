@@ -49,7 +49,8 @@
 		p
 			? [
 					{ raw: p.followers, label: 'followers' },
-					{ raw: p.engagement, label: 'avg. engagement' },
+					// Reels engagement when the insights have it (labelled so); otherwise the all-posts figure.
+					ins?.insights?.formats?.reels?.er ? { raw: `${ins.insights.formats.reels.er}%`, label: 'Reels engagement' } : { raw: p.engagement, label: 'avg. engagement' },
 					...(p.instagram?.avg_views ? [{ raw: compact(p.instagram.avg_views), label: 'avg. views per post' }] : []),
 					...(ins && reachOk(ins.insights?.totals) ? [{ raw: compact(ins.insights.totals!.reach), label: 'reached in 30 days' }] : [])
 				].filter((s) => s.raw)

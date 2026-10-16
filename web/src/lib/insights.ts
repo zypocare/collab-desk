@@ -63,7 +63,10 @@ export function insightKpis(d: PublicInsights): Kpi[] {
 		{ k: 'Accounts reached', v: reachOk(t) ? t.reach : undefined, sub: '30 days', ch: reachOk(pv) ? change(t.reach, pv.reach) : null },
 		{ k: 'Views', v: t.views, sub: '30 days', ch: change(t.views, pv.views) },
 		{ k: 'Accounts engaged', v: t.accounts_engaged, sub: '30 days', ch: change(t.accounts_engaged, pv.accounts_engaged) },
-		{ k: 'Engagement rate', v: d.engagement_rate, sub: 'per post, last 12', ch: null, pct: true },
+		// The headline rate is the Reels one (what brands mostly book), labelled as such; all posts if no Reels.
+		f?.reels?.er
+			? { k: 'Reels engagement rate', v: f.reels.er, sub: `per Reel, based on ${basedOn(f.reels)} Reel${basedOn(f.reels) === 1 ? '' : 's'}`, ch: null, pct: true }
+			: { k: 'Engagement rate', v: d.engagement_rate, sub: 'per post, last 12', ch: null, pct: true },
 		{ k: 'Interactions', v: t.total_interactions, sub: '30 days', ch: change(t.total_interactions, pv.total_interactions) },
 		{ k: 'Avg. Reel views', v: f?.reels.avg_views ?? d.avg_views, sub: f?.reels.posts ? `based on ${basedOn(f.reels)} Reel${basedOn(f.reels) === 1 ? '' : 's'}` : 'recent posts', ch: null },
 		// How long people watch a Reel, on average per view (from Instagram).
