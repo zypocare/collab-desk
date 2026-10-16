@@ -9,11 +9,16 @@
 	import BrandTopbar from '#lib/components/BrandTopbar.svelte';
 
 	let { children }: LayoutProps = $props();
-	const allowed = $derived(!!auth.session && auth.account?.role === 'brand');
+	// Anyone can start a request (they confirm their email when sending); everything else needs sign-in.
+	const guestOk = $derived(!auth.session && page.url.pathname === '/brand/new');
+	// While a guest's code is being confirmed they are signed in before the app knows they're a brand;
+	// keep the form on screen through that moment so their request isn't lost.
+	const confirming = $derived(!!auth.session && !auth.account && page.url.pathname === '/brand/new');
+	const allowed = $derived((!!auth.session && auth.account?.role === 'brand') || guestOk || confirming);
 
 	// Brands only. The creator has her own studio.
 	$effect(() => {
-		if (!auth.session) goto(`/login?next=${encodeURIComponent(page.url.pathname)}`, { replaceState: true });
+		if (!auth.session && page.url.pathname !== '/brand/new') goto(`/login?next=${encodeURIComponent(page.url.pathname + page.url.search)}`, { replaceState: true });
 		else if (auth.account?.role === 'creator') goto('/studio', { replaceState: true });
 	});
 

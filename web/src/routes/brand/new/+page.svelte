@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { untrack } from 'svelte';
-	import { auth } from '#lib/auth.svelte.ts';
+	import { auth, refreshAccount } from '#lib/auth.svelte.ts';
+	import { CATS } from '#lib/util.ts';
 	import { brandData, loadRequests } from '#lib/brand.svelte.ts';
 	import { pub } from '#lib/publicPage.svelte.ts';
 	import { supabase } from '#lib/supabase.ts';
@@ -18,6 +19,92 @@
 	import { tick } from 'svelte';
 
 	const acc = $derived(auth.account?.role === 'brand' ? auth.account : null);
+	// Not signed in: they fill everything in first and confirm their email with a code when sending.
+	const guest = $derived(!auth.session);
+	let g = $state({ brand: '', name: '', email: '', phone: '', instagram: '', category: 'Beauty' });
+	let gErr = $state('');
+	let codeStep = $state(false);
+	let code = $state('');
+	let codeBusy = $state(false);
+	let codeErr = $state('');
+	let resendIn = $state(0);
+
+	// Keep a guest's half-filled form on this device, in case they leave and come back.
+	const DRAFT = 'collab-request-draft';
+	$effect(() => {
+		if (!guest) return;
+		try {
+			const d = JSON.parse(localStorage.getItem(DRAFT) ?? 'null');
+			if (d && !page.url.searchParams.get('package')) untrack(() => Object.assign(g, d.g ?? {}));
+		} catch {
+			/* storage blocked */
+		}
+	});
+	$effect(() => {
+		if (!guest) return;
+		const snapshot = JSON.stringify({ g });
+		try {
+			localStorage.setItem(DRAFT, snapshot);
+		} catch {
+			/* storage blocked */
+		}
+	});
+
+	function validGuest() {
+		gErr = '';
+		if (!g.brand.trim()) gErr = 'Add your brand name.';
+		else if (!g.name.trim()) gErr = 'Add your name so we know who to reply to.';
+		else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(g.email.trim())) gErr = 'Add a valid work email, like name@brand.com.';
+		if (gErr) document.getElementById('g-sec')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+		return !gErr;
+	}
+
+	async function sendCode() {
+		codeErr = '';
+		const { error: err } = await supabase.auth.signInWithOtp({ email: g.email.trim().toLowerCase(), options: { shouldCreateUser: true } });
+		if (err) {
+			codeErr = err.status === 429 ? 'Too many codes asked for. Please wait a minute and try again.' : errMessage(err);
+			return false;
+		}
+		resendIn = 45;
+		const t = setInterval(() => (--resendIn <= 0 ? clearInterval(t) : null), 1000);
+		return true;
+	}
+
+	async function verifyAndSend() {
+		const token = code.replace(/\D/g, '');
+		if (token.length !== 6) return (codeErr = 'Enter the 6-digit code from the email.');
+		codeBusy = true;
+		codeErr = '';
+		const { error: err } = await supabase.auth.verifyOtp({ email: g.email.trim().toLowerCase(), token, type: 'email' });
+		if (err) {
+			codeBusy = false;
+			return (codeErr = 'That code is wrong or has expired. Check the latest email or send a new code.');
+		}
+		const account = await refreshAccount();
+		if (account?.role === 'creator') {
+			codeBusy = false;
+			return (codeErr = "This is the creator's email. Use your brand's email to send a request.");
+		}
+		if (account?.role === 'brand' && !account.brand) {
+			const { error: rErr } = await supabase.rpc('register_brand', {
+				p_name: g.brand, p_instagram: g.instagram, p_website: '', p_category: g.category, p_full_name: g.name, p_phone: g.phone
+			});
+			if (rErr) {
+				codeBusy = false;
+				return (codeErr = errMessage(rErr));
+			}
+			await refreshAccount();
+		}
+		try {
+			localStorage.removeItem(DRAFT);
+		} catch {
+			/* storage blocked */
+		}
+		codeBusy = false;
+		codeStep = false;
+		await sendRequest();
+	}
 	const creator = $derived(firstName(pub.data?.display_name ?? ''));
 	const rates = $derived(pub.data?.rates ?? null);
 
@@ -157,6 +244,23 @@
 		if (!deliverables.length) errDel = 'Choose at least one deliverable.';
 		if (type !== 'paid' && !product.trim()) errProduct = 'Tell us which product you will send.';
 		if (errDel || errProduct) return;
+		if (guest) {
+			if (!validGuest()) return;
+			busy = true;
+			const ok = await sendCode();
+			busy = false;
+			if (ok) {
+				codeStep = true;
+				await tick();
+				(document.getElementById('g-code') as HTMLInputElement | null)?.focus();
+			}
+			return;
+		}
+		await sendRequest();
+	}
+
+	async function sendRequest() {
+		const deliverables = shown.filter((k) => qty[k] > 0).map((k) => ({ kind: k, qty: qty[k] }));
 		busy = true;
 		const { data, error: err } = await supabase.rpc('submit_request', {
 			p: {
@@ -190,19 +294,25 @@
 
 <svelte:head><title>New request</title></svelte:head>
 
-<a class="back" href="/brand"><Icon name="back" />My requests</a>
+{#if guest}<a class="back" href="/"><Icon name="back" />Back</a>{:else}<a class="back" href="/brand"><Icon name="back" />My requests</a>{/if}
 
-{#if acc && !acc.brand}
+{#if acc && !acc.brand && !codeBusy}
 	<header class="ph rv"><div><div class="eb">Step 1 of 2</div><h1>About your <em>brand</em></h1><p>Then you'll choose what you'd like.</p></div></header>
 	<section class="panel rv" style="--i:1;padding:22px"><BrandDetailsForm submitLabel="Continue" /></section>
-{:else if acc && pub.data && !pub.data.accepting}
+{:else if pub.data && !pub.data.accepting}
 	<div class="empty-card"><h2>{creator} is fully booked right now</h2><p>New requests are paused. You can still follow requests you already sent.</p><a class="btn" href="/brand">My requests</a></div>
-{:else if acc}
+{:else if acc || guest}
 	<header class="ph rv">
 		<div>
-			<div class="eb">Sending as {acc.brand?.name} · {acc.full_name}</div>
-			<h1>New <em>request</em></h1>
-			<p>Tell {creator || 'us'} what you have in mind. <a class="lnk" href="/brand/details">Edit company details</a></p>
+			{#if acc}
+				<div class="eb">Sending as {acc.brand?.name} · {acc.full_name}</div>
+				<h1>New <em>request</em></h1>
+				<p>Tell {creator || 'us'} what you have in mind. <a class="lnk" href="/brand/details">Edit company details</a></p>
+			{:else}
+				<div class="eb">No account needed</div>
+				<h1>Work with <em>{creator || 'us'}</em></h1>
+				<p>Fill this in and press Send. We'll email you a 6-digit code to confirm it's you, then you can follow your request any time. <a class="lnk" href="/login?next=/brand">Already sent one? Sign in</a></p>
+			{/if}
 		</div>
 	</header>
 
@@ -222,6 +332,20 @@
 			</div>
 		{:else}
 			<form onsubmit={submit} novalidate>
+				{#if guest}
+					<div class="bsec" id="g-sec">
+						<div class="bsec-h"><i>00</i><h2>About you</h2></div>
+						<div class="fields">
+							<div class="f"><label for="g-brand">Brand name</label><input class="inp" id="g-brand" autocomplete="organization" bind:value={g.brand} /></div>
+							<div class="f"><label for="g-name">Your name</label><input class="inp" id="g-name" autocomplete="name" bind:value={g.name} /></div>
+							<div class="f"><label for="g-email">Work email</label><input class="inp" id="g-email" type="email" inputmode="email" autocomplete="email" placeholder="name@brand.com" bind:value={g.email} /></div>
+							<div class="f"><label for="g-phone">Phone or WhatsApp <span class="hint">(optional)</span></label><input class="inp" id="g-phone" inputmode="tel" autocomplete="tel" bind:value={g.phone} /></div>
+							<div class="f"><label for="g-ig">Brand Instagram <span class="hint">(optional)</span></label><div class="pre"><span>@</span><input class="inp" id="g-ig" placeholder="yourbrand" bind:value={g.instagram} /></div></div>
+							<div class="f"><label for="g-cat">Category</label><Select id="g-cat" bind:value={g.category} options={CATS.map((c) => ({ value: c, label: c }))} /></div>
+						</div>
+						{#if gErr}<div class="err" style="margin-top:10px">{gErr}</div>{/if}
+					</div>
+				{/if}
 				{#if againCode && !pkg}
 					<div class="pkg-banner">
 						<Icon name="refresh" />
@@ -291,7 +415,7 @@
 				</div>
 				<div class="bsec">
 					<div class="bsec-h"><i>04</i><h2>Brief</h2></div>
-					<BriefEditor bind:value={briefDetails} idp="b" category={acc.brand?.category ?? ''} />
+					<BriefEditor bind:value={briefDetails} idp="b" category={acc?.brand?.category ?? g.category} />
 					<div class="f" style="margin-top:12px"><label for="b-brief">Anything else</label><textarea class="inp" id="b-brief" rows="3" placeholder="What's launching, context, timing notes" bind:value={brief}></textarea></div>
 				</div>
 				{#if advice}
@@ -305,6 +429,21 @@
 							</div>
 						</div>
 					{/key}
+				{/if}
+				{#if codeStep}
+					<div class="code-step" role="dialog" aria-label="Confirm your email">
+						<Icon name="mail" />
+						<div>
+							<b>Check your email</b>
+							<small>We sent a 6-digit code to {g.email}. Enter it to send your request.</small>
+							<div class="code-row">
+								<input class="inp code-inp" id="g-code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="······" bind:value={code} oninput={() => code.replace(/\D/g, '').length === 6 && verifyAndSend()} />
+								<button type="button" class="btn grad" disabled={codeBusy} onclick={verifyAndSend}>{#if codeBusy}<span class="spinner"></span>Sending…{:else}<Icon name="send" />Confirm and send{/if}</button>
+							</div>
+							{#if codeErr}<div class="err">{codeErr}</div>{/if}
+							<small>{#if resendIn > 0}Send again in {resendIn}s{:else}<button type="button" class="lnk" onclick={sendCode}>Send a new code</button>{/if} · <button type="button" class="lnk" onclick={() => (codeStep = false)}>Change email</button></small>
+						</div>
+					</div>
 				{/if}
 				<div class="submit-row">
 					<p>{error ? '' : "You'll get a request code and an email copy."}{#if error}<span class="err" style="display:block;margin:0">{error}</span>{/if}</p>

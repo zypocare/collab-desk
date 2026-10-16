@@ -1464,3 +1464,13 @@ kbd{font-family:var(--f-mono);font-size:10.5px;padding:2px 6px;border-radius:6px
 @media (max-width: 1100px){ .kpis.k4{grid-template-columns:repeat(2,minmax(0,1fr))} }
 @media (max-width: 420px){ .kpis.k4{grid-template-columns:minmax(0,1fr)} }
 @media (max-width: 640px){ .board-wrap{scroll-snap-type:x mandatory;scroll-padding-inline:16px} .board .col{scroll-snap-align:start} }
+
+/* ---------- request first, confirm email at the end ---------- */
+.code-step{display:flex;gap:12px;margin:0 24px 22px;padding:16px;border-radius:18px;background:color-mix(in oklab,var(--accent) 8%,var(--surface));border:1px solid color-mix(in oklab,var(--accent) 30%,var(--line));animation:adv-in .45s var(--spring)}
+.code-step > svg{width:22px;height:22px;color:var(--accent);flex:none;margin-top:2px}
+.code-step > div{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
+.code-step b{font-size:15px}
+.code-step small{color:var(--ink-3);font-size:12.5px}
+.code-row{display:flex;gap:8px;flex-wrap:wrap}
+.code-row .code-inp{width:170px;flex:none;letter-spacing:.4em;font-size:20px;text-align:center;font-family:var(--f-mono)}
+@media (max-width: 640px){ .code-step{margin:0 16px 18px} .code-row .code-inp,.code-row .btn{width:100%} }

@@ -25,7 +25,8 @@
 
 	const p = $derived(pub.data);
 	const signedInBrand = $derived(auth.account?.role === 'brand');
-	const requestHref = $derived(signedInBrand ? '/brand/new' : '/login?next=/brand/new');
+	// No sign-in needed to start: brands confirm their email with a code when they send.
+	const requestHref = '/brand/new';
 	const trackHref = $derived(signedInBrand ? '/brand' : '/login?next=/brand');
 	let kitBusy = $state(false);
 	async function kit() {
@@ -34,7 +35,7 @@
 		await downloadMediaKit(p, location.origin).catch(() => {});
 		kitBusy = false;
 	}
-	const bookHref = (id: string) => (signedInBrand ? `/brand/new?package=${id}` : `/login?next=${encodeURIComponent(`/brand/new?package=${id}`)}`);
+	const bookHref = (id: string) => `/brand/new?package=${id}`;
 	const stats = $derived(
 		p
 			? [
