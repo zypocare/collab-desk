@@ -85,8 +85,9 @@ export function render(kind: string, p: Payload, s: Settings): Omit<Mail, 'to'> 
       html: layout(
         s,
         `Your quote is ready`,
-        `<p style="margin:0">Hi ${esc(firstOf(p.contact))}, ${esc(s.display_name)} has sent a quote of <b>${esc(inr(p.total))}</b> for request <b>${esc(code)}</b>. Review the details and accept it, or ask for changes.</p>`,
-        { label: 'Review the quote', href: url(s, `/brand/r/${encodeURIComponent(code)}`) },
+        `<p style="margin:0">Hi ${esc(firstOf(p.contact))}, ${esc(s.display_name)} has sent a quote of <b>${esc(inr(p.total))}</b> for request <b>${esc(code)}</b>. Review the details and accept it, or ask for changes. No sign-in needed.</p>
+         ${p.action ? `<p style="margin:12px 0 0;font-size:13px"><a href="${esc(url(s, `/brand/r/${encodeURIComponent(code)}`))}" style="color:#8c8288">Or see the full request</a></p>` : ''}`,
+        p.action ? { label: 'Accept or ask for changes', href: url(s, `/a/${p.action}`) } : { label: 'Review the quote', href: url(s, `/brand/r/${encodeURIComponent(code)}`) },
       ),
       text: `${s.display_name} sent a quote of ${inr(p.total)} for ${code}. Review it at ${url(s, `/brand/r/${code}`)}`,
     };
@@ -137,8 +138,8 @@ export function render(kind: string, p: Payload, s: Settings): Omit<Mail, 'to'> 
       html: layout(
         s,
         `A draft is ready for you`,
-        `<p style="margin:0">Hi ${esc(firstOf(p.contact))}, ${esc(s.display_name)} has shared draft round ${esc(p.round)} for <b>${esc(code)}</b>. Approve it or ask for changes.</p>${quoteBox(`Note from ${first(s.display_name)}`, p.note)}`,
-        { label: 'Review the draft', href: url(s, `/brand/r/${encodeURIComponent(code)}`) },
+        `<p style="margin:0">Hi ${esc(firstOf(p.contact))}, ${esc(s.display_name)} has shared draft round ${esc(p.round)} for <b>${esc(code)}</b>. Approve it or ask for changes. No sign-in needed.</p>${quoteBox(`Note from ${first(s.display_name)}`, p.note)}`,
+        p.action ? { label: 'Review and approve', href: url(s, `/a/${p.action}`) } : { label: 'Review the draft', href: url(s, `/brand/r/${encodeURIComponent(code)}`) },
       ),
       text: `Draft round ${p.round} for ${code} is ready for review: ${url(s, `/brand/r/${code}`)}`,
     };
