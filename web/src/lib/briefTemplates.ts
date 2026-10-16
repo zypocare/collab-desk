@@ -1,4 +1,5 @@
-// Starting points for a brief, by kind of campaign. Picking one fills only the empty fields.
+// Starting points for a brief, by kind of campaign. Picking one replaces template wording and fills empty
+// fields; text someone typed is only replaced after asking.
 import type { BriefDetails } from './types';
 
 export type BriefTemplate = { id: string; label: string; categories: string[]; brief: BriefDetails };
@@ -96,11 +97,23 @@ export const BRIEF_TEMPLATES: BriefTemplate[] = [
 
 export const templateFor = (category?: string) => BRIEF_TEMPLATES.find((t) => category && t.categories.includes(category));
 
-/** Fill only what's empty, so nothing she or the brand typed is lost. */
-export function applyTemplate(current: BriefDetails, t: BriefTemplate): BriefDetails {
-	const pick = <K extends keyof BriefDetails>(k: K) => {
-		const v = current[k];
-		return (Array.isArray(v) ? v.length : v && String(v).trim()) ? v : t.brief[k];
-	};
-	return { ...current, message: pick('message'), dos: pick('dos'), donts: pick('donts'), hashtags: pick('hashtags') };
+const FIELDS = ['message', 'dos', 'donts', 'hashtags'] as const;
+type Field = (typeof FIELDS)[number];
+const norm = (v: BriefDetails[Field]) => (Array.isArray(v) ? v.join(' ') : (v ?? '')).trim();
+
+/** Fields holding text someone typed themselves (not empty, not any template's wording). */
+export function customFields(current: BriefDetails): Field[] {
+	return FIELDS.filter((k) => {
+		const v = norm(current[k]);
+		return v !== '' && !BRIEF_TEMPLATES.some((t) => norm(t.brief[k]) === v);
+	});
+}
+
+/** Switch to a template. Empty fields and fields still holding a template's wording always take the new
+ *  template's; text someone typed is kept unless `replaceCustom`. */
+export function applyTemplate(current: BriefDetails, t: BriefTemplate, replaceCustom = false): BriefDetails {
+	const custom = new Set(replaceCustom ? [] : customFields(current));
+	const next: BriefDetails = { ...current };
+	for (const k of FIELDS) if (!custom.has(k)) (next as Record<Field, unknown>)[k] = t.brief[k];
+	return next;
 }

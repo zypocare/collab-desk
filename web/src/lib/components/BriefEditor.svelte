@@ -1,7 +1,8 @@
 <script lang="ts">
 	import type { BriefDetails } from '../types';
 	import { parseTags } from '../util';
-	import { applyTemplate, BRIEF_TEMPLATES, templateFor, type BriefTemplate } from '../briefTemplates';
+	import { applyTemplate, BRIEF_TEMPLATES, customFields, templateFor, type BriefTemplate } from '../briefTemplates';
+	import { ask } from '../confirm.svelte';
 
 	// The structured brief. Used on the brand's request form and in her studio.
 	let { value = $bindable({}), idp = 'bf', category = '', onchange }: { value?: BriefDetails; idp?: string; category?: string; onchange?: (v: BriefDetails) => void } = $props();
@@ -9,8 +10,18 @@
 	// Templates: the one for this brand's category is shown first.
 	const suggested = $derived(templateFor(category));
 	const templates = $derived(suggested ? [suggested, ...BRIEF_TEMPLATES.filter((t) => t !== suggested)] : BRIEF_TEMPLATES);
-	function useTemplate(t: BriefTemplate) {
-		value = applyTemplate(value, t);
+	// The template picked last (the brand's category is highlighted until one is picked).
+	let picked = $state<string | null>(null);
+	const FIELD_LABEL: Record<string, string> = { message: 'key message', dos: "do's", donts: "don'ts", hashtags: 'hashtags' };
+	async function useTemplate(t: BriefTemplate) {
+		const custom = customFields(value);
+		let replaceCustom = false;
+		if (custom.length) {
+			const list = custom.map((k) => FIELD_LABEL[k]).join(', ');
+			replaceCustom = await ask({ title: `Use the ${t.label} wording?`, body: `You've written your own ${list}. Replace it with the template, or keep yours and only change the rest.`, ok: 'Replace mine', cancel: 'Keep mine' });
+		}
+		picked = t.id;
+		value = applyTemplate(value, t, replaceCustom);
 		tagsText = (value.hashtags ?? []).join(' ');
 		mentionsText = (value.mentions ?? []).join(' ');
 		onchange?.(value);
@@ -30,7 +41,7 @@
 	<span class="lbl-t">Start from a template</span>
 	<div>
 		{#each templates as t (t.id)}
-			<button type="button" class="cat-chip" class:on={t === suggested} onclick={() => useTemplate(t)}>{t.label}</button>
+			<button type="button" class="cat-chip" class:on={picked ? t.id === picked : t === suggested} aria-pressed={picked === t.id} onclick={() => useTemplate(t)}>{t.label}</button>
 		{/each}
 	</div>
 </div>

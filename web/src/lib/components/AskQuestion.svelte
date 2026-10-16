@@ -37,7 +37,7 @@
 	onMount(() => {
 		if (page.url.searchParams.get('ask') === '1') {
 			// Came back from signing in: tidy the address and open the box.
-			const u = new URL(page.url);
+			const u = new URL(page.url.href);
 			u.searchParams.delete('ask');
 			history.replaceState(history.state, '', u.pathname + u.search);
 			if (auth.session) start();
