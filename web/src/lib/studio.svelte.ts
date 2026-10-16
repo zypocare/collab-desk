@@ -244,12 +244,15 @@ export async function removeDeliverable(d: Deliverable) {
 }
 
 /** Creates a collab the creator got by DM, email or phone. */
-export async function createCollab(brandName: string): Promise<Collab | null> {
+export type NewCollabExtra = { collab: Partial<Collab>; deliverables: { kind: string; qty: number }[]; instagram: string };
+
+export async function createCollab(brandName: string, extra?: NewCollabExtra): Promise<Collab | null> {
 	const name = brandName.trim();
 	if (!name) return null;
 	let brand = studio.brands.find((b) => b.name.toLowerCase() === name.toLowerCase());
+	if (brand && extra?.instagram && !brand.instagram) await saveBrand(brand.id, { instagram: extra.instagram });
 	if (!brand) {
-		const { data, error } = await supabase.from('brands').insert({ name }).select('*').single();
+		const { data, error } = await supabase.from('brands').insert({ name, instagram: extra?.instagram ?? '' }).select('*').single();
 		if (error) {
 			toast(`Couldn't add brand: ${errMessage(error)}`, 'alert');
 			return null;
@@ -259,15 +262,16 @@ export async function createCollab(brandName: string): Promise<Collab | null> {
 	}
 	const { data, error } = await supabase
 		.from('collabs')
-		.insert({ brand_id: brand.id, source: 'manual', code: '' })
+		.insert({ ...(extra?.collab ?? {}), brand_id: brand.id, source: 'manual', code: '' })
 		.select('id')
 		.single();
 	if (error || !data) {
 		toast(`Couldn't add collab: ${errMessage(error)}`, 'alert');
 		return null;
 	}
-	await supabase.from('deliverables').insert({ collab_id: data.id, kind: 'Reel', qty: 1 });
-	await supabase.from('collab_events').insert({ collab_id: data.id, kind: 'note', text: 'Added manually (DM, email or call)' });
+	const deliv = extra?.deliverables.length ? extra.deliverables : [{ kind: 'Reel', qty: 1 }];
+	await supabase.from('deliverables').insert(deliv.map((d, i) => ({ collab_id: data.id, kind: d.kind, qty: d.qty, position: i })));
+	await supabase.from('collab_events').insert({ collab_id: data.id, kind: 'note', text: extra ? 'Added from a pasted message' : 'Added manually (DM, email or call)' });
 	await reloadOne(data.id);
 	return byId(data.id) ?? null;
 }

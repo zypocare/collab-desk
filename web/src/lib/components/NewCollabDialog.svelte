@@ -1,20 +1,68 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { createCollab, studio } from '../studio.svelte';
+	import { parseDm } from '../parseDm';
 	import { ui } from '../ui.svelte';
+	import { delivText, fmt, inr, TYPE_LABEL } from '../util';
 	import Icon from './Icon.svelte';
 
 	let name = $state('');
+	let pasted = $state('');
+	let nameTouched = $state(false);
 	let busy = $state(false);
-	let input = $state<HTMLInputElement>();
+	let box = $state<HTMLTextAreaElement>();
 
-	onMount(() => input?.focus());
+	onMount(() => box?.focus());
+
+	// Read the pasted message as she types/pastes, and fill the brand name unless she typed one.
+	const parsed = $derived(pasted.trim().length > 10 ? parseDm(pasted, studio.settings?.handle ?? '') : null);
+	$effect(() => {
+		if (parsed?.brand && !nameTouched) name = studio.brands.find((b) => b.name.toLowerCase() === parsed.brand.toLowerCase())?.name ?? parsed.brand;
+	});
+	const chips = $derived(
+		parsed
+			? [
+					parsed.instagram && { k: 'Instagram', v: '@' + parsed.instagram },
+					parsed.contact && { k: 'Contact', v: parsed.contact },
+					parsed.email && { k: 'Email', v: parsed.email },
+					parsed.phone && { k: 'Phone', v: parsed.phone },
+					parsed.type && { k: 'Type', v: TYPE_LABEL[parsed.type] },
+					parsed.deliverables.length && { k: 'Content', v: delivText(parsed.deliverables) },
+					parsed.fee && { k: 'Budget', v: inr(parsed.fee) },
+					parsed.product && { k: 'Product', v: parsed.product },
+					parsed.productValue && { k: 'Worth', v: inr(parsed.productValue) },
+					parsed.preferredLive && { k: 'Go-live', v: fmt(parsed.preferredLive) },
+					parsed.usage && { k: 'Usage', v: parsed.usage }
+				].filter((x): x is { k: string; v: string } => !!x)
+			: []
+	);
 
 	async function submit(e: SubmitEvent) {
 		e.preventDefault();
 		if (!name.trim()) return;
 		busy = true;
-		const c = await createCollab(name);
+		const p = parsed;
+		const c = await createCollab(
+			name,
+			p
+				? {
+						collab: {
+							contact_name: p.contact,
+							contact_email: p.email,
+							contact_phone: p.phone,
+							...(p.type ? { type: p.type } : {}),
+							fee: p.type === 'barter' ? 0 : p.fee,
+							product: p.product,
+							product_value: p.productValue,
+							preferred_live: p.preferredLive || null,
+							...(p.usage ? { usage: p.usage } : {}),
+							brief: p.brief
+						},
+						deliverables: p.deliverables,
+						instagram: p.instagram
+					}
+				: undefined
+		);
 		busy = false;
 		if (c) {
 			ui.newCollab = false;
@@ -28,10 +76,20 @@
 <div class="dialog-scrim" role="presentation" onclick={(e) => e.target === e.currentTarget && (ui.newCollab = false)}>
 	<div class="dialog" role="dialog" aria-modal="true" aria-labelledby="nc-title"><form onsubmit={submit}>
 		<h2 id="nc-title">Add a collab</h2>
-		<p>For deals that came by DM, email or phone. Pick an existing brand or type a new one.</p>
+		<p>Paste the brand's DM or email and we'll fill in the details. Or just type the brand name.</p>
 		<div class="f">
+			<label for="nc-paste">Their message <span class="hint">(optional)</span></label>
+			<textarea class="inp" id="nc-paste" rows="5" placeholder={'Hi! I’m Asha from Lumière Skin (@lumiere.skin). We’d love 1 reel + 3 stories for our Vitamin C launch, budget ₹30k, live by 25th Oct…'} bind:value={pasted} bind:this={box}></textarea>
+		</div>
+		{#if chips.length}
+			<div class="dm-found" aria-live="polite">
+				<span class="lbl-t">Found</span>
+				<div>{#each chips as ch (ch.k)}<span class="dm-chip"><small>{ch.k}</small>{ch.v}</span>{/each}</div>
+			</div>
+		{/if}
+		<div class="f" style="margin-top:12px">
 			<label for="nc-brand">Brand</label>
-			<input class="inp" id="nc-brand" list="nc-brands" placeholder="Brand name" autocomplete="off" bind:value={name} bind:this={input} />
+			<input class="inp" id="nc-brand" list="nc-brands" placeholder="Brand name" autocomplete="off" bind:value={name} oninput={() => (nameTouched = true)} />
 			<datalist id="nc-brands">
 				{#each studio.brands as b (b.id)}<option value={b.name}></option>{/each}
 			</datalist>
