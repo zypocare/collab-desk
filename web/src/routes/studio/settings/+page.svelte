@@ -24,6 +24,7 @@
 	import TeamSettings from '#lib/components/TeamSettings.svelte';
 	import EmailInbox from '#lib/components/EmailInbox.svelte';
 	import SavedReplies from '#lib/components/SavedReplies.svelte';
+	import ResetData from '#lib/components/ResetData.svelte';
 
 	const s = $derived(studio.settings!);
 	const link = $derived(s.site_url.replace(/\/$/, ''));
@@ -262,6 +263,7 @@
 								<div class="f span2"><label for="me-email">Your sign-in email</label><input class="inp" id="me-email" value={s.creator_email} readonly /><p class="hint" style="margin-top:6px">Only this email opens your studio. It is changed in the database setup, not here.</p></div>
 							</div>
 						</section>
+						<ResetData />
 					{/if}
 				</div>
 			{/key}
