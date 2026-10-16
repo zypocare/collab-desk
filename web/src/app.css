@@ -1160,7 +1160,8 @@ input[type="number"]::-webkit-inner-spin-button,input[type="number"]::-webkit-ou
 .th-seen{align-self:flex-end;display:flex;align-items:center;gap:4px;font-size:11px;color:var(--ink-3);margin:2px 2px 4px}
 .th-seen svg{width:12px;height:12px;color:var(--ok)}
 .th-quick{display:flex;gap:6px;overflow-x:auto;padding:4px 12px 2px;scrollbar-width:none}
-.th-quick .cat-chip{flex:none;height:28px;font-size:12px}
+.th-quick .cat-chip{flex:none;height:28px;font-size:12px;display:inline-flex;align-items:center;gap:5px}
+.th-quick .cat-chip svg{width:12px;height:12px;color:var(--accent)}
 .th-box{display:flex;gap:8px;align-items:flex-end;padding:10px;border-top:1px solid var(--line);background:var(--surface)}
 .th-box textarea.inp{min-height:42px;height:42px;max-height:140px;resize:none;padding:10px 13px;line-height:1.45}
 .send-btn{width:42px;height:42px;padding:0;flex:none;border-radius:12px;display:grid;place-items:center}

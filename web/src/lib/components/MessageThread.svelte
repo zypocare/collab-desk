@@ -15,8 +15,8 @@
 		collabId: string;
 		side: 'creator' | 'brand';
 		otherName: string;
-		/** One-tap replies shown above the box. */
-		quick?: string[];
+		/** Suggested replies shown above the box: tap to put the text in the box, edit, send. */
+		quick?: (string | { label: string; text: string })[];
 	} = $props();
 
 	const other = $derived(side === 'creator' ? 'brand' : 'creator');
@@ -96,6 +96,17 @@
 		box?.focus();
 	}
 
+	// A suggestion goes into the box (not straight out), so she can tweak it first.
+	async function useReply(t: string) {
+		text = t;
+		await tick();
+		if (box) {
+			box.style.height = 'auto';
+			box.style.height = Math.min(220, box.scrollHeight) + 'px';
+			box.focus();
+		}
+	}
+
 	function keydown(e: KeyboardEvent) {
 		if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
 			e.preventDefault();
@@ -130,7 +141,12 @@
 		{/if}
 	</div>
 	{#if quick.length && !text}
-		<div class="th-quick">{#each quick as q (q)}<button type="button" class="cat-chip" onclick={() => send(q)} disabled={sending}>{q}</button>{/each}</div>
+		<div class="th-quick">
+			{#each quick as q, i (i)}
+				{@const r = typeof q === 'string' ? { label: q, text: q } : q}
+				<button type="button" class="cat-chip" title={r.text} onclick={() => useReply(r.text)} disabled={sending}><Icon name="spark" />{r.label}</button>
+			{/each}
+		</div>
 	{/if}
 	<form class="th-box" onsubmit={(e) => (e.preventDefault(), send())}>
 		<textarea

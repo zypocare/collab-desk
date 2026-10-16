@@ -3,6 +3,8 @@
 import type { Collab, Package, QuoteItem, Settings } from './types';
 import { diff, fmt, inTransit, iso, latestDraft, latestQuote, offeredKinds, overdue, parse, plural, unreadFor, usageDaysOf } from './util';
 import { balanceDue } from './invoice';
+import { fairFee, rateValue } from './priority';
+import { delivText, inr } from './util';
 
 const round500 = (n: number) => Math.round(n / 500) * 500;
 const itemsSum = (items: QuoteItem[]) => items.reduce((a, i) => a + i.qty * i.rate, 0);
@@ -224,4 +226,67 @@ export function nextStep(c: Collab): NextStep | null {
 		default:
 			return null;
 	}
+}
+
+// ---------------------------------------------------------------------------
+// Reply suggestions for Messages: what she'd most likely say right now, filled in.
+// ---------------------------------------------------------------------------
+export type Reply = { label: string; text: string };
+
+export function replySuggestions(c: Collab, s: Settings): Reply[] {
+	const hi = `Hi ${c.contact_name ? c.contact_name.split(' ')[0] : 'there'}`;
+	const me = (s.display_name ?? '').split(' ')[0];
+	const sign = me ? `\n${me}` : '';
+	const q = latestQuote(c);
+	const dr = latestDraft(c);
+	const out: Reply[] = [];
+	const add = (label: string, text: string) => out.push({ label, text: text + sign });
+	const what = delivText(c.deliverables);
+	const hasBrief = !!c.brief.trim() || Object.keys(c.brief_details ?? {}).length > 0;
+
+	switch (c.stage) {
+		case 'request':
+		case 'negotiating': {
+			const rate = rateValue(c.deliverables, s.rates);
+			if (c.type === 'barter' && rate) {
+				const fee = fairFee(rate, c.product_value);
+				if (s.barter_min_value && c.product_value < s.barter_min_value)
+					add('Decline barter, offer paid', `${hi}, thank you for thinking of me! I'm only taking barter collabs for products above ${inr(s.barter_min_value)} right now. For ${what}, I could do it for ${inr(fee)} along with the product. Would that work?`);
+				else if (fee) add('Counter with a fee', `${hi}, thank you for reaching out! I'd love to work with ${c.brand.name}. For ${what}, I usually work on a paid basis: with the product, I can do it for ${inr(fee)}. Happy to adjust the deliverables if that helps.`);
+			}
+			if (!hasBrief) add('Ask for the brief', `${hi}, thanks for reaching out! Could you share the brief, key messages, any hashtags or tags, and a few reference posts you like? Then I'll send you a quote.`);
+			if (q?.status === 'sent') add('Nudge on the quote', `${hi}, just checking in on the quote I sent for ${c.code}. Happy to tweak anything if needed!`);
+			if (c.preferred_live) add('Confirm timing', `${hi}, the date you mentioned works on my side. I'll confirm the exact go-live once we lock the details.`);
+			add('Will get back', `${hi}, thanks for the details! I'll get back to you by tomorrow.`);
+			add('Politely decline', `${hi}, thank you so much for thinking of me. Unfortunately I won't be able to take this one up right now, but I'd love to stay in touch for future campaigns!`);
+			break;
+		}
+		case 'confirmed':
+			if (c.type !== 'paid' && !c.shipped_at && !c.product_received_at)
+				add('Ask to ship', `${hi}, we're all set! Please ship the product using the address on your request page, and add the tracking number there so I know when to expect it.`);
+			if (c.product_received_at) add('Product arrived', `${hi}, the product has arrived, thank you! I'll share the draft${c.draft_date ? ` by ${fmt(c.draft_date)}` : ' soon'}.`);
+			add('Excited to start', `${hi}, excited to start on this!${c.draft_date ? ` You'll have the draft by ${fmt(c.draft_date)}` : ''}${c.live_date ? `, and we go live on ${fmt(c.live_date)}` : ''}.`);
+			if (!hasBrief) add('Ask for the brief', `${hi}, before I start, could you share the brief, key messages, hashtags and any do's and don'ts?`);
+			break;
+		case 'creating':
+			if (dr?.status === 'approved') add('Thanks for approving', `${hi}, thanks for approving the draft! It goes live${c.live_date ? ` on ${fmt(c.live_date)}` : ' soon'}. I'll share the link once it's up.`);
+			else if (dr?.status === 'pending') add('Draft is ready', `${hi}, the draft is ready for your review on your request page. Let me know if you'd like any changes!`);
+			else add('Working on it', `${hi}, working on the content now. You'll have the draft${c.draft_date ? ` by ${fmt(c.draft_date)}` : ' soon'}.`);
+			break;
+		case 'live': {
+			const post = c.posts[0]?.media.permalink;
+			add("It's live", `${hi}, it's live!${post ? ` Here's the post: ${post}` : ''} You'll get a results report with views and reach after 7 days.`);
+			const open = c.invoices.find((i) => i.status === 'sent' || i.status === 'partly_paid');
+			if (open && overdue(c)) add('Payment reminder', `${hi}, a gentle reminder that invoice ${open.number} for ${inr(balanceDue(open))} was due on ${fmt(open.due_date)}. Could you check on it? Thank you!`);
+			else if (open) add('Invoice sent', `${hi}, I've shared invoice ${open.number} for ${inr(balanceDue(open))}. You can pay by UPI from the invoice page. Thank you!`);
+			break;
+		}
+		case 'wrapped':
+			add('Thank you', `${hi}, thank you for a lovely collaboration! Would love to work with ${c.brand.name} again. You can book another one any time from your requests page.`);
+			break;
+		case 'declined':
+			add('Keep in touch', `${hi}, thanks again for reaching out. Happy to look at a future campaign whenever it fits!`);
+			break;
+	}
+	return out.slice(0, 5);
 }

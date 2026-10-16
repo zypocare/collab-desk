@@ -36,7 +36,7 @@
 	import Icon from './Icon.svelte';
 	import { toast } from '../ui.svelte';
 	import { supabase } from '../supabase';
-	import { nextStep, suggestDates } from '../suggest';
+	import { nextStep, replySuggestions, suggestDates } from '../suggest';
 	import BriefEditor from './BriefEditor.svelte';
 	import BrandRating from './BrandRating.svelte';
 	import UsageRights from './UsageRights.svelte';
@@ -281,7 +281,7 @@
 						collabId={c.id}
 						side="creator"
 						otherName={c.contact_name || c.brand.name}
-						quick={['Thanks! I’ll get back to you shortly.', 'Could you share the full brief and references?', 'Sounds good, let’s go ahead!']}
+						quick={studio.settings ? replySuggestions(c, studio.settings) : []}
 					/>
 				{/key}
 			</section>
