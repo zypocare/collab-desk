@@ -69,6 +69,8 @@ html{-webkit-text-size-adjust:100%}
 body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16.5px;line-height:1.5;-webkit-font-smoothing:antialiased;margin:0;overflow-x:hidden}
 button,input,select,textarea{font:inherit;color:inherit}
 button{cursor:pointer;-webkit-tap-highlight-color:transparent}
+/* No coloured flash when tapping on phones; every control shows its own pressed state instead. */
+a,label,summary,input,select,textarea,[role="button"],[role="tab"],[role="option"],[tabindex]{-webkit-tap-highlight-color:transparent}
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 h1,h2,h3{font-family:var(--f-display);font-weight:600;letter-spacing:-.025em;text-wrap:balance;margin:0;line-height:1.12}
 p{margin:0}
