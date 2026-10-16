@@ -5,7 +5,7 @@
 	import { auth } from '#lib/auth.svelte.ts';
 	import { loadPublicPage, pub } from '#lib/publicPage.svelte.ts';
 	import { countUp, parseStat } from '#lib/ui.svelte.ts';
-	import { delivText, firstName, initials, inr, offeredKinds, packageOffered, waLink } from '#lib/util.ts';
+	import { delivText, firstName, fmtUpdated, initials, inr, offeredKinds, packageOffered, waLink } from '#lib/util.ts';
 	import BrandTopbar from '#lib/components/BrandTopbar.svelte';
 	import Audience from '#lib/components/Audience.svelte';
 	import { compact, fmt, mediaLabel } from '#lib/util.ts';
@@ -97,7 +97,7 @@
 						</div>
 					{/if}
 					{#if p.instagram}
-						<p class="live-chip rv" style="--i:4"><span class="dt pulse k-live"></span>Live from Instagram{p.instagram.updated_at ? ` · updated ${fmt(p.instagram.updated_at.slice(0, 10))}` : ''}{#if ins}<a class="lnk ins-link" href="/insights">See full insights<Icon name="chevR" /></a>{/if}</p>
+						<p class="live-chip rv" style="--i:4"><span class="dt pulse k-live"></span>Live from Instagram{p.instagram.updated_at ? ` · updated ${fmtUpdated(p.instagram.updated_at)}` : ''}{#if ins}<a class="lnk ins-link" href="/insights">See full insights<Icon name="chevR" /></a>{/if}</p>
 					{/if}
 					{#if p.worked_with.length}
 						<div class="marquee rv" style="--i:5">

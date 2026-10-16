@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { studio } from '../studio.svelte';
 	import { countUp } from '../ui.svelte';
-	import { compact, fmt, mediaLabel } from '../util';
+	import { compact, fmt, fmtUpdated, mediaLabel } from '../util';
 	import { change as pctChange, reachOk, type InsightsData } from '../insights';
 	import { copyText } from '../ui.svelte';
 	import Icon from './Icon.svelte';
@@ -27,7 +27,7 @@
 
 {#if ig?.connected}
 	<section class="panel glow rv" style="--i:7;margin-top:18px">
-		<div class="panel-h"><h2>Instagram</h2><small>@{ig.username} · updated {ig.last_sync_at ? fmt(ig.last_sync_at.slice(0, 10)) : ''}</small></div>
+		<div class="panel-h"><h2>Instagram</h2><small>@{ig.username} · updated {ig.last_sync_at ? fmtUpdated(ig.last_sync_at) : ''}</small></div>
 		<div class="ig-grid">
 			<div class="ig-stat">
 				<span class="lbl">Followers</span>

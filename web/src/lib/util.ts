@@ -82,6 +82,9 @@ export const diff = (s: string) => Math.round((parse(s).getTime() - today().getT
 export const fmt = (s?: string | null) => (s ? parse(s).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : '—');
 export const fmtLong = (s?: string | null) =>
 	s ? parse(s).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' }) : '—';
+/** When numbers were last updated: "Fri, 16 Oct, 9:46 pm". */
+export const fmtUpdated = (s: string) =>
+	new Date(s).toLocaleString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
 export const fmtTime = (s: string) =>
 	new Date(s).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
 export const relWord = (n: number) =>

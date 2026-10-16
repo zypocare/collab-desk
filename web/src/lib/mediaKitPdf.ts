@@ -9,7 +9,7 @@ import { PDFDocument, rgb, type PDFFont, type PDFImage, type PDFPage, type RGB }
 import { qrMatrix } from './invoice';
 import { loadFonts, wrap } from './invoicePdf';
 import type { PublicPage } from './types';
-import { compact, fmt, initials, mediaLabel } from './util';
+import { compact, fmt, fmtUpdated, initials, mediaLabel } from './util';
 
 const INK = rgb(0.12, 0.09, 0.11);
 const MUTED = rgb(0.45, 0.41, 0.44);
@@ -102,7 +102,7 @@ export async function mediaKitPdf(p: PublicPage, link: string, ins: PublicInsigh
 	text(`@${ig?.username || p.handle}`, tx, H - 99, 11, reg, rgb(0.85, 0.8, 0.84));
 	const sub = [p.niche, p.city].filter(Boolean).join(' · ');
 	if (sub) for (const [i, l] of wrap(sub, reg, 9.5, W - tx - M).slice(0, 2).entries()) text(l, tx, H - 116 - i * 12, 9.5, reg, rgb(0.7, 0.65, 0.69));
-	const updated = new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+	const updated = fmtUpdated(ig?.updated_at ?? new Date().toISOString());
 	right(`Updated ${updated}${ig ? ' · live from Instagram' : ''}`, W - M, H - bandH + 16, 7.5, reg, rgb(0.6, 0.55, 0.59));
 
 	let y = H - bandH - 26;
@@ -264,7 +264,7 @@ async function insightsPages(doc: PDFDocument, p: PublicPage, d: PublicInsights,
 			text(fit(meta, reg, 9.5, tw), tx, H - 75, 9.5, reg, rgb(0.85, 0.8, 0.84));
 			const reviews = p.reviews ?? [];
 			const avg = reviews.length ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1) : '';
-			const src = `Verified from Instagram${d.updated_at ? ` · updated ${fmt(d.updated_at.slice(0, 10))}` : ''}${avg ? ` · rated ${avg}/5 by ${reviews.length} brand${reviews.length === 1 ? '' : 's'}` : ''}`;
+			const src = `Verified from Instagram${d.updated_at ? ` · updated ${fmtUpdated(d.updated_at)}` : ''}${avg ? ` · rated ${avg}/5 by ${reviews.length} brand${reviews.length === 1 ? '' : 's'}` : ''}`;
 			text(fit(src, reg, 8, tw), tx, H - 95, 8, reg, rgb(0.7, 0.65, 0.69));
 		} else {
 			text(`${d.display_name} · Instagram insights (continued)`, M, H - 28, 10, bold, WHITE);
@@ -317,7 +317,7 @@ async function insightsPages(doc: PDFDocument, p: PublicPage, d: PublicInsights,
 		need(Math.max(leftH, rightH) + 10);
 		const top = y;
 		if (formats.length) {
-			label('By format · last 12 of each, posts under 3 days left out', M, top);
+			label('By format · last 12 of each, excluding posts from the last 3 days.', M, top);
 			// Right edges of the number columns.
 			const cx = [M, M + lw * 0.38, M + lw * 0.6, M + lw * 0.8, M + lw];
 			let yy = top - 18;
@@ -437,7 +437,7 @@ async function insightsPages(doc: PDFDocument, p: PublicPage, d: PublicInsights,
 	};
 	const views = (v: number | null, r: number | null) => (v ? `${compact(v)} views` : r ? `${compact(r)} reached` : '');
 	await grid(
-		'Top content · best recent posts',
+		'Top performing content',
 		(d.top ?? []).slice(0, 6).map((m) => ({ img: m.thumbnail_url, url: m.permalink, t: `${mediaLabel(m.media_type, m.product_type)} · ${fmt(m.posted_at.slice(0, 10))}`, n: views(m.views, m.reach), n2: m.interactions ? `${compact(m.interactions)} interactions` : '' }))
 	);
 	await grid(

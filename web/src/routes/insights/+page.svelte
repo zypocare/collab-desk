@@ -3,7 +3,7 @@
 	import { supabase } from '#lib/supabase.ts';
 	import { loadPublicPage, pub } from '#lib/publicPage.svelte.ts';
 	import { basedOn, engageMix, formatRows, FORMAT_LABEL, insightKpis, type PublicInsights } from '#lib/insights.ts';
-	import { compact, fmt, fmtLong, mediaLabel } from '#lib/util.ts';
+	import { compact, fmt, fmtUpdated, mediaLabel } from '#lib/util.ts';
 	import { copyText } from '#lib/ui.svelte.ts';
 	import { downloadMediaKit } from '#lib/mediaKitPdf.ts';
 	import BrandTopbar from '#lib/components/BrandTopbar.svelte';
@@ -69,7 +69,7 @@
 				<div class="eb">Instagram insights</div>
 				<h1>{d.display_name}</h1>
 				<div class="handle">@{d.username}{d.niche ? ` · ${d.niche}` : ''}{d.city ? ` · ${d.city}` : ''}</div>
-				<span class="ins-verified"><Icon name="check" />Verified from Instagram{d.updated_at ? ` · updated ${fmtLong(d.updated_at.slice(0, 10))}` : ''}</span>
+				<span class="ins-verified"><Icon name="check" />Verified from Instagram{d.updated_at ? ` · updated ${fmtUpdated(d.updated_at)}` : ''}</span>
 			</div>
 			<div class="ins-acts">
 				<button class="btn sm" onclick={() => copyText(location.href, 'Link copied')}><Icon name="copy" />Copy link</button>
@@ -133,7 +133,7 @@
 
 		{#if d.top.length}
 			<section class="rv ins-top" style="--i:6" aria-label="Top content">
-				<div class="pkgs-h"><h2>Top content</h2><p>Best recent posts.</p></div>
+				<div class="pkgs-h"><h2>Top performing content.</h2></div>
 				<div class="ins-top-grid">
 					{#each d.top as m, i (m.permalink)}
 						<a class="ins-post glow" href={m.permalink} target="_blank" rel="noopener" style="--i:{i}">
