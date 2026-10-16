@@ -437,7 +437,7 @@ async function insightsPages(doc: PDFDocument, p: PublicPage, d: PublicInsights,
 	};
 	const views = (v: number | null, r: number | null) => (v ? `${compact(v)} views` : r ? `${compact(r)} reached` : '');
 	await grid(
-		'Top content · best of her recent posts',
+		'Top content · best recent posts',
 		(d.top ?? []).slice(0, 6).map((m) => ({ img: m.thumbnail_url, url: m.permalink, t: `${mediaLabel(m.media_type, m.product_type)} · ${fmt(m.posted_at.slice(0, 10))}`, n: views(m.views, m.reach), n2: m.interactions ? `${compact(m.interactions)} interactions` : '' }))
 	);
 	await grid(

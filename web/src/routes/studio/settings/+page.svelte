@@ -346,7 +346,7 @@
 										<p class="hint" style="margin-top:6px">This email owns the studio. People on your team sign in with their own email.</p>
 									{:else}
 										<form class="move-owner" onsubmit={transferOwner}>
-											<input class="inp" id="me-email" type="email" required placeholder="her-email@gmail.com" bind:value={newEmail} />
+											<input class="inp" id="me-email" type="email" required placeholder="name@gmail.com" bind:value={newEmail} />
 											<label class="chk"><input type="checkbox" bind:checked={keepMe} />Keep me ({s.creator_email}) on as a manager</label>
 											<div class="row-inline"><button class="btn sm primary" type="submit" disabled={moveBusy || !newEmail.includes('@')}>Change owner</button><button class="btn sm ghost" type="button" onclick={() => (moving = false)}>Cancel</button></div>
 										</form>

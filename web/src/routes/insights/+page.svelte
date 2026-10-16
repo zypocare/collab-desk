@@ -133,7 +133,7 @@
 
 		{#if d.top.length}
 			<section class="rv ins-top" style="--i:6" aria-label="Top content">
-				<div class="pkgs-h"><h2>Top content.</h2><p></p></div>
+				<div class="pkgs-h"><h2>Top content</h2><p>Best recent posts.</p></div>
 				<div class="ins-top-grid">
 					{#each d.top as m, i (m.permalink)}
 						<a class="ins-post glow" href={m.permalink} target="_blank" rel="noopener" style="--i:{i}">

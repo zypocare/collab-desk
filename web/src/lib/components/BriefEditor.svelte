@@ -66,7 +66,7 @@
 	</div>
 	<div class="f span2">
 		<label for="{idp}-promo">Promo code for followers <span class="hint">(optional)</span></label>
-		<input class="inp" id="{idp}-promo" placeholder="e.g. NIVI15 for 15% off" value={value.promo ?? ''} onchange={(e) => set({ promo: txt(e) })} />
+		<input class="inp" id="{idp}-promo" placeholder="e.g. SAVE15 for 15% off" value={value.promo ?? ''} onchange={(e) => set({ promo: txt(e) })} />
 	</div>
 	<div class="f">
 		<label for="{idp}-dos">Do's</label>

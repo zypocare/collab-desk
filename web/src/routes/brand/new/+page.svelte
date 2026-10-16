@@ -413,7 +413,7 @@
 							</div>
 						{/if}
 						<div class="f"><label for="b-date">Preferred go-live date</label><DatePicker id="b-date" min={rel(3)} bind:value={preferred} placeholder="No preference" {unavailable} />{#if busyWeek}<p class="hint" style="margin-top:6px">{busyWeek}</p>{/if}</div>
-						<div class="f"><label for="b-usage">Usage rights</label><Select id="b-usage" bind:value={usage} options={USAGE.map((u) => ({ value: u, label: usageOption(u) }))} /><p class="hint" style="margin-top:6px">{usage === 'Organic only' ? `${creator} posts it on her Instagram. No ads.` : `Your brand runs ${creator}'s content as ads from your own ad account. This is charged on top of the content fee; the quote shows the amount.`}</p></div>
+						<div class="f"><label for="b-usage">Usage rights</label><Select id="b-usage" bind:value={usage} options={USAGE.map((u) => ({ value: u, label: usageOption(u) }))} /><p class="hint" style="margin-top:6px">{usage === 'Organic only' ? `${creator} posts it on Instagram. No ads.` : `Your brand runs ${creator}'s content as ads from your own ad account. This is charged on top of the content fee; the quote shows the amount.`}</p></div>
 					</div>
 				</div>
 				<div class="bsec">

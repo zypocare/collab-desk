@@ -59,6 +59,6 @@ export function expectedResults(lines: Line[], cost: number, page: PublicPage | 
 		cpv: cost > 0 && views ? Math.round((cost / views) * 100) / 100 : null,
 		cpm: cost > 0 && views ? Math.round((cost / views) * 1000) : null,
 		cpe: cost > 0 && engagements ? Math.round((cost / engagements) * 10) / 10 : null,
-		basis: ins?.insights?.formats ? 'her averages per format (recent posts)' : 'her recent post averages'
+		basis: ins?.insights?.formats ? 'average results per format (recent posts)' : 'recent post averages'
 	};
 }

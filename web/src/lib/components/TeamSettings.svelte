@@ -14,7 +14,7 @@
 	let name = $state('');
 	let busy = $state(false);
 	const owner = $derived(studio.me?.team_role === 'owner');
-	const her = $derived(firstName(studio.settings?.display_name ?? ''));
+	const ownerName = $derived(firstName(studio.settings?.display_name ?? ''));
 
 	async function load() {
 		const { data } = await supabase.from('team_members').select('*').order('added_at');
@@ -51,7 +51,7 @@
 </script>
 
 <section class="panel rv" style="--i:1">
-	<div class="panel-h"><h2>Team</h2><small>{owner ? 'people who run the studio with you' : `you're on ${her}'s team`}</small></div>
+	<div class="panel-h"><h2>Team</h2><small>{owner ? 'people who run the studio with you' : `you're on ${ownerName}'s team`}</small></div>
 	<div class="rv-list">
 		<div class="rv-row">
 			<span class="set-ic"><Icon name="users" /></span>
