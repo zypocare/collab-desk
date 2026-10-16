@@ -4,7 +4,8 @@
 	import { supabase } from '#lib/supabase.ts';
 	import { downloadMediaKit } from '#lib/mediaKitPdf.ts';
 	import { copyText, toast } from '#lib/ui.svelte.ts';
-	import { KINDS } from '#lib/util.ts';
+	import { KINDS, compact, inr } from '#lib/util.ts';
+	import { suggestRates } from '#lib/rateSuggest.ts';
 	import Icon from '#lib/components/Icon.svelte';
 	import ShippingSettings from '#lib/components/ShippingSettings.svelte';
 	import NotificationSettings from '#lib/components/NotificationSettings.svelte';
@@ -41,6 +42,12 @@
 		if (error || !data) toast(`Couldn't make the media kit: ${error?.message ?? 'no data'}`, 'alert');
 		else await downloadMediaKit(data as PublicPage, link).catch((e) => toast(`Couldn't make the media kit: ${e}`, 'alert'));
 		kitBusy = false;
+	}
+	const suggested = $derived(suggestRates(studio.ig));
+	function useSuggested() {
+		if (!suggested || !confirm('Replace your rate card with the suggested rates? You can still edit each one.')) return;
+		saveSettings({ rates: { ...s.rates, ...suggested } });
+		toast('Rate card updated', 'check');
 	}
 	function toggle(k: 'accepting' | 'show_rates', on: boolean) {
 		saveSettings({ [k]: on });
@@ -97,9 +104,20 @@
 		<InstagramSettings />
 		<section class="panel rv" style="--i:3">
 			<div class="panel-h"><h2>Rate card</h2><small>starting price per deliverable</small></div>
+			{#if suggested}
+				<div class="rate-sug">
+					<div>
+						<b>Suggested from your Instagram</b>
+						<small>{compact(studio.ig?.followers ?? 0)} followers · {compact(studio.ig?.avg_views ?? 0)} avg. views · {studio.ig?.engagement_rate ?? '—'}% engagement. A starting point: adjust for your niche and demand.</small>
+					</div>
+					<button class="btn sm" onclick={useSuggested}><Icon name="spark" />Use suggested</button>
+				</div>
+			{/if}
 			{#each KINDS as k (k)}
+				{@const sg = suggested?.[k]}
+				{@const cur = s.rates[k] ?? 0}
 				<div class="rate">
-					<span>{k}</span>
+					<span>{k}{#if sg}<small class="sug" class:low={cur > 0 && cur < sg * 0.8} class:high={cur > sg * 1.25}>suggested {inr(sg)}{cur > 0 && cur < sg * 0.8 ? ' · you may be undercharging' : cur > sg * 1.25 ? ' · above the suggestion' : ''}</small>{/if}</span>
 					<div class="pre"><span>₹</span><input class="inp num" type="number" inputmode="numeric" aria-label="{k} rate" value={s.rates[k] ?? ''} onchange={(e) => saveSettings({ rates: { ...s.rates, [k]: num(e) } })} /></div>
 				</div>
 			{/each}
