@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { completeFollow, markPaid, markReceived, priorityOf, studio } from '#lib/studio.svelte.ts';
 	import { countUp, ui } from '#lib/ui.svelte.ts';
+	import { flip, tilt } from '#lib/motion.ts';
 	import {
 		KIND_ICON,
 		STAGES,
@@ -111,6 +112,7 @@
 <div class="t-row t-a">
 	<section class="panel rv" style="--i:1">
 		<div class="panel-h"><h2>Needs you</h2><span class="count-chip tint {urgent ? 'k-bad' : 'k-pay'}">{ts.length} item{ts.length === 1 ? '' : 's'}</span></div>
+		<div class="task-list" use:flip>
 		{#each ts as t, i (t.c.id + t.kind)}
 			{@const w = when(t)}
 			<div class="task" class:leaving={leaving === t.c.id + t.kind} style="--i:{i}">
@@ -130,10 +132,11 @@
 				</div>
 			</div>
 		{:else}
-			<div class="empty">You're all caught up.</div>
+			<div class="empty"><span class="empty-ic"><Icon name="check" /></span><b>You're all caught up</b><small>New requests and follow-ups will show up here.</small></div>
 		{/each}
+		</div>
 	</section>
-	<section class="hero-card glow rv" style="--i:2">
+	<section class="hero-card glow rv" style="--i:2" use:tilt={{ max: 3.5 }}>
 		<div class="mesh" aria-hidden="true"></div>
 		<div class="hc-in">
 			<div class="hc-top"><span class="hc-eb">Received in {monthName}</span><span class="glass-chip"><Icon name="spark" />Goal {inrS(goal)}</span></div>

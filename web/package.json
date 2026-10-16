@@ -26,10 +26,12 @@
 		"#lib/*": "./src/lib/*"
 	},
 	"dependencies": {
+		"@formkit/auto-animate": "^0.10.0",
 		"@internationalized/date": "^3.12.4",
 		"@pdf-lib/fontkit": "^1.1.1",
 		"@supabase/supabase-js": "^2.118.0",
 		"bits-ui": "^2.19.5",
+		"motion": "^14.3.0",
 		"pdf-lib": "^1.17.1",
 		"qrcode-generator": "^2.0.4"
 	},

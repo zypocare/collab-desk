@@ -6,7 +6,8 @@
 	import { auth, signOut } from '#lib/auth.svelte.ts';
 	import { byId, loadStudio, studio, stopWatching, watchStudio } from '#lib/studio.svelte.ts';
 	import { theme, toggleTheme, ui } from '#lib/ui.svelte.ts';
-	import { initials } from '#lib/util.ts';
+	import { inrS, iso, today } from '#lib/util.ts';
+	import { cascade, magnetic } from '#lib/motion.ts';
 	import Icon from '#lib/components/Icon.svelte';
 	import Avatar from '#lib/components/Avatar.svelte';
 	import NewCollabDialog from '#lib/components/NewCollabDialog.svelte';
@@ -59,25 +60,41 @@
 		return stopWatching;
 	});
 
-	// Sliding highlight behind the current nav item.
+	// This month's money against her goal, shown at the bottom of the sidebar.
+	const monthKey = iso(today()).slice(0, 7);
+	const monthName = today().toLocaleDateString('en-IN', { month: 'long' });
+	const received = $derived(studio.collabs.filter((c) => c.pay_status === 'paid' && (c.paid_on ?? '').startsWith(monthKey)).reduce((a, c) => a + c.pay_received, 0));
+	const goal = $derived(studio.settings?.monthly_goal || 0);
+	const pct = $derived(goal ? Math.min(1, received / goal) : 0);
+
+	// Sliding highlight behind the current item (sidebar and page tabs).
 	let navs = $state<HTMLElement>();
 	let ind = $state<HTMLElement>();
-	let indReady = false;
-	function moveInd() {
-		const b = navs?.querySelector<HTMLElement>('[aria-current="page"]');
-		if (!b || !ind || !b.offsetWidth) return;
-		if (!indReady) ind.style.transition = 'none';
-		ind.style.width = b.offsetWidth + 'px';
-		ind.style.height = b.offsetHeight + 'px';
-		ind.style.transform = `translate(${b.offsetLeft}px,${b.offsetTop}px)`;
-		if (!indReady) {
-			void ind.offsetWidth;
-			ind.style.transition = '';
-			indReady = true;
+	let subs = $state<HTMLElement>();
+	let subInd = $state<HTMLElement>();
+	const ready = new WeakSet<HTMLElement>();
+	function slide(host: HTMLElement | undefined, el: HTMLElement | undefined) {
+		const b = host?.querySelector<HTMLElement>('[aria-current="page"]');
+		if (!b || !el || !b.offsetWidth) return;
+		const first = !ready.has(el);
+		if (first) el.style.transition = 'none';
+		el.style.width = b.offsetWidth + 'px';
+		el.style.height = b.offsetHeight + 'px';
+		el.style.transform = `translate(${b.offsetLeft}px,${b.offsetTop}px)`;
+		el.style.opacity = '1';
+		if (first) {
+			void el.offsetWidth;
+			el.style.transition = '';
+			ready.add(el);
 		}
 	}
+	const moveInd = () => {
+		slide(navs, ind);
+		slide(subs, subInd);
+	};
 	$effect(() => {
 		void current;
+		void path;
 		void studio.loaded;
 		tick().then(moveInd);
 	});
@@ -97,57 +114,78 @@
 	<div class="app">
 		<nav class="rail" aria-label="Main">
 			<div class="logo">
-				<svg viewBox="0 0 32 32" aria-hidden="true"
-					><defs
-						><linearGradient id="logoGrad" x1="0" y1="0" x2="1" y2="1"
-							><stop offset="0" style="stop-color:var(--g1)" /><stop offset=".55" style="stop-color:var(--g2)" /><stop
-								offset="1"
-								style="stop-color:var(--g3)"
-							/></linearGradient
-						></defs
-					><circle cx="12" cy="16" r="8.5" fill="none" stroke="var(--ink)" stroke-width="2.6" /><circle
-						cx="20"
-						cy="16"
-						r="8.5"
-						fill="none"
-						stroke="url(#logoGrad)"
-						stroke-width="2.6"
-					/></svg
-				><b>{studio.settings?.app_name ?? 'Collab Desk'}</b>
+				<span class="logo-mark"
+					><svg viewBox="0 0 32 32" aria-hidden="true"
+						><defs
+							><linearGradient id="logoGrad" x1="0" y1="0" x2="1" y2="1"
+								><stop offset="0" style="stop-color:var(--g1)" /><stop offset=".55" style="stop-color:var(--g2)" /><stop
+									offset="1"
+									style="stop-color:var(--g3)"
+								/></linearGradient
+							></defs
+						><circle cx="12" cy="16" r="8.5" fill="none" stroke="var(--ink)" stroke-width="2.6" /><circle
+							cx="20"
+							cy="16"
+							r="8.5"
+							fill="none"
+							stroke="url(#logoGrad)"
+							stroke-width="2.6"
+						/></svg
+					></span
+				>
+				<div class="logo-t"><b>{studio.settings?.app_name ?? 'Collab Desk'}</b><small>Creator studio</small></div>
 			</div>
-			<button class="cmdk-btn" onclick={() => palette?.show()} aria-label="Search and actions"><Icon name="search" /><span>Search</span><kbd>Ctrl K</kbd></button>
-			<div class="navs" bind:this={navs}>
+			<div class="rail-lbl">Workspace</div>
+			<div class="navs" bind:this={navs} use:cascade={{ selector: '.nav', delay: 0.1, gap: 0.06 }}>
 				<span class="nav-ind" bind:this={ind}></span>
 				{#each NAV as n (n.href)}
 					<a class="nav" href={n.href} aria-current={current === n.href ? 'page' : undefined}
-						><Icon name={n.icon} /><span class:nav-long={!!n.short}>{n.label}</span>{#if n.short}<span class="nav-short" aria-hidden="true">{n.short}</span>{/if}{#if n.href === '/studio/collabs' && newCount}<span class="badge" aria-label="{newCount} new"
+						><span class="nav-ic"><Icon name={n.icon} /></span><span class="nav-t" class:nav-long={!!n.short}>{n.label}</span>{#if n.short}<span class="nav-short" aria-hidden="true">{n.short}</span>{/if}{#if n.href === '/studio/collabs' && newCount}<span class="badge" aria-label="{newCount} new"
 								>{newCount}</span
 							>{/if}</a
 					>
 				{/each}
 			</div>
 			<div class="spacer"></div>
+			{#if goal}
+				<a class="goal-mini" href="/studio/payments" aria-label="{monthName} goal: {Math.round(pct * 100)} percent">
+					<div class="gm-top"><span>{monthName} goal</span><b>{Math.round(pct * 100)}%</b></div>
+					<div class="gm-bar"><i style="--p:{pct}"></i></div>
+					<small>{inrS(received)} <span>of {inrS(goal)}</span></small>
+				</a>
+			{/if}
 			<div class="rail-foot">
-				<div class="rail-tools">
-					<button class="theme-btn" onclick={toggleTheme} aria-label="Switch light or dark mode"><Icon name={theme.value === 'dark' ? 'sun' : 'moon'} /></button>
-					<button class="btn sm ghost" onclick={logout}><Icon name="logout" />Sign out</button>
-				</div>
 				<div class="me">
 					<Avatar name={studio.settings?.display_name ?? ''} src={studio.ig?.connected ? studio.ig.profile_picture_url : ''} />
 					<div><b>{studio.settings?.display_name ?? ''}</b><small>{studio.me?.team_role === 'manager' ? `You: ${studio.me.name || studio.me.email} · manager` : `@${studio.settings?.handle ?? ''}`}</small></div>
+					<div class="rail-tools">
+						<button class="theme-btn" onclick={toggleTheme} aria-label="Switch light or dark mode" title="Light / dark"><Icon name={theme.value === 'dark' ? 'sun' : 'moon'} />{theme.value === 'dark' ? 'Light' : 'Dark'}</button>
+						<button class="theme-btn" onclick={logout} aria-label="Sign out" title="Sign out"><Icon name="logout" />Sign out</button>
+					</div>
 				</div>
 			</div>
 		</nav>
 		<main class="main">
+			<div class="sx-top">
+				{#if tabs}
+					<nav class="subtabs" aria-label="{group?.label} pages" bind:this={subs}>
+						<span class="sub-ind" bind:this={subInd}></span>
+						{#each tabs as t (t.href)}<a href={t.href} aria-current={path === t.href ? 'page' : undefined}>{t.label}</a>{/each}
+					</nav>
+				{:else if path.startsWith('/studio/c/')}
+					<a class="crumb crumb-back" href="/studio/collabs"><Icon name="back" />Collabs</a>
+				{:else}
+					<div class="crumb">{#if group}<Icon name={group.icon} />{group.label}{/if}</div>
+				{/if}
+				<div class="tb-r">
+					<button class="tb-search" onclick={() => palette?.show()} aria-label="Search and actions"><Icon name="search" /><span>Search brands, collabs, actions</span><kbd>Ctrl K</kbd></button>
+					<button class="btn grad tb-new" use:magnetic onclick={() => (ui.newCollab = true)}><Icon name="plus" />New collab</button>
+				</div>
+			</div>
 			{#if studio.error}
 				<div class="err-box">Couldn't load your data: {studio.error}</div>
 			{/if}
 			{#if studio.loaded}
-				{#if tabs}
-					<nav class="subtabs" aria-label="{group?.label} pages">
-						{#each tabs as t (t.href)}<a href={t.href} aria-current={path === t.href ? 'page' : undefined}>{t.label}</a>{/each}
-					</nav>
-				{/if}
 				{@render children()}
 			{:else if !studio.error}
 				<div class="loader" style="min-height:60vh"><span class="ring"><span></span></span></div>
