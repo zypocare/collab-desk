@@ -80,6 +80,8 @@
 	// page: shown as its own full page (/studio/c/CODE) instead of a side drawer.
 	let { page = false }: { page?: boolean } = $props();
 	const c = $derived(byId(ui.openCollab));
+	// Phones: short stage names so the six labels fit side by side.
+	const SHORT_STAGE: Record<string, string> = { request: 'New', negotiating: 'Talks', confirmed: 'Agreed', creating: 'Creating', live: 'Live', wrapped: 'Done' };
 	const clashList = $derived(c ? clashes(c, studio.collabs, studio.settings?.competitor_window_days ?? 14, studio.notes) : []);
 	const quote = $derived(c?.quotes[0]);
 	const agreed = $derived(c ? acceptedQuote(c) : undefined);
@@ -290,7 +292,7 @@
 						<div class="sh-track"><i></i></div>
 						{#each STAGES as s, i (s.id)}
 							<button class="sh-step st-{s.id}" class:past={i < si} class:on={i === si} aria-pressed={i === si} onclick={() => changeStage(s.id)}>
-								<span class="sh-dot">{#if i < si}<Icon name="check" />{/if}</span><span class="sh-l">{s.label}</span>
+								<span class="sh-dot">{#if i < si}<Icon name="check" />{/if}</span><span class="sh-l"><span class="sh-full">{s.label}</span><span class="sh-short" aria-hidden="true">{SHORT_STAGE[s.id]}</span></span>
 							</button>
 						{/each}
 					</div>
