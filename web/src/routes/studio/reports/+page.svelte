@@ -26,9 +26,9 @@
 	}
 	function exportMonthly() {
 		downloadCsv(`monthly-summary-${fy.label.replace(' ', '-')}.csv`, [
-			['Month', 'Invoices', 'Taxable value invoiced', 'GST charged', 'Money received', 'TDS deducted', 'Barter value'],
-			...r.months.map((m) => [m.label, m.invoices, n2(m.taxable), n2(m.gst), n2(m.received), n2(m.tds), n2(m.barter)]),
-			['Total', r.total.invoices, n2(r.total.taxable), n2(r.total.gst), n2(r.total.received), n2(r.total.tds), n2(r.total.barter)]
+			['Month', 'Invoices', 'Taxable value invoiced', 'GST charged', 'Money received', 'TDS deducted', 'Barter value', 'Costs', 'Kept (received - costs)'],
+			...r.months.map((m) => [m.label, m.invoices, n2(m.taxable), n2(m.gst), n2(m.received), n2(m.tds), n2(m.barter), n2(m.costs), n2(m.received - m.costs)]),
+			['Total', r.total.invoices, n2(r.total.taxable), n2(r.total.gst), n2(r.total.received), n2(r.total.tds), n2(r.total.barter), n2(r.total.costs), n2(r.total.received - r.total.costs)]
 		]);
 	}
 	function exportBrands() {
@@ -75,15 +75,15 @@
 		<div class="panel-h"><h2>Month by month</h2><button class="btn sm" onclick={exportMonthly}><Icon name="arrow" />CSV</button></div>
 		<div style="overflow-x:auto;padding:0 20px 16px">
 			<table class="doc-table rep-table">
-				<thead><tr><th>Month</th><th>Invoiced</th>{#if s.gst_registered}<th>GST</th>{/if}<th>Received</th><th>TDS</th><th>Barter</th></tr></thead>
+				<thead><tr><th>Month</th><th>Invoiced</th>{#if s.gst_registered}<th>GST</th>{/if}<th>Received</th><th>TDS</th><th>Barter</th><th>Costs</th><th>Kept</th></tr></thead>
 				<tbody>
 					{#each r.months as m (m.key)}
 						<tr class:empty={!m.taxable && !m.received && !m.barter}>
-							<td>{m.label}</td><td>{m.taxable ? inr(m.taxable) : '—'}</td>{#if s.gst_registered}<td>{m.gst ? inr(m.gst) : '—'}</td>{/if}<td>{m.received ? inr(m.received) : '—'}</td><td>{m.tds ? inr(m.tds) : '—'}</td><td>{m.barter ? inr(m.barter) : '—'}</td>
+							<td>{m.label}</td><td>{m.taxable ? inr(m.taxable) : '—'}</td>{#if s.gst_registered}<td>{m.gst ? inr(m.gst) : '—'}</td>{/if}<td>{m.received ? inr(m.received) : '—'}</td><td>{m.tds ? inr(m.tds) : '—'}</td><td>{m.barter ? inr(m.barter) : '—'}</td><td>{m.costs ? inr(m.costs) : '—'}</td><td>{m.received || m.costs ? inr(m.received - m.costs) : '—'}</td>
 						</tr>
 					{/each}
 				</tbody>
-				<tfoot><tr><td>Total</td><td>{inr(r.total.taxable)}</td>{#if s.gst_registered}<td>{inr(r.total.gst)}</td>{/if}<td>{inr(r.total.received)}</td><td>{inr(r.total.tds)}</td><td>{inr(r.total.barter)}</td></tr></tfoot>
+				<tfoot><tr><td>Total</td><td>{inr(r.total.taxable)}</td>{#if s.gst_registered}<td>{inr(r.total.gst)}</td>{/if}<td>{inr(r.total.received)}</td><td>{inr(r.total.tds)}</td><td>{inr(r.total.barter)}</td><td>{inr(r.total.costs)}</td><td>{inr(r.total.received - r.total.costs)}</td></tr></tfoot>
 			</table>
 		</div>
 	</section>
@@ -123,7 +123,7 @@
 	<div class="panel-h"><h2>For your accountant</h2><small>CSV files open in Excel and Google Sheets</small></div>
 	<div class="export-list">
 		<button class="export" onclick={exportRegister}><Icon name="layers" /><div><b>Invoice register</b><small>Every invoice with GSTIN, taxable value, CGST/SGST/IGST, TDS and payment. Useful for GST returns.</small></div></button>
-		<button class="export" onclick={exportMonthly}><Icon name="cal" /><div><b>Monthly summary</b><small>Invoiced, GST, received, TDS and barter for each month.</small></div></button>
+		<button class="export" onclick={exportMonthly}><Icon name="cal" /><div><b>Monthly summary</b><small>Invoiced, GST, received, TDS, barter, costs and what you kept, each month.</small></div></button>
 		<button class="export" onclick={exportBrands}><Icon name="users" /><div><b>Brand summary</b><small>Totals per brand, including missing TDS certificates.</small></div></button>
 	</div>
 </section>

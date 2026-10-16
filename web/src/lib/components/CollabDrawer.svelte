@@ -50,6 +50,7 @@
 	import DatePicker from './DatePicker.svelte';
 	import { bestTime, timeLabel, timeOptions } from '../postTime';
 	import DraftPlayer from './DraftPlayer.svelte';
+	import CollabCosts from './CollabCosts.svelte';
 	import { BRIEF_NEEDS, briefMissing } from '../content';
 	import Mono from './Mono.svelte';
 	import QuoteDialog from './QuoteDialog.svelte';
@@ -568,6 +569,8 @@
 					</div>
 				</section>
 			{/if}
+
+			{#if ['confirmed', 'creating', 'live', 'wrapped'].includes(c.stage) || c.expenses?.length}<CollabCosts {c} />{/if}
 
 			<section class="sec">
 				<h3>Follow-up reminder</h3>

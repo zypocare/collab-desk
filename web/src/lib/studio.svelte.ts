@@ -23,13 +23,14 @@ export const studio = $state<{
 	me: { role: 'creator'; email: string; team_role: 'owner' | 'manager'; name?: string } | null;
 }>({ me: null, loaded: false, error: '', collabs: [], brands: [], notes: {}, settings: null, alerts: [], ig: null, media: [], followersHistory: [], packages: [] });
 
-const COLLAB_SELECT = '*, brand:brands(*), deliverables(*), events:collab_events(*), quotes(*), drafts(*, comments:draft_comments(*)), invoices(*), posts:collab_posts(matched_by, media:ig_media(*)), reports:brand_reports(*), messages:collab_messages(id, sender, created_at), reads:collab_reads(side, read_at)';
+const COLLAB_SELECT = '*, brand:brands(*), deliverables(*), events:collab_events(*), quotes(*), drafts(*, comments:draft_comments(*)), expenses:collab_expenses(*), invoices(*), posts:collab_posts(matched_by, media:ig_media(*)), reports:brand_reports(*), messages:collab_messages(id, sender, created_at), reads:collab_reads(side, read_at)';
 
 function normalise(c: Collab): Collab {
 	c.fee = Number(c.fee) || 0;
 	c.product_value = Number(c.product_value) || 0;
 	c.pay_received = Number(c.pay_received) || 0;
 	c.usage_ext_price = Number(c.usage_ext_price) || 0;
+	c.expenses = (c.expenses ?? []).map((x) => ({ ...x, amount: Number(x.amount) || 0 })).sort((a, b) => a.spent_on.localeCompare(b.spent_on));
 	c.deliverables = (c.deliverables ?? []).sort((a, b) => a.position - b.position);
 	c.events = (c.events ?? []).sort((a, b) => b.at.localeCompare(a.at));
 	c.quotes = (c.quotes ?? [])

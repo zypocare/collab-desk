@@ -11,13 +11,13 @@ export function fyOf(d: Date): FY {
 export const fyFromStart = (start: number) => fyOf(new Date(start, 6, 1));
 const inFy = (d: string | null | undefined, fy: FY) => !!d && d >= fy.from && d <= fy.to;
 
-export type MonthRow = { key: string; label: string; taxable: number; gst: number; received: number; tds: number; barter: number; invoices: number };
+export type MonthRow = { key: string; label: string; taxable: number; gst: number; received: number; tds: number; barter: number; invoices: number; costs: number };
 export type BrandRow = { name: string; gstin: string; taxable: number; received: number; tds: number; barter: number; tdsCertsMissing: number };
 
 export function buildReport(collabs: Collab[], fy: FY) {
 	const months: MonthRow[] = Array.from({ length: 12 }, (_, i) => {
 		const d = new Date(fy.start, 3 + i, 1);
-		return { key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`, label: d.toLocaleDateString('en-IN', { month: 'short', year: '2-digit' }), taxable: 0, gst: 0, received: 0, tds: 0, barter: 0, invoices: 0 };
+		return { key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`, label: d.toLocaleDateString('en-IN', { month: 'short', year: '2-digit' }), taxable: 0, gst: 0, received: 0, tds: 0, barter: 0, invoices: 0, costs: 0 };
 	});
 	const month = (d: string) => months.find((m) => d.startsWith(m.key));
 	const brands = new Map<string, BrandRow>();
@@ -53,6 +53,8 @@ export function buildReport(collabs: Collab[], fy: FY) {
 			month(c.paid_on!)!.received += c.pay_received;
 			brandRow(c).received += c.pay_received;
 		}
+		// Costs she logged against the collab, by the month they were spent.
+		for (const x of c.expenses ?? []) if (inFy(x.spent_on, fy)) month(x.spent_on)!.costs += Number(x.amount) || 0;
 		// Products received (barter / paid + product).
 		const got = c.product_date ?? (c.stage === 'live' || c.stage === 'wrapped' ? c.live_date : null);
 		if (c.type !== 'paid' && c.product_value > 0 && c.stage !== 'declined' && inFy(got, fy)) {
@@ -62,8 +64,8 @@ export function buildReport(collabs: Collab[], fy: FY) {
 	}
 
 	const total = months.reduce(
-		(a, m) => ({ taxable: a.taxable + m.taxable, gst: a.gst + m.gst, received: a.received + m.received, tds: a.tds + m.tds, barter: a.barter + m.barter, invoices: a.invoices + m.invoices }),
-		{ taxable: 0, gst: 0, received: 0, tds: 0, barter: 0, invoices: 0 }
+		(a, m) => ({ taxable: a.taxable + m.taxable, gst: a.gst + m.gst, received: a.received + m.received, tds: a.tds + m.tds, barter: a.barter + m.barter, invoices: a.invoices + m.invoices, costs: a.costs + m.costs }),
+		{ taxable: 0, gst: 0, received: 0, tds: 0, barter: 0, invoices: 0, costs: 0 }
 	);
 	const brandList = [...brands.values()].filter((b) => b.taxable || b.received || b.barter).sort((a, b) => b.received + b.barter - (a.received + a.barter));
 	register.sort((a, b) => (a.inv.number ?? '').localeCompare(b.inv.number ?? ''));
