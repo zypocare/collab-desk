@@ -10,7 +10,7 @@
 	import { downloadMediaKit } from '#lib/mediaKitPdf.ts';
 	import { copyText, toast } from '#lib/ui.svelte.ts';
 	import { KINDS, compact, inr, offeredKinds } from '#lib/util.ts';
-	import { suggestRates } from '#lib/rateSuggest.ts';
+	import { rateCheck, suggestRates } from '#lib/rateSuggest.ts';
 	import Icon from '#lib/components/Icon.svelte';
 	import ShippingSettings from '#lib/components/ShippingSettings.svelte';
 	import NotificationSettings from '#lib/components/NotificationSettings.svelte';
@@ -252,7 +252,7 @@
 								{@const on = offered.includes(k)}
 								<div class="rate" class:rate-off={!on}>
 									<input type="checkbox" class="tgl sm" checked={on} aria-label="Offer {k} to brands" title={on ? 'Brands can request this' : 'Hidden from brands'} onchange={(e) => toggleKind(k, (e.currentTarget as HTMLInputElement).checked, e.currentTarget as HTMLInputElement)} />
-									<span>{k}{#if !on}<small class="sug">hidden from brands</small>{:else if sg}<small class="sug" class:low={cur > 0 && cur < sg * 0.8} class:high={cur > sg * 1.25}>suggested {inr(sg)}{cur > 0 && cur < sg * 0.8 ? ' · you may be undercharging' : cur > sg * 1.25 ? ' · above the suggestion' : ''}</small>{/if}</span>
+									<span>{k}{#if !on}<small class="sug">hidden from brands</small>{:else if sg}<small class="sug" class:low={rateCheck(cur, sg) === 'low'} class:high={rateCheck(cur, sg) === 'high'}>suggested {inr(sg)}{rateCheck(cur, sg) === 'low' ? ' · well below the suggestion' : rateCheck(cur, sg) === 'high' ? ' · well above the suggestion' : ''}</small>{/if}</span>
 									<div class="pre"><span>₹</span><input class="inp num" type="number" inputmode="numeric" aria-label="{k} rate" value={s.rates[k] ?? ''} onchange={(e) => saveSettings({ rates: { ...s.rates, [k]: num(e) } })} /></div>
 								</div>
 							{/each}
