@@ -2,7 +2,7 @@
 	import { page } from '$app/state';
 	import { untrack } from 'svelte';
 	import { auth } from '#lib/auth.svelte.ts';
-	import { loadRequests } from '#lib/brand.svelte.ts';
+	import { brandData, loadRequests } from '#lib/brand.svelte.ts';
 	import { pub } from '#lib/publicPage.svelte.ts';
 	import { supabase } from '#lib/supabase.ts';
 	import type { CollabType } from '#lib/types.ts';
@@ -48,6 +48,24 @@
 			fee = String(k.price);
 		});
 	});
+	// Booking again (/brand/new?again=CODE): start from that collab.
+	let againCode = $state('');
+	$effect(() => {
+		const code = page.url.searchParams.get('again');
+		const r = code ? brandData.requests.find((x) => x.code.toUpperCase() === code.toUpperCase()) : null;
+		if (!r) return;
+		untrack(() => {
+			againCode = r.code;
+			type = r.type;
+			qty = Object.fromEntries(KINDS.map((kind) => [kind, r.deliverables.find((d) => d.kind === kind)?.qty ?? 0]));
+			fee = r.type === 'barter' || !r.fee ? '' : String(r.fee);
+			product = r.product;
+			productValue = r.product_value ? String(r.product_value) : '';
+			usage = r.usage;
+			brief = r.brief;
+		});
+	});
+
 	// Changing what's included means it's a custom request, not the package.
 	$effect(() => {
 		if (!pkg) return;
@@ -167,6 +185,12 @@
 			</div>
 		{:else}
 			<form onsubmit={submit} novalidate>
+				{#if againCode && !pkg}
+					<div class="pkg-banner">
+						<Icon name="refresh" />
+						<div><b>Booking again</b><small>Filled in from {againCode}. Change anything you like.</small></div>
+					</div>
+				{/if}
 				{#if pkg}
 					<div class="pkg-banner">
 						<Icon name="gift" />

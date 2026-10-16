@@ -1248,3 +1248,15 @@ input[type="number"]::-webkit-inner-spin-button,input[type="number"]::-webkit-ou
 .usage-opt:has(input:checked){border-color:var(--accent);background:color-mix(in oklab,var(--accent) 7%,var(--surface))}
 .usage-opt:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:2px}
 .k-usage{--hue:var(--h-nego)}
+
+/* ---------- book again ---------- */
+.again{display:flex;gap:18px;flex-wrap:wrap;align-items:center;justify-content:space-between;padding:18px 20px;margin-bottom:16px;border-radius:22px;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow)}
+.again-stats{display:flex;gap:26px;flex-wrap:wrap}
+.again-stats b{display:block;font-family:var(--f-display);font-size:22px;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.again-stats small{color:var(--ink-3);font-size:12px}
+.again-list{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.again-list .lbl-t{margin:0 4px 0 0}
+.again-chip{display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 12px;border-radius:999px;border:1px solid var(--line-strong);background:var(--surface);text-decoration:none;font-size:12.5px;font-weight:600;transition:border-color .2s,transform .3s var(--spring),background .2s}
+.again-chip:hover{border-color:var(--accent);background:color-mix(in oklab,var(--accent) 6%,var(--surface));transform:translateY(-1px)}
+.again-chip svg{width:14px;height:14px;color:var(--accent)}
+.again-chip small{color:var(--ink-3);font-weight:500;font-family:var(--f-mono);font-size:11px}

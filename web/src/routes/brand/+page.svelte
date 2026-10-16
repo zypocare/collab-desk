@@ -2,12 +2,16 @@
 	import { auth } from '#lib/auth.svelte.ts';
 	import { brandData } from '#lib/brand.svelte.ts';
 	import { pub } from '#lib/publicPage.svelte.ts';
-	import { STAGES, delivText, firstName, fmt, stageIndex } from '#lib/util.ts';
+	import { STAGES, delivText, firstName, fmt, inr, stageIndex } from '#lib/util.ts';
 	import BrandDetailsForm from '#lib/components/BrandDetailsForm.svelte';
 	import Icon from '#lib/components/Icon.svelte';
 
 	const acc = $derived(auth.account?.role === 'brand' ? auth.account : null);
 	const creator = $derived(firstName(pub.data?.display_name ?? ''));
+	// Finished collabs: a quick summary and one-tap repeats.
+	const done = $derived(brandData.requests.filter((r) => r.stage === 'live' || r.stage === 'wrapped'));
+	const spent = $derived(done.reduce((a, r) => a + (r.type === 'barter' ? 0 : r.fee), 0));
+	const lastLive = $derived(done.map((r) => r.live_date).filter(Boolean).sort().at(-1) ?? null);
 </script>
 
 <svelte:head><title>My requests</title></svelte:head>
@@ -32,6 +36,24 @@
 	</header>
 
 	{#if brandData.error}<div class="err-box">{brandData.error}</div>{/if}
+
+	{#if done.length}
+		<section class="again rv" style="--i:1">
+			<div class="again-stats">
+				<div><b>{done.length}</b><small>collab{done.length === 1 ? '' : 's'} with {creator || 'the creator'}</small></div>
+				{#if spent}<div><b>{inr(spent)}</b><small>invested</small></div>{/if}
+				{#if lastLive}<div><b>{fmt(lastLive)}</b><small>last went live</small></div>{/if}
+			</div>
+			{#if pub.data?.accepting !== false}
+				<div class="again-list">
+					<span class="lbl-t">Book again</span>
+					{#each done.slice(0, 3) as r (r.id)}
+						<a class="again-chip" href="/brand/new?again={r.code}"><Icon name="refresh" /><span>{delivText(r.deliverables)}</span><small>{r.code}</small></a>
+					{/each}
+				</div>
+			{/if}
+		</section>
+	{/if}
 
 	{#if !brandData.loaded}
 		<div class="loader" style="min-height:30vh"><span class="ring"><span></span></span></div>

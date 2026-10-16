@@ -121,7 +121,10 @@
 			<div class="eb"><span class="id">{r.code}</span> · {TYPE_LABEL[r.type]}</div>
 			<h1>{delivText(r.deliverables)}</h1>
 		</div>
-		<span class="chip tint st-{r.stage === 'declined' ? 'request' : r.stage}" style={r.stage === 'declined' ? '--hue:var(--bad)' : ''}>{r.stage_label}</span>
+		<div class="acts">
+			<span class="chip tint st-{r.stage === 'declined' ? 'request' : r.stage}" style={r.stage === 'declined' ? '--hue:var(--bad)' : ''}>{r.stage_label}</span>
+			{#if (r.stage === 'live' || r.stage === 'wrapped') && pub.data?.accepting !== false}<a class="btn grad" href="/brand/new?again={r.code}"><Icon name="refresh" />Book again</a>{/if}
+		</div>
 	</header>
 
 	{#if error}<div class="err-box">{error}</div>{/if}
