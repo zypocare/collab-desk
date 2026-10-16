@@ -12,6 +12,7 @@
 	import { budgetCombos, type Combo } from '#lib/suggest.ts';
 	import BrandDetailsForm from '#lib/components/BrandDetailsForm.svelte';
 	import Icon from '#lib/components/Icon.svelte';
+	import ExpectedResults from '#lib/components/ExpectedResults.svelte';
 	import BriefEditor from '#lib/components/BriefEditor.svelte';
 	import Select from '#lib/components/Select.svelte';
 	import DatePicker from '#lib/components/DatePicker.svelte';
@@ -447,6 +448,7 @@
 						</div>
 					</div>
 				{/if}
+				{#if lines.length}<ExpectedResults {lines} cost={pkg ? pkg.price : type === 'barter' ? 0 : Number(fee) || estimate} />{/if}
 				<div class="submit-row live-total">
 					<p>
 						{#if error}<span class="err" style="display:block;margin:0">{error}</span>

@@ -6,6 +6,9 @@
 	import type { DraftComment, QuoteItem } from '#lib/types.ts';
 	import DraftPlayer from '#lib/components/DraftPlayer.svelte';
 	import Icon from '#lib/components/Icon.svelte';
+	import ExpectedResults from '#lib/components/ExpectedResults.svelte';
+	import { loadPublicPage, pub } from '#lib/publicPage.svelte.ts';
+	import { onMount } from 'svelte';
 
 	// One-tap page from an email: accept a quote / approve a draft, or ask for changes. No sign-in.
 	type Info = {
@@ -41,6 +44,9 @@
 	let error = $state('');
 	let done = $state<'' | 'yes' | 'changes'>('');
 
+	onMount(() => {
+		if (!pub.data) loadPublicPage();
+	});
 	$effect(() => {
 		const token = page.params.token;
 		supabase.rpc('action_info', { p_token: token }).then(({ data, error: err }) => {
@@ -150,6 +156,7 @@
 					</tbody>
 					<tfoot><tr><td colspan="3">Total</td><td>{inr(q.total)}</td></tr></tfoot>
 				</table>
+				<ExpectedResults lines={q.items.map((x) => ({ kind: x.kind, qty: x.qty }))} cost={q.total} />
 				<ul class="act-terms">
 					<li><Icon name="wallet" />{payTerms(q)}</li>
 					<li><Icon name="eye" />{q.usage}</li>

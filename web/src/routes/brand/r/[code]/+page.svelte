@@ -3,6 +3,7 @@
 	import { auth } from '#lib/auth.svelte.ts';
 	import { brandData, loadRequests, loadUnread } from '#lib/brand.svelte.ts';
 	import { pub } from '#lib/publicPage.svelte.ts';
+	import ExpectedResults from '#lib/components/ExpectedResults.svelte';
 	import { supabase } from '#lib/supabase.ts';
 	import { confetti, toast } from '#lib/ui.svelte.ts';
 	import {
@@ -155,6 +156,7 @@
 					{#if openQuote.discount}<div class="qv-line"><span>Discount</span><span class="num">− {inr(openQuote.discount)}</span></div>{/if}
 					<div class="qv-line total"><span>Total</span><b class="num">{inr(openQuote.total)}</b></div>
 				</div>
+				<ExpectedResults lines={openQuote.items.map((x) => ({ kind: x.kind, qty: x.qty }))} cost={openQuote.total} />
 				<dl class="facts" style="margin-top:16px">
 					<div><dt>Usage rights</dt><dd>{openQuote.usage}</dd></div>
 					<div><dt>Payment</dt><dd>{payTerms(openQuote)}</dd></div>

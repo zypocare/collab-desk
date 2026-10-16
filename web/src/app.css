@@ -1818,3 +1818,13 @@ body:has(.batch-bar) .fab{display:none}
 @media (max-width:640px){.ins-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.ins-kpi b{font-size:22px}}
 .ins-link{display:inline-flex;align-items:center;gap:2px;margin-left:10px;font-weight:600}
 .ins-link .ic{width:14px;height:14px}
+
+/* What you can expect (estimates for brands) */
+.exp-box{margin:14px 0;padding:14px 16px;border-radius:16px;background:color-mix(in oklab,var(--accent) 7%,var(--surface));border:1px solid color-mix(in oklab,var(--accent) 25%,var(--line))}
+.exp-h{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--accent)}
+.exp-h .ic{width:15px;height:15px}
+.exp-nums{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px 14px;margin:10px 0 8px}
+.exp-nums b{display:block;font-size:19px;font-variant-numeric:tabular-nums}
+.exp-nums small{font-size:11.5px;color:var(--ink-3)}
+.exp-basis{display:block;font-size:11.5px;color:var(--ink-3)}
+.exp-mini{display:block;font-size:12px;color:var(--accent);font-weight:600;margin-top:4px}

@@ -10,6 +10,7 @@
 	import Audience from '#lib/components/Audience.svelte';
 	import { compact, fmt, mediaLabel } from '#lib/util.ts';
 	import Icon from '#lib/components/Icon.svelte';
+	import ExpectedResults from '#lib/components/ExpectedResults.svelte';
 	import { downloadMediaKit } from '#lib/mediaKitPdf.ts';
 	import { rateValue } from '#lib/priority.ts';
 	import Avatar from '#lib/components/Avatar.svelte';
@@ -115,6 +116,7 @@
 										<h3>{k.name}</h3>
 										{#if k.description}<p>{k.description}</p>{/if}
 										<div class="pkg-items">{delivText(k.items)}</div>
+										<ExpectedResults lines={k.items} cost={k.price} compactView />
 										<div class="pkg-price">
 											<b>{inr(k.price)}</b>
 											{#if save >= 3}<s>{inr(rate)}</s><span class="pkg-save">Save {save}%</span>{/if}

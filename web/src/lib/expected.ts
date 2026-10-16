@@ -37,7 +37,12 @@ function perPiece(kind: string, page: PublicPage | null, ins: PublicInsights | n
 export function expectedResults(lines: Line[], cost: number, page: PublicPage | null, ins: PublicInsights | null): Expected | null {
 	let views = 0, reach = 0, engagements = 0;
 	const counted: string[] = [];
-	for (const l of lines) {
+	// A package line ("Launch pack (1 × Reel, 3 × Story)") counts as the pieces inside it.
+	const expanded = lines.flatMap((l) => {
+		const inner = [...l.kind.matchAll(/(\d+)\s*×\s*([A-Za-z][A-Za-z ]*[A-Za-z])/g)];
+		return inner.length ? inner.map((m) => ({ kind: m[2], qty: Number(m[1]) * (l.qty || 1) })) : [l];
+	});
+	for (const l of expanded) {
 		const p = perPiece(l.kind, page, ins);
 		if (!p || !l.qty) continue;
 		views += p.views * l.qty;
@@ -54,6 +59,6 @@ export function expectedResults(lines: Line[], cost: number, page: PublicPage | 
 		cpv: cost > 0 && views ? Math.round((cost / views) * 100) / 100 : null,
 		cpm: cost > 0 && views ? Math.round((cost / views) * 1000) : null,
 		cpe: cost > 0 && engagements ? Math.round((cost / engagements) * 10) / 10 : null,
-		basis: ins?.insights?.formats ? 'her average per format, last 90 days' : 'her recent post averages'
+		basis: ins?.insights?.formats ? 'her averages per format (recent posts)' : 'her recent post averages'
 	};
 }
