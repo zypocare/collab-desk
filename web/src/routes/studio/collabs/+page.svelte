@@ -57,6 +57,18 @@
 		toast(`${inr(list.reduce((a, c) => a + c.fee, 0))} from ${list.length} collab${list.length > 1 ? 's' : ''} marked as paid`, 'wallet');
 		stopSelecting();
 	}
+	async function batchTrack() {
+		const withEmail = pickedCollabs.filter((c) => c.contact_email);
+		if (!withEmail.length) return toast('None of these has a brand email. Copy the link from each collab for their DM instead.', 'alert');
+		if (!(await ask({ title: `Email tracking links to ${withEmail.length} brand${withEmail.length > 1 ? 's' : ''}?`, body: `Each gets a private link to follow their collab, no sign-up needed. Status emails are switched on for them.${pickedCollabs.length > withEmail.length ? ` ${pickedCollabs.length - withEmail.length} without an email are skipped.` : ''}`, ok: 'Send' }))) return;
+		busy = true;
+		const { data, error } = await supabase.rpc('send_track_links', { p_ids: withEmail.map((c) => c.id), p_notify: true });
+		busy = false;
+		if (error) return toast(`Couldn't send: ${errMessage(error)}`, 'alert');
+		toast(`${(data as { sent: number }).sent} tracking link${(data as { sent: number }).sent === 1 ? '' : 's'} sent`, 'send');
+		await reloadCollabs();
+		stopSelecting();
+	}
 	async function batchRemind() {
 		if (!(await ask({ title: `Send reminders to ${picked.size} brand${picked.size > 1 ? 's' : ''}?`, body: 'Each gets the reminder that fits: unpaid invoice, open quote, or draft waiting. Nobody gets two in a day.', ok: 'Send' }))) return;
 		busy = true;
@@ -197,6 +209,7 @@
 				onchange={(v) => batchMove(v)}
 			/>
 			<button class="btn sm" disabled={busy || !payable.length} title={payable.length ? '' : 'None of these has an unpaid fee'} onclick={batchPaid}><Icon name="wallet" />Mark paid{payable.length ? ` (${payable.length})` : ''}</button>
+			<button class="btn sm" disabled={busy} onclick={batchTrack}><Icon name="link" />Send tracking links</button>
 			<button class="btn sm" disabled={busy} onclick={batchRemind}>{#if busy}<span class="spinner"></span>{:else}<Icon name="send" />{/if}Send reminders</button>
 		{/if}
 		<button class="btn sm ghost" onclick={stopSelecting}>Cancel</button>

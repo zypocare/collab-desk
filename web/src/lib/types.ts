@@ -138,6 +138,8 @@ export type Collab = {
 	counter_fee: number | null;
 	counter_status: '' | 'sent' | 'taken' | 'kept';
 	shoot_date: string | null;
+	track_token: string;
+	track_sent_at: string | null;
 	brief_asked_at: string | null;
 	live_time: string | null;
 	post_alert_at: string | null;

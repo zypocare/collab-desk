@@ -235,10 +235,20 @@
 		}
 	});
 
+	// The brand's private tracking link: no sign-in to see where things stand.
+	const trackUrl = (x: Collab) => `${(studio.settings?.site_url ?? location.origin).replace(/\/$/, '')}/t/${x.track_token}`;
 	function statusMessage(x: Collab) {
-		const site = (studio.settings?.site_url ?? '').replace(/\/$/, '');
-		const name = studio.settings?.display_name ?? '';
-		return `Hi ${x.contact_name ? x.contact_name.split(' ')[0] : 'there'}! You can follow our collaboration (${x.code}) any time at ${site}/brand. Sign in with ${x.contact_email || 'your email'} to see the status. ${name}`;
+		const name = (studio.settings?.display_name ?? '').split(' ')[0];
+		return `Hi ${x.contact_name ? x.contact_name.split(' ')[0] : 'there'}! You can follow our collaboration (${x.code}) here any time, no sign-up needed: ${trackUrl(x)}\n${name}`;
+	}
+	let trackBusy = $state(false);
+	async function emailTrack(x: Collab) {
+		trackBusy = true;
+		const { data, error } = await supabase.rpc('send_track_links', { p_ids: [x.id], p_notify: true });
+		trackBusy = false;
+		if (error) return toast(`Couldn't send: ${errMessage(error)}`, 'alert');
+		toast((data as { sent: number }).sent ? `Tracking link emailed to ${x.contact_email}. Status emails are on.` : 'Add their email first', (data as { sent: number }).sent ? 'send' : 'alert');
+		reloadCollabs();
 	}
 </script>
 
@@ -601,8 +611,17 @@
 			</section>
 
 			<section class="sec">
-				<h3>Update for the brand</h3>
-				<p class="hint">The brand sees this on their status page.</p>
+				<h3>Brand access {#if c.track_sent_at}<span>link sent {fmt(c.track_sent_at.slice(0, 10))}</span>{/if}</h3>
+				<div class="trk-box">
+					<span class="lbl-t">Private tracking link</span>
+					<p class="hint" style="margin:0 0 10px">The brand sees the status, dates and what's next, without signing up. Send it in their DM or by email.</p>
+					<div class="row-btns" style="border:0;padding:0">
+						<button class="btn sm" onclick={() => c && copyText(statusMessage(c), 'Message with the link copied. Paste it in their DM')}><Icon name="copy" />Copy for DM</button>
+						<button class="btn sm ghost" onclick={() => c && copyText(trackUrl(c), 'Link copied')}><Icon name="link" />Link only</button>
+						{#if c.contact_email}<button class="btn sm primary" disabled={trackBusy} onclick={() => c && emailTrack(c)}>{#if trackBusy}<span class="spinner"></span>{:else}<Icon name="send" />{/if}{c.track_sent_at ? 'Email again' : 'Email it'}</button>{:else}<span class="hint" style="margin:0;align-self:center">Add their email below to send it by email</span>{/if}
+					</div>
+				</div>
+				<p class="hint" style="margin-top:14px">Update for the brand: shown on their tracking page.</p>
 				<textarea class="inp" id="f-note" placeholder="Draft coming your way on Friday." value={c.note_for_brand} onchange={(e) => save('note_for_brand', val(e))}></textarea>
 				<div class="switch-row" style="padding:12px 0 0;border:0">
 					<div><b>Email the brand when the stage changes</b><small>Sent to {c.contact_email || 'no email yet'}</small></div>

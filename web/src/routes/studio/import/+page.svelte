@@ -33,6 +33,7 @@
 	let showBulk = $state(false);
 	let busy = $state(false);
 	let progress = $state(0);
+	let sendLinks = $state(true);
 
 	// A pasted DM fills its row.
 	function fromDm(r: Row, text: string) {
@@ -73,6 +74,7 @@
 		busy = true;
 		progress = 0;
 		let ok = 0;
+		const imported: string[] = [];
 		for (const r of ready) {
 			const deliverables = parseDm(r.what.replace(/\+/g, ','), '').deliverables;
 			const stage: Stage = r.where === 'done' ? 'wrapped' : r.where;
@@ -97,15 +99,17 @@
 			});
 			if (c) {
 				ok++;
+				if (r.email.trim()) imported.push(c.id);
 				if (['live', 'wrapped'].includes(stage)) await supabase.from('deliverables').update({ done: true }).eq('collab_id', c.id);
 			}
 			progress = ok;
 		}
+		if (sendLinks && imported.length) await supabase.rpc('send_track_links', { p_ids: imported, p_notify: true });
 		await loadStudio();
 		busy = false;
 		if (ok) {
 			confetti();
-			toast(`${ok} collab${ok > 1 ? 's' : ''} imported`, 'check');
+			toast(`${ok} collab${ok > 1 ? 's' : ''} imported${sendLinks && imported.length ? `, ${imported.length} tracking link${imported.length > 1 ? 's' : ''} emailed` : ''}`, 'check');
 			goto('/studio/collabs');
 		}
 	}
@@ -117,7 +121,7 @@
 	<div>
 		<div class="eb">Bring in what you have</div>
 		<h1>Import <em>collabs</em></h1>
-		<p>Add the collabs already going from DMs, WhatsApp or email, one row each. Brands are not emailed about any of this.</p>
+		<p>Add the collabs already going from DMs, WhatsApp or email, one row each. Brands only hear from you if you tick “Email brands their tracking link” below; otherwise copy each link into their DM from the collab.</p>
 	</div>
 	<div class="acts"><button class="btn" onclick={() => (showBulk = !showBulk)}><Icon name="copy" />Paste many DMs</button></div>
 </header>
@@ -168,5 +172,6 @@
 <div class="imp-actions">
 	<button class="btn" onclick={() => (rows = [...rows, blank()])}><Icon name="plus" />Add a row</button>
 	<span class="hint">{ready.length} ready{total ? ` · ${inr(total)} in fees` : ''}</span>
+	<label class="check-row imp-send"><input type="checkbox" class="cbx" bind:checked={sendLinks} /><span>Email brands (with an email) their tracking link</span></label>
 	<button class="btn grad lg" disabled={busy || !ready.length} onclick={save}>{#if busy}<span class="spinner"></span>Saving {progress} of {ready.length}{:else}<Icon name="check" />Import {ready.length || ''} collab{ready.length === 1 ? '' : 's'}{/if}</button>
 </div>

@@ -423,6 +423,20 @@ export function render(kind: string, p: Payload, s: Settings): Omit<Mail, 'to'> 
     };
   }
 
+  if (kind === 'track_invite') {
+    return {
+      subject: `${code}: follow our collaboration with ${first(s.display_name)}`,
+      html: layout(
+        s,
+        `Your collab with ${first(s.display_name)}, in one place`,
+        `<p style="margin:0">Hi ${esc(firstOf(p.contact))}, ${esc(s.display_name)} now manages our collaboration <b>${esc(code)}</b>${p.deliverables ? ` (${esc(p.deliverables)})` : ''} in ${esc(s.app_name)}. Right now it's at <b>${esc(p.stage)}</b>.</p>
+         <p style="margin:12px 0 0">Open your private link any time to see the dates and what's next. No sign-up needed. When there's a quote to accept, a draft to approve or an invoice to pay, you can do it there in one tap.</p>`,
+        { label: 'See where it stands', href: url(s, `/t/${p.token}`) },
+      ),
+      text: `Follow ${code} with ${s.display_name}: ${url(s, `/t/${p.token}`)}`,
+    };
+  }
+
   if (kind === 'question_received') {
     const who = [p.name, p.brand].filter(Boolean).join(', ') || p.email;
     return {

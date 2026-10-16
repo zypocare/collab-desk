@@ -14,7 +14,8 @@
 
 	const next = $derived(page.url.searchParams.get('next') || '');
 	let step = $state<'email' | 'code'>('email');
-	let email = $state('');
+	// Links can carry the email to use (from a tracking page): it's filled in for them.
+	let email = $state(page.url.searchParams.get('email') ?? '');
 	let code = $state('');
 	let busy = $state(false);
 	let error = $state('');
