@@ -21,6 +21,7 @@
 		plural,
 		stageIndex,
 		todayIso,
+		usageLabel,
 		waLink
 	} from '#lib/util.ts';
 	import Icon from '#lib/components/Icon.svelte';
@@ -178,13 +179,13 @@
 					{#each openQuote.items as it, i (i)}
 						<div class="qv-line"><span>{it.qty} {plural(it.kind, it.qty)}</span><span class="num">{inr(it.qty * it.rate)}</span></div>
 					{/each}
-					{#if openQuote.usage_fee}<div class="qv-line"><span>Usage: {openQuote.usage}</span><span class="num">{inr(openQuote.usage_fee)}</span></div>{/if}
+					{#if openQuote.usage_fee}<div class="qv-line"><span>{usageLabel(openQuote.usage)}</span><span class="num">{inr(openQuote.usage_fee)}</span></div>{/if}
 					{#if openQuote.discount}<div class="qv-line"><span>Discount</span><span class="num">− {inr(openQuote.discount)}</span></div>{/if}
 					<div class="qv-line total"><span>Total</span><b class="num">{inr(openQuote.total)}</b></div>
 				</div>
 				<ExpectedResults lines={openQuote.items.map((x) => ({ kind: x.kind, qty: x.qty }))} cost={openQuote.total} />
 				<dl class="facts" style="margin-top:16px">
-					<div><dt>Usage rights</dt><dd>{openQuote.usage}</dd></div>
+					<div><dt>Usage rights</dt><dd>{usageLabel(openQuote.usage)}</dd></div>
 					<div><dt>Payment</dt><dd>{payTerms(openQuote)}</dd></div>
 					<div><dt>Revisions included</dt><dd>{openQuote.revision_rounds}{openQuote.exclusivity_days ? ` · ${openQuote.exclusivity_days} days exclusivity` : ''}</dd></div>
 				</dl>
@@ -310,7 +311,7 @@
 
 	{#if r.brief || briefD}
 		<section class="panel rv" style="--i:6;margin-top:18px">
-			<div class="panel-h"><h2>Your brief</h2><small>{r.usage}</small></div>
+			<div class="panel-h"><h2>Your brief</h2><small>{usageLabel(r.usage)}</small></div>
 			{#if briefD}<div style="padding:0 20px"><BriefView d={briefD} /></div>{/if}
 			{#if r.brief}<p style="padding:0 20px 20px;white-space:pre-wrap;color:var(--ink-2)">{r.brief}</p>{/if}
 		</section>

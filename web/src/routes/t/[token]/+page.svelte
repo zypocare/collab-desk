@@ -4,7 +4,7 @@
 	import { supabase } from '#lib/supabase.ts';
 	import { loadPublicPage, pub } from '#lib/publicPage.svelte.ts';
 	import type { BrandRequest } from '#lib/types.ts';
-	import { TYPE_LABEL, delivText, firstName, fmt, fmtLong, inr } from '#lib/util.ts';
+	import { TYPE_LABEL, delivText, firstName, fmt, fmtLong, inr, usageLabel } from '#lib/util.ts';
 	import CampaignTimeline from '#lib/components/CampaignTimeline.svelte';
 	import BrandTopbar from '#lib/components/BrandTopbar.svelte';
 	import Icon from '#lib/components/Icon.svelte';
@@ -71,7 +71,7 @@
 					<dl class="facts">
 						<div><dt>Content</dt><dd>{r.deliverables.map((d) => `${d.qty} × ${d.kind}${d.done ? ' ✓' : ''}`).join(', ')}</dd></div>
 						<div><dt>Go-live</dt><dd>{r.live_date ? fmtLong(r.live_date) : r.preferred_live ? `Planned around ${fmt(r.preferred_live)}` : 'To be agreed'}</dd></div>
-						<div><dt>Usage</dt><dd>{r.usage}</dd></div>
+						<div><dt>Usage</dt><dd>{usageLabel(r.usage)}</dd></div>
 					</dl>
 				</section>
 				{#if r.report_token}

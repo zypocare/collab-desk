@@ -3,7 +3,7 @@
 	import { onMount, untrack } from 'svelte';
 	import { saveQuote, studio } from '../studio.svelte';
 	import type { Collab, Quote, QuoteItem } from '../types';
-	import { KINDS, USAGE, inr, payTerms, plural, quoteTotal, rel } from '../util';
+	import { KINDS, USAGE, inr, usageOption, payTerms, plural, quoteTotal, rel } from '../util';
 	import Icon from './Icon.svelte';
 	import { quoteOptions, suggestTerms, usageFee as usageFeeFor, type QuoteOption } from '../suggest';
 	import Select from './Select.svelte';
@@ -114,7 +114,7 @@
 		<div class="fields" style="margin-top:16px">
 			<div class="f">
 				<label for="q-usage">Usage rights</label>
-				<Select id="q-usage" bind:value={usage} options={USAGE.map((u) => ({ value: u, label: u }))} onchange={(u) => (usageFee = usageFeeFor(u, itemsSubtotal, studio.settings!))} />
+				<Select id="q-usage" bind:value={usage} options={USAGE.map((u) => ({ value: u, label: usageOption(u) }))} onchange={(u) => (usageFee = usageFeeFor(u, itemsSubtotal, studio.settings!))} />
 			</div>
 			<div class="f"><label for="q-ufee">Usage fee</label><div class="pre"><span>₹</span><input class="inp num" id="q-ufee" type="number" min="0" bind:value={usageFee} /></div></div>
 			<div class="f"><label for="q-disc">Discount</label><div class="pre"><span>₹</span><input class="inp num" id="q-disc" type="number" min="0" bind:value={discount} /></div></div>

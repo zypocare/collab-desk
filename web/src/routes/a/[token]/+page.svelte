@@ -2,7 +2,7 @@
 	import { page } from '$app/state';
 	import { supabase } from '#lib/supabase.ts';
 	import { confetti } from '#lib/ui.svelte.ts';
-	import { errMessage, firstName, fmtLong, inr, payTerms, plural } from '#lib/util.ts';
+	import { errMessage, firstName, fmtLong, inr, payTerms, plural, usageLabel } from '#lib/util.ts';
 	import type { DraftComment, QuoteItem } from '#lib/types.ts';
 	import DraftPlayer from '#lib/components/DraftPlayer.svelte';
 	import Icon from '#lib/components/Icon.svelte';
@@ -151,7 +151,7 @@
 					<thead><tr><th>Deliverable</th><th>Qty</th><th>Rate</th><th>Amount</th></tr></thead>
 					<tbody>
 						{#each q.items as it, i (i)}<tr><td>{plural(it.kind, it.qty)}</td><td>{it.qty}</td><td>{inr(it.rate)}</td><td>{inr(it.qty * it.rate)}</td></tr>{/each}
-						{#if q.usage_fee}<tr><td>Usage: {q.usage}</td><td></td><td></td><td>{inr(q.usage_fee)}</td></tr>{/if}
+						{#if q.usage_fee}<tr><td>{usageLabel(q.usage)}</td><td></td><td></td><td>{inr(q.usage_fee)}</td></tr>{/if}
 						{#if q.discount}<tr><td>Discount</td><td></td><td></td><td>− {inr(q.discount)}</td></tr>{/if}
 					</tbody>
 					<tfoot><tr><td colspan="3">Total</td><td>{inr(q.total)}</td></tr></tfoot>
@@ -159,7 +159,7 @@
 				<ExpectedResults lines={q.items.map((x) => ({ kind: x.kind, qty: x.qty }))} cost={q.total} />
 				<ul class="act-terms">
 					<li><Icon name="wallet" />{payTerms(q)}</li>
-					<li><Icon name="eye" />{q.usage}</li>
+					<li><Icon name="eye" />{usageLabel(q.usage)}</li>
 					<li><Icon name="refresh" />{q.revision_rounds ? `${q.revision_rounds} revision round${q.revision_rounds > 1 ? 's' : ''} included` : 'No revisions included'}</li>
 					{#if q.exclusivity_days}<li><Icon name="alert" />{q.exclusivity_days} days category exclusivity</li>{/if}
 					{#if q.valid_until}<li><Icon name="clock" />Valid until {fmtLong(q.valid_until)}</li>{/if}

@@ -4,7 +4,7 @@
 	import { auth, homeFor } from '#lib/auth.svelte.ts';
 	import { supabase } from '#lib/supabase.ts';
 	import type { Agreement } from '#lib/types.ts';
-	import { fmtLong, fmtTime, inr, payTerms, plural } from '#lib/util.ts';
+	import { fmtLong, fmtTime, inr, payTerms, plural, usageLabel } from '#lib/util.ts';
 	import Icon from '#lib/components/Icon.svelte';
 
 	let a = $state<Agreement | null>(null);
@@ -65,7 +65,7 @@
 						{#each q.items as it, i (i)}
 							<tr><td>{plural(it.kind, it.qty)}</td><td>{it.qty}</td><td>{inr(it.rate)}</td><td>{inr(it.qty * it.rate)}</td></tr>
 						{/each}
-						{#if Number(q.usage_fee)}<tr><td colspan="3">Usage rights: {q.usage}</td><td>{inr(q.usage_fee)}</td></tr>{/if}
+						{#if Number(q.usage_fee)}<tr><td colspan="3">Usage rights: {usageLabel(q.usage)}</td><td>{inr(q.usage_fee)}</td></tr>{/if}
 						{#if Number(q.discount)}<tr><td colspan="3">Discount</td><td>− {inr(q.discount)}</td></tr>{/if}
 					</tbody>
 					<tfoot><tr><td colspan="3">Total fee (taxes extra if applicable)</td><td>{inr(q.total)}</td></tr></tfoot>
@@ -74,7 +74,7 @@
 
 				<h2>2. Terms</h2>
 				<ul class="doc-terms">
-					<li><b>Usage rights:</b> {q.usage}. The brand may repost the content with credit to @{a.creator.handle}{q.usage !== 'Organic only' ? ' and use it in paid ads for the period stated' : ''}.</li>
+					<li><b>Usage rights:</b> {usageLabel(q.usage)}. The brand may repost the content with credit to @{a.creator.handle}{q.usage !== 'Organic only' ? ' and run it as ads from its own ad account for the period stated; the creator does not run ads' : ''}.</li>
 					<li><b>Payment:</b> {payTerms(q)}. Invoices are issued by the creator.</li>
 					<li><b>Revisions:</b> {q.revision_rounds} round{q.revision_rounds === 1 ? '' : 's'} of changes included. Extra rounds may be charged.</li>
 					{#if q.exclusivity_days}<li><b>Exclusivity:</b> the creator won't post for a direct competitor for {q.exclusivity_days} days after going live.</li>{/if}

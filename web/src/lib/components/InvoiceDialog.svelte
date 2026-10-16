@@ -4,7 +4,7 @@
 	import { saveBrand, saveInvoice, studio } from '../studio.svelte';
 	import type { Collab } from '../types';
 	import { INDIAN_STATES, KIND_LABEL, type Invoice, type InvoiceItem } from '../invoice';
-	import { acceptedQuote, delivText, inr, parse, rel, todayIso, iso } from '../util';
+	import { acceptedQuote, delivText, inr, parse, rel, todayIso, iso, usageLabel } from '../util';
 	import Icon from './Icon.svelte';
 	import Select from './Select.svelte';
 	import DatePicker from './DatePicker.svelte';
@@ -29,7 +29,7 @@
 			kind = 'balance';
 			amount = Math.max(0, fee - invoicedSoFar);
 		}
-		const what = `${delivText(c.deliverables)} for ${c.brand.name}${c.usage && c.usage !== 'Organic only' ? `, ${c.usage} usage` : ''} (${c.code})`;
+		const what = `${delivText(c.deliverables)} for ${c.brand.name}${c.usage && c.usage !== 'Organic only' ? `, ${usageLabel(c.usage).toLowerCase()}` : ''} (${c.code})`;
 		const label = kind === 'advance' ? `Advance (${q?.advance_pct}%)` : kind === 'balance' ? 'Balance' : 'Content collaboration';
 		let due = rel(15);
 		if (kind === 'advance') due = rel(7);

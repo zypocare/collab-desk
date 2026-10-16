@@ -30,6 +30,23 @@ export const packageOffered = (items: { kind: string }[], list?: string[] | null
 export const mediaLabel = (type: string, product: string) =>
 	product === 'STORY' ? 'Story' : product === 'REELS' ? 'Reel' : type === 'CAROUSEL_ALBUM' ? 'Carousel' : type === 'VIDEO' ? 'Video' : 'Post';
 export const USAGE = ['Organic only', '30 days paid ads', '60 days paid ads', '90 days paid ads', 'Perpetual usage'];
+/** How usage rights read to people. The stored values ("30 days paid ads") stay as they are; these make clear
+ *  that the brand runs the ads, from its own ad account, and that it costs extra. */
+export function usageLabel(u: string) {
+	const d = usageDaysOf(u);
+	if (d) return `Brand ads for ${d} days`;
+	if (/perpetual/i.test(u)) return 'Brand use, no end date';
+	if (/organic/i.test(u)) return 'Organic only (no ads)';
+	return u;
+}
+/** The longer wording in usage pickers. */
+export function usageOption(u: string) {
+	const d = usageDaysOf(u);
+	if (d) return `Brand runs it as ads for ${d} days (extra fee)`;
+	if (/perpetual/i.test(u)) return 'Brand can use it with no end date (extra fee)';
+	if (/organic/i.test(u)) return 'Organic only: posted on her Instagram, no ads';
+	return u;
+}
 /** "60 days paid ads" -> 60; organic or perpetual -> 0 (same rule as the database). */
 export const usageDaysOf = (usage: string) => (/paid/i.test(usage) ? Number(usage.match(/(\d+)\s*day/i)?.[1] ?? 0) : 0);
 export const CATS = ['Beauty', 'Skincare', 'Fashion', 'Jewellery', 'Food & drink', 'Travel', 'Home', 'Wellness', 'Fitness', 'Tech', 'Other'];

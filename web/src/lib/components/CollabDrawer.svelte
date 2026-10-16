@@ -25,6 +25,8 @@
 		STAGES,
 		TYPE_LABEL,
 		USAGE,
+		usageLabel,
+		usageOption,
 		fmt,
 		fmtTime,
 		hasProduct,
@@ -347,7 +349,7 @@
 					</div>
 					<div class="f">
 						<label for="f-usage">Usage rights</label>
-						<Select id="f-usage" value={c.usage} options={[...USAGE, ...(USAGE.includes(c.usage) ? [] : [c.usage])].map((u) => ({ value: u, label: u }))} onchange={(v) => save('usage', v)} />
+						<Select id="f-usage" value={c.usage} options={[...USAGE, ...(USAGE.includes(c.usage) ? [] : [c.usage])].map((u) => ({ value: u, label: usageOption(u) }))} onchange={(v) => save('usage', v)} />
 					</div>
 					{#if isPaid(c)}
 						<div class="f">
@@ -387,7 +389,7 @@
 						<div class="q-card-h">
 							<b class="num">{inr(quote.total)}</b><span class="hint">Version {quote.version}{quote.sent_at ? ` · sent ${fmt(quote.sent_at)}` : ''}</span>
 						</div>
-						<div class="hint">{quote.items.map((i) => `${i.qty} ${plural(i.kind, i.qty)}`).join(' · ')} · {quote.usage}</div>
+						<div class="hint">{quote.items.map((i) => `${i.qty} ${plural(i.kind, i.qty)}`).join(' · ')} · {usageLabel(quote.usage)}</div>
 						<div class="hint">{payTerms(quote)} · {quote.revision_rounds} revision round{quote.revision_rounds === 1 ? '' : 's'}{quote.exclusivity_days ? ` · ${quote.exclusivity_days} days exclusivity` : ''}</div>
 						{#if quote.status === 'changes' && quote.response_note}
 							<blockquote class="note" style="margin:12px 0 0"><span>The brand asked</span><p>{quote.response_note}</p></blockquote>

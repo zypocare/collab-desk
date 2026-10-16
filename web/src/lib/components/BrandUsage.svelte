@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { supabase } from '../supabase';
 	import { toast } from '../ui.svelte';
-	import { diff, errMessage, fmt, inr } from '../util';
+	import { diff, errMessage, fmt, inr, usageLabel } from '../util';
 	import Icon from './Icon.svelte';
 
 	type Info = {
@@ -52,7 +52,7 @@
 			{:else if left <= 7}<span class="pill tint k-follow">Ending soon</span>{/if}
 		</div>
 		<div style="padding:0 20px 20px">
-			<p style="margin:0 0 4px"><b>{info.usage}</b> · {left < 0 ? `ended ${fmt(info.ends)}` : `until ${fmt(info.ends)}`}</p>
+			<p style="margin:0 0 4px"><b>{usageLabel(info.usage)}</b> · {left < 0 ? `ended ${fmt(info.ends)}` : `until ${fmt(info.ends)}`}</p>
 			<p class="hint" style="margin:0">{left < 0 ? 'Please stop running this content as ads, or extend below.' : `You can run this content as ads until then${left <= 30 && info.ext_status !== 'requested' ? '. Want longer? Extend below.' : '.'}`}</p>
 			{#if info.ext_status === 'requested'}
 				<p class="hint" style="margin-top:10px">You asked for {info.ext_days} more days ({inr(info.ext_price)}). {creator} will confirm shortly.</p>

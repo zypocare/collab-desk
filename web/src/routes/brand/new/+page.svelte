@@ -8,7 +8,7 @@
 	import { supabase } from '#lib/supabase.ts';
 	import type { BriefDetails, CollabType } from '#lib/types.ts';
 	import { confetti, copyText } from '#lib/ui.svelte.ts';
-	import { KINDS, USAGE, delivText, errMessage, firstName, inr, offeredKinds, packageOffered, rel } from '#lib/util.ts';
+	import { KINDS, USAGE, delivText, usageOption, errMessage, firstName, inr, offeredKinds, packageOffered, rel } from '#lib/util.ts';
 	import { budgetCombos, type Combo } from '#lib/suggest.ts';
 	import BrandDetailsForm from '#lib/components/BrandDetailsForm.svelte';
 	import Icon from '#lib/components/Icon.svelte';
@@ -413,7 +413,7 @@
 							</div>
 						{/if}
 						<div class="f"><label for="b-date">Preferred go-live date</label><DatePicker id="b-date" min={rel(3)} bind:value={preferred} placeholder="No preference" {unavailable} />{#if busyWeek}<p class="hint" style="margin-top:6px">{busyWeek}</p>{/if}</div>
-						<div class="f"><label for="b-usage">Usage rights</label><Select id="b-usage" bind:value={usage} options={USAGE.map((u) => ({ value: u, label: u }))} /></div>
+						<div class="f"><label for="b-usage">Usage rights</label><Select id="b-usage" bind:value={usage} options={USAGE.map((u) => ({ value: u, label: usageOption(u) }))} /><p class="hint" style="margin-top:6px">{usage === 'Organic only' ? `${creator} posts it on her Instagram. No ads.` : `Your brand runs ${creator}'s content as ads from your own ad account. This is charged on top of the content fee; the quote shows the amount.`}</p></div>
 					</div>
 				</div>
 				<div class="bsec">
