@@ -28,6 +28,7 @@ function normalise(c: Collab): Collab {
 	c.fee = Number(c.fee) || 0;
 	c.product_value = Number(c.product_value) || 0;
 	c.pay_received = Number(c.pay_received) || 0;
+	c.usage_ext_price = Number(c.usage_ext_price) || 0;
 	c.deliverables = (c.deliverables ?? []).sort((a, b) => a.position - b.position);
 	c.events = (c.events ?? []).sort((a, b) => b.at.localeCompare(a.at));
 	c.quotes = (c.quotes ?? [])
@@ -195,6 +196,13 @@ export async function deletePackage(id: string) {
 	if (error) return toast(`Couldn't delete: ${errMessage(error)}`, 'alert');
 	toast('Package removed', 'check');
 	await loadPackages();
+}
+
+export async function respondUsage(c: Collab, approve: boolean) {
+	const { error } = await supabase.rpc('respond_usage_extension', { p_collab: c.id, p_approve: approve });
+	if (error) return toast(`Couldn't save: ${errMessage(error)}`, 'alert');
+	toast(approve ? `Extended. ${inr(c.usage_ext_price)} added to the fee.` : 'Extension declined', approve ? 'check' : 'x');
+	await reloadCollabs();
 }
 
 export async function markReceived(c: Collab) {

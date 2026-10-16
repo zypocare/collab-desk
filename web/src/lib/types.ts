@@ -115,6 +115,10 @@ export type Collab = {
 	posts: { matched_by: 'auto' | 'manual'; media: IgMedia }[];
 	reports: BrandReport[];
 	package_name: string;
+	usage_ends: string | null;
+	usage_ext_days: number;
+	usage_ext_price: number;
+	usage_ext_status: '' | 'requested' | 'approved' | 'declined';
 	ship_carrier: string;
 	ship_tracking: string;
 	shipped_at: string | null;
@@ -235,6 +239,7 @@ export type Settings = {
 	ship_address: string;
 	ship_phone: string;
 	draft_days_after_product: number;
+	usage_ext_pct: number;
 };
 
 export type PublicPage = {

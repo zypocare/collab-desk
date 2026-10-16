@@ -22,6 +22,7 @@
 		todayIso
 	} from '#lib/util.ts';
 	import Icon from '#lib/components/Icon.svelte';
+	import BrandUsage from '#lib/components/BrandUsage.svelte';
 	import BrandShipping from '#lib/components/BrandShipping.svelte';
 	import MessageThread from '#lib/components/MessageThread.svelte';
 	import { INVOICE_STATUS } from '#lib/invoice.ts';
@@ -206,7 +207,7 @@
 		</section>
 	{/if}
 
-	{#key r.code}<BrandShipping code={r.code} {creator} onchange={loadRequests} />{/key}
+	{#key r.code}<BrandShipping code={r.code} {creator} onchange={loadRequests} /><BrandUsage code={r.code} {creator} onchange={loadRequests} />{/key}
 
 	<section class="panel rv msg-panel" style="--i:3;margin-top:18px">
 		<div class="panel-h"><h2>Messages</h2><small>with {pub.data?.display_name ?? 'the creator'}</small></div>

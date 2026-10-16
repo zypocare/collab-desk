@@ -180,8 +180,8 @@
 						<button class="btn sm" onclick={() => leaveThen(t.c.id + t.kind, () => markPaid(t.c))}>Mark paid</button>
 					{:else if t.kind === 'product' && inTransit(t.c)}
 						<button class="btn sm" onclick={() => leaveThen(t.c.id + t.kind, () => markReceived(t.c))}><Icon name="box" />Received</button>
-					{:else if t.kind === 'new' || t.kind === 'msg'}
-						<button class="btn sm" onclick={() => (ui.openCollab = t.c.id)}>{t.kind === 'msg' ? 'Reply' : 'Review'}</button>
+					{:else if t.kind === 'new' || t.kind === 'msg' || t.kind === 'usage'}
+						<button class="btn sm" onclick={() => (ui.openCollab = t.c.id)}>{t.kind === 'msg' ? 'Reply' : t.kind === 'usage' ? 'Open' : 'Review'}</button>
 					{/if}
 					<button class="icon-btn sm go" onclick={() => (ui.openCollab = t.c.id)} aria-label="Open {t.c.brand.name}"><Icon name="arrow" /></button>
 				</div>

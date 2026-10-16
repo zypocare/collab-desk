@@ -322,5 +322,51 @@ export function render(kind: string, p: Payload, s: Settings): Omit<Mail, 'to'> 
     };
   }
 
+  const day = (v: unknown) => (v ? new Date(String(v)).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '');
+
+  if (kind === 'usage_ending') {
+    return {
+      subject: `Your usage rights for ${code} end on ${day(p.ends)}`,
+      html: layout(
+        s,
+        `Paid usage ends ${day(p.ends)}`,
+        `<p style="margin:0">Hi ${esc(firstOf(p.contact))}, the ${esc(String(p.usage ?? '').toLowerCase())} for your collaboration with ${esc(s.display_name)} (<b>${esc(code)}</b>) end on <b>${esc(day(p.ends))}</b>. After that, please stop running the content as ads.</p>
+         <p style="margin:12px 0 0">Want to keep the ads running? You can extend in one tap${Number(p.price30) ? `, from ${esc(inr(p.price30))} for 30 days` : ''}.</p>`,
+        { label: 'Extend usage', href: url(s, `/brand/r/${encodeURIComponent(code)}`) },
+      ),
+      text: `Paid usage for ${code} ends on ${day(p.ends)}. Extend at ${url(s, `/brand/r/${code}`)}`,
+    };
+  }
+
+  if (kind === 'usage_ext_requested') {
+    return {
+      subject: `${brand} wants to extend usage by ${p.days} days (${inr(p.price)})`,
+      html: layout(
+        s,
+        `Usage extension request`,
+        `<p style="margin:0">${esc(brand)} asked to keep running <b>${esc(code)}</b> as ads for <b>${esc(p.days)} more days</b>.</p>
+         <table role="presentation" cellpadding="0" cellspacing="0" style="margin-top:10px">${row('Extra fee', inr(p.price))}${row('Currently ends', day(p.ends))}</table>`,
+        { label: 'Approve or decline', href: url(s, `/studio/collabs?open=${encodeURIComponent(code)}`) },
+      ),
+      text: `${brand} wants ${p.days} more days of paid usage for ${code} at ${inr(p.price)}.`,
+    };
+  }
+
+  if (kind === 'usage_ext_answer') {
+    const ok = p.approved === true;
+    return {
+      subject: ok ? `Usage extended for ${code} until ${day(p.ends)}` : `About your usage extension for ${code}`,
+      html: layout(
+        s,
+        ok ? `Extended until ${day(p.ends)}` : `Extension not available`,
+        ok
+          ? `<p style="margin:0">Hi ${esc(firstOf(p.contact))}, ${esc(first(s.display_name))} approved <b>${esc(p.days)} more days</b> of paid usage for <b>${esc(code)}</b>, now until <b>${esc(day(p.ends))}</b>. An invoice for ${esc(inr(p.price))} will follow.</p>`
+          : `<p style="margin:0">Hi ${esc(firstOf(p.contact))}, ${esc(first(s.display_name))} can't extend paid usage for <b>${esc(code)}</b> this time. You can reply in Messages on your request page.</p>`,
+        { label: 'See your request', href: url(s, `/brand/r/${encodeURIComponent(code)}`) },
+      ),
+      text: ok ? `Usage for ${code} extended until ${day(p.ends)}.` : `Usage for ${code} can't be extended this time.`,
+    };
+  }
+
   throw new Error(`Unknown email kind: ${kind}`);
 }

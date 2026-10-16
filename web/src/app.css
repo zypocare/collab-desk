@@ -1224,3 +1224,27 @@ input[type="number"]::-webkit-inner-spin-button,input[type="number"]::-webkit-ou
 .stepper.sm output{width:16px;font-size:12.5px}
 .pk-empty{text-align:center;padding:12px 0 4px;display:grid;justify-items:center;gap:10px}
 .pk-empty p{margin:0;color:var(--ink-3);font-size:13px;max-width:320px}
+
+/* ---------- usage rights ---------- */
+.usage-box{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:14px;background:var(--surface-2)}
+.usage-box > svg{width:17px;height:17px;flex:none;margin-top:2px;color:var(--ink-3)}
+.usage-box b{display:block;font-size:13.5px}
+.usage-box small{display:block;color:var(--ink-3);font-size:12px;margin-top:1px}
+.usage-box.u-soon{background:color-mix(in oklab,var(--warn) 10%,var(--surface))}
+.usage-box.u-soon > svg{color:var(--warn)}
+.usage-box.u-ended{background:color-mix(in oklab,var(--bad) 8%,var(--surface))}
+.usage-box.u-ended > svg{color:var(--bad)}
+.usage-req{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:10px;padding:14px;border-radius:14px;border:1px solid color-mix(in oklab,var(--accent) 30%,var(--line));background:color-mix(in oklab,var(--accent) 6%,var(--surface));animation:adv-in .45s var(--spring)}
+.usage-req > div:first-child{flex:1;min-width:200px}
+.usage-req b{display:block;font-size:13.5px}
+.usage-req small{display:block;color:var(--ink-3);font-size:12px;margin-top:2px}
+.usage-req .row{display:flex;gap:8px}
+.usage-opts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:14px 0 12px}
+.usage-opt{position:relative;display:flex;flex-direction:column;gap:2px;padding:12px;border-radius:14px;border:1.5px solid var(--line-strong);cursor:pointer;transition:border-color .2s,background .2s,transform .3s var(--spring)}
+.usage-opt input{position:absolute;opacity:0;pointer-events:none}
+.usage-opt b{font-size:14px}
+.usage-opt span{font-size:12.5px;color:var(--ink-3);font-variant-numeric:tabular-nums}
+.usage-opt:hover{transform:translateY(-1px);border-color:var(--ink-3)}
+.usage-opt:has(input:checked){border-color:var(--accent);background:color-mix(in oklab,var(--accent) 7%,var(--surface))}
+.usage-opt:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:2px}
+.k-usage{--hue:var(--h-nego)}

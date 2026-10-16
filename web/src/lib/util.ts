@@ -147,13 +147,17 @@ export function unreadFor(c: Collab) {
 	return (c.messages ?? []).filter((m) => m.sender === 'brand' && m.created_at > seen).length;
 }
 
-export type Task = { c: Collab; kind: 'new' | 'follow' | 'draft' | 'live' | 'product' | 'pay' | 'quote' | 'revise' | 'msg'; d: number; title: string; order: number };
+export type Task = { c: Collab; kind: 'new' | 'follow' | 'draft' | 'live' | 'product' | 'pay' | 'quote' | 'revise' | 'msg' | 'usage'; d: number; title: string; order: number };
 export function tasks(collabs: Collab[]): Task[] {
 	const out: Task[] = [];
 	for (const c of collabs) {
 		const unread = unreadFor(c);
 		if (unread) out.push({ c, kind: 'msg', d: 0, title: `Reply to ${unread} new message${unread > 1 ? 's' : ''}`, order: -1 });
 		if (c.stage === 'declined') continue;
+		if (c.usage_ext_status === 'requested')
+			out.push({ c, kind: 'usage', d: 0, title: `Wants ${c.usage_ext_days} more days of paid usage (${inr(c.usage_ext_price)})`, order: 0 });
+		else if (c.usage_ends && diff(c.usage_ends) >= 0 && diff(c.usage_ends) <= 7)
+			out.push({ c, kind: 'usage', d: diff(c.usage_ends), title: 'Paid usage rights end', order: 6 });
 		if (c.stage === 'request') out.push({ c, kind: 'new', d: Math.min(0, diff(c.received_on)), title: 'Review new request', order: 0 });
 		const q = latestQuote(c);
 		if (q?.status === 'changes') out.push({ c, kind: 'quote', d: 0, title: 'Brand asked for changes to your quote', order: 0 });
@@ -186,7 +190,7 @@ export function events(collabs: Collab[]): CalEvent[] {
 	}
 	return ev;
 }
-export const KIND_ICON: Record<string, string> = { follow: 'bell', draft: 'film', live: 'spark', pay: 'wallet', new: 'inbox', product: 'box', quote: 'rupee', revise: 'edit', msg: 'mail' };
+export const KIND_ICON: Record<string, string> = { follow: 'bell', draft: 'film', live: 'spark', pay: 'wallet', new: 'inbox', product: 'box', quote: 'rupee', revise: 'edit', msg: 'mail', usage: 'eye' };
 export const KIND_LABEL: Record<string, string> = { draft: 'Draft due', live: 'Go live', follow: 'Follow-up', pay: 'Payment due', product: 'Product arrives' };
 export const evLabel = (e: CalEvent) => (e.kind === 'live' && stageIndex(e.c.stage) >= 4 ? 'Went live' : KIND_LABEL[e.kind]);
 

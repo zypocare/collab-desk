@@ -91,6 +91,10 @@
 					<div class="pre"><span>₹</span><input class="inp num" type="number" inputmode="numeric" aria-label="{k} rate" value={s.rates[k] ?? ''} onchange={(e) => saveSettings({ rates: { ...s.rates, [k]: num(e) } })} /></div>
 				</div>
 			{/each}
+			<div class="rate">
+				<span>Extra paid usage<small class="hint" style="display:block">% of the fee per 30 days</small></span>
+				<div class="pre"><span>%</span><input class="inp num" type="number" inputmode="numeric" min="0" max="200" aria-label="Usage extension rate" value={s.usage_ext_pct} onchange={(e) => saveSettings({ usage_ext_pct: Math.min(200, num(e)) })} /></div>
+			</div>
 		</section>
 		<PackagesSettings />
 		<PriorityRules />

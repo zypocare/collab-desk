@@ -32,6 +32,7 @@
 		stageIndex
 	} from '../util';
 	import Icon from './Icon.svelte';
+	import UsageRights from './UsageRights.svelte';
 	import ProductShipping from './ProductShipping.svelte';
 	import MessageThread from './MessageThread.svelte';
 	import { isRanked } from '../priority';
@@ -318,6 +319,7 @@
 				<Select action class="add-sel" ariaLabel="Add deliverable" placeholder="+ Add deliverable" options={KINDS.map((k) => ({ value: k, label: k }))} onchange={(k) => c && addDeliverable(c, k)} />
 			</section>
 
+			{#if c.usage_ends}<section class="sec"><h3>Usage rights</h3><UsageRights {c} /></section>{/if}
 			{#if hasProduct(c)}<ProductShipping {c} />{/if}
 
 			<section class="sec">
