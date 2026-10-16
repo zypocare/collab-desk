@@ -293,5 +293,34 @@ export function render(kind: string, p: Payload, s: Settings): Omit<Mail, 'to'> 
     };
   }
 
+  if (kind === 'product_shipped') {
+    return {
+      subject: `${brand} shipped your product (${code})`,
+      html: layout(
+        s,
+        `A parcel is on its way`,
+        `<p style="margin:0">${esc(brand)} has shipped ${p.product ? `<b>${esc(p.product)}</b>` : 'the product'} for <b>${esc(code)}</b>.</p>
+         <table role="presentation" cellpadding="0" cellspacing="0" style="margin-top:10px">${row('Courier', p.carrier)}${row('Tracking', p.tracking)}</table>
+         <p style="margin:12px 0 0">Tap <b>Mark received</b> in your studio when it arrives; your draft deadline counts from that day.</p>`,
+        { label: 'Open in your studio', href: url(s, `/studio/collabs?open=${encodeURIComponent(code)}`) },
+      ),
+      text: `${brand} shipped ${p.product || 'the product'} for ${code} via ${p.carrier} ${p.tracking}.`,
+    };
+  }
+
+  if (kind === 'product_received') {
+    const due = p.draft_date ? new Date(String(p.draft_date)).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : '';
+    return {
+      subject: `${first(s.display_name)} received your product (${code})`,
+      html: layout(
+        s,
+        `Your product arrived`,
+        `<p style="margin:0">Hi ${esc(firstOf(p.contact))}, ${esc(first(s.display_name))} has received ${p.product ? `<b>${esc(p.product)}</b>` : 'your product'} for <b>${esc(code)}</b>.${due ? ` You can expect the draft by <b>${esc(due)}</b>.` : ''}</p>`,
+        { label: 'See status', href: url(s, `/brand/r/${encodeURIComponent(code)}`) },
+      ),
+      text: `${s.display_name} received your product for ${code}.${due ? ` Draft expected by ${due}.` : ''}`,
+    };
+  }
+
   throw new Error(`Unknown email kind: ${kind}`);
 }

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { completeFollow, markPaid, priorityOf, studio } from '#lib/studio.svelte.ts';
+	import { completeFollow, markPaid, markReceived, priorityOf, studio } from '#lib/studio.svelte.ts';
 	import { countUp, ui } from '#lib/ui.svelte.ts';
 	import {
 		KIND_ICON,
@@ -10,6 +10,7 @@
 		firstName,
 		fmt,
 		hasProduct,
+		inTransit,
 		inr,
 		inrS,
 		isActive,
@@ -177,6 +178,8 @@
 						<button class="btn sm" onclick={() => leaveThen(t.c.id + t.kind, () => completeFollow(t.c))}><Icon name="check" />Done</button>
 					{:else if t.kind === 'pay'}
 						<button class="btn sm" onclick={() => leaveThen(t.c.id + t.kind, () => markPaid(t.c))}>Mark paid</button>
+					{:else if t.kind === 'product' && inTransit(t.c)}
+						<button class="btn sm" onclick={() => leaveThen(t.c.id + t.kind, () => markReceived(t.c))}><Icon name="box" />Received</button>
 					{:else if t.kind === 'new' || t.kind === 'msg'}
 						<button class="btn sm" onclick={() => (ui.openCollab = t.c.id)}>{t.kind === 'msg' ? 'Reply' : 'Review'}</button>
 					{/if}

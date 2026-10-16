@@ -1169,3 +1169,21 @@ input[type="number"]::-webkit-inner-spin-button,input[type="number"]::-webkit-ou
 .msg-dot svg{width:12px;height:12px}
 .sec-sub{margin-left:auto}
 .k-msg{--hue:var(--accent)}
+
+/* ---------- shipping ---------- */
+.ship-note{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:12px;background:color-mix(in oklab,var(--warn) 10%,var(--surface));font-size:12.5px;color:var(--ink-2);margin-bottom:12px}
+.ship-note svg{width:15px;height:15px;color:var(--warn);flex:none;margin-top:1px}
+.ship-steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px;position:relative}
+.ship-steps li{display:flex;gap:12px;align-items:flex-start;position:relative}
+.ship-steps li:not(:last-child)::after{content:"";position:absolute;left:13px;top:30px;bottom:-12px;width:2px;background:var(--line)}
+.ship-steps li.on:not(:last-child)::after{background:var(--grad)}
+.ship-steps li.on .vd{background:var(--grad);border-color:transparent;color:#fff}
+.ship-steps .vd svg{width:14px;height:14px}
+.ship-steps b{display:block;font-size:13.5px}
+.ship-steps small{display:block;color:var(--ink-3);font-size:12px;margin-top:1px}
+.ship-addr{display:flex;gap:12px;align-items:flex-start;justify-content:space-between;padding:14px;border-radius:14px;background:var(--surface-2);margin-bottom:14px}
+.ship-addr p{margin:4px 0 0;white-space:pre-line;font-size:14px;line-height:1.5}
+.ship-track{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:13.5px}
+.ship-track > svg{width:18px;height:18px;color:var(--accent)}
+.ship-form{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;gap:12px;align-items:end}
+@media (max-width: 640px){ .ship-form{grid-template-columns:minmax(0,1fr)} }

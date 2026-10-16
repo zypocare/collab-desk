@@ -110,6 +110,10 @@ export type Collab = {
 	invoices: Invoice[];
 	posts: { matched_by: 'auto' | 'manual'; media: IgMedia }[];
 	reports: BrandReport[];
+	ship_carrier: string;
+	ship_tracking: string;
+	shipped_at: string | null;
+	product_received_at: string | null;
 	messages: Pick<Message, 'id' | 'sender' | 'created_at'>[];
 	reads: Pick<ReadMark, 'side' | 'read_at'>[];
 };
@@ -222,6 +226,10 @@ export type Settings = {
 	barter_monthly_cap: number;
 	barter_reply_time: string;
 	priority_categories: string[];
+	ship_name: string;
+	ship_address: string;
+	ship_phone: string;
+	draft_days_after_product: number;
 };
 
 export type PublicPage = {

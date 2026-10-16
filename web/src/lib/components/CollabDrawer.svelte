@@ -32,6 +32,7 @@
 		stageIndex
 	} from '../util';
 	import Icon from './Icon.svelte';
+	import ProductShipping from './ProductShipping.svelte';
 	import MessageThread from './MessageThread.svelte';
 	import { isRanked } from '../priority';
 	import PriorityPanel from './PriorityPanel.svelte';
@@ -316,6 +317,8 @@
 				</div>
 				<Select action class="add-sel" ariaLabel="Add deliverable" placeholder="+ Add deliverable" options={KINDS.map((k) => ({ value: k, label: k }))} onchange={(k) => c && addDeliverable(c, k)} />
 			</section>
+
+			{#if hasProduct(c)}<ProductShipping {c} />{/if}
 
 			<section class="sec">
 				<h3>Dates</h3>

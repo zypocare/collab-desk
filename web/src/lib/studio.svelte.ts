@@ -171,6 +171,13 @@ export async function markPaid(c: Collab) {
 	toast(`${inr(c.fee)} from ${c.brand.name} marked as paid`, 'wallet');
 }
 
+export async function markReceived(c: Collab) {
+	const { error } = await supabase.rpc('mark_product_received', { p_collab: c.id });
+	if (error) return toast(`Couldn't save: ${errMessage(error)}`, 'alert');
+	toast('Marked received. The draft clock has started.', 'box');
+	await reloadCollabs();
+}
+
 export async function completeFollow(c: Collab) {
 	await updateCollab(c.id, { follow_date: null, follow_note: '' });
 	toast('Follow-up done');

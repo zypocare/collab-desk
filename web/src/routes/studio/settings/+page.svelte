@@ -4,6 +4,7 @@
 	import { copyText, toast } from '#lib/ui.svelte.ts';
 	import { KINDS } from '#lib/util.ts';
 	import Icon from '#lib/components/Icon.svelte';
+	import ShippingSettings from '#lib/components/ShippingSettings.svelte';
 	import NotificationSettings from '#lib/components/NotificationSettings.svelte';
 	import BillingSettings from '#lib/components/BillingSettings.svelte';
 	import InstagramSettings from '#lib/components/InstagramSettings.svelte';
@@ -76,6 +77,7 @@
 				<input type="checkbox" class="tgl" checked={s.show_rates} aria-label="Show starting rates" onchange={(e) => toggle('show_rates', (e.currentTarget as HTMLInputElement).checked)} />
 			</div>
 		</section>
+		<ShippingSettings />
 		<BillingSettings />
 	</div>
 	<div class="stack">

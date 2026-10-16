@@ -83,6 +83,18 @@ export const firstName = (name: string) => (name || '').split(' ')[0];
 // ---- collab logic ----
 export const isPaid = (c: Pick<Collab, 'type'>) => c.type !== 'barter';
 export const hasProduct = (c: Pick<Collab, 'type'>) => c.type !== 'paid';
+/** Shipped by the brand, not yet marked received. */
+export const inTransit = (c: Pick<Collab, 'shipped_at' | 'product_received_at'>) => !!c.shipped_at && !c.product_received_at;
+
+// Couriers brands use most in India. Delhivery and Shiprocket have direct tracking pages; the rest open a search.
+export const CARRIERS = ['Delhivery', 'Blue Dart', 'DTDC', 'Ekart', 'Xpressbees', 'Shiprocket', 'India Post', 'Shadowfax', 'Ecom Express', 'Hand delivery', 'Other'];
+export function trackUrl(carrier: string, tracking: string) {
+	const t = encodeURIComponent(tracking.trim());
+	if (!t) return '';
+	if (carrier === 'Delhivery') return `https://www.delhivery.com/track/package/${t}`;
+	if (carrier === 'Shiprocket') return `https://shiprocket.co/tracking/${t}`;
+	return `https://www.google.com/search?q=${encodeURIComponent(`${carrier} tracking ${tracking.trim()}`)}`;
+}
 export const allDone = (c: Collab) => c.deliverables.length > 0 && c.deliverables.every((d) => d.done);
 export const isActive = (c: Collab) => c.stage !== 'wrapped' && c.stage !== 'declined';
 export const outstanding = (c: Collab) =>
@@ -102,6 +114,8 @@ export function nextLine(c: Collab): NextLine {
 		case 'negotiating':
 			return c.follow_date ? r(`Follow up ${relWord(diff(c.follow_date))}`, diff(c.follow_date), 'bell') : r('Waiting on brand', null);
 		case 'confirmed':
+			if (inTransit(c)) return r(`Parcel on the way · ${c.ship_carrier}`, null, 'box');
+			if (hasProduct(c) && !c.shipped_at && !c.product_received_at && !(c.product_date && diff(c.product_date) <= 0)) return r('Waiting for the brand to ship', null, 'box');
 			if (c.product_date && diff(c.product_date) >= 0) return r(`Product arrives ${relWord(diff(c.product_date))}`, diff(c.product_date), 'box');
 			return c.draft_date ? r(`Draft due ${relWord(diff(c.draft_date))}`, diff(c.draft_date), 'film') : r('Set a draft date', null);
 		case 'creating':
@@ -147,7 +161,8 @@ export function tasks(collabs: Collab[]): Task[] {
 			out.push({ c, kind: 'draft', d: diff(c.draft_date), title: `Send draft · ${delivText(c.deliverables)}`, order: 2 });
 		if (['confirmed', 'creating'].includes(c.stage) && c.live_date && diff(c.live_date) <= 3 && diff(c.live_date) >= 0)
 			out.push({ c, kind: 'live', d: diff(c.live_date), title: `Goes live · ${delivText(c.deliverables)}`, order: 3 });
-		if (c.stage === 'confirmed' && c.product_date && diff(c.product_date) >= 0 && diff(c.product_date) <= 2)
+		if (inTransit(c)) out.push({ c, kind: 'product', d: c.product_date ? Math.min(0, diff(c.product_date)) : 0, title: `Parcel on the way via ${c.ship_carrier}: mark it received when it arrives`, order: 4 });
+		else if (c.stage === 'confirmed' && !c.product_received_at && c.product_date && diff(c.product_date) >= 0 && diff(c.product_date) <= 2)
 			out.push({ c, kind: 'product', d: diff(c.product_date), title: 'Product arriving, check the parcel', order: 4 });
 		if (overdue(c)) out.push({ c, kind: 'pay', d: diff(c.pay_due!), title: `Payment overdue · ${inr(outstanding(c))}`, order: 5 });
 	}
