@@ -1,15 +1,15 @@
-// Builds her media kit in the browser from live data. Page 1: the kit (numbers, packages, rates, brands she
-// has worked with, a QR code to her brand page). Then everything on the insights page: 30-day numbers with
-// changes, formats, how people engage, follower trend, audience, top content and past collab results.
+// Builds her media kit in the browser from live data: her Instagram insights only (no packages or prices),
+// each number shown once. 30-day numbers with changes, formats, how people engage, follower trend, audience,
+// top content and past collab results, then a QR code to her brand page. If she doesn't share insights,
+// a one-page version with the basic numbers and audience.
 import { supabase } from './supabase';
-import { audienceOf, engageMix, formatRows, FORMAT_LABEL, insightKpis, reachOk, type PublicInsights } from './insights';
+import { audienceOf, engageMix, formatRows, FORMAT_LABEL, insightKpis, type PublicInsights } from './insights';
 import fontkit from '@pdf-lib/fontkit';
 import { PDFDocument, rgb, type PDFFont, type PDFImage, type PDFPage, type RGB } from 'pdf-lib';
 import { qrMatrix } from './invoice';
 import { loadFonts, wrap } from './invoicePdf';
-import { rateValue } from './priority';
 import type { PublicPage } from './types';
-import { compact, delivText, fmt, initials, mediaLabel, offeredKinds, packageOffered } from './util';
+import { compact, fmt, initials, mediaLabel } from './util';
 
 const INK = rgb(0.12, 0.09, 0.11);
 const MUTED = rgb(0.45, 0.41, 0.44);
@@ -21,7 +21,6 @@ const G2 = rgb(0.83, 0.16, 0.42);
 const G3 = rgb(0.95, 0.6, 0.29);
 const WHITE = rgb(1, 1, 1);
 
-const rupees = (n: number) => '₹' + Math.round(n).toLocaleString('en-IN');
 const pct = (part: Record<string, number> | undefined) => {
 	const entries = Object.entries(part ?? {});
 	const total = entries.reduce((a, [, v]) => a + v, 0) || 1;
@@ -65,6 +64,10 @@ export async function mediaKitPdf(p: PublicPage, link: string, ins: PublicInsigh
 	const bold = await doc.embedFont(boldBytes);
 	doc.setTitle(`${p.display_name} · Media kit`);
 	doc.setAuthor(p.display_name);
+	if (ins) {
+		await insightsPages(doc, p, ins, link, reg, bold);
+		return doc.save();
+	}
 
 	const W = 595.28, H = 841.89, M = 40;
 	const page: PDFPage = doc.addPage([W, H]);
@@ -123,31 +126,8 @@ export async function mediaKitPdf(p: PublicPage, link: string, ins: PublicInsigh
 		y -= th + 26;
 	}
 
-	// ---- last 30 days (what brands ask for) ----
-	const t = ins?.insights?.totals ?? {};
-	const fm = ins?.insights?.formats;
-	const month = [
-		{ v: reachOk(t) ? t.reach : undefined, k: 'Accounts reached' },
-		{ v: t.views, k: 'Views' },
-		{ v: t.accounts_engaged, k: 'Accounts engaged' },
-		{ v: fm?.reels?.avg_views, k: 'Avg. Reel views' },
-		{ v: fm?.stories?.avg_reach, k: 'Avg. Story reach' }
-	].filter((s): s is { v: number; k: string } => typeof s.v === 'number' && s.v > 0);
-	if (month.length) {
-		label('Last 30 days · verified from Instagram', M, y);
-		y -= 14;
-		const gap = 8, tw = (W - 2 * M - gap * (month.length - 1)) / month.length, th = 44;
-		month.forEach((s, i) => {
-			const x = M + i * (tw + gap);
-			page.drawRectangle({ x, y: y - th, width: tw, height: th, color: SOFT });
-			text(compact(s.v), x + 10, y - 22, 15, bold);
-			text(s.k, x + 10, y - 36, 7.5, reg, MUTED);
-		});
-		y -= th + 22;
-	}
-
 	// ---- audience ----
-	const demo = ins ? {} : (ig?.demographics ?? {});
+	const demo = ig?.demographics ?? {};
 	const age = pct(demo.age).sort((a, b) => a.k.localeCompare(b.k));
 	const gender = pct(demo.gender).map((g) => ({ ...g, k: g.k === 'F' ? 'Women' : g.k === 'M' ? 'Men' : 'Other' })).sort((a, b) => b.p - a.p);
 	const cities = pct(demo.city).sort((a, b) => b.p - a.p).slice(0, 5).map((c) => ({ ...c, k: c.k.split(',')[0] }));
@@ -200,50 +180,6 @@ export async function mediaKitPdf(p: PublicPage, link: string, ins: PublicInsigh
 		y = top - Math.max(16 + age.length * 14, 42 + gender.length * 14, 18 + cities.length * 14) - 18;
 	}
 
-	// ---- packages ----
-	const packs = (p.packages ?? []).filter((k) => packageOffered(k.items, p.offered));
-	if (packs.length) {
-		label('Packages', M, y);
-		y -= 12;
-		const n = Math.min(3, packs.length), gap = 10, pw = (W - 2 * M - gap * (n - 1)) / n, ph = 78;
-		packs.slice(0, 3).forEach((k, i) => {
-			const x = M + i * (pw + gap);
-			page.drawRectangle({ x, y: y - ph, width: pw, height: ph, borderColor: k.badge ? G2 : LINE, borderWidth: k.badge ? 1.2 : 0.8, color: WHITE });
-			text(k.name, x + 12, y - 20, 11, bold);
-			if (k.badge) right(k.badge.toUpperCase(), x + pw - 10, y - 18, 6.5, bold, G2);
-			for (const [j, l] of wrap(delivText(k.items), reg, 8.5, pw - 24).slice(0, 2).entries()) text(l, x + 12, y - 35 - j * 11, 8.5, reg, MUTED);
-			text(rupees(k.price), x + 12, y - ph + 13, 15, bold);
-			const r = rateValue(k.items, p.rates);
-			if (r > k.price && k.price) right(`save ${Math.round((1 - k.price / r) * 100)}%`, x + pw - 10, y - ph + 15, 8, bold, rgb(0.17, 0.48, 0.27));
-		});
-		y -= ph + 24;
-	}
-
-	// ---- rates ----
-	const room = (need: number) => y - need > M + 96 + 14;
-	const rates = Object.entries(p.rates ?? {}).filter(([k, v]) => v && offeredKinds(p.offered).includes(k));
-	if (rates.length && room(16 + Math.ceil(rates.length / 2) * 17)) {
-		label('Starting rates', M, y);
-		y -= 16;
-		const half = Math.ceil(rates.length / 2), cw = (W - 2 * M - 30) / 2;
-		rates.forEach(([k, v], i) => {
-			const col = i < half ? 0 : 1, row = i < half ? i : i - half;
-			const x = M + col * (cw + 30), yy = y - row * 17;
-			text(k, x, yy, 9.5);
-			right(`from ${rupees(v)}`, x + cw, yy, 9.5, bold);
-			page.drawLine({ start: { x, y: yy - 5 }, end: { x: x + cw, y: yy - 5 }, thickness: 0.5, color: LINE });
-		});
-		y -= half * 17 + 18;
-	}
-
-	// ---- worked with ----
-	if (p.worked_with?.length && room(40)) {
-		label('Brands I have worked with', M, y);
-		y -= 15;
-		for (const l of wrap(p.worked_with.join('  ·  '), bold, 10, W - 2 * M).slice(0, 3)) (text(l, M, y, 10, bold), (y -= 14));
-		y -= 10;
-	}
-
 	// ---- footer: book + QR ----
 	const fh = 96;
 	page.drawRectangle({ x: M, y: M, width: W - 2 * M, height: fh, color: SOFT });
@@ -252,12 +188,9 @@ export async function mediaKitPdf(p: PublicPage, link: string, ins: PublicInsigh
 	page.drawRectangle({ x: qx - 4, y: qy - 4, width: qs + 8, height: qs + 8, color: WHITE });
 	m.forEach((row, r) => row.forEach((dark, c) => dark && page.drawRectangle({ x: qx + c * cell, y: qy + qs - (r + 1) * cell, width: cell + 0.15, height: cell + 0.15, color: INK })));
 	text("Let's work together", M + 18, M + fh - 30, 15, bold);
-	text('Send a request, see packages and track it live at', M + 18, M + fh - 48, 9.5, reg, MUTED);
+	text('Send a collaboration request and track it live at', M + 18, M + fh - 48, 9.5, reg, MUTED);
 	text(link.replace(/^https?:\/\//, ''), M + 18, M + fh - 64, 11, bold, G2);
 	text(`Usually replies within ${p.reply_time}.`, M + 18, M + 18, 8.5, reg, MUTED);
-	if (ins) right('Full Instagram insights on the next page', W - M - qs - 30, M + 18, 8.5, bold, G2);
-
-	if (ins) await insightsPages(doc, p, ins, link, reg, bold);
 	return doc.save();
 }
 
@@ -305,25 +238,34 @@ async function insightsPages(doc: PDFDocument, p: PublicPage, d: PublicInsights,
 	const UP = rgb(0.17, 0.48, 0.27), DOWN = rgb(0.75, 0.2, 0.2);
 
 	// Header band (repeated, smaller, on any further page).
+	const photoBytes = await circlePhoto(d.profile_picture_url ?? '');
+	const photo: PDFImage | null = photoBytes ? await doc.embedPng(photoBytes).catch(() => null) : null;
 	const header = (first: boolean) => {
-		const bh = first ? 92 : 46;
+		const bh = first ? 118 : 46;
 		page.drawRectangle({ x: 0, y: H - bh, width: W, height: bh, color: DARK });
 		for (let i = 0; i < 60; i++) {
 			const t = i / 59;
 			page.drawRectangle({ x: (W / 60) * i, y: H - bh, width: W / 60 + 0.5, height: 4, color: t < 0.5 ? mix(G1, G2, t * 2) : mix(G2, G3, (t - 0.5) * 2) });
 		}
 		if (first) {
-			text('INSTAGRAM INSIGHTS', M, H - 32, 8, bold, G3);
-			text(d.display_name, M, H - 56, 20, bold, WHITE);
-			const meta = [`@${d.username}`, d.niche, d.city].filter(Boolean).join(' · ');
-			text(fit(meta, reg, 9.5, CW), M, H - 74, 9.5, reg, rgb(0.85, 0.8, 0.84));
-			right(`Verified from Instagram${d.updated_at ? ` · updated ${fmt(d.updated_at.slice(0, 10))}` : ''}`, W - M, H - 32, 8, reg, rgb(0.7, 0.65, 0.69));
-			right(`Live version: ${link.replace(/^https?:\/\//, '').replace(/\/$/, '')}/insights`, W - M, H - 46, 8, bold, G3);
-			const reviews = p.reviews ?? [];
-			if (reviews.length) {
-				const avg = (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1);
-				right(`Rated ${avg}/5 by ${reviews.length} brand${reviews.length === 1 ? '' : 's'}`, W - M, H - 60, 8, reg, rgb(0.85, 0.8, 0.84));
+			// Her photo in a ring, then name, handle, and where the numbers come from.
+			const R = 36, cx = M + R, cy = H - 58;
+			page.drawCircle({ x: cx, y: cy, size: R + 2.5, color: G2 });
+			if (photo) page.drawImage(photo, { x: cx - R, y: cy - R, width: R * 2, height: R * 2 });
+			else {
+				page.drawCircle({ x: cx, y: cy, size: R, color: rgb(0.2, 0.16, 0.2) });
+				const ini = initials(d.display_name);
+				text(ini, cx - bold.widthOfTextAtSize(ini, 20) / 2, cy - 7, 20, bold, WHITE);
 			}
+			const tx = cx + R + 18, tw = W - M - tx;
+			text('MEDIA KIT · INSTAGRAM INSIGHTS', tx, H - 32, 8, bold, G3);
+			text(fit(d.display_name, bold, 22, tw), tx, H - 57, 22, bold, WHITE);
+			const meta = [`@${d.username}`, d.niche, d.city].filter(Boolean).join(' · ');
+			text(fit(meta, reg, 9.5, tw), tx, H - 75, 9.5, reg, rgb(0.85, 0.8, 0.84));
+			const reviews = p.reviews ?? [];
+			const avg = reviews.length ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1) : '';
+			const src = `Verified from Instagram${d.updated_at ? ` · updated ${fmt(d.updated_at.slice(0, 10))}` : ''}${avg ? ` · rated ${avg}/5 by ${reviews.length} brand${reviews.length === 1 ? '' : 's'}` : ''}`;
+			text(fit(src, reg, 8, tw), tx, H - 95, 8, reg, rgb(0.7, 0.65, 0.69));
 		} else {
 			text(`${d.display_name} · Instagram insights (continued)`, M, H - 28, 10, bold, WHITE);
 		}
@@ -341,15 +283,16 @@ async function insightsPages(doc: PDFDocument, p: PublicPage, d: PublicInsights,
 		y -= 16;
 	}
 
-	// ---- headline numbers, 3 per row ----
-	const kpis = insightKpis(d);
+	// ---- headline numbers, 4 per row (Reel views and Story reach are in the format table, not here too) ----
+	const fmts = new Set(formatRows(d).map(([k]) => k));
+	const kpis = insightKpis(d).filter((k) => !(k.k === 'Avg. Reel views' && fmts.has('reels')) && !(k.k === 'Avg. Story reach' && fmts.has('stories')));
 	if (kpis.length) {
-		const cols = 3, gap = 10, tw = (CW - gap * (cols - 1)) / cols, th = 54;
+		const cols = 4, gap = 9, tw = (CW - gap * (cols - 1)) / cols, th = 54;
 		kpis.forEach((k, i) => {
 			const col = i % cols, row = Math.floor(i / cols);
 			const x = M + col * (tw + gap), top = y - row * (th + gap);
 			page.drawRectangle({ x, y: top - th, width: tw, height: th, color: SOFT });
-			page.drawRectangle({ x, y: top - th, width: 3, height: th, color: [G1, G2, G3][col] });
+			page.drawRectangle({ x, y: top - th, width: 3, height: th, color: [G1, G2, G3, G2][col] });
 			text(k.k, x + 12, top - 14, 8, reg, MUTED);
 			text(k.pct ? `${k.v}%` : compact(k.v), x + 12, top - 34, 17, bold);
 			let sx = x + 12;
@@ -472,7 +415,7 @@ async function insightsPages(doc: PDFDocument, p: PublicPage, d: PublicInsights,
 	const tw = (CW - 5 * 9) / 6, th = Math.round(tw * 0.9);
 	const grid = async (title: string, items: { img: string; t: string; n: string; n2?: string; url: string }[]) => {
 		if (!items.length) return;
-		need(18 + th + 44);
+		need(18 + th + 50);
 		label(title, M, y);
 		y -= 10;
 		const imgs = await Promise.all(items.map((it) => coverJpeg(it.img, tw, th)));
@@ -490,7 +433,7 @@ async function insightsPages(doc: PDFDocument, p: PublicPage, d: PublicInsights,
 			text(fit(it.n, bold, 8.5, tw), x, top - th - 22, 8.5, bold);
 			if (it.n2) text(fit(it.n2, reg, 7.5, tw), x, top - th - 32, 7.5, reg, MUTED);
 		}
-		y -= th + 50;
+		y -= th + 58;
 	};
 	const views = (v: number | null, r: number | null) => (v ? `${compact(v)} views` : r ? `${compact(r)} reached` : '');
 	await grid(
@@ -501,6 +444,21 @@ async function insightsPages(doc: PDFDocument, p: PublicPage, d: PublicInsights,
 		'Past brand collabs · how collab posts performed',
 		(p.results ?? []).slice(0, 6).map((r) => ({ img: r.thumbnail, url: r.permalink, t: `${kindLabel(r.kind)} · ${r.brand}`, n: views(r.views, r.reach) }))
 	);
+
+	// ---- work together: link and QR to her brand page ----
+	const site = link.replace(/^https?:\/\//, '').replace(/\/$/, '');
+	const fh = 84;
+	need(fh + 6);
+	const fy = y - fh;
+	page.drawRectangle({ x: M, y: fy, width: CW, height: fh, color: SOFT });
+	const m = qrMatrix(link);
+	const qs = 62, cell = qs / m.length, qx = W - M - qs - 11, qy = fy + 11;
+	page.drawRectangle({ x: qx - 4, y: qy - 4, width: qs + 8, height: qs + 8, color: WHITE });
+	m.forEach((row, r) => row.forEach((dark, c) => dark && page.drawRectangle({ x: qx + c * cell, y: qy + qs - (r + 1) * cell, width: cell + 0.15, height: cell + 0.15, color: INK })));
+	text("Let's work together", M + 16, fy + fh - 26, 14, bold);
+	text('Send a collaboration request and track it live at', M + 16, fy + fh - 43, 9, reg, MUTED);
+	text(site, M + 16, fy + fh - 58, 10.5, bold, G2);
+	text(`Usually replies within ${p.reply_time}. Live insights: ${site}/insights`, M + 16, fy + 12, 8, reg, MUTED);
 }
 
 export async function downloadMediaKit(p: PublicPage, link: string) {
