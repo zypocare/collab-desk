@@ -20,11 +20,11 @@
 		{ href: '/studio', label: 'Today', icon: 'home' },
 		{ href: '/studio/collabs', label: 'Collabs', icon: 'board' },
 		{ href: '/studio/content', label: 'Content', icon: 'film' },
-		{ href: '/studio/calendar', label: 'Calendar', icon: 'cal' },
-		{ href: '/studio/payments', label: 'Payments', icon: 'wallet' },
+		{ href: '/studio/calendar', label: 'Calendar', short: 'Dates', icon: 'cal' },
+		{ href: '/studio/payments', label: 'Payments', short: 'Money', icon: 'wallet' },
 		{ href: '/studio/brands', label: 'Brands', icon: 'users' },
-		{ href: '/studio/reports', label: 'Reports', icon: 'chart' },
-		{ href: '/studio/settings', label: 'My page', icon: 'link' }
+		{ href: '/studio/reports', label: 'Reports', short: 'Stats', icon: 'chart' },
+		{ href: '/studio/settings', label: 'My page', short: 'Page', icon: 'link' }
 	];
 	const current = $derived(
 		NAV.slice()
@@ -119,7 +119,7 @@
 				<span class="nav-ind" bind:this={ind}></span>
 				{#each NAV as n (n.href)}
 					<a class="nav" href={n.href} aria-current={current === n.href ? 'page' : undefined}
-						><Icon name={n.icon} /><span>{n.label}</span>{#if n.href === '/studio/collabs' && newCount}<span class="badge" aria-label="{newCount} new"
+						><Icon name={n.icon} /><span class:nav-long={!!n.short}>{n.label}</span>{#if n.short}<span class="nav-short" aria-hidden="true">{n.short}</span>{/if}{#if n.href === '/studio/collabs' && newCount}<span class="badge" aria-label="{newCount} new"
 								>{newCount}</span
 							>{/if}</a
 					>
