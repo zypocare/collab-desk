@@ -290,3 +290,27 @@ export function replySuggestions(c: Collab, s: Settings): Reply[] {
 	}
 	return out.slice(0, 5);
 }
+
+// ---------------------------------------------------------------------------
+// Caption starter from the brief: disclosure first, the brand tag, the message, and every
+// hashtag and @mention the brief asked for, so it passes the caption check from the start.
+// ---------------------------------------------------------------------------
+export function captionStarter(c: Collab, style: 'short' | 'detailed'): string {
+	const d = c.brief_details ?? {};
+	const brand = c.brand.instagram ? `@${c.brand.instagram.replace(/^@/, '')}` : c.brand.name;
+	const tag = c.type === 'paid' ? '#ad' : '#collab';
+	const message = (d.message ?? '').trim().replace(/[.!]+$/, '');
+	const mentions = (d.mentions ?? []).filter((m) => m.toLowerCase() !== brand.toLowerCase());
+	const tags = d.hashtags ?? [];
+	const first = `${tag} ${message ? `${message} ✨` : `Trying ${c.product || 'something new'} from ${brand} ✨`}${message ? ` with ${brand}` : ''}`;
+	const lines = [first, ''];
+	if (style === 'detailed') {
+		const dos = (d.dos ?? '').split(/\n|,|;/).map((x) => x.trim()).filter(Boolean).slice(0, 3);
+		if (dos.length) lines.push(...dos.map((x) => `✔️ ${x[0].toUpperCase()}${x.slice(1)}`), '');
+		lines.push('What would you try first? Tell me in the comments 👇', '');
+	}
+	if (d.link) lines.push('🔗 Link in bio', '');
+	if (mentions.length) lines.push(mentions.join(' '));
+	if (tags.length) lines.push(tags.join(' '));
+	return lines.join('\n').replace(/\n{3,}/g, '\n\n').trim();
+}

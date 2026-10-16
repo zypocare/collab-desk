@@ -36,7 +36,7 @@
 	import Icon from './Icon.svelte';
 	import { toast } from '../ui.svelte';
 	import { supabase } from '../supabase';
-	import { nextStep, replySuggestions, suggestDates } from '../suggest';
+	import { captionStarter, nextStep, replySuggestions, suggestDates } from '../suggest';
 	import BriefEditor from './BriefEditor.svelte';
 	import BrandRating from './BrandRating.svelte';
 	import UsageRights from './UsageRights.svelte';
@@ -432,7 +432,7 @@
 					{/if}
 					<form class="draft-form" onsubmit={sendDraft}>
 						<div class="f"><label for="dr-link">Link to the draft</label><input class="inp" id="dr-link" placeholder="Google Drive or WeTransfer link" bind:value={draftForm.link} /></div>
-						<div class="f"><label for="dr-cap">Caption</label><textarea class="inp" id="dr-cap" rows="3" placeholder="#ad The caption you plan to post, with @brand tag" bind:value={draftForm.caption}></textarea>
+						<div class="f"><label for="dr-cap">Caption <span class="cap-start">Start from the brief: <button type="button" class="lnk" onclick={() => c && (draftForm.caption = captionStarter(c, 'short'))}>Short</button> · <button type="button" class="lnk" onclick={() => c && (draftForm.caption = captionStarter(c, 'detailed'))}>Detailed</button></span></label><textarea class="inp" id="dr-cap" rows="3" placeholder="#ad The caption you plan to post, with @brand tag" bind:value={draftForm.caption}></textarea>
 							{#if draftForm.caption.trim()}
 								{@const bc = briefCheck(draftForm.caption, c.brand.instagram, c.brief_details)}
 								<div class="cap-check" aria-live="polite">
