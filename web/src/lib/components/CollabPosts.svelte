@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { igSync, linkPost, sendReport, studio, unlinkPost } from '../studio.svelte';
 	import type { Collab } from '../types';
-	import { compact, fmt, fmtTime } from '../util';
+	import { compact, fmt, fmtTime, mediaLabel } from '../util';
 	import Icon from './Icon.svelte';
 	import Select from './Select.svelte';
 
@@ -13,7 +13,7 @@
 	let busy = $state(false);
 	let pick = $state('');
 
-	const label = (t: string, p: string) => (p === 'REELS' ? 'Reel' : t === 'CAROUSEL_ALBUM' ? 'Carousel' : t === 'VIDEO' ? 'Video' : 'Post');
+	const label = mediaLabel;
 	async function freshReport() {
 		busy = true;
 		await igSync(c.id);

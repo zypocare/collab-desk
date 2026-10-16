@@ -11,7 +11,7 @@ export type Media = {
   id: string; caption?: string; media_type: string; media_product_type?: string; permalink: string; timestamp: string;
   thumbnail_url?: string; media_url?: string; like_count?: number; comments_count?: number;
 };
-export type Insights = { views?: number; reach?: number; saved?: number; shares?: number; likes?: number; comments?: number; total_interactions?: number };
+export type Insights = { views?: number; reach?: number; saved?: number; shares?: number; likes?: number; comments?: number; replies?: number; total_interactions?: number };
 export type Demographics = Record<'age' | 'gender' | 'city', Record<string, number>>;
 
 export class IgError extends Error {
@@ -80,6 +80,33 @@ const real = {
     return {};
   },
 
+  // Stories posted in the last 24 hours. Instagram drops them (and their numbers) after that.
+  async stories(token: string): Promise<Media[]> {
+    const r = await get('/me/stories', {
+      fields: 'id,caption,media_type,media_product_type,permalink,timestamp,thumbnail_url,media_url',
+      access_token: token,
+    });
+    return r.data ?? [];
+  },
+
+  async storyInsights(token: string, mediaId: string): Promise<Insights> {
+    const sets = ['reach,views,replies,shares,total_interactions', 'reach,replies,shares,total_interactions', 'reach,replies', 'reach'];
+    for (const metric of sets) {
+      try {
+        const r = await get(`/${mediaId}/insights`, { metric, access_token: token });
+        const out: Insights = {};
+        for (const m of r.data ?? []) {
+          const v = m.values?.[0]?.value ?? m.total_value?.value;
+          if (typeof v === 'number') (out as Record<string, number>)[m.name] = v;
+        }
+        return out;
+      } catch (e) {
+        if (!(e instanceof IgError)) throw e;
+      }
+    }
+    return {};
+  },
+
   // Needs at least 100 followers; returns {} if Instagram has no data.
   async demographics(token: string): Promise<Partial<Demographics>> {
     const out: Partial<Demographics> = {};
@@ -117,6 +144,15 @@ const mock = {
     const seed = id.charCodeAt(1) * 7919;
     const views = 60000 + (seed % 90000);
     return { views, reach: Math.round(views * 0.62), saved: 300 + (seed % 900), shares: 120 + (seed % 400), likes: 3000 + (seed % 2000), comments: 90 + (seed % 120) };
+  },
+  stories: async (_t: string): Promise<Media[]> => [
+    { id: 's1', caption: '', media_type: 'IMAGE', media_product_type: 'STORY', permalink: 'https://www.instagram.com/stories/mock/s1/', timestamp: daysAgo(0.1), thumbnail_url: '' },
+    { id: 's2', caption: 'Unboxing @lumiere.skin', media_type: 'VIDEO', media_product_type: 'STORY', permalink: 'https://www.instagram.com/stories/mock/s2/', timestamp: daysAgo(0.05), thumbnail_url: '' },
+  ],
+  storyInsights: async (_t: string, id: string): Promise<Insights> => {
+    const seed = id.charCodeAt(1) * 3571;
+    const views = 9000 + (seed % 6000);
+    return { views, reach: Math.round(views * 0.8), replies: 12 + (seed % 30), shares: 8 + (seed % 20), total_interactions: 60 + (seed % 90) };
   },
   demographics: async (_t: string): Promise<Partial<Demographics>> => ({
     age: { '18-24': 31200, '25-34': 118400, '35-44': 52100, '45-54': 14800 },

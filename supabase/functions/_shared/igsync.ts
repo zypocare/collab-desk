@@ -79,7 +79,7 @@ export async function runSync(db: SupabaseClient, opts: SyncOptions = {}) {
     summary.posts = rows.length;
 
     // 4. Account averages from the last 12 posts.
-    const { data: last12 } = await db.from('ig_media').select('views, reach, interactions, likes, comments').order('posted_at', { ascending: false }).limit(12);
+    const { data: last12 } = await db.from('ig_media').select('views, reach, interactions, likes, comments').neq('product_type', 'STORY').order('posted_at', { ascending: false }).limit(12);
     const avg = (xs: (number | null)[]) => {
       const v = xs.filter((x): x is number => typeof x === 'number');
       return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null;
@@ -116,6 +116,57 @@ export async function runSync(db: SupabaseClient, opts: SyncOptions = {}) {
     await db.from('ig_account').update({ last_error: message.slice(0, 300), connected: !(e instanceof IgError && e.code === 190) }).eq('id', 1);
     throw e;
   }
+}
+
+/**
+ * Stories: saves their numbers while Instagram still has them (24 hours). Runs every 2 hours.
+ * A Story whose text tags a brand is linked like a post; on a collab's go-live day, a Story is
+ * also linked to the one collab that day with a Story deliverable.
+ */
+export async function runStorySync(db: SupabaseClient) {
+  const { data: tokenRow } = await db.from('ig_token').select('access_token').eq('id', 1).maybeSingle();
+  if (!tokenRow) return { skipped: 'Instagram is not connected' };
+  const token: string = tokenRow.access_token;
+
+  const stories = await ig.stories(token);
+  if (!stories.length) return { stories: 0 };
+
+  const rows: MediaRow[] = [];
+  for (const m of stories) {
+    const ins = await ig.storyInsights(token, m.id);
+    rows.push({
+      id: m.id, caption: m.caption ?? '', media_type: m.media_type, product_type: 'STORY', permalink: m.permalink,
+      posted_at: m.timestamp, thumbnail_url: m.thumbnail_url || m.media_url || '', likes: null, comments: ins.replies ?? null,
+      saves: null, shares: ins.shares ?? null, reach: ins.reach ?? null, views: ins.views ?? null,
+      interactions: ins.total_interactions ?? null, insights_at: new Date().toISOString(),
+    });
+  }
+  await db.from('ig_media').upsert(rows);
+
+  // Tagged in the Story text: same handling as posts (links it, moves the collab to Live, tells her).
+  const detected = await detectPosts(db, rows);
+
+  // Go-live day match: one collab, a Story deliverable, live today.
+  const { data: links } = await db.from('collab_posts').select('media_id');
+  const taken = new Set((links ?? []).map((l) => l.media_id));
+  const { data: collabs } = await db
+    .from('collabs')
+    .select('id, code, stage, live_date, brand:brands(name), deliverables(kind)')
+    .in('stage', ['confirmed', 'creating', 'live']);
+  type C = { id: string; code: string; stage: string; live_date: string | null; brand: { name: string }; deliverables: { kind: string }[] };
+  let linked = 0;
+  for (const r of rows) {
+    if (taken.has(r.id)) continue;
+    const day = istDate(r.posted_at);
+    const match = ((collabs ?? []) as unknown as C[]).filter((c) => c.live_date === day && c.deliverables.some((d) => /story/i.test(d.kind)));
+    if (match.length !== 1) continue;
+    const c = match[0];
+    await db.from('collab_posts').insert({ collab_id: c.id, media_id: r.id, matched_by: 'date' });
+    await db.from('collab_events').insert({ collab_id: c.id, kind: 'post', text: 'Story saved from Instagram (its numbers are kept after it disappears)', visible_to_brand: true });
+    taken.add(r.id);
+    linked++;
+  }
+  return { stories: rows.length, detected, linked };
 }
 
 async function notifyCreator(db: SupabaseClient, kind: string, payload: Record<string, unknown>, telegram: string) {

@@ -442,6 +442,10 @@ verify_jwt = false
 [functions.instagram-sync]
 verify_jwt = false
 
+# Story numbers every 2 hours (they disappear after 24 hours): cron (shared secret) or the creator.
+[functions.instagram-stories]
+verify_jwt = false
+
 # ---------------------------------------------------------------------------
 # Live project (supabase config push --project-ref qzsfuvcxpqaavmwkxutt).
 # Email login details come from supabase/.env, which is never committed.

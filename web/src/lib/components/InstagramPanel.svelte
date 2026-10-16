@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { studio } from '../studio.svelte';
 	import { countUp } from '../ui.svelte';
-	import { compact, fmt } from '../util';
+	import { compact, fmt, mediaLabel } from '../util';
 
 	const ig = $derived(studio.ig);
 	const hist = $derived(studio.followersHistory);
@@ -37,7 +37,7 @@
 			{#each recent as m (m.id)}
 				{@const brand = brandOf(m.id)}
 				<a class="ig-post" href={m.permalink} target="_blank" rel="noopener" class:collab={!!brand}>
-					<span class="lbl">{m.product_type === 'REELS' ? 'Reel' : m.media_type === 'CAROUSEL_ALBUM' ? 'Carousel' : 'Post'} · {fmt(m.posted_at.slice(0, 10))}</span>
+					<span class="lbl">{mediaLabel(m.media_type, m.product_type)} · {fmt(m.posted_at.slice(0, 10))}</span>
 					<b>{compact(m.views ?? m.reach)}</b><small>{m.views !== null ? 'views' : 'reach'}</small>
 					{#if brand}<span class="pill tint k-live">{brand}</span>{/if}
 				</a>

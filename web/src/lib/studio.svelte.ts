@@ -417,6 +417,8 @@ async function invokeFn(name: string, body: Record<string, unknown>) {
 export async function igSync(reportFor?: string) {
 	try {
 		const r = await invokeFn('instagram-sync', reportFor ? { report_for: reportFor } : {});
+		// Live Stories too, while their numbers still exist.
+		await invokeFn('instagram-stories', {}).catch(() => null);
 		await Promise.all([loadInstagram(), reloadCollabs()]);
 		if (reportFor) toast('Fresh results report ready', 'chart');
 		else toast(r?.detected ? `Synced. ${r.detected} new collab post${r.detected > 1 ? 's' : ''} spotted.` : 'Instagram numbers updated', 'refresh');
