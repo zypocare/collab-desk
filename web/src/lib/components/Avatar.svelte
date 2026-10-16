@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { initials } from '../util';
 
-	// Her Instagram photo inside the animated ring; her initials until it loads or if it fails.
+	//  Instagram photo inside the animated ring; her initials until it loads or if it fails.
 	let { name, src = '', size }: { name: string; src?: string | null; size?: string } = $props();
 
 	let failed = $state(false);

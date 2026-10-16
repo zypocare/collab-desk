@@ -63,7 +63,7 @@
 	{:else}
 		<div style="padding:0 20px 20px">
 			<p class="hint" style="margin-bottom:14px">
-				Connect her Instagram (a Creator or Business account) to show live follower numbers and audience on your brand page, spot collab posts automatically, and send brands their results.
+				Connect your Instagram (a Creator or Business account) to show live follower numbers and audience on your brand page, spot collab posts automatically, and send brands their results.
 			</p>
 			{#if appId}
 				<button class="btn grad" onclick={connect}><Icon name="link" />Connect Instagram</button>
