@@ -1,7 +1,8 @@
 // Suggestions: ready-made answers the studio puts in front of her so she mostly picks instead of typing.
 // Everything here is plain rules on her own data (rate card, packages, history). No paid AI.
 import type { Collab, Package, QuoteItem, Settings } from './types';
-import { offeredKinds, overdue, plural, usageDaysOf } from './util';
+import { diff, fmt, inTransit, iso, latestDraft, latestQuote, offeredKinds, overdue, parse, plural, unreadFor, usageDaysOf } from './util';
+import { balanceDue } from './invoice';
 
 const round500 = (n: number) => Math.round(n / 500) * 500;
 const itemsSum = (items: QuoteItem[]) => items.reduce((a, i) => a + i.qty * i.rate, 0);
@@ -122,3 +123,105 @@ const summarise = (kinds: string[]) => {
 	const counts = kinds.reduce<Record<string, number>>((a, k) => ((a[k] = (a[k] ?? 0) + 1), a), {});
 	return Object.entries(counts).map(([k, n]) => `${n} ${plural(k, n)}`).join(' and ');
 };
+
+// ---------------------------------------------------------------------------
+// Dates: draft and go-live that fit the product's arrival and her open weeks.
+// ---------------------------------------------------------------------------
+const addDays = (d: Date, n: number) => {
+	const x = new Date(d);
+	x.setDate(x.getDate() + n);
+	return x;
+};
+const mondayOf = (d: Date) => {
+	const x = new Date(d);
+	x.setHours(0, 0, 0, 0);
+	x.setDate(x.getDate() - ((x.getDay() + 6) % 7));
+	return x;
+};
+
+/** How many collabs land in the week of `d` (same rule as the brand page's availability). */
+function weekLoad(d: Date, all: Collab[], exceptId: string) {
+	const w = mondayOf(d), end = addDays(w, 7);
+	return all.filter((c) => {
+		if (c.id === exceptId || !['confirmed', 'creating', 'live'].includes(c.stage)) return false;
+		const x = c.live_date ?? c.draft_date ?? c.preferred_live;
+		return !!x && parse(x) >= w && parse(x) < end;
+	}).length;
+}
+
+export type DateSuggestion = { draft: string; live: string; why: string };
+
+export function suggestDates(c: Collab, s: Settings, all: Collab[]): DateSuggestion {
+	const today = new Date();
+	today.setHours(0, 0, 0, 0);
+	const days = s.draft_days_after_product ?? 7;
+	const needsProduct = c.type !== 'paid' && !c.product_received_at;
+	// The product has to arrive first; if it isn't shipped yet, allow a few days for that.
+	const arrives = c.product_received_at ? parse(c.product_received_at.slice(0, 10)) : needsProduct ? (c.product_date && parse(c.product_date) > today ? parse(c.product_date) : addDays(today, 5)) : today;
+	let draft = addDays(arrives > today ? arrives : today, c.type === 'paid' ? 5 : days);
+	if (draft.getDay() === 0) draft = addDays(draft, 1); // not on a Sunday
+
+	// Go-live: their preferred date if it leaves time for review, else 4 days after the draft;
+	// then the first week that isn't full or marked away.
+	const pref = c.preferred_live ? parse(c.preferred_live) : null;
+	let live = pref && pref >= addDays(draft, 3) ? pref : addDays(draft, 4);
+	const away = new Set(s.away_weeks ?? []);
+	for (let i = 0; i < 12; i++) {
+		const wk = iso(mondayOf(live));
+		if (!away.has(wk) && weekLoad(live, all, c.id) < (s.weekly_capacity ?? 3)) break;
+		live = addDays(mondayOf(live), 7 + 1); // Tuesday of the next week
+	}
+	const why = [
+		needsProduct ? (c.product_date ? 'after the product arrives' : 'allowing time for the product to arrive') : '',
+		pref && iso(live) === iso(pref) ? 'on their preferred date' : 'in your next open week'
+	].filter(Boolean).join(', ');
+	return { draft: iso(draft), live: iso(live), why };
+}
+
+// ---------------------------------------------------------------------------
+// The next step for a collab: one action that moves it forward.
+// ---------------------------------------------------------------------------
+export type NextStep = { key: string; label: string; hint: string; icon: string };
+
+export function nextStep(c: Collab): NextStep | null {
+	const q = latestQuote(c);
+	const dr = latestDraft(c);
+	const openInv = c.invoices.find((i) => i.status === 'sent' || i.status === 'partly_paid');
+	const readyReport = c.reports.find((r) => r.status === 'ready');
+	if (unreadFor(c)) return { key: 'reply', label: 'Reply', hint: `${c.brand.name} sent you a message`, icon: 'mail' };
+
+	switch (c.stage) {
+		case 'request':
+		case 'negotiating':
+			if (q?.status === 'changes') return { key: 'revise-quote', label: 'Revise quote', hint: 'The brand asked for changes', icon: 'edit' };
+			if (q?.status === 'accepted') return { key: 'confirm', label: 'Confirm collab', hint: 'They accepted your quote', icon: 'check' };
+			if (q?.status === 'sent')
+				return diff(q.created_at.slice(0, 10)) <= -3
+					? { key: 'nudge', label: 'Nudge brand', hint: 'No answer to your quote for 3+ days', icon: 'bell' }
+					: null;
+			return c.type === 'barter'
+				? { key: 'quote', label: 'Counter or quote', hint: 'Barter request: send a quote, or reply from the priority panel', icon: 'rupee' }
+				: { key: 'quote', label: 'Send quote', hint: 'Pick a ready quote in one tap', icon: 'rupee' };
+		case 'confirmed':
+			if (c.type !== 'paid' && !c.shipped_at && !c.product_received_at) return { key: 'ask-product', label: 'Ask for the product', hint: 'Remind them to ship it', icon: 'box' };
+			if (inTransit(c)) return { key: 'received', label: 'Mark received', hint: `On its way via ${c.ship_carrier}`, icon: 'box' };
+			if (!c.draft_date || !c.live_date) return { key: 'dates', label: 'Set dates', hint: 'Suggested draft and go-live dates are ready', icon: 'cal' };
+			return { key: 'start', label: 'Start creating', hint: `Draft due ${fmt(c.draft_date)}`, icon: 'film' };
+		case 'creating':
+			if (!dr || dr.status === 'changes') return { key: 'share-draft', label: dr ? 'Share revised draft' : 'Share draft', hint: dr ? 'They asked for changes' : 'Send it for approval', icon: 'send' };
+			if (dr.status === 'approved') return { key: 'go-live', label: 'Mark live', hint: 'Draft approved: post it', icon: 'spark' };
+			return null; // waiting for the brand's review
+		case 'live':
+			if (readyReport) return { key: 'report', label: 'Send results', hint: '7-day report is ready', icon: 'chart' };
+			if (c.type === 'barter' || c.pay_status === 'paid') return null;
+			if (c.pay_status === 'pending' && !c.invoices.some((i) => i.status !== 'draft' && i.status !== 'cancelled'))
+				return { key: 'invoice', label: 'Send invoice', hint: 'Filled in from the agreed quote', icon: 'wallet' };
+			if ((openInv && balanceDue(openInv) > 0) || c.pay_status === 'invoiced' || c.pay_status === 'advance')
+				return { key: 'paid', label: 'Record payment', hint: overdue(c) ? 'Payment is overdue' : openInv ? `${openInv.number} is open` : 'Waiting for payment', icon: 'wallet' };
+			return null;
+		case 'wrapped':
+			return null;
+		default:
+			return null;
+	}
+}

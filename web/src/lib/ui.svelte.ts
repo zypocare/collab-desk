@@ -4,10 +4,12 @@ import { inr } from './util';
 export const REDUCED = typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 type Toast = { id: number; msg: string; icon: string; out: boolean };
-export const ui = $state<{ toasts: Toast[]; openCollab: string | null; newCollab: boolean }>({
+export const ui = $state<{ toasts: Toast[]; openCollab: string | null; newCollab: boolean; pendingNext: string | null }>({
 	toasts: [],
 	openCollab: null,
-	newCollab: false
+	newCollab: false,
+	/** A next-step action to run as soon as the collab panel opens (from a card's button). */
+	pendingNext: null
 });
 
 let toastId = 0;

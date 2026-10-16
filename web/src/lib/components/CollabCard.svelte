@@ -5,6 +5,7 @@
 	import { ui } from '../ui.svelte';
 	import { delivText, diff, fmt, inr, inrS, nextLine, stageIndex, stageLabel, unreadFor } from '../util';
 	import Icon from './Icon.svelte';
+	import { nextStep } from '../suggest';
 	import PriorityBadge from './PriorityBadge.svelte';
 	import Mono from './Mono.svelte';
 	import PayPill from './PayPill.svelte';
@@ -14,6 +15,7 @@
 	const n = $derived(nextLine(c));
 	const prio = $derived(isRanked(c) ? priorityOf(c) : null);
 	const unread = $derived(unreadFor(c));
+	const step = $derived(nextStep(c));
 	const done = $derived(c.deliverables.filter((d) => d.done).length);
 	const showProg = $derived(stageIndex(c.stage) >= 2 && stageIndex(c.stage) <= 4 && c.deliverables.length > 0);
 	const followTone = $derived(c.follow_date ? (diff(c.follow_date) < 0 ? 'late' : diff(c.follow_date) === 0 ? 'soon' : '') : '');
@@ -60,6 +62,18 @@
 	<div class="next {n.tone}"><Icon name={n.icon} /><span>{n.text}</span></div>
 	<div class="card-f">
 		<PayPill {c} />
+		{#if step}
+			<button
+				class="card-next"
+				title={step.hint}
+				onclick={(e) => {
+					e.stopPropagation();
+					ui.pendingNext = step.key;
+					ui.openCollab = c.id;
+				}}
+				onkeydown={(e) => e.stopPropagation()}><Icon name={step.icon} />{step.label}</button
+			>
+		{/if}
 		{#if c.follow_date}<span class="flag {followTone}" title={c.follow_note}><Icon name="bell" />{fmt(c.follow_date)}</span>{/if}
 	</div>
 </div>

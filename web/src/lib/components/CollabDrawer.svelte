@@ -5,6 +5,8 @@
 		byId,
 		completeFollow,
 		markPaid,
+		markReceived,
+		sendReport,
 		removeDeliverable,
 		saveBrand,
 		setDeliverable,
@@ -32,6 +34,9 @@
 		stageIndex
 	} from '../util';
 	import Icon from './Icon.svelte';
+	import { toast } from '../ui.svelte';
+	import { supabase } from '../supabase';
+	import { nextStep, suggestDates } from '../suggest';
 	import BriefEditor from './BriefEditor.svelte';
 	import BrandRating from './BrandRating.svelte';
 	import UsageRights from './UsageRights.svelte';
@@ -149,6 +154,53 @@
 		await setStage(c, s);
 	}
 
+	// ---- next step: one button that moves the collab forward ----
+	const next = $derived(c ? nextStep(c) : null);
+	const dates = $derived(c && studio.settings ? suggestDates(c, studio.settings, studio.collabs) : null);
+	async function scrollTo(id: string, focus?: string) {
+		await tick();
+		document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+		if (focus) setTimeout(() => (document.querySelector(focus) as HTMLElement | null)?.focus(), 350);
+	}
+	async function sendMessage(body: string) {
+		if (!c) return;
+		const { error } = await supabase.from('collab_messages').insert({ collab_id: c.id, sender: 'creator', body });
+		if (error) return toast(`Couldn't send: ${error.message}`, 'alert');
+		toast('Message sent', 'send');
+		scrollTo('sec-msg');
+	}
+	async function runNext(key: string) {
+		if (!c) return;
+		const first = c.contact_name ? c.contact_name.split(' ')[0] : 'there';
+		const me = (studio.settings?.display_name ?? '').split(' ')[0];
+		const q = c.quotes[0];
+		const openInv = c.invoices.find((i) => i.status === 'sent' || i.status === 'partly_paid');
+		switch (key) {
+			case 'reply': return scrollTo('sec-msg', '.drawer .th-box textarea');
+			case 'quote': quoteOpen = { editing: false }; return;
+			case 'revise-quote': quoteOpen = { base: q, editing: false }; return;
+			case 'confirm': return changeStage('confirmed');
+			case 'nudge': return sendMessage(`Hi ${first}, just checking in on the quote I sent for ${c.code}. Happy to adjust anything if needed! ${me}`);
+			case 'ask-product': return sendMessage(`Hi ${first}, we're all set for ${c.code}! Please ship the product using the address on your request page and add the tracking number there. ${me}`);
+			case 'received': return markReceived(c);
+			case 'dates': if (dates) { await updateCollab(c.id, { draft_date: dates.draft, live_date: dates.live }); toast('Dates set', 'cal'); } return scrollTo('sec-dates');
+			case 'start': return changeStage('creating');
+			case 'share-draft': return scrollTo('sec-drafts', '#dr-link');
+			case 'go-live': return changeStage('live');
+			case 'invoice': invoiceOpen = {}; return;
+			case 'paid': if (openInv) paymentOpen = openInv; else markPaid(c); return;
+			case 'report': { const r = c.reports.find((x) => x.status === 'ready'); if (r) sendReport(r); return; }
+		}
+	}
+	// A card's next-step button opens the panel and runs the action here.
+	$effect(() => {
+		if (c && ui.pendingNext) {
+			const k = ui.pendingNext;
+			ui.pendingNext = null;
+			setTimeout(() => runNext(k), 250);
+		}
+	});
+
 	function statusMessage(x: Collab) {
 		const site = (studio.settings?.site_url ?? '').replace(/\/$/, '');
 		const name = studio.settings?.display_name ?? '';
@@ -180,6 +232,13 @@
 		</header>
 
 		<div class="dr-b">
+			{#if next}
+				<div class="next-bar">
+					<span class="nb-ic"><Icon name={next.icon} /></span>
+					<div><small>Next step</small><b>{next.hint}</b></div>
+					<button class="btn grad" onclick={() => runNext(next.key)}><Icon name={next.icon} />{next.label}</button>
+				</div>
+			{/if}
 			<section class="sec">
 				<h3>Stage {#if c.stage === 'declined'}<span class="danger">Declined</span>{/if}</h3>
 				{#if c.stage !== 'declined'}
@@ -215,7 +274,7 @@
 
 			{#if isRanked(c)}<PriorityPanel {c} />{/if}
 
-			<section class="sec">
+			<section class="sec" id="sec-msg">
 				<h3>Messages{#if c.contact_name}<small class="sec-sub">with {c.contact_name}</small>{/if}</h3>
 				{#key c.id}
 					<MessageThread
@@ -332,8 +391,15 @@
 			{#if c.usage_ends}<section class="sec"><h3>Usage rights</h3><UsageRights {c} /></section>{/if}
 			{#if hasProduct(c)}<ProductShipping {c} />{/if}
 
-			<section class="sec">
+			<section class="sec" id="sec-dates">
 				<h3>Dates</h3>
+				{#if dates && c.stage !== 'live' && c.stage !== 'wrapped' && c.stage !== 'declined' && (c.draft_date !== dates.draft || c.live_date !== dates.live)}
+					<div class="date-sug">
+						<Icon name="spark" />
+						<span><b>Suggested:</b> draft {fmt(dates.draft)}, live {fmt(dates.live)}{dates.why ? ` (${dates.why})` : ''}</span>
+						<button class="btn sm" onclick={() => c && dates && updateCollab(c.id, { draft_date: dates.draft, live_date: dates.live })}>Use</button>
+					</div>
+				{/if}
 				<div class="fields">
 					{#if hasProduct(c) || c.product_date}
 						<div class="f"><label for="d-product">Product arrives</label><DatePicker id="d-product" value={c.product_date} onchange={(v) => save('product_date', v || null)} /></div>
@@ -343,7 +409,7 @@
 				</div>
 			</section>
 
-			<section class="sec">
+			<section class="sec" id="sec-drafts">
 				<h3>
 					Drafts for approval
 					{#if roundsIncluded !== null}<span>{Math.max(0, c.drafts.length - 1)} of {roundsIncluded} revision{roundsIncluded === 1 ? '' : 's'} used</span>{/if}
