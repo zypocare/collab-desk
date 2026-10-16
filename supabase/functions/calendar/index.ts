@@ -5,7 +5,7 @@ import { admin, inr } from '../_shared/admin.ts';
 
 type Row = {
   id: string; code: string; stage: string; type: string; fee: number; pay_received: number; pay_status: string;
-  product_date: string | null; draft_date: string | null; live_date: string | null; pay_due: string | null;
+  product_date: string | null; shoot_date: string | null; draft_date: string | null; live_date: string | null; pay_due: string | null;
   follow_date: string | null; follow_note: string; brand: { name: string };
   deliverables: { kind: string; qty: number }[];
 };
@@ -24,7 +24,7 @@ Deno.serve(async (req) => {
 
   const { data } = await db
     .from('collabs')
-    .select('id, code, stage, type, fee, pay_received, pay_status, product_date, draft_date, live_date, pay_due, follow_date, follow_note, brand:brands(name), deliverables(kind, qty)')
+    .select('id, code, stage, type, fee, pay_received, pay_status, product_date, shoot_date, draft_date, live_date, pay_due, follow_date, follow_note, brand:brands(name), deliverables(kind, qty)')
     .neq('stage', 'declined');
 
   const site = String(s.site_url).replace(/\/$/, '');
@@ -43,6 +43,7 @@ Deno.serve(async (req) => {
     const what = c.deliverables.map((d) => `${d.qty} × ${d.kind}`).join(', ');
     const active = !['wrapped'].includes(c.stage);
     if (c.product_date && ['confirmed', 'creating'].includes(c.stage)) add(`${c.id}-product`, c.product_date, `📦 ${b}: product arrives`, what, c.code);
+    if (c.shoot_date && ['confirmed', 'creating'].includes(c.stage)) add(`${c.id}-shoot`, c.shoot_date, `🎬 ${b}: shoot day`, what, c.code);
     if (c.draft_date && ['confirmed', 'creating'].includes(c.stage)) add(`${c.id}-draft`, c.draft_date, `✏️ ${b}: draft due`, what, c.code);
     if (c.live_date && !['request', 'negotiating'].includes(c.stage)) add(`${c.id}-live`, c.live_date, `✨ ${b}: goes live`, what, c.code);
     if (c.follow_date && active) add(`${c.id}-follow`, c.follow_date, `🔔 ${b}: follow up`, c.follow_note, c.code);

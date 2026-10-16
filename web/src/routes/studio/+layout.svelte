@@ -20,6 +20,7 @@
 	const NAV = [
 		{ href: '/studio', label: 'Today', icon: 'home' },
 		{ href: '/studio/collabs', label: 'Collabs', icon: 'board' },
+		{ href: '/studio/content', label: 'Content', icon: 'film' },
 		{ href: '/studio/calendar', label: 'Calendar', icon: 'cal' },
 		{ href: '/studio/payments', label: 'Payments', icon: 'wallet' },
 		{ href: '/studio/brands', label: 'Brands', icon: 'users' },

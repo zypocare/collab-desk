@@ -132,6 +132,8 @@ export type Collab = {
 	usage_ext_status: '' | 'requested' | 'approved' | 'declined';
 	counter_fee: number | null;
 	counter_status: '' | 'sent' | 'taken' | 'kept';
+	shoot_date: string | null;
+	shot_list: { t: string; done: boolean }[];
 	ship_carrier: string;
 	ship_tracking: string;
 	shipped_at: string | null;
@@ -264,6 +266,8 @@ export type Settings = {
 	autopilot_nudge: boolean;
 	autopilot_review: boolean;
 	nudge_days: number;
+	piece_hours: Record<string, number>;
+	weekly_hours: number;
 };
 
 export type PublicPage = {

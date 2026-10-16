@@ -162,7 +162,7 @@ export function unreadFor(c: Collab) {
 	return (c.messages ?? []).filter((m) => m.sender === 'brand' && m.created_at > seen).length;
 }
 
-export type Task = { c: Collab; kind: 'new' | 'follow' | 'draft' | 'live' | 'product' | 'pay' | 'quote' | 'revise' | 'msg' | 'usage'; d: number; title: string; order: number };
+export type Task = { c: Collab; kind: 'new' | 'follow' | 'draft' | 'live' | 'product' | 'pay' | 'quote' | 'revise' | 'msg' | 'usage' | 'shoot'; d: number; title: string; order: number };
 export function tasks(collabs: Collab[]): Task[] {
 	const out: Task[] = [];
 	for (const c of collabs) {
@@ -179,6 +179,8 @@ export function tasks(collabs: Collab[]): Task[] {
 		const dr = latestDraft(c);
 		if (dr?.status === 'changes') out.push({ c, kind: 'revise', d: 0, title: `Revise draft ${dr.round}: ${dr.feedback.slice(0, 60)}`, order: 1 });
 		if (c.follow_date && diff(c.follow_date) <= 2) out.push({ c, kind: 'follow', d: diff(c.follow_date), title: c.follow_note || 'Follow up', order: 1 });
+		if (['confirmed', 'creating'].includes(c.stage) && c.shoot_date && !allDone(c) && diff(c.shoot_date) <= 1)
+			out.push({ c, kind: 'shoot', d: diff(c.shoot_date), title: `Shoot · ${delivText(c.deliverables.filter((x) => !x.done))}`, order: 2 });
 		if (['confirmed', 'creating'].includes(c.stage) && c.draft_date && !allDone(c) && diff(c.draft_date) <= 3)
 			out.push({ c, kind: 'draft', d: diff(c.draft_date), title: `Send draft · ${delivText(c.deliverables)}`, order: 2 });
 		if (['confirmed', 'creating'].includes(c.stage) && c.live_date && diff(c.live_date) <= 3 && diff(c.live_date) >= 0)
@@ -191,13 +193,14 @@ export function tasks(collabs: Collab[]): Task[] {
 	return out.sort((a, b) => a.d - b.d || a.order - b.order);
 }
 
-export type CalEvent = { date: string; kind: 'draft' | 'live' | 'follow' | 'pay' | 'product'; c: Collab };
+export type CalEvent = { date: string; kind: 'shoot' | 'draft' | 'live' | 'follow' | 'pay' | 'product'; c: Collab };
 export function events(collabs: Collab[]): CalEvent[] {
 	const ev: CalEvent[] = [];
 	for (const c of collabs) {
 		if (c.stage === 'declined') continue;
 		const si = stageIndex(c.stage);
 		if (c.product_date && si >= 2 && si <= 3) ev.push({ date: c.product_date, kind: 'product', c });
+		if (c.shoot_date && si >= 2 && si <= 3 && !allDone(c)) ev.push({ date: c.shoot_date, kind: 'shoot', c });
 		if (c.draft_date && si >= 2 && si <= 3) ev.push({ date: c.draft_date, kind: 'draft', c });
 		if (c.live_date && si >= 2) ev.push({ date: c.live_date, kind: 'live', c });
 		if (c.follow_date) ev.push({ date: c.follow_date, kind: 'follow', c });
@@ -205,8 +208,8 @@ export function events(collabs: Collab[]): CalEvent[] {
 	}
 	return ev;
 }
-export const KIND_ICON: Record<string, string> = { follow: 'bell', draft: 'film', live: 'spark', pay: 'wallet', new: 'inbox', product: 'box', quote: 'rupee', revise: 'edit', msg: 'mail', usage: 'eye' };
-export const KIND_LABEL: Record<string, string> = { draft: 'Draft due', live: 'Go live', follow: 'Follow-up', pay: 'Payment due', product: 'Product arrives' };
+export const KIND_ICON: Record<string, string> = { shoot: 'cal', follow: 'bell', draft: 'film', live: 'spark', pay: 'wallet', new: 'inbox', product: 'box', quote: 'rupee', revise: 'edit', msg: 'mail', usage: 'eye' };
+export const KIND_LABEL: Record<string, string> = { shoot: 'Shoot day', draft: 'Draft due', live: 'Go live', follow: 'Follow-up', pay: 'Payment due', product: 'Product arrives' };
 export const evLabel = (e: CalEvent) => (e.kind === 'live' && stageIndex(e.c.stage) >= 4 ? 'Went live' : KIND_LABEL[e.kind]);
 
 export function errMessage(e: unknown): string {

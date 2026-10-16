@@ -405,6 +405,9 @@
 					{#if hasProduct(c) || c.product_date}
 						<div class="f"><label for="d-product">Product arrives</label><DatePicker id="d-product" value={c.product_date} onchange={(v) => save('product_date', v || null)} /></div>
 					{/if}
+					{#if ['confirmed', 'creating'].includes(c.stage) || c.shoot_date}
+						<div class="f"><label for="d-shoot">Shoot day</label><DatePicker id="d-shoot" value={c.shoot_date} onchange={(v) => save('shoot_date', v || null)} /></div>
+					{/if}
 					<div class="f"><label for="d-draft">Draft due to brand</label><DatePicker id="d-draft" value={c.draft_date} onchange={(v) => save('draft_date', v || null)} /></div>
 					<div class="f"><label for="d-live">Go-live date</label><DatePicker id="d-live" value={c.live_date} onchange={(v) => save('live_date', v || null)} /></div>
 				</div>

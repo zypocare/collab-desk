@@ -2,6 +2,7 @@
 	import { saveSettings, studio } from '../studio.svelte';
 	import { iso, parse } from '../util';
 	import Select from './Select.svelte';
+	import { DEFAULT_HOURS } from '../content';
 
 	const s = $derived(studio.settings!);
 
@@ -43,6 +44,18 @@
 			<label for="av-cap">Collabs you can take per week</label>
 			<Select id="av-cap" value={s.weekly_capacity} options={[1, 2, 3, 4, 5, 6, 8, 10].map((n) => ({ value: n, label: `${n} per week` }))} onchange={(v) => saveSettings({ weekly_capacity: v })} />
 		</div>
+	</div>
+	<div class="form-b">
+		<div class="f span2">
+			<label for="av-hours">Hours a week you want to spend on collabs</label>
+			<Select id="av-hours" value={s.weekly_hours} options={[10, 15, 20, 25, 30, 35, 40, 50].map((n) => ({ value: n, label: `${n} hours` }))} onchange={(v) => saveSettings({ weekly_hours: v })} />
+		</div>
+	</div>
+	<div class="hrs-grid" aria-label="Time each piece takes">
+		<span class="lbl-t">Time each piece takes you (shoot + edit)</span>
+		{#each Object.keys(DEFAULT_HOURS) as k (k)}
+			<label class="hrs"><span>{k}</span><span class="hrs-in"><input class="inp num" type="number" inputmode="decimal" min="0.5" max="40" step="0.5" value={s.piece_hours?.[k] ?? DEFAULT_HOURS[k]} onchange={(e) => saveSettings({ piece_hours: { ...DEFAULT_HOURS, ...s.piece_hours, [k]: Math.max(0.5, Number((e.currentTarget as HTMLInputElement).value) || DEFAULT_HOURS[k]) } })} /><i>h</i></span></label>
+		{/each}
 	</div>
 	<div class="switch-row">
 		<div><b>Show on my page</b><small>Brands see which weeks are open, limited, full or away.</small></div>

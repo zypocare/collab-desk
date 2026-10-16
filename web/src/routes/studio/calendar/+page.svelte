@@ -13,7 +13,7 @@
 
 	const byDay = $derived.by(() => {
 		const map: Record<string, CalEvent[]> = {};
-		const order = { draft: 0, live: 1, follow: 2, pay: 3, product: 4 };
+		const order = { shoot: 0, draft: 1, live: 2, follow: 3, pay: 4, product: 5 };
 		for (const e of events(studio.collabs)) (map[e.date] ||= []).push(e);
 		Object.values(map).forEach((l) => l.sort((a, b) => order[a.kind] - order[b.kind]));
 		return map;
@@ -87,7 +87,7 @@
 			</div>
 		{/key}
 		<div class="legend">
-			{#each ['draft', 'live', 'follow', 'pay', 'product'] as k (k)}<span><i class="dt k-{k}"></i>{KIND_LABEL[k]}</span>{/each}
+			{#each ['shoot', 'draft', 'live', 'follow', 'pay', 'product'] as k (k)}<span><i class="dt k-{k}"></i>{KIND_LABEL[k]}</span>{/each}
 		</div>
 	</section>
 	<section class="panel agenda rv" style="--i:2">
