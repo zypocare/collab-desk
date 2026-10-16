@@ -1,6 +1,6 @@
 // Suggestions: ready-made answers the studio puts in front of her so she mostly picks instead of typing.
 // Everything here is plain rules on her own data (rate card, packages, history). No paid AI.
-import type { Collab, Package, QuoteItem, Settings } from './types';
+import type { Collab, Package, PublicPackage, QuoteItem, Settings } from './types';
 import { diff, fmt, inTransit, iso, latestDraft, latestQuote, offeredKinds, overdue, parse, plural, unreadFor, usageDaysOf } from './util';
 import { balanceDue } from './invoice';
 import { fairFee, rateValue } from './priority';
@@ -313,4 +313,44 @@ export function captionStarter(c: Collab, style: 'short' | 'detailed'): string {
 	if (mentions.length) lines.push(mentions.join(' '));
 	if (tags.length) lines.push(tags.join(' '));
 	return lines.join('\n').replace(/\n{3,}/g, '\n\n').trim();
+}
+
+// ---------------------------------------------------------------------------
+// Brand side: what a budget gets them (from her public rates and packages).
+// ---------------------------------------------------------------------------
+export type Combo = { label: string; items: { kind: string; qty: number }[]; total: number; packageId?: string };
+
+export function budgetCombos(budget: number, rates: Record<string, number> | null, offered: string[], packages: PublicPackage[]): Combo[] {
+	if (budget < 500) return [];
+	const out: Combo[] = [];
+	// Her packages that fit come first.
+	for (const p of packages) if (p.price <= budget * 1.05 && p.price >= budget * 0.7) out.push({ label: p.name, items: p.items, total: p.price, packageId: p.id });
+	if (rates) {
+		const kinds = offered.filter((k) => rates[k] > 0).sort((a, b) => rates[b] - rates[a]);
+		const combos: Combo[] = [];
+		// Every mix of up to 3 kinds (up to 5 of each) that fits the budget.
+		const walk = (i: number, picked: { kind: string; qty: number }[], total: number) => {
+			if (picked.length && total <= budget * 1.05 && total >= budget * 0.6) combos.push({ label: '', items: [...picked], total });
+			if (i >= kinds.length || picked.length >= 3) return;
+			for (let q = 1; q <= 5; q++) {
+				const t = total + rates[kinds[i]] * q;
+				if (t > budget * 1.05) break;
+				walk(i + 1, [...picked, { kind: kinds[i], qty: q }], t);
+			}
+			walk(i + 1, picked, total);
+		};
+		walk(0, [], 0);
+		// Closest to the budget first; then pick ones that look different from each other.
+		combos.sort((a, b) => Math.abs(budget - a.total) - Math.abs(budget - b.total));
+		// Lead with the best mix that includes her top format (usually a Reel), if it fits.
+		const top = combos.find((c) => c.items.some((i) => i.kind === kinds[0]));
+		if (top) combos.splice(combos.indexOf(top), 1), combos.unshift(top);
+		for (const c of combos) {
+			if (out.length >= 3) break;
+			const lead = [...c.items].sort((a, b) => rates[b.kind] * b.qty - rates[a.kind] * a.qty)[0].kind;
+			if (out.some((o) => !o.packageId && [...o.items].sort((a, b) => rates[b.kind] * b.qty - rates[a.kind] * a.qty)[0].kind === lead)) continue;
+			out.push({ ...c, label: c.items.map((i) => `${i.qty} ${plural(i.kind, i.qty)}`).join(' + ') });
+		}
+	}
+	return out.slice(0, 3);
 }

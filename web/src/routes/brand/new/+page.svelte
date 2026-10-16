@@ -7,7 +7,8 @@
 	import { supabase } from '#lib/supabase.ts';
 	import type { BriefDetails, CollabType } from '#lib/types.ts';
 	import { confetti, copyText } from '#lib/ui.svelte.ts';
-	import { KINDS, USAGE, delivText, errMessage, firstName, inr, offeredKinds, rel } from '#lib/util.ts';
+	import { KINDS, USAGE, delivText, errMessage, firstName, inr, offeredKinds, packageOffered, rel } from '#lib/util.ts';
+	import { budgetCombos, type Combo } from '#lib/suggest.ts';
 	import BrandDetailsForm from '#lib/components/BrandDetailsForm.svelte';
 	import Icon from '#lib/components/Icon.svelte';
 	import BriefEditor from '#lib/components/BriefEditor.svelte';
@@ -105,6 +106,17 @@
 		return w?.status === 'full' || w?.status === 'away';
 	};
 	const busyWeek = $derived(pub.data?.availability?.some((w) => w.status === 'full' || w.status === 'away') ? `Greyed-out dates are weeks ${creator || 'the creator'} is fully booked or away.` : '');
+	// What their budget gets (her public rates and packages).
+	const combos = $derived(type !== 'barter' && Number(fee) >= 500 && pub.data ? budgetCombos(Number(fee), pub.data.rates, shown, (pub.data.packages ?? []).filter((x) => packageOffered(x.items, pub.data?.offered))) : []);
+	const comboOn = (cb: Combo) => KINDS.every((k) => (qty[k] ?? 0) === (cb.items.find((i) => i.kind === k)?.qty ?? 0));
+	function useCombo(cb: Combo) {
+		qty = Object.fromEntries(KINDS.map((k) => [k, cb.items.find((i) => i.kind === k)?.qty ?? 0]));
+		if (cb.packageId) {
+			packageId = cb.packageId;
+			fee = String(cb.total);
+		}
+		document.querySelector('.dpick')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+	}
 	const replyIn = $derived(type === 'barter' ? (barter?.reply_time ?? pub.data?.reply_time) : pub.data?.reply_time);
 
 	async function takeSuggestion() {
@@ -242,6 +254,18 @@
 					<div class="fields">
 						{#if type !== 'barter'}
 							<div class="f"><label for="b-budget">Budget</label><div class="pre"><span>₹</span><input class="inp num" id="b-budget" type="number" inputmode="numeric" min="0" placeholder="Leave blank for a quote" bind:value={fee} /></div></div>
+							{#if combos.length && !pkg}
+								<div class="f span2 combos">
+									<span class="lbl-t">{inr(Number(fee))} gets you</span>
+									<div>
+										{#each combos as cb (cb.label)}
+											<button type="button" class="combo" class:on={comboOn(cb)} onclick={() => useCombo(cb)}>
+												<b>{cb.label}</b><small>{cb.packageId ? 'Package · ' : ''}{inr(cb.total)}</small>
+											</button>
+										{/each}
+									</div>
+								</div>
+							{/if}
 						{/if}
 						{#if type !== 'paid'}
 							<div class="f"><label for="b-value">Product value</label><div class="pre"><span>₹</span><input class="inp num" id="b-value" type="number" inputmode="numeric" min="0" bind:value={productValue} /></div></div>
