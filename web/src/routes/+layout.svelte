@@ -1,10 +1,10 @@
 <script lang="ts">
 	import '../app.css';
-	import favicon from '#lib/assets/favicon.svg';
 	import type { LayoutProps } from './$types';
 	import { onMount } from 'svelte';
 	import { auth, initAuth } from '#lib/auth.svelte.ts';
 	import { initTheme, ui } from '#lib/ui.svelte.ts';
+	import { watchInstall } from '#lib/pwa.svelte.ts';
 	import Icon from '#lib/components/Icon.svelte';
 
 	let { children }: LayoutProps = $props();
@@ -12,11 +12,11 @@
 	onMount(() => {
 		initTheme();
 		initAuth();
+		watchInstall();
 	});
 </script>
 
 <svelte:head>
-	<link rel="icon" href={favicon} />
 	<title>Collab Desk</title>
 </svelte:head>
 

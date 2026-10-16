@@ -4,6 +4,7 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { mailConfigured, sendMail } from '../_shared/mailer.ts';
 import { render, type Settings } from '../_shared/templates.ts';
+import { pushFor, pushToCreator } from '../_shared/push.ts';
 
 const CRON_SECRET = Deno.env.get('CRON_SECRET') ?? '';
 
@@ -28,6 +29,9 @@ Deno.serve(async (req) => {
 
   let sent = 0, failed = 0, skipped = 0;
   for (const row of rows ?? []) {
+    // Phone alert for things that need her (independent of the email going out).
+    const alert = pushFor(row.kind, row.payload ?? {});
+    if (alert) await pushToCreator(supabase, alert).catch((e) => console.error('[push]', e));
     try {
       const mail = render(row.kind, row.payload ?? {}, settings);
       if (!mailConfigured) {

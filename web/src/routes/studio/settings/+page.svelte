@@ -16,6 +16,7 @@
 	import PackagesSettings from '#lib/components/PackagesSettings.svelte';
 	import AvailabilitySettings from '#lib/components/AvailabilitySettings.svelte';
 	import ReviewsSettings from '#lib/components/ReviewsSettings.svelte';
+	import AppSettings from '#lib/components/AppSettings.svelte';
 
 	const s = $derived(studio.settings!);
 	const link = $derived(s.site_url.replace(/\/$/, ''));
@@ -114,6 +115,7 @@
 		</div>
 	</section>
 	<InstagramSettings />
+	<AppSettings />
 	<section class="panel rv" style="--i:3">
 		<div class="panel-h"><h2>Rate card</h2><small>switch off what you don't offer</small></div>
 		{#if suggested}

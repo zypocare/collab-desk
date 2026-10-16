@@ -1,0 +1,62 @@
+// Phone notifications to the creator's devices (Web Push, free). Uses the VAPID keys in the secrets.
+import webpush from 'npm:web-push@3.6.7';
+import type { SupabaseClient } from 'npm:@supabase/supabase-js@2';
+
+const PUBLIC = Deno.env.get('VAPID_PUBLIC_KEY') ?? '';
+const PRIVATE = Deno.env.get('VAPID_PRIVATE_KEY') ?? '';
+const SUBJECT = Deno.env.get('VAPID_SUBJECT') ?? 'mailto:push@example.com';
+export const pushConfigured = PUBLIC !== '' && PRIVATE !== '';
+if (pushConfigured) webpush.setVapidDetails(SUBJECT, PUBLIC, PRIVATE);
+
+export type Push = { title: string; body: string; url: string; tag?: string };
+
+/** Sends to every device she turned alerts on for; forgets devices the browser says are gone. */
+export async function pushToCreator(db: SupabaseClient, msg: Push) {
+  if (!pushConfigured) return { sent: 0, skipped: 'push not configured' };
+  const { data: subs } = await db.from('push_subscriptions').select('id, endpoint, p256dh, auth');
+  let sent = 0;
+  for (const s of subs ?? []) {
+    try {
+      await webpush.sendNotification({ endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } }, JSON.stringify(msg), { TTL: 60 * 60 * 24 });
+      sent++;
+    } catch (e) {
+      const code = (e as { statusCode?: number }).statusCode;
+      if (code === 404 || code === 410) await db.from('push_subscriptions').delete().eq('id', s.id);
+      else console.error('[push]', code, (e as Error).message);
+    }
+  }
+  return { sent };
+}
+
+const inr = (n: unknown) => '₹' + Math.round(Number(n) || 0).toLocaleString('en-IN');
+const open = (code: unknown) => `/studio/collabs?open=${encodeURIComponent(String(code ?? ''))}`;
+
+/** The phone alert for an email that went to her, if that kind deserves one. */
+export function pushFor(kind: string, p: Record<string, unknown>): Push | null {
+  const brand = String(p.brand ?? 'A brand');
+  const code = String(p.code ?? '');
+  switch (kind) {
+    case 'request_received_creator':
+      return { title: `New request from ${brand}`, body: [p.deliverables, p.type === 'barter' ? 'Barter' : Number(p.fee) ? inr(p.fee) : 'Asked for a quote'].filter(Boolean).join(' · '), url: open(code), tag: code };
+    case 'message_to_creator':
+      return { title: `${brand} sent a message`, body: String(p.body ?? '').slice(0, 140), url: open(code), tag: `msg-${code}` };
+    case 'quote_accepted':
+      return { title: `${brand} accepted your quote`, body: `${inr(p.total)} · ${code}. The collab is confirmed.`, url: open(code), tag: code };
+    case 'quote_changes':
+      return { title: `${brand} asked for quote changes`, body: String(p.note ?? '').slice(0, 140), url: open(code), tag: code };
+    case 'draft_reviewed':
+      return { title: p.approved ? `${brand} approved your draft` : `${brand} asked for draft changes`, body: p.approved ? 'You can post it.' : String(p.feedback ?? '').slice(0, 140), url: open(code), tag: code };
+    case 'product_shipped':
+      return { title: `${brand} shipped the product`, body: [p.carrier, p.tracking].filter(Boolean).join(' · '), url: open(code), tag: code };
+    case 'usage_ext_requested':
+      return { title: `${brand} wants to extend usage`, body: `${p.days} more days for ${inr(p.price)}`, url: open(code), tag: code };
+    case 'review_received':
+      return { title: `${brand} left you ${p.rating} stars`, body: String(p.body ?? '').slice(0, 140), url: '/studio/settings', tag: `review-${code}` };
+    case 'bank_matched':
+      return { title: 'Payment received', body: `${inr(p.amount)}${p.brand ? ` from ${brand}` : ''}`, url: '/studio/payments' };
+    case 'post_detected':
+      return { title: `Your ${brand} post is live`, body: p.missing_ad ? 'Add #ad to the first line of the caption.' : 'The brand has been told.', url: open(code), tag: code };
+    default:
+      return null;
+  }
+}
