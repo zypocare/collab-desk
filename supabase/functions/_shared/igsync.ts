@@ -55,8 +55,10 @@ export async function runSync(db: SupabaseClient, opts: SyncOptions = {}) {
     const linked = new Set((linkedRows ?? []).map((l) => l.media_id));
 
     const rows: MediaRow[] = [];
-    for (const m of list) {
-      const recent = Date.now() - Date.parse(m.timestamp) < 45 * DAY || linked.has(m.id) || opts.reportFor !== undefined;
+    for (const [i, m] of list.entries()) {
+      // Detailed figures for the newest 12 posts (they make the averages), anything from the last
+      // 45 days, and posts linked to a collab.
+      const recent = i < 12 || Date.now() - Date.parse(m.timestamp) < 45 * DAY || linked.has(m.id) || opts.reportFor !== undefined;
       const stale = !lastInsights.get(m.id) || Date.now() - Date.parse(lastInsights.get(m.id)!) > 20 * 3600e3;
       let ins: Insights | null = null;
       if (recent && (stale || opts.reportFor)) ins = await ig.insights(token, m.id);
@@ -70,19 +72,20 @@ export async function runSync(db: SupabaseClient, opts: SyncOptions = {}) {
         insights_at: ins ? new Date().toISOString() : lastInsights.get(m.id) ?? null,
       };
       // Don't wipe stored insights when this run skipped them.
-      if (!ins) for (const k of ['saves', 'shares', 'reach', 'views', 'interactions'] as const) delete (row as Partial<MediaRow>)[k];
+      if (!ins && lastInsights.get(m.id)) for (const k of ['saves', 'shares', 'reach', 'views', 'interactions'] as const) delete (row as Partial<MediaRow>)[k];
       rows.push(row);
     }
     if (rows.length) await db.from('ig_media').upsert(rows);
     summary.posts = rows.length;
 
     // 4. Account averages from the last 12 posts.
-    const { data: last12 } = await db.from('ig_media').select('views, reach, interactions').order('posted_at', { ascending: false }).limit(12);
+    const { data: last12 } = await db.from('ig_media').select('views, reach, interactions, likes, comments').order('posted_at', { ascending: false }).limit(12);
     const avg = (xs: (number | null)[]) => {
       const v = xs.filter((x): x is number => typeof x === 'number');
       return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null;
     };
-    const avgInteractions = avg((last12 ?? []).map((r) => r.interactions));
+    // Posts without detailed figures still count with their likes and comments.
+    const avgInteractions = avg((last12 ?? []).map((r) => r.interactions ?? (r.likes === null && r.comments === null ? null : (r.likes ?? 0) + (r.comments ?? 0))));
     const engagement = avgInteractions !== null && p.followers_count ? Math.round((avgInteractions / p.followers_count) * 10000) / 100 : null;
     const avgViews = avg((last12 ?? []).map((r) => r.views));
     const avgReach = avg((last12 ?? []).map((r) => r.reach));
