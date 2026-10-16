@@ -82,6 +82,19 @@ const real = {
     return {};
   },
 
+  /** A Reel's average watch time per view, in milliseconds (null if Instagram has none). */
+  async watchTime(token: string, mediaId: string): Promise<number | null> {
+    try {
+      const r = await get(`/${mediaId}/insights`, { metric: 'ig_reels_avg_watch_time', access_token: token });
+      const m = (r.data ?? [])[0];
+      const v = m?.values?.[0]?.value ?? m?.total_value?.value;
+      return typeof v === 'number' && v > 0 ? v : null;
+    } catch (e) {
+      if (e instanceof IgError) return null;
+      throw e;
+    }
+  },
+
   // Stories posted in the last 24 hours. Instagram drops them (and their numbers) after that.
   async stories(token: string): Promise<Media[]> {
     const r = await get('/me/stories', {
@@ -175,6 +188,7 @@ const mock = {
     const views = 60000 + (seed % 90000);
     return { views, reach: Math.round(views * 0.62), saved: 300 + (seed % 900), shares: 120 + (seed % 400), likes: 3000 + (seed % 2000), comments: 90 + (seed % 120) };
   },
+  watchTime: async (_t: string, id: string): Promise<number | null> => 4000 + ((id.charCodeAt(1) * 7919) % 9000),
   stories: async (_t: string): Promise<Media[]> => [
     { id: 's1', caption: '', media_type: 'IMAGE', media_product_type: 'STORY', permalink: 'https://www.instagram.com/stories/mock/s1/', timestamp: daysAgo(0.1), thumbnail_url: '' },
     { id: 's2', caption: 'Unboxing @lumiere.skin', media_type: 'VIDEO', media_product_type: 'STORY', permalink: 'https://www.instagram.com/stories/mock/s2/', timestamp: daysAgo(0.05), thumbnail_url: '' },

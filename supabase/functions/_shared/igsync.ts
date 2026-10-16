@@ -25,7 +25,7 @@ const adTagged = (caption: string) => /#(ad|collab|sponsored|paidpartnership|par
 type MediaRow = {
   id: string; caption: string; media_type: string; product_type: string; permalink: string; posted_at: string; thumbnail_url: string;
   likes: number | null; comments: number | null; saves: number | null; shares: number | null; reach: number | null; views: number | null;
-  interactions: number | null; insights_at: string | null; owner_id?: string;
+  interactions: number | null; insights_at: string | null; owner_id?: string; avg_watch_ms?: number | null;
 };
 
 export type SyncOptions = { reportFor?: string };
@@ -59,7 +59,8 @@ export async function runSync(db: SupabaseClient, opts: SyncOptions = {}) {
 
     // 3. Posts.
     const list = await ig.media(token, 60);
-    const { data: existing } = await db.from('ig_media').select('id, insights_at, views, reach').in('id', list.map((m) => m.id));
+    const { data: existing } = await db.from('ig_media').select('id, insights_at, views, reach, avg_watch_ms').in('id', list.map((m) => m.id));
+    const hasWatch = new Set((existing ?? []).filter((e) => e.avg_watch_ms !== null).map((e) => e.id));
     // A post whose figures came back empty counts as never fetched, so it is tried again.
     const lastInsights = new Map((existing ?? []).map((e) => [e.id, (e.views === null && e.reach === null ? null : e.insights_at) as string | null]));
     const { data: linkedRows } = await db.from('collab_posts').select('media_id');
@@ -95,14 +96,21 @@ export async function runSync(db: SupabaseClient, opts: SyncOptions = {}) {
       };
       // Don't wipe stored insights when this run skipped them.
       if (!ins && lastInsights.get(m.id)) for (const k of ['saves', 'shares', 'reach', 'views', 'interactions'] as const) delete (row as Partial<MediaRow>)[k];
+      // Reels: average watch time per view, with the other figures (or once, for Reels stored before it existed).
+      if (recent && fmtOf(m.media_product_type, m.media_type) === 'reels' && (ins || !hasWatch.has(m.id))) {
+        const w = await ig.watchTime(token, m.id);
+        if (w !== null || ins) row.avg_watch_ms = w;
+      }
       rows.push(row);
     }
-    // Save posts with fresh figures and posts without separately: in one batch the database would fill the
-    // missing figures with blanks and wipe what was stored.
-    const withFigures = rows.filter((r) => 'views' in r);
-    const without = rows.filter((r) => !('views' in r));
-    if (withFigures.length) await db.from('ig_media').upsert(withFigures);
-    if (without.length) await db.from('ig_media').upsert(without);
+    // Save posts in groups with the same fields: in one mixed batch the database fills fields a post
+    // doesn't carry with blanks, wiping what was stored.
+    const groups = new Map<string, MediaRow[]>();
+    for (const r of rows) {
+      const key = Object.keys(r).sort().join(',');
+      groups.set(key, [...(groups.get(key) ?? []), r]);
+    }
+    for (const g of groups.values()) await db.from('ig_media').upsert(g);
     summary.posts = rows.length;
     // Posts from another account (one connected before) don't count towards her numbers.
     let others = db.from('ig_media').delete({ count: 'exact' }).or(`owner_id.is.null,owner_id.neq.${p.user_id}`);
@@ -131,9 +139,10 @@ export async function runSync(db: SupabaseClient, opts: SyncOptions = {}) {
       ig.accountTotals(token, new Date(Date.now() - 60 * DAY), new Date(Date.now() - 30 * DAY)).catch(() => ({})),
     ]);
     // Her most recent posts of each kind (whatever their dates: she may not have posted lately).
-    const { data: m90 } = await db.from('ig_media').select('media_type, product_type, posted_at, views, reach, interactions, likes, comments')
+    const { data: m90 } = await db.from('ig_media').select('media_type, product_type, posted_at, views, reach, interactions, likes, comments, avg_watch_ms')
       .order('posted_at', { ascending: false }).limit(200);
-    const fmtStats = (xs: { views: number | null; reach: number | null; interactions: number | null; likes: number | null; comments: number | null }[]) => {
+    const fmtStats = (xs: { views: number | null; reach: number | null; interactions: number | null; likes: number | null; comments: number | null; avg_watch_ms?: number | null }[]) => {
+      const watch = avg(xs.map((r) => r.avg_watch_ms ?? null));
       const inter = avg(xs.map((r) => r.interactions ?? (r.likes === null && r.comments === null ? null : (r.likes ?? 0) + (r.comments ?? 0))));
       const v = avg(xs.map((r) => r.views));
       const re = avg(xs.map((r) => r.reach));
@@ -142,6 +151,7 @@ export async function runSync(db: SupabaseClient, opts: SyncOptions = {}) {
         posts: xs.length, measured: xs.filter((r) => r.views !== null || r.reach !== null).length,
         avg_views: v === null ? null : Math.round(v), avg_reach: re === null ? null : Math.round(re),
         avg_interactions: inter === null ? null : Math.round(inter),
+        avg_watch_ms: watch === null ? null : Math.round(watch),
         er: inter !== null && p.followers_count ? Math.round((inter / p.followers_count) * 10000) / 100 : null,
       };
     };

@@ -83,7 +83,7 @@
 			{#each kpis as k, i (k.k)}
 				<div class="ins-kpi glow rv" style="--i:{i + 1}">
 					<small>{k.k}</small>
-					<b>{k.pct ? `${k.v}%` : compact(k.v as number)}</b>
+					<b>{k.show ?? (k.pct ? `${k.v}%` : compact(k.v as number))}</b>
 					<span>
 						{#if k.ch !== null}<em class:up={k.ch >= 0} class:down={k.ch < 0}>{k.ch >= 0 ? '▲' : '▼'} {Math.abs(k.ch)}%</em>{/if}
 						{k.sub}
@@ -101,7 +101,7 @@
 							<thead><tr><th>Format</th><th>Based on</th><th>Avg. views</th><th>Avg. reach</th><th>Engagement</th></tr></thead>
 							<tbody>
 								{#each formats as [key, s] (key)}
-									<tr><td>{FORMAT_LABEL[key]}</td><td>{s.manual ? 'your numbers' : `${basedOn(s)} ${key === 'stories' ? 'Stories' : 'posts'}`}</td><td>{s.avg_views ? compact(s.avg_views) : '—'}</td><td>{s.avg_reach ? compact(s.avg_reach) : '—'}</td><td>{key === 'stories' ? (s.avg_interactions ? `${compact(s.avg_interactions)} actions` : '—') : s.er ? `${s.er}%` : '—'}</td></tr>
+									<tr><td>{FORMAT_LABEL[key]}</td><td>{s.manual ? 'your numbers' : `${basedOn(s)} ${key === 'stories' ? (basedOn(s) === 1 ? 'Story' : 'Stories') : basedOn(s) === 1 ? 'post' : 'posts'}`}</td><td>{s.avg_views ? compact(s.avg_views) : '—'}</td><td>{s.avg_reach ? compact(s.avg_reach) : '—'}</td><td>{key === 'stories' ? (s.avg_interactions ? `${compact(s.avg_interactions)} actions` : '—') : s.er ? `${s.er}%` : '—'}</td></tr>
 								{/each}
 							</tbody>
 						</table>

@@ -1,5 +1,5 @@
 // Profile insights brands ask for, as stored by the Instagram sync (ig_account.insights).
-export type FormatStats = { posts: number; avg_views: number | null; avg_reach: number | null; avg_interactions: number | null; er: number | null; manual?: boolean; measured?: number };
+export type FormatStats = { posts: number; avg_views: number | null; avg_reach: number | null; avg_interactions: number | null; er: number | null; manual?: boolean; measured?: number; avg_watch_ms?: number | null };
 /** How many posts an average is based on: those Instagram gave figures for (older syncs: all looked at). */
 export const basedOn = (s: FormatStats) => s.measured ?? s.posts;
 export type InsightsData = {
@@ -43,7 +43,13 @@ export function change(cur: number | undefined, prev: number | undefined) {
 export const FORMAT_LABEL: Record<string, string> = { reels: 'Reels', carousels: 'Carousels', photos: 'Photos', stories: 'Stories' };
 
 // ---- What the insights page shows (also used by the media kit PDF, so both always match) ----
-export type Kpi = { k: string; v: number; sub: string; ch: number | null; pct?: boolean };
+export type Kpi = { k: string; v: number; sub: string; ch: number | null; pct?: boolean; show?: string };
+
+/** 7,400 ms -> "7.4s"; 65,000 ms -> "1m 5s". */
+export function watchText(ms: number) {
+	const s = ms / 1000;
+	return s < 60 ? `${s.toFixed(1)}s` : `${Math.floor(s / 60)}m ${Math.round(s % 60)}s`;
+}
 
 export function insightKpis(d: PublicInsights): Kpi[] {
 	const t = d.insights.totals ?? {};
@@ -52,14 +58,16 @@ export function insightKpis(d: PublicInsights): Kpi[] {
 	const g = d.insights.growth?.d30;
 	const sign = (n: number) => (n > 0 ? '+' : n < 0 ? '-' : '');
 	const short = (n: number) => (Math.abs(n) >= 1e6 ? `${+(Math.abs(n) / 1e6).toFixed(1)}M` : Math.abs(n) >= 1e3 ? `${+(Math.abs(n) / 1e3).toFixed(1)}K` : String(Math.abs(n)));
-	const all: { k: string; v: number | null | undefined; sub: string; ch: number | null; pct?: boolean }[] = [
+	const all: { k: string; v: number | null | undefined; sub: string; ch: number | null; pct?: boolean; show?: string }[] = [
 		{ k: 'Followers', v: d.followers, sub: g ? `${sign(g)}${short(g)} in 30 days` : '', ch: null },
 		{ k: 'Accounts reached', v: reachOk(t) ? t.reach : undefined, sub: '30 days', ch: reachOk(pv) ? change(t.reach, pv.reach) : null },
 		{ k: 'Views', v: t.views, sub: '30 days', ch: change(t.views, pv.views) },
 		{ k: 'Accounts engaged', v: t.accounts_engaged, sub: '30 days', ch: change(t.accounts_engaged, pv.accounts_engaged) },
 		{ k: 'Engagement rate', v: d.engagement_rate, sub: 'per post, last 12', ch: null, pct: true },
 		{ k: 'Interactions', v: t.total_interactions, sub: '30 days', ch: change(t.total_interactions, pv.total_interactions) },
-		{ k: 'Avg. Reel views', v: f?.reels.avg_views ?? d.avg_views, sub: f?.reels.posts ? `based on ${basedOn(f.reels)} Reels` : 'recent posts', ch: null },
+		{ k: 'Avg. Reel views', v: f?.reels.avg_views ?? d.avg_views, sub: f?.reels.posts ? `based on ${basedOn(f.reels)} Reel${basedOn(f.reels) === 1 ? '' : 's'}` : 'recent posts', ch: null },
+		// How long people watch a Reel, on average per view (from Instagram).
+		{ k: 'Avg. watch time', v: f?.reels?.avg_watch_ms, show: f?.reels?.avg_watch_ms ? watchText(f.reels.avg_watch_ms) : undefined, sub: 'per Reel view', ch: null },
 		// Only when she shows Stories (the server leaves them out otherwise); her own average if she typed one.
 		{ k: 'Avg. Story reach', v: f?.stories?.avg_reach, sub: f?.stories?.manual ? 'per Story' : f?.stories?.posts ? `${f.stories.posts} Stories` : '', ch: null }
 	];

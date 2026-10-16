@@ -294,7 +294,7 @@ async function insightsPages(doc: PDFDocument, p: PublicPage, d: PublicInsights,
 			page.drawRectangle({ x, y: top - th, width: tw, height: th, color: SOFT });
 			page.drawRectangle({ x, y: top - th, width: 3, height: th, color: [G1, G2, G3, G2][col] });
 			text(k.k, x + 12, top - 14, 8, reg, MUTED);
-			text(k.pct ? `${k.v}%` : compact(k.v), x + 12, top - 34, 17, bold);
+			text(k.show ?? (k.pct ? `${k.v}%` : compact(k.v)), x + 12, top - 34, 17, bold);
 			let sx = x + 12;
 			if (k.ch !== null) {
 				const c = `${k.ch >= 0 ? '+' : '-'}${Math.abs(k.ch)}%`;
@@ -326,7 +326,7 @@ async function insightsPages(doc: PDFDocument, p: PublicPage, d: PublicInsights,
 			for (const [key, s] of formats) {
 				yy -= 18;
 				text(FORMAT_LABEL[key] ?? key, cx[0], yy, 9.5, bold);
-				right(s.manual ? 'own' : `${basedOn(s)} ${key === 'stories' ? 'Stories' : 'posts'}`, cx[1], yy, 9.5);
+				right(s.manual ? 'own' : `${basedOn(s)} ${key === 'stories' ? (basedOn(s) === 1 ? 'Story' : 'Stories') : basedOn(s) === 1 ? 'post' : 'posts'}`, cx[1], yy, 9.5);
 				right(s.avg_views ? compact(s.avg_views) : '-', cx[2], yy, 9.5);
 				right(s.avg_reach ? compact(s.avg_reach) : '-', cx[3], yy, 9.5);
 				right(key === 'stories' ? (s.avg_interactions ? `${compact(s.avg_interactions)} actions` : '-') : s.er ? `${s.er}%` : '-', cx[4], yy, 9.5, bold);
