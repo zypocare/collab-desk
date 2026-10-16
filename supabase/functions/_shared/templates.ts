@@ -423,6 +423,33 @@ export function render(kind: string, p: Payload, s: Settings): Omit<Mail, 'to'> 
     };
   }
 
+  if (kind === 'question_received') {
+    const who = [p.name, p.brand].filter(Boolean).join(', ') || p.email;
+    return {
+      subject: `Question from ${who}`,
+      html: layout(
+        s,
+        `${esc(who)} asked a question`,
+        `${quoteBox('Their question', p.body)}<p style="margin:12px 0 0;font-size:13px;color:#8c8288">Reply from your Today page (they get it by email), or turn it into a request.</p>`,
+        { label: 'Reply', href: url(s, '/studio') },
+      ),
+      text: `${who} (${p.email}) asked: ${p.body}`,
+    };
+  }
+
+  if (kind === 'question_answer') {
+    return {
+      subject: `${first(s.display_name)} replied to your question`,
+      html: layout(
+        s,
+        `A reply from ${first(s.display_name)}`,
+        `<p style="margin:0">Hi${p.name ? ` ${esc(firstOf(p.name))}` : ''},</p>${quoteBox(`${first(s.display_name)}'s reply`, p.answer)}${quoteBox('You asked', p.question)}<p style="margin:12px 0 0">Ready to go ahead? Send a request in two minutes, no sign-up needed.</p>`,
+        { label: 'Send a request', href: url(s, '/brand/new') },
+      ),
+      text: `${s.display_name} replied: ${p.answer}\n\nSend a request: ${url(s, '/brand/new')}`,
+    };
+  }
+
   if (kind === 'brand_invite') {
     return {
       subject: `${p.by} added you to ${brand} on ${s.app_name}`,

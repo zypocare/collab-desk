@@ -53,6 +53,8 @@ export function pushFor(kind: string, p: Record<string, unknown>): Push | null {
       return { title: `${brand} shipped the product`, body: [p.carrier, p.tracking].filter(Boolean).join(' · '), url: open(code), tag: code };
     case 'usage_ext_requested':
       return { title: `${brand} wants to extend usage`, body: `${p.days} more days for ${inr(p.price)}`, url: open(code), tag: code };
+    case 'question_received':
+      return { title: `Question from ${p.brand || p.name || p.email}`, body: String(p.body ?? '').slice(0, 140), url: '/studio', tag: `q-${p.email}` };
     case 'payment_claimed':
       return { title: `${brand} says they paid ${inr(p.amount)}`, body: `${p.number} · ref ${p.ref}. Tap to confirm.`, url: open(code), tag: `claim-${code}` };
     case 'email_request':

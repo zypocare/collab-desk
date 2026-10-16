@@ -14,6 +14,7 @@
 	import { downloadMediaKit } from '#lib/mediaKitPdf.ts';
 	import { rateValue } from '#lib/priority.ts';
 	import Avatar from '#lib/components/Avatar.svelte';
+	import AskQuestion from '#lib/components/AskQuestion.svelte';
 	import { supabase } from '#lib/supabase.ts';
 	import { reachOk, type PublicInsights } from '#lib/insights.ts';
 
@@ -191,7 +192,7 @@
 							<b>Work with {firstName(p.display_name)}</b>
 							<p>Usually replies within {p.reply_time}. Paid collaborations are reviewed first.</p>
 							<a class="btn grad lg" href={requestHref}><Icon name="send" />Send a request</a>
-							<div class="row">{#if p.whatsapp}<a class="btn sm wa" href={waLink(p.whatsapp, `Hi ${firstName(p.display_name)}! I'd like to discuss a collaboration.`)} target="_blank" rel="noopener"><Icon name="send" />WhatsApp</a>{/if}<a class="btn sm" href={trackHref}><Icon name="search" />Track requests</a><button class="btn sm" onclick={kit} disabled={kitBusy}>{#if kitBusy}<span class="spinner"></span>{:else}<Icon name="film" />{/if}Media kit</button></div>
+							<div class="row">{#if p.whatsapp}<a class="btn sm wa" href={waLink(p.whatsapp, `Hi ${firstName(p.display_name)}! I'd like to discuss a collaboration.`)} target="_blank" rel="noopener"><Icon name="send" />WhatsApp</a>{/if}<a class="btn sm" href={trackHref}><Icon name="search" />Track requests</a><AskQuestion creator={firstName(p.display_name)} /><button class="btn sm" onclick={kit} disabled={kitBusy}>{#if kitBusy}<span class="spinner"></span>{:else}<Icon name="film" />{/if}Media kit</button></div>
 						</section>
 					{/if}
 					{#if p.availability?.length && p.accepting}

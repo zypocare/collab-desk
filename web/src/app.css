@@ -1870,3 +1870,10 @@ body:has(.batch-bar) .fab{display:none}
 .claim-box > .ic{width:16px;height:16px;color:var(--warn);flex:none}
 .claim-box > span{flex:1;min-width:200px}
 .needs-you{margin-bottom:18px}
+
+/* Questions from brands (Today) */
+.bq-panel{margin-bottom:18px}
+.bq{padding:12px 20px;border-top:1px solid var(--line)}
+.bq-h b{display:block;font-size:14px}
+.bq-h small{font-size:12px;color:var(--ink-3)}
+.bq p{margin:6px 0 0;font-size:13.5px;white-space:pre-wrap}

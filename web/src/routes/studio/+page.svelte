@@ -30,6 +30,7 @@
 	import PriorityBadge from '#lib/components/PriorityBadge.svelte';
 	import InstagramPanel from '#lib/components/InstagramPanel.svelte';
 	import AlertsPrompt from '#lib/components/AlertsPrompt.svelte';
+	import BrandQuestions from '#lib/components/BrandQuestions.svelte';
 
 	const s = $derived(studio.settings!);
 	const list = $derived(studio.collabs);
@@ -118,6 +119,7 @@
 </header>
 
 <AlertsPrompt />
+<BrandQuestions />
 
 <div class="top-grid">
 	<section class="hero-card glow rv" style="--i:1">
