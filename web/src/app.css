@@ -1373,3 +1373,8 @@ button.wk:hover{transform:translateY(-1px);border-color:var(--ink-3)}
 .combo.on{border-color:var(--accent);background:color-mix(in oklab,var(--accent) 8%,var(--surface))}
 .combo b{font-size:13.5px}
 .combo small{font-size:12px;color:var(--ink-3)}
+
+/* ---------- brief templates ---------- */
+.tpl-row{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+.tpl-row > div{display:flex;gap:6px;flex-wrap:wrap}
+.tpl-row .cat-chip{height:28px;font-size:12px}

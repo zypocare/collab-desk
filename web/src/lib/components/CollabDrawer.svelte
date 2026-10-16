@@ -548,7 +548,7 @@
 
 			<section class="sec">
 				<h3>Brief</h3>
-				{#key c.id}<BriefEditor value={c.brief_details ?? {}} idp="f" onchange={saveBrief} />{/key}
+				{#key c.id}<BriefEditor value={c.brief_details ?? {}} idp="f" category={c.brand.category} onchange={saveBrief} />{/key}
 				<div class="f" style="margin-top:12px"><label for="f-brief">Notes</label><textarea class="inp" id="f-brief" placeholder="Anything else from the brand" value={c.brief} onchange={(e) => save('brief', val(e))}></textarea></div>
 			</section>
 

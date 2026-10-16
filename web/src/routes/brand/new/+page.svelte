@@ -281,7 +281,7 @@
 				</div>
 				<div class="bsec">
 					<div class="bsec-h"><i>04</i><h2>Brief</h2></div>
-					<BriefEditor bind:value={briefDetails} idp="b" />
+					<BriefEditor bind:value={briefDetails} idp="b" category={acc.brand?.category ?? ''} />
 					<div class="f" style="margin-top:12px"><label for="b-brief">Anything else</label><textarea class="inp" id="b-brief" rows="3" placeholder="What's launching, context, timing notes" bind:value={brief}></textarea></div>
 				</div>
 				{#if advice}

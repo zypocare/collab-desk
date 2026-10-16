@@ -1,9 +1,20 @@
 <script lang="ts">
 	import type { BriefDetails } from '../types';
 	import { parseTags } from '../util';
+	import { applyTemplate, BRIEF_TEMPLATES, templateFor, type BriefTemplate } from '../briefTemplates';
 
 	// The structured brief. Used on the brand's request form and in her studio.
-	let { value = $bindable({}), idp = 'bf', onchange }: { value?: BriefDetails; idp?: string; onchange?: (v: BriefDetails) => void } = $props();
+	let { value = $bindable({}), idp = 'bf', category = '', onchange }: { value?: BriefDetails; idp?: string; category?: string; onchange?: (v: BriefDetails) => void } = $props();
+
+	// Templates: the one for this brand's category is shown first.
+	const suggested = $derived(templateFor(category));
+	const templates = $derived(suggested ? [suggested, ...BRIEF_TEMPLATES.filter((t) => t !== suggested)] : BRIEF_TEMPLATES);
+	function useTemplate(t: BriefTemplate) {
+		value = applyTemplate(value, t);
+		tagsText = (value.hashtags ?? []).join(' ');
+		mentionsText = (value.mentions ?? []).join(' ');
+		onchange?.(value);
+	}
 
 	let tagsText = $state((value.hashtags ?? []).join(' '));
 	let mentionsText = $state((value.mentions ?? []).join(' '));
@@ -15,6 +26,14 @@
 	const txt = (e: Event) => (e.currentTarget as HTMLInputElement).value;
 </script>
 
+<div class="tpl-row">
+	<span class="lbl-t">Start from a template</span>
+	<div>
+		{#each templates as t (t.id)}
+			<button type="button" class="cat-chip" class:on={t === suggested} onclick={() => useTemplate(t)}>{t.label}</button>
+		{/each}
+	</div>
+</div>
 <div class="fields brief-ed">
 	<div class="f span2">
 		<label for="{idp}-msg">Key message</label>
