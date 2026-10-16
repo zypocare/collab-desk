@@ -83,7 +83,7 @@
 </script>
 
 <section class="panel rv" style="--i:5">
-	<div class="panel-h"><h2>Reminders</h2><small>so nothing slips</small></div>
+	<div class="panel-h"><h2>Summary & calendar</h2><small>so nothing slips</small></div>
 	<div class="switch-row" style="border-top:0">
 		<div><b>9 AM summary email</b><small>Every morning: follow-ups, drafts due, go-lives, overdue payments and brand replies. Skipped on days with nothing to do.</small></div>
 		<input type="checkbox" class="tgl" checked={s.digest_enabled} aria-label="9 AM summary email" onchange={(e) => saveSettings({ digest_enabled: (e.currentTarget as HTMLInputElement).checked })} />

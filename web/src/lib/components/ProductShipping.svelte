@@ -26,7 +26,7 @@
 	{#if !s.ship_address}
 		<div class="ship-note">
 			<Icon name="alert" />
-			<span>Add your shipping address so brands can send products once a collab is confirmed. <a class="lnk" href="/studio/settings">Add it in My page</a></span>
+			<span>Add your shipping address so brands can send products once a collab is confirmed. <a class="lnk" href="/studio/settings?s=account">Add it in My page</a></span>
 		</div>
 	{/if}
 

@@ -36,7 +36,7 @@
 			await igConnect(code, `${location.origin}/studio/instagram`);
 			confetti();
 			toast('Instagram connected');
-			goto('/studio/settings', { replace: true });
+			goto('/studio/settings?s=profile', { replace: true });
 		} catch (e) {
 			status = 'error';
 			message = errMessage(e);
@@ -55,6 +55,6 @@
 		<span class="mini-ic tint k-bad" style="margin:0 auto 14px"><Icon name="alert" /></span>
 		<h2>Couldn't connect Instagram</h2>
 		<p>{message}</p>
-		<a class="btn" href="/studio/settings">Back to My page</a>
+		<a class="btn" href="/studio/settings?s=profile">Back to My page</a>
 	{/if}
 </div>

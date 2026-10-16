@@ -1,12 +1,14 @@
 <script lang="ts">
-	import { saveSettings, studio } from '#lib/studio.svelte.ts';
+	import { goto } from '$app/navigation';
+	import { page } from '$app/state';
+	import { onMount } from 'svelte';
+	import { loadPackages, saveSettings, studio } from '#lib/studio.svelte.ts';
 	import type { PublicPage, Settings } from '#lib/types.ts';
 	import { supabase } from '#lib/supabase.ts';
 	import { downloadMediaKit } from '#lib/mediaKitPdf.ts';
 	import { copyText, toast } from '#lib/ui.svelte.ts';
 	import { KINDS, compact, inr, offeredKinds } from '#lib/util.ts';
 	import { suggestRates } from '#lib/rateSuggest.ts';
-	import { masonry } from '#lib/masonry.ts';
 	import Icon from '#lib/components/Icon.svelte';
 	import ShippingSettings from '#lib/components/ShippingSettings.svelte';
 	import NotificationSettings from '#lib/components/NotificationSettings.svelte';
@@ -68,95 +70,192 @@
 		saveSettings({ [k]: on });
 		toast(k === 'accepting' ? (on ? 'Your page is open for requests' : 'New requests are paused') : on ? 'Rates shown on your page' : 'Rates hidden from your page');
 	}
+
+	// Settings are split into a few sections and only the one she picks is shown.
+	// On phones the menu is its own screen: tap a section, and "All settings" (or Back) returns.
+	type Sec = 'profile' | 'rates' | 'bookings' | 'autopilot' | 'payments' | 'reviews' | 'alerts' | 'account';
+	const autoOn = $derived([s.autopilot_packages, s.autopilot_counter, s.autopilot_nudge, s.autopilot_review].filter(Boolean).length);
+	const hasPay = $derived(!!(s.upi_id || s.bank_details));
+	const sections = $derived<{ id: Sec; label: string; icon: string; sub: string; warn?: string }[]>([
+		{
+			id: 'profile',
+			label: 'Profile & Instagram',
+			icon: 'users',
+			sub: studio.ig?.connected ? `@${studio.ig.username} connected` : 'Connect Instagram for live stats',
+			warn: studio.ig?.connected ? undefined : 'Instagram not connected'
+		},
+		{ id: 'rates', label: 'Rates & packages', icon: 'rupee', sub: `${offered.length} content types · ${studio.packages.filter((k) => k.active).length} packages` },
+		{
+			id: 'bookings',
+			label: 'Bookings & barter',
+			icon: 'cal',
+			sub: s.accepting ? `Open · ${s.weekly_capacity} a week · barter ${s.barter_mode}` : 'Paused: not taking requests',
+			warn: s.accepting ? undefined : 'New requests are paused'
+		},
+		{ id: 'autopilot', label: 'Auto-pilot', icon: 'spark', sub: autoOn ? `${autoOn} of 4 rules on` : 'All rules off' },
+		{
+			id: 'payments',
+			label: 'Invoices & payments',
+			icon: 'wallet',
+			sub: hasPay ? `Goal ${inr(s.monthly_goal)} a month` : 'Add UPI or bank details',
+			warn: hasPay ? undefined : 'No UPI or bank details yet'
+		},
+		{ id: 'reviews', label: 'Results & reviews', icon: 'chart', sub: s.show_results ? 'Shown on your page' : 'Hidden from your page' },
+		{ id: 'alerts', label: 'Alerts & phone app', icon: 'bell', sub: s.digest_enabled ? '9 AM summary on' : '9 AM summary off' },
+		{
+			id: 'account',
+			label: 'Shipping & account',
+			icon: 'gear',
+			sub: s.ship_address ? 'Shipping address added' : 'Add your shipping address',
+			warn: s.ship_address ? undefined : 'No shipping address yet'
+		}
+	]);
+
+	let narrow = $state(false);
+	onMount(() => {
+		if (!studio.packages.length) loadPackages();
+		const mq = matchMedia('(max-width: 900px)');
+		const on = () => (narrow = mq.matches);
+		on();
+		mq.addEventListener('change', on);
+		return () => mq.removeEventListener('change', on);
+	});
+	const asked = $derived(page.url.searchParams.get('s'));
+	const active = $derived<Sec | null>(sections.find((x) => x.id === asked)?.id ?? (narrow ? null : 'profile'));
+	const current = $derived(sections.find((x) => x.id === active));
+	function open(id: Sec) {
+		// Phones: a new screen (Back returns to the menu). Desktop: swap the section in place.
+		goto(`?s=${id}`, narrow ? {} : { replace: true, reset: false });
+	}
 </script>
 
 <svelte:head><title>My page · {s.app_name}</title></svelte:head>
 
-<header class="ph rv">
-	<div>
-		<div class="eb">Share with brands</div>
-		<h1>Brand <em>page</em></h1>
-		<p>One link for every brand. They send requests there and sign in to follow them.</p>
-	</div>
-</header>
-
-<div class="set-top">
-	<section class="linkcard glow rv" style="--i:1">
-		<div class="mesh" aria-hidden="true"></div>
-		<div class="hc-in">
-			<span class="hc-eb">Your link</span>
-			<span class="url">{link.replace(/^https?:\/\//, '')}</span>
-			<p>Put this in your Instagram bio and send it in DMs. Brands sign in with their work email to send and track requests.</p>
-			<div class="row">
-				<button class="btn" onclick={() => copyText(link, 'Link copied')}><Icon name="copy" />Copy link</button>
-				<a class="btn out" href="/?preview=1" target="_blank" rel="noopener"><Icon name="eye" />Preview your page</a>
-				<button class="btn out" onclick={kit} disabled={kitBusy}>{#if kitBusy}<span class="spinner"></span>{:else}<Icon name="film" />{/if}Media kit PDF</button>
-			</div>
+<div class="set-intro" class:sec-open={!!active}>
+	<header class="ph rv">
+		<div>
+			<div class="eb">Share with brands</div>
+			<h1>My <em>page</em></h1>
+			<p>Your link for brands, and how you like to work. Pick a section to change it.</p>
 		</div>
-	</section>
+	</header>
+
+	<div class="set-top">
+		<section class="linkcard glow rv" style="--i:1">
+			<div class="mesh" aria-hidden="true"></div>
+			<div class="hc-in">
+				<span class="hc-eb">Your link</span>
+				<span class="url">{link.replace(/^https?:\/\//, '')}</span>
+				<p>Put this in your Instagram bio and send it in DMs. Brands sign in with their work email to send and track requests.</p>
+				<div class="row">
+					<button class="btn" onclick={() => copyText(link, 'Link copied')}><Icon name="copy" />Copy link</button>
+					<a class="btn out" href="/?preview=1" target="_blank" rel="noopener"><Icon name="eye" />Preview your page</a>
+					<button class="btn out" onclick={kit} disabled={kitBusy}>{#if kitBusy}<span class="spinner"></span>{:else}<Icon name="film" />{/if}Media kit PDF</button>
+				</div>
+			</div>
+		</section>
+	</div>
 </div>
 
-<!-- Cards pack into as many balanced columns as the screen fits (2 on laptops, 3 on wide screens). -->
-<div class="set-grid" use:masonry>
-	<section class="panel rv" style="--i:2">
-		<div class="panel-h"><h2>Profile</h2><small>shown on your brand page</small></div>
-		<div class="form-b">
-			{#each fields as f (f.k)}
-				<div class="f"><label for="me-{f.k}">{f.label}</label><input class="inp" id="me-{f.k}" value={s[f.k]} placeholder={f.ph ?? ''} onchange={(e) => saveText(f.k, val(e))} /></div>
-			{/each}
-			<div class="f"><label for="me-goal">Monthly income goal (₹)</label><input class="inp num" id="me-goal" type="number" inputmode="numeric" value={s.monthly_goal} onchange={(e) => saveSettings({ monthly_goal: num(e) })} /></div>
-		</div>
-		<div class="switch-row">
-			<div><b>Accepting collaborations</b><small>Turn off when you're fully booked. Brands can still follow requests they've sent.</small></div>
-			<input type="checkbox" class="tgl" checked={s.accepting} aria-label="Accepting collaborations" onchange={(e) => toggle('accepting', (e.currentTarget as HTMLInputElement).checked)} />
-		</div>
-		<div class="switch-row">
-			<div><b>Show starting rates</b><small>Brands see "from" prices next to each deliverable.</small></div>
-			<input type="checkbox" class="tgl" checked={s.show_rates} aria-label="Show starting rates" onchange={(e) => toggle('show_rates', (e.currentTarget as HTMLInputElement).checked)} />
-		</div>
-	</section>
-	<InstagramSettings />
-	<AppSettings />
-	<AutopilotSettings />
-	<section class="panel rv" style="--i:3">
-		<div class="panel-h"><h2>Rate card</h2><small>switch off what you don't offer</small></div>
-		{#if suggested}
-			<div class="rate-sug">
-				<div>
-					<b>Suggested from your Instagram</b>
-					<small>{compact(studio.ig?.followers ?? 0)} followers · {compact(studio.ig?.avg_views ?? 0)} avg. views · {studio.ig?.engagement_rate ?? '—'}% engagement. A starting point: adjust for your niche and demand.</small>
-				</div>
-				<button class="btn sm" onclick={useSuggested}><Icon name="spark" />Use suggested</button>
-			</div>
-		{/if}
-		{#each KINDS as k (k)}
-			{@const sg = suggested?.[k]}
-			{@const cur = s.rates[k] ?? 0}
-			{@const on = offered.includes(k)}
-			<div class="rate" class:rate-off={!on}>
-				<input type="checkbox" class="tgl sm" checked={on} aria-label="Offer {k} to brands" title={on ? 'Brands can request this' : 'Hidden from brands'} onchange={(e) => toggleKind(k, (e.currentTarget as HTMLInputElement).checked, e.currentTarget as HTMLInputElement)} />
-				<span>{k}{#if !on}<small class="sug">hidden from brands</small>{:else if sg}<small class="sug" class:low={cur > 0 && cur < sg * 0.8} class:high={cur > sg * 1.25}>suggested {inr(sg)}{cur > 0 && cur < sg * 0.8 ? ' · you may be undercharging' : cur > sg * 1.25 ? ' · above the suggestion' : ''}</small>{/if}</span>
-				<div class="pre"><span>₹</span><input class="inp num" type="number" inputmode="numeric" aria-label="{k} rate" value={s.rates[k] ?? ''} onchange={(e) => saveSettings({ rates: { ...s.rates, [k]: num(e) } })} /></div>
-			</div>
+<div class="set-shell" class:sec-open={!!active}>
+	<nav class="set-menu rv" style="--i:2" aria-label="Settings sections">
+		{#each sections as x (x.id)}
+			<a class="set-item" class:on={x.id === active} href="?s={x.id}" aria-current={x.id === active ? 'page' : undefined} onclick={(e) => (e.preventDefault(), open(x.id))}>
+				<span class="set-ic"><Icon name={x.icon} /></span>
+				<span class="set-t"><b>{x.label}</b><small>{x.sub}</small></span>
+				{#if x.warn}<span class="set-dot" title={x.warn}></span>{/if}
+				<Icon name="chevR" class="set-chev" />
+			</a>
 		{/each}
-		<div class="rate">
-			<span>Extra paid usage<small class="hint" style="display:block">% of the fee per 30 days</small></span>
-			<div class="pre"><span>%</span><input class="inp num" type="number" inputmode="numeric" min="0" max="200" aria-label="Usage extension rate" value={s.usage_ext_pct} onchange={(e) => saveSettings({ usage_ext_pct: Math.min(200, num(e)) })} /></div>
+	</nav>
+
+	{#if active && current}
+		<div class="set-body">
+			<div class="set-head">
+				<button class="set-back" onclick={() => goto('/studio/settings')}><Icon name="chevL" />All settings</button>
+				<h2>{current.label}</h2>
+			</div>
+			{#key active}
+				<div class="set-panels">
+					{#if active === 'profile'}
+						<section class="panel rv" style="--i:1">
+							<div class="panel-h"><h2>Profile</h2><small>shown on your brand page</small></div>
+							<div class="form-b">
+								{#each fields as f (f.k)}
+									<div class="f"><label for="me-{f.k}">{f.label}</label><input class="inp" id="me-{f.k}" value={s[f.k]} placeholder={f.ph ?? ''} onchange={(e) => saveText(f.k, val(e))} /></div>
+								{/each}
+							</div>
+						</section>
+						<InstagramSettings />
+					{:else if active === 'rates'}
+						<section class="panel rv" style="--i:1">
+							<div class="panel-h"><h2>Rate card</h2><small>switch off what you don't offer</small></div>
+							{#if suggested}
+								<div class="rate-sug">
+									<div>
+										<b>Suggested from your Instagram</b>
+										<small>{compact(studio.ig?.followers ?? 0)} followers · {compact(studio.ig?.avg_views ?? 0)} avg. views · {studio.ig?.engagement_rate ?? '—'}% engagement. A starting point: adjust for your niche and demand.</small>
+									</div>
+									<button class="btn sm" onclick={useSuggested}><Icon name="spark" />Use suggested</button>
+								</div>
+							{/if}
+							{#each KINDS as k (k)}
+								{@const sg = suggested?.[k]}
+								{@const cur = s.rates[k] ?? 0}
+								{@const on = offered.includes(k)}
+								<div class="rate" class:rate-off={!on}>
+									<input type="checkbox" class="tgl sm" checked={on} aria-label="Offer {k} to brands" title={on ? 'Brands can request this' : 'Hidden from brands'} onchange={(e) => toggleKind(k, (e.currentTarget as HTMLInputElement).checked, e.currentTarget as HTMLInputElement)} />
+									<span>{k}{#if !on}<small class="sug">hidden from brands</small>{:else if sg}<small class="sug" class:low={cur > 0 && cur < sg * 0.8} class:high={cur > sg * 1.25}>suggested {inr(sg)}{cur > 0 && cur < sg * 0.8 ? ' · you may be undercharging' : cur > sg * 1.25 ? ' · above the suggestion' : ''}</small>{/if}</span>
+									<div class="pre"><span>₹</span><input class="inp num" type="number" inputmode="numeric" aria-label="{k} rate" value={s.rates[k] ?? ''} onchange={(e) => saveSettings({ rates: { ...s.rates, [k]: num(e) } })} /></div>
+								</div>
+							{/each}
+							<div class="rate">
+								<span>Extra paid usage<small class="hint" style="display:block">% of the fee per 30 days</small></span>
+								<div class="pre"><span>%</span><input class="inp num" type="number" inputmode="numeric" min="0" max="200" aria-label="Usage extension rate" value={s.usage_ext_pct} onchange={(e) => saveSettings({ usage_ext_pct: Math.min(200, num(e)) })} /></div>
+							</div>
+							<div class="switch-row">
+								<div><b>Show starting rates</b><small>Brands see "from" prices next to each deliverable.</small></div>
+								<input type="checkbox" class="tgl" checked={s.show_rates} aria-label="Show starting rates" onchange={(e) => toggle('show_rates', (e.currentTarget as HTMLInputElement).checked)} />
+							</div>
+						</section>
+						<PackagesSettings />
+					{:else if active === 'bookings'}
+						<section class="panel rv" style="--i:1">
+							<div class="switch-row" style="border-top:0">
+								<div><b>Accepting collaborations</b><small>Turn off when you're fully booked. Brands can still follow requests they've sent.</small></div>
+								<input type="checkbox" class="tgl" checked={s.accepting} aria-label="Accepting collaborations" onchange={(e) => toggle('accepting', (e.currentTarget as HTMLInputElement).checked)} />
+							</div>
+						</section>
+						<AvailabilitySettings />
+						<PriorityRules />
+					{:else if active === 'autopilot'}
+						<AutopilotSettings />
+					{:else if active === 'payments'}
+						<section class="panel rv" style="--i:1">
+							<div class="panel-h"><h2>Income goal</h2><small>tracked on Today</small></div>
+							<div class="form-b">
+								<div class="f span2"><label for="me-goal">Monthly income goal (₹)</label><input class="inp num" id="me-goal" type="number" inputmode="numeric" value={s.monthly_goal} onchange={(e) => saveSettings({ monthly_goal: num(e) })} /></div>
+							</div>
+						</section>
+						<BillingSettings />
+					{:else if active === 'reviews'}
+						<ReviewsSettings />
+					{:else if active === 'alerts'}
+						<AppSettings />
+						<NotificationSettings />
+					{:else if active === 'account'}
+						<ShippingSettings />
+						<section class="panel rv" style="--i:4">
+							<div class="panel-h"><h2>App</h2></div>
+							<div class="form-b">
+								<div class="f span2"><label for="me-app">App name</label><input class="inp" id="me-app" value={s.app_name} onchange={(e) => saveText('app_name', val(e))} /></div>
+								<div class="f span2"><label for="me-site">Website address</label><input class="inp" id="me-site" value={s.site_url} placeholder="https://yourdomain.com" onchange={(e) => saveText('site_url', val(e))} /></div>
+								<div class="f span2"><label for="me-email">Your sign-in email</label><input class="inp" id="me-email" value={s.creator_email} readonly /><p class="hint" style="margin-top:6px">Only this email opens your studio. It is changed in the database setup, not here.</p></div>
+							</div>
+						</section>
+					{/if}
+				</div>
+			{/key}
 		</div>
-	</section>
-	<BillingSettings />
-	<PackagesSettings />
-	<PriorityRules />
-	<AvailabilitySettings />
-	<ShippingSettings />
-	<ReviewsSettings />
-	<NotificationSettings />
-	<section class="panel rv" style="--i:4">
-		<div class="panel-h"><h2>App</h2></div>
-		<div class="form-b">
-			<div class="f span2"><label for="me-app">App name</label><input class="inp" id="me-app" value={s.app_name} onchange={(e) => saveText('app_name', val(e))} /></div>
-			<div class="f span2"><label for="me-site">Website address</label><input class="inp" id="me-site" value={s.site_url} placeholder="https://yourdomain.com" onchange={(e) => saveText('site_url', val(e))} /></div>
-			<div class="f span2"><label for="me-email">Your sign-in email</label><input class="inp" id="me-email" value={s.creator_email} readonly /><p class="hint" style="margin-top:6px">Only this email opens your studio. It is changed in the database setup, not here.</p></div>
-		</div>
-	</section>
+	{/if}
 </div>

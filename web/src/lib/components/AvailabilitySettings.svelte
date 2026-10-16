@@ -39,13 +39,14 @@
 <section class="panel rv" style="--i:3">
 	<div class="panel-h"><h2>Open weeks</h2><small>shown on your brand page</small></div>
 	<div class="form-b">
-		<div class="f">
+		<div class="f span2">
 			<label for="av-cap">Collabs you can take per week</label>
 			<Select id="av-cap" value={s.weekly_capacity} options={[1, 2, 3, 4, 5, 6, 8, 10].map((n) => ({ value: n, label: `${n} per week` }))} onchange={(v) => saveSettings({ weekly_capacity: v })} />
 		</div>
-		<div class="f" style="display:flex;align-items:flex-end">
-			<label class="check-row" style="padding:0 0 10px"><input type="checkbox" class="cbx" checked={s.show_availability} onchange={(e) => saveSettings({ show_availability: (e.currentTarget as HTMLInputElement).checked })} /><span>Show on my page</span></label>
-		</div>
+	</div>
+	<div class="switch-row">
+		<div><b>Show on my page</b><small>Brands see which weeks are open, limited, full or away.</small></div>
+		<input type="checkbox" class="tgl" checked={s.show_availability} aria-label="Show open weeks on my page" onchange={(e) => saveSettings({ show_availability: (e.currentTarget as HTMLInputElement).checked })} />
 	</div>
 	<div class="wk-grid">
 		{#each weeks as w (w.ws)}

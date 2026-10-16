@@ -53,7 +53,7 @@ export function pushFor(kind: string, p: Record<string, unknown>): Push | null {
     case 'counter_taken':
       return { title: `${brand} took your paid offer`, body: `Barter is now Paid + product at ${inr(p.fee)} · ${code}`, url: open(code), tag: code };
     case 'review_received':
-      return { title: `${brand} left you ${p.rating} stars`, body: String(p.body ?? '').slice(0, 140), url: '/studio/settings', tag: `review-${code}` };
+      return { title: `${brand} left you ${p.rating} stars`, body: String(p.body ?? '').slice(0, 140), url: '/studio/settings?s=reviews', tag: `review-${code}` };
     case 'bank_matched':
       return { title: 'Payment received', body: `${inr(p.amount)}${p.brand ? ` from ${brand}` : ''}`, url: '/studio/payments' };
     case 'post_detected':

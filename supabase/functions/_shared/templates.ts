@@ -444,7 +444,7 @@ export function render(kind: string, p: Payload, s: Settings): Omit<Mail, 'to'> 
         s,
         `${stars} from ${brand}`,
         `${quoteBox('Their words', p.body || 'No comment')}<p style="margin:12px 0 0;font-size:13px;color:#8c8288">${Number(p.rating) >= 4 ? 'It is showing on your brand page.' : 'It is hidden from your page. You can show it from My page.'}</p>`,
-        { label: 'Manage reviews', href: url(s, '/studio/settings') },
+        { label: 'Manage reviews', href: url(s, '/studio/settings?s=reviews') },
       ),
       text: `${brand} left you ${p.rating} stars: ${p.body}`,
     };
