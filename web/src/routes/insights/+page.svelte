@@ -1,8 +1,21 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { page } from '$app/state';
 	import { supabase } from '#lib/supabase.ts';
 	import { loadPublicPage, pub } from '#lib/publicPage.svelte.ts';
-	import { basedOn, engageMix, formatRows, FORMAT_LABEL, insightKpis, type PublicInsights } from '#lib/insights.ts';
+	import {
+		audienceSummary,
+		basedOn,
+		benchmark,
+		engageMix,
+		formatRows,
+		FORMAT_LABEL,
+		insightKpis,
+		monthName,
+		sponsoredLine,
+		type PublicInsights,
+		type SectionKey
+	} from '#lib/insights.ts';
 	import { compact, fmt, fmtUpdated, mediaLabel } from '#lib/util.ts';
 	import { copyText } from '#lib/ui.svelte.ts';
 	import { downloadMediaKit } from '#lib/mediaKitPdf.ts';
@@ -12,19 +25,35 @@
 	import Icon from '#lib/components/Icon.svelte';
 
 	// The profile insights brands ask for, live from Instagram: one link instead of screenshots.
+	// A brand's own link (?for=...) tells the creator when it's opened and may leave some sections out.
 	let d = $state<PublicInsights | null>(null);
 	let status = $state<'loading' | 'ok' | 'off'>('loading');
+	let forLabel = $state('');
+	let hide = $state(new Set<SectionKey>());
 	onMount(async () => {
 		loadPublicPage();
-		const { data } = await supabase.rpc('public_insights');
+		const token = page.url.searchParams.get('for');
+		const [{ data }, link] = await Promise.all([supabase.rpc('public_insights'), token ? supabase.rpc('insight_link_open', { p_token: token }) : Promise.resolve({ data: null })]);
 		d = (data as PublicInsights | null) ?? null;
+		const l = link.data as { label: string; hide: SectionKey[] } | null;
+		if (l) {
+			forLabel = l.label;
+			hide = new Set(l.hide ?? []);
+		}
 		status = d ? 'ok' : 'off';
 	});
+	const show = (k: SectionKey) => !hide.has(k);
 
 	const kpis = $derived(d ? insightKpis(d) : []);
 	const mix = $derived(d ? engageMix(d) : []);
 	const mixMax = $derived(Math.max(1, ...mix.map((x) => x.v)));
 	const formats = $derived(d ? formatRows(d) : []);
+	const summary = $derived(d ? audienceSummary(d.demographics) : []);
+	const bench = $derived(d ? benchmark(d.followers, d.engagement_rate) : null);
+	const sp = $derived(d?.insights.sponsored ?? null);
+	const spLine = $derived(sponsoredLine(sp));
+	const topics = $derived(d?.insights.topics ?? []);
+	const months = $derived((d?.months ?? []).filter((m) => m.reach || m.views));
 
 	// Follower line for the last 90 days.
 	const spark = $derived.by(() => {
@@ -41,9 +70,10 @@
 	async function kit() {
 		if (!pub.data) return;
 		kitBusy = true;
-		await downloadMediaKit(pub.data, location.origin).catch(() => {});
+		await downloadMediaKit(pub.data, location.origin, [...hide]).catch(() => {});
 		kitBusy = false;
 	}
+	const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 </script>
 
 <svelte:head>
@@ -66,7 +96,7 @@
 		<section class="ins-hero rv">
 			<Avatar name={d.display_name} src={d.profile_picture_url} />
 			<div>
-				<div class="eb">Instagram insights</div>
+				<div class="eb">Instagram insights{forLabel ? ` · prepared for ${forLabel}` : ''}</div>
 				<h1>{d.display_name}</h1>
 				<div class="handle">@{d.username}{d.niche ? ` · ${d.niche}` : ''}{d.city ? ` · ${d.city}` : ''}</div>
 				<span class="ins-verified"><Icon name="check" />Verified from Instagram{d.updated_at ? ` · updated ${fmtUpdated(d.updated_at)}` : ''}</span>
@@ -77,6 +107,9 @@
 			</div>
 		</section>
 
+		{#if summary.length && show('audience')}
+			<div class="ins-summary rv" aria-label="Audience at a glance">{#each summary as s (s)}<span>{s}</span>{/each}</div>
+		{/if}
 		{#if d.insights.from}<p class="hint ins-period">Last 30 days: {fmt(d.insights.from)} to {fmt(d.insights.to)}.</p>{/if}
 
 		<div class="ins-kpis">
@@ -91,24 +124,34 @@
 				</div>
 			{/each}
 		</div>
+		{#if bench}<p class="ins-bench rv"><Icon name="check" />{bench}</p>{/if}
 
-		<div class="ins-grid">
-			{#if formats.length}
-				<section class="panel rv" style="--i:3">
-					<div class="panel-h"><h2>By format</h2><small>last 12 of each, leaving out posts under 3 days old</small></div>
-					<div class="table-wrap">
-						<table class="doc-table ins-table">
-							<thead><tr><th>Format</th><th>Based on</th><th>Avg. views</th><th>Avg. reach</th><th>Engagement</th></tr></thead>
-							<tbody>
-								{#each formats as [key, s] (key)}
-									<tr><td>{FORMAT_LABEL[key]}</td><td>{s.manual ? 'your numbers' : `${basedOn(s)} ${key === 'stories' ? (basedOn(s) === 1 ? 'Story' : 'Stories') : basedOn(s) === 1 ? 'post' : 'posts'}`}</td><td>{s.avg_views ? compact(s.avg_views) : '—'}</td><td>{s.avg_reach ? compact(s.avg_reach) : '—'}</td><td>{key === 'stories' ? (s.avg_interactions ? `${compact(s.avg_interactions)} actions` : '—') : s.er ? `${s.er}%` : '—'}</td></tr>
-								{/each}
-							</tbody>
-						</table>
-					</div>
-				</section>
-			{/if}
-			{#if mix.length || spark}
+		{#if formats.length && show('formats')}
+			<section class="panel rv" style="--i:3;margin-bottom:18px">
+				<div class="panel-h"><h2>By format</h2><small>last 12 of each, leaving out posts under 3 days old</small></div>
+				<div class="table-wrap">
+					<table class="doc-table ins-table">
+						<thead><tr><th>Format</th><th>Based on</th><th>Avg. views</th><th>Avg. reach</th><th>Saved · shared</th><th>Engagement</th></tr></thead>
+						<tbody>
+							{#each formats as [key, s] (key)}
+								<tr>
+									<td>{FORMAT_LABEL[key]}</td>
+									<td>{s.manual ? 'your numbers' : key === 'stories' ? plural(basedOn(s), 'Story', 'Stories') : plural(basedOn(s), 'post', 'posts')}</td>
+									<td>{s.avg_views ? compact(s.avg_views) : '—'}{#if s.med_views && s.avg_views && s.med_views !== s.avg_views}<small class="ins-typ">typical {compact(s.med_views)}</small>{/if}</td>
+									<td>{s.avg_reach ? compact(s.avg_reach) : '—'}{#if s.med_reach && s.avg_reach && s.med_reach !== s.avg_reach}<small class="ins-typ">typical {compact(s.med_reach)}</small>{/if}</td>
+									<td>{s.save_rate == null && s.share_rate == null ? '—' : [s.save_rate, s.share_rate].map((v) => (v == null ? '—' : `${v}%`)).join(' · ')}</td>
+									<td>{key === 'stories' ? (s.avg_interactions ? `${compact(s.avg_interactions)} actions` : '—') : s.er ? `${s.er}%` : '—'}</td>
+								</tr>
+							{/each}
+						</tbody>
+					</table>
+				</div>
+				<p class="hint ins-foot">"Typical" is the middle post, so one viral post doesn't pull it up. Saved · shared: per 100 accounts reached.</p>
+			</section>
+		{/if}
+		{#if ((mix.length || spark) && show('engage')) || (topics.length && show('topics'))}
+			<div class="ins-grid">
+			{#if (mix.length || spark) && show('engage')}
 				<section class="panel rv" style="--i:4">
 					{#if mix.length}
 						<div class="panel-h"><h2>How people engage</h2><small>30 days</small></div>
@@ -127,12 +170,54 @@
 					{/if}
 				</section>
 			{/if}
-		</div>
+				{#if topics.length && show('topics')}
+					<section class="panel rv" style="--i:6">
+						<div class="panel-h"><h2>What performs best</h2><small>typical views by topic</small></div>
+						<div class="ins-mix">
+							{#each topics as t (t.k)}
+								<div class="ins-mix-row ins-topic"><span>{t.k}<small>{plural(t.posts, 'post', 'posts')}</small></span><div class="ct-bar"><i style="width:{((t.med_views ?? 0) / (topics[0].med_views || 1)) * 100}%"></i></div><b>{compact(t.med_views)}<small>typical views</small></b></div>
+							{/each}
+						</div>
+					</section>
+				{/if}
+			</div>
+		{/if}
+		{#if sp && spLine && show('sponsored')}
+			<section class="panel rv" style="--i:5;margin-bottom:18px">
+				<div class="panel-h"><h2>Sponsored vs regular posts</h2><small>typical post of each</small></div>
+				<p class="ins-sp-line">{spLine}.</p>
+				<div class="table-wrap">
+					<table class="doc-table ins-table">
+						<thead><tr><th></th><th>Based on</th><th>Typical reach</th><th>Typical views</th><th>Engagement</th></tr></thead>
+						<tbody>
+							<tr><td>Sponsored</td><td>{plural(basedOn(sp.sponsored), 'post', 'posts')}</td><td>{compact(sp.sponsored.med_reach)}</td><td>{compact(sp.sponsored.med_views)}</td><td>{sp.sponsored.er ?? '—'}%</td></tr>
+							<tr><td>Regular</td><td>{plural(basedOn(sp.regular), 'post', 'posts')}</td><td>{compact(sp.regular.med_reach)}</td><td>{compact(sp.regular.med_views)}</td><td>{sp.regular.er ?? '—'}%</td></tr>
+						</tbody>
+					</table>
+				</div>
+			</section>
+		{/if}
 
-		{#if Object.keys(d.demographics ?? {}).length}<Audience demo={d.demographics} i={5} />{/if}
+		{#if Object.keys(d.demographics ?? {}).length && show('audience')}<Audience demo={d.demographics} i={7} />{/if}
 
-		{#if d.top.length}
-			<section class="rv ins-top" style="--i:6" aria-label="Top content">
+		{#if months.length >= 2 && show('months')}
+			<section class="panel rv" style="--i:8;margin-bottom:18px">
+				<div class="panel-h"><h2>Month by month</h2><small>30 days to each month's last update</small></div>
+				<div class="table-wrap">
+					<table class="doc-table ins-table">
+						<thead><tr><th>Month</th><th>Followers</th><th>Accounts reached</th><th>Views</th><th>Accounts engaged</th><th>Reels engagement</th></tr></thead>
+						<tbody>
+							{#each months as m (m.month)}
+								<tr><td>{monthName(m.month)}</td><td>{m.followers ? compact(m.followers) : '—'}</td><td>{m.reach ? compact(m.reach) : '—'}</td><td>{m.views ? compact(m.views) : '—'}</td><td>{m.engaged ? compact(m.engaged) : '—'}</td><td>{m.reels_er ? `${m.reels_er}%` : '—'}</td></tr>
+							{/each}
+						</tbody>
+					</table>
+				</div>
+			</section>
+		{/if}
+
+		{#if d.top.length && show('top')}
+			<section class="rv ins-top" style="--i:9" aria-label="Top content">
 				<div class="pkgs-h"><h2>Top performing content.</h2></div>
 				<div class="ins-top-grid">
 					{#each d.top as m, i (m.permalink)}
@@ -146,8 +231,8 @@
 			</section>
 		{/if}
 
-		{#if results.length}
-			<section class="rv ins-top" style="--i:7" aria-label="Results from past collabs">
+		{#if results.length && show('collabs')}
+			<section class="rv ins-top" style="--i:10" aria-label="Results from past collabs">
 				<div class="pkgs-h"><h2>Past brand collabs</h2><p>How collab posts performed.</p></div>
 				<div class="ins-top-grid">
 					{#each results.slice(0, 6) as r, i (r.permalink + i)}

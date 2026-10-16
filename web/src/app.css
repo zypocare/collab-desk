@@ -1990,3 +1990,51 @@ body{font-feature-settings:'cv11','ss01';letter-spacing:-.005em}
 .story-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;width:100%}
 .story-grid .f{display:flex;flex-direction:column;gap:6px;min-width:0}
 @media (max-width:640px){.story-grid{grid-template-columns:minmax(0,1fr)}}
+/* Insights: audience at a glance, benchmark, typical values, sponsored line, topics */
+.ins-summary{display:flex;flex-wrap:wrap;gap:8px;margin:-6px 0 14px}
+.ins-summary span{background:var(--surface-2);border:1px solid var(--line);border-radius:999px;padding:5px 12px;font-size:15px;font-weight:600;color:var(--ink-2)}
+.ins-bench{display:flex;align-items:center;gap:8px;margin:-6px 0 18px;font-size:15px;font-weight:600;color:var(--ok, #2f9e5b)}
+.ins-bench .ic{width:16px;height:16px;flex-shrink:0}
+.ins-typ{display:block;font-size:13px;color:var(--ink-3);font-weight:500}
+.ins-foot{padding:0 20px 16px;margin:0;font-size:14px}
+.ins-sp-line{padding:0 20px;margin:0 0 10px;font-size:16px;font-weight:600}
+.ins-topic span{display:flex;flex-direction:column;line-height:1.2}
+.ins-topic span small,.ins-topic b small{font-size:13px;color:var(--ink-3);font-weight:500}
+.ins-topic b{display:flex;flex-direction:column;align-items:flex-end;line-height:1.2}
+.ins-mix-row.ins-topic{grid-template-columns:130px minmax(0,1fr) 96px}
+/* Settings: insight links for each brand */
+.ilinks{padding-bottom:6px}
+.ilink-new{display:flex;flex-direction:column;gap:10px;padding:0 20px 16px;align-items:flex-start}
+.ilink-new .inp{width:100%;max-width:420px}
+.ilink-secs{display:flex;flex-wrap:wrap;gap:6px}
+.ilink{padding:12px 20px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:8px}
+.ilink-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.ilink-top b{font-size:16px}
+.ilink-seen{flex:1;min-width:160px;font-size:14.5px;color:var(--ink-3)}
+.ilink-seen.on{color:var(--ok, #2f9e5b);font-weight:600}
+.cat-chip.sm{height:26px;font-size:13.5px;padding:0 10px}
+/* Today: content tips from her own posts */
+.tips-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;padding:0 20px 20px}
+.tip{background:var(--surface-2);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.tip .lbl{display:flex;align-items:center;gap:6px}
+.tip .lbl .ic{width:15px;height:15px}
+.tip p{margin:0;font-size:16px;line-height:1.45}
+.tip-bars{display:flex;flex-direction:column;gap:6px}
+.tip-bar{display:grid;grid-template-columns:150px minmax(0,1fr) 52px;align-items:center;gap:8px;font-size:14.5px}
+.tip-bar span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink-2)}
+.tip-bar span small{color:var(--ink-3)}
+.tip-bar i{height:8px;border-radius:99px;background:var(--line-strong);display:block;min-width:4px}
+.tip-bar.best i,.tip-days .best i{background:var(--accent)}
+.tip-bar.best span{color:var(--ink);font-weight:700}
+.tip-bar b{text-align:right;font-variant-numeric:tabular-nums}
+.tip-bars:not(:has(.best)) .tip-bar i{background:var(--accent)}
+.tip-days{display:flex;gap:6px;align-items:flex-end;height:64px}
+.tip-days span{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:4px;height:100%;font-size:13px;color:var(--ink-3)}
+.tip-days span i{width:100%;max-width:26px;border-radius:6px 6px 2px 2px;background:var(--line-strong);display:block}
+.tip-days span.best{color:var(--ink);font-weight:700}
+.tip-nums{display:flex;gap:24px}
+.tip-nums b{display:block;font-size:26px;font-family:var(--f-display)}
+.tip-nums small{color:var(--ink-3);font-size:14px}
+.tip .hint{font-size:13.5px}
+@media (max-width:760px){.tips-grid{grid-template-columns:minmax(0,1fr)}.tip-bar{grid-template-columns:120px minmax(0,1fr) 48px}}
+.tip-band{display:flex;flex-direction:column;line-height:1.2}.tip-band small{font-size:12.5px}

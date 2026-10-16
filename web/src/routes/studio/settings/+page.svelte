@@ -26,6 +26,7 @@
 	import EmailInbox from '#lib/components/EmailInbox.svelte';
 	import SavedReplies from '#lib/components/SavedReplies.svelte';
 	import ResetData from '#lib/components/ResetData.svelte';
+	import InsightLinks from '#lib/components/InsightLinks.svelte';
 
 	const s = $derived(studio.settings!);
 	const link = $derived(s.site_url.replace(/\/$/, ''));
@@ -270,6 +271,7 @@
 										{/if}
 									</div>
 								{/if}
+								<InsightLinks />
 							{/if}
 						</section>
 					{:else if active === 'rates'}

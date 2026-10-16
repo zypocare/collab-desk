@@ -29,6 +29,7 @@
 	import Icon from '#lib/components/Icon.svelte';
 	import PriorityBadge from '#lib/components/PriorityBadge.svelte';
 	import InstagramPanel from '#lib/components/InstagramPanel.svelte';
+	import ContentTips from '#lib/components/ContentTips.svelte';
 	import AlertsPrompt from '#lib/components/AlertsPrompt.svelte';
 	import BrandQuestions from '#lib/components/BrandQuestions.svelte';
 
@@ -235,3 +236,4 @@
 </section>
 
 <InstagramPanel />
+<ContentTips />

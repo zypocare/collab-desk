@@ -3,7 +3,7 @@
 // top content and past collab results, then a QR code to her brand page. If she doesn't share insights,
 // a one-page version with the basic numbers and audience.
 import { supabase } from './supabase';
-import { audienceOf, basedOn, engageMix, formatRows, FORMAT_LABEL, insightKpis, type PublicInsights } from './insights';
+import { audienceOf, audienceSummary, basedOn, benchmark, engageMix, formatRows, FORMAT_LABEL, insightKpis, monthName, sponsoredLine, type PublicInsights } from './insights';
 import fontkit from '@pdf-lib/fontkit';
 import { PDFDocument, rgb, type PDFFont, type PDFImage, type PDFPage, type RGB } from 'pdf-lib';
 import { qrMatrix } from './invoice';
@@ -56,7 +56,7 @@ async function circlePhoto(url: string): Promise<Uint8Array | null> {
 	}
 }
 
-export async function mediaKitPdf(p: PublicPage, link: string, ins: PublicInsights | null = null): Promise<Uint8Array> {
+export async function mediaKitPdf(p: PublicPage, link: string, ins: PublicInsights | null = null, hide: string[] = []): Promise<Uint8Array> {
 	const doc = await PDFDocument.create();
 	doc.registerFontkit(fontkit);
 	const [regBytes, boldBytes] = await loadFonts();
@@ -65,7 +65,7 @@ export async function mediaKitPdf(p: PublicPage, link: string, ins: PublicInsigh
 	doc.setTitle(`${p.display_name} · Media kit`);
 	doc.setAuthor(p.display_name);
 	if (ins) {
-		await insightsPages(doc, p, ins, link, reg, bold);
+		await insightsPages(doc, p, ins, link, reg, bold, new Set(hide));
 		return doc.save();
 	}
 
@@ -223,7 +223,8 @@ async function coverJpeg(url: string, w: number, h: number): Promise<Uint8Array 
 }
 
 /** Everything on the insights page, on as many A4 pages as it needs. */
-async function insightsPages(doc: PDFDocument, p: PublicPage, d: PublicInsights, link: string, reg: PDFFont, bold: PDFFont) {
+async function insightsPages(doc: PDFDocument, p: PublicPage, d: PublicInsights, link: string, reg: PDFFont, bold: PDFFont, hide: Set<string>) {
+	const show = (k: string) => !hide.has(k);
 	const W = 595.28, H = 841.89, M = 40, CW = W - 2 * M;
 	let page = doc.addPage([W, H]);
 	let y = H;
@@ -282,6 +283,11 @@ async function insightsPages(doc: PDFDocument, p: PublicPage, d: PublicInsights,
 		text(`Last 30 days: ${fmt(d.insights.from)} to ${fmt(d.insights.to ?? '')}.`, M, y, 8.5, reg, MUTED);
 		y -= 16;
 	}
+	const summary = show('audience') ? audienceSummary(d.demographics) : [];
+	if (summary.length) {
+		text(fit(`Audience at a glance: ${summary.join('  ·  ')}`, bold, 9.5, CW), M, y, 9.5, bold, G1);
+		y -= 16;
+	}
 
 	// ---- headline numbers, 4 per row (Reel views and Story reach are in the format table, not here too) ----
 	const fmts = new Set(formatRows(d).map(([k]) => k));
@@ -303,67 +309,114 @@ async function insightsPages(doc: PDFDocument, p: PublicPage, d: PublicInsights,
 			}
 			if (k.sub) text(fit(k.sub, reg, 8, x + tw - 8 - sx), sx, top - 47, 8, reg, MUTED);
 		});
-		y -= Math.ceil(kpis.length / cols) * (th + gap) + 14;
+		y -= Math.ceil(kpis.length / cols) * (th + gap) + 4;
+		const bench = benchmark(d.followers, d.engagement_rate);
+		if (bench) {
+			text(fit(bench, bold, 8.5, CW), M, y, 8.5, bold, UP);
+			y -= 6;
+		}
+		y -= 10;
 	}
 
-	// ---- by format (left) and how people engage + followers (right) ----
-	const formats = formatRows(d);
-	const eng = engageMix(d);
-	const hist = d.history ?? [];
-	if (formats.length || eng.length || hist.length >= 3) {
-		const lw = CW * 0.56, rx = M + lw + 20, rw = CW - lw - 20;
-		const leftH = formats.length ? 30 + formats.length * 18 : 0;
-		const rightH = (eng.length ? 24 + eng.length * 16 : 0) + (hist.length >= 3 ? 86 : 0);
-		need(Math.max(leftH, rightH) + 10);
+	// ---- by format: full width, with typical values and saves/shares ----
+	const formats = show('formats') ? formatRows(d) : [];
+	if (formats.length) {
+		need(30 + formats.length * 18 + 20);
 		const top = y;
-		if (formats.length) {
-			label('By format · last 12 of each, excluding posts from the last 3 days.', M, top);
-			// Right edges of the number columns.
-			const cx = [M, M + lw * 0.38, M + lw * 0.6, M + lw * 0.8, M + lw];
-			let yy = top - 18;
-			['Format', 'Based on', 'Avg. views', 'Avg. reach', 'Engagement'].forEach((h, i) => (i === 0 ? text(h, cx[0], yy, 8, bold, MUTED) : right(h, cx[i], yy, 8, bold, MUTED)));
-			page.drawLine({ start: { x: M, y: yy - 5 }, end: { x: M + lw, y: yy - 5 }, thickness: 0.6, color: LINE });
-			for (const [key, s] of formats) {
-				yy -= 18;
-				text(FORMAT_LABEL[key] ?? key, cx[0], yy, 9.5, bold);
-				right(s.manual ? 'own' : `${basedOn(s)} ${key === 'stories' ? (basedOn(s) === 1 ? 'Story' : 'Stories') : basedOn(s) === 1 ? 'post' : 'posts'}`, cx[1], yy, 9.5);
-				right(s.avg_views ? compact(s.avg_views) : '-', cx[2], yy, 9.5);
-				right(s.avg_reach ? compact(s.avg_reach) : '-', cx[3], yy, 9.5);
-				right(key === 'stories' ? (s.avg_interactions ? `${compact(s.avg_interactions)} actions` : '-') : s.er ? `${s.er}%` : '-', cx[4], yy, 9.5, bold);
-				page.drawLine({ start: { x: M, y: yy - 6 }, end: { x: M + lw, y: yy - 6 }, thickness: 0.4, color: LINE });
-			}
+		label('By format · last 12 of each, excluding posts from the last 3 days.', M, top);
+		// Right edges of the number columns.
+		const cx = [M, 0.25, 0.36, 0.47, 0.58, 0.69, 0.86, 1].map((f, i) => (i === 0 ? M : M + CW * f));
+		let yy = top - 18;
+		['Format', 'Based on', 'Avg. views', 'Typical views', 'Avg. reach', 'Typical reach', 'Saved · shared', 'Engagement'].forEach((h, i) => (i === 0 ? text(h, cx[0], yy, 8, bold, MUTED) : right(h, cx[i], yy, 8, bold, MUTED)));
+		page.drawLine({ start: { x: M, y: yy - 5 }, end: { x: M + CW, y: yy - 5 }, thickness: 0.6, color: LINE });
+		const c = (n: number | null | undefined) => (n ? compact(n) : '-');
+		const rates = (a: number | null | undefined, b: number | null | undefined, none: string) => (a == null && b == null ? none : [a, b].map((v) => (v == null ? none : `${v}%`)).join(' · '));
+		for (const [key, s] of formats) {
+			yy -= 18;
+			text(FORMAT_LABEL[key] ?? key, cx[0], yy, 9.5, bold);
+			right(s.manual ? 'own' : `${basedOn(s)} ${key === 'stories' ? (basedOn(s) === 1 ? 'Story' : 'Stories') : basedOn(s) === 1 ? 'post' : 'posts'}`, cx[1], yy, 9.5);
+			right(c(s.avg_views), cx[2], yy, 9.5);
+			right(c(s.med_views), cx[3], yy, 9.5, reg, MUTED);
+			right(c(s.avg_reach), cx[4], yy, 9.5);
+			right(c(s.med_reach), cx[5], yy, 9.5, reg, MUTED);
+			right(rates(s.save_rate, s.share_rate, '-'), cx[6], yy, 9);
+			right(key === 'stories' ? (s.avg_interactions ? `${compact(s.avg_interactions)} actions` : '-') : s.er ? `${s.er}%` : '-', cx[7], yy, 9.5, bold);
+			page.drawLine({ start: { x: M, y: yy - 6 }, end: { x: M + CW, y: yy - 6 }, thickness: 0.4, color: LINE });
 		}
-		let ry = top;
-		if (eng.length) {
-			label('How people engage · 30 days', rx, ry);
-			const max = Math.max(1, ...eng.map((e) => e.v));
-			ry -= 18;
-			for (const e of eng) {
-				text(e.k, rx, ry, 9);
-				const bx = rx + 62, bw = rw - 62 - 40;
-				page.drawRectangle({ x: bx, y: ry - 1, width: bw, height: 7, color: SOFT });
-				page.drawRectangle({ x: bx, y: ry - 1, width: Math.max(2, (bw * e.v) / max), height: 7, color: G2 });
-				right(compact(e.v), rx + rw, ry, 9, bold);
-				ry -= 16;
-			}
-			ry -= 8;
+		text('Typical: the middle post, so one viral post does not pull it up. Saved · shared: per 100 accounts reached.', M, yy - 18, 7.5, reg, MUTED);
+		y = yy - 36;
+	}
+
+	// Two side-by-side blocks (left and right halves); returns how tall the taller one was.
+	const half = (CW - 24) / 2, rx = M + half + 24;
+	const bars = (x: number, top: number, w: number, title: string, rows: { k: string; v: number; note?: string }[], fmtV: (v: number) => string) => {
+		label(title, x, top);
+		const max = Math.max(1, ...rows.map((r) => r.v));
+		let yy = top - 18;
+		for (const r of rows) {
+			text(fit(r.k, reg, 9, 84), x, yy, 9);
+			const bx = x + 88, bw = w - 88 - 52;
+			page.drawRectangle({ x: bx, y: yy - 1, width: bw, height: 7, color: SOFT });
+			page.drawRectangle({ x: bx, y: yy - 1, width: Math.max(2, (bw * r.v) / max), height: 7, color: G2 });
+			right(fmtV(r.v), x + w, yy, 9, bold);
+			if (r.note) text(r.note, x, yy - 9, 7, reg, MUTED);
+			yy -= r.note ? 22 : 16;
 		}
+		return top - yy;
+	};
+
+	// ---- how people engage (left) and followers (right) ----
+	const eng = show('engage') ? engageMix(d) : [];
+	const hist = show('engage') ? (d.history ?? []) : [];
+	if (eng.length || hist.length >= 3) {
+		need(100);
+		const top = y;
+		const lh = eng.length ? bars(M, top, half, 'How people engage · 30 days', eng, (v) => compact(v)) : 0;
+		let rh = 0;
 		if (hist.length >= 3) {
-			label(`Followers · ${fmt(hist[0].day)} to ${fmt(hist[hist.length - 1].day)}`, rx, ry);
+			label(`Followers · ${fmt(hist[0].day)} to ${fmt(hist[hist.length - 1].day)}`, rx, top);
 			const ys = hist.map((h) => h.followers), lo = Math.min(...ys), hi = Math.max(...ys), span = hi - lo || 1;
-			const gx = rx, gy = ry - 62, gw = rw, gh = 46;
+			const gx = rx, gy = top - 62, gw = half, gh = 46;
 			page.drawRectangle({ x: gx, y: gy, width: gw, height: gh + 6, color: SOFT });
 			const pt = (i: number) => ({ x: gx + 4 + (i / (hist.length - 1)) * (gw - 8), y: gy + 4 + ((ys[i] - lo) / span) * (gh - 4) });
 			for (let i = 1; i < hist.length; i++) page.drawLine({ start: pt(i - 1), end: pt(i), thickness: 1.6, color: G2 });
 			text(compact(ys[0]), gx, gy - 11, 8, reg, MUTED);
 			right(compact(ys[ys.length - 1]), gx + gw, gy - 11, 8, bold);
-			ry = gy - 18;
+			rh = 80;
 		}
-		y = Math.min(top - leftH, ry) - 16;
+		y = top - Math.max(lh, rh) - 14;
+	}
+
+	// ---- sponsored vs regular (left) and what performs best (right) ----
+	const sp = show('sponsored') ? (d.insights.sponsored ?? null) : null;
+	const spLine = sponsoredLine(sp);
+	const topics = show('topics') ? (d.insights.topics ?? []) : [];
+	if ((sp && spLine) || topics.length) {
+		need(30 + Math.max(4, topics.length) * 22);
+		const top = y;
+		let lh = 0;
+		if (sp && spLine) {
+			label('Sponsored vs regular posts · typical post', M, top);
+			for (const [i, l] of wrap(`${spLine}.`, bold, 9.5, half).slice(0, 2).entries()) text(l, M, top - 17 - i * 12, 9.5, bold);
+			const rows: [string, typeof sp.sponsored][] = [['Sponsored', sp.sponsored], ['Regular', sp.regular]];
+			let yy = top - 50;
+			['', 'Reach', 'Views', 'Engagement'].forEach((h, i) => i && right(h, M + half * [0, 0.55, 0.78, 1][i], yy, 8, bold, MUTED));
+			for (const [k, st] of rows) {
+				yy -= 15;
+				text(`${k} (${basedOn(st)})`, M, yy, 9.5, bold);
+				right(compact(st.med_reach), M + half * 0.55, yy, 9.5);
+				right(compact(st.med_views), M + half * 0.78, yy, 9.5);
+				right(st.er != null ? `${st.er}%` : '-', M + half, yy, 9.5, bold);
+			}
+			lh = top - yy + 6;
+		}
+		const tx = sp && spLine ? rx : M, tw = sp && spLine ? half : CW;
+		const th = topics.length ? bars(tx, top, tw, 'What performs best · typical views by topic', topics.map((t) => ({ k: t.k, v: t.med_views ?? 0, note: `${t.posts} post${t.posts === 1 ? '' : 's'}` })), (v) => compact(v)) : 0;
+		y = top - Math.max(lh, th) - 14;
 	}
 
 	// ---- audience: age, gender, top cities, top countries ----
-	const a = audienceOf(d.demographics ?? {});
+	const a = audienceOf(show('audience') ? (d.demographics ?? {}) : {});
 	const groups = [a.age.length ? 'age' : '', a.gender.length ? 'gender' : '', a.cities.length ? 'cities' : '', a.countries.length ? 'countries' : ''].filter(Boolean);
 	if (groups.length) {
 		const rows = Math.max(a.age.length, a.gender.length + 2, a.cities.length, a.countries.length);
@@ -411,6 +464,23 @@ async function insightsPages(doc: PDFDocument, p: PublicPage, d: PublicInsights,
 		y = top - 16 - rows * 14 - 12;
 	}
 
+	// ---- month by month ----
+	const months = show('months') ? (d.months ?? []).filter((m) => m.reach || m.views) : [];
+	if (months.length >= 2) {
+		need(30 + months.length * 16);
+		label('Month by month · 30 days to each month\'s last update', M, y);
+		const cx = [M, 0.3, 0.46, 0.62, 0.8, 1].map((f, i) => (i === 0 ? M : M + CW * f));
+		let yy = y - 18;
+		['Month', 'Followers', 'Reached', 'Views', 'Engaged', 'Reels engagement'].forEach((h, i) => (i === 0 ? text(h, cx[0], yy, 8, bold, MUTED) : right(h, cx[i], yy, 8, bold, MUTED)));
+		for (const m of months) {
+			yy -= 16;
+			text(monthName(m.month), cx[0], yy, 9.5, bold);
+			[m.followers, m.reach, m.views, m.engaged].forEach((v, i) => right(v ? compact(v) : '-', cx[i + 1], yy, 9.5));
+			right(m.reels_er ? `${m.reels_er}%` : '-', cx[5], yy, 9.5, bold);
+		}
+		y = yy - 22;
+	}
+
 	// ---- post grids: top content and past brand collabs ----
 	const tw = (CW - 5 * 9) / 6, th = Math.round(tw * 0.9);
 	const grid = async (title: string, items: { img: string; t: string; n: string; n2?: string; url: string }[]) => {
@@ -438,11 +508,11 @@ async function insightsPages(doc: PDFDocument, p: PublicPage, d: PublicInsights,
 	const views = (v: number | null, r: number | null) => (v ? `${compact(v)} views` : r ? `${compact(r)} reached` : '');
 	await grid(
 		'Top performing content',
-		(d.top ?? []).slice(0, 6).map((m) => ({ img: m.thumbnail_url, url: m.permalink, t: `${mediaLabel(m.media_type, m.product_type)} · ${fmt(m.posted_at.slice(0, 10))}`, n: views(m.views, m.reach), n2: m.interactions ? `${compact(m.interactions)} interactions` : '' }))
+		(show('top') ? (d.top ?? []) : []).slice(0, 6).map((m) => ({ img: m.thumbnail_url, url: m.permalink, t: `${mediaLabel(m.media_type, m.product_type)} · ${fmt(m.posted_at.slice(0, 10))}`, n: views(m.views, m.reach), n2: m.interactions ? `${compact(m.interactions)} interactions` : '' }))
 	);
 	await grid(
 		'Past brand collabs · how collab posts performed',
-		(p.results ?? []).slice(0, 6).map((r) => ({ img: r.thumbnail, url: r.permalink, t: `${kindLabel(r.kind)} · ${r.brand}`, n: views(r.views, r.reach) }))
+		(show('collabs') ? (p.results ?? []) : []).slice(0, 6).map((r) => ({ img: r.thumbnail, url: r.permalink, t: `${kindLabel(r.kind)} · ${r.brand}`, n: views(r.views, r.reach) }))
 	);
 
 	// ---- work together: link and QR to her brand page ----
@@ -461,9 +531,9 @@ async function insightsPages(doc: PDFDocument, p: PublicPage, d: PublicInsights,
 	text(`Usually replies within ${p.reply_time}. Live insights: ${site}/insights`, M + 16, fy + 12, 8, reg, MUTED);
 }
 
-export async function downloadMediaKit(p: PublicPage, link: string) {
+export async function downloadMediaKit(p: PublicPage, link: string, hide: string[] = []) {
 	const { data } = await supabase.rpc('public_insights');
-	const bytes = await mediaKitPdf(p, link, (data as PublicInsights | null) ?? null);
+	const bytes = await mediaKitPdf(p, link, (data as PublicInsights | null) ?? null, hide);
 	saveBlob(bytes, `${p.display_name.replace(/[^\w]+/g, '-')}-media-kit.pdf`);
 }
 

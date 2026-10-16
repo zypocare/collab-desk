@@ -139,19 +139,32 @@ export async function runSync(db: SupabaseClient, opts: SyncOptions = {}) {
       ig.accountTotals(token, new Date(Date.now() - 60 * DAY), new Date(Date.now() - 30 * DAY)).catch(() => ({})),
     ]);
     // Her most recent posts of each kind (whatever their dates: she may not have posted lately).
-    const { data: m90 } = await db.from('ig_media').select('media_type, product_type, posted_at, views, reach, interactions, likes, comments, avg_watch_ms')
+    const { data: m90 } = await db.from('ig_media').select('id, caption, media_type, product_type, posted_at, views, reach, interactions, likes, comments, saves, shares, avg_watch_ms')
       .order('posted_at', { ascending: false }).limit(200);
-    const fmtStats = (xs: { views: number | null; reach: number | null; interactions: number | null; likes: number | null; comments: number | null; avg_watch_ms?: number | null }[]) => {
-      const watch = avg(xs.map((r) => r.avg_watch_ms ?? null));
-      const inter = avg(xs.map((r) => r.interactions ?? (r.likes === null && r.comments === null ? null : (r.likes ?? 0) + (r.comments ?? 0))));
-      const v = avg(xs.map((r) => r.views));
-      const re = avg(xs.map((r) => r.reach));
+    type Post = NonNullable<typeof m90>[number];
+    const nums = (xs: (number | null | undefined)[]) => xs.filter((x): x is number => typeof x === 'number');
+    const median = (xs: (number | null | undefined)[]) => {
+      const v = nums(xs).sort((a, b) => a - b);
+      if (!v.length) return null;
+      const h = Math.floor(v.length / 2);
+      return v.length % 2 ? v[h] : (v[h - 1] + v[h]) / 2;
+    };
+    const round = (n: number | null, dp = 0) => (n === null ? null : Math.round(n * 10 ** dp) / 10 ** dp);
+    const interOf = (r: Post) => r.interactions ?? (r.likes === null && r.comments === null ? null : (r.likes ?? 0) + (r.comments ?? 0));
+    const fmtStats = (xs: Post[]) => {
+      const inter = avg(xs.map(interOf));
+      // Saves and shares per 100 accounts reached: the strongest signs people found it worth keeping.
+      const withReach = xs.filter((r) => r.reach);
       return {
         // posts: how many were looked at; measured: how many had Instagram's views/reach (the averages' basis).
         posts: xs.length, measured: xs.filter((r) => r.views !== null || r.reach !== null).length,
-        avg_views: v === null ? null : Math.round(v), avg_reach: re === null ? null : Math.round(re),
-        avg_interactions: inter === null ? null : Math.round(inter),
-        avg_watch_ms: watch === null ? null : Math.round(watch),
+        avg_views: round(avg(xs.map((r) => r.views))), avg_reach: round(avg(xs.map((r) => r.reach))),
+        // "Typical": the middle post, so one viral post doesn't pull it up.
+        med_views: round(median(xs.map((r) => r.views))), med_reach: round(median(xs.map((r) => r.reach))),
+        avg_interactions: round(inter),
+        avg_watch_ms: round(avg(xs.map((r) => r.avg_watch_ms))),
+        save_rate: round(avg(withReach.filter((r) => r.saves !== null).map((r) => (r.saves! / r.reach!) * 100)), 2),
+        share_rate: round(avg(withReach.filter((r) => r.shares !== null).map((r) => (r.shares! / r.reach!) * 100)), 2),
         er: inter !== null && p.followers_count ? Math.round((inter / p.followers_count) * 10000) / 100 : null,
       };
     };
@@ -166,15 +179,70 @@ export async function runSync(db: SupabaseClient, opts: SyncOptions = {}) {
       photos: fmtStats(recent12(all90.filter((r) => !isStory(r) && r.media_type === 'IMAGE'))),
       stories: fmtStats(recent12(all90.filter(isStory))),
     };
+
+    // Settled feed posts with Instagram's figures: the basis for the comparisons below.
+    const feed = all90.filter((r) => !isStory(r) && (r.views !== null || r.reach !== null));
+
+    // Sponsored (linked to a collab, or tagged #ad/#collab/...) against regular posts.
+    const isSponsored = (r: Post) => linked.has(r.id) || adTagged(r.caption ?? '');
+    const sp = recent12(feed.filter(isSponsored)), reg = recent12(feed.filter((r) => !isSponsored(r)));
+    const sponsored = sp.length >= 2 && reg.length >= 2 ? { sponsored: fmtStats(sp), regular: fmtStats(reg) } : null;
+
+    // Topics from captions and hashtags: which kinds of content get the most views.
+    const TOPICS: [string, RegExp][] = [
+      ['Fashion', /#?(ootd|fashion|outfit|style|styleinspo|saree|lehenga|kurta|dress|wear|lookbook|grwm)\b/i],
+      ['Travel', /#?(travel|trip|wanderlust|travelgram|beach|mountains?|explore|vacation|holiday|hotel|staycation|resort|itinerary)\b/i],
+      ['Yoga & fitness', /#?(yoga|fitness|workout|gym|asana|pilates|running|fit|stretch)\b/i],
+      ['Beauty', /#?(makeup|skincare|skin|beauty|lipstick|serum|hair|nails|glow)\b/i],
+      ['Food', /#?(food|foodie|cafe|restaurant|recipe|brunch|dessert|coffee|eats)\b/i],
+      ['Wellness', /#?(wellness|mindful|mindfulness|meditation|selfcare|self-care|healthy|health)\b/i],
+      ['Lifestyle', /#?(lifestyle|dayinmylife|vlog|home|decor|routine)\b/i],
+      ['Tech', /#?(tech|gadget|phone|unboxing|laptop|camera)\b/i],
+    ];
+    const topics = TOPICS.map(([k, re]) => {
+      const xs = feed.filter((r) => re.test(r.caption ?? '')).slice(0, 20);
+      const st = fmtStats(xs);
+      return { k, posts: xs.length, med_views: st.med_views, avg_views: st.avg_views, med_reach: st.med_reach };
+    }).filter((x) => x.posts >= 2 && x.med_views !== null).sort((a, b) => b.med_views! - a.med_views!).slice(0, 6);
+
+    // When posts reach the most people (India time): by day of the week and time of day.
+    const ist = (iso: string) => new Date(Date.parse(iso) + 5.5 * 3600e3);
+    const BANDS: [string, (h: number) => boolean][] = [
+      ['Morning (6am-12pm)', (h) => h >= 6 && h < 12], ['Afternoon (12-5pm)', (h) => h >= 12 && h < 17],
+      ['Evening (5-9pm)', (h) => h >= 17 && h < 21], ['Night (9pm-6am)', (h) => h >= 21 || h < 6],
+    ];
+    const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const withReach = feed.filter((r) => r.reach !== null).slice(0, 60);
+    const bucket = (k: string, xs: Post[]) => ({ k, posts: xs.length, med_reach: round(median(xs.map((r) => r.reach))) });
+    const bands = BANDS.map(([k, f]) => bucket(k, withReach.filter((r) => f(ist(r.posted_at).getUTCHours())))).filter((b) => b.posts > 0);
+    const days = DAYS.map((k, i) => bucket(k, withReach.filter((r) => ist(r.posted_at).getUTCDay() === i))).filter((b) => b.posts > 0);
+    const best = (xs: { k: string; posts: number; med_reach: number | null }[]) =>
+      xs.filter((x) => x.posts >= 2 && x.med_reach !== null).sort((a, b) => b.med_reach! - a.med_reach!)[0]?.k ?? null;
+    const best_time = withReach.length >= 6 ? { posts: withReach.length, bands, days, best_band: best(bands), best_day: best(days) } : null;
+
     const followersOn = async (daysAgo: number) =>
       // The count on (or just before) that day; nothing if the history doesn't go back that far yet.
       (await db.from('ig_followers_history').select('followers').lte('day', new Date(Date.now() - daysAgo * DAY).toISOString().slice(0, 10)).order('day', { ascending: false }).limit(1)).data?.[0]?.followers ?? null;
     const [f30, f90] = await Promise.all([followersOn(30), followersOn(90)]);
     const insights = {
       from: new Date(Date.now() - 30 * DAY).toISOString().slice(0, 10), to: now.toISOString().slice(0, 10),
-      totals: cur, prev, formats,
+      totals: cur, prev, formats, sponsored, topics, best_time,
       growth: { d30: f30 === null ? null : p.followers_count - f30, d90: f90 === null ? null : p.followers_count - f90 },
     };
+
+    // Monthly snapshot (this month, updated each sync), and last month from the 30 days before if missing.
+    const monthOf = (d: Date) => `${ist(d.toISOString()).toISOString().slice(0, 7)}-01`;
+    const t30 = cur as Record<string, number>, p30 = prev as Record<string, number>;
+    await db.from('ig_monthly').upsert({
+      month: monthOf(now), followers: p.followers_count, reach: t30.reach ?? null, views: t30.views ?? null, engaged: t30.accounts_engaged ?? null,
+      interactions: t30.total_interactions ?? null, er: engagement, reels_er: formats.reels.er, updated_at: now.toISOString(),
+    });
+    if (p30.reach || p30.views) {
+      await db.from('ig_monthly').upsert({
+        month: monthOf(new Date(Date.now() - 30 * DAY)), followers: f30, reach: p30.reach ?? null, views: p30.views ?? null,
+        engaged: p30.accounts_engaged ?? null, interactions: p30.total_interactions ?? null, er: null, reels_er: null,
+      }, { onConflict: 'month', ignoreDuplicates: true });
+    }
 
     // 5. Audience, once a week.
     const { data: acct } = await db.from('ig_account').select('demographics, demographics_at').eq('id', 1).single();

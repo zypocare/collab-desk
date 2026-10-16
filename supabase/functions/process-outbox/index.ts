@@ -6,6 +6,9 @@ import { mailConfigured, sendMail } from '../_shared/mailer.ts';
 import { render, type Settings } from '../_shared/templates.ts';
 import { pushFor, pushToCreator } from '../_shared/push.ts';
 
+// Alerts only: a brand opening her insights link.
+const PUSH_ONLY = new Set(['insights_viewed']);
+
 const CRON_SECRET = Deno.env.get('CRON_SECRET') ?? '';
 
 Deno.serve(async (req) => {
@@ -37,6 +40,12 @@ Deno.serve(async (req) => {
     // Phone alert for things that need her (independent of the email going out).
     const alert = pushFor(row.kind, row.payload ?? {});
     if (alert) await pushToCreator(supabase, alert).catch((e) => console.error('[push]', e));
+    // Some things are worth a phone alert but not an email.
+    if (PUSH_ONLY.has(row.kind)) {
+      await supabase.from('outbox').update({ status: 'sent', sent_at: new Date().toISOString(), last_error: null }).eq('id', row.id);
+      sent++;
+      continue;
+    }
     try {
       const mail = render(row.kind, row.payload ?? {}, settings);
       if (!mailConfigured) {
