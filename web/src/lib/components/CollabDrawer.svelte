@@ -32,6 +32,8 @@
 		stageIndex
 	} from '../util';
 	import Icon from './Icon.svelte';
+	import { isRanked } from '../priority';
+	import PriorityPanel from './PriorityPanel.svelte';
 	import Select from './Select.svelte';
 	import DatePicker from './DatePicker.svelte';
 	import Mono from './Mono.svelte';
@@ -198,6 +200,8 @@
 					<button class="btn sm" onclick={() => changeStage('request')}><Icon name="refresh" />Reopen request</button>
 				{/if}
 			</section>
+
+			{#if isRanked(c)}<PriorityPanel {c} />{/if}
 
 			<section class="sec">
 				<h3>Deal</h3>

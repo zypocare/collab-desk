@@ -1,5 +1,6 @@
 // The creator's data: loads everything once, keeps it live with realtime, and saves edits.
 import type { RealtimeChannel } from '@supabase/supabase-js';
+import { scoreCollab } from './priority';
 import { supabase } from './supabase';
 import type { BankAlert, Brand, BrandPrivate, BrandReport, Checklist, Collab, Deliverable, IgAccount, IgMedia, Quote, Settings, Stage } from './types';
 import { balanceDue, normaliseInvoice, type Invoice, type InvoiceItem } from './invoice';
@@ -121,6 +122,8 @@ async function reloadOne(id: string) {
 
 export const byId = (id: string | null | undefined) => studio.collabs.find((c) => c.id === id);
 export const byCode = (code: string) => studio.collabs.find((c) => c.code.toUpperCase() === code.toUpperCase());
+/** Priority score for a request (see priority.ts). */
+export const priorityOf = (c: Collab) => (studio.settings ? scoreCollab(c, studio.settings, studio.collabs) : null);
 
 type CollabPatch = Partial<Omit<Collab, 'id' | 'brand' | 'deliverables' | 'events'>>;
 

@@ -2,7 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { untrack } from 'svelte';
-	import { byCode, byId, setStage, studio } from '#lib/studio.svelte.ts';
+	import { byCode, byId, priorityOf, setStage, studio } from '#lib/studio.svelte.ts';
 	import type { Stage } from '#lib/types.ts';
 	import { pointer, ui } from '#lib/ui.svelte.ts';
 	import { STAGES, inrS, parse } from '#lib/util.ts';
@@ -38,6 +38,8 @@
 			const cs = visible
 				.filter((c) => c.stage === s.id)
 				.sort((a, b) => {
+					// Requests still being decided: highest priority first (paid before barter).
+					if (s.id === 'request' || s.id === 'negotiating') return (priorityOf(b)?.score ?? 0) - (priorityOf(a)?.score ?? 0);
 					const ka = key(a.draft_date || a.live_date || a.received_on), kb = key(b.draft_date || b.live_date || b.received_on);
 					return s.id === 'wrapped' || s.id === 'declined' ? kb - ka : ka - kb;
 				});

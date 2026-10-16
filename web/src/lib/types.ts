@@ -213,6 +213,11 @@ export type Settings = {
 	reminders_enabled: boolean;
 	inbox_token: string;
 	report_mode: 'review' | 'auto' | 'off';
+	barter_mode: 'open' | 'selective' | 'closed';
+	barter_min_value: number;
+	barter_monthly_cap: number;
+	barter_reply_time: string;
+	priority_categories: string[];
 };
 
 export type PublicPage = {
@@ -226,6 +231,7 @@ export type PublicPage = {
 	reply_time: string;
 	accepting: boolean;
 	rates: Record<string, number> | null;
+	barter: { mode: 'open' | 'selective' | 'closed'; min_value: number; reply_time: string; slots_left: number | null } | null;
 	worked_with: string[];
 	instagram: {
 		username: string;

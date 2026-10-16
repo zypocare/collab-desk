@@ -1,14 +1,18 @@
 <script lang="ts">
 	import type { Collab } from '../types';
+	import { isRanked } from '../priority';
+	import { priorityOf } from '../studio.svelte';
 	import { ui } from '../ui.svelte';
 	import { delivText, diff, fmt, inr, inrS, nextLine, stageIndex, stageLabel } from '../util';
 	import Icon from './Icon.svelte';
+	import PriorityBadge from './PriorityBadge.svelte';
 	import Mono from './Mono.svelte';
 	import PayPill from './PayPill.svelte';
 
 	let { c, i = 0, pop = false }: { c: Collab; i?: number; pop?: boolean } = $props();
 
 	const n = $derived(nextLine(c));
+	const prio = $derived(isRanked(c) ? priorityOf(c) : null);
 	const done = $derived(c.deliverables.filter((d) => d.done).length);
 	const showProg = $derived(stageIndex(c.stage) >= 2 && stageIndex(c.stage) <= 4 && c.deliverables.length > 0);
 	const followTone = $derived(c.follow_date ? (diff(c.follow_date) < 0 ? 'late' : diff(c.follow_date) === 0 ? 'soon' : '') : '');
@@ -43,6 +47,7 @@
 		<div class="dprog" title="{done} of {c.deliverables.length} deliverables done"><i style="--p:{done / c.deliverables.length}"></i></div>
 	{/if}
 	<div class="chips">
+		{#if prio}<PriorityBadge p={prio} compact />{/if}
 		{#if c.type === 'barter'}
 			<span class="chip tint k-product"><Icon name="gift" />Barter · {inrS(c.product_value)}</span>
 		{:else}

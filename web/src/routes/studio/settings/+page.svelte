@@ -7,6 +7,7 @@
 	import NotificationSettings from '#lib/components/NotificationSettings.svelte';
 	import BillingSettings from '#lib/components/BillingSettings.svelte';
 	import InstagramSettings from '#lib/components/InstagramSettings.svelte';
+	import PriorityRules from '#lib/components/PriorityRules.svelte';
 
 	const s = $derived(studio.settings!);
 	const link = $derived(s.site_url.replace(/\/$/, ''));
@@ -88,6 +89,7 @@
 				</div>
 			{/each}
 		</section>
+		<PriorityRules />
 		<NotificationSettings />
 		<section class="panel rv" style="--i:4">
 			<div class="panel-h"><h2>App</h2></div>

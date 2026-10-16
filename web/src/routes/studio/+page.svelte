@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { completeFollow, markPaid, studio } from '#lib/studio.svelte.ts';
+	import { completeFollow, markPaid, priorityOf, studio } from '#lib/studio.svelte.ts';
 	import { countUp, ui } from '#lib/ui.svelte.ts';
 	import {
 		KIND_ICON,
@@ -26,11 +26,18 @@
 		type Task
 	} from '#lib/util.ts';
 	import Icon from '#lib/components/Icon.svelte';
+	import PriorityBadge from '#lib/components/PriorityBadge.svelte';
 	import InstagramPanel from '#lib/components/InstagramPanel.svelte';
 
 	const s = $derived(studio.settings!);
 	const list = $derived(studio.collabs);
-	const ts = $derived(tasks(list));
+	// New requests are listed by priority (paid first), in the place the first one would have been.
+	const ts = $derived.by(() => {
+		const all = tasks(list);
+		const ranked = all.filter((t) => t.kind === 'new').sort((a, b) => (priorityOf(b.c)?.score ?? 0) - (priorityOf(a.c)?.score ?? 0));
+		let n = 0;
+		return all.map((t) => (t.kind === 'new' ? ranked[n++] : t));
+	});
 	const urgent = $derived(ts.filter((t) => t.d <= 0).length);
 
 	const T = today();
@@ -163,7 +170,7 @@
 			{@const w = when(t)}
 			<div class="task" class:leaving={leaving === t.c.id + t.kind} style="--i:{i}">
 				<span class="ticon tint k-{t.kind === 'pay' ? 'bad' : t.kind}"><Icon name={KIND_ICON[t.kind]} /></span>
-				<div class="tbody"><div class="tt">{t.title}</div><div class="tm">{t.c.brand.name} · <span class={w.cls}>{w.text}</span></div></div>
+				<div class="tbody"><div class="tt">{t.title}{#if t.kind === 'new' && priorityOf(t.c)}<PriorityBadge p={priorityOf(t.c)!} compact />{/if}</div><div class="tm">{t.c.brand.name} · <span class={w.cls}>{w.text}</span></div></div>
 				<div class="tact">
 					{#if t.kind === 'follow'}
 						<button class="btn sm" onclick={() => leaveThen(t.c.id + t.kind, () => completeFollow(t.c))}><Icon name="check" />Done</button>
