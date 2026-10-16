@@ -5,7 +5,6 @@
    ========================================================================================== */
 
 [data-side="studio"]{
-  --sx-max:1320px;
   --sx-r:22px;
   --sx-card:color-mix(in oklab,var(--surface) 94%,transparent);
   --sx-border:color-mix(in oklab,var(--line) 85%,transparent);
@@ -13,7 +12,7 @@
 }
 
 /* ---------- frame: content centred, never wider than a comfortable working width ---------- */
-[data-side="studio"] .main{max-width:calc(var(--sx-max) + 2 * var(--gut));justify-self:center;padding-top:clamp(20px,2.6vw,34px)}
+[data-side="studio"] .main{max-width:none;justify-self:stretch;padding-top:clamp(20px,2.6vw,34px)}
 [data-side="studio"] .rail{border-right:1px solid color-mix(in oklab,var(--line) 70%,transparent)}
 
 /* ---------- motion ---------- */

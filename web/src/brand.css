@@ -7,8 +7,9 @@
    ========================================================================================== */
 
 [data-side="brand"]{
-  --bx-max:1200px;
-  --bx-gut:clamp(16px,4vw,40px);
+  /* Full screen: content uses the width of the window, with margins that grow on big screens. */
+  --bx-max:1880px;
+  --bx-gut:clamp(16px,3vw,56px);
   --bx-r:24px;
   --bx-card:color-mix(in oklab,var(--surface) 94%,transparent);
   --bx-border:color-mix(in oklab,var(--line) 85%,transparent);
