@@ -10,7 +10,16 @@
 	import Mono from './Mono.svelte';
 	import PayPill from './PayPill.svelte';
 
-	let { c, i = 0, pop = false }: { c: Collab; i?: number; pop?: boolean } = $props();
+	let {
+		c,
+		i = 0,
+		pop = false,
+		selecting = false,
+		picked = false,
+		onpick
+	}: { c: Collab; i?: number; pop?: boolean; selecting?: boolean; picked?: boolean; onpick?: () => void } = $props();
+	// In select mode a tap picks the card instead of opening it.
+	const open = () => (selecting ? onpick?.() : (ui.openCollab = c.id));
 
 	const n = $derived(nextLine(c));
 	const prio = $derived(isRanked(c) ? priorityOf(c) : null);
@@ -26,9 +35,12 @@
 	class="card glow"
 	class:dragging
 	class:pop
-	draggable="true"
+	class:picking={selecting}
+	class:picked
+	draggable={!selecting}
 	tabindex="0"
 	role="button"
+	aria-pressed={selecting ? picked : undefined}
 	style="--i:{i}"
 	aria-label="{c.brand.name}, {stageLabel(c.stage)}"
 	ondragstart={(e) => {
@@ -37,9 +49,10 @@
 		requestAnimationFrame(() => (dragging = true));
 	}}
 	ondragend={() => (dragging = false)}
-	onclick={() => (ui.openCollab = c.id)}
-	onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), (ui.openCollab = c.id))}
+	onclick={open}
+	onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), open())}
 >
+	{#if selecting}<span class="pick-box" aria-hidden="true">{#if picked}<Icon name="check" />{/if}</span>{/if}
 	<div class="card-h">
 		<Mono name={c.brand.name} />
 		<div><b>{c.brand.name}</b><small><span class="id">{c.code}</span> · {c.brand.category}</small></div>
@@ -62,7 +75,7 @@
 	<div class="next {n.tone}"><Icon name={n.icon} /><span>{n.text}</span></div>
 	<div class="card-f">
 		<PayPill {c} />
-		{#if step}
+		{#if step && !selecting}
 			<button
 				class="card-next"
 				title={step.hint}

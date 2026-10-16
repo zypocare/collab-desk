@@ -1530,3 +1530,22 @@ kbd{font-family:var(--f-mono);font-size:10.5px;padding:2px 6px;border-radius:6px
 .ap-log .rv-row:hover{background:var(--bg-2, color-mix(in oklab,var(--ink) 4%,transparent))}
 .ap-log .rv-row > .ic{color:var(--accent, var(--ink-2));flex:none}
 .ap-log .rv-row > small{color:var(--ink-3);font-size:12px;flex:none}
+
+/* Batch actions on the board */
+.card.picking{cursor:pointer;position:relative}
+.card.picking:hover{transform:none}
+.card.picked{border-color:var(--accent);box-shadow:0 0 0 2px color-mix(in oklab,var(--accent) 45%,transparent),var(--shadow-sm)}
+.pick-box{position:absolute;top:10px;right:10px;width:22px;height:22px;border-radius:7px;border:1.5px solid var(--line-strong);background:var(--surface);display:grid;place-items:center;z-index:1}
+.card.picking .card-h{padding-right:28px}
+.card.picked .pick-box{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.pick-box .ic{width:14px;height:14px;stroke-width:2.6}
+.col-all{font-size:12px;margin-left:4px}
+.batch-bar{position:fixed;left:0;right:0;margin-inline:auto;width:fit-content;bottom:22px;z-index:45;display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:center;max-width:calc(100vw - 24px);padding:10px 12px 10px 18px;border-radius:18px;background:color-mix(in oklab,var(--surface) 92%,transparent);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);border:1px solid var(--line-strong);box-shadow:var(--shadow);animation:rise .35s var(--ease) both}
+.batch-bar > b{font-size:13.5px;margin-right:4px;white-space:nowrap}
+.batch-bar .sel{width:auto;min-width:140px;flex:none}
+@media (max-width:900px){
+  .batch-bar{bottom:calc(78px + env(safe-area-inset-bottom,0px));padding:10px 12px;width:calc(100vw - 24px)}
+  .batch-bar > b{width:100%;text-align:center;margin:0}
+  .batch-bar .sel{flex:1}
+}
+body:has(.batch-bar) .fab{display:none}

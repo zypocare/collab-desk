@@ -116,7 +116,7 @@ export function stopWatching() {
 	channel = null;
 }
 
-async function reloadCollabs() {
+export async function reloadCollabs() {
 	const { data, error } = await supabase.from('collabs').select(COLLAB_SELECT).order('received_on', { ascending: false });
 	if (!error && data) studio.collabs = (data as Collab[]).map(normalise);
 	const b = await supabase.from('brands').select('*').order('name');
@@ -150,7 +150,7 @@ export async function updateCollab(id: string, patch: CollabPatch) {
 	await reloadOne(id);
 }
 
-export async function setStage(c: Collab, stage: Stage) {
+export async function setStage(c: Collab, stage: Stage, quiet = false) {
 	if (c.stage === stage) return;
 	const patch: CollabPatch = { stage };
 	if (stage === 'live' && !c.live_date) patch.live_date = todayIso();
@@ -159,11 +159,12 @@ export async function setStage(c: Collab, stage: Stage) {
 		await supabase.from('deliverables').update({ done: true }).eq('collab_id', c.id);
 		await reloadOne(c.id);
 	}
+	if (quiet) return;
 	if (stage === 'live' || stage === 'wrapped') confetti();
 	toast(`${c.brand.name} moved to ${stageLabel(stage)}`, 'layers');
 }
 
-export async function markPaid(c: Collab) {
+export async function markPaid(c: Collab, quiet = false) {
 	const open = c.invoices.filter((i) => i.status === 'sent' || i.status === 'partly_paid');
 	if (open.length) {
 		// With invoices, "paid in full" means every open invoice was paid (TDS deducted as expected).
@@ -171,6 +172,7 @@ export async function markPaid(c: Collab) {
 	} else {
 		await updateCollab(c.id, { pay_status: 'paid', pay_received: c.fee, paid_on: todayIso(), ...(c.stage === 'live' ? { stage: 'wrapped' as Stage } : {}) });
 	}
+	if (quiet) return;
 	confetti();
 	toast(`${inr(c.fee)} from ${c.brand.name} marked as paid`, 'wallet');
 }
