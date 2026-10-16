@@ -124,7 +124,7 @@
 				</div>
 				<div class="me">
 					<Avatar name={studio.settings?.display_name ?? ''} src={studio.ig?.connected ? studio.ig.profile_picture_url : ''} />
-					<div><b>{studio.settings?.display_name ?? ''}</b><small>@{studio.settings?.handle ?? ''}</small></div>
+					<div><b>{studio.settings?.display_name ?? ''}</b><small>{studio.me?.team_role === 'manager' ? `You: ${studio.me.name || studio.me.email} · manager` : `@${studio.settings?.handle ?? ''}`}</small></div>
 				</div>
 			</div>
 		</nav>

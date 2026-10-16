@@ -20,6 +20,7 @@
 	import ReviewsSettings from '#lib/components/ReviewsSettings.svelte';
 	import AppSettings from '#lib/components/AppSettings.svelte';
 	import AutopilotSettings from '#lib/components/AutopilotSettings.svelte';
+	import TeamSettings from '#lib/components/TeamSettings.svelte';
 
 	const s = $derived(studio.settings!);
 	const link = $derived(s.site_url.replace(/\/$/, ''));
@@ -73,14 +74,14 @@
 
 	// Settings are split into a few sections and only the one she picks is shown.
 	// On phones the menu is its own screen: tap a section, and "All settings" (or Back) returns.
-	type Sec = 'profile' | 'rates' | 'bookings' | 'autopilot' | 'payments' | 'reviews' | 'alerts' | 'account';
+	type Sec = 'profile' | 'rates' | 'bookings' | 'autopilot' | 'payments' | 'reviews' | 'alerts' | 'team' | 'account';
 	const autoOn = $derived([s.autopilot_packages, s.autopilot_counter, s.autopilot_nudge, s.autopilot_brief, s.autopilot_review].filter(Boolean).length);
 	const hasPay = $derived(!!(s.upi_id || s.bank_details));
 	const sections = $derived<{ id: Sec; label: string; icon: string; sub: string; warn?: string }[]>([
 		{
 			id: 'profile',
 			label: 'Profile & Instagram',
-			icon: 'users',
+			icon: 'edit',
 			sub: studio.ig?.connected ? `@${studio.ig.username} connected` : 'Connect Instagram for live stats',
 			warn: studio.ig?.connected ? undefined : 'Instagram not connected'
 		},
@@ -102,6 +103,7 @@
 		},
 		{ id: 'reviews', label: 'Results & reviews', icon: 'chart', sub: s.show_results ? 'Shown on your page' : 'Hidden from your page' },
 		{ id: 'alerts', label: 'Alerts & phone app', icon: 'bell', sub: s.digest_enabled ? '9 AM summary on' : '9 AM summary off' },
+		{ id: 'team', label: 'Team', icon: 'users', sub: studio.me?.team_role === 'manager' ? 'You are a manager' : 'Give a manager their own login' },
 		{
 			id: 'account',
 			label: 'Shipping & account',
@@ -243,6 +245,8 @@
 					{:else if active === 'alerts'}
 						<AppSettings />
 						<NotificationSettings />
+					{:else if active === 'team'}
+						<TeamSettings />
 					{:else if active === 'account'}
 						<ShippingSettings />
 						<section class="panel rv" style="--i:4">

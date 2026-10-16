@@ -19,13 +19,18 @@ Deno.serve(async (req) => {
 
   const { data: settings, error: settingsError } = await supabase
     .from('creator_settings')
-    .select('app_name, display_name, site_url, reply_time')
+    .select('app_name, display_name, site_url, reply_time, creator_email')
     .eq('id', 1)
     .single<Settings>();
   if (settingsError) return Response.json({ error: settingsError.message }, { status: 500 });
 
   const { data: rows, error } = await supabase.rpc('claim_outbox', { n: 20 });
   if (error) return Response.json({ error: error.message }, { status: 500 });
+
+  // Her team gets copies of what is sent to her (if they chose to).
+  const { data: copies } = await supabase.rpc('team_copy_emails');
+  const ownerEmail = String((settings as Settings & { creator_email?: string }).creator_email ?? '').toLowerCase();
+  const teamCc = ((copies as string[] | null) ?? []).filter((e) => e !== ownerEmail);
 
   let sent = 0, failed = 0, skipped = 0;
   for (const row of rows ?? []) {
@@ -40,7 +45,7 @@ Deno.serve(async (req) => {
         skipped++;
         continue;
       }
-      await sendMail({ to: row.to_email, ...mail });
+      await sendMail({ to: row.to_email, cc: String(row.to_email).toLowerCase() === ownerEmail ? teamCc : undefined, ...mail });
       await supabase.from('outbox').update({ status: 'sent', sent_at: new Date().toISOString(), last_error: null }).eq('id', row.id);
       sent++;
     } catch (e) {

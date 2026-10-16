@@ -2,7 +2,7 @@
 // Hosted Supabase blocks ports 25 and 587, so production uses port 465 (SSL).
 import nodemailer from 'npm:nodemailer@6.9.16';
 
-export type Mail = { to: string; subject: string; html: string; text: string };
+export type Mail = { to: string; cc?: string[]; subject: string; html: string; text: string };
 
 const host = Deno.env.get('SMTP_HOST') ?? '';
 const port = Number(Deno.env.get('SMTP_PORT') ?? '465');
@@ -19,5 +19,5 @@ const transport = mailConfigured
 
 export async function sendMail(mail: Mail): Promise<void> {
   if (!transport) throw new Error('SMTP is not configured (set SMTP_HOST).');
-  await transport.sendMail({ from, to: mail.to, subject: mail.subject, html: mail.html, text: mail.text });
+  await transport.sendMail({ from, to: mail.to, cc: mail.cc?.length ? mail.cc : undefined, subject: mail.subject, html: mail.html, text: mail.text });
 }

@@ -85,7 +85,9 @@ ${listHtml}
 </td></tr></table></td></tr></table></body></html>`;
     const text = items.map((i) => `- ${i.text} (${i.when})`).join('\n');
     try {
-      await sendMail({ to: s.creator_email, subject: `Today: ${items.length} thing${items.length === 1 ? '' : 's'} need you`, html, text });
+      const { data: copies } = await db.rpc('team_copy_emails');
+      const cc = ((copies as string[] | null) ?? []).filter((e) => e !== String(s.creator_email).toLowerCase());
+      await sendMail({ to: s.creator_email, cc, subject: `Today: ${items.length} thing${items.length === 1 ? '' : 's'} need you`, html, text });
       result.email = 'sent';
     } catch (e) {
       result.email = `failed: ${e instanceof Error ? e.message : e}`;

@@ -1688,3 +1688,5 @@ body:has(.batch-bar) .fab{display:none}
 .dp-at{flex:none;border:0;border-radius:8px;padding:2px 7px;font:inherit;font-size:12px;font-weight:700;font-variant-numeric:tabular-nums;background:color-mix(in oklab,var(--accent) 15%,transparent);color:var(--accent);cursor:pointer}
 .dp-add{display:flex;gap:8px;align-items:center}
 .dp-add .inp{flex:1;min-width:0}
+.team-copy{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-3);flex:none}
+.team-add{border-top:1px solid var(--line);padding-top:16px}

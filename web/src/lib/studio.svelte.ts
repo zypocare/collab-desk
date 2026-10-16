@@ -20,7 +20,8 @@ export const studio = $state<{
 	media: IgMedia[];
 	followersHistory: { day: string; followers: number }[];
 	packages: Package[];
-}>({ loaded: false, error: '', collabs: [], brands: [], notes: {}, settings: null, alerts: [], ig: null, media: [], followersHistory: [], packages: [] });
+	me: { role: 'creator'; email: string; team_role: 'owner' | 'manager'; name?: string } | null;
+}>({ me: null, loaded: false, error: '', collabs: [], brands: [], notes: {}, settings: null, alerts: [], ig: null, media: [], followersHistory: [], packages: [] });
 
 const COLLAB_SELECT = '*, brand:brands(*), deliverables(*), events:collab_events(*), quotes(*), drafts(*, comments:draft_comments(*)), invoices(*), posts:collab_posts(matched_by, media:ig_media(*)), reports:brand_reports(*), messages:collab_messages(id, sender, created_at), reads:collab_reads(side, read_at)';
 
@@ -54,6 +55,7 @@ export async function loadStudio() {
 	loadAlerts();
 	loadInstagram();
 	loadPackages();
+	supabase.rpc('studio_account').then(({ data }) => (studio.me = (data as typeof studio.me) ?? null));
 	const err = collabs.error || brands.error || notes.error || settings.error;
 	if (err) {
 		studio.error = errMessage(err);
