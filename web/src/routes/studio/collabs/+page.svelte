@@ -130,7 +130,7 @@
 		<h1>Your <em>collabs</em></h1>
 		<p>{studio.collabs.filter((c) => c.stage !== 'wrapped' && c.stage !== 'declined').length} active, {studio.collabs.filter((c) => c.stage === 'request').length} waiting for your reply.</p>
 	</div>
-	<div class="acts"><button class="btn primary" onclick={() => (ui.newCollab = true)}><Icon name="plus" />Add collab</button></div>
+	<div class="acts"><a class="btn" href="/studio/import"><Icon name="layers" />Import existing</a><button class="btn primary" onclick={() => (ui.newCollab = true)}><Icon name="plus" />Add collab</button></div>
 </header>
 
 <div class="toolbar rv" style="--i:1">

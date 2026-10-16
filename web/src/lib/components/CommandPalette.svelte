@@ -38,6 +38,7 @@
 		}
 		out.push(
 			{ id: 'a-add', group: 'Actions', label: 'Add collab', sub: 'Paste a DM or type a brand', icon: 'plus', hay: 'add new collab paste dm email', run: () => (ui.newCollab = true) },
+			{ id: 'a-import', group: 'Actions', label: 'Import existing collabs', sub: 'Many at once, from DMs', icon: 'layers', hay: 'import bulk existing many dms old collabs', run: () => goto('/studio/import') },
 			{ id: 'a-sync', group: 'Actions', label: 'Sync Instagram now', icon: 'refresh', hay: 'sync instagram refresh stats', run: () => igSync() },
 			{ id: 'a-kit', group: 'Actions', label: 'Media kit PDF', sub: 'From My page', icon: 'film', hay: 'media kit pdf download', run: () => goto('/studio/settings') }
 		);

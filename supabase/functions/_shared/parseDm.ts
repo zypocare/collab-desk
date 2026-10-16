@@ -99,7 +99,7 @@ export function parseDm(text: string, ownHandle = ''): Parsed {
 	const type: CollabType | null = barterish ? (fee ? 'hybrid' : 'barter') : fee ? 'paid' : null;
 	const product = barterish
 		? (t.match(/(?:send you|gift you|share)\s+(?:our|the|a|an|some)?\s*([^.,\n!?]{3,60})/i)?.[1] ?? t.match(/(?:our|the)\s+(new\s+)?([a-z][\w\s-]{2,40}?)\s+(?:launch|range|collection)/i)?.[0] ?? '')
-				.replace(/\s+(?:as (?:a )?gift|in exchange|for (?:a|an|you|your|the)|to (?:try|review|use)|which|that)\b.*$/i, '')
+				.replace(/\s+(?:as (?:a )?gift|in exchange|for (?:a|an|you|your|the)|to (?:try|review|use)|which|that|worth|valued?|mrp)\b.*$/i, '')
 				.trim()
 		: '';
 

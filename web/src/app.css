@@ -1753,3 +1753,24 @@ body:has(.batch-bar) .fab{display:none}
 .danger-zone .panel-h h2{color:var(--bad)}
 .reset-row{display:flex;gap:8px;flex-wrap:wrap}
 .reset-row .inp{flex:1;min-width:160px;max-width:240px;letter-spacing:.08em}
+
+/* Import existing collabs */
+.imp-bulk{margin-bottom:16px}
+.imp-list{display:flex;flex-direction:column;gap:12px}
+.imp-row{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 14px;padding:16px 18px}
+.imp-num{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:700;background:color-mix(in oklab,var(--accent) 14%,transparent);color:var(--accent);grid-row:span 3}
+.imp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px 12px;align-items:end}
+.imp-grid .f{margin:0}
+.imp-paid{padding:0 0 10px}
+.imp-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:4px}
+.imp-foot .lnk{display:inline-flex;align-items:center;gap:6px;font-size:12.5px}
+.imp-foot .lnk .ic{width:14px;height:14px}
+.imp-row > textarea{grid-column:2}
+.imp-actions{position:sticky;bottom:12px;z-index:5;display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:16px;padding:12px 14px;border-radius:18px;background:color-mix(in oklab,var(--surface) 92%,transparent);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border:1px solid var(--line);box-shadow:var(--shadow)}
+.imp-actions .hint{flex:1}
+@media (max-width:900px){
+  .imp-actions{bottom:calc(78px + env(safe-area-inset-bottom,0px))}
+  .imp-row{grid-template-columns:minmax(0,1fr)}
+  .imp-num{grid-row:auto}
+  .imp-row > textarea{grid-column:1}
+}
