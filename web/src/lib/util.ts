@@ -22,6 +22,8 @@ export const packageOffered = (items: { kind: string }[], list?: string[] | null
 export const mediaLabel = (type: string, product: string) =>
 	product === 'STORY' ? 'Story' : product === 'REELS' ? 'Reel' : type === 'CAROUSEL_ALBUM' ? 'Carousel' : type === 'VIDEO' ? 'Video' : 'Post';
 export const USAGE = ['Organic only', '30 days paid ads', '60 days paid ads', '90 days paid ads', 'Perpetual usage'];
+/** "60 days paid ads" -> 60; organic or perpetual -> 0 (same rule as the database). */
+export const usageDaysOf = (usage: string) => (/paid/i.test(usage) ? Number(usage.match(/(\d+)\s*day/i)?.[1] ?? 0) : 0);
 export const CATS = ['Beauty', 'Skincare', 'Fashion', 'Jewellery', 'Food & drink', 'Travel', 'Home', 'Wellness', 'Fitness', 'Tech', 'Other'];
 export const PAY_LABEL: Record<PayStatus, string> = {
 	na: 'Barter',

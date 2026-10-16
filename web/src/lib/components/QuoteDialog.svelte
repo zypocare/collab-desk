@@ -4,6 +4,7 @@
 	import type { Collab, Quote, QuoteItem } from '../types';
 	import { KINDS, USAGE, inr, payTerms, plural, quoteTotal, rel } from '../util';
 	import Icon from './Icon.svelte';
+	import { quoteOptions, suggestTerms, usageFee as usageFeeFor, type QuoteOption } from '../suggest';
 	import Select from './Select.svelte';
 
 	let { c, base, editing = false, onclose }: { c: Collab; base?: Quote; editing?: boolean; onclose: () => void } = $props();
@@ -16,19 +17,35 @@
 			? start.base.items.map((i) => ({ ...i }))
 			: start.c.deliverables.map((d) => ({ kind: d.kind, qty: d.qty, rate: rates[d.kind] ?? 0 }))
 	);
+	// Suggestions (new quotes only): three ready options and the terms she usually agrees with this brand.
+	const options = start.base ? [] : quoteOptions(start.c, studio.settings!, studio.packages);
+	const terms = suggestTerms(start.c, studio.collabs);
+	let picked = $state<QuoteOption['key'] | ''>('');
 	let usage = $state(start.base?.usage ?? start.c.usage ?? 'Organic only');
 	let usageFee = $state(start.base?.usage_fee ?? 0);
 	let discount = $state(start.base?.discount ?? 0);
-	let advance = $state(start.base?.advance_pct ?? 0);
-	let payDays = $state(start.base?.pay_days ?? 15);
-	let rounds = $state(start.base?.revision_rounds ?? 2);
-	let exclusivity = $state(start.base?.exclusivity_days ?? 0);
+	let advance = $state(start.base?.advance_pct ?? terms.advance_pct);
+	let payDays = $state(start.base?.pay_days ?? terms.pay_days);
+	let rounds = $state(start.base?.revision_rounds ?? terms.revision_rounds);
+	let exclusivity = $state(start.base?.exclusivity_days ?? terms.exclusivity_days);
+
+	function pick(o: QuoteOption) {
+		picked = o.key;
+		items = o.items.map((i) => ({ ...i }));
+		usage = o.usage;
+		usageFee = o.usage_fee;
+		discount = o.discount;
+	}
+	// Start from the option that fits best: the brand's budget if they gave one, else the rate card.
+	const first0 = options.find((o) => o.key === 'budget') ?? options.find((o) => o.key === 'rate');
+	if (first0) untrack(() => pick(first0));
 	let validDays = $state(14);
 	let notes = $state(start.base?.notes ?? '');
 	let busy = $state(false);
 	let first = $state<HTMLElement>();
 
 	const total = $derived(quoteTotal(items, usageFee, discount));
+	const itemsSubtotal = $derived(items.reduce((a, i) => a + i.qty * i.rate, 0));
 	const brandBudget = $derived(c.fee);
 	onMount(() => first?.querySelector('input')?.focus());
 
@@ -67,6 +84,18 @@
 		<h2 id="q-title">{editing ? 'Edit quote' : base ? `Quote version ${(c.quotes[0]?.version ?? 0) + 1}` : 'Build a quote'} · {c.brand.name}</h2>
 		<p>Prices start from your rate card. {#if brandBudget}The brand's budget was {inr(brandBudget)}.{/if}</p>
 
+		{#if options.length}
+			<div class="q-opts" role="radiogroup" aria-label="Suggested quotes">
+				{#each options as o (o.key)}
+					<button type="button" class="q-opt" class:on={picked === o.key} role="radio" aria-checked={picked === o.key} onclick={() => pick(o)}>
+						<span class="q-opt-t">{o.title}</span>
+						<b class="num">{inr(o.total)}</b>
+						<small>{o.sub}</small>
+					</button>
+				{/each}
+			</div>
+		{/if}
+
 		<div class="q-items" bind:this={first}>
 			<div class="q-row head"><span>Deliverable</span><span>Qty</span><span>Rate</span><span>Amount</span><span></span></div>
 			{#each items as it, i (i)}
@@ -84,13 +113,14 @@
 		<div class="fields" style="margin-top:16px">
 			<div class="f">
 				<label for="q-usage">Usage rights</label>
-				<Select id="q-usage" bind:value={usage} options={USAGE.map((u) => ({ value: u, label: u }))} />
+				<Select id="q-usage" bind:value={usage} options={USAGE.map((u) => ({ value: u, label: u }))} onchange={(u) => (usageFee = usageFeeFor(u, itemsSubtotal, studio.settings!))} />
 			</div>
 			<div class="f"><label for="q-ufee">Usage fee</label><div class="pre"><span>₹</span><input class="inp num" id="q-ufee" type="number" min="0" bind:value={usageFee} /></div></div>
 			<div class="f"><label for="q-disc">Discount</label><div class="pre"><span>₹</span><input class="inp num" id="q-disc" type="number" min="0" bind:value={discount} /></div></div>
 			<div class="f">
 				<label for="q-adv">Advance</label>
 				<Select id="q-adv" bind:value={advance} options={[{ value: 0, label: 'No advance' }, { value: 30, label: '30% advance' }, { value: 50, label: '50% advance' }, { value: 100, label: '100% upfront' }]} />
+				{#if !base && advance === terms.advance_pct}<small class="hint sug-why">{terms.why}</small>{/if}
 			</div>
 			<div class="f">
 				<label for="q-days">Balance due</label>
