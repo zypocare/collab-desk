@@ -102,6 +102,7 @@
 							<div class="mq"><div class="mq-track">{#each [0, 1, 2, 3] as k (k)}{#each p.worked_with as n (n)}<span>{n}</span>{/each}{/each}</div></div>
 						</div>
 					{/if}
+					{#if p.instagram?.demographics}<Audience demo={p.instagram.demographics} i={5} />{/if}
 					{#if p.packages?.some((x) => packageOffered(x.items, p.offered)) && p.accepting}
 						<section class="pkgs rv" style="--i:6" aria-label="Packages">
 							<div class="pkgs-h"><h2>Packages</h2><p>Book a ready-made bundle in one tap.</p></div>
@@ -155,7 +156,6 @@
 						</div>
 					</section>
 				{/if}
-				{#if p.instagram?.demographics}<Audience demo={p.instagram.demographics} />{/if}
 					<section class="panel rv" style="--i:6;overflow:hidden">
 						<div class="bsec">
 							<div class="bsec-h"><h2>Work with {firstName(p.display_name)}</h2></div>
