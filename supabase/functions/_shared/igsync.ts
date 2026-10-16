@@ -19,7 +19,7 @@ const adTagged = (caption: string) => /#(ad|collab|sponsored|paidpartnership|par
 type MediaRow = {
   id: string; caption: string; media_type: string; product_type: string; permalink: string; posted_at: string; thumbnail_url: string;
   likes: number | null; comments: number | null; saves: number | null; shares: number | null; reach: number | null; views: number | null;
-  interactions: number | null; insights_at: string | null;
+  interactions: number | null; insights_at: string | null; owner_id?: string;
 };
 
 export type SyncOptions = { reportFor?: string };
@@ -45,6 +45,10 @@ export async function runSync(db: SupabaseClient, opts: SyncOptions = {}) {
 
     // 2. Account.
     const p = await ig.profile(token);
+    // A different account was connected: the old one's follower history means nothing for this one.
+    const { data: before } = await db.from('ig_account').select('ig_user_id').eq('id', 1).single();
+    const switched = !!before?.ig_user_id && before.ig_user_id !== p.user_id;
+    if (switched) await db.from('ig_followers_history').delete().lt('day', '9999-12-31');
     await db.from('ig_followers_history').upsert({ day: todayIST(), followers: p.followers_count });
 
     // 3. Posts.
@@ -71,7 +75,7 @@ export async function runSync(db: SupabaseClient, opts: SyncOptions = {}) {
         posted_at: m.timestamp, thumbnail_url: m.thumbnail_url || m.media_url || '', likes, comments,
         saves: ins?.saved ?? null, shares: ins?.shares ?? null, reach: ins?.reach ?? null, views: ins?.views ?? null,
         interactions: ins?.total_interactions ?? ((likes ?? 0) + (comments ?? 0) + (ins?.saved ?? 0) + (ins?.shares ?? 0)),
-        insights_at: ins ? new Date().toISOString() : lastInsights.get(m.id) ?? null,
+        insights_at: ins ? new Date().toISOString() : lastInsights.get(m.id) ?? null, owner_id: p.user_id,
       };
       // Don't wipe stored insights when this run skipped them.
       if (!ins && lastInsights.get(m.id)) for (const k of ['saves', 'shares', 'reach', 'views', 'interactions'] as const) delete (row as Partial<MediaRow>)[k];
@@ -79,6 +83,11 @@ export async function runSync(db: SupabaseClient, opts: SyncOptions = {}) {
     }
     if (rows.length) await db.from('ig_media').upsert(rows);
     summary.posts = rows.length;
+    // Posts from another account (one connected before) don't count towards her numbers.
+    let others = db.from('ig_media').delete({ count: 'exact' }).or(`owner_id.is.null,owner_id.neq.${p.user_id}`);
+    if (linked.size) others = others.not('id', 'in', `(${[...linked].map((x) => `"${x}"`).join(',')})`);
+    const { count: removed } = await others;
+    if (removed) summary.removed_other_account = removed;
 
     // 4. Account averages from the last 12 posts.
     const { data: last12 } = await db.from('ig_media').select('views, reach, interactions, likes, comments').neq('product_type', 'STORY').order('posted_at', { ascending: false }).limit(12);
@@ -132,15 +141,21 @@ export async function runSync(db: SupabaseClient, opts: SyncOptions = {}) {
     };
 
     // 5. Audience, once a week.
-    const { data: acct } = await db.from('ig_account').select('demographics, updated_at').eq('id', 1).single();
-    const demographicsStale = !acct?.demographics || !acct.demographics.country || Date.now() - Date.parse(acct.updated_at) > 7 * DAY;
-    const demographics = demographicsStale ? await ig.demographics(token) : acct.demographics;
+    const { data: acct } = await db.from('ig_account').select('demographics, demographics_at').eq('id', 1).single();
+    const demographicsStale = switched || !acct?.demographics_at || !acct.demographics?.country || Date.now() - Date.parse(acct.demographics_at) > 7 * DAY;
+    let demographics = acct?.demographics ?? {};
+    if (demographicsStale) {
+      const fresh = await ig.demographics(token).catch(() => ({}));
+      // Keep last week's audience if Instagram sent nothing, unless it may belong to another account.
+      if (Object.keys(fresh).length) demographics = fresh;
+      else if (switched || !acct?.demographics_at) demographics = {};
+    }
 
     await db.from('ig_account').update({
       connected: true, ig_user_id: p.user_id, username: p.username, name: p.name ?? '', profile_picture_url: p.profile_picture_url ?? '',
       followers: p.followers_count, follows: p.follows_count, media_count: p.media_count,
       engagement_rate: engagement, avg_views: avgViews === null ? null : Math.round(avgViews), avg_reach: avgReach === null ? null : Math.round(avgReach),
-      demographics, insights, last_sync_at: new Date().toISOString(), last_error: '', updated_at: new Date().toISOString(),
+      demographics, ...(demographicsStale ? { demographics_at: new Date().toISOString() } : {}), insights, last_sync_at: new Date().toISOString(), last_error: '', updated_at: new Date().toISOString(),
       token_expires_at: (await db.from('ig_token').select('expires_at').eq('id', 1).single()).data?.expires_at,
     }).eq('id', 1);
     // The brand page shows these.
@@ -171,6 +186,7 @@ export async function runStorySync(db: SupabaseClient) {
 
   const stories = await ig.stories(token);
   if (!stories.length) return { stories: 0 };
+  const { data: acct } = await db.from('ig_account').select('ig_user_id').eq('id', 1).single();
 
   const rows: MediaRow[] = [];
   for (const m of stories) {
@@ -179,7 +195,7 @@ export async function runStorySync(db: SupabaseClient) {
       id: m.id, caption: m.caption ?? '', media_type: m.media_type, product_type: 'STORY', permalink: m.permalink,
       posted_at: m.timestamp, thumbnail_url: m.thumbnail_url || m.media_url || '', likes: null, comments: ins.replies ?? null,
       saves: null, shares: ins.shares ?? null, reach: ins.reach ?? null, views: ins.views ?? null,
-      interactions: ins.total_interactions ?? null, insights_at: new Date().toISOString(),
+      interactions: ins.total_interactions ?? null, insights_at: new Date().toISOString(), owner_id: acct?.ig_user_id ?? undefined,
     });
   }
   await db.from('ig_media').upsert(rows);
