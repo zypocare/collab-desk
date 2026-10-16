@@ -1,15 +1,14 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
-	import { onMount, tick } from 'svelte';
+	import { onMount, tick, untrack } from 'svelte';
 	import type { LayoutProps } from './$types';
 	import { auth, signOut } from '#lib/auth.svelte.ts';
-	import { loadStudio, studio, stopWatching, watchStudio } from '#lib/studio.svelte.ts';
+	import { byId, loadStudio, studio, stopWatching, watchStudio } from '#lib/studio.svelte.ts';
 	import { theme, toggleTheme, ui } from '#lib/ui.svelte.ts';
 	import { initials } from '#lib/util.ts';
 	import Icon from '#lib/components/Icon.svelte';
 	import Avatar from '#lib/components/Avatar.svelte';
-	import CollabDrawer from '#lib/components/CollabDrawer.svelte';
 	import NewCollabDialog from '#lib/components/NewCollabDialog.svelte';
 	import CommandPalette from '#lib/components/CommandPalette.svelte';
 
@@ -30,10 +29,20 @@
 	const current = $derived(
 		NAV.slice()
 			.reverse()
-			.find((n) => (n.href === '/studio' ? page.url.pathname === '/studio' : page.url.pathname.startsWith(n.href)))?.href
+			.find((n) => (n.href === '/studio' ? page.url.pathname === '/studio' : page.url.pathname.startsWith(n.href) || (n.href === '/studio/collabs' && page.url.pathname.startsWith('/studio/c/'))))?.href
 	);
 	const newCount = $derived(studio.collabs.filter((c) => c.stage === 'request').length);
 	const allowed = $derived(auth.account?.role === 'creator');
+
+	// Opening a collab from anywhere (cards, Today, calendar, search, email links) goes to its own page.
+	$effect(() => {
+		const id = ui.openCollab;
+		if (!id) return;
+		untrack(() => {
+			const c = byId(id);
+			if (c && page.url.pathname !== `/studio/c/${c.code}`) goto(`/studio/c/${c.code}`);
+		});
+	});
 
 	// Only the creator may be here.
 	$effect(() => {
@@ -140,7 +149,6 @@
 		</main>
 		<button class="fab" onclick={() => (ui.newCollab = true)} aria-label="Add collab"><Icon name="plus" /></button>
 	</div>
-	<CollabDrawer />
 	<CommandPalette bind:this={palette} />
 	{#if ui.newCollab}<NewCollabDialog />{/if}
 {/if}

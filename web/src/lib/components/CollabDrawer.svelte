@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { ask } from '../confirm.svelte';
 	import { tick } from 'svelte';
+	import { goto } from '$app/navigation';
 	import {
 		addDeliverable,
 		byId,
@@ -76,6 +77,8 @@
 	import InvoiceDialog from './InvoiceDialog.svelte';
 	import PaymentDialog from './PaymentDialog.svelte';
 
+	// page: shown as its own full page (/studio/c/CODE) instead of a side drawer.
+	let { page = false }: { page?: boolean } = $props();
 	const c = $derived(byId(ui.openCollab));
 	const clashList = $derived(c ? clashes(c, studio.collabs, studio.settings?.competitor_window_days ?? 14, studio.notes) : []);
 	const quote = $derived(c?.quotes[0]);
@@ -128,10 +131,12 @@
 			lastFocus = document.activeElement;
 			fresh = true;
 			setTimeout(() => (fresh = false), 1100);
-			document.body.style.overflow = 'hidden';
-			tick().then(() => setTimeout(() => closeBtn?.focus({ preventScroll: true }), 80));
+			if (!page) {
+				document.body.style.overflow = 'hidden';
+				tick().then(() => setTimeout(() => closeBtn?.focus({ preventScroll: true }), 80));
+			}
 		}
-		if (!id && prevId) {
+		if (!id && prevId && !page) {
 			document.body.style.overflow = '';
 			if (lastFocus instanceof HTMLElement && document.contains(lastFocus)) lastFocus.focus({ preventScroll: true });
 		}
@@ -140,6 +145,10 @@
 
 	function close() {
 		ui.openCollab = null;
+		if (page) {
+			if (history.length > 1) history.back();
+			else goto('/studio/collabs');
+		}
 	}
 
 	type Field = Exclude<keyof Collab, 'id' | 'brand' | 'deliverables' | 'events'>;
@@ -233,10 +242,10 @@
 	}
 </script>
 
-<svelte:window onkeydown={(e) => e.key === 'Escape' && open && !ui.newCollab && !quoteOpen && !invoiceOpen && !paymentOpen && close()} />
+<svelte:window onkeydown={(e) => e.key === 'Escape' && !page && open && !ui.newCollab && !quoteOpen && !invoiceOpen && !paymentOpen && close()} />
 
-<div class="scrim" class:on={open} role="presentation" onclick={close}></div>
-<aside class="drawer" class:on={open} class:fresh aria-label="Collab details" aria-hidden={!open} inert={!open}>
+{#if !page}<div class="scrim" class:on={open} role="presentation" onclick={close}></div>{/if}
+<aside class="drawer" class:as-page={page} class:on={open} class:fresh aria-label="Collab details" aria-hidden={!open} inert={!open}>
 	{#if c}
 		<header class="dr-h" style="--hue:var(--m{hueOf(c.brand.name)})">
 			<Mono name={c.brand.name} size="lg" />
@@ -253,7 +262,7 @@
 				/>
 				<div class="dr-sub"><span class="id">{c.code}</span> · {TYPE_LABEL[c.type]} · received {fmt(c.received_on)}</div>
 			</div>
-			<button class="icon-btn" onclick={close} aria-label="Close" bind:this={closeBtn}><Icon name="x" /></button>
+			<button class="icon-btn" onclick={close} aria-label={page ? 'Back' : 'Close'} bind:this={closeBtn}><Icon name={page ? 'back' : 'x'} /></button>
 		</header>
 
 		<div class="dr-b">
@@ -642,7 +651,7 @@
 
 		<footer class="dr-f">
 			<button class="btn" onclick={() => c && copyText(statusMessage(c), 'Status message copied. Paste it in your DM or email.')}><Icon name="link" />Copy status message</button>
-			<button class="btn primary" onclick={close}>Done</button>
+			<button class="btn primary" onclick={close}>{page ? 'Back to collabs' : 'Done'}</button>
 		</footer>
 	{/if}
 </aside>
