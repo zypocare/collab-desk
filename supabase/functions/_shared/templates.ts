@@ -423,6 +423,19 @@ export function render(kind: string, p: Payload, s: Settings): Omit<Mail, 'to'> 
     };
   }
 
+  if (kind === 'brand_invite') {
+    return {
+      subject: `${p.by} added you to ${brand} on ${s.app_name}`,
+      html: layout(
+        s,
+        `You're on the ${brand} team`,
+        `<p style="margin:0">Hi${p.name ? ` ${esc(firstOf(p.name))}` : ''}, ${esc(p.by)} added you to <b>${esc(brand)}</b> for collaborations with ${esc(s.display_name)}. Sign in with this email (a 6-digit code, no password) to see every request, quote, draft, invoice and report.</p>`,
+        { label: 'Sign in', href: url(s, '/login?next=/brand') },
+      ),
+      text: `${p.by} added you to ${brand}. Sign in with this email: ${url(s, '/login?next=/brand')}`,
+    };
+  }
+
   if (kind === 'payment_claimed') {
     return {
       subject: `${brand} says they paid ${inr(p.amount)} (${p.number})`,

@@ -6,6 +6,7 @@
 	import { auth } from '#lib/auth.svelte.ts';
 	import { page } from '$app/state';
 	import { loadRequests } from '#lib/brand.svelte.ts';
+	import BrandTeam from '#lib/components/BrandTeam.svelte';
 
 	const isNew = $derived(page.url.searchParams.get('new') === '1');
 </script>
@@ -35,4 +36,5 @@
 		<p class="hint" style="margin-bottom:16px">Printed on the invoices you receive. Add your GSTIN if you want to claim GST input credit.</p>
 		<BrandBillingForm />
 	</section>
+	<BrandTeam />
 {/if}
