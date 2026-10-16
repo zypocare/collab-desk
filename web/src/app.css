@@ -146,7 +146,7 @@ p{margin:0}
 .ring::before{content:"";position:absolute;inset:0;border-radius:50%;background:conic-gradient(from 0deg,var(--g3),var(--g2),var(--g1),var(--g2),var(--g3));z-index:-1;animation:spin 7s linear infinite}
 .ring span{display:grid;place-items:center;width:100%;height:100%;border-radius:50%;background:var(--surface-2);border:2px solid var(--surface);font-family:var(--f-display);font-weight:700;font-size:calc(var(--sz)*.34);color:var(--ink)}
 
-.main{min-width:0;padding-block:30px 72px;padding-inline:var(--gut);max-width:1400px;width:100%}
+.main{min-width:0;padding-block:30px 72px;padding-inline:var(--gut);width:100%}
 .ph{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:26px}
 .ph .eb{font-size:11.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);margin-bottom:10px;display:flex;align-items:center;gap:8px}
 .ph h1{font-size:clamp(30px,3.6vw,46px);letter-spacing:-.04em;font-weight:600}
@@ -1315,3 +1315,8 @@ button.wk:hover{transform:translateY(-1px);border-color:var(--ink-3)}
 .rate small.sug{display:block;font-weight:500;font-size:11.5px;color:var(--ink-3);margin-top:1px}
 .rate small.sug.low{color:var(--warn)}
 .rate small.sug.high{color:var(--ink-2)}
+
+/* ---------- My page: full-width, self-balancing card columns ---------- */
+.set-top{margin-bottom:18px}
+.set-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(420px,100%),1fr));grid-auto-rows:2px;grid-auto-flow:row dense;column-gap:18px;align-items:start}
+.set-grid > *{min-width:0;margin:0}
