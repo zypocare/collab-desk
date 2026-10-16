@@ -1512,3 +1512,10 @@ kbd{font-family:var(--f-mono);font-size:10.5px;padding:2px 6px;border-radius:6px
 .big-stars{display:flex;justify-content:center;gap:4px;margin:6px 0 2px}
 .big-stars .star{width:46px;height:46px;font-size:36px}
 .star-word{text-align:center;color:var(--ink-3);font-size:13px;margin:0 0 14px;min-height:18px}
+
+/* ---------- live total on the request form ---------- */
+.live-total p{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px}
+.lt-what{font-weight:600;color:var(--ink-2);font-size:13px}
+.lt-sum{font-family:var(--f-display);font-size:22px;letter-spacing:-.02em;color:var(--ink);font-variant-numeric:tabular-nums}
+.lt-note{font-size:12px;color:var(--ink-3);width:100%}
+@media (min-width: 901px){ .live-total{position:sticky;bottom:0;z-index:5;border-radius:0 0 24px 24px;-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px)} }

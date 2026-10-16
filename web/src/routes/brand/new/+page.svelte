@@ -214,7 +214,9 @@
 		}
 		document.querySelector('.dpick')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
 	}
-	const replyIn = $derived(type === 'barter' ? (barter?.reply_time ?? pub.data?.reply_time) : pub.data?.reply_time);
+	// Running total at her public rates (nothing shown if she keeps rates private).
+	const estimate = $derived(rates ? lines.reduce((a, l) => a + (Number(rates[l.kind]) || 0) * l.qty, 0) : 0);
+		const replyIn = $derived(type === 'barter' ? (barter?.reply_time ?? pub.data?.reply_time) : pub.data?.reply_time);
 
 	async function takeSuggestion() {
 		const sg = advice?.suggest;
@@ -316,7 +318,7 @@
 		</div>
 	</header>
 
-	<section class="panel rv" style="--i:1;overflow:hidden" bind:this={panel}>
+	<section class="panel rv" style="--i:1;overflow:clip" bind:this={panel}>
 		{#if sent}
 			<div class="success panel-in">
 				<div class="big-check">
@@ -445,8 +447,15 @@
 						</div>
 					</div>
 				{/if}
-				<div class="submit-row">
-					<p>{error ? '' : "You'll get a request code and an email copy."}{#if error}<span class="err" style="display:block;margin:0">{error}</span>{/if}</p>
+				<div class="submit-row live-total">
+					<p>
+						{#if error}<span class="err" style="display:block;margin:0">{error}</span>
+						{:else if lines.length && (estimate || pkg)}
+							<span class="lt-what">{delivText(lines)}</span>
+							<b class="lt-sum">{inr(pkg ? pkg.price : estimate)}</b>
+							<span class="lt-note">{pkg ? 'package price' : type === 'barter' ? `at ${creator}'s rates, for your product` : `at ${creator}'s rates`}{#if !pkg && type !== 'barter' && Number(fee) > 0}{' · '}your budget {inr(Number(fee))}{Number(fee) < estimate ? ` (${Math.round((Number(fee) / estimate) * 100)}%)` : ''}{/if}</span>
+						{:else}You'll get a request code and an email copy.{/if}
+					</p>
 					<button class="btn grad lg" class:blocked={advice?.tone === 'block'} type="submit" disabled={busy || advice?.tone === 'block'} title={advice?.tone === 'block' ? advice.title : undefined}>{#if busy}<span class="spinner"></span>Sending…{:else}<Icon name="send" />Send request{/if}</button>
 				</div>
 			</form>
