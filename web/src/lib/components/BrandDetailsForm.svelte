@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import { auth, refreshAccount } from '../auth.svelte';
 	import { supabase } from '../supabase';
 	import { toast } from '../ui.svelte';
@@ -6,13 +7,15 @@
 	import Icon from './Icon.svelte';
 	import Select from './Select.svelte';
 
-	let { onsaved, submitLabel = 'Save details' }: { onsaved?: () => void; submitLabel?: string } = $props();
+	let { onsaved, submitLabel = 'Save details', isNew = false }: { onsaved?: () => void; submitLabel?: string; isNew?: boolean } = $props();
 
 	const acc = auth.account?.role === 'brand' ? auth.account : null;
-	let name = $state(acc?.brand?.name ?? '');
-	let instagram = $state(acc?.brand?.instagram ?? '');
-	let website = $state(acc?.brand?.website ?? '');
-	let category = $state(acc?.brand?.category ?? 'Beauty');
+	// Starting values only (the page re-creates the form when switching to "add a brand").
+	const start = untrack(() => (isNew ? null : acc?.brand));
+	let name = $state(start?.name ?? '');
+	let instagram = $state(start?.instagram ?? '');
+	let website = $state(start?.website ?? '');
+	let category = $state(start?.category ?? 'Beauty');
 	let fullName = $state(acc?.full_name ?? '');
 	let phone = $state(acc?.phone ?? '');
 	let busy = $state(false);
@@ -30,7 +33,8 @@
 			p_website: website,
 			p_category: category,
 			p_full_name: fullName,
-			p_phone: phone
+			p_phone: phone,
+			p_new: isNew
 		});
 		if (err) {
 			busy = false;
@@ -39,7 +43,7 @@
 		}
 		await refreshAccount();
 		busy = false;
-		toast('Details saved');
+		toast(isNew ? `${name.trim()} added. You're now working as ${name.trim()}.` : 'Details saved');
 		onsaved?.();
 	}
 </script>

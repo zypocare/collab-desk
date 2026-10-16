@@ -291,6 +291,8 @@ export type Account =
 			full_name: string;
 			phone: string;
 			brand: { id: string; name: string; instagram: string; website: string; category: string } | null;
+			/** Every brand this login manages (agencies have several). */
+			brands: { id: string; name: string }[];
 	  };
 
 export type BrandRequest = {

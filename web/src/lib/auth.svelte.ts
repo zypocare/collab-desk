@@ -35,6 +35,13 @@ export async function refreshAccount() {
 	return auth.account;
 }
 
+/** Agencies: work as another of their brands. */
+export async function switchBrand(id: string) {
+	const { data, error } = await supabase.rpc('switch_brand', { p_brand: id });
+	if (error) throw error;
+	auth.account = data as Account;
+}
+
 export const homeFor = (a: Account | null) => (a?.role === 'creator' ? '/studio' : '/brand');
 
 export async function signOut() {

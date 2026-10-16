@@ -1305,3 +1305,4 @@ button.wk:hover{transform:translateY(-1px);border-color:var(--ink-3)}
 .wk-away{background:repeating-linear-gradient(135deg,var(--surface-2) 0 6px,var(--surface) 6px 12px)}
 .wk-away small{color:var(--ink-3)}
 @media (max-width: 640px){ .wk-strip{grid-template-columns:repeat(4,minmax(0,1fr))} .wk-grid{grid-template-columns:repeat(3,minmax(0,1fr))} }
+.brand-switch{width:auto;min-width:150px;max-width:220px}
