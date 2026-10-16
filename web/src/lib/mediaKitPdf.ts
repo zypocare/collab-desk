@@ -1,14 +1,15 @@
-// Builds her media kit (one A4 page) in the browser from live data: Instagram numbers, audience,
-// packages, rates, brands she has worked with, and a QR code to her brand page.
+// Builds her media kit in the browser from live data. Page 1: the kit (numbers, packages, rates, brands she
+// has worked with, a QR code to her brand page). Then everything on the insights page: 30-day numbers with
+// changes, formats, how people engage, follower trend, audience, top content and past collab results.
 import { supabase } from './supabase';
-import { reachOk, type PublicInsights } from './insights';
+import { audienceOf, engageMix, formatRows, FORMAT_LABEL, insightKpis, reachOk, type PublicInsights } from './insights';
 import fontkit from '@pdf-lib/fontkit';
 import { PDFDocument, rgb, type PDFFont, type PDFImage, type PDFPage, type RGB } from 'pdf-lib';
 import { qrMatrix } from './invoice';
 import { loadFonts, wrap } from './invoicePdf';
 import { rateValue } from './priority';
 import type { PublicPage } from './types';
-import { compact, delivText, initials, offeredKinds, packageOffered } from './util';
+import { compact, delivText, fmt, initials, mediaLabel, offeredKinds, packageOffered } from './util';
 
 const INK = rgb(0.12, 0.09, 0.11);
 const MUTED = rgb(0.45, 0.41, 0.44);
@@ -146,7 +147,7 @@ export async function mediaKitPdf(p: PublicPage, link: string, ins: PublicInsigh
 	}
 
 	// ---- audience ----
-	const demo = ig?.demographics ?? {};
+	const demo = ins ? {} : (ig?.demographics ?? {});
 	const age = pct(demo.age).sort((a, b) => a.k.localeCompare(b.k));
 	const gender = pct(demo.gender).map((g) => ({ ...g, k: g.k === 'F' ? 'Women' : g.k === 'M' ? 'Men' : 'Other' })).sort((a, b) => b.p - a.p);
 	const cities = pct(demo.city).sort((a, b) => b.p - a.p).slice(0, 5).map((c) => ({ ...c, k: c.k.split(',')[0] }));
@@ -254,8 +255,252 @@ export async function mediaKitPdf(p: PublicPage, link: string, ins: PublicInsigh
 	text('Send a request, see packages and track it live at', M + 18, M + fh - 48, 9.5, reg, MUTED);
 	text(link.replace(/^https?:\/\//, ''), M + 18, M + fh - 64, 11, bold, G2);
 	text(`Usually replies within ${p.reply_time}.`, M + 18, M + 18, 8.5, reg, MUTED);
+	if (ins) right('Full Instagram insights on the next page', W - M - qs - 30, M + 18, 8.5, bold, G2);
 
+	if (ins) await insightsPages(doc, p, ins, link, reg, bold);
 	return doc.save();
+}
+
+const kindLabel = (k: string) => ({ REELS: 'Reel', STORY: 'Story', FEED: 'Post' })[k] ?? k;
+
+/** A post thumbnail cropped to fill w×h (null if the image can't be read). */
+async function coverJpeg(url: string, w: number, h: number): Promise<Uint8Array | null> {
+	if (!url) return null;
+	try {
+		const img = new Image();
+		img.crossOrigin = 'anonymous';
+		img.referrerPolicy = 'no-referrer';
+		await new Promise<void>((res, rej) => {
+			img.onload = () => res();
+			img.onerror = () => rej(new Error('thumb'));
+			setTimeout(() => rej(new Error('slow')), 8000);
+			img.src = url;
+		});
+		const cv = document.createElement('canvas');
+		cv.width = w * 3;
+		cv.height = h * 3;
+		const ctx = cv.getContext('2d')!;
+		const s = Math.max(cv.width / img.naturalWidth, cv.height / img.naturalHeight);
+		ctx.drawImage(img, (cv.width - img.naturalWidth * s) / 2, (cv.height - img.naturalHeight * s) / 2, img.naturalWidth * s, img.naturalHeight * s);
+		const blob = await new Promise<Blob | null>((r) => cv.toBlob(r, 'image/jpeg', 0.82));
+		return blob ? new Uint8Array(await blob.arrayBuffer()) : null;
+	} catch {
+		return null;
+	}
+}
+
+/** Everything on the insights page, on as many A4 pages as it needs. */
+async function insightsPages(doc: PDFDocument, p: PublicPage, d: PublicInsights, link: string, reg: PDFFont, bold: PDFFont) {
+	const W = 595.28, H = 841.89, M = 40, CW = W - 2 * M;
+	let page = doc.addPage([W, H]);
+	let y = H;
+	const text = (t: string, x: number, yy: number, size = 9.5, font: PDFFont = reg, color: RGB = INK) => page.drawText(t, { x, y: yy, size, font, color });
+	const right = (t: string, xr: number, yy: number, size = 9.5, font: PDFFont = reg, color: RGB = INK) => text(t, xr - font.widthOfTextAtSize(t, size), yy, size, font, color);
+	const label = (t: string, x: number, yy: number) => text(t.toUpperCase(), x, yy, 7.5, bold, MUTED);
+	const fit = (t: string, font: PDFFont, size: number, w: number) => {
+		if (font.widthOfTextAtSize(t, size) <= w) return t;
+		while (t.length > 1 && font.widthOfTextAtSize(t + '…', size) > w) t = t.slice(0, -1);
+		return t + '…';
+	};
+	const UP = rgb(0.17, 0.48, 0.27), DOWN = rgb(0.75, 0.2, 0.2);
+
+	// Header band (repeated, smaller, on any further page).
+	const header = (first: boolean) => {
+		const bh = first ? 92 : 46;
+		page.drawRectangle({ x: 0, y: H - bh, width: W, height: bh, color: DARK });
+		for (let i = 0; i < 60; i++) {
+			const t = i / 59;
+			page.drawRectangle({ x: (W / 60) * i, y: H - bh, width: W / 60 + 0.5, height: 4, color: t < 0.5 ? mix(G1, G2, t * 2) : mix(G2, G3, (t - 0.5) * 2) });
+		}
+		if (first) {
+			text('INSTAGRAM INSIGHTS', M, H - 32, 8, bold, G3);
+			text(d.display_name, M, H - 56, 20, bold, WHITE);
+			const meta = [`@${d.username}`, d.niche, d.city].filter(Boolean).join(' · ');
+			text(fit(meta, reg, 9.5, CW), M, H - 74, 9.5, reg, rgb(0.85, 0.8, 0.84));
+			right(`Verified from Instagram${d.updated_at ? ` · updated ${fmt(d.updated_at.slice(0, 10))}` : ''}`, W - M, H - 32, 8, reg, rgb(0.7, 0.65, 0.69));
+			right(`Live version: ${link.replace(/^https?:\/\//, '').replace(/\/$/, '')}/insights`, W - M, H - 46, 8, bold, G3);
+			const reviews = p.reviews ?? [];
+			if (reviews.length) {
+				const avg = (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1);
+				right(`Rated ${avg}/5 by ${reviews.length} brand${reviews.length === 1 ? '' : 's'}`, W - M, H - 60, 8, reg, rgb(0.85, 0.8, 0.84));
+			}
+		} else {
+			text(`${d.display_name} · Instagram insights (continued)`, M, H - 28, 10, bold, WHITE);
+		}
+		y = H - bh - 22;
+	};
+	const need = (h: number) => {
+		if (y - h >= M - 10) return;
+		page = doc.addPage([W, H]);
+		header(false);
+	};
+	header(true);
+
+	if (d.insights.from) {
+		text(`Last 30 days: ${fmt(d.insights.from)} to ${fmt(d.insights.to ?? '')}. Changes are against the 30 days before.`, M, y, 8.5, reg, MUTED);
+		y -= 16;
+	}
+
+	// ---- headline numbers, 3 per row ----
+	const kpis = insightKpis(d);
+	if (kpis.length) {
+		const cols = 3, gap = 10, tw = (CW - gap * (cols - 1)) / cols, th = 54;
+		kpis.forEach((k, i) => {
+			const col = i % cols, row = Math.floor(i / cols);
+			const x = M + col * (tw + gap), top = y - row * (th + gap);
+			page.drawRectangle({ x, y: top - th, width: tw, height: th, color: SOFT });
+			page.drawRectangle({ x, y: top - th, width: 3, height: th, color: [G1, G2, G3][col] });
+			text(k.k, x + 12, top - 14, 8, reg, MUTED);
+			text(k.pct ? `${k.v}%` : compact(k.v), x + 12, top - 34, 17, bold);
+			let sx = x + 12;
+			if (k.ch !== null) {
+				const c = `${k.ch >= 0 ? '+' : '-'}${Math.abs(k.ch)}%`;
+				text(c, sx, top - 47, 8, bold, k.ch >= 0 ? UP : DOWN);
+				sx += bold.widthOfTextAtSize(c, 8) + 5;
+			}
+			if (k.sub) text(fit(k.sub, reg, 8, x + tw - 8 - sx), sx, top - 47, 8, reg, MUTED);
+		});
+		y -= Math.ceil(kpis.length / cols) * (th + gap) + 14;
+	}
+
+	// ---- by format (left) and how people engage + followers (right) ----
+	const formats = formatRows(d);
+	const eng = engageMix(d);
+	const hist = d.history ?? [];
+	if (formats.length || eng.length || hist.length >= 3) {
+		const lw = CW * 0.56, rx = M + lw + 20, rw = CW - lw - 20;
+		const leftH = formats.length ? 30 + formats.length * 18 : 0;
+		const rightH = (eng.length ? 24 + eng.length * 16 : 0) + (hist.length >= 3 ? 86 : 0);
+		need(Math.max(leftH, rightH) + 10);
+		const top = y;
+		if (formats.length) {
+			label('By format · averages of recent posts', M, top);
+			// Right edges of the number columns.
+			const cx = [M, M + lw * 0.38, M + lw * 0.6, M + lw * 0.8, M + lw];
+			let yy = top - 18;
+			['Format', 'Posts', 'Avg. views', 'Avg. reach', 'Engagement'].forEach((h, i) => (i === 0 ? text(h, cx[0], yy, 8, bold, MUTED) : right(h, cx[i], yy, 8, bold, MUTED)));
+			page.drawLine({ start: { x: M, y: yy - 5 }, end: { x: M + lw, y: yy - 5 }, thickness: 0.6, color: LINE });
+			for (const [key, s] of formats) {
+				yy -= 18;
+				text(FORMAT_LABEL[key] ?? key, cx[0], yy, 9.5, bold);
+				right(String(s.posts), cx[1], yy, 9.5);
+				right(s.avg_views ? compact(s.avg_views) : '-', cx[2], yy, 9.5);
+				right(s.avg_reach ? compact(s.avg_reach) : '-', cx[3], yy, 9.5);
+				right(key === 'stories' ? (s.avg_interactions ? `${compact(s.avg_interactions)} actions` : '-') : s.er ? `${s.er}%` : '-', cx[4], yy, 9.5, bold);
+				page.drawLine({ start: { x: M, y: yy - 6 }, end: { x: M + lw, y: yy - 6 }, thickness: 0.4, color: LINE });
+			}
+		}
+		let ry = top;
+		if (eng.length) {
+			label('How people engage · 30 days', rx, ry);
+			const max = Math.max(1, ...eng.map((e) => e.v));
+			ry -= 18;
+			for (const e of eng) {
+				text(e.k, rx, ry, 9);
+				const bx = rx + 62, bw = rw - 62 - 40;
+				page.drawRectangle({ x: bx, y: ry - 1, width: bw, height: 7, color: SOFT });
+				page.drawRectangle({ x: bx, y: ry - 1, width: Math.max(2, (bw * e.v) / max), height: 7, color: G2 });
+				right(compact(e.v), rx + rw, ry, 9, bold);
+				ry -= 16;
+			}
+			ry -= 8;
+		}
+		if (hist.length >= 3) {
+			label(`Followers · ${fmt(hist[0].day)} to ${fmt(hist[hist.length - 1].day)}`, rx, ry);
+			const ys = hist.map((h) => h.followers), lo = Math.min(...ys), hi = Math.max(...ys), span = hi - lo || 1;
+			const gx = rx, gy = ry - 62, gw = rw, gh = 46;
+			page.drawRectangle({ x: gx, y: gy, width: gw, height: gh + 6, color: SOFT });
+			const pt = (i: number) => ({ x: gx + 4 + (i / (hist.length - 1)) * (gw - 8), y: gy + 4 + ((ys[i] - lo) / span) * (gh - 4) });
+			for (let i = 1; i < hist.length; i++) page.drawLine({ start: pt(i - 1), end: pt(i), thickness: 1.6, color: G2 });
+			text(compact(ys[0]), gx, gy - 11, 8, reg, MUTED);
+			right(compact(ys[ys.length - 1]), gx + gw, gy - 11, 8, bold);
+			ry = gy - 18;
+		}
+		y = Math.min(top - leftH, ry) - 16;
+	}
+
+	// ---- audience: age, gender, top cities, top countries ----
+	const a = audienceOf(d.demographics ?? {});
+	const groups = [a.age.length ? 'age' : '', a.gender.length ? 'gender' : '', a.cities.length ? 'cities' : '', a.countries.length ? 'countries' : ''].filter(Boolean);
+	if (groups.length) {
+		const rows = Math.max(a.age.length, a.gender.length + 2, a.cities.length, a.countries.length);
+		need(30 + rows * 14);
+		label('Audience', M, y);
+		y -= 16;
+		const gap = 18, cw = (CW - gap * (groups.length - 1)) / groups.length, top = y;
+		groups.forEach((gname, gi) => {
+			const x = M + gi * (cw + gap);
+			if (gname === 'age') {
+				text('Age', x, top, 9.5, bold);
+				const max = Math.max(1, ...a.age.map((r) => r.p));
+				a.age.forEach((r, i) => {
+					const yy = top - 16 - i * 14;
+					text(r.k, x, yy, 8.5, reg, MUTED);
+					const bw = (cw - 66) * (r.p / max);
+					page.drawRectangle({ x: x + 36, y: yy - 1, width: Math.max(2, bw), height: 8, color: G2 });
+					text(`${r.p}%`, x + 40 + bw, yy, 8.5, bold);
+				});
+			} else if (gname === 'gender') {
+				text('Gender', x, top, 9.5, bold);
+				let bx = x;
+				const cols = [G2, G1, G3];
+				a.gender.forEach((g, i) => {
+					const w = (cw * g.p) / 100;
+					page.drawRectangle({ x: bx, y: top - 20, width: Math.max(1, w - 1.5), height: 8, color: cols[i % 3] });
+					bx += w;
+				});
+				a.gender.forEach((g, i) => {
+					const yy = top - 38 - i * 14;
+					page.drawCircle({ x: x + 3, y: yy + 3, size: 3, color: cols[i % 3] });
+					text(g.k, x + 11, yy, 9);
+					right(`${g.p}%`, x + cw, yy, 9, bold);
+				});
+			} else {
+				const list = gname === 'cities' ? a.cities : a.countries;
+				text(gname === 'cities' ? 'Top cities' : 'Top countries', x, top, 9.5, bold);
+				list.forEach((c, i) => {
+					const yy = top - 16 - i * 14;
+					text(fit(c.k, reg, 9, cw - 30), x, yy, 9);
+					right(`${c.p}%`, x + cw, yy, 9, bold);
+				});
+			}
+		});
+		y = top - 16 - rows * 14 - 12;
+	}
+
+	// ---- post grids: top content and past brand collabs ----
+	const tw = (CW - 5 * 9) / 6, th = Math.round(tw * 0.9);
+	const grid = async (title: string, items: { img: string; t: string; n: string; n2?: string; url: string }[]) => {
+		if (!items.length) return;
+		need(18 + th + 44);
+		label(title, M, y);
+		y -= 10;
+		const imgs = await Promise.all(items.map((it) => coverJpeg(it.img, tw, th)));
+		for (const [i, it] of items.entries()) {
+			const x = M + i * (tw + 9), top = y;
+			const bytes = imgs[i];
+			const img = bytes ? await doc.embedJpg(bytes).catch(() => null) : null;
+			if (img) page.drawImage(img, { x, y: top - th, width: tw, height: th });
+			else {
+				page.drawRectangle({ x, y: top - th, width: tw, height: th, color: SOFT });
+				const ph = 'Instagram';
+				text(ph, x + (tw - reg.widthOfTextAtSize(ph, 7.5)) / 2, top - th / 2, 7.5, reg, MUTED);
+			}
+			text(fit(it.t, reg, 7.5, tw), x, top - th - 11, 7.5, reg, MUTED);
+			text(fit(it.n, bold, 8.5, tw), x, top - th - 22, 8.5, bold);
+			if (it.n2) text(fit(it.n2, reg, 7.5, tw), x, top - th - 32, 7.5, reg, MUTED);
+		}
+		y -= th + 50;
+	};
+	const views = (v: number | null, r: number | null) => (v ? `${compact(v)} views` : r ? `${compact(r)} reached` : '');
+	await grid(
+		'Top content · best of her recent posts',
+		(d.top ?? []).slice(0, 6).map((m) => ({ img: m.thumbnail_url, url: m.permalink, t: `${mediaLabel(m.media_type, m.product_type)} · ${fmt(m.posted_at.slice(0, 10))}`, n: views(m.views, m.reach), n2: m.interactions ? `${compact(m.interactions)} interactions` : '' }))
+	);
+	await grid(
+		'Past brand collabs · how collab posts performed',
+		(p.results ?? []).slice(0, 6).map((r) => ({ img: r.thumbnail, url: r.permalink, t: `${kindLabel(r.kind)} · ${r.brand}`, n: views(r.views, r.reach) }))
+	);
 }
 
 export async function downloadMediaKit(p: PublicPage, link: string) {

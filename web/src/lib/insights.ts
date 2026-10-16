@@ -39,3 +39,66 @@ export function change(cur: number | undefined, prev: number | undefined) {
 }
 
 export const FORMAT_LABEL: Record<string, string> = { reels: 'Reels', carousels: 'Carousels', photos: 'Photos', stories: 'Stories' };
+
+// ---- What the insights page shows (also used by the media kit PDF, so both always match) ----
+export type Kpi = { k: string; v: number; sub: string; ch: number | null; pct?: boolean };
+
+export function insightKpis(d: PublicInsights): Kpi[] {
+	const t = d.insights.totals ?? {};
+	const pv = d.insights.prev ?? {};
+	const f = d.insights.formats;
+	const g = d.insights.growth?.d30;
+	const sign = (n: number) => (n > 0 ? '+' : n < 0 ? '-' : '');
+	const short = (n: number) => (Math.abs(n) >= 1e6 ? `${+(Math.abs(n) / 1e6).toFixed(1)}M` : Math.abs(n) >= 1e3 ? `${+(Math.abs(n) / 1e3).toFixed(1)}K` : String(Math.abs(n)));
+	const all: { k: string; v: number | null | undefined; sub: string; ch: number | null; pct?: boolean }[] = [
+		{ k: 'Followers', v: d.followers, sub: g ? `${sign(g)}${short(g)} in 30 days` : '', ch: null },
+		{ k: 'Accounts reached', v: reachOk(t) ? t.reach : undefined, sub: '30 days', ch: reachOk(pv) ? change(t.reach, pv.reach) : null },
+		{ k: 'Views', v: t.views, sub: '30 days', ch: change(t.views, pv.views) },
+		{ k: 'Accounts engaged', v: t.accounts_engaged, sub: '30 days', ch: change(t.accounts_engaged, pv.accounts_engaged) },
+		{ k: 'Engagement rate', v: d.engagement_rate, sub: 'per post, last 12', ch: null, pct: true },
+		{ k: 'Interactions', v: t.total_interactions, sub: '30 days', ch: change(t.total_interactions, pv.total_interactions) },
+		{ k: 'Avg. Reel views', v: f?.reels.avg_views ?? d.avg_views, sub: f?.reels.posts ? `last ${f.reels.posts} Reels` : 'recent posts', ch: null },
+		{ k: 'Avg. Story reach', v: f?.stories.avg_reach, sub: f?.stories.posts ? `${f.stories.posts} Stories` : '', ch: null },
+		{ k: 'Link taps', v: t.profile_links_taps, sub: '30 days', ch: change(t.profile_links_taps, pv.profile_links_taps) }
+	];
+	return all.filter((x): x is Kpi => typeof x.v === 'number' && x.v > 0);
+}
+
+/** Likes, comments, shares and saves over the 30 days. */
+export function engageMix(d: PublicInsights) {
+	const t = d.insights.totals ?? {};
+	return [
+		{ k: 'Likes', v: t.likes },
+		{ k: 'Comments', v: t.comments },
+		{ k: 'Shares', v: t.shares },
+		{ k: 'Saves', v: t.saves }
+	].filter((x): x is { k: string; v: number } => !!x.v);
+}
+
+/** Formats she has posted, with their averages. */
+export function formatRows(d: PublicInsights) {
+	const f = d.insights.formats;
+	return f ? (Object.entries(f) as [string, FormatStats][]).filter(([, s]) => s.posts > 0) : [];
+}
+
+/** Age, gender, top cities and top countries as percentages. */
+export function audienceOf(demo: PublicInsights['demographics']) {
+	const pct = (part: Record<string, number> | undefined) => {
+		const entries = Object.entries(part ?? {});
+		const total = entries.reduce((a, [, v]) => a + v, 0) || 1;
+		return entries.map(([k, v]) => ({ k, p: Math.round((v / total) * 100) }));
+	};
+	const countryName = (code: string) => {
+		try {
+			return new Intl.DisplayNames(['en'], { type: 'region' }).of(code) ?? code;
+		} catch {
+			return code;
+		}
+	};
+	return {
+		age: pct(demo.age).sort((a, b) => a.k.localeCompare(b.k)),
+		gender: pct(demo.gender).map((g) => ({ ...g, k: g.k === 'F' ? 'Women' : g.k === 'M' ? 'Men' : 'Other' })).sort((a, b) => b.p - a.p),
+		cities: pct(demo.city).sort((a, b) => b.p - a.p).slice(0, 5).map((c) => ({ ...c, k: c.k.split(',')[0] })),
+		countries: pct(demo.country).sort((a, b) => b.p - a.p).slice(0, 5).map((c) => ({ ...c, k: countryName(c.k) }))
+	};
+}

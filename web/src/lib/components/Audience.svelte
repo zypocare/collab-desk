@@ -1,22 +1,11 @@
 <script lang="ts">
+	import { audienceOf } from '../insights';
 	let { demo, i = 5 }: { demo: Partial<Record<'age' | 'gender' | 'city' | 'country', Record<string, number>>>; i?: number } = $props();
-	const countryName = (code: string) => {
-		try {
-			return new Intl.DisplayNames(['en'], { type: 'region' }).of(code) ?? code;
-		} catch {
-			return code;
-		}
-	};
-
-	const pct = (part: Record<string, number> | undefined) => {
-		const entries = Object.entries(part ?? {});
-		const total = entries.reduce((a, [, v]) => a + v, 0) || 1;
-		return entries.map(([k, v]) => ({ k, p: Math.round((v / total) * 100) }));
-	};
-	const age = $derived(pct(demo.age).sort((a, b) => a.k.localeCompare(b.k)));
-	const gender = $derived(pct(demo.gender).map((g) => ({ ...g, k: g.k === 'F' ? 'Women' : g.k === 'M' ? 'Men' : 'Other' })).sort((a, b) => b.p - a.p));
-	const cities = $derived(pct(demo.city).sort((a, b) => b.p - a.p).slice(0, 5).map((c) => ({ ...c, k: c.k.split(',')[0] })));
-	const countries = $derived(pct(demo.country).sort((a, b) => b.p - a.p).slice(0, 5).map((c) => ({ ...c, k: countryName(c.k) })));
+	const aud = $derived(audienceOf(demo));
+	const age = $derived(aud.age);
+	const gender = $derived(aud.gender);
+	const cities = $derived(aud.cities);
+	const countries = $derived(aud.countries);
 	const maxAge = $derived(Math.max(1, ...age.map((a) => a.p)));
 	const has = $derived(age.length || gender.length || cities.length);
 </script>

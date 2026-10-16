@@ -2,7 +2,7 @@
 	import { onMount } from 'svelte';
 	import { supabase } from '#lib/supabase.ts';
 	import { loadPublicPage, pub } from '#lib/publicPage.svelte.ts';
-	import { change, FORMAT_LABEL, reachOk, type PublicInsights } from '#lib/insights.ts';
+	import { engageMix, formatRows, FORMAT_LABEL, insightKpis, type PublicInsights } from '#lib/insights.ts';
 	import { compact, fmt, fmtLong, mediaLabel } from '#lib/util.ts';
 	import { copyText } from '#lib/ui.svelte.ts';
 	import { downloadMediaKit } from '#lib/mediaKitPdf.ts';
@@ -21,34 +21,10 @@
 		status = d ? 'ok' : 'off';
 	});
 
-	const t = $derived(d?.insights.totals ?? {});
-	const pv = $derived(d?.insights.prev ?? {});
-	const f = $derived(d?.insights.formats);
-	const kpis = $derived(
-		d
-			? [
-					{ k: 'Followers', v: d.followers, sub: d.insights.growth?.d30 ? `${d.insights.growth.d30 > 0 ? '+' : ''}${compact(d.insights.growth.d30)} in 30 days` : '', ch: null },
-					{ k: 'Accounts reached', v: reachOk(t) ? t.reach : undefined, sub: '30 days', ch: reachOk(pv) ? change(t.reach, pv.reach) : null },
-					{ k: 'Views', v: t.views, sub: '30 days', ch: change(t.views, pv.views) },
-					{ k: 'Accounts engaged', v: t.accounts_engaged, sub: '30 days', ch: change(t.accounts_engaged, pv.accounts_engaged) },
-					{ k: 'Engagement rate', v: d.engagement_rate, sub: 'per post, last 12', ch: null, pct: true },
-					{ k: 'Interactions', v: t.total_interactions, sub: '30 days', ch: change(t.total_interactions, pv.total_interactions) },
-					{ k: 'Avg. Reel views', v: f?.reels.avg_views ?? d.avg_views, sub: f?.reels.posts ? `last ${f.reels.posts} Reels` : 'recent posts', ch: null },
-					{ k: 'Avg. Story reach', v: f?.stories.avg_reach, sub: f?.stories.posts ? `${f.stories.posts} Stories` : '', ch: null },
-					{ k: 'Link taps', v: t.profile_links_taps, sub: '30 days', ch: change(t.profile_links_taps, pv.profile_links_taps) }
-				].filter((x) => typeof x.v === 'number' && x.v > 0)
-			: []
-	);
-	const mix = $derived(
-		[
-			{ k: 'Likes', v: t.likes },
-			{ k: 'Comments', v: t.comments },
-			{ k: 'Shares', v: t.shares },
-			{ k: 'Saves', v: t.saves }
-		].filter((x) => x.v)
-	);
+	const kpis = $derived(d ? insightKpis(d) : []);
+	const mix = $derived(d ? engageMix(d) : []);
 	const mixMax = $derived(Math.max(1, ...mix.map((x) => x.v)));
-	const formats = $derived(f ? (Object.entries(f) as [string, NonNullable<typeof f>['reels']][]).filter(([, s]) => s.posts > 0) : []);
+	const formats = $derived(d ? formatRows(d) : []);
 
 	// Follower line for the last 90 days.
 	const spark = $derived.by(() => {
@@ -177,7 +153,7 @@
 					{#each results.slice(0, 6) as r, i (r.permalink + i)}
 						<a class="ins-post glow" href={r.permalink} target="_blank" rel="noopener" style="--i:{i}">
 							{#if r.thumbnail}<img src={r.thumbnail} alt="" loading="lazy" referrerpolicy="no-referrer" />{:else}<span class="ins-post-ph"><Icon name="spark" /></span>{/if}
-							<span class="ins-post-t">{r.brand} · {r.kind}</span>
+							<span class="ins-post-t">{r.brand} · {({ REELS: 'Reel', STORY: 'Story', FEED: 'Post' } as Record<string, string>)[r.kind] ?? r.kind}</span>
 							<span class="ins-post-n">{#if r.views}<b>{compact(r.views)}</b> views{:else if r.reach}<b>{compact(r.reach)}</b> reached{/if}</span>
 						</a>
 					{/each}
