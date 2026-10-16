@@ -29,7 +29,8 @@
 	import BrandUsage from '#lib/components/BrandUsage.svelte';
 	import BrandShipping from '#lib/components/BrandShipping.svelte';
 	import MessageThread from '#lib/components/MessageThread.svelte';
-	import { INVOICE_STATUS } from '#lib/invoice.ts';
+	import CampaignTimeline from '#lib/components/CampaignTimeline.svelte';
+	import CampaignDocs from '#lib/components/CampaignDocs.svelte';
 
 	const r = $derived(brandData.requests.find((x) => x.code.toUpperCase() === (page.params.code ?? '').toUpperCase()));
 	const si = $derived(r ? (r.stage === 'declined' ? -1 : stageIndex(r.stage)) : 0);
@@ -48,12 +49,6 @@
 		const code = r?.code;
 		if (code) supabase.rpc('brief_info', { p_code: code }).then(({ data }) => (briefD = data && Object.keys(data).length ? (data as BriefDetails) : null));
 	});
-
-	let reports = $state<{ code: string; token: string; sent_at: string }[]>([]);
-	$effect(() => {
-		supabase.rpc('my_reports').then(({ data }) => (reports = (data as typeof reports) ?? []));
-	});
-	const myReports = $derived(reports.filter((x) => r && x.code === r.code));
 
 	let mode = $state<'' | 'accept' | 'changes'>('');
 	let signName = $state(auth.account?.role === 'brand' ? auth.account.full_name : '');
@@ -236,23 +231,13 @@
 
 		</div>
 		<aside class="r-side">
+	<CampaignTimeline {r} {creator} />
 	<section class="panel rv" style="--i:3;padding:24px;margin-top:18px">
 		{#if r.note_for_brand}
 			<blockquote class="note"><span>Latest from {creator}</span><p>{r.note_for_brand}</p></blockquote>
 		{/if}
 		{#if r.stage === 'declined'}
 			<p class="hint">{creator} isn't able to take this one on. Thank you for thinking of {creator}.</p>
-		{:else}
-			<ol class="vs">
-				{#each STAGES as s, i (s.id)}
-					{@const isDone = i < si || (i === si && s.id === 'wrapped')}
-					{@const d = detail(s.id, i)}
-					<li class:done={isDone} class:cur={!isDone && i === si} style="--i:{i}">
-						<span class="vd">{#if isDone}<Icon name="check" />{/if}</span>
-						<div><b>{s.pub}</b>{#if d}<small>{d}</small>{/if}</div>
-					</li>
-				{/each}
-			</ol>
 		{/if}
 		<dl class="facts">
 			<div><dt>{accepted ? 'Agreed' : 'Offer'}</dt><dd>{r.type === 'barter' ? r.product : `${r.fee ? inr(r.fee) : 'Quote requested'}${r.type === 'hybrid' ? ` + ${r.product}` : ''}`}</dd></div>
@@ -264,27 +249,9 @@
 		{/if}
 	</section>
 
-	{#if myReports.length}
-		<section class="panel rv action-panel" style="--i:3;margin-top:18px">
-			<div class="panel-h"><h2>Results</h2><span class="pill tint k-live">From Instagram</span></div>
-			{#each myReports as rep (rep.token)}
-				<a class="prod-row" href="/report/{rep.token}" style="text-decoration:none"><div><b>Campaign results report</b><small>Shared {fmt(rep.sent_at?.slice(0, 10))}</small></div><Icon name="arrow" /></a>
-			{/each}
-		</section>
-	{/if}
+	<CampaignDocs {r} />
 
-	{#if r.invoices?.length}
-		<section class="panel rv" style="--i:4;margin-top:18px">
-			<div class="panel-h"><h2>Invoices</h2></div>
-			{#each r.invoices as inv (inv.token)}
-				<a class="prod-row" href="/invoice/{inv.token}" style="text-decoration:none">
-					<div><b>{inv.number}</b><small>{fmt(inv.issue_date)}{inv.status !== 'paid' && inv.due_date ? ` · due ${fmt(inv.due_date)}` : ''}</small></div>
-					<span class="v">{inr(inv.payable)}</span>
-					<span class="pill tint {INVOICE_STATUS[inv.status as keyof typeof INVOICE_STATUS]?.k ?? 'plain'}">{INVOICE_STATUS[inv.status as keyof typeof INVOICE_STATUS]?.label ?? inv.status}</span>
-				</a>
-			{/each}
-		</section>
-	{/if}
+
 
 	{#if r.drafts.length && !(r.drafts.length === 1 && pendingDraft)}
 		<section class="panel rv" style="--i:4;margin-top:18px">

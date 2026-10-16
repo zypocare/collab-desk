@@ -1839,3 +1839,22 @@ body:has(.batch-bar) .fab{display:none}
 .roi-now{display:flex;align-items:center;gap:8px;margin:0 0 16px;font-size:13.5px;color:var(--ok)}
 .roi-now .ic{width:16px;height:16px}
 @media (max-width:640px){.roi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* Brand campaign timeline */
+.tl-panel{margin-bottom:18px}
+.tl-panel .panel-h .btn{margin-left:auto}
+.tl-need{display:flex;align-items:flex-start;gap:8px;margin:0 20px 6px;padding:10px 12px;border-radius:12px;font-size:13px;background:color-mix(in oklab,var(--accent) 10%,transparent)}
+.tl-need .ic{width:16px;height:16px;color:var(--accent);flex:none;margin-top:1px}
+.tl{list-style:none;margin:0;padding:6px 20px 16px;position:relative}
+.tl li{display:flex;align-items:center;gap:12px;padding:9px 0;position:relative}
+.tl li::before{content:'';position:absolute;left:10px;top:30px;bottom:-10px;width:2px;background:var(--line)}
+.tl li:last-child::before{display:none}
+.tl li > div{flex:1;min-width:0}
+.tl b{display:block;font-size:13.5px}
+.tl small{font-size:12px;color:var(--ink-3)}
+.tl-dot{width:22px;height:22px;border-radius:50%;flex:none;display:grid;place-items:center;border:2px solid var(--line-strong);background:var(--surface);z-index:1}
+.tl-done .tl-dot{background:var(--ok);border-color:var(--ok);color:#fff}
+.tl-done .tl-dot .ic{width:12px;height:12px;stroke-width:2.6}
+.tl li.tl-you .tl-dot{border-color:var(--accent);box-shadow:0 0 0 4px color-mix(in oklab,var(--accent) 18%,transparent)}
+.tl-done b{color:var(--ink-2)}
+.doc-btn{width:100%;background:none;border:0;border-top:1px solid var(--line);font:inherit;color:inherit;text-align:left;cursor:pointer}

@@ -356,6 +356,15 @@ export type BrandRequest = {
 	quotes: Quote[];
 	drafts: Draft[];
 	invoices: { number: string; kind: string; total: number; payable: number; status: string; issue_date: string; due_date: string | null; token: string }[];
+	live_time: string | null;
+	product_date: string | null;
+	shipped_at: string | null;
+	product_received_at: string | null;
+	usage_ends: string | null;
+	files_sent_at: string | null;
+	files: { id: string; label: string; url: string; file_path: string | null; file_type: string; size: number }[];
+	report_token: string | null;
+	results: { views: number | null; reach: number | null; interactions: number | null; posts: number } | null;
 };
 
 export type Agreement = {
