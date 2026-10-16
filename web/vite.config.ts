@@ -13,7 +13,11 @@ export default defineConfig({
 
 			// The app is a single-page app: every page loads data in the browser through Supabase.
 			// Cloudflare Pages serves index.html for any path that has no file, so deep links work.
-			adapter: adapter({ fallback: 'index.html' })
+			adapter: adapter({ fallback: 'index.html' }),
+
+			// Check for a new deploy every 2 minutes. Once there is one, moving to another screen
+			// reloads the page instead of asking for files the old version had (they no longer exist).
+			version: { pollInterval: 120_000 }
 		})
 	]
 });

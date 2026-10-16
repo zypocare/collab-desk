@@ -1,9 +1,9 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { onMount, tick } from 'svelte';
 	import { auth, homeFor, refreshAccount } from '#lib/auth.svelte.ts';
 	import { supabase, turnstileSiteKey } from '#lib/supabase.ts';
+	import type { Account } from '#lib/types.ts';
 	import { errMessage } from '#lib/util.ts';
 	import Icon from '#lib/components/Icon.svelte';
 
@@ -25,8 +25,9 @@
 	let codeInput = $state<HTMLInputElement>();
 
 	// Already signed in? Go straight to the right area.
+	let signingIn = false;
 	$effect(() => {
-		if (auth.session && auth.account) goto(next || homeFor(auth.account), { replaceState: true });
+		if (auth.session && auth.account && !signingIn) location.replace(targetFor(auth.account));
 	});
 
 	onMount(() => {
@@ -104,14 +105,34 @@
 			return;
 		}
 		busy = true;
-		const { error: err } = await supabase.auth.verifyOtp({ email, token, type: 'email' });
-		if (err) {
+		signingIn = true;
+		const { data, error: err } = await supabase.auth
+			.verifyOtp({ email, token, type: 'email' })
+			.catch((x) => ({ data: { session: null }, error: x as Error }));
+		if (err || !data.session) {
 			busy = false;
+			signingIn = false;
 			error = 'That code is wrong or has expired. Check the latest email or send a new code.';
 			return;
 		}
-		const account = await refreshAccount();
-		goto(next && !(account?.role === 'creator' && next.startsWith('/brand')) ? next : homeFor(account), { replaceState: true });
+		auth.session = data.session;
+		// Who is this: the creator or a brand? Don't wait forever for the answer.
+		const account = await Promise.race([
+			refreshAccount().catch(() => null),
+			new Promise<null>((r) => setTimeout(() => r(null), 8000))
+		]);
+		// A full page load, not an in-app jump: if the website was updated while this page was
+		// open, the in-app jump would ask for files the old version had and get stuck.
+		location.replace(targetFor(account));
+	}
+
+	// Where to land. A link to the other side's area (creator → /brand…) goes home instead.
+	function targetFor(account: Account | null) {
+		const home = homeFor(account);
+		if (!next || !next.startsWith('/') || next.startsWith('//')) return home;
+		if (account?.role === 'creator' && next.startsWith('/brand')) return home;
+		if (account?.role === 'brand' && next.startsWith('/studio')) return home;
+		return next;
 	}
 
 	// Sign in as soon as all 6 digits are typed (once per code).
