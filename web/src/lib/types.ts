@@ -65,6 +65,10 @@ export type Draft = {
 
 export type Checklist = Partial<Record<'paid_label' | 'ad_tag' | 'brand_tag' | 'link', boolean>>;
 
+export type PackageItem = { kind: string; qty: number };
+export type Package = { id: string; name: string; description: string; items: PackageItem[]; price: number; badge: string; active: boolean; position: number; created_at: string };
+export type PublicPackage = Pick<Package, 'id' | 'name' | 'description' | 'items' | 'price' | 'badge'>;
+
 export type Message = { id: string; collab_id: string; sender: 'creator' | 'brand'; body: string; created_at: string };
 export type ReadMark = { collab_id: string; side: 'creator' | 'brand'; read_at: string };
 export type CollabEvent = { id: number; collab_id: string; at: string; kind: string; text: string; visible_to_brand: boolean };
@@ -110,6 +114,7 @@ export type Collab = {
 	invoices: Invoice[];
 	posts: { matched_by: 'auto' | 'manual'; media: IgMedia }[];
 	reports: BrandReport[];
+	package_name: string;
 	ship_carrier: string;
 	ship_tracking: string;
 	shipped_at: string | null;
@@ -243,6 +248,7 @@ export type PublicPage = {
 	reply_time: string;
 	accepting: boolean;
 	rates: Record<string, number> | null;
+	packages: PublicPackage[];
 	barter: { mode: 'open' | 'selective' | 'closed'; min_value: number; reply_time: string; slots_left: number | null } | null;
 	worked_with: string[];
 	instagram: {

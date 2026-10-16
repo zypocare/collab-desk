@@ -49,6 +49,7 @@
 	{/if}
 	<div class="chips">
 		{#if prio}<PriorityBadge p={prio} compact />{/if}
+		{#if c.package_name}<span class="chip tint k-quote" title="Booked package"><Icon name="gift" />{c.package_name}</span>{/if}
 		{#if c.type === 'barter'}
 			<span class="chip tint k-product"><Icon name="gift" />Barter · {inrS(c.product_value)}</span>
 		{:else}

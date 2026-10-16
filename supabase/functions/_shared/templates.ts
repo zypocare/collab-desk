@@ -52,7 +52,7 @@ export function render(kind: string, p: Payload, s: Settings): Omit<Mail, 'to'> 
     const html = layout(
       s,
       `New request from ${brand}`,
-      `<table role="presentation" cellpadding="0" cellspacing="0">${row('Code', code)}${row('Contact', p.contact)}${row('Email', p.email)}${row('Phone', p.phone)}${row('Deliverables', p.deliverables)}${row('Offer', money)}</table>
+      `<table role="presentation" cellpadding="0" cellspacing="0">${row('Code', code)}${row('Contact', p.contact)}${row('Email', p.email)}${row('Phone', p.phone)}${row('Package', p.package)}${row('Deliverables', p.deliverables)}${row('Offer', money)}</table>
        ${p.brief ? `<p style="margin:14px 0 0;padding:12px 14px;background:#f2eded;border-radius:12px;font-size:14px">${esc(p.brief)}</p>` : ''}`,
       { label: 'Open in your studio', href: url(s, `/studio/collabs?open=${encodeURIComponent(code)}`) },
     );

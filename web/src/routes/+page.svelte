@@ -5,11 +5,12 @@
 	import { auth } from '#lib/auth.svelte.ts';
 	import { loadPublicPage, pub } from '#lib/publicPage.svelte.ts';
 	import { countUp, parseStat } from '#lib/ui.svelte.ts';
-	import { firstName, initials, inr } from '#lib/util.ts';
+	import { delivText, firstName, initials, inr } from '#lib/util.ts';
 	import BrandTopbar from '#lib/components/BrandTopbar.svelte';
 	import Audience from '#lib/components/Audience.svelte';
 	import { compact, fmt } from '#lib/util.ts';
 	import Icon from '#lib/components/Icon.svelte';
+	import { rateValue } from '#lib/priority.ts';
 	import Avatar from '#lib/components/Avatar.svelte';
 
 	const preview = $derived(page.url.searchParams.has('preview'));
@@ -25,6 +26,7 @@
 	const signedInBrand = $derived(auth.account?.role === 'brand');
 	const requestHref = $derived(signedInBrand ? '/brand/new' : '/login?next=/brand/new');
 	const trackHref = $derived(signedInBrand ? '/brand' : '/login?next=/brand');
+	const bookHref = (id: string) => (signedInBrand ? `/brand/new?package=${id}` : `/login?next=${encodeURIComponent(`/brand/new?package=${id}`)}`);
 	const stats = $derived(
 		p
 			? [
@@ -82,6 +84,29 @@
 			{/if}
 
 			{#if p.instagram?.demographics}<Audience demo={p.instagram.demographics} />{/if}
+
+			{#if p.packages?.length && p.accepting}
+				<section class="pkgs rv" style="--i:6" aria-label="Packages">
+					<div class="pkgs-h"><h2>Packages</h2><p>Book a ready-made bundle in one tap.</p></div>
+					<div class="pkg-grid">
+						{#each p.packages as k, i (k.id)}
+							{@const rate = rateValue(k.items, p.rates)}
+							{@const save = rate > k.price && k.price ? Math.round((1 - k.price / rate) * 100) : 0}
+							<article class="pkg glow" class:hot={!!k.badge} style="--i:{i}">
+								{#if k.badge}<span class="pkg-badge">{k.badge}</span>{/if}
+								<h3>{k.name}</h3>
+								{#if k.description}<p>{k.description}</p>{/if}
+								<div class="pkg-items">{delivText(k.items)}</div>
+								<div class="pkg-price">
+									<b>{inr(k.price)}</b>
+									{#if save >= 3}<s>{inr(rate)}</s><span class="pkg-save">Save {save}%</span>{/if}
+								</div>
+								<a class="btn {k.badge ? 'grad' : ''}" href={bookHref(k.id)}><Icon name="send" />Book this</a>
+							</article>
+						{/each}
+					</div>
+				</section>
+			{/if}
 
 			<section class="panel rv" style="--i:6;overflow:hidden">
 				<div class="bsec">

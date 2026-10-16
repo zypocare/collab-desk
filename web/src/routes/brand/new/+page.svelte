@@ -1,16 +1,18 @@
 <script lang="ts">
+	import { page } from '$app/state';
+	import { untrack } from 'svelte';
 	import { auth } from '#lib/auth.svelte.ts';
 	import { loadRequests } from '#lib/brand.svelte.ts';
 	import { pub } from '#lib/publicPage.svelte.ts';
 	import { supabase } from '#lib/supabase.ts';
 	import type { CollabType } from '#lib/types.ts';
 	import { confetti, copyText } from '#lib/ui.svelte.ts';
-	import { KINDS, USAGE, errMessage, firstName, inr, rel } from '#lib/util.ts';
+	import { KINDS, USAGE, delivText, errMessage, firstName, inr, rel } from '#lib/util.ts';
 	import BrandDetailsForm from '#lib/components/BrandDetailsForm.svelte';
 	import Icon from '#lib/components/Icon.svelte';
 	import Select from '#lib/components/Select.svelte';
 	import DatePicker from '#lib/components/DatePicker.svelte';
-	import { brandAdvice } from '#lib/priority.ts';
+	import { brandAdvice, type Advice } from '#lib/priority.ts';
 	import { tick } from 'svelte';
 
 	const acc = $derived(auth.account?.role === 'brand' ? auth.account : null);
@@ -31,6 +33,27 @@
 	let errProduct = $state('');
 	let sent = $state<string | null>(null);
 	let sentReply = $state<string | null>(null);
+
+	// Booking one of her packages (/brand/new?package=ID): fill the form from it.
+	let packageId = $state('');
+	const pkg = $derived(pub.data?.packages?.find((k) => k.id === packageId) ?? null);
+	$effect(() => {
+		const id = page.url.searchParams.get('package');
+		const k = id ? pub.data?.packages?.find((x) => x.id === id) : null;
+		if (!k) return;
+		untrack(() => {
+			packageId = k.id;
+			type = 'paid';
+			qty = Object.fromEntries(KINDS.map((kind) => [kind, k.items.find((i) => i.kind === kind)?.qty ?? 0]));
+			fee = String(k.price);
+		});
+	});
+	// Changing what's included means it's a custom request, not the package.
+	$effect(() => {
+		if (!pkg) return;
+		const same = KINDS.every((kind) => (qty[kind] ?? 0) === (pkg.items.find((i) => i.kind === kind)?.qty ?? 0)) && type !== 'barter';
+		if (!same) untrack(() => (packageId = ''));
+	});
 	let bumped = $state<string | null>(null);
 	let panel = $state<HTMLElement>();
 
@@ -43,8 +66,12 @@
 
 	// Live guidance from the creator's priority rules (same engine the studio uses).
 	const lines = $derived(KINDS.filter((k) => qty[k] > 0).map((k) => ({ kind: k, qty: qty[k] })));
-	const advice = $derived(
-		pub.data ? brandAdvice({ type, fee: Number(fee) || 0, productValue: Number(productValue) || 0, lines }, pub.data, creator) : null
+	const advice = $derived<Advice | null>(
+		pkg
+			? { tone: 'good', title: 'Booking a package', lines: [`This is one of ${creator}'s own packages at the listed price, so it goes to the top of the list.`] }
+			: pub.data
+				? brandAdvice({ type, fee: Number(fee) || 0, productValue: Number(productValue) || 0, lines }, pub.data, creator)
+				: null
 	);
 	const replyIn = $derived(type === 'barter' ? (barter?.reply_time ?? pub.data?.reply_time) : pub.data?.reply_time);
 
@@ -80,6 +107,7 @@
 		const { data, error: err } = await supabase.rpc('submit_request', {
 			p: {
 				type,
+				package_id: packageId || null,
 				deliverables,
 				fee: type === 'barter' ? 0 : Number(fee) || 0,
 				product,
@@ -139,6 +167,13 @@
 			</div>
 		{:else}
 			<form onsubmit={submit} novalidate>
+				{#if pkg}
+					<div class="pkg-banner">
+						<Icon name="gift" />
+						<div><b>{pkg.name}</b><small>{delivText(pkg.items)} · {inr(pkg.price)}</small></div>
+						<button type="button" class="lnk" onclick={() => (packageId = '')}>Customise instead</button>
+					</div>
+				{/if}
 				<div class="bsec">
 					<div class="bsec-h"><i>01</i><h2>Type of collaboration</h2></div>
 					<div class="types" role="radiogroup" aria-label="Type of collaboration">

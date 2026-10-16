@@ -80,6 +80,8 @@ export function scoreCollab(c: Collab, s: Settings, all: Collab[]): Priority {
 	else if (history.some((x) => x.pay_status === 'paid')) add(10, 'Brand has paid you before');
 	else if (history.some((x) => x.stage === 'wrapped')) add(5, 'Worked together before');
 
+	if (c.package_name) add(12, `Booked your “${c.package_name}” package`);
+
 	if (s.priority_categories?.includes(c.brand.category)) add(8, `${c.brand.category} is a category you prefer`);
 
 	if (c.stage === 'request') {

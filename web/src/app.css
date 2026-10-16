@@ -1187,3 +1187,40 @@ input[type="number"]::-webkit-inner-spin-button,input[type="number"]::-webkit-ou
 .ship-track > svg{width:18px;height:18px;color:var(--accent)}
 .ship-form{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;gap:12px;align-items:end}
 @media (max-width: 640px){ .ship-form{grid-template-columns:minmax(0,1fr)} }
+
+/* ---------- packages ---------- */
+.pkgs{margin:0 0 18px}
+.pkgs-h{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.pkgs-h h2{font-family:var(--f-display);font-size:20px;letter-spacing:-.02em}
+.pkgs-h p{color:var(--ink-3);font-size:13px;margin:0}
+.pkg-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.pkg{position:relative;display:flex;flex-direction:column;gap:6px;padding:20px;border-radius:22px;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow);animation:rise .6s var(--spring) both;animation-delay:calc(var(--i) * 70ms);min-width:0}
+.pkg.hot{border-color:color-mix(in oklab,var(--accent) 45%,var(--line));background:linear-gradient(180deg,color-mix(in oklab,var(--accent) 7%,var(--surface)),var(--surface) 60%)}
+.pkg h3{font-family:var(--f-display);font-size:18px;letter-spacing:-.02em}
+.pkg p{margin:0;color:var(--ink-3);font-size:13px;line-height:1.45}
+.pkg-items{font-size:13px;font-weight:600;color:var(--ink-2);margin-top:4px}
+.pkg-price{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin:8px 0 12px}
+.pkg-price b{font-family:var(--f-display);font-size:28px;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.pkg-price s{color:var(--ink-3);font-size:13px}
+.pkg-save{font-size:11.5px;font-weight:700;color:color-mix(in oklab,var(--ok) 85%,var(--ink));background:color-mix(in oklab,var(--ok) 14%,var(--surface));padding:2px 8px;border-radius:999px}
+.pkg .btn{margin-top:auto;justify-content:center}
+.pkg-badge{position:absolute;top:-10px;right:16px;font-size:11px;font-weight:700;letter-spacing:.02em;padding:4px 10px;border-radius:999px;background:var(--grad);color:#fff;box-shadow:0 6px 16px color-mix(in oklab,var(--accent) 30%,transparent)}
+.pkg-banner{display:flex;align-items:center;gap:12px;margin:22px 24px 0;padding:14px 16px;border-radius:16px;background:color-mix(in oklab,var(--accent) 8%,var(--surface));border:1px solid color-mix(in oklab,var(--accent) 25%,var(--line))}
+.pkg-banner > svg{width:20px;height:20px;color:var(--accent);flex:none}
+.pkg-banner div{flex:1;min-width:0}
+.pkg-banner b{display:block;font-size:14.5px}
+.pkg-banner small{color:var(--ink-3);font-size:12.5px}
+.pk-list{padding:0 20px;display:flex;flex-direction:column;gap:12px}
+.pk-edit{border:1px solid var(--line);border-radius:16px;padding:12px;display:flex;flex-direction:column;gap:8px;transition:opacity .2s}
+.pk-edit.off{opacity:.6}
+.pk-row{display:flex;gap:8px;align-items:center}
+.pk-name{font-weight:700}
+.pk-price{width:140px;flex:none}
+.pk-items{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.pk-item{display:flex;align-items:center;justify-content:space-between;gap:6px;padding:4px 4px 4px 10px;border-radius:12px;background:var(--surface-2);font-size:12.5px;min-width:0}
+.pk-item.on{background:color-mix(in oklab,var(--accent) 10%,var(--surface));font-weight:600}
+.pk-item span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.stepper.sm button{width:26px;height:26px;font-size:15px}
+.stepper.sm output{width:16px;font-size:12.5px}
+.pk-empty{text-align:center;padding:12px 0 4px;display:grid;justify-items:center;gap:10px}
+.pk-empty p{margin:0;color:var(--ink-3);font-size:13px;max-width:320px}

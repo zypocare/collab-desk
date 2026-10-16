@@ -2,6 +2,7 @@
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import { scoreCollab } from './priority';
 import { supabase } from './supabase';
+import type { Package } from './types';
 import type { BankAlert, Brand, BrandPrivate, BrandReport, Checklist, Collab, Deliverable, IgAccount, IgMedia, Quote, Settings, Stage } from './types';
 import { balanceDue, normaliseInvoice, type Invoice, type InvoiceItem } from './invoice';
 import { confetti, toast, ui } from './ui.svelte';
@@ -18,7 +19,8 @@ export const studio = $state<{
 	ig: IgAccount | null;
 	media: IgMedia[];
 	followersHistory: { day: string; followers: number }[];
-}>({ loaded: false, error: '', collabs: [], brands: [], notes: {}, settings: null, alerts: [], ig: null, media: [], followersHistory: [] });
+	packages: Package[];
+}>({ loaded: false, error: '', collabs: [], brands: [], notes: {}, settings: null, alerts: [], ig: null, media: [], followersHistory: [], packages: [] });
 
 const COLLAB_SELECT = '*, brand:brands(*), deliverables(*), events:collab_events(*), quotes(*), drafts(*), invoices(*), posts:collab_posts(matched_by, media:ig_media(*)), reports:brand_reports(*), messages:collab_messages(id, sender, created_at), reads:collab_reads(side, read_at)';
 
@@ -50,6 +52,7 @@ export async function loadStudio() {
 	]);
 	loadAlerts();
 	loadInstagram();
+	loadPackages();
 	const err = collabs.error || brands.error || notes.error || settings.error;
 	if (err) {
 		studio.error = errMessage(err);
@@ -169,6 +172,29 @@ export async function markPaid(c: Collab) {
 	}
 	confetti();
 	toast(`${inr(c.fee)} from ${c.brand.name} marked as paid`, 'wallet');
+}
+
+// ---------------------------------------------------------------------------
+// Packages
+// ---------------------------------------------------------------------------
+export async function loadPackages() {
+	const { data } = await supabase.from('packages').select('*').order('position').order('created_at');
+	studio.packages = ((data as Package[]) ?? []).map((p) => ({ ...p, price: Number(p.price) || 0 }));
+}
+
+export async function savePackage(p: Partial<Package> & { id?: string }) {
+	const { id, ...rest } = p;
+	const q = id ? supabase.from('packages').update(rest).eq('id', id) : supabase.from('packages').insert({ ...rest, position: studio.packages.length });
+	const { error } = await q;
+	if (error) return toast(`Couldn't save: ${errMessage(error)}`, 'alert');
+	await loadPackages();
+}
+
+export async function deletePackage(id: string) {
+	const { error } = await supabase.from('packages').delete().eq('id', id);
+	if (error) return toast(`Couldn't delete: ${errMessage(error)}`, 'alert');
+	toast('Package removed', 'check');
+	await loadPackages();
 }
 
 export async function markReceived(c: Collab) {
