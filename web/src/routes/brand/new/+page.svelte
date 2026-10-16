@@ -7,7 +7,7 @@
 	import { supabase } from '#lib/supabase.ts';
 	import type { BriefDetails, CollabType } from '#lib/types.ts';
 	import { confetti, copyText } from '#lib/ui.svelte.ts';
-	import { KINDS, USAGE, delivText, errMessage, firstName, inr, rel } from '#lib/util.ts';
+	import { KINDS, USAGE, delivText, errMessage, firstName, inr, offeredKinds, rel } from '#lib/util.ts';
 	import BrandDetailsForm from '#lib/components/BrandDetailsForm.svelte';
 	import Icon from '#lib/components/Icon.svelte';
 	import BriefEditor from '#lib/components/BriefEditor.svelte';
@@ -85,7 +85,8 @@
 	]);
 
 	// Live guidance from the creator's priority rules (same engine the studio uses).
-	const lines = $derived(KINDS.filter((k) => qty[k] > 0).map((k) => ({ kind: k, qty: qty[k] })));
+	const shown = $derived(offeredKinds(pub.data?.offered));
+	const lines = $derived(shown.filter((k) => qty[k] > 0).map((k) => ({ kind: k, qty: qty[k] })));
 	const advice = $derived<Advice | null>(
 		pkg
 			? { tone: 'good', title: 'Booking a package', lines: [`This is one of ${creator}'s own packages at the listed price, so it goes to the top of the list.`] }
@@ -130,7 +131,7 @@
 	async function submit(e: SubmitEvent) {
 		e.preventDefault();
 		error = errDel = errProduct = '';
-		const deliverables = KINDS.filter((k) => qty[k] > 0).map((k) => ({ kind: k, qty: qty[k] }));
+		const deliverables = shown.filter((k) => qty[k] > 0).map((k) => ({ kind: k, qty: qty[k] }));
 		if (!deliverables.length) errDel = 'Choose at least one deliverable.';
 		if (type !== 'paid' && !product.trim()) errProduct = 'Tell us which product you will send.';
 		if (errDel || errProduct) return;
@@ -223,7 +224,7 @@
 				<div class="bsec">
 					<div class="bsec-h"><i>02</i><h2>What you'd like</h2></div>
 					<div class="dpick">
-						{#each KINDS as k (k)}
+						{#each shown as k (k)}
 							<div class="dp" class:on={qty[k] > 0}>
 								<div><b>{k}</b>{#if rates?.[k]}<small>from {inr(rates[k])}</small>{/if}</div>
 								<div class="stepper">

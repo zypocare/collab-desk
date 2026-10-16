@@ -1320,3 +1320,12 @@ button.wk:hover{transform:translateY(-1px);border-color:var(--ink-3)}
 .set-top{margin-bottom:18px}
 .set-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(420px,100%),1fr));grid-auto-rows:2px;grid-auto-flow:row dense;column-gap:18px;align-items:start}
 .set-grid > *{min-width:0;margin:0}
+
+/* ---------- offered content switches ---------- */
+.tgl.sm{width:38px;height:22px;flex:none}
+.tgl.sm::after{width:16px;height:16px}
+.tgl.sm:checked::after{transform:translateX(16px)}
+.rate-off > span{opacity:.5}
+.rate-off .pre{opacity:.35}
+/* "Reviewed after paid" stays readable on a selected card. */
+.type-tag:not(.first){background:color-mix(in oklab,var(--warn) 14%,var(--surface));color:color-mix(in oklab,var(--warn) 80%,var(--ink))}

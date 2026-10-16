@@ -4,7 +4,7 @@
 	import { supabase } from '#lib/supabase.ts';
 	import { downloadMediaKit } from '#lib/mediaKitPdf.ts';
 	import { copyText, toast } from '#lib/ui.svelte.ts';
-	import { KINDS, compact, inr } from '#lib/util.ts';
+	import { KINDS, compact, inr, offeredKinds } from '#lib/util.ts';
 	import { suggestRates } from '#lib/rateSuggest.ts';
 	import { masonry } from '#lib/masonry.ts';
 	import Icon from '#lib/components/Icon.svelte';
@@ -49,6 +49,16 @@
 		if (!suggested || !confirm('Replace your rate card with the suggested rates? You can still edit each one.')) return;
 		saveSettings({ rates: { ...s.rates, ...suggested } });
 		toast('Rate card updated', 'check');
+	}
+	const offered = $derived(offeredKinds(s.offered_kinds));
+	function toggleKind(k: string, on: boolean, el: HTMLInputElement) {
+		const next = on ? KINDS.filter((x) => x === k || offered.includes(x)) : offered.filter((x) => x !== k);
+		if (!next.length) {
+			el.checked = true;
+			return toast('Keep at least one type of content on.', 'alert');
+		}
+		saveSettings({ offered_kinds: next });
+		toast(on ? `${k} is back on your page` : `${k} hidden from brands`, on ? 'eye' : 'x');
 	}
 	function toggle(k: 'accepting' | 'show_rates', on: boolean) {
 		saveSettings({ [k]: on });
@@ -103,7 +113,7 @@
 	</section>
 	<InstagramSettings />
 	<section class="panel rv" style="--i:3">
-		<div class="panel-h"><h2>Rate card</h2><small>starting price per deliverable</small></div>
+		<div class="panel-h"><h2>Rate card</h2><small>switch off what you don't offer</small></div>
 		{#if suggested}
 			<div class="rate-sug">
 				<div>
@@ -116,8 +126,10 @@
 		{#each KINDS as k (k)}
 			{@const sg = suggested?.[k]}
 			{@const cur = s.rates[k] ?? 0}
-			<div class="rate">
-				<span>{k}{#if sg}<small class="sug" class:low={cur > 0 && cur < sg * 0.8} class:high={cur > sg * 1.25}>suggested {inr(sg)}{cur > 0 && cur < sg * 0.8 ? ' · you may be undercharging' : cur > sg * 1.25 ? ' · above the suggestion' : ''}</small>{/if}</span>
+			{@const on = offered.includes(k)}
+			<div class="rate" class:rate-off={!on}>
+				<input type="checkbox" class="tgl sm" checked={on} aria-label="Offer {k} to brands" title={on ? 'Brands can request this' : 'Hidden from brands'} onchange={(e) => toggleKind(k, (e.currentTarget as HTMLInputElement).checked, e.currentTarget as HTMLInputElement)} />
+				<span>{k}{#if !on}<small class="sug">hidden from brands</small>{:else if sg}<small class="sug" class:low={cur > 0 && cur < sg * 0.8} class:high={cur > sg * 1.25}>suggested {inr(sg)}{cur > 0 && cur < sg * 0.8 ? ' · you may be undercharging' : cur > sg * 1.25 ? ' · above the suggestion' : ''}</small>{/if}</span>
 				<div class="pre"><span>₹</span><input class="inp num" type="number" inputmode="numeric" aria-label="{k} rate" value={s.rates[k] ?? ''} onchange={(e) => saveSettings({ rates: { ...s.rates, [k]: num(e) } })} /></div>
 			</div>
 		{/each}

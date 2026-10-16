@@ -5,7 +5,7 @@
 	import { auth } from '#lib/auth.svelte.ts';
 	import { loadPublicPage, pub } from '#lib/publicPage.svelte.ts';
 	import { countUp, parseStat } from '#lib/ui.svelte.ts';
-	import { delivText, firstName, initials, inr } from '#lib/util.ts';
+	import { delivText, firstName, initials, inr, offeredKinds, packageOffered } from '#lib/util.ts';
 	import BrandTopbar from '#lib/components/BrandTopbar.svelte';
 	import Audience from '#lib/components/Audience.svelte';
 	import { compact, fmt } from '#lib/util.ts';
@@ -104,11 +104,11 @@
 				</section>
 			{/if}
 
-			{#if p.packages?.length && p.accepting}
+			{#if p.packages?.some((x) => packageOffered(x.items, p.offered)) && p.accepting}
 				<section class="pkgs rv" style="--i:6" aria-label="Packages">
 					<div class="pkgs-h"><h2>Packages</h2><p>Book a ready-made bundle in one tap.</p></div>
 					<div class="pkg-grid">
-						{#each p.packages as k, i (k.id)}
+						{#each p.packages.filter((x) => packageOffered(x.items, p.offered)) as k, i (k.id)}
 							{@const rate = rateValue(k.items, p.rates)}
 							{@const save = rate > k.price && k.price ? Math.round((1 - k.price / rate) * 100) : 0}
 							<article class="pkg glow" class:hot={!!k.badge} style="--i:{i}">
@@ -140,7 +140,7 @@
 					<div class="bsec">
 						<div class="bsec-h"><h2>Starting rates</h2></div>
 						<div class="dpick">
-							{#each Object.entries(p.rates).filter(([, v]) => v) as [k, v] (k)}
+							{#each Object.entries(p.rates).filter(([k, v]) => v && offeredKinds(p.offered).includes(k)) as [k, v] (k)}
 								<div class="dp"><div><b>{k}</b><small>from {inr(v)}</small></div></div>
 							{/each}
 						</div>

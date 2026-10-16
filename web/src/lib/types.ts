@@ -254,6 +254,7 @@ export type Settings = {
 	weekly_capacity: number;
 	away_weeks: string[];
 	show_availability: boolean;
+	offered_kinds: string[];
 };
 
 export type PublicPage = {
@@ -268,6 +269,8 @@ export type PublicPage = {
 	accepting: boolean;
 	rates: Record<string, number> | null;
 	packages: PublicPackage[];
+	/** Content types she offers; brands only see these. */
+	offered: string[];
 	availability: { start: string; status: 'open' | 'limited' | 'full' | 'away' }[] | null;
 	barter: { mode: 'open' | 'selective' | 'closed'; min_value: number; reply_time: string; slots_left: number | null } | null;
 	worked_with: string[];

@@ -2,7 +2,7 @@
 	import { deletePackage, savePackage, studio } from '../studio.svelte';
 	import type { Package, PackageItem } from '../types';
 	import { rateValue } from '../priority';
-	import { KINDS, inr } from '../util';
+	import { KINDS, inr, offeredKinds, packageOffered } from '../util';
 	import Icon from './Icon.svelte';
 
 	const s = $derived(studio.settings!);
@@ -47,7 +47,7 @@
 				</div>
 				<input class="inp pk-desc" aria-label="Short description" placeholder="One line for brands" value={p.description} onchange={(e) => savePackage({ id: p.id, description: val(e) })} />
 				<div class="pk-items">
-					{#each KINDS as k (k)}
+					{#each offeredKinds(s.offered_kinds) as k (k)}
 						<div class="pk-item" class:on={qtyOf(p, k) > 0}>
 							<span>{k}</span>
 							<div class="stepper sm">
@@ -62,6 +62,7 @@
 					<div class="pre pk-price"><span>₹</span><input class="inp num" type="number" inputmode="numeric" min="0" aria-label="Price" value={p.price || ''} onchange={(e) => savePackage({ id: p.id, price: Math.max(0, Number(val(e)) || 0) })} /></div>
 					<input class="inp pk-badge" aria-label="Badge" placeholder="Badge, e.g. Most booked" maxlength="20" value={p.badge} onchange={(e) => savePackage({ id: p.id, badge: val(e) })} />
 				</div>
+				{#if !packageOffered(p.items, s.offered_kinds)}<p class="hint" style="color:var(--warn)">Includes content you've switched off, so brands can't see this package.</p>{/if}
 				<p class="hint">Rate card value {inr(rateValue(p.items, s.rates))}{off ? ` · brands save ${off}%` : ''}</p>
 			</div>
 		{:else}

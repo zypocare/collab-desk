@@ -14,6 +14,10 @@ export const stageLabel = (s: Stage) => (s === 'declined' ? 'Declined' : STAGES[
 export const stagePub = (s: Stage) => (s === 'declined' ? 'Not going ahead' : STAGES[stageIndex(s)].pub);
 
 export const KINDS = ['Reel', 'Story', 'Static post', 'Carousel', 'YouTube Short', 'UGC video'];
+/** The content types she has switched on (all of them if the list is missing). */
+export const offeredKinds = (list?: string[] | null) => (list?.length ? KINDS.filter((k) => list.includes(k)) : KINDS);
+/** A package can be booked only if everything in it is still offered. */
+export const packageOffered = (items: { kind: string }[], list?: string[] | null) => items.every((i) => offeredKinds(list).includes(i.kind));
 /** What Instagram calls a post, in her words. */
 export const mediaLabel = (type: string, product: string) =>
 	product === 'STORY' ? 'Story' : product === 'REELS' ? 'Reel' : type === 'CAROUSEL_ALBUM' ? 'Carousel' : type === 'VIDEO' ? 'Video' : 'Post';

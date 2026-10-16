@@ -6,7 +6,7 @@ import { qrMatrix } from './invoice';
 import { loadFonts, wrap } from './invoicePdf';
 import { rateValue } from './priority';
 import type { PublicPage } from './types';
-import { compact, delivText, initials } from './util';
+import { compact, delivText, initials, offeredKinds, packageOffered } from './util';
 
 const INK = rgb(0.12, 0.09, 0.11);
 const MUTED = rgb(0.45, 0.41, 0.44);
@@ -175,7 +175,7 @@ export async function mediaKitPdf(p: PublicPage, link: string): Promise<Uint8Arr
 	}
 
 	// ---- packages ----
-	const packs = p.packages ?? [];
+	const packs = (p.packages ?? []).filter((k) => packageOffered(k.items, p.offered));
 	if (packs.length) {
 		label('Packages', M, y);
 		y -= 12;
@@ -195,7 +195,7 @@ export async function mediaKitPdf(p: PublicPage, link: string): Promise<Uint8Arr
 
 	// ---- rates ----
 	const room = (need: number) => y - need > M + 96 + 14;
-	const rates = Object.entries(p.rates ?? {}).filter(([, v]) => v);
+	const rates = Object.entries(p.rates ?? {}).filter(([k, v]) => v && offeredKinds(p.offered).includes(k));
 	if (rates.length && room(16 + Math.ceil(rates.length / 2) * 17)) {
 		label('Starting rates', M, y);
 		y -= 16;
