@@ -8,7 +8,7 @@
 	import { supabase } from '#lib/supabase.ts';
 	import type { BriefDetails, CollabType } from '#lib/types.ts';
 	import { confetti, copyText } from '#lib/ui.svelte.ts';
-	import { KINDS, USAGE, delivText, usageOption, errMessage, firstName, inr, offeredKinds, packageOffered, rel } from '#lib/util.ts';
+	import { KINDS, USAGE, TYPE_LABEL, delivText, fmtLong, usageLabel, usageOption, errMessage, firstName, inr, offeredKinds, packageOffered, rel } from '#lib/util.ts';
 	import { budgetCombos, type Combo } from '#lib/suggest.ts';
 	import BrandDetailsForm from '#lib/components/BrandDetailsForm.svelte';
 	import Icon from '#lib/components/Icon.svelte';
@@ -227,6 +227,18 @@
 	const estimate = $derived(rates ? lines.reduce((a, l) => a + (Number(rates[l.kind]) || 0) * l.qty, 0) : 0);
 		const replyIn = $derived(type === 'barter' ? (barter?.reply_time ?? pub.data?.reply_time) : pub.data?.reply_time);
 
+	// Progress bar: each step is ticked once it has what it needs; tap to jump to it.
+	const steps = $derived(
+		[
+			...(guest ? [{ id: 'rq-about', label: 'About you', done: !!(g.brand.trim() && g.name.trim() && /.+@.+\..+/.test(g.email)) }] : []),
+			{ id: 'rq-type', label: 'Type', done: !!type },
+			{ id: 'rq-content', label: 'Content', done: lines.length > 0 },
+			{ id: 'rq-budget', label: 'Budget & timing', done: (type === 'paid' || !!product.trim()) && (!!pkg || type === 'barter' || Number(fee) > 0 || !!preferred) },
+			{ id: 'rq-brief', label: 'Brief', done: !!(briefDetails.message || brief.trim()) }
+		]
+	);
+	const doneCount = $derived(steps.filter((x) => x.done).length);
+
 	async function takeSuggestion() {
 		const sg = advice?.suggest;
 		if (!sg) return;
@@ -327,7 +339,7 @@
 		</div>
 	</header>
 
-	<section class="panel rv" style="--i:1;overflow:clip" bind:this={panel}>
+	<section class="rq-wrap rv" class:panel={!!sent} style="--i:1" bind:this={panel}>
 		{#if sent}
 			<div class="success panel-in">
 				<div class="big-check">
@@ -342,10 +354,17 @@
 				</div>
 			</div>
 		{:else}
-			<form onsubmit={submit} novalidate>
+			<form class="rq" onsubmit={submit} novalidate>
+			<div class="rq-main">
+				<nav class="rq-steps" aria-label="Your progress" style="--p:{doneCount / steps.length}">
+					{#each steps as st, i (st.id)}
+						<a href="#{st.id}" class:done={st.done}><span>{#if st.done}<Icon name="check" />{:else}{i + 1}{/if}</span><b>{st.label}</b></a>
+					{/each}
+					<i class="rq-prog" aria-hidden="true"></i>
+				</nav>
 				{#if guest}
-					<div class="bsec" id="g-sec">
-						<div class="bsec-h"><i>00</i><h2>About you</h2></div>
+					<div class="bsec rq-card" id="rq-about">
+						<div class="bsec-h"><i>01</i><h2>About you</h2></div>
 						<div class="fields">
 							<div class="f"><label for="g-brand">Brand name</label><input class="inp" id="g-brand" autocomplete="organization" bind:value={g.brand} /></div>
 							<div class="f"><label for="g-name">Your name</label><input class="inp" id="g-name" autocomplete="name" bind:value={g.name} /></div>
@@ -370,16 +389,16 @@
 						<button type="button" class="lnk" onclick={() => (packageId = '')}>Customise instead</button>
 					</div>
 				{/if}
-				<div class="bsec">
-					<div class="bsec-h"><i>01</i><h2>Type of collaboration</h2></div>
+				<div class="bsec rq-card" id="rq-type">
+					<div class="bsec-h"><i>{guest ? '02' : '01'}</i><h2>Type of collaboration</h2></div>
 					<div class="types" role="radiogroup" aria-label="Type of collaboration">
 						{#each types as t (t.v)}
 							<label class="type-card" class:off={t.off}><Icon name={t.i} /><input type="radio" name="btype" value={t.v} bind:group={type} /><b>{t.t}</b><small>{t.d}</small><em class="type-tag" class:first={t.v !== 'barter'}>{t.tag}</em></label>
 						{/each}
 					</div>
 				</div>
-				<div class="bsec">
-					<div class="bsec-h"><i>02</i><h2>What you'd like</h2></div>
+				<div class="bsec rq-card" id="rq-content">
+					<div class="bsec-h"><i>{guest ? '03' : '02'}</i><h2>What you'd like</h2></div>
 					<div class="dpick">
 						{#each shown as k (k)}
 							<div class="dp" class:on={qty[k] > 0}>
@@ -394,8 +413,8 @@
 					</div>
 					{#if errDel}<div class="err" style="margin-top:10px">{errDel}</div>{/if}
 				</div>
-				<div class="bsec">
-					<div class="bsec-h"><i>03</i><h2>Budget, product and timing</h2></div>
+				<div class="bsec rq-card" id="rq-budget">
+					<div class="bsec-h"><i>{guest ? '04' : '03'}</i><h2>Budget, product and timing</h2></div>
 					<div class="fields">
 						{#if type !== 'barter'}
 							<div class="f"><label for="b-budget">Budget</label><div class="pre"><span>₹</span><input class="inp num" id="b-budget" type="number" inputmode="numeric" min="0" placeholder="Leave blank for a quote" bind:value={fee} /></div></div>
@@ -424,8 +443,8 @@
 						<div class="f"><label for="b-usage">Usage rights</label><Select id="b-usage" bind:value={usage} options={USAGE.map((u) => ({ value: u, label: usageOption(u) }))} /><p class="hint" style="margin-top:6px">{usage === 'Organic only' ? `${creator} posts it on Instagram. No ads.` : `Your brand runs ${creator}'s content as ads from your own ad account. This is charged on top of the content fee; the quote shows the amount.`}</p></div>
 					</div>
 				</div>
-				<div class="bsec">
-					<div class="bsec-h"><i>04</i><h2>Brief</h2></div>
+				<div class="bsec rq-card" id="rq-brief">
+					<div class="bsec-h"><i>{guest ? '05' : '04'}</i><h2>Brief</h2></div>
 					<BriefEditor bind:value={briefDetails} idp="b" category={acc?.brand?.category ?? g.category} />
 					<div class="f" style="margin-top:12px"><label for="b-brief">Anything else</label><textarea class="inp" id="b-brief" rows="3" placeholder="What's launching, context, timing notes" bind:value={brief}></textarea></div>
 				</div>
@@ -456,18 +475,39 @@
 						</div>
 					</div>
 				{/if}
-				{#if lines.length}<ExpectedResults {lines} cost={pkg ? pkg.price : type === 'barter' ? 0 : Number(fee) || estimate} />{/if}
-				<div class="submit-row live-total">
+				{#if lines.length}<div class="rq-phone"><ExpectedResults {lines} cost={pkg ? pkg.price : type === 'barter' ? 0 : Number(fee) || estimate} /></div>{/if}
+				<div class="submit-row live-total rq-bar">
 					<p>
 						{#if error}<span class="err" style="display:block;margin:0">{error}</span>
 						{:else if lines.length && (estimate || pkg)}
 							<span class="lt-what">{delivText(lines)}</span>
 							<b class="lt-sum">{inr(pkg ? pkg.price : estimate)}</b>
 							<span class="lt-note">{pkg ? 'package price' : type === 'barter' ? `at ${creator}'s rates, for your product` : `at ${creator}'s rates`}{#if !pkg && type !== 'barter' && Number(fee) > 0}{' · '}your budget {inr(Number(fee))}{Number(fee) < estimate ? ` (${Math.round((Number(fee) / estimate) * 100)}%)` : ''}{/if}</span>
-						{:else}You'll get a request code and an email copy.{/if}
+						{:else}<span class="rq-default">You'll get a request code and an email copy.</span>{/if}
 					</p>
 					<button class="btn grad lg" class:blocked={advice?.tone === 'block'} type="submit" disabled={busy || advice?.tone === 'block'} title={advice?.tone === 'block' ? advice.title : undefined}>{#if busy}<span class="spinner"></span>Sending…{:else}<Icon name="send" />Send request{/if}</button>
 				</div>
+			</div>
+			<!-- Wide screens: what they're asking for, always in view, with the Send button. -->
+			<aside class="rq-side">
+				<div class="rq-sum">
+					<span class="bx-eb">Your request</span>
+					<h3>{pkg ? pkg.name : lines.length ? delivText(lines) : 'Pick what you need'}</h3>
+					{#if !lines.length}<p class="rq-empty">Choose at least one piece of content to see the total.</p>{/if}
+					<dl>
+						<div><dt>Type</dt><dd>{TYPE_LABEL[type]}</dd></div>
+						<div><dt>Budget</dt><dd>{pkg ? inr(pkg.price) : type === 'barter' ? 'Your product' : Number(fee) > 0 ? inr(Number(fee)) : 'Asking for a quote'}</dd></div>
+						{#if estimate && !pkg && lines.length}<div><dt>At {creator}'s rates</dt><dd>{inr(estimate)}</dd></div>{/if}
+						{#if type !== 'paid' && product.trim()}<div><dt>Product</dt><dd>{product}</dd></div>{/if}
+						<div><dt>Go-live</dt><dd>{preferred ? fmtLong(preferred) : 'No preference'}</dd></div>
+						<div><dt>Usage</dt><dd>{usageLabel(usage)}</dd></div>
+					</dl>
+					{#if lines.length}<ExpectedResults {lines} cost={pkg ? pkg.price : type === 'barter' ? 0 : Number(fee) || estimate} />{/if}
+					{#if error}<div class="err">{error}</div>{/if}
+					<button class="btn grad lg" class:blocked={advice?.tone === 'block'} type="submit" disabled={busy || advice?.tone === 'block'} title={advice?.tone === 'block' ? advice.title : undefined}>{#if busy}<span class="spinner"></span>Sending…{:else}<Icon name="send" />Send request{/if}</button>
+					<small class="rq-note">{guest ? "We'll email you a 6-digit code to confirm. " : ''}{creator} usually replies within {replyIn ?? '2 days'}.</small>
+				</div>
+			</aside>
 			</form>
 		{/if}
 	</section>

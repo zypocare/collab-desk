@@ -35,6 +35,8 @@
 	import CampaignDocs from '#lib/components/CampaignDocs.svelte';
 
 	const r = $derived(brandData.requests.find((x) => x.code.toUpperCase() === (page.params.code ?? '').toUpperCase()));
+	// Short names for the progress tracker, in stage order.
+	const TRACK = ['Sent', 'Talking', 'Agreed', 'Creating', 'Live', 'Done'];
 	const si = $derived(r ? (r.stage === 'declined' ? -1 : stageIndex(r.stage)) : 0);
 	const creator = $derived(firstName(pub.data?.display_name ?? ''));
 	const quote = $derived(r?.quotes?.[0]);
@@ -165,6 +167,14 @@
 		</div>
 	</header>
 
+	<!-- Where it stands, at a glance. -->
+	{#if r.stage !== 'declined'}
+		<ol class="rtrack rv" style="--i:1;--p:{Math.max(0, si) / (STAGES.length - 1)}" aria-label="Progress">
+			{#each STAGES as st, i (st.id)}
+				<li class:done={i < si} class:now={i === si}><span>{#if i < si}<Icon name="check" />{:else}{i + 1}{/if}</span><b>{TRACK[i]}</b></li>
+			{/each}
+		</ol>
+	{/if}
 	{#if error}<div class="err-box">{error}</div>{/if}
 
 	<!-- Quote waiting for an answer -->
@@ -264,6 +274,32 @@
 		</div>
 	</section>
 
+	{#if r.brief || briefD}
+		<section class="panel rv" style="--i:6;margin-top:18px">
+			<div class="panel-h"><h2>Your brief</h2><small>{usageLabel(r.usage)}</small></div>
+			{#if briefD}<div style="padding:0 20px"><BriefView d={briefD} /></div>{/if}
+			{#if r.brief}<p style="padding:0 20px 20px;white-space:pre-wrap;color:var(--ink-2)">{r.brief}</p>{/if}
+		</section>
+	{/if}
+
+	{#if r.events.length}
+		<section class="panel rv" style="--i:5;margin-top:18px">
+			<div class="panel-h"><h2>History</h2></div>
+			<ol class="timeline" style="padding:0 20px 14px">
+				{#each r.events.slice(0, 4) as ev, i (i)}<li><time>{fmtTime(ev.at)}</time><span>{ev.text}</span></li>{/each}
+			</ol>
+			{#if r.events.length > 4}
+				<details class="hist-more">
+					<summary>Show all {r.events.length} updates</summary>
+					<ol class="timeline" style="padding:0 20px 14px">
+						{#each r.events.slice(4) as ev, i (i)}<li><time>{fmtTime(ev.at)}</time><span>{ev.text}</span></li>{/each}
+					</ol>
+				</details>
+			{/if}
+		</section>
+	{/if}
+
+
 		</div>
 		<aside class="r-side">
 	<CampaignTimeline {r} {creator} />
@@ -300,22 +336,6 @@
 		</section>
 	{/if}
 
-	{#if r.events.length}
-		<section class="panel rv" style="--i:5;margin-top:18px">
-			<div class="panel-h"><h2>History</h2></div>
-			<ol class="timeline" style="padding:0 20px 14px">
-				{#each r.events as ev, i (i)}<li><time>{fmtTime(ev.at)}</time><span>{ev.text}</span></li>{/each}
-			</ol>
-		</section>
-	{/if}
-
-	{#if r.brief || briefD}
-		<section class="panel rv" style="--i:6;margin-top:18px">
-			<div class="panel-h"><h2>Your brief</h2><small>{usageLabel(r.usage)}</small></div>
-			{#if briefD}<div style="padding:0 20px"><BriefView d={briefD} /></div>{/if}
-			{#if r.brief}<p style="padding:0 20px 20px;white-space:pre-wrap;color:var(--ink-2)">{r.brief}</p>{/if}
-		</section>
-	{/if}
 		</aside>
 	</div>
 {/if}

@@ -94,13 +94,17 @@
 			{#each brandData.requests as r, i (r.id)}
 				{@const si = r.stage === 'declined' ? -1 : stageIndex(r.stage)}
 				<a class="req" href="/brand/r/{r.code}" style="--i:{i}">
-					<div class="req-h">
+					<div class="req-top">
 						<span class="id">{r.code}</span>
-						<b>{delivText(r.deliverables)}</b>
-						{#if brandData.unread[r.code]}<span class="msg-dot"><Icon name="mail" />{brandData.unread[r.code]} new</span>{/if}
-						{#if r.quotes?.[0]?.status === 'sent' || r.drafts?.some((d) => d.status === 'pending')}<span class="pill tint k-new"><span class="dt pulse"></span>Needs your answer</span>{/if}
 						<span class="chip tint st-{r.stage === 'declined' ? 'request' : r.stage}" style={r.stage === 'declined' ? '--hue:var(--bad)' : ''}>{r.stage_label}</span>
 					</div>
+					<b class="req-t">{delivText(r.deliverables)}</b>
+					{#if brandData.unread[r.code] || r.quotes?.[0]?.status === 'sent' || r.drafts?.some((d) => d.status === 'pending')}
+						<div class="req-flags">
+							{#if r.quotes?.[0]?.status === 'sent' || r.drafts?.some((d) => d.status === 'pending')}<span class="pill tint k-new"><span class="dt pulse"></span>Needs your answer</span>{/if}
+							{#if brandData.unread[r.code]}<span class="msg-dot"><Icon name="mail" />{brandData.unread[r.code]} new</span>{/if}
+						</div>
+					{/if}
 					<div class="mini-steps" aria-hidden="true">{#each STAGES as _, k (k)}<i class:on={k <= si}></i>{/each}</div>
 					{#if r.note_for_brand}<p>{r.note_for_brand}</p>{/if}
 					<small>Sent {fmt(r.received_on)}{r.live_date ? ` · go-live ${fmt(r.live_date)}` : ''}</small>

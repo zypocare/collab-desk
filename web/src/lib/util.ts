@@ -44,7 +44,7 @@ export function usageOption(u: string) {
 	const d = usageDaysOf(u);
 	if (d) return `Brand runs it as ads for ${d} days (extra fee)`;
 	if (/perpetual/i.test(u)) return 'Brand can use it with no end date (extra fee)';
-	if (/organic/i.test(u)) return 'Organic only: posted on Instagram, no ads';
+	if (/organic/i.test(u)) return 'Organic only, no ads';
 	return u;
 }
 /** "60 days paid ads" -> 60; organic or perpetual -> 0 (same rule as the database). */
