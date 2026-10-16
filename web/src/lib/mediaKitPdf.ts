@@ -3,7 +3,7 @@
 // top content and past collab results, then a QR code to her brand page. If she doesn't share insights,
 // a one-page version with the basic numbers and audience.
 import { supabase } from './supabase';
-import { audienceOf, engageMix, formatRows, FORMAT_LABEL, insightKpis, type PublicInsights } from './insights';
+import { audienceOf, basedOn, engageMix, formatRows, FORMAT_LABEL, insightKpis, type PublicInsights } from './insights';
 import fontkit from '@pdf-lib/fontkit';
 import { PDFDocument, rgb, type PDFFont, type PDFImage, type PDFPage, type RGB } from 'pdf-lib';
 import { qrMatrix } from './invoice';
@@ -317,16 +317,16 @@ async function insightsPages(doc: PDFDocument, p: PublicPage, d: PublicInsights,
 		need(Math.max(leftH, rightH) + 10);
 		const top = y;
 		if (formats.length) {
-			label('By format · averages of recent posts', M, top);
+			label('By format · last 12 of each, posts under 3 days left out', M, top);
 			// Right edges of the number columns.
 			const cx = [M, M + lw * 0.38, M + lw * 0.6, M + lw * 0.8, M + lw];
 			let yy = top - 18;
-			['Format', 'Posts', 'Avg. views', 'Avg. reach', 'Engagement'].forEach((h, i) => (i === 0 ? text(h, cx[0], yy, 8, bold, MUTED) : right(h, cx[i], yy, 8, bold, MUTED)));
+			['Format', 'Based on', 'Avg. views', 'Avg. reach', 'Engagement'].forEach((h, i) => (i === 0 ? text(h, cx[0], yy, 8, bold, MUTED) : right(h, cx[i], yy, 8, bold, MUTED)));
 			page.drawLine({ start: { x: M, y: yy - 5 }, end: { x: M + lw, y: yy - 5 }, thickness: 0.6, color: LINE });
 			for (const [key, s] of formats) {
 				yy -= 18;
 				text(FORMAT_LABEL[key] ?? key, cx[0], yy, 9.5, bold);
-				right(s.manual ? '-' : String(s.posts), cx[1], yy, 9.5);
+				right(s.manual ? 'own' : `${basedOn(s)} ${key === 'stories' ? 'Stories' : 'posts'}`, cx[1], yy, 9.5);
 				right(s.avg_views ? compact(s.avg_views) : '-', cx[2], yy, 9.5);
 				right(s.avg_reach ? compact(s.avg_reach) : '-', cx[3], yy, 9.5);
 				right(key === 'stories' ? (s.avg_interactions ? `${compact(s.avg_interactions)} actions` : '-') : s.er ? `${s.er}%` : '-', cx[4], yy, 9.5, bold);

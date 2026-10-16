@@ -6,6 +6,12 @@ import { esc, todayIST } from './admin.ts';
 import { sendTelegram, telegramConfigured } from './telegram.ts';
 
 const DAY = 864e5;
+// A post's reach keeps growing for a couple of days while its views update at once, so averages leave
+// out posts younger than this.
+const SETTLE = 3 * DAY;
+type Fmt = 'reels' | 'carousels' | 'photos' | 'stories' | 'other';
+const fmtOf = (productType: string | undefined, mediaType: string): Fmt =>
+  productType === 'STORY' ? 'stories' : productType === 'REELS' || mediaType === 'VIDEO' ? 'reels' : mediaType === 'CAROUSEL_ALBUM' ? 'carousels' : mediaType === 'IMAGE' ? 'photos' : 'other';
 const istDate = (iso: string) => new Date(Date.parse(iso) + 5.5 * 3600e3).toISOString().slice(0, 10);
 const short = (n: number) => (n >= 1e6 ? `${+(n / 1e6).toFixed(1)}M` : n >= 1e3 ? `${+(n / 1e3).toFixed(1)}K` : String(n));
 const mentions = (caption: string, handle: string) => {
@@ -52,18 +58,28 @@ export async function runSync(db: SupabaseClient, opts: SyncOptions = {}) {
     await db.from('ig_followers_history').upsert({ day: todayIST(), followers: p.followers_count });
 
     // 3. Posts.
-    const list = await ig.media(token, 40);
+    const list = await ig.media(token, 60);
     const { data: existing } = await db.from('ig_media').select('id, insights_at, views, reach').in('id', list.map((m) => m.id));
     // A post whose figures came back empty counts as never fetched, so it is tried again.
     const lastInsights = new Map((existing ?? []).map((e) => [e.id, (e.views === null && e.reach === null ? null : e.insights_at) as string | null]));
     const { data: linkedRows } = await db.from('collab_posts').select('media_id');
     const linked = new Set((linkedRows ?? []).map((l) => l.media_id));
 
+    // The posts that make the averages: per format, the 12 newest that are at least 3 days old.
+    const forAverages = new Set<string>();
+    const perFmt: Partial<Record<Fmt, number>> = {};
+    for (const m of list) {
+      if (Date.now() - Date.parse(m.timestamp) < SETTLE) continue;
+      const f = fmtOf(m.media_product_type, m.media_type);
+      perFmt[f] = (perFmt[f] ?? 0) + 1;
+      if (perFmt[f]! <= 12) forAverages.add(m.id);
+    }
+
     const rows: MediaRow[] = [];
     for (const [i, m] of list.entries()) {
-      // Detailed figures for the newest 12 posts (they make the averages), anything from the last
-      // 45 days, and posts linked to a collab.
-      const recent = i < 12 || Date.now() - Date.parse(m.timestamp) < 45 * DAY || linked.has(m.id) || opts.reportFor !== undefined;
+      // Detailed figures for the newest 12 posts, the posts that make the averages, anything from the
+      // last 45 days, and posts linked to a collab.
+      const recent = i < 12 || forAverages.has(m.id) || Date.now() - Date.parse(m.timestamp) < 45 * DAY || linked.has(m.id) || opts.reportFor !== undefined;
       const stale = !lastInsights.get(m.id) || Date.now() - Date.parse(lastInsights.get(m.id)!) > 20 * 3600e3;
       let ins: Insights | null = null;
       if (recent && (stale || opts.reportFor)) ins = await ig.insights(token, m.id);
@@ -89,8 +105,9 @@ export async function runSync(db: SupabaseClient, opts: SyncOptions = {}) {
     const { count: removed } = await others;
     if (removed) summary.removed_other_account = removed;
 
-    // 4. Account averages from the last 12 posts.
-    const { data: last12 } = await db.from('ig_media').select('views, reach, interactions, likes, comments').neq('product_type', 'STORY').order('posted_at', { ascending: false }).limit(12);
+    // 4. Account averages from the last 12 posts that are at least 3 days old.
+    const settledBefore = new Date(Date.now() - SETTLE).toISOString();
+    const { data: last12 } = await db.from('ig_media').select('views, reach, interactions, likes, comments').neq('product_type', 'STORY').lt('posted_at', settledBefore).order('posted_at', { ascending: false }).limit(12);
     const avg = (xs: (number | null)[]) => {
       const v = xs.filter((x): x is number => typeof x === 'number');
       return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null;
@@ -109,19 +126,23 @@ export async function runSync(db: SupabaseClient, opts: SyncOptions = {}) {
       ig.accountTotals(token, new Date(Date.now() - 60 * DAY), new Date(Date.now() - 30 * DAY)).catch(() => ({})),
     ]);
     // Her most recent posts of each kind (whatever their dates: she may not have posted lately).
-    const { data: m90 } = await db.from('ig_media').select('media_type, product_type, views, reach, interactions, likes, comments')
+    const { data: m90 } = await db.from('ig_media').select('media_type, product_type, posted_at, views, reach, interactions, likes, comments')
       .order('posted_at', { ascending: false }).limit(200);
     const fmtStats = (xs: { views: number | null; reach: number | null; interactions: number | null; likes: number | null; comments: number | null }[]) => {
       const inter = avg(xs.map((r) => r.interactions ?? (r.likes === null && r.comments === null ? null : (r.likes ?? 0) + (r.comments ?? 0))));
       const v = avg(xs.map((r) => r.views));
       const re = avg(xs.map((r) => r.reach));
       return {
-        posts: xs.length, avg_views: v === null ? null : Math.round(v), avg_reach: re === null ? null : Math.round(re),
+        // posts: how many were looked at; measured: how many had Instagram's views/reach (the averages' basis).
+        posts: xs.length, measured: xs.filter((r) => r.views !== null || r.reach !== null).length,
+        avg_views: v === null ? null : Math.round(v), avg_reach: re === null ? null : Math.round(re),
         avg_interactions: inter === null ? null : Math.round(inter),
         er: inter !== null && p.followers_count ? Math.round((inter / p.followers_count) * 10000) / 100 : null,
       };
     };
-    const all90 = m90 ?? [];
+    // Feed posts younger than 3 days are left out (their reach is still growing). Stories keep the figures
+    // saved within their 24 hours, so they all count.
+    const all90 = (m90 ?? []).filter((r) => r.product_type === 'STORY' || Date.parse(r.posted_at) < Date.now() - SETTLE);
     const isStory = (r: { product_type: string }) => r.product_type === 'STORY';
     const recent12 = <T,>(xs: T[]) => xs.slice(0, 12);
     const formats = {

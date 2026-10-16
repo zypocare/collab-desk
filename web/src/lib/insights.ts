@@ -1,5 +1,7 @@
 // Profile insights brands ask for, as stored by the Instagram sync (ig_account.insights).
-export type FormatStats = { posts: number; avg_views: number | null; avg_reach: number | null; avg_interactions: number | null; er: number | null; manual?: boolean };
+export type FormatStats = { posts: number; avg_views: number | null; avg_reach: number | null; avg_interactions: number | null; er: number | null; manual?: boolean; measured?: number };
+/** How many posts an average is based on: those Instagram gave figures for (older syncs: all looked at). */
+export const basedOn = (s: FormatStats) => s.measured ?? s.posts;
 export type InsightsData = {
 	from?: string;
 	to?: string;
@@ -57,7 +59,7 @@ export function insightKpis(d: PublicInsights): Kpi[] {
 		{ k: 'Accounts engaged', v: t.accounts_engaged, sub: '30 days', ch: change(t.accounts_engaged, pv.accounts_engaged) },
 		{ k: 'Engagement rate', v: d.engagement_rate, sub: 'per post, last 12', ch: null, pct: true },
 		{ k: 'Interactions', v: t.total_interactions, sub: '30 days', ch: change(t.total_interactions, pv.total_interactions) },
-		{ k: 'Avg. Reel views', v: f?.reels.avg_views ?? d.avg_views, sub: f?.reels.posts ? `last ${f.reels.posts} Reels` : 'recent posts', ch: null },
+		{ k: 'Avg. Reel views', v: f?.reels.avg_views ?? d.avg_views, sub: f?.reels.posts ? `based on ${basedOn(f.reels)} Reels` : 'recent posts', ch: null },
 		// Only when she shows Stories (the server leaves them out otherwise); her own average if she typed one.
 		{ k: 'Avg. Story reach', v: f?.stories?.avg_reach, sub: f?.stories?.manual ? 'per Story' : f?.stories?.posts ? `${f.stories.posts} Stories` : '', ch: null }
 	];

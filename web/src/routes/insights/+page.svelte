@@ -2,7 +2,7 @@
 	import { onMount } from 'svelte';
 	import { supabase } from '#lib/supabase.ts';
 	import { loadPublicPage, pub } from '#lib/publicPage.svelte.ts';
-	import { engageMix, formatRows, FORMAT_LABEL, insightKpis, type PublicInsights } from '#lib/insights.ts';
+	import { basedOn, engageMix, formatRows, FORMAT_LABEL, insightKpis, type PublicInsights } from '#lib/insights.ts';
 	import { compact, fmt, fmtLong, mediaLabel } from '#lib/util.ts';
 	import { copyText } from '#lib/ui.svelte.ts';
 	import { downloadMediaKit } from '#lib/mediaKitPdf.ts';
@@ -95,13 +95,13 @@
 		<div class="ins-grid">
 			{#if formats.length}
 				<section class="panel rv" style="--i:3">
-					<div class="panel-h"><h2>By format</h2><small>averages of recent posts (up to 12 each)</small></div>
+					<div class="panel-h"><h2>By format</h2><small>last 12 of each, leaving out posts under 3 days old</small></div>
 					<div class="table-wrap">
 						<table class="doc-table ins-table">
-							<thead><tr><th>Format</th><th>Posts</th><th>Avg. views</th><th>Avg. reach</th><th>Engagement</th></tr></thead>
+							<thead><tr><th>Format</th><th>Based on</th><th>Avg. views</th><th>Avg. reach</th><th>Engagement</th></tr></thead>
 							<tbody>
 								{#each formats as [key, s] (key)}
-									<tr><td>{FORMAT_LABEL[key]}</td><td>{s.manual ? '—' : s.posts}</td><td>{s.avg_views ? compact(s.avg_views) : '—'}</td><td>{s.avg_reach ? compact(s.avg_reach) : '—'}</td><td>{key === 'stories' ? (s.avg_interactions ? `${compact(s.avg_interactions)} actions` : '—') : s.er ? `${s.er}%` : '—'}</td></tr>
+									<tr><td>{FORMAT_LABEL[key]}</td><td>{s.manual ? 'your numbers' : `${basedOn(s)} ${key === 'stories' ? 'Stories' : 'posts'}`}</td><td>{s.avg_views ? compact(s.avg_views) : '—'}</td><td>{s.avg_reach ? compact(s.avg_reach) : '—'}</td><td>{key === 'stories' ? (s.avg_interactions ? `${compact(s.avg_interactions)} actions` : '—') : s.er ? `${s.er}%` : '—'}</td></tr>
 								{/each}
 							</tbody>
 						</table>
