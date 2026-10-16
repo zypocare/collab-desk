@@ -98,7 +98,7 @@
 					{/each}
 				</div>
 			</div>
-			<div class="months" style="gap:4%">{#each r.months as m (m.key)}<span>{m.label.slice(0, 3)}</span>{/each}</div>
+			<div class="months" style="gap:4%">{#each r.months as m (m.key)}<span title={m.label}><span class="m3">{m.label.slice(0, 3)}</span><span class="m1">{m.label.slice(0, 1)}</span></span>{/each}</div>
 		</div>
 	</section>
 </div>

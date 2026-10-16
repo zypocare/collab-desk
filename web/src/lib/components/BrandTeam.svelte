@@ -43,14 +43,14 @@
 		{#each team.members as m (m.email)}
 			<div class="rv-row">
 				<span class="set-ic"><Icon name="users" /></span>
-				<div><b>{m.name || m.email}{m.me ? ' (you)' : ''}</b><small>{m.email}</small></div>
+				<div><b>{m.name || m.email}{m.me ? ' (you)' : ''}</b><small class="wrap-any">{m.email}</small></div>
 				{#if !m.me}<button class="shot-x" style="opacity:1" aria-label="Remove {m.email}" onclick={() => remove(m.email, m.name || m.email)}><Icon name="x" /></button>{/if}
 			</div>
 		{/each}
 		{#each team.invites as i (i.email)}
 			<div class="rv-row">
 				<span class="set-ic"><Icon name="mail" /></span>
-				<div><b>{i.name || i.email} <span class="pill tint plain">Invited</span></b><small>{i.email} · added by {i.invited_by}</small></div>
+				<div><b>{i.name || i.email} <span class="pill tint plain">Invited</span></b><small class="wrap-any">{i.email} · added by {i.invited_by}</small></div>
 				<button class="shot-x" style="opacity:1" aria-label="Remove {i.email}" onclick={() => remove(i.email, i.name || i.email)}><Icon name="x" /></button>
 			</div>
 		{/each}

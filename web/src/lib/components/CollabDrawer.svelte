@@ -677,8 +677,8 @@
 		</div>
 
 		<footer class="dr-f">
-			<button class="btn" onclick={() => c && copyText(statusMessage(c), 'Status message copied. Paste it in your DM or email.')}><Icon name="link" />Copy status message</button>
-			<button class="btn primary" onclick={close}>{page ? 'Back to collabs' : 'Done'}</button>
+			<button class="btn" onclick={() => c && copyText(statusMessage(c), 'Status message copied. Paste it in your DM or email.')}><Icon name="link" /><span class="nav-long">Copy status message</span><span class="nav-short">Copy status</span></button>
+			<button class="btn primary" onclick={close}>{#if page}<span class="nav-long">Back to collabs</span><span class="nav-short">Back</span>{:else}Done{/if}</button>
 		</footer>
 	{/if}
 </aside>

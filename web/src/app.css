@@ -155,7 +155,7 @@ p{margin:0}
 .ph p{color:var(--ink-2);margin-top:8px;font-size:17.5px;display:flex;align-items:center;gap:8px}
 .ph .acts{display:flex;gap:8px;flex-wrap:wrap}
 
-.btn{position:relative;display:inline-flex;align-items:center;justify-content:center;gap:7px;height:38px;padding:0 15px;border-radius:11px;border:1px solid var(--line-strong);background:var(--surface);font-weight:600;font-size:16px;color:var(--ink);white-space:nowrap;transition:background .2s,border-color .2s,transform .15s,box-shadow .25s;overflow:hidden}
+.btn{position:relative;display:inline-flex;align-items:center;justify-content:center;gap:7px;height:38px;padding:0 15px;border-radius:11px;border:1px solid var(--line-strong);background:var(--surface);font-weight:600;font-size:16px;color:var(--ink);white-space:nowrap;transition:background .2s,border-color .2s,transform .15s,box-shadow .25s;overflow:hidden;min-width:max-content}
 .btn:hover{border-color:var(--ink-3);transform:translateY(-1px)}
 .btn:active{transform:translateY(0) scale(.97)}
 .btn .ic{width:16px;height:16px;transition:transform .35s var(--spring)}
@@ -449,7 +449,7 @@ select.inp{appearance:none;-webkit-appearance:none;padding-right:34px;background
 .dr-h::before{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(520px 160px at 0% 0%,color-mix(in oklab,var(--hue) 22%,transparent),transparent 70%)}
 .dr-h > *{position:relative}
 .dr-t{min-width:0;flex:1}
-.title-inp{border:0;background:transparent;font-family:var(--f-display);font-size:24px;font-weight:600;letter-spacing:-.03em;width:100%;padding:1px 6px;margin-left:-6px;border-radius:8px;color:var(--ink)}
+.title-inp{border:0;background:transparent;font-family:var(--f-display);font-size:24px;font-weight:600;letter-spacing:-.03em;width:100%;padding:1px 6px;margin-left:-6px;border-radius:8px;color:var(--ink);text-overflow:ellipsis;min-width:0}
 .title-inp:hover{background:color-mix(in oklab,var(--surface-2) 70%,transparent)}
 .title-inp:focus{outline:none;background:var(--surface-2);box-shadow:0 0 0 2px var(--accent)}
 .dr-sub{font-size:15px;color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -480,7 +480,7 @@ select.inp{appearance:none;-webkit-appearance:none;padding-right:34px;background
 .dl-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--line)}
 .dl-row:first-child{border-top:0;padding-top:0}
 .dl-row .qty{width:60px;height:34px;padding:0 8px;text-align:center}
-.dl-row label{flex:1;font-weight:600;font-size:16.5px;cursor:pointer;background:linear-gradient(currentColor,currentColor) 0 55% / 0 1.5px no-repeat;transition:background-size .35s var(--ease),color .3s}
+.dl-row label{flex:0 1 auto;margin-right:auto;font-weight:600;font-size:16.5px;cursor:pointer;background:linear-gradient(currentColor,currentColor) 0 55% / 0 1.5px no-repeat;transition:background-size .35s var(--ease),color .3s}
 .dl-row.done label{color:var(--ink-3);background-size:100% 1.5px}
 .add-sel{margin-top:12px;height:36px;width:auto;font-size:15.5px;font-weight:600;color:var(--ink-2)}
 .balance{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:14px;padding:13px 15px;border-radius:14px;background:var(--surface-2);font-size:15.5px}
@@ -525,8 +525,8 @@ select.inp{appearance:none;-webkit-appearance:none;padding-right:34px;background
 .hero h1{font-size:clamp(32px,5vw,48px);letter-spacing:-.045em}
 .hero .handle{color:var(--ink-2);font-size:17.5px;margin-top:4px;font-weight:600}
 .hero .niche{color:var(--ink-2);font-size:19px;margin-top:2px}
-.avail{display:inline-flex;align-items:center;gap:8px;height:30px;padding:0 13px;border-radius:999px;font-size:15px;font-weight:700;margin-top:12px}
-.avail .dt{width:8px;height:8px}
+.avail{display:inline-flex;align-items:center;gap:8px;min-height:30px;padding:4px 13px;line-height:1.35;border-radius:16px;font-size:15px;font-weight:700;margin-top:12px}
+.avail .dt{width:8px;height:8px;flex-shrink:0}
 .stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:18px}
 .stat{padding:16px 18px;border-radius:18px;background:var(--surface);border:1px solid var(--line);min-width:0}
 .stat b{display:block;font-family:var(--f-display);font-size:28px;font-weight:600;letter-spacing:-.035em;font-variant-numeric:tabular-nums;line-height:1.1}
@@ -973,7 +973,7 @@ a{color:inherit}
 .ig-post b{font-family:var(--f-display);font-size:20px;letter-spacing:-.03em}
 .ig-post small{font-size:14px;color:var(--ink-3)}
 .ig-post .pill{margin-top:4px;align-self:flex-start;max-width:100%;overflow:hidden;text-overflow:ellipsis}
-.live-chip{display:flex;align-items:center;gap:8px;font-size:15px;color:var(--ink-3);margin:-8px 0 18px;font-weight:600}
+.live-chip{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;font-size:15px;color:var(--ink-3);margin:-8px 0 18px;font-weight:600}
 .audience{margin-bottom:18px}
 .aud-grid{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:20px;padding:0 20px 20px}
 .age-bars{display:flex;align-items:flex-end;gap:10px;height:120px;margin-top:10px}
@@ -984,6 +984,7 @@ a{color:inherit}
 .gender-bar{display:flex;gap:3px;height:12px;border-radius:999px;overflow:hidden;margin:14px 0 10px}
 .gender-bar i{transform-origin:left;animation:growx .9s var(--ease) both;animation-delay:calc(.3s + var(--i) * 90ms)}
 .g0{background:var(--g2)} .g1{background:var(--g1)} .g2{background:var(--g3)}
+.aud-stack{display:flex;flex-direction:column;gap:22px;min-width:0}
 .aud-list{list-style:none;margin:10px 0 0;padding:0;display:flex;flex-direction:column;gap:7px}
 .aud-list li{display:flex;align-items:center;gap:8px;font-size:16px}
 .aud-list b{margin-left:auto;font-variant-numeric:tabular-nums}
@@ -1424,7 +1425,7 @@ kbd{font-family:var(--f-mono);font-size:13px;padding:2px 6px;border-radius:6px;b
 .bp-cta p{margin:0;opacity:.75;font-size:16px;line-height:1.5}
 .bp-cta .btn.lg{justify-content:center}
 .bp-cta .row{display:flex;gap:8px;flex-wrap:wrap}
-.bp-cta .row .btn{flex:1;justify-content:center;background:color-mix(in oklab,var(--hero-ink) 12%,transparent);color:var(--hero-ink);border-color:transparent}
+.bp-cta .row .btn{flex:1 1 auto;justify-content:center;background:color-mix(in oklab,var(--hero-ink) 12%,transparent);color:var(--hero-ink);border-color:transparent}
 @media (max-width: 1000px){
   .bp-grid{grid-template-columns:minmax(0,1fr)}
   .bp-side{position:static}
@@ -1463,7 +1464,14 @@ kbd{font-family:var(--f-mono);font-size:13px;padding:2px 6px;border-radius:6px;b
 .kpis.k4{grid-template-columns:repeat(4,minmax(0,1fr))}
 @media (max-width: 1100px){ .kpis.k4{grid-template-columns:repeat(2,minmax(0,1fr))} }
 @media (max-width: 420px){ .kpis.k4{grid-template-columns:minmax(0,1fr)} }
-@media (max-width: 640px){ .board-wrap{scroll-snap-type:x mandatory;scroll-padding-inline:16px} .board .col{scroll-snap-align:start} }
+/* Phones: stages stacked top to bottom (no sideways swiping); empty stages shrink to one line */
+@media (max-width: 640px){
+  .board-wrap{overflow:visible;margin-inline:0;padding-inline:0}
+  .board{grid-auto-flow:row;grid-auto-columns:auto;grid-template-columns:minmax(0,1fr);min-width:0;gap:10px}
+  .board .col{min-height:0}
+  .board .col.empty{padding:4px 10px;opacity:.75}
+  .board .col.empty .col-empty{display:none}
+}
 
 /* ---------- request first, confirm email at the end ---------- */
 .code-step{display:flex;gap:12px;margin:0 24px 22px;padding:16px;border-radius:18px;background:color-mix(in oklab,var(--accent) 8%,var(--surface));border:1px solid color-mix(in oklab,var(--accent) 30%,var(--line));animation:adv-in .45s var(--spring)}
@@ -1918,3 +1926,52 @@ body{font-feature-settings:'cv11','ss01';letter-spacing:-.005em}
 .row-inline .inp{flex:1;min-width:0}
 .move-owner{display:flex;flex-direction:column;gap:10px}
 .move-owner .chk{display:flex;gap:8px;align-items:center;font-size:15px;color:var(--ink-2);font-weight:400;text-transform:none;letter-spacing:0}
+/* Collab page on phones: name fits, details wrap, footer buttons share the bar */
+@media (max-width:600px){
+  .drawer.as-page .dr-h{padding:16px}
+  .drawer.as-page .dr-h .title-inp{font-size:22px}
+  .dr-sub{white-space:normal}
+  .dr-f .btn{flex:1 1 0;min-width:0}
+}
+/* Long emails wrap instead of being cut off */
+.rv-row small.wrap-any{white-space:normal;overflow-wrap:anywhere}
+/* Files: the link gets its own line, name and button below it */
+.link-add > .inp:first-child{flex-basis:100%}
+/* Rates on phones: narrower amount box so the content name has room */
+@media (max-width:600px){
+  .rate{padding:10px 14px;gap:10px}
+  .rate .pre{width:118px}
+  .rate span{min-width:0}
+}
+/* Brand request side column: facts stack in one column, no empty gap when there's no note above */
+.facts:first-child{margin-top:0}
+.r-side .facts{grid-template-columns:minmax(0,1fr)}
+.r-side .panel > .btn{white-space:normal;height:auto;min-height:38px;padding-block:8px;min-width:0;text-align:left}
+/* Today "Needs you": the action buttons drop under the text when space is short, instead of squeezing it */
+.task{flex-wrap:wrap}
+.task .tbody{flex:1 1 190px}
+.task .tact{margin-left:auto}
+/* Instagram tiles: label above the number */
+.ig-stat .lbl,.ig-stat .big{display:block}
+@media (max-width:440px){.task .tact{margin-left:50px}}
+@media (max-width:420px){.drawer.as-page .dr-h .title-inp{font-size:20px}}
+/* Payments: the table needs the full width until the screen is really wide */
+@media (max-width:1500px){.pay-grid{grid-template-columns:minmax(0,1fr)}}
+/* Charts: month labels shrink to one letter when the card is narrow */
+.chart{container-type:inline-size}
+.months .m1{display:none}
+.months > span{min-width:0}
+@container (max-width:440px){.months .m3{display:none}.months .m1{display:inline}}
+/* Availability weeks: as many per row as fit (never narrower than the "2/3 booked" label) */
+.wk-grid{grid-template-columns:repeat(auto-fill,minmax(92px,1fr))}
+/* Caption label: keep its floated "Start from the brief" inside the label when it wraps */
+.f label{display:flow-root}
+/* Settings menu: subtitles wrap instead of being cut off */
+.set-t small{white-space:normal}
+/* Package editor: content names never cut off */
+.pk-items{grid-template-columns:repeat(auto-fill,minmax(176px,1fr))}
+.fdl-row b{white-space:normal;overflow-wrap:anywhere}
+.glass-chip{white-space:nowrap;flex:none}
+/* Collab page on phones: the footer has Back, so the header arrow gives its room to the brand name */
+@media (max-width:600px){.drawer.as-page .dr-h .icon-btn{display:none}}
+@media (max-width:440px){.task .tact:not(:has(.btn)){margin-left:auto}}

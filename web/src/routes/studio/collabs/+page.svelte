@@ -169,6 +169,7 @@
 			<section
 				class="col st-{col.s.id}"
 				class:over={over === col.s.id}
+				class:empty={!col.cs.length}
 				aria-label={col.s.label}
 				ondragover={(e) => {
 					e.preventDefault();

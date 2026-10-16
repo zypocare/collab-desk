@@ -55,12 +55,12 @@
 	<div class="rv-list">
 		<div class="rv-row">
 			<span class="set-ic"><Icon name="users" /></span>
-			<div><b>{studio.settings?.display_name} <span class="pill tint k-pay">Owner</span></b><small>{studio.settings?.creator_email}</small></div>
+			<div><b>{studio.settings?.display_name} <span class="pill tint k-pay">Owner</span></b><small class="wrap-any">{studio.settings?.creator_email}</small></div>
 		</div>
 		{#each team as m (m.email)}
 			<div class="rv-row">
 				<span class="set-ic"><Icon name="users" /></span>
-				<div><b>{m.name || m.email} <span class="pill tint plain">Manager</span></b><small>{m.email} · {seen(m.last_seen_at)}</small></div>
+				<div><b>{m.name || m.email} <span class="pill tint plain">Manager</span></b><small class="wrap-any">{m.email} · {seen(m.last_seen_at)}</small></div>
 				{#if owner || m.email === studio.me?.email}
 					<label class="team-copy" title="Gets copies of your notification emails"><input type="checkbox" class="tgl sm" checked={m.copy_emails} onchange={(e) => copies(m, (e.currentTarget as HTMLInputElement).checked)} />Emails</label>
 				{/if}

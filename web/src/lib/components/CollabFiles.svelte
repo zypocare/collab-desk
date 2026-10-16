@@ -76,9 +76,9 @@
 		</label>
 		<span class="hint">up to {MAX_MB} MB each, or add a link:</span>
 	</div>
-	<form class="exp-add" onsubmit={addLink}>
+	<form class="exp-add link-add" onsubmit={addLink}>
 		<input class="inp" placeholder="https://drive.google.com/…" aria-label="Link to the files" bind:value={link} />
-		<input class="inp" placeholder="Name (e.g. Raw footage)" aria-label="Name for the link" bind:value={label} style="max-width:200px" />
+		<input class="inp" placeholder="Name (e.g. Raw footage)" aria-label="Name for the link" bind:value={label} />
 		<button class="btn sm" type="submit" disabled={!link.trim()}><Icon name="link" />Add link</button>
 	</form>
 	{#if files.length}

@@ -24,25 +24,29 @@
 					</div>
 				</div>
 			{/if}
-			{#if gender.length}
-				<div>
-					<span class="lbl">Gender</span>
-					<div class="gender-bar" role="img" aria-label={gender.map((g) => `${g.k}: ${g.p}%`).join(', ')}>
-						{#each gender as g, i (g.k)}<i style="flex:{g.p};--i:{i}" class="g{i}"></i>{/each}
+			{#if gender.length || countries.length}
+				<div class="aud-stack">
+				{#if gender.length}
+					<div>
+						<span class="lbl">Gender</span>
+						<div class="gender-bar" role="img" aria-label={gender.map((g) => `${g.k}: ${g.p}%`).join(', ')}>
+							{#each gender as g, i (g.k)}<i style="flex:{g.p};--i:{i}" class="g{i}"></i>{/each}
+						</div>
+						<ul class="aud-list">{#each gender as g, i (g.k)}<li><span class="dt g{i}"></span>{g.k}<b>{g.p}%</b></li>{/each}</ul>
 					</div>
-					<ul class="aud-list">{#each gender as g, i (g.k)}<li><span class="dt g{i}"></span>{g.k}<b>{g.p}%</b></li>{/each}</ul>
+				{/if}
+				{#if countries.length}
+					<div>
+						<span class="lbl">Top countries</span>
+						<ul class="aud-list">{#each countries as c (c.k)}<li>{c.k}<b>{c.p}%</b></li>{/each}</ul>
+					</div>
+				{/if}
 				</div>
 			{/if}
 			{#if cities.length}
 				<div>
 					<span class="lbl">Top cities</span>
 					<ul class="aud-list">{#each cities as c (c.k)}<li>{c.k}<b>{c.p}%</b></li>{/each}</ul>
-				</div>
-			{/if}
-			{#if countries.length}
-				<div>
-					<span class="lbl">Top countries</span>
-					<ul class="aud-list">{#each countries as c (c.k)}<li>{c.k}<b>{c.p}%</b></li>{/each}</ul>
 				</div>
 			{/if}
 		</div>
