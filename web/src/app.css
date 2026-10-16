@@ -1975,3 +1975,13 @@ body{font-feature-settings:'cv11','ss01';letter-spacing:-.005em}
 /* Collab page on phones: the footer has Back, so the header arrow gives its room to the brand name */
 @media (max-width:600px){.drawer.as-page .dr-h .icon-btn{display:none}}
 @media (max-width:440px){.task .tact:not(:has(.btn)){margin-left:auto}}
+/* Ask a question: roomier box, full-width fields */
+.dialog.ask-dialog{width:min(580px,100%);padding:28px}
+.ask-fields{display:flex;flex-direction:column;gap:14px}
+.ask-fields .f{display:flex;flex-direction:column;gap:6px;min-width:0}
+.ask-fields .inp{width:100%;min-height:48px}
+.ask-fields textarea.inp{min-height:130px;resize:vertical}
+.ask-two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.ask-reply{display:flex;align-items:center;gap:8px;font-size:15px;color:var(--ink-2);background:var(--surface-2);border-radius:12px;padding:10px 14px;overflow-wrap:anywhere}
+.ask-reply .ic{flex-shrink:0;width:16px;height:16px}
+@media (max-width:560px){.ask-two{grid-template-columns:minmax(0,1fr)}.dialog.ask-dialog{padding:22px}}
