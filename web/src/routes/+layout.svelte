@@ -1,6 +1,7 @@
 <script lang="ts">
 	import '../app.css';
 	import '../brand.css';
+	import '../studio.css';
 	import type { LayoutProps } from './$types';
 	import { onMount } from 'svelte';
 	import { onNavigate } from '$app/navigation';

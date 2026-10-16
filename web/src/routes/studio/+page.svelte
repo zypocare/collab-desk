@@ -120,10 +120,34 @@
 </header>
 
 <AlertsPrompt />
-<BrandQuestions />
 
-<div class="top-grid">
-	<section class="hero-card glow rv" style="--i:1">
+<!-- What needs her first, with the month's money beside it. -->
+<div class="t-row t-a">
+	<section class="panel rv" style="--i:1">
+		<div class="panel-h"><h2>Needs you</h2><span class="count-chip tint {urgent ? 'k-bad' : 'k-pay'}">{ts.length} item{ts.length === 1 ? '' : 's'}</span></div>
+		{#each ts as t, i (t.c.id + t.kind)}
+			{@const w = when(t)}
+			<div class="task" class:leaving={leaving === t.c.id + t.kind} style="--i:{i}">
+				<span class="ticon tint k-{t.kind === 'pay' ? 'bad' : t.kind}"><Icon name={KIND_ICON[t.kind]} /></span>
+				<div class="tbody"><div class="tt">{t.title}{#if t.kind === 'new' && priorityOf(t.c)}<PriorityBadge p={priorityOf(t.c)!} compact />{/if}</div><div class="tm">{t.c.brand.name} · <span class={w.cls}>{w.text}</span></div></div>
+				<div class="tact">
+					{#if t.kind === 'follow'}
+						<button class="btn sm" onclick={() => leaveThen(t.c.id + t.kind, () => completeFollow(t.c))}><Icon name="check" />Done</button>
+					{:else if t.kind === 'pay'}
+						<button class="btn sm" onclick={() => leaveThen(t.c.id + t.kind, () => markPaid(t.c))}>Mark paid</button>
+					{:else if t.kind === 'product' && inTransit(t.c)}
+						<button class="btn sm" onclick={() => leaveThen(t.c.id + t.kind, () => markReceived(t.c))}><Icon name="box" />Received</button>
+					{:else if t.kind === 'new' || t.kind === 'msg' || t.kind === 'usage'}
+						<button class="btn sm" onclick={() => (ui.openCollab = t.c.id)}>{t.kind === 'msg' ? 'Reply' : t.kind === 'usage' ? 'Open' : 'Review'}</button>
+					{/if}
+					<button class="icon-btn sm go" onclick={() => (ui.openCollab = t.c.id)} aria-label="Open {t.c.brand.name}"><Icon name="arrow" /></button>
+				</div>
+			</div>
+		{:else}
+			<div class="empty">You're all caught up.</div>
+		{/each}
+	</section>
+	<section class="hero-card glow rv" style="--i:2">
 		<div class="mesh" aria-hidden="true"></div>
 		<div class="hc-in">
 			<div class="hc-top"><span class="hc-eb">Received in {monthName}</span><span class="glass-chip"><Icon name="spark" />Goal {inrS(goal)}</span></div>
@@ -150,6 +174,28 @@
 			</div>
 		</div>
 	</section>
+</div>
+
+<BrandQuestions />
+
+<div class="t-row t-b">
+	<section class="panel rv" style="--i:3">
+		<div class="panel-h"><h2>Next 7 days</h2><small>drafts, go-lives, follow-ups and payments</small></div>
+		<div class="week-wrap">
+			<div class="week">
+				{#each week as d (d.ds)}
+					<div class="day" class:is-today={d.i === 0} style="--i:{d.i}">
+						<div class="day-h"><b>{d.dt.getDate()}</b><small>{d.i === 0 ? 'Today' : d.dt.toLocaleDateString('en-IN', { weekday: 'short' })}</small></div>
+						{#each d.list.slice(0, 4) as e (e.c.id + e.kind)}
+							<button class="ev tint k-{e.kind}" onclick={() => (ui.openCollab = e.c.id)} title="{evLabel(e)} · {e.c.brand.name}"><span class="dt"></span><span>{e.c.brand.name}</span></button>
+						{/each}
+						{#if d.list.length > 4}<small class="hint">+{d.list.length - 4} more</small>{/if}
+						{#if !d.list.length}<span class="none">Free day</span>{/if}
+					</div>
+				{/each}
+			</div>
+		</div>
+	</section>
 	<div class="side-stack">
 		<section class="panel glow pipe rv" style="--i:2">
 			<div class="pipe-h">
@@ -171,31 +217,7 @@
 	</div>
 </div>
 
-<div class="today-grid">
-	<section class="panel rv" style="--i:4">
-		<div class="panel-h"><h2>Needs you</h2><span class="count-chip tint {urgent ? 'k-bad' : 'k-pay'}">{ts.length} item{ts.length === 1 ? '' : 's'}</span></div>
-		{#each ts as t, i (t.c.id + t.kind)}
-			{@const w = when(t)}
-			<div class="task" class:leaving={leaving === t.c.id + t.kind} style="--i:{i}">
-				<span class="ticon tint k-{t.kind === 'pay' ? 'bad' : t.kind}"><Icon name={KIND_ICON[t.kind]} /></span>
-				<div class="tbody"><div class="tt">{t.title}{#if t.kind === 'new' && priorityOf(t.c)}<PriorityBadge p={priorityOf(t.c)!} compact />{/if}</div><div class="tm">{t.c.brand.name} · <span class={w.cls}>{w.text}</span></div></div>
-				<div class="tact">
-					{#if t.kind === 'follow'}
-						<button class="btn sm" onclick={() => leaveThen(t.c.id + t.kind, () => completeFollow(t.c))}><Icon name="check" />Done</button>
-					{:else if t.kind === 'pay'}
-						<button class="btn sm" onclick={() => leaveThen(t.c.id + t.kind, () => markPaid(t.c))}>Mark paid</button>
-					{:else if t.kind === 'product' && inTransit(t.c)}
-						<button class="btn sm" onclick={() => leaveThen(t.c.id + t.kind, () => markReceived(t.c))}><Icon name="box" />Received</button>
-					{:else if t.kind === 'new' || t.kind === 'msg' || t.kind === 'usage'}
-						<button class="btn sm" onclick={() => (ui.openCollab = t.c.id)}>{t.kind === 'msg' ? 'Reply' : t.kind === 'usage' ? 'Open' : 'Review'}</button>
-					{/if}
-					<button class="icon-btn sm go" onclick={() => (ui.openCollab = t.c.id)} aria-label="Open {t.c.brand.name}"><Icon name="arrow" /></button>
-				</div>
-			</div>
-		{:else}
-			<div class="empty">You're all caught up.</div>
-		{/each}
-	</section>
+<div class="t-row t-c">
 	<section class="panel glow rv" style="--i:5">
 		<div class="panel-h"><h2>Payments received</h2><small>last 6 months · {months[5].label} so far</small></div>
 		<div class="chart">
@@ -216,24 +238,5 @@
 		</div>
 	</section>
 </div>
-
-<section class="panel rv" style="--i:6">
-	<div class="panel-h"><h2>Next 7 days</h2><small>drafts, go-lives, follow-ups and payments</small></div>
-	<div class="week-wrap">
-		<div class="week">
-			{#each week as d (d.ds)}
-				<div class="day" class:is-today={d.i === 0} style="--i:{d.i}">
-					<div class="day-h"><b>{d.dt.getDate()}</b><small>{d.i === 0 ? 'Today' : d.dt.toLocaleDateString('en-IN', { weekday: 'short' })}</small></div>
-					{#each d.list.slice(0, 4) as e (e.c.id + e.kind)}
-						<button class="ev tint k-{e.kind}" onclick={() => (ui.openCollab = e.c.id)} title="{evLabel(e)} · {e.c.brand.name}"><span class="dt"></span><span>{e.c.brand.name}</span></button>
-					{/each}
-					{#if d.list.length > 4}<small class="hint">+{d.list.length - 4} more</small>{/if}
-					{#if !d.list.length}<span class="none">Free day</span>{/if}
-				</div>
-			{/each}
-		</div>
-	</div>
-</section>
-
 <InstagramPanel />
 <ContentTips />

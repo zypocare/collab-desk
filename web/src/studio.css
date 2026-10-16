@@ -1,0 +1,99 @@
+/* ==========================================================================================
+   Studio: the creator's workspace. Same language as the brand side (brand.css): a centred
+   working column with room to breathe, one consistent card surface, gradient section labels,
+   cards that lift, sections that rise in, tactile buttons. Scoped to [data-side="studio"].
+   ========================================================================================== */
+
+[data-side="studio"]{
+  --sx-max:1320px;
+  --sx-r:22px;
+  --sx-card:color-mix(in oklab,var(--surface) 94%,transparent);
+  --sx-border:color-mix(in oklab,var(--line) 85%,transparent);
+  --sx-lift:0 1px 2px rgba(0,0,0,.06),0 18px 40px -18px rgba(40,22,32,.28);
+}
+
+/* ---------- frame: content centred, never wider than a comfortable working width ---------- */
+[data-side="studio"] .main{max-width:calc(var(--sx-max) + 2 * var(--gut));justify-self:center;padding-top:clamp(20px,2.6vw,34px)}
+[data-side="studio"] .rail{border-right:1px solid color-mix(in oklab,var(--line) 70%,transparent)}
+
+/* ---------- motion ---------- */
+[data-side="studio"][data-io] .rv{animation:none;opacity:0;transform:translateY(14px);transition:opacity .6s var(--ease),transform .6s var(--ease);transition-delay:calc(var(--i,0) * 50ms)}
+[data-side="studio"][data-io] .rv.in{opacity:1;transform:none}
+[data-side="studio"] .btn{transition:transform .25s var(--spring),background .25s,border-color .25s,box-shadow .3s,color .2s}
+[data-side="studio"] .btn:active:not(:disabled){transform:scale(.97)}
+[data-side="studio"] .btn.grad,[data-side="studio"] .btn.primary{position:relative;overflow:hidden}
+[data-side="studio"] .btn.grad::after{content:"";position:absolute;inset:0;background:linear-gradient(105deg,transparent 30%,rgba(255,255,255,.28) 50%,transparent 70%);transform:translateX(-120%);transition:transform .9s var(--ease);pointer-events:none}
+[data-side="studio"] .btn.grad:hover::after{transform:translateX(120%)}
+
+/* ---------- page headers ---------- */
+[data-side="studio"] .ph{margin-bottom:clamp(18px,2.6vw,28px)}
+[data-side="studio"] .ph .eb{font-size:12.5px;letter-spacing:.14em;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;margin-bottom:8px}
+[data-side="studio"] .ph h1{font-size:clamp(30px,3.8vw,48px);letter-spacing:-.05em}
+[data-side="studio"] .ph p{color:var(--ink-3);font-size:17px}
+
+/* ---------- one card surface ---------- */
+[data-side="studio"] .panel{border-radius:var(--sx-r);background:var(--sx-card);border:1px solid var(--sx-border);box-shadow:var(--shadow-sm)}
+[data-side="studio"] .panel-h h2{font-size:19px;letter-spacing:-.025em}
+[data-side="studio"] .kpi,[data-side="studio"] .stat-card{border-radius:var(--sx-r)}
+
+/* ---------- Today ---------- */
+.t-row{display:grid;gap:18px;margin-bottom:18px;align-items:start}
+.t-a{grid-template-columns:minmax(0,1.1fr) minmax(0,1fr)}
+.t-a > .hero-card{height:100%;min-height:0}
+.t-b{grid-template-columns:minmax(0,1.6fr) minmax(0,1fr)}
+.t-b > .panel{margin:0}
+.t-c{grid-template-columns:minmax(0,1fr)}
+.t-row > *{margin:0!important}
+[data-side="studio"] .task{border-radius:14px;transition:background .2s}
+[data-side="studio"] .task:hover{background:color-mix(in oklab,var(--surface-2) 60%,transparent)}
+/* Next 7 days: compact; free days step back so busy ones stand out. */
+.t-b .week-wrap{padding:0 16px 16px}
+.t-b .week{grid-template-columns:repeat(7,minmax(74px,1fr));gap:8px}
+[data-side="studio"] .day{min-height:92px;padding:10px;border-radius:14px}
+[data-side="studio"] .day:has(.none){background:transparent;border-style:dashed}
+[data-side="studio"] .day .none{font-size:13px}
+[data-side="studio"] .day.is-today{border-color:var(--accent);background:color-mix(in oklab,var(--accent) 6%,var(--surface));box-shadow:0 10px 26px -16px color-mix(in oklab,var(--accent) 60%,transparent)}
+[data-side="studio"] .day-h b{font-size:20px}
+@media (max-width: 1100px){ .t-a,.t-b{grid-template-columns:minmax(0,1fr)} }
+
+/* ---------- Collabs board ---------- */
+@media (min-width: 641px){
+  [data-side="studio"] .board{display:flex;gap:12px;min-width:0}
+  [data-side="studio"] .board .col{flex:1 1 240px;min-width:220px;min-height:0;align-self:stretch}
+  /* Empty stages stay as slim drop targets so the busy ones get the room. */
+  [data-side="studio"] .board .col.empty{flex:0 0 118px;min-width:118px;padding:8px}
+  [data-side="studio"] .board .col.empty .col-h{flex-wrap:wrap;gap:4px 6px;font-size:14.5px;padding:6px 4px}
+  [data-side="studio"] .board .col.empty .col-h b{white-space:nowrap}
+  [data-side="studio"] .board .col.empty .col-empty{padding:16px 6px;font-size:13px}
+  [data-side="studio"] .board-wrap{padding-bottom:20px}
+}
+[data-side="studio"] .col{border-radius:20px}
+[data-side="studio"] .card{border-radius:16px;transition:transform .4s var(--spring),box-shadow .3s,border-color .3s}
+[data-side="studio"] .card:hover{transform:translateY(-3px);box-shadow:var(--sx-lift)}
+[data-side="studio"] .card-f{flex-wrap:wrap;row-gap:6px}
+[data-side="studio"] .card-next{min-width:0;max-width:100%;white-space:normal;text-align:left}
+[data-side="studio"] .chips{flex-wrap:wrap}
+
+/* ---------- Collab page ---------- */
+.cx-nav{grid-column:1/-1;position:sticky;top:8px;z-index:15;display:flex;gap:4px;width:max-content;max-width:100%;overflow-x:auto;scrollbar-width:none;margin:0 0 16px;padding:5px;border-radius:999px;background:color-mix(in oklab,var(--surface) 84%,transparent);-webkit-backdrop-filter:blur(16px) saturate(1.4);backdrop-filter:blur(16px) saturate(1.4);border:1px solid var(--sx-border);box-shadow:0 10px 30px -14px rgba(0,0,0,.4)}
+.cx-nav::-webkit-scrollbar{display:none}
+.cx-nav a{flex:none;padding:7px 14px;border-radius:999px;font-size:14.5px;font-weight:600;text-decoration:none;color:var(--ink-2);white-space:nowrap;transition:background .25s,color .25s}
+.cx-nav a:hover{background:var(--grad);color:#fff}
+[data-side="studio"] .drawer.as-page .sec{border-radius:var(--sx-r);background:var(--sx-card);border:1px solid var(--sx-border);scroll-margin-top:72px;transition:border-color .3s,box-shadow .3s}
+[data-side="studio"] .drawer.as-page .sec:focus-within{border-color:color-mix(in oklab,var(--accent) 30%,var(--line))}
+[data-side="studio"] .drawer.as-page .sec h3{font-size:12.5px;letter-spacing:.14em}
+[data-side="studio"] .drawer.as-page .dr-h{border-radius:26px}
+[data-side="studio"] .next-bar{border-radius:20px}
+
+/* ---------- lists and tables: rows respond to the pointer ---------- */
+[data-side="studio"] .brand-row:hover,[data-side="studio"] .pay-row:hover{background:color-mix(in oklab,var(--surface-2) 55%,transparent)}
+
+/* ---------- settings ---------- */
+[data-side="studio"] .set-item{transition:background .2s,transform .3s var(--spring)}
+[data-side="studio"] .set-item:hover{transform:translateX(2px)}
+
+@media (max-width: 900px){
+  [data-side="studio"] .main{padding-top:18px}
+}
+[data-side="studio"] .board .col.empty .col-h .dt{display:none}
+.t-a .hc-foot b{white-space:normal;overflow:visible;text-overflow:clip;font-size:16px;line-height:1.25}

@@ -81,7 +81,17 @@
 	import PaymentDialog from './PaymentDialog.svelte';
 
 	// page: shown as its own full page (/studio/c/CODE) instead of a side drawer.
+	// Full-page jump bar: only for sections this collab actually shows.
+	const JUMPS = [['sec-msg', 'Messages'], ['sec-deal', 'Deal'], ['sec-drafts', 'Drafts'], ['sec-dates', 'Dates'], ['sec-pay', 'Payment'], ['sec-brand', 'Brand'], ['sec-brief', 'Brief'], ['sec-activity', 'Activity']];
+	let present = $state<string[]>([]);
 	let { page = false }: { page?: boolean } = $props();
+	$effect(() => {
+		if (!page) return;
+		void c?.id;
+		void c?.stage;
+		void c?.type;
+		tick().then(() => (present = JUMPS.map(([id]) => id).filter((id) => document.getElementById(id))));
+	});
 	const c = $derived(byId(ui.openCollab));
 	// Phones: short stage names so the six labels fit side by side.
 	const SHORT_STAGE: Record<string, string> = { request: 'New', negotiating: 'Talks', confirmed: 'Agreed', creating: 'Creating', live: 'Live', wrapped: 'Done' };
@@ -286,6 +296,14 @@
 		</header>
 
 		<div class="dr-b">
+			{#if page}
+				<!-- Full page: jump straight to a part of the collab. -->
+				<nav class="cx-nav" aria-label="Jump to">
+					{#each JUMPS.filter(([id]) => present.includes(id)) as [id, label] (id)}
+						<a href="#{id}" onclick={(e) => { e.preventDefault(); document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }}>{label}</a>
+					{/each}
+				</nav>
+			{/if}
 			{#if next}
 				<div class="next-bar">
 					<span class="nb-ic"><Icon name={next.icon} /></span>
@@ -340,7 +358,7 @@
 				{/key}
 			</section>
 
-			<section class="sec">
+			<section class="sec" id="sec-deal">
 				<h3>Deal</h3>
 				<div class="fields">
 					<div class="f">
@@ -539,7 +557,7 @@
 			<CollabPosts {c} />
 
 			{#if isPaid(c)}
-				<section class="sec">
+				<section class="sec" id="sec-pay">
 					<h3>Payment {#if issuedInvoices.length}<span>{issuedInvoices.length} invoice{issuedInvoices.length === 1 ? '' : 's'}</span>{/if}</h3>
 					{#each c.invoices as inv (inv.id)}
 						<div class="inv-row" class:muted={inv.status === 'cancelled'}>
@@ -620,7 +638,7 @@
 				{#if c.follow_date}<button class="btn sm follow-done" onclick={() => c && completeFollow(c)}><Icon name="check" />Mark follow-up done</button>{/if}
 			</section>
 
-			<section class="sec">
+			<section class="sec" id="sec-brand">
 				<h3>Brand access {#if c.track_sent_at}<span>link sent {fmt(c.track_sent_at.slice(0, 10))}</span>{/if}</h3>
 				<div class="trk-box">
 					<span class="lbl-t">Private tracking link</span>
@@ -639,7 +657,7 @@
 				</div>
 			</section>
 
-			<section class="sec">
+			<section class="sec" id="sec-brief">
 				<h3>Brief</h3>
 				{#if missingBrief.length && !['declined', 'wrapped'].includes(c.stage)}
 					<div class="date-sug brief-gap">
@@ -668,7 +686,7 @@
 				<p class="hint" style="margin-top:10px">The brand signs in with this email to see their requests.</p>
 			</section>
 
-			<section class="sec">
+			<section class="sec" id="sec-activity">
 				<h3>Activity</h3>
 				<ol class="log">
 					{#each c.events as ev (ev.id)}
