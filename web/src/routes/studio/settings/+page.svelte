@@ -15,6 +15,7 @@
 	import PriorityRules from '#lib/components/PriorityRules.svelte';
 	import PackagesSettings from '#lib/components/PackagesSettings.svelte';
 	import AvailabilitySettings from '#lib/components/AvailabilitySettings.svelte';
+	import ReviewsSettings from '#lib/components/ReviewsSettings.svelte';
 
 	const s = $derived(studio.settings!);
 	const link = $derived(s.site_url.replace(/\/$/, ''));
@@ -143,6 +144,7 @@
 	<PriorityRules />
 	<AvailabilitySettings />
 	<ShippingSettings />
+	<ReviewsSettings />
 	<NotificationSettings />
 	<section class="panel rv" style="--i:4">
 		<div class="panel-h"><h2>App</h2></div>

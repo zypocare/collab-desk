@@ -255,6 +255,7 @@ export type Settings = {
 	away_weeks: string[];
 	show_availability: boolean;
 	offered_kinds: string[];
+	show_results: boolean;
 };
 
 export type PublicPage = {
@@ -269,6 +270,8 @@ export type PublicPage = {
 	accepting: boolean;
 	rates: Record<string, number> | null;
 	packages: PublicPackage[];
+	results: { brand: string; views: number | null; reach: number | null; likes: number | null; kind: string; permalink: string; thumbnail: string; posted_at: string }[];
+	reviews: { rating: number; text: string; name: string; brand: string }[];
 	/** Content types she offers; brands only see these. */
 	offered: string[];
 	availability: { start: string; status: 'open' | 'limited' | 'full' | 'away' }[] | null;

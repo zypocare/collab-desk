@@ -1484,3 +1484,31 @@ kbd{font-family:var(--f-mono);font-size:10.5px;padding:2px 6px;border-radius:6px
 .act-box .row{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end;margin-top:12px}
 .act-done{text-align:center}
 @media (max-width: 640px){ .act-box .row .btn{flex:1;justify-content:center} }
+
+/* ---------- results & reviews ---------- */
+.results,.reviews{margin:0 0 18px}
+.res-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px}
+.res{display:flex;flex-direction:column;border-radius:18px;overflow:hidden;background:var(--surface);border:1px solid var(--line);text-decoration:none;transition:transform .3s var(--spring),border-color .2s}
+.res:hover{transform:translateY(-2px);border-color:var(--line-strong)}
+.res img,.res-ph{width:100%;aspect-ratio:4/5;object-fit:cover;display:grid;place-items:center;background:var(--surface-2);color:var(--ink-3)}
+.res-ph svg{width:28px;height:28px}
+.res-b{padding:10px 12px 12px;display:flex;flex-direction:column;gap:1px}
+.res-b b{font-family:var(--f-display);font-size:22px;letter-spacing:-.02em}
+.res-b small{color:var(--ink-3);font-size:12px}
+.res-b span{font-size:12.5px;font-weight:600;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rev-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+.rev{margin:0;padding:16px 18px;border-radius:18px;background:var(--surface);border:1px solid var(--line);display:flex;flex-direction:column;gap:8px}
+.rev blockquote{margin:0;font-family:var(--f-serif);font-size:16px;line-height:1.4}
+.rev figcaption{font-size:12.5px;color:var(--ink-3)}
+.rev figcaption b{color:var(--ink-2)}
+.rev-stars{color:#f2b33d;letter-spacing:1px;font-size:14px}
+.rev-stars i{font-style:normal;color:var(--line-strong)}
+.rv-list{display:flex;flex-direction:column}
+.rv-row{display:flex;align-items:center;gap:12px;padding:12px 20px;border-top:1px solid var(--line)}
+.rv-row > div{flex:1;min-width:0}
+.rv-row b{display:block;font-size:13.5px}
+.rv-row small{display:block;color:var(--ink-3);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.review-card{max-width:480px}
+.big-stars{display:flex;justify-content:center;gap:4px;margin:6px 0 2px}
+.big-stars .star{width:46px;height:46px;font-size:36px}
+.star-word{text-align:center;color:var(--ink-3);font-size:13px;margin:0 0 14px;min-height:18px}

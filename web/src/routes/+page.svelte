@@ -8,7 +8,7 @@
 	import { delivText, firstName, initials, inr, offeredKinds, packageOffered } from '#lib/util.ts';
 	import BrandTopbar from '#lib/components/BrandTopbar.svelte';
 	import Audience from '#lib/components/Audience.svelte';
-	import { compact, fmt } from '#lib/util.ts';
+	import { compact, fmt, mediaLabel } from '#lib/util.ts';
 	import Icon from '#lib/components/Icon.svelte';
 	import { downloadMediaKit } from '#lib/mediaKitPdf.ts';
 	import { rateValue } from '#lib/priority.ts';
@@ -116,13 +116,44 @@
 							</div>
 						</section>
 					{/if}
-					{#if p.instagram?.demographics}<Audience demo={p.instagram.demographics} />{/if}
+					{#if p.results?.length}
+					<section class="results rv" aria-label="Results from past collabs">
+						<div class="pkgs-h"><h2>Results</h2><p>Real numbers from past collaborations</p></div>
+						<div class="res-grid">
+							{#each p.results.slice(0, 4) as r, i (r.permalink + i)}
+								<a class="res" href={r.permalink} target="_blank" rel="noopener">
+									{#if r.thumbnail}<img src={r.thumbnail} alt="" loading="lazy" referrerpolicy="no-referrer" />{:else}<span class="res-ph"><Icon name="film" /></span>{/if}
+									<div class="res-b">
+										<b>{r.views ? compact(r.views) : compact(r.reach ?? 0)}</b>
+										<small>{r.views ? 'views' : 'reached'}{r.reach && r.views ? ` · ${compact(r.reach)} reached` : ''}</small>
+										<span>{r.brand} · {mediaLabel('', r.kind)}</span>
+									</div>
+								</a>
+							{/each}
+						</div>
+					</section>
+				{/if}
+				{#if p.reviews?.length}
+					<section class="reviews rv" aria-label="What brands say">
+						<div class="pkgs-h"><h2>What brands say</h2><p>{(p.reviews.reduce((a, r) => a + r.rating, 0) / p.reviews.length).toFixed(1)} ★ from {p.reviews.length} review{p.reviews.length === 1 ? '' : 's'}</p></div>
+						<div class="rev-grid">
+							{#each p.reviews.slice(0, 6) as r, i (i)}
+								<figure class="rev">
+									<div class="rev-stars" aria-label="{r.rating} out of 5">{'★'.repeat(r.rating)}<i>{'★'.repeat(5 - r.rating)}</i></div>
+									{#if r.text}<blockquote>“{r.text}”</blockquote>{/if}
+									<figcaption><b>{r.name}</b> · {r.brand}</figcaption>
+								</figure>
+							{/each}
+						</div>
+					</section>
+				{/if}
+				{#if p.instagram?.demographics}<Audience demo={p.instagram.demographics} />{/if}
 					<section class="panel rv" style="--i:6;overflow:hidden">
 						<div class="bsec">
 							<div class="bsec-h"><h2>Work with {firstName(p.display_name)}</h2></div>
 							<div class="types t3">
-								<div class="type-card static"><Icon name="mail" /><b>1. Sign in</b><small>With your work email and a one-time code. No password.</small></div>
-								<div class="type-card static"><Icon name="send" /><b>2. Send your request</b><small>Paid, barter or both. Pick the content you need.</small></div>
+								<div class="type-card static"><Icon name="send" /><b>1. Tell us what you need</b><small>Pick the content, a package or your budget. No account needed.</small></div>
+								<div class="type-card static"><Icon name="mail" /><b>2. Confirm your email</b><small>A 6-digit code when you send. No password, ever.</small></div>
 								<div class="type-card static"><Icon name="eye" /><b>3. Follow along</b><small>See every step, from first reply to going live.</small></div>
 							</div>
 						</div>

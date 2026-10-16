@@ -370,5 +370,32 @@ export function render(kind: string, p: Payload, s: Settings): Omit<Mail, 'to'> 
     };
   }
 
+  if (kind === 'review_request') {
+    return {
+      subject: `How was working with ${first(s.display_name)}? (${code})`,
+      html: layout(
+        s,
+        `How did it go?`,
+        `<p style="margin:0">Hi ${esc(firstOf(p.contact))}, thank you for collaborating with ${esc(s.display_name)} on <b>${esc(code)}</b>! Would you leave a quick rating and one line about the experience? It takes 20 seconds and helps other brands.</p>`,
+        { label: 'Leave a quick review', href: url(s, `/review/${p.action}`) },
+      ),
+      text: `How was working with ${s.display_name} on ${code}? Leave a quick review: ${url(s, `/review/${p.action}`)}`,
+    };
+  }
+
+  if (kind === 'review_received') {
+    const stars = '★'.repeat(Number(p.rating) || 0) + '☆'.repeat(5 - (Number(p.rating) || 0));
+    return {
+      subject: `${brand} left you a ${p.rating}-star review`,
+      html: layout(
+        s,
+        `${stars} from ${brand}`,
+        `${quoteBox('Their words', p.body || 'No comment')}<p style="margin:12px 0 0;font-size:13px;color:#8c8288">${Number(p.rating) >= 4 ? 'It is showing on your brand page.' : 'It is hidden from your page. You can show it from My page.'}</p>`,
+        { label: 'Manage reviews', href: url(s, '/studio/settings') },
+      ),
+      text: `${brand} left you ${p.rating} stars: ${p.body}`,
+    };
+  }
+
   throw new Error(`Unknown email kind: ${kind}`);
 }
