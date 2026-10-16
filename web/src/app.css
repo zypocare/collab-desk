@@ -2038,3 +2038,14 @@ body{font-feature-settings:'cv11','ss01';letter-spacing:-.005em}
 .tip .hint{font-size:13.5px}
 @media (max-width:760px){.tips-grid{grid-template-columns:minmax(0,1fr)}.tip-bar{grid-template-columns:120px minmax(0,1fr) 48px}}
 .tip-band{display:flex;flex-direction:column;line-height:1.2}.tip-band small{font-size:12.5px}
+/* Brand page: not only bundles, any single item or mix */
+.pkg-custom{margin-top:14px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:18px 20px;border-radius:20px;border:1px dashed var(--line-strong);background:var(--surface)}
+.pkg-custom-t{flex:1 1 220px;min-width:0}
+.pkg-custom-t b{display:block;font-size:17px}
+.pkg-custom-t small{color:var(--ink-3);font-size:15px}
+.pkg-chips{display:flex;flex-wrap:wrap;gap:8px;flex:2 1 320px}
+.pkg-chips .cat-chip{display:inline-flex;align-items:center;gap:6px;text-decoration:none;color:var(--ink)}
+.pkg-chips .cat-chip span{color:var(--ink-3);font-weight:500;font-size:14px}
+.pkg-chips .cat-chip:hover{border-color:var(--accent);color:var(--accent)}
+@media (max-width:640px){.pkg-custom .btn{width:100%}}
+@media (max-width:640px){.sel:not(.sm){height:auto;min-height:48px;padding-top:8px;padding-bottom:8px}.sel:not(.sm) .sel-v{white-space:normal;text-align:left;line-height:1.3}}

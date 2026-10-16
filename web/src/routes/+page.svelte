@@ -108,7 +108,7 @@
 					{#if p.instagram?.demographics}<Audience demo={p.instagram.demographics} i={5} />{/if}
 					{#if p.packages?.some((x) => packageOffered(x.items, p.offered)) && p.accepting}
 						<section class="pkgs rv" style="--i:6" aria-label="Packages">
-							<div class="pkgs-h"><h2>Packages</h2><p>Book a ready-made bundle in one tap.</p></div>
+							<div class="pkgs-h"><h2>Packages</h2><p>Ready-made bundles, or pick exactly what you need.</p></div>
 							<div class="pkg-grid">
 								{#each p.packages.filter((x) => packageOffered(x.items, p.offered)) as k, i (k.id)}
 									{@const rate = rateValue(k.items, p.rates)}
@@ -126,6 +126,16 @@
 										<a class="btn {k.badge ? 'grad' : ''}" href={bookHref(k.id)}><Icon name="send" />Book this</a>
 									</article>
 								{/each}
+							</div>
+							<!-- Not only bundles: any single item, or any mix, can be requested. -->
+							<div class="pkg-custom glow">
+								<div class="pkg-custom-t"><b>Need something different?</b><small>Book a single Reel, one Story or any mix you like.{p.rates ? '' : ` ${firstName(p.display_name)} will send you a quote.`}</small></div>
+								<div class="pkg-chips">
+									{#each offeredKinds(p.offered) as kd (kd)}
+										<a class="cat-chip" href="/brand/new?item={encodeURIComponent(kd)}">1 {kd}{#if p.rates?.[kd]}<span>from {inr(p.rates[kd])}</span>{/if}</a>
+									{/each}
+								</div>
+								<a class="btn" href="/brand/new"><Icon name="plus" />Build your own request</a>
 							</div>
 						</section>
 					{/if}

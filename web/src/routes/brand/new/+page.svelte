@@ -139,6 +139,14 @@
 			fee = String(k.price);
 		});
 	});
+	// One item from the brand page (/brand/new?item=Reel): start with just that.
+	$effect(() => {
+		const item = page.url.searchParams.get('item');
+		if (!item || !KINDS.includes(item) || page.url.searchParams.get('package')) return;
+		untrack(() => {
+			qty = Object.fromEntries(KINDS.map((kind) => [kind, kind === item ? 1 : 0]));
+		});
+	});
 	// Their usual type and usage, unless a package or "book again" says otherwise.
 	$effect(() => {
 		const last = brandData.requests[0];
