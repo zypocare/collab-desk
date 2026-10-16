@@ -5,7 +5,7 @@
 	import { auth } from '#lib/auth.svelte.ts';
 	import { loadPublicPage, pub } from '#lib/publicPage.svelte.ts';
 	import { countUp, parseStat } from '#lib/ui.svelte.ts';
-	import { delivText, firstName, initials, inr, offeredKinds, packageOffered } from '#lib/util.ts';
+	import { delivText, firstName, initials, inr, offeredKinds, packageOffered, waLink } from '#lib/util.ts';
 	import BrandTopbar from '#lib/components/BrandTopbar.svelte';
 	import Audience from '#lib/components/Audience.svelte';
 	import { compact, fmt, mediaLabel } from '#lib/util.ts';
@@ -181,7 +181,7 @@
 							<b>Work with {firstName(p.display_name)}</b>
 							<p>Usually replies within {p.reply_time}. Paid collaborations are reviewed first.</p>
 							<a class="btn grad lg" href={requestHref}><Icon name="send" />Send a request</a>
-							<div class="row"><a class="btn sm" href={trackHref}><Icon name="search" />Track requests</a><button class="btn sm" onclick={kit} disabled={kitBusy}>{#if kitBusy}<span class="spinner"></span>{:else}<Icon name="film" />{/if}Media kit</button></div>
+							<div class="row">{#if p.whatsapp}<a class="btn sm wa" href={waLink(p.whatsapp, `Hi ${firstName(p.display_name)}! I'd like to discuss a collaboration.`)} target="_blank" rel="noopener"><Icon name="send" />WhatsApp</a>{/if}<a class="btn sm" href={trackHref}><Icon name="search" />Track requests</a><button class="btn sm" onclick={kit} disabled={kitBusy}>{#if kitBusy}<span class="spinner"></span>{:else}<Icon name="film" />{/if}Media kit</button></div>
 						</section>
 					{/if}
 					{#if p.availability?.length && p.accepting}

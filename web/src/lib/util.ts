@@ -13,6 +13,14 @@ export const stageIndex = (s: Stage) => STAGES.findIndex((x) => x.id === s);
 export const stageLabel = (s: Stage) => (s === 'declined' ? 'Declined' : STAGES[stageIndex(s)].label);
 export const stagePub = (s: Stage) => (s === 'declined' ? 'Not going ahead' : STAGES[stageIndex(s)].pub);
 
+/** WhatsApp click-to-chat link (free). Indian 10-digit numbers get +91. Empty if no usable number. */
+export function waLink(phone: string | null | undefined, text: string) {
+	let n = (phone ?? '').replace(/\D/g, '');
+	if (n.length === 11 && n.startsWith('0')) n = n.slice(1);
+	if (n.length === 10) n = '91' + n;
+	return n.length >= 11 ? `https://wa.me/${n}?text=${encodeURIComponent(text)}` : '';
+}
+
 export const KINDS = ['Reel', 'Story', 'Static post', 'Carousel', 'YouTube Short', 'UGC video'];
 /** The content types she has switched on (all of them if the list is missing). */
 export const offeredKinds = (list?: string[] | null) => (list?.length ? KINDS.filter((k) => list.includes(k)) : KINDS);

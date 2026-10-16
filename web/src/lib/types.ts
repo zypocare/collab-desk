@@ -256,6 +256,7 @@ export type Settings = {
 	show_availability: boolean;
 	offered_kinds: string[];
 	show_results: boolean;
+	whatsapp: string;
 };
 
 export type PublicPage = {
@@ -272,6 +273,7 @@ export type PublicPage = {
 	packages: PublicPackage[];
 	results: { brand: string; views: number | null; reach: number | null; likes: number | null; kind: string; permalink: string; thumbnail: string; posted_at: string }[];
 	reviews: { rating: number; text: string; name: string; brand: string }[];
+	whatsapp: string | null;
 	/** Content types she offers; brands only see these. */
 	offered: string[];
 	availability: { start: string; status: 'open' | 'limited' | 'full' | 'away' }[] | null;

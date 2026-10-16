@@ -22,7 +22,7 @@
 	const val = (e: Event) => (e.currentTarget as HTMLInputElement).value;
 	const num = (e: Event) => Math.max(0, Number(val(e)) || 0);
 
-	type TextKey = 'display_name' | 'handle' | 'niche' | 'city' | 'followers' | 'engagement' | 'reply_time' | 'app_name' | 'site_url';
+	type TextKey = 'display_name' | 'handle' | 'niche' | 'city' | 'followers' | 'engagement' | 'reply_time' | 'app_name' | 'site_url' | 'whatsapp';
 	const fields: { k: TextKey; label: string; ph?: string }[] = [
 		{ k: 'display_name', label: 'Name' },
 		{ k: 'handle', label: 'Instagram handle', ph: 'yourhandle' },
@@ -30,7 +30,8 @@
 		{ k: 'city', label: 'City' },
 		{ k: 'followers', label: 'Followers', ph: '248K' },
 		{ k: 'engagement', label: 'Avg. engagement', ph: '4.8%' },
-		{ k: 'reply_time', label: 'Usual reply time', ph: '2 days' }
+		{ k: 'reply_time', label: 'Usual reply time', ph: '2 days' },
+		{ k: 'whatsapp', label: 'WhatsApp for brands (optional)', ph: '98450 00000' }
 	];
 	function saveText(k: TextKey, v: string) {
 		const clean = k === 'handle' ? v.trim().replace(/^@/, '') : v.trim();

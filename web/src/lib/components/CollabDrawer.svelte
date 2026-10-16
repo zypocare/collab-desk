@@ -59,7 +59,8 @@
 		checklistMissing,
 		clashes,
 		latestDraft,
-		payTerms
+		payTerms,
+		waLink
 	} from '../util';
 	import { cancelInvoice, setChecklist, setInvoiceFlags, shareDraft, withdrawQuote } from '../studio.svelte';
 	import type { Quote } from '../types';
@@ -562,6 +563,9 @@
 						<input class="inp" id="c-e" value={c.contact_email} inputmode="email" onchange={(e) => save('contact_email', val(e).trim().toLowerCase())} />
 					</div>
 				</div>
+				{#if waLink(c.contact_phone, '')}
+					<a class="btn sm wa" style="margin-top:10px" href={waLink(c.contact_phone, statusMessage(c))} target="_blank" rel="noopener"><Icon name="send" />WhatsApp {c.contact_name ? c.contact_name.split(' ')[0] : 'them'} the status</a>
+				{/if}
 				<p class="hint" style="margin-top:10px">The brand signs in with this email to see their requests.</p>
 			</section>
 
