@@ -11,7 +11,6 @@
 		formatRows,
 		FORMAT_LABEL,
 		insightKpis,
-		monthName,
 		sponsoredLine,
 		type PublicInsights,
 		type SectionKey
@@ -53,7 +52,6 @@
 	const sp = $derived(d?.insights.sponsored ?? null);
 	const spLine = $derived(sponsoredLine(sp));
 	const topics = $derived(d?.insights.topics ?? []);
-	const months = $derived((d?.months ?? []).filter((m) => m.reach || m.views));
 
 	// Follower line for the last 90 days.
 	const spark = $derived.by(() => {
@@ -200,21 +198,6 @@
 
 		{#if Object.keys(d.demographics ?? {}).length && show('audience')}<Audience demo={d.demographics} i={7} />{/if}
 
-		{#if months.length >= 2 && show('months')}
-			<section class="panel rv" style="--i:8;margin-bottom:18px">
-				<div class="panel-h"><h2>Month by month</h2><small>30 days to each month's last update</small></div>
-				<div class="table-wrap">
-					<table class="doc-table ins-table">
-						<thead><tr><th>Month</th><th>Followers</th><th>Accounts reached</th><th>Views</th><th>Accounts engaged</th><th>Reels engagement</th></tr></thead>
-						<tbody>
-							{#each months as m (m.month)}
-								<tr><td>{monthName(m.month)}</td><td>{m.followers ? compact(m.followers) : '—'}</td><td>{m.reach ? compact(m.reach) : '—'}</td><td>{m.views ? compact(m.views) : '—'}</td><td>{m.engaged ? compact(m.engaged) : '—'}</td><td>{m.reels_er ? `${m.reels_er}%` : '—'}</td></tr>
-							{/each}
-						</tbody>
-					</table>
-				</div>
-			</section>
-		{/if}
 
 		{#if d.top.length && show('top')}
 			<section class="rv ins-top" style="--i:9" aria-label="Top content">

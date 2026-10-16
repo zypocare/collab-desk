@@ -60,7 +60,6 @@ export const SECTIONS = [
 	{ k: 'audience', label: 'Audience' },
 	{ k: 'sponsored', label: 'Sponsored vs regular' },
 	{ k: 'topics', label: 'What performs best' },
-	{ k: 'months', label: 'Month by month' },
 	{ k: 'top', label: 'Top content' },
 	{ k: 'collabs', label: 'Past brand collabs' }
 ] as const;

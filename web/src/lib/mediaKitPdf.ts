@@ -3,13 +3,13 @@
 // top content and past collab results, then a QR code to her brand page. If she doesn't share insights,
 // a one-page version with the basic numbers and audience.
 import { supabase } from './supabase';
-import { audienceOf, audienceSummary, basedOn, benchmark, engageMix, formatRows, FORMAT_LABEL, insightKpis, monthName, sponsoredLine, type PublicInsights } from './insights';
+import { audienceOf, audienceSummary, basedOn, benchmark, engageMix, formatRows, FORMAT_LABEL, insightKpis, sponsoredLine, type PublicInsights } from './insights';
 import fontkit from '@pdf-lib/fontkit';
 import { PDFDocument, rgb, type PDFFont, type PDFImage, type PDFPage, type RGB } from 'pdf-lib';
 import { qrMatrix } from './invoice';
 import { loadFonts, wrap } from './invoicePdf';
 import type { PublicPage } from './types';
-import { compact, fmt, fmtUpdated, initials, mediaLabel } from './util';
+import { compact, fmt, fmtUpdated, initials } from './util';
 
 const INK = rgb(0.12, 0.09, 0.11);
 const MUTED = rgb(0.45, 0.41, 0.44);
@@ -238,7 +238,7 @@ async function insightsPages(doc: PDFDocument, p: PublicPage, d: PublicInsights,
 	};
 	const UP = rgb(0.17, 0.48, 0.27), DOWN = rgb(0.75, 0.2, 0.2);
 
-	// Header band (repeated, smaller, on any further page).
+	// Header band.
 	const photoBytes = await circlePhoto(d.profile_picture_url ?? '');
 	const photo: PDFImage | null = photoBytes ? await doc.embedPng(photoBytes).catch(() => null) : null;
 	const header = (first: boolean) => {
@@ -272,12 +272,13 @@ async function insightsPages(doc: PDFDocument, p: PublicPage, d: PublicInsights,
 		}
 		y = H - bh - 22;
 	};
-	const need = (h: number) => {
-		if (y - h >= M - 10) return;
-		page = doc.addPage([W, H]);
-		header(false);
-	};
 	header(true);
+	// Everything below the header is laid out on a tall scratch page, then placed on the A4 page (shrunk
+	// only if it doesn't fit), so the media kit is always one page.
+	const a4 = page, bodyTop = y + 14, TALL = 3000;
+	page = doc.addPage([W, TALL]);
+	y = TALL - 14;
+	const need = (_h: number) => {};
 
 	if (d.insights.from) {
 		text(`Last 30 days: ${fmt(d.insights.from)} to ${fmt(d.insights.to ?? '')}.`, M, y, 8.5, reg, MUTED);
@@ -365,54 +366,49 @@ async function insightsPages(doc: PDFDocument, p: PublicPage, d: PublicInsights,
 		return top - yy;
 	};
 
-	// ---- how people engage (left) and followers (right) ----
+	// ---- smaller sections, two per row: how people engage, what performs best, sponsored, followers ----
 	const eng = show('engage') ? engageMix(d) : [];
 	const hist = show('engage') ? (d.history ?? []) : [];
-	if (eng.length || hist.length >= 3) {
-		need(100);
-		const top = y;
-		const lh = eng.length ? bars(M, top, half, 'How people engage · 30 days', eng, (v) => compact(v)) : 0;
-		let rh = 0;
-		if (hist.length >= 3) {
-			label(`Followers · ${fmt(hist[0].day)} to ${fmt(hist[hist.length - 1].day)}`, rx, top);
-			const ys = hist.map((h) => h.followers), lo = Math.min(...ys), hi = Math.max(...ys), span = hi - lo || 1;
-			const gx = rx, gy = top - 62, gw = half, gh = 46;
-			page.drawRectangle({ x: gx, y: gy, width: gw, height: gh + 6, color: SOFT });
-			const pt = (i: number) => ({ x: gx + 4 + (i / (hist.length - 1)) * (gw - 8), y: gy + 4 + ((ys[i] - lo) / span) * (gh - 4) });
-			for (let i = 1; i < hist.length; i++) page.drawLine({ start: pt(i - 1), end: pt(i), thickness: 1.6, color: G2 });
-			text(compact(ys[0]), gx, gy - 11, 8, reg, MUTED);
-			right(compact(ys[ys.length - 1]), gx + gw, gy - 11, 8, bold);
-			rh = 80;
-		}
-		y = top - Math.max(lh, rh) - 14;
-	}
-
-	// ---- sponsored vs regular (left) and what performs best (right) ----
 	const sp = show('sponsored') ? (d.insights.sponsored ?? null) : null;
 	const spLine = sponsoredLine(sp);
 	const topics = show('topics') ? (d.insights.topics ?? []) : [];
-	if ((sp && spLine) || topics.length) {
-		need(30 + Math.max(4, topics.length) * 22);
-		const top = y;
-		let lh = 0;
-		if (sp && spLine) {
-			label('Sponsored vs regular posts · typical post', M, top);
-			for (const [i, l] of wrap(`${spLine}.`, bold, 9.5, half).slice(0, 2).entries()) text(l, M, top - 17 - i * 12, 9.5, bold);
-			const rows: [string, typeof sp.sponsored][] = [['Sponsored', sp.sponsored], ['Regular', sp.regular]];
-			let yy = top - 50;
-			['', 'Reach', 'Views', 'Engagement'].forEach((h, i) => i && right(h, M + half * [0, 0.55, 0.78, 1][i], yy, 8, bold, MUTED));
-			for (const [k, st] of rows) {
+	const blocks: ((x: number, top: number, w: number) => number)[] = [];
+	if (eng.length) blocks.push((x, top, w) => bars(x, top, w, 'How people engage · 30 days', eng, (v) => compact(v)));
+	if (topics.length)
+		blocks.push((x, top, w) => bars(x, top, w, 'What performs best · typical views', topics.map((t) => ({ k: t.k, v: t.med_views ?? 0, note: `${t.posts} post${t.posts === 1 ? '' : 's'}` })), (v) => compact(v)));
+	if (sp && spLine)
+		blocks.push((x, top, w) => {
+			label('Sponsored vs regular · typical post', x, top);
+			const lines = wrap(`${spLine}.`, bold, 9.5, w).slice(0, 2);
+			lines.forEach((l, i) => text(l, x, top - 17 - i * 12, 9.5, bold));
+			let yy = top - 22 - lines.length * 12;
+			['Reach', 'Views', 'Engagement'].forEach((h, i) => right(h, x + w * [0.55, 0.78, 1][i], yy, 8, bold, MUTED));
+			for (const [k, st] of [['Sponsored', sp.sponsored], ['Regular', sp.regular]] as const) {
 				yy -= 15;
-				text(`${k} (${basedOn(st)})`, M, yy, 9.5, bold);
-				right(compact(st.med_reach), M + half * 0.55, yy, 9.5);
-				right(compact(st.med_views), M + half * 0.78, yy, 9.5);
-				right(st.er != null ? `${st.er}%` : '-', M + half, yy, 9.5, bold);
+				text(`${k} (${basedOn(st)})`, x, yy, 9.5, bold);
+				right(compact(st.med_reach), x + w * 0.55, yy, 9.5);
+				right(compact(st.med_views), x + w * 0.78, yy, 9.5);
+				right(st.er != null ? `${st.er}%` : '-', x + w, yy, 9.5, bold);
 			}
-			lh = top - yy + 6;
-		}
-		const tx = sp && spLine ? rx : M, tw = sp && spLine ? half : CW;
-		const th = topics.length ? bars(tx, top, tw, 'What performs best · typical views by topic', topics.map((t) => ({ k: t.k, v: t.med_views ?? 0, note: `${t.posts} post${t.posts === 1 ? '' : 's'}` })), (v) => compact(v)) : 0;
-		y = top - Math.max(lh, th) - 14;
+			return top - yy + 6;
+		});
+	if (hist.length >= 3)
+		blocks.push((x, top, w) => {
+			label(`Followers · ${fmt(hist[0].day)} to ${fmt(hist[hist.length - 1].day)}`, x, top);
+			const ys = hist.map((h) => h.followers), lo = Math.min(...ys), hi = Math.max(...ys), span = hi - lo || 1;
+			const gy = top - 62, gh = 46;
+			page.drawRectangle({ x, y: gy, width: w, height: gh + 6, color: SOFT });
+			const pt = (i: number) => ({ x: x + 4 + (i / (hist.length - 1)) * (w - 8), y: gy + 4 + ((ys[i] - lo) / span) * (gh - 4) });
+			for (let i = 1; i < hist.length; i++) page.drawLine({ start: pt(i - 1), end: pt(i), thickness: 1.6, color: G2 });
+			text(compact(ys[0]), x, gy - 11, 8, reg, MUTED);
+			right(compact(ys[ys.length - 1]), x + w, gy - 11, 8, bold);
+			return 80;
+		});
+	for (let i = 0; i < blocks.length; i += 2) {
+		const top = y;
+		const h1 = blocks[i](M, top, half);
+		const h2 = blocks[i + 1] ? blocks[i + 1](rx, top, half) : 0;
+		y = top - Math.max(h1, h2) - 14;
 	}
 
 	// ---- audience: age, gender, top cities, top countries ----
@@ -464,24 +460,7 @@ async function insightsPages(doc: PDFDocument, p: PublicPage, d: PublicInsights,
 		y = top - 16 - rows * 14 - 12;
 	}
 
-	// ---- month by month ----
-	const months = show('months') ? (d.months ?? []).filter((m) => m.reach || m.views) : [];
-	if (months.length >= 2) {
-		need(30 + months.length * 16);
-		label('Month by month · 30 days to each month\'s last update', M, y);
-		const cx = [M, 0.3, 0.46, 0.62, 0.8, 1].map((f, i) => (i === 0 ? M : M + CW * f));
-		let yy = y - 18;
-		['Month', 'Followers', 'Reached', 'Views', 'Engaged', 'Reels engagement'].forEach((h, i) => (i === 0 ? text(h, cx[0], yy, 8, bold, MUTED) : right(h, cx[i], yy, 8, bold, MUTED)));
-		for (const m of months) {
-			yy -= 16;
-			text(monthName(m.month), cx[0], yy, 9.5, bold);
-			[m.followers, m.reach, m.views, m.engaged].forEach((v, i) => right(v ? compact(v) : '-', cx[i + 1], yy, 9.5));
-			right(m.reels_er ? `${m.reels_er}%` : '-', cx[5], yy, 9.5, bold);
-		}
-		y = yy - 22;
-	}
-
-	// ---- post grids: top content and past brand collabs ----
+	// ---- past brand collabs ----
 	const tw = (CW - 5 * 9) / 6, th = Math.round(tw * 0.9);
 	const grid = async (title: string, items: { img: string; t: string; n: string; n2?: string; url: string }[]) => {
 		if (!items.length) return;
@@ -507,10 +486,6 @@ async function insightsPages(doc: PDFDocument, p: PublicPage, d: PublicInsights,
 	};
 	const views = (v: number | null, r: number | null) => (v ? `${compact(v)} views` : r ? `${compact(r)} reached` : '');
 	await grid(
-		'Top performing content',
-		(show('top') ? (d.top ?? []) : []).slice(0, 6).map((m) => ({ img: m.thumbnail_url, url: m.permalink, t: `${mediaLabel(m.media_type, m.product_type)} · ${fmt(m.posted_at.slice(0, 10))}`, n: views(m.views, m.reach), n2: m.interactions ? `${compact(m.interactions)} interactions` : '' }))
-	);
-	await grid(
 		'Past brand collabs · how collab posts performed',
 		(show('collabs') ? (p.results ?? []) : []).slice(0, 6).map((r) => ({ img: r.thumbnail, url: r.permalink, t: `${kindLabel(r.kind)} · ${r.brand}`, n: views(r.views, r.reach) }))
 	);
@@ -529,6 +504,11 @@ async function insightsPages(doc: PDFDocument, p: PublicPage, d: PublicInsights,
 	text('Send a collaboration request and track it live at', M + 16, fy + fh - 43, 9, reg, MUTED);
 	text(site, M + 16, fy + fh - 58, 10.5, bold, G2);
 	text(`Usually replies within ${p.reply_time}. Live insights: ${site}/insights`, M + 16, fy + 12, 8, reg, MUTED);
+
+	const body = await doc.embedPage(page, { left: 0, bottom: fy - 6, right: W, top: TALL });
+	doc.removePage(doc.getPageCount() - 1);
+	const scale = Math.min(1, (bodyTop - 22) / body.height);
+	a4.drawPage(body, { x: (W - W * scale) / 2, y: bodyTop - body.height * scale, xScale: scale, yScale: scale });
 }
 
 export async function downloadMediaKit(p: PublicPage, link: string, hide: string[] = []) {
