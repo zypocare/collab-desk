@@ -142,6 +142,8 @@ export type Collab = {
 	live_time: string | null;
 	post_alert_at: string | null;
 	shot_list: { t: string; done: boolean }[];
+	files?: { id: string; label: string; url: string; file_path: string | null; file_type: string; size_bytes: number; created_at: string; downloaded_at: string | null }[];
+	files_sent_at: string | null;
 	expenses?: { id: string; collab_id: string; label: string; category: 'props' | 'travel' | 'editor' | 'shoot' | 'other'; amount: number; spent_on: string }[];
 	ship_carrier: string;
 	ship_tracking: string;

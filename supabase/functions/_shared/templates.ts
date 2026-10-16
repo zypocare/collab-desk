@@ -423,6 +423,20 @@ export function render(kind: string, p: Payload, s: Settings): Omit<Mail, 'to'> 
     };
   }
 
+  if (kind === 'files_ready') {
+    const n = Number(p.count) || 0;
+    return {
+      subject: `${code}: your files from ${first(s.display_name)} are ready`,
+      html: layout(
+        s,
+        `Your files are ready`,
+        `<p style="margin:0">Hi ${esc(firstOf(p.contact))}, ${esc(s.display_name)} has shared ${n} file${n === 1 ? '' : 's'} for <b>${esc(code)}</b>. Download them any time in the next 90 days. No sign-in needed.</p>`,
+        p.action ? { label: 'Download the files', href: url(s, `/files/${p.action}`) } : { label: 'Open your request', href: url(s, `/brand/r/${encodeURIComponent(code)}`) },
+      ),
+      text: `${n} file(s) for ${code}: ${url(s, p.action ? `/files/${p.action}` : `/brand/r/${code}`)}`,
+    };
+  }
+
   if (kind === 'email_request') {
     return {
       subject: `New request by email: ${brand}`,

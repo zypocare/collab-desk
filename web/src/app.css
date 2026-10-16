@@ -1737,3 +1737,13 @@ body:has(.batch-bar) .fab{display:none}
 .exp-add .sel{width:auto;min-width:150px;flex:none}
 .exp-add > .inp{flex:1;min-width:160px}
 .exp-amt{width:110px;flex:none}
+
+/* Files for the brand */
+.files-add{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px}
+.files-add label.btn{cursor:pointer}
+.files-add label.btn.disabled{opacity:.5;pointer-events:none}
+.fdl-row{display:flex;align-items:center;gap:12px;padding:14px 20px;border-top:1px solid var(--line)}
+.fdl-row:first-child{border-top:0}
+.fdl-row > div{flex:1;min-width:0}
+.fdl-row b{display:block;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fdl-row small{color:var(--ink-3);font-size:12px}

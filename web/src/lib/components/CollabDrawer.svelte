@@ -51,6 +51,7 @@
 	import { bestTime, timeLabel, timeOptions } from '../postTime';
 	import DraftPlayer from './DraftPlayer.svelte';
 	import CollabCosts from './CollabCosts.svelte';
+	import CollabFiles from './CollabFiles.svelte';
 	import { BRIEF_NEEDS, briefMissing } from '../content';
 	import Mono from './Mono.svelte';
 	import QuoteDialog from './QuoteDialog.svelte';
@@ -570,6 +571,7 @@
 				</section>
 			{/if}
 
+			{#if ['confirmed', 'creating', 'live', 'wrapped'].includes(c.stage) || c.files?.length}<CollabFiles {c} />{/if}
 			{#if ['confirmed', 'creating', 'live', 'wrapped'].includes(c.stage) || c.expenses?.length}<CollabCosts {c} />{/if}
 
 			<section class="sec">
