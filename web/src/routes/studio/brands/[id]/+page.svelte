@@ -45,7 +45,7 @@
 		</div>
 	</header>
 
-	<section class="kpis" style="grid-template-columns:repeat(4,minmax(0,1fr))" aria-label="Brand summary">
+	<section class="kpis k4" aria-label="Brand summary">
 		<div class="kpi glow rv" style="--i:1"><div><div class="lbl">Earned</div><div class="big" use:countUp={{ value: s.paid, money: true }}>{inr(s.paid)}</div><div class="sub">{s.outstanding ? `${inr(s.outstanding)} still due` : 'nothing due'}</div></div></div>
 		<div class="kpi glow rv" style="--i:2"><div><div class="lbl">Collabs</div><div class="big" use:countUp={{ value: s.count }}>{s.count}</div><div class="sub">{s.active} active</div></div></div>
 		<div class="kpi glow rv" style="--i:3"><div><div class="lbl">Barter value</div><div class="big" use:countUp={{ value: s.barter, money: true }}>{inr(s.barter)}</div><div class="sub">products received</div></div></div>

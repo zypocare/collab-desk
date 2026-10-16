@@ -60,10 +60,19 @@
 		{:else}
 			<span class="who-chip"><span>{auth.account?.email}</span></span>
 		{/if}
-		<button class="btn sm" onclick={logout}><Icon name="logout" />Sign out</button>
+		<button class="btn sm signout" onclick={logout} aria-label="Sign out"><Icon name="logout" /><span>Sign out</span></button>
 	{:else if auth.account?.role === 'creator'}
 		<a class="btn sm" href="/studio"><Icon name="back" />Back to studio</a>
 	{:else}
 		<a class="btn sm" href="/login">Sign in</a>
 	{/if}
 </header>
+
+{#if signedIn}
+	<!-- Phones and tablets: the brand menu moves to a tab bar at the bottom. -->
+	<nav class="brand-tabs" aria-label="Brand">
+		<a href="/brand" aria-current={path === '/brand' || path.startsWith('/brand/r/') ? 'page' : undefined}><Icon name="inbox" /><span>Requests</span></a>
+		<a href="/brand/new" aria-current={path === '/brand/new' ? 'page' : undefined}><Icon name="send" /><span>New</span></a>
+		<a href="/brand/details" aria-current={path.startsWith('/brand/details') ? 'page' : undefined}><Icon name="users" /><span>Company</span></a>
+	</nav>
+{/if}

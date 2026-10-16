@@ -90,11 +90,12 @@ export async function invoicePdf(inv: InvoiceView): Promise<Uint8Array> {
 		inv.bill_to.state ? `State: ${inv.bill_to.state}` : '',
 		inv.bill_to.contact ? `Attn: ${inv.bill_to.contact}${inv.bill_to.email ? ` · ${inv.bill_to.email}` : ''}` : ''
 	].filter(Boolean);
-	const boxH = 30 + billLines.length * 12;
+	// 14pt padding top and bottom so no line sits on the box edge.
+	const boxH = 46 + billLines.length * 12.5;
 	page.drawRectangle({ x: M, y: y - boxH, width: W - 2 * M, height: boxH, color: rgb(0.965, 0.95, 0.95) });
-	text('BILL TO', M + 14, y - 16, 7.5, bold, MUTED);
-	text(inv.bill_to.name, M + 14, y - 30, 11, bold);
-	let by = y - 43;
+	text('BILL TO', M + 14, y - 17, 7.5, bold, MUTED);
+	text(inv.bill_to.name, M + 14, y - 32, 11, bold);
+	let by = y - 46;
 	for (const l of billLines) (text(l, M + 14, by, 9, reg, MUTED), (by -= 12));
 	y -= boxH + 22;
 
@@ -150,9 +151,12 @@ export async function invoicePdf(inv: InvoiceView): Promise<Uint8Array> {
 	}
 	hr(y);
 	y -= 22;
-	text('HOW TO PAY', M, y, 7.5, bold, MUTED);
-	y -= 4;
 	const due = balanceDue(inv);
+	// The heading only when there is something under it (UPI or bank details).
+	if ((inv.seller.upi_id && due > 0) || inv.seller.bank_details) {
+		text('HOW TO PAY', M, y, 7.5, bold, MUTED);
+		y -= 6;
+	}
 	if (inv.seller.upi_id && due > 0) {
 		const m = qrMatrix(upiLink(inv));
 		const size = 104, cell = size / m.length;
@@ -171,7 +175,11 @@ export async function invoicePdf(inv: InvoiceView): Promise<Uint8Array> {
 		text('Bank transfer', M, y, 10, bold);
 		y -= 14;
 		for (const l of wrap(inv.seller.bank_details, reg, 9, W - 2 * M)) (text(l, M, y, 9, reg, MUTED), (y -= 12));
-		y -= 8;
+		y -= 10;
+	}
+	if (inv.seller.upi_id || inv.seller.bank_details) {
+		hr(y + 2);
+		y -= 16;
 	}
 	const footer = [
 		inv.notes,

@@ -70,89 +70,100 @@
 					>
 				</div>
 			</section>
-			{#if stats.length}
-				<div class="stats">
-					{#each stats as s, i (s.label)}
-						{@const n = parseStat(s.raw)}
-						<div class="stat glow rv" style="--i:{i + 2}">
-							{#if n}<b use:countUp={{ value: n.value, decimals: n.decimals, suffix: n.suffix }}>{s.raw}</b>{:else}<b>{s.raw}</b>{/if}
-							<small>{s.label}</small>
-						</div>
-					{/each}
-				</div>
-			{/if}
-			{#if p.instagram}
-				<p class="live-chip rv" style="--i:4"><span class="dt pulse k-live"></span>Live from Instagram{p.instagram.updated_at ? ` · updated ${fmt(p.instagram.updated_at.slice(0, 10))}` : ''}</p>
-			{/if}
-			{#if p.worked_with.length}
-				<div class="marquee rv" style="--i:5">
-					<span class="mq-l">Worked with</span>
-					<div class="mq"><div class="mq-track">{#each [0, 1, 2, 3] as k (k)}{#each p.worked_with as n (n)}<span>{n}</span>{/each}{/each}</div></div>
-				</div>
-			{/if}
-
-			{#if p.instagram?.demographics}<Audience demo={p.instagram.demographics} />{/if}
-
-			{#if p.availability?.length && p.accepting}
-				<section class="avail-wk rv" style="--i:5" aria-label="Availability">
-					<div class="pkgs-h"><h2>Availability</h2><p>Next 8 weeks</p></div>
-					<div class="wk-strip">
-						{#each p.availability as w (w.start)}
-							<div class="wk wk-{w.status}"><b>{new Date(w.start + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</b><small>{w.status === 'open' ? 'Open' : w.status === 'limited' ? '1 spot left' : w.status === 'full' ? 'Full' : 'Away'}</small></div>
-						{/each}
-					</div>
-				</section>
-			{/if}
-
-			{#if p.packages?.some((x) => packageOffered(x.items, p.offered)) && p.accepting}
-				<section class="pkgs rv" style="--i:6" aria-label="Packages">
-					<div class="pkgs-h"><h2>Packages</h2><p>Book a ready-made bundle in one tap.</p></div>
-					<div class="pkg-grid">
-						{#each p.packages.filter((x) => packageOffered(x.items, p.offered)) as k, i (k.id)}
-							{@const rate = rateValue(k.items, p.rates)}
-							{@const save = rate > k.price && k.price ? Math.round((1 - k.price / rate) * 100) : 0}
-							<article class="pkg glow" class:hot={!!k.badge} style="--i:{i}">
-								{#if k.badge}<span class="pkg-badge">{k.badge}</span>{/if}
-								<h3>{k.name}</h3>
-								{#if k.description}<p>{k.description}</p>{/if}
-								<div class="pkg-items">{delivText(k.items)}</div>
-								<div class="pkg-price">
-									<b>{inr(k.price)}</b>
-									{#if save >= 3}<s>{inr(rate)}</s><span class="pkg-save">Save {save}%</span>{/if}
+			<!-- Wide screens: details on the left, a sticky sidebar with the request button and availability. -->
+			<div class="bp-grid">
+				<div class="bp-main">
+					{#if stats.length}
+						<div class="stats">
+							{#each stats as s, i (s.label)}
+								{@const n = parseStat(s.raw)}
+								<div class="stat glow rv" style="--i:{i + 2}">
+									{#if n}<b use:countUp={{ value: n.value, decimals: n.decimals, suffix: n.suffix }}>{s.raw}</b>{:else}<b>{s.raw}</b>{/if}
+									<small>{s.label}</small>
 								</div>
-								<a class="btn {k.badge ? 'grad' : ''}" href={bookHref(k.id)}><Icon name="send" />Book this</a>
-							</article>
-						{/each}
-					</div>
-				</section>
-			{/if}
-
-			<section class="panel rv" style="--i:6;overflow:hidden">
-				<div class="bsec">
-					<div class="bsec-h"><h2>Work with {firstName(p.display_name)}</h2></div>
-					<div class="types" style="grid-template-columns:repeat(3,minmax(0,1fr))">
-						<div class="type-card static"><Icon name="mail" /><b>1. Sign in</b><small>With your work email and a one-time code. No password.</small></div>
-						<div class="type-card static"><Icon name="send" /><b>2. Send your request</b><small>Paid, barter or both. Pick the content you need.</small></div>
-						<div class="type-card static"><Icon name="eye" /><b>3. Follow along</b><small>See every step, from first reply to going live.</small></div>
-					</div>
-				</div>
-				{#if p.rates}
-					<div class="bsec">
-						<div class="bsec-h"><h2>Starting rates</h2></div>
-						<div class="dpick">
-							{#each Object.entries(p.rates).filter(([k, v]) => v && offeredKinds(p.offered).includes(k)) as [k, v] (k)}
-								<div class="dp"><div><b>{k}</b><small>from {inr(v)}</small></div></div>
 							{/each}
 						</div>
-					</div>
-				{/if}
-				<div class="submit-row">
-					<p>{p.accepting ? `${firstName(p.display_name)} usually replies within ${p.reply_time}.` : 'New requests are paused right now. You can still follow requests you already sent.'}</p>
-					<button class="btn" onclick={kit} disabled={kitBusy}>{#if kitBusy}<span class="spinner"></span>{:else}<Icon name="film" />{/if}Media kit</button>
-					<a class="btn" href={trackHref}><Icon name="search" />Track my requests</a>
-					{#if p.accepting}<a class="btn grad lg" href={requestHref}><Icon name="send" />Send a request</a>{/if}
+					{/if}
+					{#if p.instagram}
+						<p class="live-chip rv" style="--i:4"><span class="dt pulse k-live"></span>Live from Instagram{p.instagram.updated_at ? ` · updated ${fmt(p.instagram.updated_at.slice(0, 10))}` : ''}</p>
+					{/if}
+					{#if p.worked_with.length}
+						<div class="marquee rv" style="--i:5">
+							<span class="mq-l">Worked with</span>
+							<div class="mq"><div class="mq-track">{#each [0, 1, 2, 3] as k (k)}{#each p.worked_with as n (n)}<span>{n}</span>{/each}{/each}</div></div>
+						</div>
+					{/if}
+					{#if p.packages?.some((x) => packageOffered(x.items, p.offered)) && p.accepting}
+						<section class="pkgs rv" style="--i:6" aria-label="Packages">
+							<div class="pkgs-h"><h2>Packages</h2><p>Book a ready-made bundle in one tap.</p></div>
+							<div class="pkg-grid">
+								{#each p.packages.filter((x) => packageOffered(x.items, p.offered)) as k, i (k.id)}
+									{@const rate = rateValue(k.items, p.rates)}
+									{@const save = rate > k.price && k.price ? Math.round((1 - k.price / rate) * 100) : 0}
+									<article class="pkg glow" class:hot={!!k.badge} style="--i:{i}">
+										{#if k.badge}<span class="pkg-badge">{k.badge}</span>{/if}
+										<h3>{k.name}</h3>
+										{#if k.description}<p>{k.description}</p>{/if}
+										<div class="pkg-items">{delivText(k.items)}</div>
+										<div class="pkg-price">
+											<b>{inr(k.price)}</b>
+											{#if save >= 3}<s>{inr(rate)}</s><span class="pkg-save">Save {save}%</span>{/if}
+										</div>
+										<a class="btn {k.badge ? 'grad' : ''}" href={bookHref(k.id)}><Icon name="send" />Book this</a>
+									</article>
+								{/each}
+							</div>
+						</section>
+					{/if}
+					{#if p.instagram?.demographics}<Audience demo={p.instagram.demographics} />{/if}
+					<section class="panel rv" style="--i:6;overflow:hidden">
+						<div class="bsec">
+							<div class="bsec-h"><h2>Work with {firstName(p.display_name)}</h2></div>
+							<div class="types t3">
+								<div class="type-card static"><Icon name="mail" /><b>1. Sign in</b><small>With your work email and a one-time code. No password.</small></div>
+								<div class="type-card static"><Icon name="send" /><b>2. Send your request</b><small>Paid, barter or both. Pick the content you need.</small></div>
+								<div class="type-card static"><Icon name="eye" /><b>3. Follow along</b><small>See every step, from first reply to going live.</small></div>
+							</div>
+						</div>
+						{#if p.rates}
+							<div class="bsec">
+								<div class="bsec-h"><h2>Starting rates</h2></div>
+								<div class="dpick">
+									{#each Object.entries(p.rates).filter(([k, v]) => v && offeredKinds(p.offered).includes(k)) as [k, v] (k)}
+										<div class="dp"><div><b>{k}</b><small>from {inr(v)}</small></div></div>
+									{/each}
+								</div>
+							</div>
+						{/if}
+						<div class="submit-row">
+							<p>{p.accepting ? `${firstName(p.display_name)} usually replies within ${p.reply_time}.` : 'New requests are paused right now. You can still follow requests you already sent.'}</p>
+							<button class="btn" onclick={kit} disabled={kitBusy}>{#if kitBusy}<span class="spinner"></span>{:else}<Icon name="film" />{/if}Media kit</button>
+							<a class="btn" href={trackHref}><Icon name="search" />Track my requests</a>
+							{#if p.accepting}<a class="btn grad lg" href={requestHref}><Icon name="send" />Send a request</a>{/if}
+						</div>
+					</section>
 				</div>
-			</section>
+				<aside class="bp-side">
+					{#if p.accepting}
+						<section class="bp-cta rv" style="--i:3">
+							<b>Work with {firstName(p.display_name)}</b>
+							<p>Usually replies within {p.reply_time}. Paid collaborations are reviewed first.</p>
+							<a class="btn grad lg" href={requestHref}><Icon name="send" />Send a request</a>
+							<div class="row"><a class="btn sm" href={trackHref}><Icon name="search" />Track requests</a><button class="btn sm" onclick={kit} disabled={kitBusy}>{#if kitBusy}<span class="spinner"></span>{:else}<Icon name="film" />{/if}Media kit</button></div>
+						</section>
+					{/if}
+					{#if p.availability?.length && p.accepting}
+						<section class="avail-wk rv" style="--i:5" aria-label="Availability">
+							<div class="pkgs-h"><h2>Availability</h2><p>Next 8 weeks</p></div>
+							<div class="wk-strip">
+								{#each p.availability as w (w.start)}
+									<div class="wk wk-{w.status}"><b>{new Date(w.start + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</b><small>{w.status === 'open' ? 'Open' : w.status === 'limited' ? '1 spot left' : w.status === 'full' ? 'Full' : 'Away'}</small></div>
+								{/each}
+							</div>
+						</section>
+					{/if}
+				</aside>
+			</div>
 			<p class="foot">Requests go straight to {firstName(p.display_name)}. Your details are only used to reply to you.</p>
 		</div>
 	{:else}

@@ -138,6 +138,9 @@
 	{#if error}<div class="err-box">{error}</div>{/if}
 
 	<!-- Quote waiting for an answer -->
+	<!-- Wide screens: what needs the brand on the left, status and documents on the right. -->
+	<div class="r-grid">
+		<div class="r-main">
 	{#if openQuote}
 		<section class="panel rv action-panel" style="--i:1">
 			<div class="panel-h"><h2>Quote from {creator}</h2><span class="pill tint k-new">Needs your answer</span></div>
@@ -227,6 +230,8 @@
 		</div>
 	</section>
 
+		</div>
+		<aside class="r-side">
 	<section class="panel rv" style="--i:3;padding:24px;margin-top:18px">
 		{#if r.note_for_brand}
 			<blockquote class="note"><span>Latest from {creator}</span><p>{r.note_for_brand}</p></blockquote>
@@ -305,4 +310,6 @@
 			{#if r.brief}<p style="padding:0 20px 20px;white-space:pre-wrap;color:var(--ink-2)">{r.brief}</p>{/if}
 		</section>
 	{/if}
+		</aside>
+	</div>
 {/if}

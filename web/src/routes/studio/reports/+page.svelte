@@ -56,7 +56,7 @@
 	</div>
 </header>
 
-<section class="kpis" style="grid-template-columns:repeat(4,minmax(0,1fr))" aria-label="Year summary">
+<section class="kpis k4" aria-label="Year summary">
 	<div class="kpi glow rv" style="--i:1"><div><div class="lbl">Money received</div><div class="big" use:countUp={{ value: r.total.received, money: true }}>{inr(r.total.received)}</div><div class="sub">+ {inr(r.total.tds)} TDS deducted</div></div></div>
 	<div class="kpi glow rv" style="--i:2"><div><div class="lbl">Invoiced</div><div class="big" use:countUp={{ value: r.total.taxable, money: true }}>{inr(r.total.taxable)}</div><div class="sub">{r.total.invoices} invoice{r.total.invoices === 1 ? '' : 's'}, before GST</div></div></div>
 	<div class="kpi glow rv" style="--i:3"><div><div class="lbl">GST charged</div><div class="big" use:countUp={{ value: r.total.gst, money: true }}>{inr(r.total.gst)}</div><div class="sub">{s.gst_registered ? 'to pay with your GST returns' : 'not registered for GST'}</div></div></div>
