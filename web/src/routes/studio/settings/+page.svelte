@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { saveSettings, studio } from '#lib/studio.svelte.ts';
-	import type { Settings } from '#lib/types.ts';
+	import type { PublicPage, Settings } from '#lib/types.ts';
+	import { supabase } from '#lib/supabase.ts';
+	import { downloadMediaKit } from '#lib/mediaKitPdf.ts';
 	import { copyText, toast } from '#lib/ui.svelte.ts';
 	import { KINDS } from '#lib/util.ts';
 	import Icon from '#lib/components/Icon.svelte';
@@ -31,6 +33,14 @@
 		if ((k === 'display_name' || k === 'app_name' || k === 'site_url') && !clean) return;
 		saveSettings({ [k]: clean } as Partial<Settings>);
 	}
+	let kitBusy = $state(false);
+	async function kit() {
+		kitBusy = true;
+		const { data, error } = await supabase.rpc('public_page');
+		if (error || !data) toast(`Couldn't make the media kit: ${error?.message ?? 'no data'}`, 'alert');
+		else await downloadMediaKit(data as PublicPage, link).catch((e) => toast(`Couldn't make the media kit: ${e}`, 'alert'));
+		kitBusy = false;
+	}
 	function toggle(k: 'accepting' | 'show_rates', on: boolean) {
 		saveSettings({ [k]: on });
 		toast(k === 'accepting' ? (on ? 'Your page is open for requests' : 'New requests are paused') : on ? 'Rates shown on your page' : 'Rates hidden from your page');
@@ -58,6 +68,7 @@
 				<div class="row">
 					<button class="btn" onclick={() => copyText(link, 'Link copied')}><Icon name="copy" />Copy link</button>
 					<a class="btn out" href="/?preview=1" target="_blank" rel="noopener"><Icon name="eye" />Preview your page</a>
+					<button class="btn out" onclick={kit} disabled={kitBusy}>{#if kitBusy}<span class="spinner"></span>{:else}<Icon name="film" />{/if}Media kit PDF</button>
 				</div>
 			</div>
 		</section>

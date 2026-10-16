@@ -13,7 +13,7 @@ const money = (n: number) => '₹' + n.toLocaleString('en-IN', { minimumFraction
 const dateText = (d: string | null) =>
 	d ? new Date(d.slice(0, 10) + 'T00:00:00').toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
 
-function wrap(text: string, font: PDFFont, size: number, width: number): string[] {
+export function wrap(text: string, font: PDFFont, size: number, width: number): string[] {
 	const lines: string[] = [];
 	for (const para of String(text ?? '').split(/\r?\n/)) {
 		let line = '';
@@ -30,7 +30,7 @@ function wrap(text: string, font: PDFFont, size: number, width: number): string[
 }
 
 let fontCache: Promise<[ArrayBuffer, ArrayBuffer]> | null = null;
-const loadFonts = () =>
+export const loadFonts = () =>
 	(fontCache ??= Promise.all([
 		fetch('/fonts/Inter-Regular.ttf').then((r) => r.arrayBuffer()),
 		fetch('/fonts/Inter-SemiBold.ttf').then((r) => r.arrayBuffer())

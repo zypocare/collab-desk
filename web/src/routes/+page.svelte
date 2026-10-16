@@ -10,6 +10,7 @@
 	import Audience from '#lib/components/Audience.svelte';
 	import { compact, fmt } from '#lib/util.ts';
 	import Icon from '#lib/components/Icon.svelte';
+	import { downloadMediaKit } from '#lib/mediaKitPdf.ts';
 	import { rateValue } from '#lib/priority.ts';
 	import Avatar from '#lib/components/Avatar.svelte';
 
@@ -26,6 +27,13 @@
 	const signedInBrand = $derived(auth.account?.role === 'brand');
 	const requestHref = $derived(signedInBrand ? '/brand/new' : '/login?next=/brand/new');
 	const trackHref = $derived(signedInBrand ? '/brand' : '/login?next=/brand');
+	let kitBusy = $state(false);
+	async function kit() {
+		if (!p) return;
+		kitBusy = true;
+		await downloadMediaKit(p, location.origin).catch(() => {});
+		kitBusy = false;
+	}
 	const bookHref = (id: string) => (signedInBrand ? `/brand/new?package=${id}` : `/login?next=${encodeURIComponent(`/brand/new?package=${id}`)}`);
 	const stats = $derived(
 		p
@@ -129,6 +137,7 @@
 				{/if}
 				<div class="submit-row">
 					<p>{p.accepting ? `${firstName(p.display_name)} usually replies within ${p.reply_time}.` : 'New requests are paused right now. You can still follow requests you already sent.'}</p>
+					<button class="btn" onclick={kit} disabled={kitBusy}>{#if kitBusy}<span class="spinner"></span>{:else}<Icon name="film" />{/if}Media kit</button>
 					<a class="btn" href={trackHref}><Icon name="search" />Track my requests</a>
 					{#if p.accepting}<a class="btn grad lg" href={requestHref}><Icon name="send" />Send a request</a>{/if}
 				</div>
