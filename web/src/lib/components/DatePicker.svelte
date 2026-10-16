@@ -15,6 +15,7 @@
 		disabled = false,
 		size,
 		class: cls = '',
+		unavailable,
 		onchange
 	}: {
 		/** 'YYYY-MM-DD', or '' for no date (same as a native date input). */
@@ -27,6 +28,8 @@
 		disabled?: boolean;
 		size?: 'sm';
 		class?: string;
+		/** Dates that can't be picked ('YYYY-MM-DD' in, true = greyed out). */
+		unavailable?: (iso: string) => boolean;
 		onchange?: (v: string) => void;
 	} = $props();
 
@@ -67,6 +70,7 @@
 				value={picked}
 				onValueChange={(d) => d && set(d.toString())}
 				{minValue}
+				isDateUnavailable={unavailable ? (d) => unavailable(d.toString()) : undefined}
 				weekdayFormat="short"
 				fixedWeeks
 				locale="en-IN"

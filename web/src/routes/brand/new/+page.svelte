@@ -93,6 +93,17 @@
 				? brandAdvice({ type, fee: Number(fee) || 0, productValue: Number(productValue) || 0, lines }, pub.data, creator)
 				: null
 	);
+	// Weeks she is full or away can't be picked as the go-live date.
+	const weekOf = (isoDate: string) => {
+		const d = new Date(isoDate + 'T00:00:00');
+		d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+		return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+	};
+	const unavailable = (isoDate: string) => {
+		const w = pub.data?.availability?.find((x) => x.start === weekOf(isoDate));
+		return w?.status === 'full' || w?.status === 'away';
+	};
+	const busyWeek = $derived(pub.data?.availability?.some((w) => w.status === 'full' || w.status === 'away') ? `Greyed-out dates are weeks ${creator || 'the creator'} is fully booked or away.` : '');
 	const replyIn = $derived(type === 'barter' ? (barter?.reply_time ?? pub.data?.reply_time) : pub.data?.reply_time);
 
 	async function takeSuggestion() {
@@ -239,7 +250,7 @@
 								{#if errProduct}<div class="err">{errProduct}</div>{/if}
 							</div>
 						{/if}
-						<div class="f"><label for="b-date">Preferred go-live date</label><DatePicker id="b-date" min={rel(3)} bind:value={preferred} placeholder="No preference" /></div>
+						<div class="f"><label for="b-date">Preferred go-live date</label><DatePicker id="b-date" min={rel(3)} bind:value={preferred} placeholder="No preference" {unavailable} />{#if busyWeek}<p class="hint" style="margin-top:6px">{busyWeek}</p>{/if}</div>
 						<div class="f"><label for="b-usage">Usage rights</label><Select id="b-usage" bind:value={usage} options={USAGE.map((u) => ({ value: u, label: u }))} /></div>
 					</div>
 				</div>

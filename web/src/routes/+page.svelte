@@ -93,6 +93,17 @@
 
 			{#if p.instagram?.demographics}<Audience demo={p.instagram.demographics} />{/if}
 
+			{#if p.availability?.length && p.accepting}
+				<section class="avail-wk rv" style="--i:5" aria-label="Availability">
+					<div class="pkgs-h"><h2>Availability</h2><p>Next 8 weeks</p></div>
+					<div class="wk-strip">
+						{#each p.availability as w (w.start)}
+							<div class="wk wk-{w.status}"><b>{new Date(w.start + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</b><small>{w.status === 'open' ? 'Open' : w.status === 'limited' ? '1 spot left' : w.status === 'full' ? 'Full' : 'Away'}</small></div>
+						{/each}
+					</div>
+				</section>
+			{/if}
+
 			{#if p.packages?.length && p.accepting}
 				<section class="pkgs rv" style="--i:6" aria-label="Packages">
 					<div class="pkgs-h"><h2>Packages</h2><p>Book a ready-made bundle in one tap.</p></div>

@@ -251,6 +251,9 @@ export type Settings = {
 	ship_phone: string;
 	draft_days_after_product: number;
 	usage_ext_pct: number;
+	weekly_capacity: number;
+	away_weeks: string[];
+	show_availability: boolean;
 };
 
 export type PublicPage = {
@@ -265,6 +268,7 @@ export type PublicPage = {
 	accepting: boolean;
 	rates: Record<string, number> | null;
 	packages: PublicPackage[];
+	availability: { start: string; status: 'open' | 'limited' | 'full' | 'away' }[] | null;
 	barter: { mode: 'open' | 'selective' | 'closed'; min_value: number; reply_time: string; slots_left: number | null } | null;
 	worked_with: string[];
 	instagram: {

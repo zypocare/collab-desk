@@ -12,6 +12,7 @@
 	import InstagramSettings from '#lib/components/InstagramSettings.svelte';
 	import PriorityRules from '#lib/components/PriorityRules.svelte';
 	import PackagesSettings from '#lib/components/PackagesSettings.svelte';
+	import AvailabilitySettings from '#lib/components/AvailabilitySettings.svelte';
 
 	const s = $derived(studio.settings!);
 	const link = $derived(s.site_url.replace(/\/$/, ''));
@@ -108,6 +109,7 @@
 			</div>
 		</section>
 		<PackagesSettings />
+		<AvailabilitySettings />
 		<PriorityRules />
 		<NotificationSettings />
 		<section class="panel rv" style="--i:4">
