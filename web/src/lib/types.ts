@@ -282,6 +282,9 @@ export type Settings = {
 	nudge_days: number;
 	autopilot_brief: boolean;
 	show_insights: boolean;
+	/** Stories on the insights page, and her own Story averages to use instead of the app's. */
+	insights_stories: boolean;
+	story_stats: { avg_views?: number; avg_reach?: number; avg_interactions?: number };
 	saved_replies: { id: string; title: string; body: string }[];
 	piece_hours: Record<string, number>;
 	weekly_hours: number;

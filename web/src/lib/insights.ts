@@ -1,11 +1,11 @@
 // Profile insights brands ask for, as stored by the Instagram sync (ig_account.insights).
-export type FormatStats = { posts: number; avg_views: number | null; avg_reach: number | null; avg_interactions: number | null; er: number | null };
+export type FormatStats = { posts: number; avg_views: number | null; avg_reach: number | null; avg_interactions: number | null; er: number | null; manual?: boolean };
 export type InsightsData = {
 	from?: string;
 	to?: string;
 	totals?: Record<string, number>;
 	prev?: Record<string, number>;
-	formats?: { reels: FormatStats; carousels: FormatStats; photos: FormatStats; stories: FormatStats };
+	formats?: { reels: FormatStats; carousels: FormatStats; photos: FormatStats; stories?: FormatStats };
 	growth?: { d30: number | null; d90: number | null };
 };
 export type TopPost = { permalink: string; thumbnail_url: string; media_type: string; product_type: string; views: number | null; reach: number | null; interactions: number | null; likes: number | null; comments: number | null; posted_at: string };
@@ -58,8 +58,8 @@ export function insightKpis(d: PublicInsights): Kpi[] {
 		{ k: 'Engagement rate', v: d.engagement_rate, sub: 'per post, last 12', ch: null, pct: true },
 		{ k: 'Interactions', v: t.total_interactions, sub: '30 days', ch: change(t.total_interactions, pv.total_interactions) },
 		{ k: 'Avg. Reel views', v: f?.reels.avg_views ?? d.avg_views, sub: f?.reels.posts ? `last ${f.reels.posts} Reels` : 'recent posts', ch: null },
-		{ k: 'Avg. Story reach', v: f?.stories.avg_reach, sub: f?.stories.posts ? `${f.stories.posts} Stories` : '', ch: null },
-		{ k: 'Link taps', v: t.profile_links_taps, sub: '30 days', ch: change(t.profile_links_taps, pv.profile_links_taps) }
+		// Only when she shows Stories (the server leaves them out otherwise); her own average if she typed one.
+		{ k: 'Avg. Story reach', v: f?.stories?.avg_reach, sub: f?.stories?.manual ? 'per Story' : f?.stories?.posts ? `${f.stories.posts} Stories` : '', ch: null }
 	];
 	return all.filter((x): x is Kpi => typeof x.v === 'number' && x.v > 0);
 }
@@ -75,10 +75,11 @@ export function engageMix(d: PublicInsights) {
 	].filter((x): x is { k: string; v: number } => !!x.v);
 }
 
-/** Formats she has posted, with their averages. */
+/** Formats she has posted, with their averages. Stories only when she shows them (with her own numbers,
+ *  if she typed them in settings). */
 export function formatRows(d: PublicInsights) {
 	const f = d.insights.formats;
-	return f ? (Object.entries(f) as [string, FormatStats][]).filter(([, s]) => s.posts > 0) : [];
+	return f ? (Object.entries(f) as [string, FormatStats][]).filter(([, s]) => s && (s.posts > 0 || s.manual)) : [];
 }
 
 /** Age, gender, top cities and top countries as percentages. */

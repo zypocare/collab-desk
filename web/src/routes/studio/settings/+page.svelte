@@ -81,6 +81,22 @@
 		toast(`Done. ${to} is the owner now; you're a manager.`);
 	}
 
+	// Stories on the insights page: her own averages replace the app's when she types them.
+	type StoryKey = 'avg_views' | 'avg_reach' | 'avg_interactions';
+	const STORY_FIELDS: { k: StoryKey; label: string }[] = [
+		{ k: 'avg_views', label: 'Avg. views per Story' },
+		{ k: 'avg_reach', label: 'Avg. reach per Story' },
+		{ k: 'avg_interactions', label: 'Avg. replies, shares and taps' }
+	];
+	const appStory = $derived(((studio.ig?.insights as { formats?: { stories?: Record<string, number> } } | undefined)?.formats?.stories ?? null) as (Partial<Record<StoryKey | 'posts', number>> | null));
+	function saveStory(k: StoryKey, v: string) {
+		const next = { ...(s.story_stats ?? {}) };
+		const n = Math.round(Number(v));
+		if (v.trim() === '' || !(n >= 0)) delete next[k];
+		else next[k] = n;
+		saveSettings({ story_stats: next });
+	}
+
 	let kitBusy = $state(false);
 	async function kit() {
 		kitBusy = true;
@@ -233,6 +249,28 @@
 								<div><b>Share an insights page with brands</b><small>Reach, views, engagement, audience and top posts, live from Instagram, at <a class="lnk" href="/insights" target="_blank" rel="noopener">{link.replace(/^https?:\/\//, '')}/insights</a>. Send it instead of screenshots.</small></div>
 								<input type="checkbox" class="tgl" checked={s.show_insights} aria-label="Share an insights page" onchange={(e) => saveSettings({ show_insights: (e.currentTarget as HTMLInputElement).checked })} />
 							</div>
+							{#if s.show_insights}
+								<div class="switch-row">
+									<div><b>Show Stories</b><small>Story views and reach on the insights page and in the media kit.</small></div>
+									<input type="checkbox" class="tgl" checked={s.insights_stories} aria-label="Show Stories on the insights page" onchange={(e) => saveSettings({ insights_stories: (e.currentTarget as HTMLInputElement).checked })} />
+								</div>
+								{#if s.insights_stories}
+									<div class="story-stats">
+										<p class="hint">Instagram keeps Story numbers for only 24 hours, so the app has seen {appStory?.posts ? `only ${appStory.posts} of your Stories` : 'few of your Stories'}. For truer numbers, copy your averages from the Instagram app (Professional dashboard, then Stories). Leave a box empty to use the app's number.</p>
+										<div class="story-grid">
+											{#each STORY_FIELDS as sf (sf.k)}
+												<div class="f">
+													<label for="st-{sf.k}">{sf.label}</label>
+													<input class="inp num" id="st-{sf.k}" type="number" inputmode="numeric" min="0" placeholder={appStory?.[sf.k] ? `app: ${appStory[sf.k]}` : 'e.g. 1500'} value={s.story_stats?.[sf.k] ?? ''} onchange={(e) => saveStory(sf.k, val(e))} />
+												</div>
+											{/each}
+										</div>
+										{#if Object.keys(s.story_stats ?? {}).length}
+											<button class="btn sm" onclick={() => saveSettings({ story_stats: {} })}><Icon name="refresh" />Use Instagram's numbers</button>
+										{/if}
+									</div>
+								{/if}
+							{/if}
 						</section>
 					{:else if active === 'rates'}
 						<section class="panel rv" style="--i:1">

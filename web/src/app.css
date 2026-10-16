@@ -1985,3 +1985,8 @@ body{font-feature-settings:'cv11','ss01';letter-spacing:-.005em}
 .ask-reply{display:flex;align-items:center;gap:8px;font-size:15px;color:var(--ink-2);background:var(--surface-2);border-radius:12px;padding:10px 14px;overflow-wrap:anywhere}
 .ask-reply .ic{flex-shrink:0;width:16px;height:16px}
 @media (max-width:560px){.ask-two{grid-template-columns:minmax(0,1fr)}.dialog.ask-dialog{padding:22px}}
+/* Settings: her own Story numbers for the insights page */
+.story-stats{padding:0 20px 18px;display:flex;flex-direction:column;gap:12px;align-items:flex-start}
+.story-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;width:100%}
+.story-grid .f{display:flex;flex-direction:column;gap:6px;min-width:0}
+@media (max-width:640px){.story-grid{grid-template-columns:minmax(0,1fr)}}

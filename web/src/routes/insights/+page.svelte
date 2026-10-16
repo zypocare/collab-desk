@@ -77,7 +77,7 @@
 			</div>
 		</section>
 
-		{#if d.insights.from}<p class="hint ins-period">Last 30 days: {fmt(d.insights.from)} to {fmt(d.insights.to)}. Changes are against the 30 days before.</p>{/if}
+		{#if d.insights.from}<p class="hint ins-period">Last 30 days: {fmt(d.insights.from)} to {fmt(d.insights.to)}.</p>{/if}
 
 		<div class="ins-kpis">
 			{#each kpis as k, i (k.k)}
@@ -101,7 +101,7 @@
 							<thead><tr><th>Format</th><th>Posts</th><th>Avg. views</th><th>Avg. reach</th><th>Engagement</th></tr></thead>
 							<tbody>
 								{#each formats as [key, s] (key)}
-									<tr><td>{FORMAT_LABEL[key]}</td><td>{s.posts}</td><td>{s.avg_views ? compact(s.avg_views) : '—'}</td><td>{s.avg_reach ? compact(s.avg_reach) : '—'}</td><td>{key === 'stories' ? (s.avg_interactions ? `${compact(s.avg_interactions)} actions` : '—') : s.er ? `${s.er}%` : '—'}</td></tr>
+									<tr><td>{FORMAT_LABEL[key]}</td><td>{s.manual ? '—' : s.posts}</td><td>{s.avg_views ? compact(s.avg_views) : '—'}</td><td>{s.avg_reach ? compact(s.avg_reach) : '—'}</td><td>{key === 'stories' ? (s.avg_interactions ? `${compact(s.avg_interactions)} actions` : '—') : s.er ? `${s.er}%` : '—'}</td></tr>
 								{/each}
 							</tbody>
 						</table>
@@ -133,7 +133,7 @@
 
 		{#if d.top.length}
 			<section class="rv ins-top" style="--i:6" aria-label="Top content">
-				<div class="pkgs-h"><h2>Top content</h2><p>Best of her recent posts.</p></div>
+				<div class="pkgs-h"><h2>Top content.</h2><p></p></div>
 				<div class="ins-top-grid">
 					{#each d.top as m, i (m.permalink)}
 						<a class="ins-post glow" href={m.permalink} target="_blank" rel="noopener" style="--i:{i}">

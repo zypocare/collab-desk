@@ -279,7 +279,7 @@ async function insightsPages(doc: PDFDocument, p: PublicPage, d: PublicInsights,
 	header(true);
 
 	if (d.insights.from) {
-		text(`Last 30 days: ${fmt(d.insights.from)} to ${fmt(d.insights.to ?? '')}. Changes are against the 30 days before.`, M, y, 8.5, reg, MUTED);
+		text(`Last 30 days: ${fmt(d.insights.from)} to ${fmt(d.insights.to ?? '')}.`, M, y, 8.5, reg, MUTED);
 		y -= 16;
 	}
 
@@ -326,7 +326,7 @@ async function insightsPages(doc: PDFDocument, p: PublicPage, d: PublicInsights,
 			for (const [key, s] of formats) {
 				yy -= 18;
 				text(FORMAT_LABEL[key] ?? key, cx[0], yy, 9.5, bold);
-				right(String(s.posts), cx[1], yy, 9.5);
+				right(s.manual ? '-' : String(s.posts), cx[1], yy, 9.5);
 				right(s.avg_views ? compact(s.avg_views) : '-', cx[2], yy, 9.5);
 				right(s.avg_reach ? compact(s.avg_reach) : '-', cx[3], yy, 9.5);
 				right(key === 'stories' ? (s.avg_interactions ? `${compact(s.avg_interactions)} actions` : '-') : s.er ? `${s.er}%` : '-', cx[4], yy, 9.5, bold);
