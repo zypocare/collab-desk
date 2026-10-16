@@ -373,3 +373,11 @@ html:has([data-side="brand"]),[data-side="brand"]{scroll-behavior:smooth}
   .rq-bar:has(.rq-default) .btn.lg{flex:1;justify-content:center}
 }
 @media (max-width: 1060px){ [data-side="brand"] .rq-bar .btn.lg{width:auto} [data-side="brand"] .rq-bar p{display:flex;flex-direction:column;gap:0} .rq-bar .lt-what{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink-2)} }
+
+/* Forms on brand pages: taller fields, same feel as the studio. */
+[data-side="brand"] .inp,[data-side="brand"] .sel{height:48px;padding:0 15px;font-size:16px;border-radius:13px}
+[data-side="brand"] textarea.inp{height:auto;min-height:108px;padding:13px 15px}
+[data-side="brand"] .pre > span{left:15px}
+[data-side="brand"] .pre .inp{padding-left:32px}
+[data-side="brand"] .f label{font-size:15px;margin-bottom:8px}
+[data-side="brand"] .fields{gap:16px 18px}

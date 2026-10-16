@@ -492,3 +492,42 @@ a.btn{text-decoration:none}
 [data-side="studio"] .bq-panel > .bq:hover{transform:translateY(-3px);box-shadow:var(--sx-hi),var(--sx-lift);border-color:color-mix(in oklab,var(--accent) 24%,var(--line));background:var(--surface)}
 [data-side="studio"] .bq-panel > .bq .row-btns{margin-top:auto}
 [data-side="studio"] .bq p{margin:8px 0 6px;font-size:14.5px;line-height:1.5}
+
+/* ==========================================================================================
+   Forms: taller, roomier fields so every form reads neat and calm.
+   ========================================================================================== */
+[data-side="studio"] .inp,[data-side="studio"] .sel{height:50px;padding:0 16px;font-size:16px;border-radius:14px}
+[data-side="studio"] .sel{padding-right:12px}
+[data-side="studio"] textarea.inp{height:auto;min-height:112px;padding:14px 16px;line-height:1.55}
+[data-side="studio"] .pre > span{left:16px}
+[data-side="studio"] .pre .inp{padding-left:34px}
+[data-side="studio"] .f label,[data-side="studio"] .lbl-t{font-size:15px;margin-bottom:8px}
+[data-side="studio"] .fields,[data-side="studio"] .form-b{gap:16px 18px}
+[data-side="studio"] .form-b{padding:6px 22px 24px}
+[data-side="studio"] .sel.sm{height:38px;padding:0 10px 0 12px;font-size:14.5px}
+[data-side="studio"] .exp-add .inp,[data-side="studio"] .exp-add .sel{height:46px}
+@media (max-width:640px){ [data-side="studio"] .inp,[data-side="studio"] .sel{height:52px} }
+
+/* My page: the forms use the full width; the link card's main button keeps its light look. */
+[data-side="studio"] .set-panels{max-width:none}
+[data-side="studio"] .linkcard .btn:not(.out){background:var(--hero-ink);color:var(--hero);border-color:transparent}
+[data-side="studio"] .linkcard .btn:not(.out):hover{background:color-mix(in oklab,var(--hero-ink) 88%,var(--hero))}
+
+/* ---------- Collabs: one tidy toolbar row, and a welcome when the board is empty ---------- */
+[data-side="studio"] .toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+[data-side="studio"] .toolbar .tb-gap{flex:1}
+[data-side="studio"] .toolbar .search{height:50px}
+.board-empty{display:grid;grid-template-columns:auto minmax(0,1fr);gap:18px 22px;align-items:start;padding:clamp(22px,3vw,36px);border-radius:28px;background:var(--sx-card);border:1px dashed color-mix(in oklab,var(--ink) 18%,transparent);margin-top:6px}
+.be-ic{grid-row:span 2;width:56px;height:56px;border-radius:18px;display:grid;place-items:center;background:var(--grad);color:#fff;box-shadow:0 14px 30px -12px color-mix(in oklab,var(--g2) 60%,transparent)}
+.be-ic svg{width:26px;height:26px}
+.board-empty h2{font-size:clamp(22px,2.4vw,28px);letter-spacing:-.035em}
+.board-empty p{color:var(--ink-3);font-size:16px;max-width:64ch;margin-top:6px;line-height:1.55}
+.be-acts{grid-column:2;display:flex;flex-wrap:wrap;gap:10px}
+.be-flow{grid-column:1/-1;list-style:none;margin:8px 0 0;padding:16px 0 0;border-top:1px dashed var(--sx-border);display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.be-flow li{display:flex;align-items:center;gap:8px;font-size:14.5px;font-weight:600;color:var(--ink-2)}
+.be-flow li span{padding:6px 12px;border-radius:999px;background:color-mix(in oklab,var(--ink) 5%,transparent);border:1px solid var(--sx-border)}
+.be-flow li + li::before{content:"→";color:var(--ink-3)}
+@media (max-width:640px){ .board-empty{grid-template-columns:minmax(0,1fr)} .be-ic{grid-row:auto} .be-acts{grid-column:auto} }
+/* The top bar already has "← Collabs": no second and third back button on a collab's page. */
+[data-side="studio"] .drawer.as-page .dr-h > .icon-btn,[data-side="studio"] .drawer.as-page .dr-f .btn.primary{display:none}
+@media (min-width:641px){ [data-side="studio"] .board-wrap{margin-inline:0;padding-inline:0;max-width:100%} }

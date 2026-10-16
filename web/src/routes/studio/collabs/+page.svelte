@@ -7,7 +7,7 @@
 	import { byCode, byId, markPaid, priorityOf, reloadCollabs, setStage, studio } from '#lib/studio.svelte.ts';
 	import { supabase } from '#lib/supabase.ts';
 	import type { Stage } from '#lib/types.ts';
-	import { confetti, pointer, toast, ui } from '#lib/ui.svelte.ts';
+	import { confetti, copyText, pointer, toast, ui } from '#lib/ui.svelte.ts';
 	import { STAGES, errMessage, inr, inrS, parse, stageLabel } from '#lib/util.ts';
 	import Select from '#lib/components/Select.svelte';
 	import CollabCard from '#lib/components/CollabCard.svelte';
@@ -142,7 +142,6 @@
 		<h1>Your <em>collabs</em></h1>
 		<p>{studio.collabs.filter((c) => c.stage !== 'wrapped' && c.stage !== 'declined').length} active, {studio.collabs.filter((c) => c.stage === 'request').length} waiting for your reply.</p>
 	</div>
-	<div class="acts"><a class="btn" href="/studio/import"><Icon name="layers" />Import existing</a><button class="btn primary" onclick={() => (ui.newCollab = true)}><Icon name="plus" />Add collab</button></div>
 </header>
 
 <div class="toolbar rv" style="--i:1">
@@ -159,10 +158,31 @@
 	{#if declinedCount}
 		<label class="declined-toggle"><input type="checkbox" class="cbx" bind:checked={showDeclined} />Show declined ({declinedCount})</label>
 	{/if}
-	<span class="hint-r"><Icon name="drag" />Drag cards between columns</span>
-	<button class="btn sm" class:primary={selecting} aria-pressed={selecting} onclick={() => (selecting ? stopSelecting() : (selecting = true))}><Icon name={selecting ? 'x' : 'check'} />{selecting ? 'Done' : 'Select'}</button>
+	{#if studio.collabs.some((c) => c.stage !== 'declined')}
+	<span class="tb-gap"></span>
+	<a class="btn" href="/studio/import" title="Add the collabs you already have from DMs, all at once"><Icon name="layers" />Import existing</a>
+	<button class="btn" class:primary={selecting} title="Drag cards between columns, or select several to act on together" aria-pressed={selecting} onclick={() => (selecting ? stopSelecting() : (selecting = true))}><Icon name={selecting ? 'x' : 'check'} />{selecting ? 'Done' : 'Select'}</button>
+	{/if}
 </div>
 
+{#if !studio.collabs.some((c) => c.stage !== 'declined')}
+	<!-- Nothing yet: what the board is for, and the three ways collabs get here. -->
+	<section class="board-empty rv" style="--i:2">
+		<span class="be-ic"><Icon name="board" /></span>
+		<div>
+			<h2>Your board is ready</h2>
+			<p>Requests from your brand page land here on their own. Add the collabs you already have from DMs one by one, or import them all at once, and each one moves across as it progresses.</p>
+		</div>
+		<div class="be-acts">
+			<button class="btn grad" onclick={() => (ui.newCollab = true)}><Icon name="plus" />Add a collab</button>
+			<a class="btn" href="/studio/import"><Icon name="layers" />Import from DMs</a>
+			<button class="btn" onclick={() => copyText((studio.settings?.site_url || location.origin).replace(/\/$/, ''), 'Your page link is copied. Put it in your Instagram bio.')}><Icon name="link" />Copy your page link</button>
+		</div>
+		<ol class="be-flow" aria-label="How a collab moves">
+			{#each ['New request', 'Negotiating', 'Confirmed', 'Creating', 'Live', 'Wrapped'] as st (st)}<li><span>{st}</span></li>{/each}
+		</ol>
+	</section>
+{:else}
 <div class="board-wrap">
 	<div class="board">
 		{#each columns as col, ci (col.s.id)}
@@ -193,6 +213,7 @@
 		{/each}
 	</div>
 </div>
+{/if}
 
 <svelte:window onkeydown={(e) => e.key === 'Escape' && selecting && !ui.openCollab && stopSelecting()} />
 
