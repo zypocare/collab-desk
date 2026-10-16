@@ -4,12 +4,14 @@ import { inr } from './util';
 export const REDUCED = typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 type Toast = { id: number; msg: string; icon: string; out: boolean };
-export const ui = $state<{ toasts: Toast[]; openCollab: string | null; newCollab: boolean; pendingNext: string | null }>({
+export const ui = $state<{ toasts: Toast[]; openCollab: string | null; newCollab: boolean; pendingNext: string | null; pasteText: string }>({
 	toasts: [],
 	openCollab: null,
 	newCollab: false,
 	/** A next-step action to run as soon as the collab panel opens (from a card's button). */
-	pendingNext: null
+	pendingNext: null,
+	/** Text shared into the app (Android share sheet), for Add collab to read. */
+	pasteText: ''
 });
 
 let toastId = 0;

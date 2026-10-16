@@ -36,7 +36,7 @@
 
 	// Only the creator may be here.
 	$effect(() => {
-		if (!auth.session) goto(`/login?next=${encodeURIComponent(page.url.pathname)}`, { replaceState: true });
+		if (!auth.session) goto(`/login?next=${encodeURIComponent(page.url.pathname + page.url.search)}`, { replaceState: true });
 		else if (auth.account && auth.account.role !== 'creator') goto('/brand', { replaceState: true });
 	});
 

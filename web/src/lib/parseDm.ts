@@ -93,7 +93,8 @@ export function parseDm(text: string, ownHandle = ''): Parsed {
 	})();
 
 	// Barter or paid.
-	const barterish = /\b(barter|gift(?:ed|ing)?|pr (?:package|box|kit)|in exchange|complimentary|free (?:product|stay|meal)|send you (?:our|the|a|some))\b/i.test(t);
+	// "Gift" only when they're gifting it to her, not a product name like "Diwali gift box".
+	const barterish = /\b(barter|gifted|gifting|gift (?:you|it)|as a gift|pr (?:package|box|kit)|in exchange|complimentary|free (?:product|stay|meal)|send you (?:our|the|a|some))\b/i.test(t);
 	const type: CollabType | null = barterish ? (fee ? 'hybrid' : 'barter') : fee ? 'paid' : null;
 	const product = barterish
 		? (t.match(/(?:send you|gift you|share)\s+(?:our|the|a|an|some)?\s*([^.,\n!?]{3,60})/i)?.[1] ?? t.match(/(?:our|the)\s+(new\s+)?([a-z][\w\s-]{2,40}?)\s+(?:launch|range|collection)/i)?.[0] ?? '')

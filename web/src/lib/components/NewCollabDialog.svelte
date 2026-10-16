@@ -7,12 +7,25 @@
 	import Icon from './Icon.svelte';
 
 	let name = $state('');
-	let pasted = $state('');
+	// Text shared into the app arrives here once.
+	let pasted = $state(ui.pasteText);
+	ui.pasteText = '';
 	let nameTouched = $state(false);
 	let busy = $state(false);
 	let box = $state<HTMLTextAreaElement>();
 
 	onMount(() => box?.focus());
+
+	// One-tap paste from the clipboard (copied from WhatsApp, Instagram or email).
+	const canPaste = typeof navigator !== 'undefined' && !!navigator.clipboard?.readText;
+	async function pasteClip() {
+		try {
+			const t = await navigator.clipboard.readText();
+			if (t.trim()) pasted = t;
+		} catch {
+			box?.focus();
+		}
+	}
 
 	// Read the pasted message as she types/pastes, and fill the brand name unless she typed one.
 	const parsed = $derived(pasted.trim().length > 10 ? parseDm(pasted, studio.settings?.handle ?? '') : null);
@@ -78,7 +91,7 @@
 		<h2 id="nc-title">Add a collab</h2>
 		<p>Paste the brand's DM or email and we'll fill in the details. Or just type the brand name.</p>
 		<div class="f">
-			<label for="nc-paste">Their message <span class="hint">(optional)</span></label>
+			<label for="nc-paste">Their message <span class="hint">(optional)</span>{#if canPaste}<button type="button" class="lnk paste-btn" onclick={pasteClip}>Paste</button>{/if}</label>
 			<textarea class="inp" id="nc-paste" rows="5" placeholder={'Hi! I’m Asha from Lumière Skin (@lumiere.skin). We’d love 1 reel + 3 stories for our Vitamin C launch, budget ₹30k, live by 25th Oct…'} bind:value={pasted} bind:this={box}></textarea>
 		</div>
 		{#if chips.length}
