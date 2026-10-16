@@ -49,8 +49,9 @@ export async function runSync(db: SupabaseClient, opts: SyncOptions = {}) {
 
     // 3. Posts.
     const list = await ig.media(token, 40);
-    const { data: existing } = await db.from('ig_media').select('id, insights_at').in('id', list.map((m) => m.id));
-    const lastInsights = new Map((existing ?? []).map((e) => [e.id, e.insights_at as string | null]));
+    const { data: existing } = await db.from('ig_media').select('id, insights_at, views, reach').in('id', list.map((m) => m.id));
+    // A post whose figures came back empty counts as never fetched, so it is tried again.
+    const lastInsights = new Map((existing ?? []).map((e) => [e.id, (e.views === null && e.reach === null ? null : e.insights_at) as string | null]));
     const { data: linkedRows } = await db.from('collab_posts').select('media_id');
     const linked = new Set((linkedRows ?? []).map((l) => l.media_id));
 
@@ -62,6 +63,7 @@ export async function runSync(db: SupabaseClient, opts: SyncOptions = {}) {
       const stale = !lastInsights.get(m.id) || Date.now() - Date.parse(lastInsights.get(m.id)!) > 20 * 3600e3;
       let ins: Insights | null = null;
       if (recent && (stale || opts.reportFor)) ins = await ig.insights(token, m.id);
+      if (ins && !Object.keys(ins).length) ins = null; // nothing came back: keep what we had, retry next time
       const likes = ins?.likes ?? m.like_count ?? null;
       const comments = ins?.comments ?? m.comments_count ?? null;
       const row: MediaRow = {
@@ -97,8 +99,9 @@ export async function runSync(db: SupabaseClient, opts: SyncOptions = {}) {
       ig.accountTotals(token, new Date(Date.now() - 30 * DAY), now).catch(() => ({})),
       ig.accountTotals(token, new Date(Date.now() - 60 * DAY), new Date(Date.now() - 30 * DAY)).catch(() => ({})),
     ]);
+    // Her most recent posts of each kind (whatever their dates: she may not have posted lately).
     const { data: m90 } = await db.from('ig_media').select('media_type, product_type, views, reach, interactions, likes, comments')
-      .gte('posted_at', new Date(Date.now() - 90 * DAY).toISOString());
+      .order('posted_at', { ascending: false }).limit(200);
     const fmtStats = (xs: { views: number | null; reach: number | null; interactions: number | null; likes: number | null; comments: number | null }[]) => {
       const inter = avg(xs.map((r) => r.interactions ?? (r.likes === null && r.comments === null ? null : (r.likes ?? 0) + (r.comments ?? 0))));
       const v = avg(xs.map((r) => r.views));
@@ -111,11 +114,12 @@ export async function runSync(db: SupabaseClient, opts: SyncOptions = {}) {
     };
     const all90 = m90 ?? [];
     const isStory = (r: { product_type: string }) => r.product_type === 'STORY';
+    const recent12 = <T,>(xs: T[]) => xs.slice(0, 12);
     const formats = {
-      reels: fmtStats(all90.filter((r) => !isStory(r) && (r.product_type === 'REELS' || r.media_type === 'VIDEO'))),
-      carousels: fmtStats(all90.filter((r) => !isStory(r) && r.media_type === 'CAROUSEL_ALBUM')),
-      photos: fmtStats(all90.filter((r) => !isStory(r) && r.media_type === 'IMAGE')),
-      stories: fmtStats(all90.filter(isStory)),
+      reels: fmtStats(recent12(all90.filter((r) => !isStory(r) && (r.product_type === 'REELS' || r.media_type === 'VIDEO')))),
+      carousels: fmtStats(recent12(all90.filter((r) => !isStory(r) && r.media_type === 'CAROUSEL_ALBUM'))),
+      photos: fmtStats(recent12(all90.filter((r) => !isStory(r) && r.media_type === 'IMAGE'))),
+      stories: fmtStats(recent12(all90.filter(isStory))),
     };
     const followersOn = async (daysAgo: number) =>
       // The count on (or just before) that day; nothing if the history doesn't go back that far yet.

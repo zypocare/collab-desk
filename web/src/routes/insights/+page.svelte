@@ -2,7 +2,7 @@
 	import { onMount } from 'svelte';
 	import { supabase } from '#lib/supabase.ts';
 	import { loadPublicPage, pub } from '#lib/publicPage.svelte.ts';
-	import { change, FORMAT_LABEL, type PublicInsights } from '#lib/insights.ts';
+	import { change, FORMAT_LABEL, reachOk, type PublicInsights } from '#lib/insights.ts';
 	import { compact, fmt, fmtLong, mediaLabel } from '#lib/util.ts';
 	import { copyText } from '#lib/ui.svelte.ts';
 	import { downloadMediaKit } from '#lib/mediaKitPdf.ts';
@@ -28,12 +28,12 @@
 		d
 			? [
 					{ k: 'Followers', v: d.followers, sub: d.insights.growth?.d30 ? `${d.insights.growth.d30 > 0 ? '+' : ''}${compact(d.insights.growth.d30)} in 30 days` : '', ch: null },
-					{ k: 'Accounts reached', v: t.reach, sub: '30 days', ch: change(t.reach, pv.reach) },
+					{ k: 'Accounts reached', v: reachOk(t) ? t.reach : undefined, sub: '30 days', ch: reachOk(pv) ? change(t.reach, pv.reach) : null },
 					{ k: 'Views', v: t.views, sub: '30 days', ch: change(t.views, pv.views) },
 					{ k: 'Accounts engaged', v: t.accounts_engaged, sub: '30 days', ch: change(t.accounts_engaged, pv.accounts_engaged) },
 					{ k: 'Engagement rate', v: d.engagement_rate, sub: 'per post, last 12', ch: null, pct: true },
 					{ k: 'Interactions', v: t.total_interactions, sub: '30 days', ch: change(t.total_interactions, pv.total_interactions) },
-					{ k: 'Avg. Reel views', v: f?.reels.avg_views ?? d.avg_views, sub: f?.reels.posts ? `${f.reels.posts} Reels, 90 days` : 'recent posts', ch: null },
+					{ k: 'Avg. Reel views', v: f?.reels.avg_views ?? d.avg_views, sub: f?.reels.posts ? `last ${f.reels.posts} Reels` : 'recent posts', ch: null },
 					{ k: 'Avg. Story reach', v: f?.stories.avg_reach, sub: f?.stories.posts ? `${f.stories.posts} Stories` : '', ch: null },
 					{ k: 'Link taps', v: t.profile_links_taps, sub: '30 days', ch: change(t.profile_links_taps, pv.profile_links_taps) }
 				].filter((x) => typeof x.v === 'number' && x.v > 0)
@@ -119,7 +119,7 @@
 		<div class="ins-grid">
 			{#if formats.length}
 				<section class="panel rv" style="--i:3">
-					<div class="panel-h"><h2>By format</h2><small>averages, last 90 days</small></div>
+					<div class="panel-h"><h2>By format</h2><small>averages of recent posts (up to 12 each)</small></div>
 					<div class="table-wrap">
 						<table class="doc-table ins-table">
 							<thead><tr><th>Format</th><th>Posts</th><th>Avg. views</th><th>Avg. reach</th><th>Engagement</th></tr></thead>
@@ -157,7 +157,7 @@
 
 		{#if d.top.length}
 			<section class="rv ins-top" style="--i:6" aria-label="Top content">
-				<div class="pkgs-h"><h2>Top content</h2><p>Best posts of the last 90 days.</p></div>
+				<div class="pkgs-h"><h2>Top content</h2><p>Best of her recent posts.</p></div>
 				<div class="ins-top-grid">
 					{#each d.top as m, i (m.permalink)}
 						<a class="ins-post glow" href={m.permalink} target="_blank" rel="noopener" style="--i:{i}">

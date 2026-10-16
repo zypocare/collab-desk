@@ -2,7 +2,7 @@
 	import { studio } from '../studio.svelte';
 	import { countUp } from '../ui.svelte';
 	import { compact, fmt, mediaLabel } from '../util';
-	import { change as pctChange, type InsightsData } from '../insights';
+	import { change as pctChange, reachOk, type InsightsData } from '../insights';
 	import { copyText } from '../ui.svelte';
 	import Icon from './Icon.svelte';
 
@@ -37,7 +37,7 @@
 			</div>
 			<div class="ig-stat"><span class="lbl">Engagement</span><b class="big">{ig.engagement_rate ?? '—'}%</b><small>last 12 posts</small></div>
 			<div class="ig-stat"><span class="lbl">Avg. views</span><b class="big">{compact(ig.avg_views)}</b><small>avg. reach {compact(ig.avg_reach)}</small></div>
-			{#if t30.reach}
+			{#if reachOk(t30)}
 				{@const ch = pctChange(t30.reach, p30.reach)}
 				<div class="ig-stat"><span class="lbl">Reached · 30 days</span><b class="big">{compact(t30.reach)}</b><small class:up={(ch ?? 0) >= 0} class:down={(ch ?? 0) < 0}>{ch !== null ? `${ch >= 0 ? '+' : ''}${ch}% vs last 30 days` : `${compact(t30.views)} views`}</small></div>
 			{/if}

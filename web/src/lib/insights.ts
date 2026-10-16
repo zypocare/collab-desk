@@ -28,6 +28,10 @@ export type PublicInsights = {
 	top: TopPost[];
 };
 
+/** Instagram's 30-day reach sometimes comes back lower than the accounts that engaged, which can't be;
+ *  then it isn't shown. */
+export const reachOk = (t: Record<string, number> | undefined) => !!t?.reach && t.reach >= (t.accounts_engaged ?? 0);
+
 /** % change from the previous 30 days, or null when there's nothing to compare with. */
 export function change(cur: number | undefined, prev: number | undefined) {
 	if (!cur || !prev) return null;

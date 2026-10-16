@@ -14,7 +14,7 @@
 	import { rateValue } from '#lib/priority.ts';
 	import Avatar from '#lib/components/Avatar.svelte';
 	import { supabase } from '#lib/supabase.ts';
-	import type { PublicInsights } from '#lib/insights.ts';
+	import { reachOk, type PublicInsights } from '#lib/insights.ts';
 
 	const preview = $derived(page.url.searchParams.has('preview'));
 
@@ -49,7 +49,7 @@
 					{ raw: p.followers, label: 'followers' },
 					{ raw: p.engagement, label: 'avg. engagement' },
 					...(p.instagram?.avg_views ? [{ raw: compact(p.instagram.avg_views), label: 'avg. views per post' }] : []),
-					...(ins?.insights?.totals?.reach ? [{ raw: compact(ins.insights.totals.reach), label: 'reached in 30 days' }] : [])
+					...(ins && reachOk(ins.insights?.totals) ? [{ raw: compact(ins.insights.totals!.reach), label: 'reached in 30 days' }] : [])
 				].filter((s) => s.raw)
 			: []
 	);

@@ -1,7 +1,7 @@
 // Builds her media kit (one A4 page) in the browser from live data: Instagram numbers, audience,
 // packages, rates, brands she has worked with, and a QR code to her brand page.
 import { supabase } from './supabase';
-import type { PublicInsights } from './insights';
+import { reachOk, type PublicInsights } from './insights';
 import fontkit from '@pdf-lib/fontkit';
 import { PDFDocument, rgb, type PDFFont, type PDFImage, type PDFPage, type RGB } from 'pdf-lib';
 import { qrMatrix } from './invoice';
@@ -126,7 +126,7 @@ export async function mediaKitPdf(p: PublicPage, link: string, ins: PublicInsigh
 	const t = ins?.insights?.totals ?? {};
 	const fm = ins?.insights?.formats;
 	const month = [
-		{ v: t.reach, k: 'Accounts reached' },
+		{ v: reachOk(t) ? t.reach : undefined, k: 'Accounts reached' },
 		{ v: t.views, k: 'Views' },
 		{ v: t.accounts_engaged, k: 'Accounts engaged' },
 		{ v: fm?.reels?.avg_views, k: 'Avg. Reel views' },
