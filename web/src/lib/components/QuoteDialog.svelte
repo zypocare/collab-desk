@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { portal } from '../portal';
 	import { onMount, untrack } from 'svelte';
 	import { saveQuote, studio } from '../studio.svelte';
 	import type { Collab, Quote, QuoteItem } from '../types';
@@ -79,7 +80,7 @@
 
 <svelte:window onkeydown={(e) => e.key === 'Escape' && onclose()} />
 
-<div class="dialog-scrim" role="presentation" onclick={(e) => e.target === e.currentTarget && onclose()}>
+<div class="dialog-scrim" role="presentation" use:portal onclick={(e) => e.target === e.currentTarget && onclose()}>
 	<div class="dialog quote-dialog" role="dialog" aria-modal="true" aria-labelledby="q-title">
 		<h2 id="q-title">{editing ? 'Edit quote' : base ? `Quote version ${(c.quotes[0]?.version ?? 0) + 1}` : 'Build a quote'} · {c.brand.name}</h2>
 		<p>Prices start from your rate card. {#if brandBudget}The brand's budget was {inr(brandBudget)}.{/if}</p>

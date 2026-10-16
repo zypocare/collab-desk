@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { portal } from '../portal';
 	import { supabase } from '../supabase';
 	import { toast } from '../ui.svelte';
 	import { errMessage } from '../util';
@@ -28,7 +29,7 @@
 
 <svelte:window onkeydown={(e) => open && e.key === 'Escape' && (open = false)} />
 {#if open}
-	<div class="dialog-scrim" role="presentation" onclick={(e) => e.target === e.currentTarget && (open = false)}>
+	<div class="dialog-scrim" role="presentation" use:portal onclick={(e) => e.target === e.currentTarget && (open = false)}>
 		<div class="dialog" role="dialog" aria-modal="true" aria-labelledby="aq-title">
 			{#if sent}
 				<h2 id="aq-title">Question sent</h2>

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { portal } from '../portal';
 	import { onMount } from 'svelte';
 	import { createCollab, studio } from '../studio.svelte';
 	import { parseDm } from '../parseDm';
@@ -86,7 +87,7 @@
 
 <svelte:window onkeydown={(e) => e.key === 'Escape' && (ui.newCollab = false)} />
 
-<div class="dialog-scrim" role="presentation" onclick={(e) => e.target === e.currentTarget && (ui.newCollab = false)}>
+<div class="dialog-scrim" role="presentation" use:portal onclick={(e) => e.target === e.currentTarget && (ui.newCollab = false)}>
 	<div class="dialog" role="dialog" aria-modal="true" aria-labelledby="nc-title"><form onsubmit={submit}>
 		<h2 id="nc-title">Add a collab</h2>
 		<p>Paste the brand's DM or email and we'll fill in the details. Or just type the brand name. Adding many? <a class="lnk" href="/studio/import" onclick={() => (ui.newCollab = false)}>Import them at once</a>.</p>

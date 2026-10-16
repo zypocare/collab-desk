@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { portal } from '../portal';
 	import { untrack } from 'svelte';
 	import { recordPayment } from '../studio.svelte';
 	import { balanceDue, type Invoice } from '../invoice';
@@ -26,7 +27,7 @@
 
 <svelte:window onkeydown={(e) => e.key === 'Escape' && onclose()} />
 
-<div class="dialog-scrim" role="presentation" onclick={(e) => e.target === e.currentTarget && onclose()}>
+<div class="dialog-scrim" role="presentation" use:portal onclick={(e) => e.target === e.currentTarget && onclose()}>
 	<div class="dialog" role="dialog" aria-modal="true" aria-labelledby="pay-title">
 		<form onsubmit={submit}>
 			<h2 id="pay-title">Record a payment</h2>

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { portal } from '../portal';
 	import { goto } from '$app/navigation';
 	import { tick } from 'svelte';
 	import { igSync, studio } from '../studio.svelte';
@@ -96,7 +97,7 @@
 <svelte:window onkeydown={globalKey} />
 
 {#if open}
-	<div class="dialog-scrim cmdk-scrim" role="presentation" onclick={(e) => e.target === e.currentTarget && (open = false)}>
+	<div class="dialog-scrim cmdk-scrim" role="presentation" use:portal onclick={(e) => e.target === e.currentTarget && (open = false)}>
 		<div class="cmdk" role="dialog" aria-modal="true" aria-label="Search and actions">
 			<div class="cmdk-in">
 				<Icon name="search" />

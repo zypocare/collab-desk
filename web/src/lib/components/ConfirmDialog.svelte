@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { portal } from '../portal';
 	import { answer, asking } from '../confirm.svelte';
 	import Icon from './Icon.svelte';
 
@@ -13,7 +14,7 @@
 
 {#if asking.q}
 	{@const q = asking.q}
-	<div class="dialog-scrim confirm-scrim" role="presentation" onclick={(e) => e.target === e.currentTarget && answer(false)}>
+	<div class="dialog-scrim confirm-scrim" role="presentation" use:portal onclick={(e) => e.target === e.currentTarget && answer(false)}>
 		<div class="dialog confirm-dlg" role="alertdialog" aria-modal="true" aria-labelledby="cf-title" aria-describedby={q.body ? 'cf-body' : undefined}>
 			<span class="cf-ic" class:danger={q.danger}><Icon name={q.danger ? 'alert' : 'check'} /></span>
 			<h2 id="cf-title">{q.title}</h2>

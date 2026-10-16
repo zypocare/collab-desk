@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { portal } from '../portal';
 	import { untrack } from 'svelte';
 	import { saveBrand, saveInvoice, studio } from '../studio.svelte';
 	import type { Collab } from '../types';
@@ -108,7 +109,7 @@
 
 <svelte:window onkeydown={(e) => e.key === 'Escape' && onclose()} />
 
-<div class="dialog-scrim" role="presentation" onclick={(e) => e.target === e.currentTarget && onclose()}>
+<div class="dialog-scrim" role="presentation" use:portal onclick={(e) => e.target === e.currentTarget && onclose()}>
 	<div class="dialog quote-dialog" role="dialog" aria-modal="true" aria-labelledby="inv-title">
 		<h2 id="inv-title">{editing ? 'Edit draft invoice' : 'New invoice'} · {c.brand.name}</h2>
 		<p>Fee {inr(start.fee)}{start.invoicedSoFar ? ` · already invoiced ${inr(start.invoicedSoFar)}` : ''}. Amounts are before GST.</p>
