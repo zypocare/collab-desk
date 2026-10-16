@@ -3,6 +3,7 @@
 	import type { Collab } from '../types';
 	import { compact, fmt, fmtTime } from '../util';
 	import Icon from './Icon.svelte';
+	import Select from './Select.svelte';
 
 	let { c }: { c: Collab } = $props();
 	const ig = $derived(studio.ig);
@@ -47,10 +48,7 @@
 		{/each}
 		{#if choices.length}
 			<div class="link-post">
-				<select class="inp" aria-label="Link a post by hand" bind:value={pick}>
-					<option value="">Link a post by hand…</option>
-					{#each choices as m (m.id)}<option value={m.id}>{fmt(m.posted_at.slice(0, 10))} · {label(m.media_type, m.product_type)} · {(m.caption || 'No caption').slice(0, 50)}</option>{/each}
-				</select>
+				<Select size="sm" ariaLabel="Link a post by hand" placeholder="Link a post by hand…" bind:value={pick} options={choices.map((m) => ({ value: m.id, label: (m.caption || 'No caption').slice(0, 60), hint: `${fmt(m.posted_at.slice(0, 10))} · ${label(m.media_type, m.product_type)}` }))} />
 				<button class="btn sm" disabled={!pick} onclick={() => { const m = studio.media.find((x) => x.id === pick); if (m) linkPost(c, m); pick = ''; }}>Link</button>
 			</div>
 		{/if}

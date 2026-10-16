@@ -2,6 +2,8 @@
 	import { igDisconnect, igSync, saveSettings, studio } from '../studio.svelte';
 	import { compact, fmtTime } from '../util';
 	import Icon from './Icon.svelte';
+	import Avatar from './Avatar.svelte';
+	import Select from './Select.svelte';
 
 	const appId = (import.meta.env.VITE_INSTAGRAM_APP_ID as string) || '';
 	const ig = $derived(studio.ig);
@@ -37,7 +39,7 @@
 	<div class="panel-h"><h2>Instagram</h2>{#if ig?.connected}<span class="pill tint k-pay"><span class="dt pulse"></span>Connected</span>{/if}</div>
 	{#if ig?.connected}
 		<div class="ig-head">
-			<span class="ring" style="--sz:52px"><span>{#if ig.profile_picture_url}<img src={ig.profile_picture_url} alt="" />{:else}{ig.username.slice(0, 2).toUpperCase()}{/if}</span></span>
+			<Avatar name={ig.name || ig.username} src={ig.profile_picture_url} size="52px" />
 			<div>
 				<b>@{ig.username}</b>
 				<small>{compact(ig.followers)} followers · {ig.engagement_rate ?? '—'}% engagement · {compact(ig.avg_views)} avg views</small>
@@ -48,11 +50,7 @@
 		{#if daysLeft !== null && daysLeft < 7}<p class="hint warn-text" style="padding:0 20px 10px">Instagram access ends in {daysLeft} days. Reconnect to keep stats updating.</p>{/if}
 		<div class="switch-row">
 			<div><b>Results reports for brands</b><small>7 days after a collab post goes live, a report with views, reach and saves is made from Instagram's numbers.</small></div>
-			<select class="inp" style="width:auto" aria-label="Results reports" value={s.report_mode} onchange={(e) => saveSettings({ report_mode: (e.currentTarget as HTMLSelectElement).value as 'review' | 'auto' | 'off' })}>
-				<option value="review">I check, then send</option>
-				<option value="auto">Send automatically</option>
-				<option value="off">Don't make reports</option>
-			</select>
+			<Select style="width:auto;min-width:190px" ariaLabel="Results reports" value={s.report_mode as string} options={[{ value: 'review', label: 'I check, then send' }, { value: 'auto', label: 'Send automatically' }, { value: 'off', label: "Don't make reports" }]} onchange={(v) => saveSettings({ report_mode: v as 'review' | 'auto' | 'off' })} />
 		</div>
 		<div class="switch-row">
 			<div><b>Automatic go-live</b><small>When you post and @mention a brand you have a confirmed collab with, the collab moves to Live, the brand is told, and the caption is checked for #ad.</small></div>

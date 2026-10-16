@@ -4,6 +4,7 @@
 	import { copyText, toast } from '../ui.svelte';
 	import { INDIAN_STATES } from '../invoice';
 	import Icon from './Icon.svelte';
+	import Select from './Select.svelte';
 
 	const s = $derived(studio.settings!);
 	const webhook = $derived(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/bank-alert`);
@@ -35,7 +36,7 @@
 		<div class="f"><label for="bl-pan">PAN</label><input class="inp" id="bl-pan" value={s.pan} placeholder="ABCDE1234F" onchange={(e) => set('pan', val(e))} />{#if errors.pan}<div class="err">{errors.pan}</div>{/if}</div>
 		<div class="f">
 			<label for="bl-state">State</label>
-			<select class="inp" id="bl-state" value={s.state} onchange={(e) => set('state', val(e))}><option value="">Choose</option>{#each INDIAN_STATES as st (st)}<option value={st}>{st}</option>{/each}</select>
+			<Select id="bl-state" value={s.state} options={INDIAN_STATES.map((st) => ({ value: st, label: st }))} onchange={(v) => set('state', v)} />
 		</div>
 		<div class="f span2"><label for="bl-addr">Address</label><textarea class="inp" id="bl-addr" rows="2" value={s.address} onchange={(e) => set('address', val(e))}></textarea></div>
 		<div class="f"><label for="bl-upi">UPI ID</label><input class="inp" id="bl-upi" value={s.upi_id} placeholder="name@okicici" onchange={(e) => set('upi_id', val(e))} />{#if errors.upi_id}<div class="err">{errors.upi_id}</div>{/if}</div>
@@ -50,7 +51,7 @@
 	{#if s.gst_registered}
 		<div class="form-b" style="padding-top:0">
 			<div class="f"><label for="bl-gstin">GSTIN</label><input class="inp" id="bl-gstin" value={s.gstin} onchange={(e) => set('gstin', val(e))} />{#if errors.gstin}<div class="err">{errors.gstin}</div>{/if}</div>
-			<div class="f"><label for="bl-rate">GST rate</label><select class="inp" id="bl-rate" value={String(s.gst_rate)} onchange={(e) => saveSettings({ gst_rate: Number(val(e)) })}><option value="18">18%</option><option value="12">12%</option><option value="5">5%</option></select></div>
+			<div class="f"><label for="bl-rate">GST rate</label><Select id="bl-rate" value={Number(s.gst_rate)} options={[18, 12, 5].map((r) => ({ value: r, label: `${r}%` }))} onchange={(v) => saveSettings({ gst_rate: v })} /></div>
 			<div class="f"><label for="bl-sac">SAC code <span class="hint">(ask your accountant)</span></label><input class="inp" id="bl-sac" value={s.sac_code} onchange={(e) => set('sac_code', val(e))} /></div>
 		</div>
 	{/if}

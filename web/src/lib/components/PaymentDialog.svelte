@@ -4,6 +4,7 @@
 	import { balanceDue, type Invoice } from '../invoice';
 	import { inr, todayIso } from '../util';
 	import Icon from './Icon.svelte';
+	import DatePicker from './DatePicker.svelte';
 
 	let { inv, onclose }: { inv: Invoice; onclose: () => void } = $props();
 
@@ -33,7 +34,7 @@
 			<div class="fields">
 				<div class="f"><label for="pd-amt">Amount received</label><div class="pre"><span>₹</span><input class="inp num" id="pd-amt" type="number" min="0" step="0.01" bind:value={amount} /></div></div>
 				<div class="f"><label for="pd-tds">TDS deducted</label><div class="pre"><span>₹</span><input class="inp num" id="pd-tds" type="number" min="0" step="0.01" bind:value={tds} /></div></div>
-				<div class="f"><label for="pd-date">Date</label><input class="inp" id="pd-date" type="date" bind:value={date} /></div>
+				<div class="f"><label for="pd-date">Date</label><DatePicker id="pd-date" bind:value={date} clearable={false} /></div>
 				<div class="f"><label for="pd-ref">UTR / reference <span class="hint">(optional)</span></label><input class="inp" id="pd-ref" bind:value={ref} /></div>
 			</div>
 			<p class="hint" style="margin:12px 0 0">TDS the brand deducted counts as paid; you claim it back when you file your income tax return.</p>

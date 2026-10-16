@@ -8,6 +8,7 @@
 	import { theme, toggleTheme, ui } from '#lib/ui.svelte.ts';
 	import { initials } from '#lib/util.ts';
 	import Icon from '#lib/components/Icon.svelte';
+	import Avatar from '#lib/components/Avatar.svelte';
 	import CollabDrawer from '#lib/components/CollabDrawer.svelte';
 	import NewCollabDialog from '#lib/components/NewCollabDialog.svelte';
 
@@ -117,7 +118,7 @@
 					<button class="btn sm ghost" onclick={logout}><Icon name="logout" />Sign out</button>
 				</div>
 				<div class="me">
-					<span class="ring"><span>{initials(studio.settings?.display_name ?? '')}</span></span>
+					<Avatar name={studio.settings?.display_name ?? ''} src={studio.ig?.connected ? studio.ig.profile_picture_url : ''} />
 					<div><b>{studio.settings?.display_name ?? ''}</b><small>@{studio.settings?.handle ?? ''}</small></div>
 				</div>
 			</div>

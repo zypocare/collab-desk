@@ -3,6 +3,7 @@
 	import { balanceDue, type Invoice } from '../invoice';
 	import { fmt, inr } from '../util';
 	import Icon from './Icon.svelte';
+	import Select from './Select.svelte';
 
 	const unmatched = $derived(studio.alerts.filter((a) => a.status === 'unmatched'));
 	const recent = $derived(studio.alerts.filter((a) => a.status === 'matched').slice(0, 5));
@@ -27,10 +28,7 @@
 					<small>{a.excerpt.slice(0, 160)}</small>
 				</div>
 				<div class="alert-acts">
-					<select class="inp" aria-label="Which invoice is this?" bind:value={choice[a.id]}>
-						<option value="">Which invoice?</option>
-						{#each open as o (o.i.id)}<option value={o.i.id}>{o.i.number} · {o.brand} · {inr(balanceDue(o.i))}</option>{/each}
-					</select>
+					<Select size="sm" ariaLabel="Which invoice is this?" placeholder="Which invoice?" bind:value={choice[a.id]} options={open.map((o) => ({ value: o.i.id, label: `${o.i.number} · ${o.brand}`, hint: inr(balanceDue(o.i)) }))} />
 					<button class="btn sm primary" disabled={!choice[a.id]} onclick={() => assignAlert(a, byId(choice[a.id]) as Invoice)}>Match</button>
 					<button class="btn sm ghost" onclick={() => ignoreAlert(a)}>Not a collab</button>
 				</div>

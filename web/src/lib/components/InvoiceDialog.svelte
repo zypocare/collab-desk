@@ -5,6 +5,8 @@
 	import { INDIAN_STATES, KIND_LABEL, type Invoice, type InvoiceItem } from '../invoice';
 	import { acceptedQuote, delivText, inr, parse, rel, todayIso, iso } from '../util';
 	import Icon from './Icon.svelte';
+	import Select from './Select.svelte';
+	import DatePicker from './DatePicker.svelte';
 
 	let { c, editing, onclose }: { c: Collab; editing?: Invoice; onclose: () => void } = $props();
 	const s = studio.settings!;
@@ -104,9 +106,9 @@
 		<div class="fields">
 			<div class="f">
 				<label for="iv-kind">Invoice for</label>
-				<select class="inp" id="iv-kind" bind:value={kind}>{#each Object.entries(KIND_LABEL) as [k, l] (k)}<option value={k}>{l}</option>{/each}</select>
+				<Select id="iv-kind" bind:value={kind} options={Object.entries(KIND_LABEL).map(([k, l]) => ({ value: k as Invoice['kind'], label: l }))} />
 			</div>
-			<div class="f"><label for="iv-date">Invoice date</label><input class="inp" id="iv-date" type="date" bind:value={issueDate} /></div>
+			<div class="f"><label for="iv-date">Invoice date</label><DatePicker id="iv-date" bind:value={issueDate} clearable={false} /></div>
 		</div>
 
 		<div class="q-items" style="margin-top:14px">
@@ -126,19 +128,15 @@
 			{#if s.gst_registered}
 				<div class="f">
 					<label for="iv-tax">GST</label>
-					<select class="inp" id="iv-tax" bind:value={taxMode}>
-						<option value="intra">CGST + SGST (brand in {s.state || 'your state'})</option>
-						<option value="inter">IGST (brand in another state)</option>
-						<option value="none">No GST on this invoice</option>
-					</select>
+					<Select id="iv-tax" bind:value={taxMode} options={[{ value: 'intra' as const, label: `CGST + SGST (brand in ${s.state || 'your state'})` }, { value: 'inter' as const, label: 'IGST (brand in another state)' }, { value: 'none' as const, label: 'No GST on this invoice' }]} />
 				</div>
-				<div class="f"><label for="iv-rate">GST rate</label><select class="inp" id="iv-rate" bind:value={gstRate}><option value={18}>18%</option><option value={12}>12%</option><option value={5}>5%</option></select></div>
+				<div class="f"><label for="iv-rate">GST rate</label><Select id="iv-rate" bind:value={gstRate} options={[18, 12, 5].map((r) => ({ value: r, label: `${r}%` }))} /></div>
 			{/if}
 			<div class="f">
 				<label for="iv-tds">TDS the brand will deduct</label>
-				<select class="inp" id="iv-tds" bind:value={tdsRate}><option value={0}>None</option><option value={1}>1%</option><option value={2}>2%</option><option value={10}>10%</option></select>
+				<Select id="iv-tds" bind:value={tdsRate} options={[0, 1, 2, 10].map((r) => ({ value: r, label: r ? `${r}%` : 'None' }))} />
 			</div>
-			<div class="f"><label for="iv-due">Payment due</label><input class="inp" id="iv-due" type="date" bind:value={dueDate} /></div>
+			<div class="f"><label for="iv-due">Payment due</label><DatePicker id="iv-due" bind:value={dueDate} /></div>
 		</div>
 
 		<details class="bill-details" open={!c.brand.state && s.gst_registered}>
@@ -147,7 +145,7 @@
 				<div class="f"><label for="iv-bg">Brand GSTIN</label><input class="inp" id="iv-bg" value={c.brand.gstin} placeholder="27AAACB1234C1Z5" onchange={(e) => saveBrand(c.brand_id, { gstin: val(e).toUpperCase().trim() })} /></div>
 				<div class="f">
 					<label for="iv-bs">Brand state</label>
-					<select class="inp" id="iv-bs" value={c.brand.state} onchange={(e) => brandState(val(e))}><option value="">Not known</option>{#each INDIAN_STATES as st (st)}<option value={st}>{st}</option>{/each}</select>
+					<Select id="iv-bs" value={c.brand.state} placeholder="Not known" options={INDIAN_STATES.map((st) => ({ value: st, label: st }))} onchange={(v) => brandState(v)} />
 				</div>
 				<div class="f span2"><label for="iv-ba">Billing address</label><input class="inp" id="iv-ba" value={c.brand.billing_address} onchange={(e) => saveBrand(c.brand_id, { billing_address: val(e) })} /></div>
 			</div>

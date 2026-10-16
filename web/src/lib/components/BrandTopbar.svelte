@@ -6,6 +6,7 @@
 	import { theme, toggleTheme } from '../ui.svelte';
 	import { initials } from '../util';
 	import Icon from './Icon.svelte';
+	import Avatar from './Avatar.svelte';
 
 	const name = $derived(pub.data?.display_name ?? '');
 	const signedIn = $derived(!!auth.session && auth.account?.role === 'brand');
@@ -18,7 +19,7 @@
 </script>
 
 <header class="topbar">
-	<a class="brandmark" href="/"><span class="ring"><span>{initials(name)}</span></span><b>{name ? `Collaborate with ${name.split(' ')[0]}` : ''}</b></a>
+	<a class="brandmark" href="/"><Avatar {name} src={pub.data?.instagram?.profile_picture_url} /><b>{name ? `Collaborate with ${name.split(' ')[0]}` : ''}</b></a>
 	{#if signedIn}
 		<nav aria-label="Brand">
 			<a href="/brand" aria-current={path === '/brand' || path.startsWith('/brand/r/') ? 'page' : undefined}>My requests</a>

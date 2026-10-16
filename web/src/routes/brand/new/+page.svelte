@@ -8,6 +8,8 @@
 	import { KINDS, USAGE, errMessage, firstName, inr, rel } from '#lib/util.ts';
 	import BrandDetailsForm from '#lib/components/BrandDetailsForm.svelte';
 	import Icon from '#lib/components/Icon.svelte';
+	import Select from '#lib/components/Select.svelte';
+	import DatePicker from '#lib/components/DatePicker.svelte';
 
 	const acc = $derived(auth.account?.role === 'brand' ? auth.account : null);
 	const creator = $derived(firstName(pub.data?.display_name ?? ''));
@@ -152,8 +154,8 @@
 								{#if errProduct}<div class="err">{errProduct}</div>{/if}
 							</div>
 						{/if}
-						<div class="f"><label for="b-date">Preferred go-live date</label><input class="inp" id="b-date" type="date" min={rel(3)} bind:value={preferred} /></div>
-						<div class="f"><label for="b-usage">Usage rights</label><select class="inp" id="b-usage" bind:value={usage}>{#each USAGE as u (u)}<option value={u}>{u}</option>{/each}</select></div>
+						<div class="f"><label for="b-date">Preferred go-live date</label><DatePicker id="b-date" min={rel(3)} bind:value={preferred} placeholder="No preference" /></div>
+						<div class="f"><label for="b-usage">Usage rights</label><Select id="b-usage" bind:value={usage} options={USAGE.map((u) => ({ value: u, label: u }))} /></div>
 						<div class="f span2"><label for="b-brief">Brief</label><textarea class="inp" id="b-brief" rows="4" placeholder="What's launching, key messages, hashtags, links and anything to avoid." bind:value={brief}></textarea></div>
 					</div>
 				</div>

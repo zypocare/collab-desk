@@ -4,6 +4,7 @@
 	import type { Collab, Quote, QuoteItem } from '../types';
 	import { KINDS, USAGE, inr, payTerms, plural, quoteTotal, rel } from '../util';
 	import Icon from './Icon.svelte';
+	import Select from './Select.svelte';
 
 	let { c, base, editing = false, onclose }: { c: Collab; base?: Quote; editing?: boolean; onclose: () => void } = $props();
 
@@ -77,53 +78,35 @@
 					<button class="icon-btn sm" onclick={() => items.splice(i, 1)} aria-label="Remove {it.kind}"><Icon name="x" /></button>
 				</div>
 			{/each}
-			<select
-				class="inp add-sel"
-				aria-label="Add a line"
-				value=""
-				onchange={(e) => {
-					const k = (e.currentTarget as HTMLSelectElement).value;
-					(e.currentTarget as HTMLSelectElement).value = '';
-					if (k) addItem(k);
-				}}
-			>
-				<option value="">+ Add a line</option>
-				{#each KINDS as k (k)}<option value={k}>{k}</option>{/each}
-			</select>
+			<Select action class="add-sel" ariaLabel="Add a line" placeholder="+ Add a line" options={KINDS.map((k) => ({ value: k, label: k }))} onchange={(k) => addItem(k)} />
 		</div>
 
 		<div class="fields" style="margin-top:16px">
 			<div class="f">
 				<label for="q-usage">Usage rights</label>
-				<select class="inp" id="q-usage" bind:value={usage}>{#each USAGE as u (u)}<option value={u}>{u}</option>{/each}</select>
+				<Select id="q-usage" bind:value={usage} options={USAGE.map((u) => ({ value: u, label: u }))} />
 			</div>
 			<div class="f"><label for="q-ufee">Usage fee</label><div class="pre"><span>₹</span><input class="inp num" id="q-ufee" type="number" min="0" bind:value={usageFee} /></div></div>
 			<div class="f"><label for="q-disc">Discount</label><div class="pre"><span>₹</span><input class="inp num" id="q-disc" type="number" min="0" bind:value={discount} /></div></div>
 			<div class="f">
 				<label for="q-adv">Advance</label>
-				<select class="inp" id="q-adv" bind:value={advance}>
-					<option value={0}>No advance</option><option value={30}>30% advance</option><option value={50}>50% advance</option><option value={100}>100% upfront</option>
-				</select>
+				<Select id="q-adv" bind:value={advance} options={[{ value: 0, label: 'No advance' }, { value: 30, label: '30% advance' }, { value: 50, label: '50% advance' }, { value: 100, label: '100% upfront' }]} />
 			</div>
 			<div class="f">
 				<label for="q-days">Balance due</label>
-				<select class="inp" id="q-days" bind:value={payDays} disabled={advance >= 100}>
-					<option value={0}>On the day it goes live</option><option value={7}>7 days after going live</option><option value={15}>15 days after going live</option><option value={30}>30 days after going live</option><option value={45}>45 days after going live</option>
-				</select>
+				<Select id="q-days" bind:value={payDays} disabled={advance >= 100} options={[0, 7, 15, 30, 45].map((d) => ({ value: d, label: d ? `${d} days after going live` : 'On the day it goes live' }))} />
 			</div>
 			<div class="f">
 				<label for="q-rounds">Draft revisions included</label>
-				<select class="inp" id="q-rounds" bind:value={rounds}>{#each [0, 1, 2, 3] as r (r)}<option value={r}>{r === 0 ? 'None' : `${r} round${r > 1 ? 's' : ''}`}</option>{/each}</select>
+				<Select id="q-rounds" bind:value={rounds} options={[0, 1, 2, 3].map((r) => ({ value: r, label: r === 0 ? 'None' : `${r} round${r > 1 ? 's' : ''}` }))} />
 			</div>
 			<div class="f">
 				<label for="q-excl">Exclusivity</label>
-				<select class="inp" id="q-excl" bind:value={exclusivity}>
-					<option value={0}>None</option><option value={7}>7 days</option><option value={15}>15 days</option><option value={30}>30 days</option><option value={60}>60 days</option><option value={90}>90 days</option>
-				</select>
+				<Select id="q-excl" bind:value={exclusivity} options={[0, 7, 15, 30, 60, 90].map((d) => ({ value: d, label: d ? `${d} days` : 'None' }))} />
 			</div>
 			<div class="f">
 				<label for="q-valid">Quote valid for</label>
-				<select class="inp" id="q-valid" bind:value={validDays}><option value={7}>7 days</option><option value={14}>14 days</option><option value={30}>30 days</option><option value={0}>No expiry</option></select>
+				<Select id="q-valid" bind:value={validDays} options={[7, 14, 30, 0].map((d) => ({ value: d, label: d ? `${d} days` : 'No expiry' }))} />
 			</div>
 			<div class="f span2"><label for="q-notes">Notes for the brand <span class="hint">(optional)</span></label><textarea class="inp" id="q-notes" rows="2" placeholder="e.g. Raw footage not included. One reshoot if the product changes." bind:value={notes}></textarea></div>
 		</div>

@@ -32,6 +32,8 @@
 		stageIndex
 	} from '../util';
 	import Icon from './Icon.svelte';
+	import Select from './Select.svelte';
+	import DatePicker from './DatePicker.svelte';
 	import Mono from './Mono.svelte';
 	import QuoteDialog from './QuoteDialog.svelte';
 	import CollabPosts from './CollabPosts.svelte';
@@ -121,7 +123,6 @@
 	}
 	const num = (e: Event) => Math.max(0, Number((e.currentTarget as HTMLInputElement).value) || 0);
 	const val = (e: Event) => (e.currentTarget as HTMLInputElement).value;
-	const dateVal = (e: Event) => val(e) || null;
 
 	async function changeStage(s: Stage, force = false) {
 		if (!c) return;
@@ -203,16 +204,11 @@
 				<div class="fields">
 					<div class="f">
 						<label for="f-type">Type</label>
-						<select class="inp" id="f-type" value={c.type} onchange={(e) => save('type', val(e))}>
-							{#each Object.entries(TYPE_LABEL) as [v, l] (v)}<option value={v}>{l}</option>{/each}
-						</select>
+						<Select id="f-type" value={c.type as string} options={Object.entries(TYPE_LABEL).map(([v, l]) => ({ value: v, label: l }))} onchange={(v) => save('type', v)} />
 					</div>
 					<div class="f">
 						<label for="f-usage">Usage rights</label>
-						<select class="inp" id="f-usage" value={c.usage} onchange={(e) => save('usage', val(e))}>
-							{#each USAGE as u (u)}<option value={u}>{u}</option>{/each}
-							{#if !USAGE.includes(c.usage)}<option value={c.usage}>{c.usage}</option>{/if}
-						</select>
+						<Select id="f-usage" value={c.usage} options={[...USAGE, ...(USAGE.includes(c.usage) ? [] : [c.usage])].map((u) => ({ value: u, label: u }))} onchange={(v) => save('usage', v)} />
 					</div>
 					{#if isPaid(c)}
 						<div class="f">
@@ -232,9 +228,7 @@
 					{/if}
 					<div class="f">
 						<label for="f-cat">Category</label>
-						<select class="inp" id="f-cat" value={c.brand.category} onchange={(e) => saveBrand(c.brand_id, { category: val(e) })}>
-							{#each CATS as cat (cat)}<option value={cat}>{cat}</option>{/each}
-						</select>
+						<Select id="f-cat" value={c.brand.category} options={CATS.map((cat) => ({ value: cat, label: cat }))} onchange={(v) => c && saveBrand(c.brand_id, { category: v })} />
 					</div>
 					<div class="f">
 						<label for="f-handle">Brand Instagram</label>
@@ -303,29 +297,17 @@
 						<p class="hint">Add what the brand is expecting.</p>
 					{/each}
 				</div>
-				<select
-					class="inp add-sel"
-					aria-label="Add deliverable"
-					value=""
-					onchange={(e) => {
-						const k = val(e);
-						(e.currentTarget as HTMLSelectElement).value = '';
-						if (k && c) addDeliverable(c, k);
-					}}
-				>
-					<option value="">+ Add deliverable</option>
-					{#each KINDS as k (k)}<option value={k}>{k}</option>{/each}
-				</select>
+				<Select action class="add-sel" ariaLabel="Add deliverable" placeholder="+ Add deliverable" options={KINDS.map((k) => ({ value: k, label: k }))} onchange={(k) => c && addDeliverable(c, k)} />
 			</section>
 
 			<section class="sec">
 				<h3>Dates</h3>
 				<div class="fields">
 					{#if hasProduct(c) || c.product_date}
-						<div class="f"><label for="d-product">Product arrives</label><input class="inp" type="date" id="d-product" value={c.product_date ?? ''} onchange={(e) => save('product_date', dateVal(e))} /></div>
+						<div class="f"><label for="d-product">Product arrives</label><DatePicker id="d-product" value={c.product_date} onchange={(v) => save('product_date', v || null)} /></div>
 					{/if}
-					<div class="f"><label for="d-draft">Draft due to brand</label><input class="inp" type="date" id="d-draft" value={c.draft_date ?? ''} onchange={(e) => save('draft_date', dateVal(e))} /></div>
-					<div class="f"><label for="d-live">Go-live date</label><input class="inp" type="date" id="d-live" value={c.live_date ?? ''} onchange={(e) => save('live_date', dateVal(e))} /></div>
+					<div class="f"><label for="d-draft">Draft due to brand</label><DatePicker id="d-draft" value={c.draft_date} onchange={(v) => save('draft_date', v || null)} /></div>
+					<div class="f"><label for="d-live">Go-live date</label><DatePicker id="d-live" value={c.live_date} onchange={(v) => save('live_date', v || null)} /></div>
 				</div>
 			</section>
 
@@ -418,16 +400,14 @@
 					<div class="fields">
 						<div class="f">
 							<label for="p-st">Status</label>
-							<select class="inp" id="p-st" value={c.pay_status} onchange={(e) => (val(e) === 'paid' && c ? markPaid(c) : save('pay_status', val(e)))}>
-								{#each ['pending', 'advance', 'invoiced', 'paid'] as const as s (s)}<option value={s}>{PAY_LABEL[s]}</option>{/each}
-							</select>
+							<Select id="p-st" value={c.pay_status as string} options={(['pending', 'advance', 'invoiced', 'paid'] as const).map((s) => ({ value: s as string, label: PAY_LABEL[s] }))} onchange={(v) => (v === 'paid' && c ? markPaid(c) : save('pay_status', v))} />
 						</div>
 						<div class="f">
 							<label for="p-rec">Received so far</label>
 							<div class="pre"><span>₹</span><input class="inp num" type="number" inputmode="numeric" min="0" id="p-rec" value={c.pay_received || ''} onchange={(e) => save('pay_received', num(e))} /></div>
 						</div>
 						<div class="f"><label for="p-inv">Invoice no.</label><input class="inp" id="p-inv" value={c.invoice_no} placeholder="INV-1048" onchange={(e) => save('invoice_no', val(e))} /></div>
-						<div class="f"><label for="p-due">Payment due</label><input class="inp" type="date" id="p-due" value={c.pay_due ?? ''} onchange={(e) => save('pay_due', dateVal(e))} /></div>
+						<div class="f"><label for="p-due">Payment due</label><DatePicker id="p-due" value={c.pay_due} onchange={(v) => save('pay_due', v || null)} /></div>
 					</div>
 					{/if}
 					<div class="balance">
@@ -445,7 +425,7 @@
 			<section class="sec">
 				<h3>Follow-up reminder</h3>
 				<div class="fields">
-					<div class="f"><label for="fu-d">Remind me on</label><input class="inp" type="date" id="fu-d" value={c.follow_date ?? ''} onchange={(e) => save('follow_date', dateVal(e))} /></div>
+					<div class="f"><label for="fu-d">Remind me on</label><DatePicker id="fu-d" value={c.follow_date} onchange={(v) => save('follow_date', v || null)} /></div>
 					<div class="f"><label for="fu-n">About</label><input class="inp" id="fu-n" value={c.follow_note} placeholder="Ask for product tracking" onchange={(e) => save('follow_note', val(e))} /></div>
 				</div>
 				{#if c.follow_date}<button class="btn sm follow-done" onclick={() => c && completeFollow(c)}><Icon name="check" />Mark follow-up done</button>{/if}

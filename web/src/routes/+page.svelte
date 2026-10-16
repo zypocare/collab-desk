@@ -10,6 +10,7 @@
 	import Audience from '#lib/components/Audience.svelte';
 	import { compact, fmt } from '#lib/util.ts';
 	import Icon from '#lib/components/Icon.svelte';
+	import Avatar from '#lib/components/Avatar.svelte';
 
 	const preview = $derived(page.url.searchParams.has('preview'));
 
@@ -29,8 +30,7 @@
 			? [
 					{ raw: p.followers, label: 'followers' },
 					{ raw: p.engagement, label: 'avg. engagement' },
-					...(p.instagram?.avg_views ? [{ raw: compact(p.instagram.avg_views), label: 'avg. views per post' }] : []),
-					{ raw: p.reply_time, label: 'typical reply time' }
+					...(p.instagram?.avg_views ? [{ raw: compact(p.instagram.avg_views), label: 'avg. views per post' }] : [])
 				].filter((s) => s.raw)
 			: []
 	);
@@ -50,7 +50,7 @@
 		<div class="bp">
 			<section class="cover rv"><div class="mesh" aria-hidden="true"></div><div class="cover-txt"><small>Brand collaborations</small>Let's make something <em>beautiful</em></div></section>
 			<section class="hero rv" style="--i:1">
-				<span class="ring"><span>{initials(p.display_name)}</span></span>
+				<Avatar name={p.display_name} src={p.instagram?.profile_picture_url} />
 				<div>
 					<h1>{p.display_name}</h1>
 					<div class="handle">@{p.handle}</div>

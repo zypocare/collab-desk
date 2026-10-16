@@ -4,6 +4,7 @@
 	import { toast } from '../ui.svelte';
 	import { CATS, errMessage } from '../util';
 	import Icon from './Icon.svelte';
+	import Select from './Select.svelte';
 
 	let { onsaved, submitLabel = 'Save details' }: { onsaved?: () => void; submitLabel?: string } = $props();
 
@@ -48,7 +49,7 @@
 		<div class="f"><label for="bd-name">Brand name</label><input class="inp" id="bd-name" autocomplete="organization" bind:value={name} /></div>
 		<div class="f"><label for="bd-ig">Instagram handle</label><div class="pre"><span>@</span><input class="inp" id="bd-ig" placeholder="yourbrand" bind:value={instagram} /></div></div>
 		<div class="f"><label for="bd-web">Website <span class="hint">(optional)</span></label><input class="inp" id="bd-web" placeholder="https://" bind:value={website} /></div>
-		<div class="f"><label for="bd-cat">Category</label><select class="inp" id="bd-cat" bind:value={category}>{#each CATS as c (c)}<option value={c}>{c}</option>{/each}</select></div>
+		<div class="f"><label for="bd-cat">Category</label><Select id="bd-cat" bind:value={category} options={CATS.map((c) => ({ value: c, label: c }))} /></div>
 		<div class="f"><label for="bd-you">Your name</label><input class="inp" id="bd-you" autocomplete="name" bind:value={fullName} /></div>
 		<div class="f"><label for="bd-phone">Phone or WhatsApp <span class="hint">(optional)</span></label><input class="inp" id="bd-phone" inputmode="tel" autocomplete="tel" bind:value={phone} /></div>
 	</div>

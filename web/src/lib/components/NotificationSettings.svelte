@@ -5,6 +5,7 @@
 	import { copyText, toast } from '../ui.svelte';
 	import { errMessage } from '../util';
 	import Icon from './Icon.svelte';
+	import Select from './Select.svelte';
 
 	const s = $derived(studio.settings!);
 	const calUrl = $derived(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/calendar?token=${s.calendar_token}`);
@@ -131,8 +132,6 @@
 
 	<div class="switch-row">
 		<div><b>Competitor warning</b><small>Warn when two brands in the same category, or listed as competitors, go live within this many days of each other.</small></div>
-		<select class="inp" style="width:auto" aria-label="Competitor warning window" value={s.competitor_window_days} onchange={(e) => saveSettings({ competitor_window_days: Number((e.currentTarget as HTMLSelectElement).value) })}>
-			{#each [3, 7, 14, 21, 30] as d (d)}<option value={d}>{d} days</option>{/each}
-		</select>
+		<Select style="width:auto;min-width:120px" ariaLabel="Competitor warning window" value={Number(s.competitor_window_days)} options={[3, 7, 14, 21, 30].map((d) => ({ value: d, label: `${d} days` }))} onchange={(v) => saveSettings({ competitor_window_days: v })} />
 	</div>
 </section>

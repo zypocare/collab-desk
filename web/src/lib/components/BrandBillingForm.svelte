@@ -5,6 +5,7 @@
 	import { INDIAN_STATES } from '../invoice';
 	import { errMessage } from '../util';
 	import Icon from './Icon.svelte';
+	import Select from './Select.svelte';
 
 	let gstin = $state('');
 	let address = $state('');
@@ -34,7 +35,7 @@
 		<div class="f"><label for="bb-gstin">GSTIN <span class="hint">(optional)</span></label><input class="inp" id="bb-gstin" placeholder="27AAACB1234C1Z5" bind:value={gstin} /></div>
 		<div class="f">
 			<label for="bb-state">State</label>
-			<select class="inp" id="bb-state" bind:value={stateName}><option value="">Choose</option>{#each INDIAN_STATES as st (st)}<option value={st}>{st}</option>{/each}</select>
+			<Select id="bb-state" bind:value={stateName} options={INDIAN_STATES.map((st) => ({ value: st, label: st }))} />
 		</div>
 		<div class="f span2"><label for="bb-addr">Billing address</label><textarea class="inp" id="bb-addr" rows="2" bind:value={address}></textarea></div>
 		<div class="f span2"><label for="bb-acc">Accounts team email <span class="hint">(gets a copy of invoices)</span></label><input class="inp" id="bb-acc" type="email" placeholder="accounts@brand.com" bind:value={accounts} /></div>

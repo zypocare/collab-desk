@@ -5,6 +5,7 @@
 	import { countUp, ui } from '#lib/ui.svelte.ts';
 	import { CATS, delivText, fmt, inr, stageLabel } from '#lib/util.ts';
 	import Icon from '#lib/components/Icon.svelte';
+	import Select from '#lib/components/Select.svelte';
 	import Mono from '#lib/components/Mono.svelte';
 	import PayPill from '#lib/components/PayPill.svelte';
 
@@ -71,7 +72,7 @@
 					<div class="f"><label for="b-ig">Instagram</label><div class="pre"><span>@</span><input class="inp" id="b-ig" value={brand.instagram} onchange={(e) => saveBrand(brand.id, { instagram: val(e).replace(/^@/, '') })} /></div></div>
 					<div class="f">
 						<label for="b-cat">Category</label>
-						<select class="inp" id="b-cat" value={brand.category} onchange={(e) => saveBrand(brand.id, { category: val(e) })}>{#each CATS as c (c)}<option value={c}>{c}</option>{/each}</select>
+						<Select id="b-cat" value={brand.category} options={CATS.map((c) => ({ value: c, label: c }))} onchange={(v) => brand && saveBrand(brand.id, { category: v })} />
 					</div>
 					<div class="f span2"><label for="b-web">Website</label><input class="inp" id="b-web" value={brand.website} placeholder="https://" onchange={(e) => saveBrand(brand.id, { website: val(e) })} /></div>
 				</div>
