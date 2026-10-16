@@ -53,6 +53,10 @@
 		<label for="{idp}-link">Link to share <span class="hint">(optional)</span></label>
 		<input class="inp" id="{idp}-link" inputmode="url" placeholder="https://" value={value.link ?? ''} onchange={(e) => set({ link: txt(e) })} />
 	</div>
+	<div class="f span2">
+		<label for="{idp}-promo">Promo code for followers <span class="hint">(optional)</span></label>
+		<input class="inp" id="{idp}-promo" placeholder="e.g. NIVI15 for 15% off" value={value.promo ?? ''} onchange={(e) => set({ promo: txt(e) })} />
+	</div>
 	<div class="f">
 		<label for="{idp}-dos">Do's</label>
 		<textarea class="inp" id="{idp}-dos" rows="3" placeholder="Show the texture, morning routine" value={value.dos ?? ''} onchange={(e) => set({ dos: txt(e) })}></textarea>

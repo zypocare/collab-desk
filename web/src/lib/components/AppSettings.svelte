@@ -35,7 +35,10 @@
 	async function test() {
 		const { data, error } = await supabase.functions.invoke('push-test', { body: {} });
 		if (error) return toast(`Couldn't send: ${errMessage(error)}`, 'alert');
-		toast((data as { sent?: number })?.sent ? 'Test sent. Check your notifications.' : 'No devices to send to yet.', 'bell');
+		const r = data as { sent?: number; devices?: number; failed?: { device: string; code: number | null; error: string }[]; skipped?: string };
+		if (r.skipped) return toast(`Couldn't send: ${r.skipped}`, 'alert');
+		if (r.failed?.length) return toast(`Sent to ${r.sent ?? 0} of ${r.devices}. ${r.failed.map((f) => `${f.device}: ${f.code ?? ''} ${f.error}`).join('; ')}`, 'alert');
+		toast(r.sent ? `Test sent to ${r.sent} device${r.sent > 1 ? 's' : ''}. Check your notifications.` : 'No devices to send to yet. Turn notifications on first.', 'bell');
 	}
 </script>
 

@@ -309,6 +309,7 @@ export function captionStarter(c: Collab, style: 'short' | 'detailed'): string {
 		if (dos.length) lines.push(...dos.map((x) => `✔️ ${x[0].toUpperCase()}${x.slice(1)}`), '');
 		lines.push('What would you try first? Tell me in the comments 👇', '');
 	}
+	if (d.promo?.trim()) lines.push(`🎁 Use code ${d.promo.trim().split(/\s/)[0].toUpperCase()}`, '');
 	if (d.link) lines.push('🔗 Link in bio', '');
 	if (mentions.length) lines.push(mentions.join(' '));
 	if (tags.length) lines.push(tags.join(' '));

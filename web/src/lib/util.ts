@@ -280,7 +280,8 @@ export function briefCheck(caption: string, handle: string, d: BriefDetails | nu
 		{ label: '#ad or #collab in the first line', ok: base.ad_tag },
 		...(handle ? [{ label: `@${handle.replace(/^@/, '')}`, ok: base.brand_tag }] : []),
 		...(d?.mentions ?? []).filter((m) => m.toLowerCase() !== `@${handle.toLowerCase().replace(/^@/, '')}`).map((m) => ({ label: m, ok: has(m.toLowerCase()) })),
-		...(d?.hashtags ?? []).map((h) => ({ label: h, ok: has(h.toLowerCase()) }))
+		...(d?.hashtags ?? []).map((h) => ({ label: h, ok: has(h.toLowerCase()) })),
+		...(d?.promo?.trim() ? [{ label: `code ${d.promo.trim().split(/\s/)[0].toUpperCase()}`, ok: lower.includes(d.promo.trim().split(/\s/)[0].toLowerCase()) }] : [])
 	];
 	return { items, missing: items.filter((i) => !i.ok).map((i) => i.label) };
 }

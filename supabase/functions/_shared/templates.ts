@@ -423,6 +423,24 @@ export function render(kind: string, p: Payload, s: Settings): Omit<Mail, 'to'> 
     };
   }
 
+  if (kind === 'post_now') {
+    const extra = [p.promo && `Promo code: ${p.promo}`, p.link && `Link: ${p.link}`].filter(Boolean).join(' · ');
+    return {
+      subject: `Time to post: ${brand} at ${p.time}`,
+      html: layout(
+        s,
+        `${brand} goes live at ${p.time}`,
+        `<p style="margin:0">${esc(p.deliverables)} for <b>${esc(code)}</b>. Turn on the Paid partnership label and tag @${esc(p.instagram || brand)}.</p>${quoteBox('Approved caption', p.caption || 'No approved caption yet. Open the app to write one from the brief.')}${quoteBox('Also', extra)}`,
+        { label: 'Open caption to copy', href: url(s, `/studio/content?post=${encodeURIComponent(code)}`) },
+      ),
+      text: `${brand} goes live at ${p.time}.
+
+${p.caption ?? ''}
+
+${extra}`,
+    };
+  }
+
   if (kind === 'review_request') {
     return {
       subject: `How was working with ${first(s.display_name)}? (${code})`,

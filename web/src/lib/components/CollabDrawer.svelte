@@ -46,6 +46,7 @@
 	import PriorityPanel from './PriorityPanel.svelte';
 	import Select from './Select.svelte';
 	import DatePicker from './DatePicker.svelte';
+	import { bestTime, timeLabel, timeOptions } from '../postTime';
 	import Mono from './Mono.svelte';
 	import QuoteDialog from './QuoteDialog.svelte';
 	import CollabPosts from './CollabPosts.svelte';
@@ -158,6 +159,7 @@
 	// ---- next step: one button that moves the collab forward ----
 	const next = $derived(c ? nextStep(c) : null);
 	const dates = $derived(c && studio.settings ? suggestDates(c, studio.settings, studio.collabs) : null);
+	const best = $derived(bestTime(studio.media));
 	async function scrollTo(id: string, focus?: string) {
 		await tick();
 		document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -410,7 +412,17 @@
 					{/if}
 					<div class="f"><label for="d-draft">Draft due to brand</label><DatePicker id="d-draft" value={c.draft_date} onchange={(v) => save('draft_date', v || null)} /></div>
 					<div class="f"><label for="d-live">Go-live date</label><DatePicker id="d-live" value={c.live_date} onchange={(v) => save('live_date', v || null)} /></div>
+					{#if c.live_date && !['live', 'wrapped', 'declined'].includes(c.stage)}
+						<div class="f"><label for="d-time">Post at <span class="hint">(alert 30 min before)</span></label><Select id="d-time" value={c.live_time?.slice(0, 5) ?? undefined} placeholder="Pick a time" options={timeOptions(c.live_time)} onchange={(v) => save('live_time', v)} /></div>
+					{/if}
 				</div>
+				{#if best && c.live_date && !['live', 'wrapped', 'declined'].includes(c.stage) && c.live_time?.slice(0, 5) !== best.value}
+					<div class="date-sug">
+						<Icon name="spark" />
+						<span><b>Your best time:</b> {best.label}. Your posts then get {best.lift}% more interactions.</span>
+						<button class="btn sm" onclick={() => best && save('live_time', best.value)}>Use {timeLabel(best.value)}</button>
+					</div>
+				{/if}
 			</section>
 
 			<section class="sec" id="sec-drafts">

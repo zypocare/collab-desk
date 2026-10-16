@@ -13,19 +13,22 @@ export type Push = { title: string; body: string; url: string; tag?: string };
 /** Sends to every device she turned alerts on for; forgets devices the browser says are gone. */
 export async function pushToCreator(db: SupabaseClient, msg: Push) {
   if (!pushConfigured) return { sent: 0, skipped: 'push not configured' };
-  const { data: subs } = await db.from('push_subscriptions').select('id, endpoint, p256dh, auth');
+  const { data: subs } = await db.from('push_subscriptions').select('id, endpoint, p256dh, auth, device');
   let sent = 0;
+  const failed: { device: string; code: number | null; error: string }[] = [];
   for (const s of subs ?? []) {
     try {
       await webpush.sendNotification({ endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } }, JSON.stringify(msg), { TTL: 60 * 60 * 24 });
       sent++;
     } catch (e) {
       const code = (e as { statusCode?: number }).statusCode;
+      const body = String((e as { body?: string }).body ?? (e as Error).message ?? '').slice(0, 200);
+      failed.push({ device: s.device ?? 'device', code: code ?? null, error: body });
       if (code === 404 || code === 410) await db.from('push_subscriptions').delete().eq('id', s.id);
-      else console.error('[push]', code, (e as Error).message);
+      else console.error('[push]', code, body);
     }
   }
-  return { sent };
+  return { sent, devices: subs?.length ?? 0, failed };
 }
 
 const inr = (n: unknown) => '₹' + Math.round(Number(n) || 0).toLocaleString('en-IN');
@@ -50,6 +53,8 @@ export function pushFor(kind: string, p: Record<string, unknown>): Push | null {
       return { title: `${brand} shipped the product`, body: [p.carrier, p.tracking].filter(Boolean).join(' · '), url: open(code), tag: code };
     case 'usage_ext_requested':
       return { title: `${brand} wants to extend usage`, body: `${p.days} more days for ${inr(p.price)}`, url: open(code), tag: code };
+    case 'post_now':
+      return { title: `Post ${brand} at ${p.time}`, body: p.caption ? 'Caption is ready: tap to copy it.' : `${p.deliverables}. Tap to get your caption.`, url: `/studio/content?post=${encodeURIComponent(code)}`, tag: `post-${code}` };
     case 'counter_taken':
       return { title: `${brand} took your paid offer`, body: `Barter is now Paid + product at ${inr(p.fee)} · ${code}`, url: open(code), tag: code };
     case 'review_received':

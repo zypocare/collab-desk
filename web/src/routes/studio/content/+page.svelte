@@ -4,6 +4,8 @@
 	import { ui } from '#lib/ui.svelte.ts';
 	import { diff, fmt, fmtLong, latestDraft, relWord, todayIso } from '#lib/util.ts';
 	import ContentRow from '#lib/components/ContentRow.svelte';
+	import PostCard from '#lib/components/PostCard.svelte';
+	import { page } from '$app/state';
 	import Icon from '#lib/components/Icon.svelte';
 	import Mono from '#lib/components/Mono.svelte';
 
@@ -91,12 +93,8 @@
 		<section class="panel rv" style="--i:2">
 			<div class="panel-h"><h2>Ready to post</h2><small>approved by the brand</small></div>
 			{#each toPost as c (c.id)}
-				<button class="ct-mini" onclick={() => (ui.openCollab = c.id)}>
-					<Mono name={c.brand.name} size="sm" />
-					<span><b>{c.brand.name}</b><small>{c.live_date ? `Goes live ${relWord(diff(c.live_date))}` : 'Set a go-live date'}</small></span>
-					<Icon name="chevR" />
-				</button>
-			{:else}<p class="hint ct-none">Approved drafts land here, ready to post.</p>{/each}
+				<PostCard {c} focus={page.url.searchParams.get('post') === c.code} />
+			{:else}<p class="hint ct-none">Approved drafts land here, with the caption ready to copy.</p>{/each}
 		</section>
 		<section class="panel rv" style="--i:3">
 			<div class="panel-h"><h2>With the brand</h2><small>drafts waiting for review</small></div>

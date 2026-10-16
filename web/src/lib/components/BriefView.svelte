@@ -8,6 +8,7 @@
 			{ k: "Do's", v: d.dos },
 			{ k: "Don'ts", v: d.donts },
 			{ k: 'Link', v: d.link },
+			{ k: 'Promo code', v: d.promo },
 			{ k: 'References', v: d.references }
 		].filter((r) => r.v)
 	);

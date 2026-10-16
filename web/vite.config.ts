@@ -17,7 +17,11 @@ export default defineConfig({
 
 			// Check for a new deploy every 2 minutes. Once there is one, moving to another screen
 			// reloads the page instead of asking for files the old version had (they no longer exist).
-			version: { pollInterval: 120_000 }
+			version: { pollInterval: 120_000 },
+
+			// We register the service worker ourselves as a classic script (lib/pwa.svelte.ts):
+			// some phones (older iPhones) refuse a "module" service worker, which stops alerts.
+			serviceWorker: { register: false }
 		})
 	]
 });

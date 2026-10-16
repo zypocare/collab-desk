@@ -8,6 +8,7 @@ export const pwa = $state<{ installEvent: InstallEvent | null; installed: boolea
 /** Called once from the root layout. Keeps the browser's install offer for our own button. */
 export function watchInstall() {
 	if (typeof window === 'undefined') return;
+	if (!import.meta.env.DEV && 'serviceWorker' in navigator) navigator.serviceWorker.register('/service-worker.js').catch((e) => console.error('[sw]', e));
 	pwa.installed = matchMedia('(display-mode: standalone)').matches || (navigator as unknown as { standalone?: boolean }).standalone === true;
 	addEventListener('beforeinstallprompt', (e) => {
 		e.preventDefault();
@@ -47,13 +48,30 @@ export async function pushState(): Promise<'unsupported' | 'blocked' | 'on' | 'o
 	return sub ? 'on' : 'off';
 }
 
+/** The service worker, registering it if needed, and waiting (at most 10 s) until it is active. */
+async function worker(): Promise<ServiceWorkerRegistration> {
+	const reg = (await navigator.serviceWorker.getRegistration()) ?? (await navigator.serviceWorker.register('/service-worker.js'));
+	if (reg.active) return reg;
+	return Promise.race([
+		navigator.serviceWorker.ready,
+		new Promise<never>((_, no) => setTimeout(() => no(new Error('The app is still setting up on this phone. Close it, open it again, then try once more.')), 10_000))
+	]);
+}
+
 export async function enablePush() {
+	// Ask first, straight from her tap (iPhones only allow the question then).
 	const perm = await Notification.requestPermission();
 	if (perm !== 'granted') throw new Error(perm === 'denied' ? 'Notifications are blocked for this site. Allow them in the browser settings.' : 'Notifications were not allowed.');
 	const { data: key, error } = await supabase.rpc('push_public_key');
 	if (error || !key) throw new Error('Notifications are not set up on the server yet.');
-	const reg = await navigator.serviceWorker.ready;
-	const sub = (await reg.pushManager.getSubscription()) ?? (await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToBytes(key as string) }));
+	const reg = await worker();
+	let sub = await reg.pushManager.getSubscription();
+	// A subscription made with an older key can't receive from the new one: replace it.
+	if (sub && sub.options.applicationServerKey && bytesToB64(sub.options.applicationServerKey) !== String(key).replace(/=+$/, '')) {
+		await sub.unsubscribe();
+		sub = null;
+	}
+	sub ??= await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToBytes(key as string) });
 	const device = /android/i.test(navigator.userAgent) ? 'Android' : isIos() ? 'iPhone / iPad' : /mac/i.test(navigator.userAgent) ? 'Mac' : /windows/i.test(navigator.userAgent) ? 'Windows' : 'This device';
 	const { error: e2 } = await supabase
 		.from('push_subscriptions')

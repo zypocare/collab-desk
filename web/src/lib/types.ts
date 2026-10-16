@@ -73,7 +73,7 @@ export type Draft = {
 
 export type Checklist = Partial<Record<'paid_label' | 'ad_tag' | 'brand_tag' | 'link', boolean>>;
 
-export type BriefDetails = { message?: string; hashtags?: string[]; mentions?: string[]; link?: string; dos?: string; donts?: string; references?: string };
+export type BriefDetails = { message?: string; hashtags?: string[]; mentions?: string[]; link?: string; promo?: string; dos?: string; donts?: string; references?: string };
 
 export type PackageItem = { kind: string; qty: number };
 export type Package = { id: string; name: string; description: string; items: PackageItem[]; price: number; badge: string; active: boolean; position: number; created_at: string };
@@ -133,6 +133,8 @@ export type Collab = {
 	counter_fee: number | null;
 	counter_status: '' | 'sent' | 'taken' | 'kept';
 	shoot_date: string | null;
+	live_time: string | null;
+	post_alert_at: string | null;
 	shot_list: { t: string; done: boolean }[];
 	ship_carrier: string;
 	ship_tracking: string;

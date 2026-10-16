@@ -29,6 +29,7 @@
 	import Icon from '#lib/components/Icon.svelte';
 	import PriorityBadge from '#lib/components/PriorityBadge.svelte';
 	import InstagramPanel from '#lib/components/InstagramPanel.svelte';
+	import AlertsPrompt from '#lib/components/AlertsPrompt.svelte';
 
 	const s = $derived(studio.settings!);
 	const list = $derived(studio.collabs);
@@ -115,6 +116,8 @@
 	</div>
 	<div class="acts"><button class="btn primary" onclick={() => (ui.newCollab = true)}><Icon name="plus" />Add collab</button></div>
 </header>
+
+<AlertsPrompt />
 
 <div class="top-grid">
 	<section class="hero-card glow rv" style="--i:1">
