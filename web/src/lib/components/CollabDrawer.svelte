@@ -69,8 +69,8 @@
 		payTerms,
 		waLink
 	} from '../util';
-	import { DRAFT_MAX_MB, cancelInvoice, reloadCollabs, setChecklist, setInvoiceFlags, shareDraft, withdrawQuote } from '../studio.svelte';
-	import { errMessage } from '../util';
+	import { DRAFT_MAX_MB, cancelInvoice, recordPayment, reloadCollabs, setChecklist, setInvoiceFlags, shareDraft, withdrawQuote } from '../studio.svelte';
+	import { errMessage, todayIso } from '../util';
 	import type { Quote } from '../types';
 	import { INVOICE_STATUS, KIND_LABEL, balanceDue, type Invoice } from '../invoice';
 	import InvoiceDialog from './InvoiceDialog.svelte';
@@ -525,6 +525,14 @@
 								{:else if inv.status !== 'draft' && inv.status !== 'cancelled'}Due {fmt(inv.due_date)} · {inr(balanceDue(inv))} to receive{inv.reminders_sent.length ? ` · ${inv.reminders_sent.length} reminder${inv.reminders_sent.length > 1 ? 's' : ''} sent` : ''}
 								{:else if inv.status === 'draft'}Not sent yet{/if}
 							</div>
+							{#if inv.claim_at && (inv.status === 'sent' || inv.status === 'partly_paid')}
+								<div class="claim-box">
+									<Icon name="wallet" />
+									<span><b>{c.brand.name} says they paid {inr(Number(inv.claim_amount))}</b> on {fmt(inv.claim_on)} · ref {inv.claim_ref}. Check your bank.</span>
+									<button class="btn sm primary" onclick={() => recordPayment(inv, { amount: Number(inv.claim_amount) || 0, tds: inv.tds_amount, date: inv.claim_on ?? todayIso(), ref: inv.claim_ref ?? '' })}><Icon name="check" />It arrived</button>
+									<button class="btn sm ghost" onclick={async () => { if (await ask({ title: 'Not received yet?', body: 'The brand sees that the payment hasn’t arrived yet, and reminders start again.', ok: 'Not received' })) { await supabase.rpc('invoice_claim_reject', { p_invoice: inv.id }); reloadCollabs(); } }}>Not received</button>
+								</div>
+							{/if}
 							<div class="q-actions">
 								{#if inv.status === 'draft'}
 									<button class="btn sm primary" onclick={() => (invoiceOpen = { editing: inv })}><Icon name="edit" />Edit and send</button>

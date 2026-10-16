@@ -423,6 +423,19 @@ export function render(kind: string, p: Payload, s: Settings): Omit<Mail, 'to'> 
     };
   }
 
+  if (kind === 'payment_claimed') {
+    return {
+      subject: `${brand} says they paid ${inr(p.amount)} (${p.number})`,
+      html: layout(
+        s,
+        `${brand} reported a payment`,
+        `<p style="margin:0"><b>${esc(inr(p.amount))}</b> for invoice <b>${esc(p.number)}</b> (${esc(code)}), paid on ${esc(fmtDate(p.on))}, reference <b>${esc(p.ref)}</b>. Check your bank, then confirm it in the studio. Reminders are paused meanwhile.</p>`,
+        { label: 'Confirm the payment', href: url(s, `/studio/collabs?open=${encodeURIComponent(code)}`) },
+      ),
+      text: `${brand} says they paid ${inr(p.amount)} for ${p.number} (ref ${p.ref}). Confirm it in the studio.`,
+    };
+  }
+
   if (kind === 'files_ready') {
     const n = Number(p.count) || 0;
     return {

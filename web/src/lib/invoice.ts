@@ -33,6 +33,11 @@ export type InvoiceView = {
 	seller: Seller;
 	bill_to: BillTo;
 	token: string;
+	/** The brand said they paid (waiting for her to confirm). */
+	claim_amount?: number | null;
+	claim_ref?: string;
+	claim_on?: string | null;
+	claim_at?: string | null;
 };
 
 export type Invoice = Omit<InvoiceView, 'token' | 'number'> & {

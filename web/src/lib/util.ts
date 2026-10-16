@@ -162,7 +162,7 @@ export function unreadFor(c: Collab) {
 	return (c.messages ?? []).filter((m) => m.sender === 'brand' && m.created_at > seen).length;
 }
 
-export type Task = { c: Collab; kind: 'new' | 'follow' | 'draft' | 'live' | 'product' | 'pay' | 'quote' | 'revise' | 'msg' | 'usage' | 'shoot'; d: number; title: string; order: number };
+export type Task = { c: Collab; kind: 'new' | 'follow' | 'draft' | 'live' | 'product' | 'pay' | 'quote' | 'revise' | 'msg' | 'usage' | 'shoot' | 'claim'; d: number; title: string; order: number };
 export function tasks(collabs: Collab[]): Task[] {
 	const out: Task[] = [];
 	for (const c of collabs) {
@@ -188,6 +188,9 @@ export function tasks(collabs: Collab[]): Task[] {
 		if (inTransit(c)) out.push({ c, kind: 'product', d: c.product_date ? Math.min(0, diff(c.product_date)) : 0, title: `Parcel on the way via ${c.ship_carrier}: mark it received when it arrives`, order: 4 });
 		else if (c.stage === 'confirmed' && !c.product_received_at && c.product_date && diff(c.product_date) >= 0 && diff(c.product_date) <= 2)
 			out.push({ c, kind: 'product', d: diff(c.product_date), title: 'Product arriving, check the parcel', order: 4 });
+		for (const inv of c.invoices ?? [])
+			if (inv.claim_at && (inv.status === 'sent' || inv.status === 'partly_paid'))
+				out.push({ c, kind: 'claim', d: 0, title: `Brand says they paid ${inr(Number(inv.claim_amount))} (ref ${inv.claim_ref}): confirm it`, order: 0 });
 		if (overdue(c)) out.push({ c, kind: 'pay', d: diff(c.pay_due!), title: `Payment overdue · ${inr(outstanding(c))}`, order: 5 });
 	}
 	return out.sort((a, b) => a.d - b.d || a.order - b.order);
@@ -208,7 +211,7 @@ export function events(collabs: Collab[]): CalEvent[] {
 	}
 	return ev;
 }
-export const KIND_ICON: Record<string, string> = { shoot: 'cal', follow: 'bell', draft: 'film', live: 'spark', pay: 'wallet', new: 'inbox', product: 'box', quote: 'rupee', revise: 'edit', msg: 'mail', usage: 'eye' };
+export const KIND_ICON: Record<string, string> = { claim: 'wallet', shoot: 'cal', follow: 'bell', draft: 'film', live: 'spark', pay: 'wallet', new: 'inbox', product: 'box', quote: 'rupee', revise: 'edit', msg: 'mail', usage: 'eye' };
 export const KIND_LABEL: Record<string, string> = { shoot: 'Shoot day', draft: 'Draft due', live: 'Go live', follow: 'Follow-up', pay: 'Payment due', product: 'Product arrives' };
 export const evLabel = (e: CalEvent) => (e.kind === 'live' && stageIndex(e.c.stage) >= 4 ? 'Went live' : KIND_LABEL[e.kind]);
 

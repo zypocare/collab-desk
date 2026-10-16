@@ -1858,3 +1858,14 @@ body:has(.batch-bar) .fab{display:none}
 .tl li.tl-you .tl-dot{border-color:var(--accent);box-shadow:0 0 0 4px color-mix(in oklab,var(--accent) 18%,transparent)}
 .tl-done b{color:var(--ink-2)}
 .doc-btn{width:100%;background:none;border:0;border-top:1px solid var(--line);font:inherit;color:inherit;text-align:left;cursor:pointer}
+
+/* "I've paid" */
+.claim-link{margin:12px 0 0;display:flex;justify-content:center}
+.claim-card{display:flex;align-items:flex-start;gap:12px;margin-top:14px;padding:14px 16px;border-radius:16px;background:color-mix(in oklab,var(--warn) 12%,var(--surface));border:1px solid color-mix(in oklab,var(--warn) 35%,var(--line))}
+.claim-card .ic{width:20px;height:20px;color:var(--warn);flex:none}
+.claim-card b{display:block}
+.claim-card small{color:var(--ink-2)}
+.claim-form{margin-top:14px}
+.claim-box{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0;padding:10px 12px;border-radius:12px;font-size:13px;background:color-mix(in oklab,var(--warn) 12%,transparent)}
+.claim-box > .ic{width:16px;height:16px;color:var(--warn);flex:none}
+.claim-box > span{flex:1;min-width:200px}

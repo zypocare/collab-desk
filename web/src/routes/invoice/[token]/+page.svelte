@@ -22,6 +22,29 @@
 	const qr = $derived(upi ? qrSvgPath(upi) : null);
 	const isMobile = typeof navigator !== 'undefined' && /Android|iPhone|iPad/i.test(navigator.userAgent);
 
+	// "I've paid": amount, UTR / reference and date, so she can confirm it.
+	let claimOpen = $state(false);
+	let claim = $state({ amount: '', ref: '', on: '', name: '' });
+	let claimBusy = $state(false);
+	let claimErr = $state('');
+	function openClaim() {
+		claim.amount = String(Math.round(due));
+		claim.on = new Date().toISOString().slice(0, 10);
+		claimOpen = true;
+	}
+	async function sendClaim(e: SubmitEvent) {
+		e.preventDefault();
+		claimErr = '';
+		claimBusy = true;
+		const { error } = await supabase.rpc('invoice_claim_paid', { p_token: page.params.token, p_amount: Number(claim.amount) || 0, p_ref: claim.ref, p_on: claim.on || null, p_name: claim.name });
+		claimBusy = false;
+		if (error) return (claimErr = errMessage(error));
+		const { data } = await supabase.rpc('public_invoice', { p_token: page.params.token });
+		inv = data ? normaliseInvoice(data as InvoiceView) : inv;
+		claimOpen = false;
+		toast(`Thank you! ${inv?.seller.name ?? 'The creator'} has been told and will confirm it.`, 'check');
+	}
+
 	async function download() {
 		if (!inv) return;
 		busy = true;
@@ -69,6 +92,23 @@
 						</figure>
 					{/if}
 				</section>
+				{#if inv.claim_at}
+					<section class="claim-card rv no-print"><Icon name="clock" /><div><b>Payment reported: {inr(Number(inv.claim_amount))}</b><small>Paid {inv.claim_on ? fmtLong(inv.claim_on) : ''} · ref {inv.claim_ref}. Waiting for {inv.seller.name} to confirm it arrived.</small></div></section>
+				{:else if claimOpen}
+					<form class="panel claim-form rv no-print" onsubmit={sendClaim}>
+						<div class="panel-h"><h2>Tell {inv.seller.name} you've paid</h2><small>so the reminders stop</small></div>
+						<div class="form-b">
+							<div class="f"><label for="cl-amt">Amount paid (₹)</label><input class="inp num" id="cl-amt" type="number" inputmode="decimal" min="1" bind:value={claim.amount} /></div>
+							<div class="f"><label for="cl-ref">UTR / transaction reference</label><input class="inp" id="cl-ref" placeholder="e.g. 412345678901" bind:value={claim.ref} /></div>
+							<div class="f"><label for="cl-on">Paid on</label><input class="inp" id="cl-on" type="date" bind:value={claim.on} /></div>
+							<div class="f"><label for="cl-name">Your name <span class="hint">(optional)</span></label><input class="inp" id="cl-name" bind:value={claim.name} /></div>
+						</div>
+						{#if claimErr}<div class="err" style="margin:0 20px">{claimErr}</div>{/if}
+						<div class="row-btns" style="border:0"><button class="btn ghost" type="button" onclick={() => (claimOpen = false)}>Cancel</button><button class="btn grad" type="submit" disabled={claimBusy || !claim.ref.trim()}>{#if claimBusy}<span class="spinner"></span>{:else}<Icon name="check" />{/if}Send</button></div>
+					</form>
+				{:else}
+					<p class="claim-link no-print"><button class="btn" onclick={openClaim}><Icon name="check" />I've paid this invoice</button></p>
+				{/if}
 			{:else if inv.status === 'paid'}
 				<section class="pay-card paid rv no-print"><div class="pay-main"><span class="lbl">Paid</span><b>Thank you!</b><small>Received {inv.paid_on ? fmtLong(inv.paid_on) : ''}</small></div></section>
 			{/if}
