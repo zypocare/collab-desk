@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { ask } from '#lib/confirm.svelte.ts';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { untrack } from 'svelte';
@@ -37,6 +38,7 @@
 	async function batchMove(stage: Stage) {
 		const list = pickedCollabs.filter((c) => c.stage !== stage);
 		if (!list.length) return;
+		if (!(await ask({ title: `Move ${list.length} collab${list.length > 1 ? 's' : ''} to ${stageLabel(stage)}?`, body: stage === 'declined' ? 'Brands with updates turned on are told politely.' : 'Brands with updates turned on get a short email about the new stage.', ok: 'Move', danger: stage === 'declined' }))) return;
 		busy = true;
 		for (const c of list) await setStage(c, stage, true);
 		busy = false;
@@ -47,6 +49,7 @@
 	async function batchPaid() {
 		const list = payable;
 		if (!list.length) return;
+		if (!(await ask({ title: `Mark ${list.length} as paid?`, body: `${inr(list.reduce((a, c) => a + c.fee, 0))} in total, received today. Open invoices are settled in full.`, ok: 'Mark paid' }))) return;
 		busy = true;
 		for (const c of list) await markPaid(c, true);
 		busy = false;
@@ -55,6 +58,7 @@
 		stopSelecting();
 	}
 	async function batchRemind() {
+		if (!(await ask({ title: `Send reminders to ${picked.size} brand${picked.size > 1 ? 's' : ''}?`, body: 'Each gets the reminder that fits: unpaid invoice, open quote, or draft waiting. Nobody gets two in a day.', ok: 'Send' }))) return;
 		busy = true;
 		const { data, error } = await supabase.rpc('send_reminders', { p_ids: [...picked] });
 		busy = false;

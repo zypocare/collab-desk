@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { ask } from '../confirm.svelte';
 	import { onMount } from 'svelte';
 	import { studio } from '../studio.svelte';
 	import { supabase } from '../supabase';
@@ -35,7 +36,7 @@
 		load();
 	}
 	async function remove(m: Member) {
-		if (!confirm(`Remove ${m.name || m.email}? They won't be able to open the studio any more.`)) return;
+		if (!(await ask({ title: `Remove ${m.name || m.email}?`, body: "They won't be able to open the studio any more. You can add them again later.", ok: 'Remove', danger: true }))) return;
 		const { error } = await supabase.from('team_members').delete().eq('email', m.email);
 		if (error) return toast(`Couldn't remove: ${errMessage(error)}`, 'alert');
 		load();

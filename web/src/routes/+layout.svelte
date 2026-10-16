@@ -14,6 +14,7 @@
 		initAuth();
 		watchInstall();
 	});
+	import ConfirmDialog from '#lib/components/ConfirmDialog.svelte';
 </script>
 
 <svelte:head>
@@ -34,4 +35,5 @@
 		<div class="toast" class:out={t.out}><span class="ti"><Icon name={t.icon} /></span><span>{t.msg}</span></div>
 	{/each}
 </div>
+<ConfirmDialog />
 <canvas id="confetti" aria-hidden="true"></canvas>

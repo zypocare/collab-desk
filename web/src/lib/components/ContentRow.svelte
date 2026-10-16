@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { ask } from '../confirm.svelte';
 	import type { Collab } from '../types';
 	import { hoursLeft, makeShotList, suggestShoot, type Shot } from '../content';
 	import { studio, updateCollab } from '../studio.svelte';
@@ -72,7 +73,7 @@
 				</form>
 				<div class="row-btns" style="border:0;padding:8px 0 0">
 					<button class="btn sm" onclick={() => copyText(`${c.brand.name} shot list\n` + shots.map((x) => `${x.done ? '☑' : '☐'} ${x.t}`).join('\n'), 'Shot list copied')}><Icon name="copy" />Copy</button>
-					<button class="btn sm ghost" onclick={() => confirm('Make a fresh list from the brief? Your ticks and edits will be replaced.') && save(makeShotList(c))}><Icon name="refresh" />Start over</button>
+					<button class="btn sm ghost" onclick={async () => (await ask({ title: 'Start the shot list over?', body: 'A fresh list is made from the brief. Your ticks and edits are replaced.', ok: 'Start over', danger: true })) && save(makeShotList(c))}><Icon name="refresh" />Start over</button>
 				</div>
 			{/if}
 		</div>

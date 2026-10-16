@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { ask } from '#lib/confirm.svelte.ts';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { onMount } from 'svelte';
@@ -52,8 +53,8 @@
 		kitBusy = false;
 	}
 	const suggested = $derived(suggestRates(studio.ig));
-	function useSuggested() {
-		if (!suggested || !confirm('Replace your rate card with the suggested rates? You can still edit each one.')) return;
+	async function useSuggested() {
+		if (!suggested || !(await ask({ title: 'Use the suggested rates?', body: 'Your rate card is replaced with the rates suggested from your Instagram. You can still edit each one.', ok: 'Use suggested' }))) return;
 		saveSettings({ rates: { ...s.rates, ...suggested } });
 		toast('Rate card updated', 'check');
 	}

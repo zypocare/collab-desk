@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { ask } from '../confirm.svelte';
 	import { igDisconnect, igSync, saveSettings, studio } from '../studio.svelte';
 	import { compact, fmtTime } from '../util';
 	import Icon from './Icon.svelte';
@@ -9,7 +10,6 @@
 	const ig = $derived(studio.ig);
 	const s = $derived(studio.settings!);
 	let busy = $state(false);
-	let confirmOff = $state(false);
 	const daysLeft = $derived(ig?.token_expires_at ? Math.round((Date.parse(ig.token_expires_at) - Date.now()) / 864e5) : null);
 
 	function connect() {
@@ -58,7 +58,7 @@
 		<div class="row-btns">
 			<button class="btn sm primary" disabled={busy} onclick={sync}>{#if busy}<span class="spinner"></span>{:else}<Icon name="refresh" />{/if}Sync now</button>
 			{#if appId}<button class="btn sm" onclick={connect}>Reconnect</button>{/if}
-			<button class="btn sm ghost danger" onclick={() => (confirmOff ? (igDisconnect(), (confirmOff = false)) : (confirmOff = true))}>{confirmOff ? 'Tap again to disconnect' : 'Disconnect'}</button>
+			<button class="btn sm ghost danger" onclick={async () => (await ask({ title: 'Disconnect Instagram?', body: 'Live stats, post matching and brand reports stop until you connect again.', ok: 'Disconnect', danger: true })) && igDisconnect()}>Disconnect</button>
 		</div>
 	{:else}
 		<div style="padding:0 20px 20px">

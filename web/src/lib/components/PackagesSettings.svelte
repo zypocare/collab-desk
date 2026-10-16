@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { ask } from '../confirm.svelte';
 	import { deletePackage, savePackage, studio } from '../studio.svelte';
 	import type { Package, PackageItem } from '../types';
 	import { rateValue } from '../priority';
@@ -43,7 +44,7 @@
 				<div class="pk-row">
 					<input class="inp pk-name" aria-label="Package name" value={p.name} onchange={(e) => savePackage({ id: p.id, name: val(e) || p.name })} />
 					<input type="checkbox" class="tgl" checked={p.active} aria-label="Show {p.name} on your page" onchange={(e) => savePackage({ id: p.id, active: (e.currentTarget as HTMLInputElement).checked })} />
-					<button class="icon-btn sm" aria-label="Delete {p.name}" onclick={() => confirm(`Delete “${p.name}”?`) && deletePackage(p.id)}><Icon name="x" /></button>
+					<button class="icon-btn sm" aria-label="Delete {p.name}" onclick={async () => (await ask({ title: `Delete “${p.name}”?`, body: 'Brands will no longer see it on your page. Requests already made with it stay as they are.', ok: 'Delete', danger: true })) && deletePackage(p.id)}><Icon name="x" /></button>
 				</div>
 				<input class="inp pk-desc" aria-label="Short description" placeholder="One line for brands" value={p.description} onchange={(e) => savePackage({ id: p.id, description: val(e) })} />
 				<div class="pk-items">

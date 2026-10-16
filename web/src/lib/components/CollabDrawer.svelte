@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { ask } from '../confirm.svelte';
 	import { tick } from 'svelte';
 	import {
 		addDeliverable,
@@ -286,7 +287,7 @@
 					</div>
 				{/each}
 				{#if c.stage === 'request' || c.stage === 'negotiating'}
-					<button class="btn sm ghost danger" style="margin-top:14px" onclick={() => changeStage('declined')}><Icon name="x" />Decline this request</button>
+					<button class="btn sm ghost danger" style="margin-top:14px" onclick={async () => (await ask({ title: `Decline ${c.brand.name}?`, body: c.notify_brand ? 'The brand is told politely that you can’t take this on. You can reopen it later.' : 'It moves to Declined. You can reopen it later.', ok: 'Decline', danger: true })) && changeStage('declined')}><Icon name="x" />Decline this request</button>
 				{:else if c.stage === 'declined'}
 					<p class="hint" style="margin:0 0 10px">The brand sees this request as "Not going ahead".</p>
 					<button class="btn sm" onclick={() => changeStage('request')}><Icon name="refresh" />Reopen request</button>
@@ -369,7 +370,7 @@
 								<button class="btn sm primary" onclick={() => (quoteOpen = { base: quote, editing: true })}><Icon name="edit" />Edit and send</button>
 							{:else if quote.status === 'sent'}
 								<button class="btn sm" onclick={() => (quoteOpen = { base: quote, editing: false })}><Icon name="edit" />New version</button>
-								<button class="btn sm ghost" onclick={() => quote && withdrawQuote(quote)}>Withdraw</button>
+								<button class="btn sm ghost" onclick={async () => quote && (await ask({ title: `Withdraw quote v${quote.version}?`, body: 'The brand can no longer accept it. You can send a new version any time.', ok: 'Withdraw', danger: true })) && withdrawQuote(quote)}>Withdraw</button>
 							{:else if quote.status === 'changes' || quote.status === 'withdrawn'}
 								<button class="btn sm primary" onclick={() => (quoteOpen = { base: quote, editing: false })}><Icon name="edit" />Revise quote</button>
 							{/if}
@@ -399,7 +400,7 @@
 							<input type="checkbox" class="cbx" id="dl-{d.id}" checked={d.done} onchange={(e) => setDeliverable(d, { done: (e.currentTarget as HTMLInputElement).checked })} />
 							<input class="inp qty num" type="number" min="1" max="50" value={d.qty} aria-label="How many {d.kind}" onchange={(e) => setDeliverable(d, { qty: Math.min(50, Math.max(1, num(e))) })} />
 							<label for="dl-{d.id}">{plural(d.kind, d.qty)}</label>
-							<button class="icon-btn sm" onclick={() => removeDeliverable(d)} aria-label="Remove {d.kind}"><Icon name="x" /></button>
+							<button class="icon-btn sm" onclick={async () => (await ask({ title: `Remove ${d.kind}?`, body: 'It comes off this collab’s deliverables.', ok: 'Remove', danger: true })) && removeDeliverable(d)} aria-label="Remove {d.kind}"><Icon name="x" /></button>
 						</div>
 					{:else}
 						<p class="hint">Add what the brand is expecting.</p>
@@ -524,13 +525,13 @@
 							<div class="q-actions">
 								{#if inv.status === 'draft'}
 									<button class="btn sm primary" onclick={() => (invoiceOpen = { editing: inv })}><Icon name="edit" />Edit and send</button>
-									<button class="btn sm ghost" onclick={() => cancelInvoice(inv)}>Delete</button>
+									<button class="btn sm ghost" onclick={async () => (await ask({ title: 'Delete this draft invoice?', ok: 'Delete', danger: true })) && cancelInvoice(inv)}>Delete</button>
 								{:else}
 									<a class="btn sm" href="/invoice/{inv.public_token}" target="_blank" rel="noopener"><Icon name="eye" />View / PDF</a>
 									<button class="btn sm ghost" onclick={() => copyText(`${location.origin}/invoice/${inv.public_token}`, 'Invoice link copied')}><Icon name="copy" />Link</button>
 									{#if inv.status === 'sent' || inv.status === 'partly_paid'}
 										<button class="btn sm primary" onclick={() => (paymentOpen = inv)}><Icon name="wallet" />Record payment</button>
-										<button class="btn sm ghost danger" onclick={() => cancelInvoice(inv)}>Cancel</button>
+										<button class="btn sm ghost danger" onclick={async () => (await ask({ title: `Cancel invoice ${inv.number}?`, body: 'It is marked cancelled (the number is kept for your records) and payment reminders stop.', ok: 'Cancel invoice', cancel: 'Keep it', danger: true })) && cancelInvoice(inv)}>Cancel</button>
 									{/if}
 									{#if inv.status === 'paid' && inv.tds_deducted > 0}
 										<label class="check-row" style="padding:0"><input type="checkbox" class="cbx" checked={inv.tds_certificate} onchange={(e) => setInvoiceFlags(inv, { tds_certificate: (e.currentTarget as HTMLInputElement).checked })} /><span>TDS certificate (Form 16A) received</span></label>

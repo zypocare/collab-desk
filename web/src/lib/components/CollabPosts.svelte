@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { ask } from '../confirm.svelte';
 	import { igSync, linkPost, sendReport, studio, unlinkPost } from '../studio.svelte';
 	import type { Collab } from '../types';
 	import { compact, fmt, fmtTime, mediaLabel } from '../util';
@@ -31,7 +32,7 @@
 					<span class="pill tint k-live">{label(m.media_type, m.product_type)}</span>
 					<span class="hint">{fmt(m.posted_at.slice(0, 10))}{p.matched_by === 'auto' ? ' · spotted automatically' : ''}</span>
 					<a class="lnk" style="margin-left:auto" href={m.permalink} target="_blank" rel="noopener">Open</a>
-					<button class="icon-btn sm" onclick={() => unlinkPost(c, m.id)} aria-label="Unlink this post"><Icon name="x" /></button>
+					<button class="icon-btn sm" onclick={async () => (await ask({ title: 'Unlink this post?', body: 'It stops counting towards this collab and its report.', ok: 'Unlink', danger: true })) && unlinkPost(c, m.id)} aria-label="Unlink this post"><Icon name="x" /></button>
 				</div>
 				<div class="post-stats">
 					<div><b>{compact(m.views)}</b><small>views</small></div>
