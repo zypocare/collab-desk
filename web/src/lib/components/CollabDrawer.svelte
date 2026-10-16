@@ -32,6 +32,7 @@
 		stageIndex
 	} from '../util';
 	import Icon from './Icon.svelte';
+	import BrandRating from './BrandRating.svelte';
 	import UsageRights from './UsageRights.svelte';
 	import ProductShipping from './ProductShipping.svelte';
 	import MessageThread from './MessageThread.svelte';
@@ -319,6 +320,7 @@
 				<Select action class="add-sel" ariaLabel="Add deliverable" placeholder="+ Add deliverable" options={KINDS.map((k) => ({ value: k, label: k }))} onchange={(k) => c && addDeliverable(c, k)} />
 			</section>
 
+			{#if c.stage === 'live' || c.stage === 'wrapped'}<section class="sec"><h3>How was {c.brand.name}?<small class="sec-sub">private</small></h3><BrandRating brand={c.brand} compact /></section>{/if}
 			{#if c.usage_ends}<section class="sec"><h3>Usage rights</h3><UsageRights {c} /></section>{/if}
 			{#if hasProduct(c)}<ProductShipping {c} />{/if}
 

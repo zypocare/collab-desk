@@ -135,7 +135,7 @@ async function reloadOne(id: string) {
 export const byId = (id: string | null | undefined) => studio.collabs.find((c) => c.id === id);
 export const byCode = (code: string) => studio.collabs.find((c) => c.code.toUpperCase() === code.toUpperCase());
 /** Priority score for a request (see priority.ts). */
-export const priorityOf = (c: Collab) => (studio.settings ? scoreCollab(c, studio.settings, studio.collabs) : null);
+export const priorityOf = (c: Collab) => (studio.settings ? scoreCollab(c, studio.settings, studio.collabs, studio.notes[c.brand_id]) : null);
 
 type CollabPatch = Partial<Omit<Collab, 'id' | 'brand' | 'deliverables' | 'events'>>;
 

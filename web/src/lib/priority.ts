@@ -2,7 +2,7 @@
 // the offer compares with her rate card, barter rules, the brand's history and timing.
 // The studio uses it to rank and explain requests; the brand form uses the same rules to tell
 // brands, before they send, how a barter request will be treated and how to improve it.
-import type { Collab, CollabType, PublicPage, Settings } from './types';
+import type { BrandPrivate, Collab, CollabType, PublicPage, Settings } from './types';
 import { diff, inr, overdue, todayIso } from './util';
 
 export type BarterMode = 'open' | 'selective' | 'closed';
@@ -52,7 +52,7 @@ export function barterSlotsUsed(collabs: Collab[]) {
 }
 
 /** Score a request for the studio. */
-export function scoreCollab(c: Collab, s: Settings, all: Collab[]): Priority {
+export function scoreCollab(c: Collab, s: Settings, all: Collab[], notes?: BrandPrivate): Priority {
 	const reasons: Reason[] = [];
 	const add = (pts: number, text: string) => pts && reasons.push({ pts, text });
 
@@ -79,6 +79,20 @@ export function scoreCollab(c: Collab, s: Settings, all: Collab[]): Priority {
 	if (history.some(overdue)) add(-15, 'Brand has an overdue payment');
 	else if (history.some((x) => x.pay_status === 'paid')) add(10, 'Brand has paid you before');
 	else if (history.some((x) => x.stage === 'wrapped')) add(5, 'Worked together before');
+
+	// Her private ratings of this brand (1-5 stars), and how fast they actually paid.
+	const stars = [notes?.rate_pay, notes?.rate_brief, notes?.rate_again].filter((x): x is number => typeof x === 'number');
+	if (stars.length) {
+		const avg = stars.reduce((a, b) => a + b, 0) / stars.length;
+		const pts = Math.round((avg - 3) * 5);
+		if (pts) add(pts, `You rated this brand ${avg.toFixed(1)}★`);
+	}
+	const withDue = history.filter((x) => x.pay_status === 'paid' && x.paid_on && x.pay_due);
+	if (withDue.length) {
+		const late = withDue.filter((x) => x.paid_on! > x.pay_due!).length / withDue.length;
+		if (late >= 0.5) add(-8, `Paid late on ${Math.round(late * 100)}% of invoices`);
+		else if (late === 0 && withDue.length >= 2) add(5, 'Always pays on time');
+	}
 
 	if (c.package_name) add(12, `Booked your “${c.package_name}” package`);
 

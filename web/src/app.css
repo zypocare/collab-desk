@@ -1260,3 +1260,18 @@ input[type="number"]::-webkit-inner-spin-button,input[type="number"]::-webkit-ou
 .again-chip:hover{border-color:var(--accent);background:color-mix(in oklab,var(--accent) 6%,var(--surface));transform:translateY(-1px)}
 .again-chip svg{width:14px;height:14px;color:var(--accent)}
 .again-chip small{color:var(--ink-3);font-weight:500;font-family:var(--f-mono);font-size:11px}
+
+/* ---------- brand ratings ---------- */
+.rating{display:flex;flex-direction:column;gap:10px}
+.rate-row{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.rate-row b{display:block;font-size:13.5px}
+.rate-row small{display:block;color:var(--ink-3);font-size:12px}
+.stars{display:flex;gap:2px;flex:none}
+.star{width:30px;height:30px;border:0;background:none;font-size:22px;line-height:1;color:var(--line-strong);cursor:pointer;transition:color .15s,transform .3s var(--spring);padding:0}
+.star.on{color:#f2b33d}
+.star:hover{transform:scale(1.18)}
+.star:active{transform:scale(.9)}
+.star:focus-visible{outline:2px solid var(--accent);outline-offset:1px;border-radius:6px}
+.rating.compact .star{width:26px;height:26px;font-size:19px}
+.rate-foot{display:flex;gap:6px;align-items:flex-start;margin:2px 0 0}
+.rate-foot svg{width:13px;height:13px;flex:none;margin-top:2px}

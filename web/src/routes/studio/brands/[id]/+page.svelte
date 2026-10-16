@@ -5,6 +5,7 @@
 	import { countUp, ui } from '#lib/ui.svelte.ts';
 	import { CATS, delivText, fmt, inr, stageLabel } from '#lib/util.ts';
 	import Icon from '#lib/components/Icon.svelte';
+	import BrandRating from '#lib/components/BrandRating.svelte';
 	import Select from '#lib/components/Select.svelte';
 	import Mono from '#lib/components/Mono.svelte';
 	import PayPill from '#lib/components/PayPill.svelte';
@@ -65,6 +66,10 @@
 			</section>
 		</div>
 		<div class="stack">
+			<section class="panel rv" style="--i:5">
+				<div class="panel-h"><h2>Your rating</h2><small>private · moves their requests up or down</small></div>
+				<div style="padding:0 20px 18px"><BrandRating {brand} /></div>
+			</section>
 			<section class="panel rv" style="--i:6">
 				<div class="panel-h"><h2>Details</h2></div>
 				<div class="form-b">

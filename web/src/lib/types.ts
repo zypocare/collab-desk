@@ -17,7 +17,15 @@ export type Brand = {
 	created_at: string;
 };
 
-export type BrandPrivate = { brand_id: string; notes: string; competitors: string[] };
+export type BrandPrivate = {
+	brand_id: string;
+	notes: string;
+	competitors: string[];
+	rate_pay?: number | null;
+	rate_brief?: number | null;
+	rate_again?: number | null;
+	rated_at?: string | null;
+};
 
 export type Deliverable = { id: string; collab_id: string; kind: string; qty: number; done: boolean; position: number };
 
