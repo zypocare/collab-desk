@@ -97,7 +97,12 @@ export async function runSync(db: SupabaseClient, opts: SyncOptions = {}) {
       if (!ins && lastInsights.get(m.id)) for (const k of ['saves', 'shares', 'reach', 'views', 'interactions'] as const) delete (row as Partial<MediaRow>)[k];
       rows.push(row);
     }
-    if (rows.length) await db.from('ig_media').upsert(rows);
+    // Save posts with fresh figures and posts without separately: in one batch the database would fill the
+    // missing figures with blanks and wipe what was stored.
+    const withFigures = rows.filter((r) => 'views' in r);
+    const without = rows.filter((r) => !('views' in r));
+    if (withFigures.length) await db.from('ig_media').upsert(withFigures);
+    if (without.length) await db.from('ig_media').upsert(without);
     summary.posts = rows.length;
     // Posts from another account (one connected before) don't count towards her numbers.
     let others = db.from('ig_media').delete({ count: 'exact' }).or(`owner_id.is.null,owner_id.neq.${p.user_id}`);
