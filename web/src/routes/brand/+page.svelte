@@ -2,7 +2,9 @@
 	import { auth } from '#lib/auth.svelte.ts';
 	import { brandData } from '#lib/brand.svelte.ts';
 	import { pub } from '#lib/publicPage.svelte.ts';
-	import { STAGES, delivText, firstName, fmt, inr, stageIndex } from '#lib/util.ts';
+	import { STAGES, compact, delivText, firstName, fmt, inr, stageIndex } from '#lib/util.ts';
+	import { milestones } from '#lib/campaign.ts';
+	import { money } from '#lib/roi.ts';
 	import BrandDetailsForm from '#lib/components/BrandDetailsForm.svelte';
 	import Icon from '#lib/components/Icon.svelte';
 
@@ -12,6 +14,18 @@
 	const done = $derived(brandData.requests.filter((r) => r.stage === 'live' || r.stage === 'wrapped'));
 	const spent = $derived(done.reduce((a, r) => a + (r.type === 'barter' ? 0 : r.fee), 0));
 	const lastLive = $derived(done.map((r) => r.live_date).filter(Boolean).sort().at(-1) ?? null);
+	// Results across every collab with her, and what it cost per view.
+	const views = $derived(done.reduce((a, r) => a + (Number(r.results?.views) || 0), 0));
+	const engaged = $derived(done.reduce((a, r) => a + (Number(r.results?.interactions) || 0), 0));
+	const paidViews = $derived(done.filter((r) => r.type !== 'barter').reduce((a, r) => a + (Number(r.results?.views) || 0), 0));
+	const cpv = $derived(spent && paidViews ? spent / paidViews : null);
+	// Everything waiting on the brand, across requests.
+	const todo = $derived(
+		brandData.requests.flatMap((r) => milestones(r, creator || 'the creator').filter((m) => m.who === 'you').map((m) => ({ r, m })))
+	);
+	const toPay = $derived(
+		brandData.requests.reduce((a, r) => a + (r.invoices ?? []).filter((i) => (i.status === 'sent' || i.status === 'partly_paid') && !i.claimed).reduce((x, i) => x + Number(i.payable), 0), 0)
+	);
 </script>
 
 <svelte:head><title>My requests</title></svelte:head>
@@ -42,6 +56,9 @@
 			<div class="again-stats">
 				<div><b>{done.length}</b><small>collab{done.length === 1 ? '' : 's'} with {creator || 'the creator'}</small></div>
 				{#if spent}<div><b>{inr(spent)}</b><small>invested</small></div>{/if}
+				{#if views}<div><b>{compact(views)}</b><small>views</small></div>{/if}
+				{#if engaged}<div><b>{compact(engaged)}</b><small>likes, comments, saves</small></div>{/if}
+				{#if cpv}<div><b>{money(cpv)}</b><small>avg. cost per view</small></div>{/if}
 				{#if lastLive}<div><b>{fmt(lastLive)}</b><small>last went live</small></div>{/if}
 			</div>
 			{#if pub.data?.accepting !== false}
@@ -52,6 +69,15 @@
 					{/each}
 				</div>
 			{/if}
+		</section>
+	{/if}
+
+	{#if todo.length || toPay}
+		<section class="panel rv needs-you" style="--i:2">
+			<div class="panel-h"><h2>Needs you</h2>{#if toPay}<small>{inr(toPay)} to pay</small>{/if}</div>
+			{#each todo as t (t.r.code + t.m.key)}
+				<a class="prod-row" href="/brand/r/{t.r.code}" style="text-decoration:none"><div><b>{t.m.title}</b><small>{t.r.code} · {delivText(t.r.deliverables)}{t.m.note ? ` · ${t.m.note}` : ''}</small></div><Icon name="chevR" /></a>
+			{/each}
 		</section>
 	{/if}
 

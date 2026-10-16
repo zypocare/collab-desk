@@ -56,12 +56,14 @@ export function milestones(r: BrandRequest, creator: string): Milestone[] {
 	}
 
 	if (r.type !== 'barter' && (r.invoices?.length || r.pay_due)) {
-		const unpaid = r.invoices?.some((i) => i.status === 'sent' || i.status === 'partly_paid');
+		const unpaid = r.invoices?.some((i) => (i.status === 'sent' || i.status === 'partly_paid') && !i.claimed);
+		const reported = r.invoices?.some((i) => (i.status === 'sent' || i.status === 'partly_paid') && i.claimed);
 		out.push({
 			key: 'pay',
 			date: r.pay_status === 'paid' ? r.paid_on : r.pay_due,
-			title: r.pay_status === 'paid' ? 'Paid' : 'Payment due',
-			who: r.pay_status === 'paid' ? 'done' : unpaid ? 'you' : 'creator'
+			title: r.pay_status === 'paid' ? 'Paid' : reported && !unpaid ? 'Payment reported' : 'Payment due',
+			who: r.pay_status === 'paid' ? 'done' : unpaid ? 'you' : 'creator',
+			note: reported && !unpaid ? 'waiting for confirmation' : undefined
 		});
 	}
 

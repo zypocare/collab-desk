@@ -355,7 +355,7 @@ export type BrandRequest = {
 	events: { at: string; text: string }[];
 	quotes: Quote[];
 	drafts: Draft[];
-	invoices: { number: string; kind: string; total: number; payable: number; status: string; issue_date: string; due_date: string | null; token: string }[];
+	invoices: { number: string; kind: string; total: number; payable: number; status: string; issue_date: string; due_date: string | null; token: string; claimed?: boolean }[];
 	live_time: string | null;
 	product_date: string | null;
 	shipped_at: string | null;

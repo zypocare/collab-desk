@@ -1869,3 +1869,4 @@ body:has(.batch-bar) .fab{display:none}
 .claim-box{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:8px 0;padding:10px 12px;border-radius:12px;font-size:13px;background:color-mix(in oklab,var(--warn) 12%,transparent)}
 .claim-box > .ic{width:16px;height:16px;color:var(--warn);flex:none}
 .claim-box > span{flex:1;min-width:200px}
+.needs-you{margin-bottom:18px}
