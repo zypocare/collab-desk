@@ -1828,3 +1828,14 @@ body:has(.batch-bar) .fab{display:none}
 .exp-nums small{font-size:11.5px;color:var(--ink-3)}
 .exp-basis{display:block;font-size:11.5px;color:var(--ink-3)}
 .exp-mini{display:block;font-size:12px;color:var(--accent);font-weight:600;margin-top:4px}
+
+/* ROI on the results report */
+.doc-tools{gap:8px;flex-wrap:wrap}
+.roi-panel{margin-bottom:18px}
+.roi-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;padding:4px 20px 18px}
+.roi-grid > div{padding:12px 14px;border-radius:14px;background:color-mix(in oklab,var(--accent) 8%,transparent)}
+.roi-grid b{display:block;font-size:22px;font-variant-numeric:tabular-nums}
+.roi-grid small{font-size:12px;color:var(--ink-3)}
+.roi-now{display:flex;align-items:center;gap:8px;margin:0 0 16px;font-size:13.5px;color:var(--ok)}
+.roi-now .ic{width:16px;height:16px}
+@media (max-width:640px){.roi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
