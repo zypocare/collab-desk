@@ -145,6 +145,59 @@ export function render(kind: string, p: Payload, s: Settings): Omit<Mail, 'to'> 
     };
   }
 
+  if (kind === 'quote_nudge') {
+    return {
+      subject: `${code}: a gentle reminder about your quote (${inr(p.total)})`,
+      html: layout(
+        s,
+        `Still interested?`,
+        `<p style="margin:0">Hi ${esc(firstOf(p.contact))}, just checking in on the quote of <b>${esc(inr(p.total))}</b> ${esc(s.display_name)} sent for <b>${esc(code)}</b>. You can accept it in one tap, or tell us what you'd like changed. No sign-in needed.</p>`,
+        p.action ? { label: 'Accept or ask for changes', href: url(s, `/a/${p.action}`) } : { label: 'Review the quote', href: url(s, `/brand/r/${encodeURIComponent(code)}`) },
+      ),
+      text: `A reminder about the quote of ${inr(p.total)} for ${code}: ${url(s, p.action ? `/a/${p.action}` : `/brand/r/${code}`)}`,
+    };
+  }
+
+  if (kind === 'draft_nudge') {
+    return {
+      subject: `${code}: draft ${p.round} is waiting for your review`,
+      html: layout(
+        s,
+        `A draft is waiting for you`,
+        `<p style="margin:0">Hi ${esc(firstOf(p.contact))}, draft round ${esc(p.round)} for <b>${esc(code)}</b> is still waiting for your review. Approve it in one tap so ${esc(first(s.display_name))} can post on time, or ask for changes.</p>`,
+        p.action ? { label: 'Review and approve', href: url(s, `/a/${p.action}`) } : { label: 'Review the draft', href: url(s, `/brand/r/${encodeURIComponent(code)}`) },
+      ),
+      text: `Draft round ${p.round} for ${code} is waiting for your review: ${url(s, p.action ? `/a/${p.action}` : `/brand/r/${code}`)}`,
+    };
+  }
+
+  if (kind === 'barter_counter') {
+    return {
+      subject: `${code}: an option to get your collab moving faster`,
+      html: layout(
+        s,
+        `Thanks for your barter request`,
+        `<p style="margin:0">Hi ${esc(firstOf(p.contact))}, thank you for reaching out about ${esc(p.product || 'your product')}! ${esc(first(s.display_name))} works on paid collaborations first. For ${esc(p.deliverables)}, together with the product, ${esc(first(s.display_name))} can do it for <b>${esc(inr(p.fee))}</b>, and paid requests get a reply first.</p>
+         <p style="margin:12px 0 0">Prefer to keep it as barter? That's fine too. Barter requests usually get a reply within ${esc(p.reply_time)}.</p>`,
+        p.action ? { label: `Switch to ${inr(p.fee)} + product`, href: url(s, `/a/${p.action}`) } : { label: 'See your request', href: url(s, `/brand/r/${encodeURIComponent(code)}`) },
+      ),
+      text: `For ${p.deliverables} with the product, ${first(s.display_name)} can do it for ${inr(p.fee)}. Switch here: ${url(s, p.action ? `/a/${p.action}` : `/brand/r/${code}`)}`,
+    };
+  }
+
+  if (kind === 'counter_taken') {
+    return {
+      subject: `${brand} switched to Paid + product (${inr(p.fee)})`,
+      html: layout(
+        s,
+        `${brand} took your paid offer`,
+        `<p style="margin:0">Auto-pilot offered <b>${esc(inr(p.fee))}</b> + product for <b>${esc(code)}</b>, and ${esc(brand)} said yes. Send them a quote to confirm it.</p>`,
+        { label: 'Open in your studio', href: url(s, `/studio/collabs?open=${encodeURIComponent(code)}`) },
+      ),
+      text: `${brand} switched ${code} to Paid + product at ${inr(p.fee)}.`,
+    };
+  }
+
   if (kind === 'draft_reviewed') {
     const ok = p.approved === true;
     return {

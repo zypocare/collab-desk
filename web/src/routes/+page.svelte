@@ -18,7 +18,7 @@
 
 	// The creator works in the studio; this page is for brands (she can still preview it).
 	$effect(() => {
-		if (auth.account?.role === 'creator' && !preview) goto('/studio', { replaceState: true });
+		if (auth.account?.role === 'creator' && !preview) goto('/studio', { replace: true });
 	});
 
 	onMount(loadPublicPage);

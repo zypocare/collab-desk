@@ -33,7 +33,7 @@
 
 	async function logout() {
 		await signOut();
-		goto('/', { replaceState: true });
+		goto('/', { replace: true });
 	}
 </script>
 

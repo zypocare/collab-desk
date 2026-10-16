@@ -9,7 +9,7 @@
 	// One-tap page from an email: accept a quote / approve a draft, or ask for changes. No sign-in.
 	type Info = {
 		state: 'open' | 'used' | 'expired' | 'closed' | 'missing';
-		kind: 'quote' | 'draft';
+		kind: 'quote' | 'draft' | 'counter';
 		code: string;
 		brand: string;
 		contact: string;
@@ -29,6 +29,7 @@
 			notes: string;
 		} | null;
 		draft: { round: number; link: string; caption: string; note: string } | null;
+		counter: { fee: number; product: string; reply_time: string; deliverables: string } | null;
 	};
 
 	let info = $state<Info | null>(null);
@@ -54,7 +55,7 @@
 
 	async function run(yes: boolean) {
 		error = '';
-		if (!yes && !note.trim()) return (error = 'Tell us what you would like changed.');
+		if (!yes && info?.kind !== 'counter' && !note.trim()) return (error = 'Tell us what you would like changed.');
 		if (yes && info?.kind === 'quote' && !name.trim()) return (error = 'Type your full name to accept.');
 		busy = true;
 		const { error: err } = await supabase.rpc('action_run', { p_token: page.params.token, p_yes: yes, p_name: name, p_note: note });
@@ -65,7 +66,7 @@
 	}
 </script>
 
-<svelte:head><title>{info?.kind === 'draft' ? 'Review draft' : 'Your quote'}</title></svelte:head>
+<svelte:head><title>{info?.kind === 'draft' ? 'Review draft' : info?.kind === 'counter' ? 'Your request' : 'Your quote'}</title></svelte:head>
 
 <header class="topbar">
 	<a class="brandmark" href="/"><span class="ring"><span></span></span><b>{info?.creator ? `Collaborate with ${creator}` : ''}</b></a>
@@ -77,8 +78,8 @@
 	{:else if done}
 		<div class="empty-card act-done">
 			<div class="big-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg></div>
-			<h2>{done === 'changes' ? `Sent to ${creator}` : info.kind === 'quote' ? 'Quote accepted' : 'Draft approved'}</h2>
-			<p>{done === 'changes' ? `${creator} will get back to you with an update.` : info.kind === 'quote' ? `Thank you! ${creator} has been told and the collaboration is confirmed. You'll get the agreement by email.` : `Thank you! ${creator} will go ahead and post it.`}</p>
+			<h2>{info.kind === 'counter' ? (done === 'yes' ? 'Switched to Paid + product' : 'Kept as barter') : done === 'changes' ? `Sent to ${creator}` : info.kind === 'quote' ? 'Quote accepted' : 'Draft approved'}</h2>
+			<p>{info.kind === 'counter' ? (done === 'yes' ? `Thank you! Your request now moves up ${creator}'s list. You'll get a quote by email to confirm.` : `No problem. ${creator} will reply within ${info.counter?.reply_time}.`) : done === 'changes' ? `${creator} will get back to you with an update.` : info.kind === 'quote' ? `Thank you! ${creator} has been told and the collaboration is confirmed. You'll get the agreement by email.` : `Thank you! ${creator} will go ahead and post it.`}</p>
 			<a class="btn" href="/brand/r/{info.code}">See your request</a>
 		</div>
 	{:else if info.state !== 'open'}
@@ -87,6 +88,24 @@
 			<p>{info.state === 'missing' ? 'Check that you copied the whole link from the email.' : 'You can see everything about this request on your request page.'}</p>
 			{#if info.code}<a class="btn" href="/brand/r/{info.code}">Open your request</a>{/if}
 		</div>
+	{:else if info.kind === 'counter' && info.counter}
+		{@const k = info.counter}
+		<header class="ph rv">
+			<div>
+				<div class="eb">{info.brand} · <span class="id">{info.code}</span></div>
+				<h1>Get your collab moving <em>faster</em></h1>
+				<p>{creator} works on paid collaborations first.</p>
+			</div>
+		</header>
+		<section class="panel rv act-box" style="--i:1">
+			<p style="margin:0">For <b>{k.deliverables}</b>{k.product ? `, together with ${k.product}` : ''}, {creator} can do it for <b>{inr(k.fee)}</b> + the product. Paid requests get a reply first.</p>
+			{#if error}<div class="err">{error}</div>{/if}
+			<div class="row">
+				<button class="btn" disabled={busy} onclick={() => run(false)}>Keep it as barter</button>
+				<button class="btn grad lg" disabled={busy} onclick={() => run(true)}>{#if busy}<span class="spinner"></span>{:else}<Icon name="check" />{/if}Switch to {inr(k.fee)} + product</button>
+			</div>
+			<p class="hint" style="margin:10px 0 0">Barter requests usually get a reply within {k.reply_time}. You'll get a quote to confirm before anything is final.</p>
+		</section>
 	{:else}
 		<header class="ph rv">
 			<div>

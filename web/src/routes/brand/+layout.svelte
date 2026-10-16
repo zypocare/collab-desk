@@ -18,8 +18,8 @@
 
 	// Brands only. The creator has her own studio.
 	$effect(() => {
-		if (!auth.session && page.url.pathname !== '/brand/new') goto(`/login?next=${encodeURIComponent(page.url.pathname + page.url.search)}`, { replaceState: true });
-		else if (auth.account?.role === 'creator') goto('/studio', { replaceState: true });
+		if (!auth.session && page.url.pathname !== '/brand/new') goto(`/login?next=${encodeURIComponent(page.url.pathname + page.url.search)}`, { replace: true });
+		else if (auth.account?.role === 'creator') goto('/studio', { replace: true });
 	});
 
 	onMount(() => {

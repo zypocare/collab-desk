@@ -9,7 +9,7 @@
 		const q = page.url.searchParams;
 		ui.pasteText = [q.get('title'), q.get('text'), q.get('url')].filter(Boolean).join('\n').trim();
 		ui.newCollab = true;
-		goto('/studio/collabs', { replaceState: true });
+		goto('/studio/collabs', { replace: true });
 	});
 </script>
 

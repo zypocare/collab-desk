@@ -130,6 +130,8 @@ export type Collab = {
 	usage_ext_days: number;
 	usage_ext_price: number;
 	usage_ext_status: '' | 'requested' | 'approved' | 'declined';
+	counter_fee: number | null;
+	counter_status: '' | 'sent' | 'taken' | 'kept';
 	ship_carrier: string;
 	ship_tracking: string;
 	shipped_at: string | null;
@@ -257,6 +259,11 @@ export type Settings = {
 	offered_kinds: string[];
 	show_results: boolean;
 	whatsapp: string;
+	autopilot_packages: boolean;
+	autopilot_counter: boolean;
+	autopilot_nudge: boolean;
+	autopilot_review: boolean;
+	nudge_days: number;
 };
 
 export type PublicPage = {

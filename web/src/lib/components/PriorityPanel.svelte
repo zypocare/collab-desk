@@ -34,7 +34,14 @@
 				<li class:neg={r.pts < 0}><span>{r.pts > 0 ? '+' : ''}{r.pts}</span>{r.text}</li>
 			{/each}
 		</ul>
-		{#if counter}
+		{#if c.counter_status}
+			<div class="prio-counter">
+				<div>
+					<b>{c.counter_status === 'taken' ? `Brand took ${inr(c.counter_fee ?? 0)} + product` : c.counter_status === 'kept' ? 'Brand kept it as barter' : `Auto-pilot offered ${inr(c.counter_fee ?? 0)} + product`}</b>
+					<small>{c.counter_status === 'taken' ? 'Send a quote to confirm it.' : c.counter_status === 'kept' ? 'They saw your paid offer and chose barter.' : 'Waiting for the brand to switch or keep it as barter.'}</small>
+				</div>
+			</div>
+		{:else if counter}
 			<div class="prio-counter">
 				<div>
 					<b>Counter with a fee: {inr(p.counterFee)}</b>

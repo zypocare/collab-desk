@@ -12,7 +12,7 @@
 
 	$effect(() => {
 		if (!auth.session) {
-			goto(`/login?next=${encodeURIComponent(page.url.pathname)}`, { replaceState: true });
+			goto(`/login?next=${encodeURIComponent(page.url.pathname)}`, { replace: true });
 			return;
 		}
 		supabase.rpc('get_agreement', { p_quote: page.params.id }).then(({ data }) => {

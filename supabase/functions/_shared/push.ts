@@ -50,6 +50,8 @@ export function pushFor(kind: string, p: Record<string, unknown>): Push | null {
       return { title: `${brand} shipped the product`, body: [p.carrier, p.tracking].filter(Boolean).join(' · '), url: open(code), tag: code };
     case 'usage_ext_requested':
       return { title: `${brand} wants to extend usage`, body: `${p.days} more days for ${inr(p.price)}`, url: open(code), tag: code };
+    case 'counter_taken':
+      return { title: `${brand} took your paid offer`, body: `Barter is now Paid + product at ${inr(p.fee)} · ${code}`, url: open(code), tag: code };
     case 'review_received':
       return { title: `${brand} left you ${p.rating} stars`, body: String(p.body ?? '').slice(0, 140), url: '/studio/settings', tag: `review-${code}` };
     case 'bank_matched':

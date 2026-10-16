@@ -22,7 +22,7 @@
 		if (!code || !studio.loaded) return;
 		const c = untrack(() => byCode(code));
 		if (c) ui.openCollab = c.id;
-		goto('/studio/collabs', { replaceState: true, shallow: true });
+		goto('/studio/collabs', { replace: true, shallow: true });
 	});
 
 	const visible = $derived(
