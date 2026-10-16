@@ -38,6 +38,7 @@
 	import { toast } from '../ui.svelte';
 	import { supabase } from '../supabase';
 	import { captionStarter, nextStep, replySuggestions, suggestDates } from '../suggest';
+	import { savedFor } from '../savedReplies';
 	import BriefEditor from './BriefEditor.svelte';
 	import BrandRating from './BrandRating.svelte';
 	import UsageRights from './UsageRights.svelte';
@@ -303,7 +304,7 @@
 						collabId={c.id}
 						side="creator"
 						otherName={c.contact_name || c.brand.name}
-						quick={studio.settings ? replySuggestions(c, studio.settings) : []}
+						quick={studio.settings ? [...savedFor(c, studio.settings), ...replySuggestions(c, studio.settings)] : []}
 					/>
 				{/key}
 			</section>

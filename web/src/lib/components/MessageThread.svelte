@@ -16,7 +16,7 @@
 		side: 'creator' | 'brand';
 		otherName: string;
 		/** Suggested replies shown above the box: tap to put the text in the box, edit, send. */
-		quick?: (string | { label: string; text: string })[];
+		quick?: (string | { label: string; text: string; saved?: boolean })[];
 	} = $props();
 
 	const other = $derived(side === 'creator' ? 'brand' : 'creator');
@@ -143,8 +143,8 @@
 	{#if quick.length && !text}
 		<div class="th-quick">
 			{#each quick as q, i (i)}
-				{@const r = typeof q === 'string' ? { label: q, text: q } : q}
-				<button type="button" class="cat-chip" title={r.text} onclick={() => useReply(r.text)} disabled={sending}><Icon name="spark" />{r.label}</button>
+				{@const r = typeof q === 'string' ? { label: q, text: q, saved: false } : q}
+				<button type="button" class="cat-chip" class:saved-chip={r.saved} title={r.text} onclick={() => useReply(r.text)} disabled={sending}><Icon name={r.saved ? 'edit' : 'spark'} />{r.label}</button>
 			{/each}
 		</div>
 	{/if}

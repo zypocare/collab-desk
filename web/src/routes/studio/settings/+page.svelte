@@ -23,6 +23,7 @@
 	import AutopilotSettings from '#lib/components/AutopilotSettings.svelte';
 	import TeamSettings from '#lib/components/TeamSettings.svelte';
 	import EmailInbox from '#lib/components/EmailInbox.svelte';
+	import SavedReplies from '#lib/components/SavedReplies.svelte';
 
 	const s = $derived(studio.settings!);
 	const link = $derived(s.site_url.replace(/\/$/, ''));
@@ -104,7 +105,7 @@
 			warn: hasPay ? undefined : 'No UPI or bank details yet'
 		},
 		{ id: 'reviews', label: 'Results & reviews', icon: 'chart', sub: s.show_results ? 'Shown on your page' : 'Hidden from your page' },
-		{ id: 'alerts', label: 'Inbox, alerts & phone', icon: 'bell', sub: s.digest_enabled ? 'Brand emails · 9 AM summary on' : 'Brand emails · 9 AM summary off' },
+		{ id: 'alerts', label: 'Inbox, replies & alerts', icon: 'bell', sub: `${(s.saved_replies ?? []).length} saved replies · ${s.digest_enabled ? '9 AM summary on' : '9 AM summary off'}` },
 		{ id: 'team', label: 'Team', icon: 'users', sub: studio.me?.team_role === 'manager' ? 'You are a manager' : 'Give a manager their own login' },
 		{
 			id: 'account',
@@ -247,6 +248,7 @@
 					{:else if active === 'alerts'}
 						<AppSettings />
 						<EmailInbox />
+						<SavedReplies />
 						<NotificationSettings />
 					{:else if active === 'team'}
 						<TeamSettings />

@@ -1712,3 +1712,10 @@ body:has(.batch-bar) .fab{display:none}
 .steps li::before{content:counter(st);width:24px;height:24px;border-radius:50%;display:grid;place-items:center;flex:none;font-size:12px;font-weight:700;background:color-mix(in oklab,var(--accent) 14%,transparent);color:var(--accent)}
 .steps li > span{flex:1;min-width:200px}
 .ap-log .rv-row:disabled{cursor:default}
+
+/* Saved replies */
+.ph-code{font-family:var(--f-mono, ui-monospace, monospace);font-size:11.5px;padding:1px 6px;border-radius:6px;background:color-mix(in oklab,var(--ink) 7%,transparent);white-space:nowrap}
+.sr-item{display:flex;flex-direction:column;gap:6px;padding:10px 0;border-top:1px solid var(--line)}
+.sr-top{display:flex;gap:8px;align-items:center}
+.sr-top .inp{flex:1;font-weight:600}
+.cat-chip.saved-chip{border-color:color-mix(in oklab,var(--accent) 45%,var(--line))}

@@ -275,6 +275,7 @@ export type Settings = {
 	autopilot_review: boolean;
 	nudge_days: number;
 	autopilot_brief: boolean;
+	saved_replies: { id: string; title: string; body: string }[];
 	piece_hours: Record<string, number>;
 	weekly_hours: number;
 };
