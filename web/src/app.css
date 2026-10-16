@@ -1378,3 +1378,26 @@ button.wk:hover{transform:translateY(-1px);border-color:var(--ink-3)}
 .tpl-row{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
 .tpl-row > div{display:flex;gap:6px;flex-wrap:wrap}
 .tpl-row .cat-chip{height:28px;font-size:12px}
+
+/* ---------- Ctrl+K ---------- */
+.cmdk-btn{display:flex;align-items:center;gap:10px;width:100%;height:38px;margin:0 0 12px;padding:0 10px 0 12px;border-radius:12px;border:1px solid var(--line);background:var(--surface-2);color:var(--ink-3);font-size:13px;cursor:pointer;transition:border-color .2s,color .2s}
+.cmdk-btn:hover{border-color:var(--line-strong);color:var(--ink-2)}
+.cmdk-btn span{flex:1;text-align:left}
+.cmdk-btn svg{width:15px;height:15px}
+kbd{font-family:var(--f-mono);font-size:10.5px;padding:2px 6px;border-radius:6px;border:1px solid var(--line-strong);background:var(--surface);color:var(--ink-3);white-space:nowrap}
+.cmdk-scrim{align-items:start;padding-top:12vh}
+.cmdk{width:min(640px,100%);max-height:70vh;display:flex;flex-direction:column;border-radius:20px;background:var(--surface);border:1px solid var(--line);box-shadow:0 30px 80px rgba(0,0,0,.35);overflow:hidden;animation:pop-in .25s var(--spring)}
+.cmdk-in{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--line)}
+.cmdk-in svg{width:18px;height:18px;color:var(--ink-3)}
+.cmdk-in input{flex:1;border:0;background:none;font-size:16px;outline:none;color:var(--ink);min-width:0}
+.cmdk-list{overflow-y:auto;padding:6px}
+.cmdk-g{font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);padding:10px 10px 4px}
+.cmdk-it{display:flex;align-items:center;gap:10px;width:100%;padding:8px 10px;border:0;border-radius:12px;background:none;text-align:left;cursor:pointer;color:var(--ink)}
+.cmdk-it[aria-selected="true"]{background:color-mix(in oklab,var(--accent) 10%,var(--surface-2))}
+.cmdk-ic{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;background:var(--surface-2);color:var(--ink-2);flex:none}
+.cmdk-it[aria-selected="true"] .cmdk-ic{color:var(--accent)}
+.cmdk-ic svg{width:15px;height:15px}
+.cmdk-l{flex:1;min-width:0}
+.cmdk-l b{display:block;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cmdk-l small{display:block;font-size:12px;color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cmdk-empty{padding:20px;text-align:center;color:var(--ink-3);font-size:13px}

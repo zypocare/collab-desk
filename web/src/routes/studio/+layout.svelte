@@ -11,6 +11,9 @@
 	import Avatar from '#lib/components/Avatar.svelte';
 	import CollabDrawer from '#lib/components/CollabDrawer.svelte';
 	import NewCollabDialog from '#lib/components/NewCollabDialog.svelte';
+	import CommandPalette from '#lib/components/CommandPalette.svelte';
+
+	let palette = $state<CommandPalette>();
 
 	let { children }: LayoutProps = $props();
 
@@ -101,6 +104,7 @@
 					/></svg
 				><b>{studio.settings?.app_name ?? 'Collab Desk'}</b>
 			</div>
+			<button class="cmdk-btn" onclick={() => palette?.show()} aria-label="Search and actions"><Icon name="search" /><span>Search</span><kbd>Ctrl K</kbd></button>
 			<div class="navs" bind:this={navs}>
 				<span class="nav-ind" bind:this={ind}></span>
 				{#each NAV as n (n.href)}
@@ -136,5 +140,6 @@
 		<button class="fab" onclick={() => (ui.newCollab = true)} aria-label="Add collab"><Icon name="plus" /></button>
 	</div>
 	<CollabDrawer />
+	<CommandPalette bind:this={palette} />
 	{#if ui.newCollab}<NewCollabDialog />{/if}
 {/if}
