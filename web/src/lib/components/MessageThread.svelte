@@ -37,7 +37,8 @@
 	}
 
 	function markRead() {
-		if (document.visibilityState === 'visible') supabase.rpc('mark_thread_read', { p_collab: collabId }).then(() => {});
+		// Only when she's actually looking: the tab is showing and the window has focus.
+		if (document.visibilityState === 'visible' && document.hasFocus()) supabase.rpc('mark_thread_read', { p_collab: collabId }).then(() => {});
 	}
 
 	async function load() {
@@ -70,9 +71,11 @@
 			.subscribe();
 		const onVis = () => markRead();
 		document.addEventListener('visibilitychange', onVis);
+		window.addEventListener('focus', onVis);
 		return () => {
 			supabase.removeChannel(ch);
 			document.removeEventListener('visibilitychange', onVis);
+			window.removeEventListener('focus', onVis);
 		};
 	});
 

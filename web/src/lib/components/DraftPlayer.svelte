@@ -88,7 +88,7 @@
 			{#each comments as c (c.id)}
 				<li>
 					{#if c.at !== null}<button class="dp-at" onclick={() => seek(c.at)}>{mmss(c.at)}</button>{/if}
-					<span>{c.body}{#if c.name}<small> · {c.name}</small>{/if}</span>
+					<span>{c.body}{#if c.name}<small>{' · '}{c.name}</small>{/if}</span>
 					{#if ondelete}<button class="shot-x" aria-label="Remove comment" onclick={() => ondelete?.(c.id)}><Icon name="x" /></button>{/if}
 				</li>
 			{/each}

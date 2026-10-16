@@ -24,8 +24,9 @@
 		waLink
 	} from '#lib/util.ts';
 	import Icon from '#lib/components/Icon.svelte';
-	import type { BriefDetails } from '#lib/types.ts';
+	import type { BriefDetails, DraftComment } from '#lib/types.ts';
 	import BriefView from '#lib/components/BriefView.svelte';
+	import DraftPlayer from '#lib/components/DraftPlayer.svelte';
 	import BrandUsage from '#lib/components/BrandUsage.svelte';
 	import BrandShipping from '#lib/components/BrandShipping.svelte';
 	import MessageThread from '#lib/components/MessageThread.svelte';
@@ -40,6 +41,36 @@
 	const accepted = $derived(r?.quotes?.find((q) => q.status === 'accepted'));
 	const expired = $derived(!!openQuote?.valid_until && openQuote.valid_until < todayIso());
 	const pendingDraft = $derived(r?.drafts?.find((d) => d.status === 'pending'));
+
+	// The draft file and comments pinned to moments in it (the same as on the email link).
+	let comments = $state<DraftComment[]>([]);
+	$effect(() => {
+		const id = pendingDraft?.id;
+		comments = [];
+		if (id)
+			supabase.from('draft_comments').select('id, at_seconds, body, name').eq('draft_id', id).order('at_seconds', { nullsFirst: false }).then(({ data }) => {
+				comments = ((data ?? []) as { id: number; at_seconds: number | null; body: string; name: string }[]).map((x) => ({ id: x.id, at: x.at_seconds === null ? null : Number(x.at_seconds), body: x.body, name: x.name }));
+			});
+	});
+	async function addComment(at: number | null, body: string) {
+		if (!pendingDraft) return false;
+		const { data, error: err } = await supabase.rpc('draft_comment_add_member', { p_draft: pendingDraft.id, p_at: at, p_body: body });
+		if (err) {
+			error = errMessage(err);
+			return false;
+		}
+		comments = [...comments, { id: (data as { id: number }).id, at, body, name: (data as { name: string }).name }].sort((a, b) => (a.at ?? 1e9) - (b.at ?? 1e9));
+		return true;
+	}
+	async function removeComment(id: number) {
+		await supabase.rpc('draft_comment_delete_member', { p_id: id });
+		comments = comments.filter((x) => x.id !== id);
+	}
+	const mmss = (s: number | null) => (s === null ? '' : `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`);
+	function askChanges() {
+		if (comments.length && !feedback.trim()) feedback = comments.map((x) => (x.at === null ? `• ${x.body}` : `• ${mmss(x.at)} ${x.body}`)).join('\n');
+		draftMode = 'changes';
+	}
 
 	// Leaving the page: refresh the unread counts on My requests.
 	$effect(() => () => void loadUnread());
@@ -199,6 +230,9 @@
 		<section class="panel rv action-panel" style="--i:2;margin-top:18px">
 			<div class="panel-h"><h2>Draft {pendingDraft.round} for your review</h2><span class="pill tint k-new">Needs your answer</span></div>
 			<div style="padding:0 20px 8px">
+				{#if pendingDraft.file_path}
+					<DraftPlayer path={pendingDraft.file_path} type={pendingDraft.file_type} {comments} canComment onadd={addComment} ondelete={removeComment} />
+				{/if}
 				{#if pendingDraft.link}<a class="btn" href={pendingDraft.link} target="_blank" rel="noopener"><Icon name="eye" />Open the draft</a>{/if}
 				{#if pendingDraft.caption}<div class="f" style="margin-top:14px"><span class="lbl-t">Caption</span><p class="draft-cap">{pendingDraft.caption}</p></div>{/if}
 				{#if pendingDraft.note}<blockquote class="note" style="margin-top:14px"><span>Note from {creator}</span><p>{pendingDraft.note}</p></blockquote>{/if}
@@ -213,7 +247,7 @@
 			{:else}
 				<div class="submit-row">
 					<p>Approve it, or tell {creator} what to change.</p>
-					<button class="btn" onclick={() => (draftMode = 'changes')}>Ask for changes</button>
+					<button class="btn" onclick={askChanges}>Ask for changes{comments.length ? ` (${comments.length})` : ''}</button>
 					<button class="btn grad lg" disabled={busy} onclick={() => respondDraft(true)}><Icon name="check" />Approve draft</button>
 				</div>
 			{/if}

@@ -65,7 +65,7 @@
 	{#each files as f (f.id)}
 		<div class="exp-row">
 			<Icon name={f.file_path ? 'film' : 'link'} />
-			<span class="exp-l">{f.label}<small> · {size(f.size_bytes)}{f.downloaded_at ? ` · downloaded ${fmt(f.downloaded_at.slice(0, 10))}` : ''}</small></span>
+			<span class="exp-l">{f.label}<small>{' · '}{size(f.size_bytes)}{f.downloaded_at ? ` · downloaded ${fmt(f.downloaded_at.slice(0, 10))}` : ''}</small></span>
 			<button class="shot-x" style="opacity:1" aria-label="Remove {f.label}" onclick={() => remove(f)}><Icon name="x" /></button>
 		</div>
 	{/each}

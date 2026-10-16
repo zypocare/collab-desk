@@ -77,8 +77,13 @@ export function quoteOptions(c: Collab, s: Settings, packages: Package[]): Quote
 			const items = pk.items.map((i) => ({ kind: i.kind, qty: i.qty, rate: rates[i.kind] ?? 0 }));
 			const discount = Math.max(0, itemsSum(items) - pk.price);
 			out.push(make('budget', `Match budget · ${pk.name}`, `Your ${pk.name} package fits their ${budgetText(budget)}`, items, 'Organic only', discount));
+		} else if (rate.total - budget <= rate.total * 0.15) {
+			// 2. Close to the rate card: keep everything they asked for, with a small discount.
+			const discount = Math.max(0, rate.total - budget);
+			const pct = Math.round((discount / Math.max(1, itemsSum(base))) * 100);
+			out.push(make('budget', 'Match budget', `${pct}% off, everything they asked for, at their ${budgetText(budget)}`, base.map((i) => ({ ...i })), usage, discount));
 		} else {
-			// 2. Drop the cheapest pieces until it fits (keep at least one), then a small discount (max 15%).
+			// 3. Far below the rate card: drop the cheapest pieces until it fits (keep at least one), then a small discount (max 15%).
 			const items = base.map((i) => ({ ...i }));
 			const dropped: string[] = [];
 			const totalOf = () => itemsSum(items) + usageFee(usage, itemsSum(items), s);
@@ -298,7 +303,8 @@ export function replySuggestions(c: Collab, s: Settings): Reply[] {
 export function captionStarter(c: Collab, style: 'short' | 'detailed'): string {
 	const d = c.brief_details ?? {};
 	const brand = c.brand.instagram ? `@${c.brand.instagram.replace(/^@/, '')}` : c.brand.name;
-	const tag = c.type === 'paid' ? '#ad' : '#collab';
+	// ASCI: any money paid means #ad; a product only (barter) is #gifted.
+	const tag = c.type === 'barter' ? '#gifted' : '#ad';
 	const message = (d.message ?? '').trim().replace(/[.!]+$/, '');
 	const mentions = (d.mentions ?? []).filter((m) => m.toLowerCase() !== brand.toLowerCase());
 	const tags = d.hashtags ?? [];

@@ -1911,3 +1911,10 @@ body{font-feature-settings:'cv11','ss01';letter-spacing:-.005em}
 /* Phones: short names in the bottom bar so all eight fit */
 .nav-short{display:none}
 @media (max-width:900px){.nav-long{display:none}.nav-short{display:inline}.nav{font-size:10.5px}}
+.post-check{display:flex;flex-direction:column;gap:2px}
+.post-check .check-row{padding:4px 0;font-size:14px}
+/* Settings: hand the studio to another sign-in email */
+.row-inline{display:flex;gap:8px;align-items:center}
+.row-inline .inp{flex:1;min-width:0}
+.move-owner{display:flex;flex-direction:column;gap:10px}
+.move-owner .chk{display:flex;gap:8px;align-items:center;font-size:15px;color:var(--ink-2);font-weight:400;text-transform:none;letter-spacing:0}

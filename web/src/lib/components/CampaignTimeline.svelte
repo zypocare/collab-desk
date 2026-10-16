@@ -31,7 +31,7 @@
 				<div>
 					<b>{m.title}</b>
 					<small>
-						{#if m.date}{fmt(m.date)}{#if m.who !== 'done'} · {relWord(diff(m.date))}{/if}{:else if m.who !== 'done'}date to be set{/if}{m.note ? ` · ${m.note}` : ''}
+						{#if m.date}{fmt(m.date)}{#if m.who !== 'done'}{' · '}{relWord(diff(m.date))}{/if}{:else if m.who !== 'done'}date to be set{/if}{m.note ? ` · ${m.note}` : ''}
 					</small>
 				</div>
 				{#if m.who === 'you'}<span class="pill tint k-new">You</span>{:else if m.who === 'creator'}<span class="pill tint plain">{creator}</span>{/if}

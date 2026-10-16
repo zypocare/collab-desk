@@ -12,7 +12,7 @@
 
 {#if e}
 	{#if compactView}
-		<span class="exp-mini" title="Estimate from {e.basis}">≈ {compact(e.views)} views{#if e.cpm} · {rupee(e.cpm)} per 1K views{/if}</span>
+		<span class="exp-mini" title="Estimate from {e.basis}">≈ {compact(e.views)} views{#if e.cpm}{' · '}{rupee(e.cpm)} per 1K views{/if}</span>
 	{:else}
 		<div class="exp-box" aria-label="What you can expect">
 			<span class="exp-h"><Icon name="chart" />What you can expect</span>

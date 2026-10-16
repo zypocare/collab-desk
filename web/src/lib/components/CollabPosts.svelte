@@ -62,7 +62,7 @@
 						<small>{report.status === 'sent' ? `Sent to the brand ${report.sent_at ? fmtTime(report.sent_at) : ''}` : 'Ready. Check it, then send it.'} · {compact(report.data.totals.views)} views · {compact(report.data.totals.reach)} reached</small>
 					</div>
 					<a class="btn sm" href="/report/{report.public_token}" target="_blank" rel="noopener"><Icon name="eye" />View</a>
-					{#if report.status === 'ready'}<button class="btn sm primary" onclick={() => sendReport(report)}><Icon name="send" />Send to brand</button>{/if}
+					{#if report.status === 'ready'}<button class="btn sm primary" onclick={async () => (await ask({ title: `Email the results report to ${c.contact_name || c.brand.name}?`, body: 'They get the views, reach and cost per view, with a PDF to download.', ok: 'Send' })) && sendReport(report)}><Icon name="send" />Send to brand</button>{/if}
 				{:else}
 					<div><b>Results report</b><small>Made automatically 7 days after the post goes live.</small></div>
 				{/if}

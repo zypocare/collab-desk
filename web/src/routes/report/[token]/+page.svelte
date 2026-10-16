@@ -2,7 +2,7 @@
 	import { page } from '$app/state';
 	import { onMount } from 'svelte';
 	import { supabase } from '#lib/supabase.ts';
-	import { money, roiOf, type ReportFull } from '#lib/roi.ts';
+	import { deliv, money, roiOf, type ReportFull } from '#lib/roi.ts';
 	import { downloadReport } from '#lib/reportPdf.ts';
 	import { countUp } from '#lib/ui.svelte.ts';
 	import { compact, fmtLong } from '#lib/util.ts';
@@ -48,7 +48,7 @@
 				<div class="hc-in">
 					<span class="hc-eb">Collaboration results · {r.code}</span>
 					<h1>{r.brand} <em>×</em> {r.creator.name}</h1>
-					<p>{r.deliverables} · measured {r.days_after} day{r.days_after === 1 ? '' : 's'} after posting · @{r.creator.handle}{r.creator.followers ? ` · ${compact(r.creator.followers)} followers` : ''}</p>
+					<p>{deliv(r.deliverables)} · measured {r.days_after} day{r.days_after === 1 ? '' : 's'} after posting · @{r.creator.handle}{r.creator.followers ? ` · ${compact(r.creator.followers)} followers` : ''}</p>
 					{#if r.totals.views !== null}
 						<div class="report-big"><b use:countUp={{ value: r.totals.views ?? 0 }}>{(r.totals.views ?? 0).toLocaleString('en-IN')}</b><span>views</span></div>
 					{/if}

@@ -2,7 +2,7 @@
 import fontkit from '@pdf-lib/fontkit';
 import { PDFDocument, rgb, type PDFFont, type RGB } from 'pdf-lib';
 import { loadFonts } from './invoicePdf';
-import { money, roiOf, type ReportFull } from './roi';
+import { deliv, money, roiOf, type ReportFull } from './roi';
 import { compact } from './util';
 
 const INK = rgb(0.12, 0.09, 0.11);
@@ -37,7 +37,7 @@ export async function reportPdf(r: ReportFull): Promise<Uint8Array> {
 	page.drawRectangle({ x: (2 * W) / 3, y: H - bandH, width: W / 3, height: 5, color: G3 });
 	text(`COLLABORATION RESULTS · ${r.code}`, M, H - 40, 8, bold, rgb(0.75, 0.7, 0.74));
 	text(`${r.brand} × ${r.creator.name}`, M, H - 68, 22, bold, WHITE);
-	text(`${r.deliverables} · @${r.creator.handle}${r.creator.followers ? ` · ${compact(r.creator.followers)} followers` : ''}`, M, H - 88, 10, reg, rgb(0.85, 0.8, 0.84));
+	text(`${deliv(r.deliverables)} · @${r.creator.handle}${r.creator.followers ? ` · ${compact(r.creator.followers)} followers` : ''}`, M, H - 88, 10, reg, rgb(0.85, 0.8, 0.84));
 	const asOf = (roi.latest?.updated_at ?? r.generated_at ?? '').slice(0, 10);
 	text(`Numbers from Instagram${asOf ? ` as of ${new Date(asOf).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}` : ''}`, M, H - 108, 8.5, reg, rgb(0.65, 0.6, 0.64));
 

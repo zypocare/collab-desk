@@ -47,7 +47,7 @@
 	{#each c.expenses ?? [] as x (x.id)}
 		<div class="exp-row">
 			<span class="pill tint plain">{EXPENSE_CATS[x.category]}</span>
-			<span class="exp-l">{x.label}<small> · {fmt(x.spent_on)}</small></span>
+			<span class="exp-l">{x.label}<small>{' · '}{fmt(x.spent_on)}</small></span>
 			<b>{inr(x.amount)}</b>
 			<button class="shot-x" style="opacity:1" aria-label="Remove {x.label}" onclick={() => remove(x.id, x.label)}><Icon name="x" /></button>
 		</div>

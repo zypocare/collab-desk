@@ -1,5 +1,6 @@
 // A brand's campaign at a glance: dated milestones (who acts next), and a calendar file of them.
 import type { BrandRequest } from './types';
+import { fmt } from './util';
 
 export type Milestone = { key: string; date: string | null; title: string; who: 'you' | 'creator' | 'done'; note?: string };
 
@@ -26,7 +27,7 @@ export function milestones(r: BrandRequest, creator: string): Milestone[] {
 
 	if (product && confirmed) {
 		if (r.product_received_at) out.push({ key: 'product', date: r.product_received_at.slice(0, 10), title: 'Product received', who: 'done' });
-		else if (r.shipped_at) out.push({ key: 'product', date: r.product_date, title: 'Product on the way', who: 'creator', note: `Shipped ${r.shipped_at.slice(0, 10)}` });
+		else if (r.shipped_at) out.push({ key: 'product', date: r.product_date, title: 'Product on the way', who: 'creator', note: `shipped ${fmt(r.shipped_at.slice(0, 10))}` });
 		else out.push({ key: 'product', date: r.product_date, title: 'Ship the product', who: 'you', note: r.product_date ? undefined : 'Add tracking on this page when it goes out' });
 	}
 
@@ -61,9 +62,10 @@ export function milestones(r: BrandRequest, creator: string): Milestone[] {
 		out.push({
 			key: 'pay',
 			date: r.pay_status === 'paid' ? r.paid_on : r.pay_due,
-			title: r.pay_status === 'paid' ? 'Paid' : reported && !unpaid ? 'Payment reported' : 'Payment due',
+			title:
+				r.pay_status === 'paid' ? 'Paid' : reported && !unpaid ? 'Payment reported' : !unpaid && r.pay_status === 'advance' ? 'Balance invoice' : 'Payment due',
 			who: r.pay_status === 'paid' ? 'done' : unpaid ? 'you' : 'creator',
-			note: reported && !unpaid ? 'waiting for confirmation' : undefined
+			note: reported && !unpaid ? 'waiting for confirmation' : !unpaid && r.pay_status === 'advance' ? 'advance received, the balance invoice comes next' : undefined
 		});
 	}
 

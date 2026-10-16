@@ -31,6 +31,7 @@
 		hueOf,
 		inr,
 		isPaid,
+		outstanding,
 		overdue,
 		plural,
 		stageIndex
@@ -175,6 +176,11 @@
 			return;
 		}
 		confirmLive = false;
+		// Wrapping up with money still to come: ask first.
+		if (s === 'wrapped' && isPaid(c) && c.pay_status !== 'paid' && outstanding(c) > 0) {
+			const ok = await ask({ title: `${inr(outstanding(c))} not paid yet`, body: 'Wrap it up anyway? Unpaid invoices keep their reminders, but anything not invoiced yet is easy to forget.', ok: 'Wrap anyway', cancel: 'Not yet' });
+			if (!ok) return;
+		}
 		await setStage(c, s);
 	}
 
@@ -499,7 +505,7 @@
 						<div class="f"><label for="dr-link">Or a link to it</label><input class="inp" id="dr-link" placeholder="Google Drive or WeTransfer link" bind:value={draftForm.link} /></div>
 						<div class="f"><label for="dr-cap">Caption <span class="cap-start">Start from the brief: <button type="button" class="lnk" onclick={() => c && (draftForm.caption = captionStarter(c, 'short'))}>Short</button> · <button type="button" class="lnk" onclick={() => c && (draftForm.caption = captionStarter(c, 'detailed'))}>Detailed</button></span></label><textarea class="inp" id="dr-cap" rows="3" placeholder="#ad The caption you plan to post, with @brand tag" bind:value={draftForm.caption}></textarea>
 							{#if draftForm.caption.trim()}
-								{@const bc = briefCheck(draftForm.caption, c.brand.instagram, c.brief_details)}
+								{@const bc = briefCheck(draftForm.caption, c.brand.instagram, c.brief_details, c.type)}
 								<div class="cap-check" aria-live="polite">
 									{#each bc.items as it (it.label)}<span class:ok={it.ok}><Icon name={it.ok ? 'check' : 'x'} />{it.label}</span>{/each}
 								</div>

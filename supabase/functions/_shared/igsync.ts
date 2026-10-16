@@ -291,7 +291,7 @@ async function makeReports(db: SupabaseClient, reportFor?: string) {
     const data = {
       brand: c.brand.name, brand_handle: c.brand.instagram, code: c.code,
       creator: { name: s.display_name, handle: acct?.username || s.handle, followers: acct?.followers ?? null },
-      deliverables: c.deliverables.map((d) => `${d.qty} ${d.kind}`).join(', '),
+      deliverables: c.deliverables.map((d) => `${d.qty} ${d.qty > 1 ? (d.kind === 'Story' ? 'Stories' : `${d.kind}s`) : d.kind}`).join(', '),
       days_after: Math.max(1, Math.round((Date.now() - Math.min(...posts.map((p) => Date.parse(p.posted_at)))) / DAY)),
       posts: posts.sort((a, b) => a.posted_at.localeCompare(b.posted_at)).map((p) => ({
         permalink: p.permalink, type: p.product_type === 'REELS' ? 'Reel' : p.media_type === 'CAROUSEL_ALBUM' ? 'Carousel' : 'Post',

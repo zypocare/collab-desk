@@ -253,7 +253,7 @@ export const DRAFT_STATUS: Record<Draft['status'], { label: string; k: string }>
 // ---- posting checklist (ASCI disclosure rules + brand basics) ----
 export const CHECKLIST: { key: keyof Checklist; label: string }[] = [
 	{ key: 'paid_label', label: '"Paid partnership" label turned on' },
-	{ key: 'ad_tag', label: '#ad or #collab in the first line of the caption' },
+	{ key: 'ad_tag', label: '#ad (paid) or #gifted (product only) in the first line of the caption' },
 	{ key: 'brand_tag', label: 'Brand tagged in the post and caption' },
 	{ key: 'link', label: 'Discount code or link included (if agreed)' }
 ];
@@ -275,12 +275,14 @@ export function parseTags(text: string, sign: '#' | '@') {
 }
 
 /** Everything the caption must have: disclosure, the brand tag, and the brief's hashtags and @mentions. */
-export function briefCheck(caption: string, handle: string, d: BriefDetails | null | undefined) {
+export function briefCheck(caption: string, handle: string, d: BriefDetails | null | undefined, type: CollabType = 'paid') {
 	const base = captionCheck(caption, handle);
 	const lower = caption.toLowerCase();
 	const has = (tag: string) => new RegExp(`${tag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![\\p{L}\\p{N}_])`, 'iu').test(lower);
 	const items = [
-		{ label: '#ad or #collab in the first line', ok: base.ad_tag },
+		type === 'barter'
+			? { label: '#gifted (or #ad) in the first line', ok: base.ad_tag }
+			: { label: '#ad in the first line (it’s paid)', ok: /#(ad|sponsored|paidpartnership)(?![a-z])/i.test(caption.trim().split(/\r?\n/)[0] ?? '') },
 		...(handle ? [{ label: `@${handle.replace(/^@/, '')}`, ok: base.brand_tag }] : []),
 		...(d?.mentions ?? []).filter((m) => m.toLowerCase() !== `@${handle.toLowerCase().replace(/^@/, '')}`).map((m) => ({ label: m, ok: has(m.toLowerCase()) })),
 		...(d?.hashtags ?? []).map((h) => ({ label: h, ok: has(h.toLowerCase()) })),
@@ -292,7 +294,7 @@ export function briefCheck(caption: string, handle: string, d: BriefDetails | nu
 export function captionCheck(caption: string, handle: string) {
 	const firstLine = caption.trim().split(/\r?\n/)[0]?.slice(0, 140) ?? '';
 	return {
-		ad_tag: /#(ad|collab|sponsored|paidpartnership|partner)(?![a-z])/i.test(firstLine),
+		ad_tag: /#(ad|collab|sponsored|paidpartnership|partner|gifted)(?![a-z])/i.test(firstLine),
 		brand_tag: !!handle && caption.toLowerCase().includes('@' + handle.toLowerCase().replace(/^@/, ''))
 	};
 }

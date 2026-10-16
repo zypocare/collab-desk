@@ -19,7 +19,9 @@
 		const fee = c.fee || q?.total || 0;
 		let kind: Invoice['kind'] = 'full';
 		let amount = fee;
-		if (q && q.advance_pct > 0 && q.advance_pct < 100 && !hasAdvance && invoicedSoFar === 0) {
+		// An advance only makes sense before the content is out; after that it's the full amount.
+		const posted = c.stage === 'live' || c.stage === 'wrapped';
+		if (q && q.advance_pct > 0 && q.advance_pct < 100 && !hasAdvance && invoicedSoFar === 0 && !posted) {
 			kind = 'advance';
 			amount = Math.round((fee * q.advance_pct) / 100);
 		} else if (invoicedSoFar > 0) {

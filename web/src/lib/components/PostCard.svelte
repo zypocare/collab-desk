@@ -1,11 +1,12 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import type { Collab } from '../types';
-	import { setStage, updateCollab } from '../studio.svelte';
+	import { setChecklist, setStage, updateCollab } from '../studio.svelte';
+	import { ask } from '../confirm.svelte';
 	import { captionStarter } from '../suggest';
 	import { timeLabel, timeOptions } from '../postTime';
 	import { copyText, ui } from '../ui.svelte';
-	import { delivText, diff, latestDraft, relWord } from '../util';
+	import { CHECKLIST, checklistMissing, delivText, diff, latestDraft, relWord } from '../util';
 	import DatePicker from './DatePicker.svelte';
 	import Icon from './Icon.svelte';
 	import Mono from './Mono.svelte';
@@ -25,7 +26,10 @@
 	onMount(() => {
 		if (focus) setTimeout(() => el?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300);
 	});
+	// The same disclosure checklist as the collab page: ask before skipping it.
+	const missing = $derived(checklistMissing(c));
 	async function posted() {
+		if (missing.length && !(await ask({ title: 'Posting checklist not finished', body: `Still unticked: ${missing.join('; ')}. Indian ad rules need paid posts clearly marked.`, ok: 'Mark posted anyway', cancel: 'Go back' }))) return;
 		busy = true;
 		await setStage(c, 'live');
 		busy = false;
@@ -54,6 +58,10 @@
 		{#if promo}<button class="btn sm" onclick={() => copyText(promo, 'Code copied')}>Code {promo}</button>{/if}
 		{#if d.link}<button class="btn sm" onclick={() => copyText(d.link!, 'Link copied')}><Icon name="link" />Link</button>{/if}
 	</div>
-	<p class="hint post-tip"><Icon name="alert" />Turn on the <b>Paid partnership</b> label and keep #ad in the first line.</p>
+	<div class="post-check">
+		{#each CHECKLIST as item (item.key)}
+			<label class="check-row"><input type="checkbox" class="cbx" checked={!!c.checklist?.[item.key]} onchange={(e) => setChecklist(c, { [item.key]: (e.currentTarget as HTMLInputElement).checked })} /><span>{item.label}</span></label>
+		{/each}
+	</div>
 	<button class="btn sm primary" disabled={busy} onclick={posted}>{#if busy}<span class="spinner"></span>{:else}<Icon name="check" />{/if}I've posted it</button>
 </div>

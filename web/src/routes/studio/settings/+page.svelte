@@ -6,6 +6,7 @@
 	import { loadPackages, saveSettings, studio } from '#lib/studio.svelte.ts';
 	import type { PublicPage, Settings } from '#lib/types.ts';
 	import { supabase } from '#lib/supabase.ts';
+	import { signOut } from '#lib/auth.svelte.ts';
 	import { downloadMediaKit } from '#lib/mediaKitPdf.ts';
 	import { copyText, toast } from '#lib/ui.svelte.ts';
 	import { KINDS, compact, inr, offeredKinds } from '#lib/util.ts';
@@ -43,10 +44,43 @@
 		{ k: 'whatsapp', label: 'WhatsApp for brands (optional)', ph: '98450 00000' }
 	];
 	function saveText(k: TextKey, v: string) {
-		const clean = k === 'handle' ? v.trim().replace(/^@/, '') : v.trim();
+		let clean = k === 'handle' ? v.trim().replace(/^@/, '') : v.trim();
+		if (k === 'reply_time') clean = clean.replace(/^1 (day|hour|week)s\b/i, '1 $1');
 		if ((k === 'display_name' || k === 'app_name' || k === 'site_url') && !clean) return;
 		saveSettings({ [k]: clean } as Partial<Settings>);
 	}
+	// Hand the studio to another email (e.g. hers), optionally keeping the current one as a manager.
+	let moving = $state(false);
+	let newEmail = $state('');
+	let keepMe = $state(true);
+	let moveBusy = $state(false);
+	async function transferOwner(e: SubmitEvent) {
+		e.preventDefault();
+		const to = newEmail.trim().toLowerCase();
+		const ok = await ask({
+			title: `Make ${to} the owner?`,
+			body: keepMe
+				? `From now on ${to} signs in as the owner. You (${s.creator_email}) stay on the team as a manager and keep getting email copies.`
+				: `From now on only ${to} opens this studio. You'll be signed out and won't be able to get back in.`,
+			ok: 'Change owner',
+			danger: !keepMe
+		});
+		if (!ok) return;
+		moveBusy = true;
+		const { error } = await supabase.rpc('studio_transfer', { p_email: to, p_keep_me: keepMe });
+		moveBusy = false;
+		if (error) return toast(error.message, 'alert');
+		if (!keepMe) {
+			await signOut();
+			return goto('/login', { replace: true });
+		}
+		studio.settings!.creator_email = to;
+		const { data } = await supabase.rpc('studio_account');
+		studio.me = (data as typeof studio.me) ?? null;
+		moving = false;
+		toast(`Done. ${to} is the owner now; you're a manager.`);
+	}
+
 	let kitBusy = $state(false);
 	async function kit() {
 		kitBusy = true;
@@ -267,7 +301,19 @@
 							<div class="form-b">
 								<div class="f span2"><label for="me-app">App name</label><input class="inp" id="me-app" value={s.app_name} onchange={(e) => saveText('app_name', val(e))} /></div>
 								<div class="f span2"><label for="me-site">Website address</label><input class="inp" id="me-site" value={s.site_url} placeholder="https://yourdomain.com" onchange={(e) => saveText('site_url', val(e))} /></div>
-								<div class="f span2"><label for="me-email">Your sign-in email</label><input class="inp" id="me-email" value={s.creator_email} readonly /><p class="hint" style="margin-top:6px">Only this email opens your studio. It is changed in the database setup, not here.</p></div>
+								<div class="f span2">
+									<label for="me-email">Owner sign-in email</label>
+									{#if !moving}
+										<div class="row-inline"><input class="inp" id="me-email" value={s.creator_email} readonly />{#if studio.me?.team_role === 'owner'}<button class="btn sm" type="button" onclick={() => ((moving = true), (newEmail = ''))}>Change</button>{/if}</div>
+										<p class="hint" style="margin-top:6px">This email owns the studio. People on your team sign in with their own email.</p>
+									{:else}
+										<form class="move-owner" onsubmit={transferOwner}>
+											<input class="inp" id="me-email" type="email" required placeholder="her-email@gmail.com" bind:value={newEmail} />
+											<label class="chk"><input type="checkbox" bind:checked={keepMe} />Keep me ({s.creator_email}) on as a manager</label>
+											<div class="row-inline"><button class="btn sm primary" type="submit" disabled={moveBusy || !newEmail.includes('@')}>Change owner</button><button class="btn sm ghost" type="button" onclick={() => (moving = false)}>Cancel</button></div>
+										</form>
+									{/if}
+								</div>
 							</div>
 						</section>
 						<ResetData />
