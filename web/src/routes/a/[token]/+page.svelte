@@ -3,7 +3,8 @@
 	import { supabase } from '#lib/supabase.ts';
 	import { confetti } from '#lib/ui.svelte.ts';
 	import { errMessage, firstName, fmtLong, inr, payTerms, plural } from '#lib/util.ts';
-	import type { QuoteItem } from '#lib/types.ts';
+	import type { DraftComment, QuoteItem } from '#lib/types.ts';
+	import DraftPlayer from '#lib/components/DraftPlayer.svelte';
 	import Icon from '#lib/components/Icon.svelte';
 
 	// One-tap page from an email: accept a quote / approve a draft, or ask for changes. No sign-in.
@@ -28,7 +29,7 @@
 			valid_until: string | null;
 			notes: string;
 		} | null;
-		draft: { round: number; link: string; caption: string; note: string } | null;
+		draft: { round: number; link: string; caption: string; note: string; file_path: string | null; file_type: string; comments: DraftComment[] } | null;
 		counter: { fee: number; product: string; reply_time: string; deliverables: string } | null;
 	};
 
@@ -52,6 +53,28 @@
 	});
 
 	const creator = $derived(firstName(info?.creator ?? ''));
+
+	// Comments on the draft video (pinned to a moment), saved as they're added.
+	const mmss = (s: number | null) => (s === null ? '' : `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`);
+	async function addComment(at: number | null, body: string) {
+		const { data, error: err } = await supabase.rpc('draft_comment_add', { p_token: page.params.token, p_at: at, p_body: body, p_name: name });
+		if (err) {
+			error = errMessage(err);
+			return false;
+		}
+		info!.draft!.comments = [...info!.draft!.comments, { id: (data as { id: number }).id, at, body, name }].sort((a, b) => (a.at ?? 1e9) - (b.at ?? 1e9));
+		return true;
+	}
+	async function removeComment(id: number) {
+		await supabase.rpc('draft_comment_delete', { p_token: page.params.token, p_id: id });
+		info!.draft!.comments = info!.draft!.comments.filter((x) => x.id !== id);
+	}
+	// "Ask for changes" starts from their comments.
+	function askChanges() {
+		const cs = info?.draft?.comments ?? [];
+		if (cs.length && !note.trim()) note = cs.map((x) => (x.at === null ? `• ${x.body}` : `• ${mmss(Number(x.at))} ${x.body}`)).join('\n');
+		mode = 'changes';
+	}
 
 	async function run(yes: boolean) {
 		error = '';
@@ -137,6 +160,9 @@
 				{#if q.notes}<p class="hint" style="white-space:pre-wrap;margin-top:10px">{q.notes}</p>{/if}
 			{:else if info.draft}
 				{@const d = info.draft}
+				{#if d.file_path}
+					<DraftPlayer path={d.file_path} type={d.file_type} comments={d.comments.map((x) => ({ ...x, at: x.at === null ? null : Number(x.at) }))} canComment onadd={addComment} ondelete={removeComment} />
+				{/if}
 				{#if d.link}<a class="btn" href={d.link} target="_blank" rel="noopener"><Icon name="eye" />Open the draft</a>{/if}
 				{#if d.caption}<div class="f" style="margin-top:14px"><span class="lbl-t">Caption</span><p class="draft-cap">{d.caption}</p></div>{/if}
 				{#if d.note}<blockquote class="note" style="margin-top:14px"><span>Note from {creator}</span><p>{d.note}</p></blockquote>{/if}
@@ -157,7 +183,7 @@
 				{/if}
 				{#if error}<div class="err">{error}</div>{/if}
 				<div class="row">
-					<button class="btn" onclick={() => (mode = 'changes')}><Icon name="edit" />Ask for changes</button>
+					<button class="btn" onclick={askChanges}><Icon name="edit" />Ask for changes{info.draft?.comments?.length ? ` (${info.draft.comments.length})` : ""}</button>
 					<button class="btn grad lg" disabled={busy} onclick={() => run(true)}>{#if busy}<span class="spinner"></span>{:else}<Icon name="check" />{/if}{info.kind === 'quote' ? `Accept ${inr(info.quote?.total ?? 0)}` : 'Approve draft'}</button>
 				</div>
 				<p class="hint" style="margin:10px 0 0">{info.kind === 'quote' ? `By accepting, you agree to the terms above with ${info.creator}.` : `${creator} will post it once you approve.`}</p>

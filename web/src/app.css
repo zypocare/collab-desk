@@ -1670,3 +1670,21 @@ body:has(.batch-bar) .fab{display:none}
 .brief-miss{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-bottom:14px}
 .brief-miss .lbl-t{margin:0 6px 0 0}
 .brief-gap{margin-bottom:12px}
+
+/* Draft player with time-pinned comments */
+.dplayer{display:flex;flex-direction:column;gap:8px;margin:8px 0}
+.dp-media{border-radius:14px;overflow:hidden;background:#000;display:grid;place-items:center;max-height:70vh}
+.dp-media video,.dp-media img{display:block;width:100%;max-height:70vh;object-fit:contain}
+.dp-load{min-height:180px;background:color-mix(in oklab,var(--ink) 6%,transparent)}
+.dp-marks{position:relative;height:10px;margin:0 6px}
+.dp-marks button{position:absolute;top:0;width:10px;height:10px;margin-left:-5px;border-radius:50%;border:2px solid var(--surface);background:var(--accent);padding:0;cursor:pointer}
+.dp-open{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;align-self:flex-start}
+.dp-open .ic{width:14px;height:14px}
+.dp-comments{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.dp-comments li{display:flex;align-items:flex-start;gap:8px;font-size:13px;padding:8px 10px;border-radius:12px;background:color-mix(in oklab,var(--ink) 4%,transparent)}
+.dp-comments li > span{flex:1}
+.dp-comments small{color:var(--ink-3)}
+.dp-comments li:hover .shot-x{opacity:1}
+.dp-at{flex:none;border:0;border-radius:8px;padding:2px 7px;font:inherit;font-size:12px;font-weight:700;font-variant-numeric:tabular-nums;background:color-mix(in oklab,var(--accent) 15%,transparent);color:var(--accent);cursor:pointer}
+.dp-add{display:flex;gap:8px;align-items:center}
+.dp-add .inp{flex:1;min-width:0}

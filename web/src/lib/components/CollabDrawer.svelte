@@ -47,6 +47,7 @@
 	import Select from './Select.svelte';
 	import DatePicker from './DatePicker.svelte';
 	import { bestTime, timeLabel, timeOptions } from '../postTime';
+	import DraftPlayer from './DraftPlayer.svelte';
 	import { BRIEF_NEEDS, briefMissing } from '../content';
 	import Mono from './Mono.svelte';
 	import QuoteDialog from './QuoteDialog.svelte';
@@ -64,7 +65,7 @@
 		payTerms,
 		waLink
 	} from '../util';
-	import { cancelInvoice, reloadCollabs, setChecklist, setInvoiceFlags, shareDraft, withdrawQuote } from '../studio.svelte';
+	import { DRAFT_MAX_MB, cancelInvoice, reloadCollabs, setChecklist, setInvoiceFlags, shareDraft, withdrawQuote } from '../studio.svelte';
 	import { errMessage } from '../util';
 	import type { Quote } from '../types';
 	import { INVOICE_STATUS, KIND_LABEL, balanceDue, type Invoice } from '../invoice';
@@ -85,6 +86,7 @@
 	const issuedInvoices = $derived(c ? c.invoices.filter((i) => i.status !== 'draft' && i.status !== 'cancelled') : []);
 	let confirmLive = $state(false);
 	let draftForm = $state({ link: '', caption: '', note: '' });
+	let draftFile = $state<File | null>(null);
 	let draftBusy = $state(false);
 	let showOld = $state(false);
 
@@ -99,9 +101,12 @@
 		e.preventDefault();
 		if (!c) return;
 		draftBusy = true;
-		const ok = await shareDraft(c, draftForm);
+		const ok = await shareDraft(c, draftForm, draftFile);
 		draftBusy = false;
-		if (ok) draftForm = { link: '', caption: '', note: '' };
+		if (ok) {
+			draftForm = { link: '', caption: '', note: '' };
+			draftFile = null;
+		}
 	}
 	const open = $derived(!!c);
 	const si = $derived(c ? stageIndex(c.stage) : 0);
@@ -450,6 +455,7 @@
 							<span class="pill tint {DRAFT_STATUS[d.status].k}">{DRAFT_STATUS[d.status].label}</span>
 							<span class="hint">{fmt(d.submitted_at)}</span>
 						</div>
+						{#if d.file_path}<DraftPlayer path={d.file_path} type={d.file_type} comments={(d.comments ?? []).map((x) => ({ id: x.id, at: x.at_seconds === null ? null : Number(x.at_seconds), body: x.body, name: x.name })).sort((a, b) => (a.at ?? 1e9) - (b.at ?? 1e9))} />{/if}
 						{#if d.link}<a class="lnk draft-link" href={d.link} target="_blank" rel="noopener">{d.link}</a>{/if}
 						{#if d.caption}<p class="draft-cap">{d.caption}</p>{/if}
 						{#if d.feedback}<blockquote class="note" style="margin:8px 0 0"><span>{d.status === 'approved' ? 'Brand note' : 'Changes asked'} · {d.responded_by}</span><p>{d.feedback}</p></blockquote>{/if}
@@ -460,7 +466,12 @@
 						<p class="hint warn-text">This would be an extra round beyond the {roundsIncluded} included in the agreement.</p>
 					{/if}
 					<form class="draft-form" onsubmit={sendDraft}>
-						<div class="f"><label for="dr-link">Link to the draft</label><input class="inp" id="dr-link" placeholder="Google Drive or WeTransfer link" bind:value={draftForm.link} /></div>
+						<div class="f">
+							<label for="dr-file">Upload the draft <span class="hint">(video or photo, up to {DRAFT_MAX_MB} MB)</span></label>
+							<input class="inp" id="dr-file" type="file" accept="video/mp4,video/quicktime,video/webm,image/jpeg,image/png,image/webp,image/heic" onchange={(e) => (draftFile = (e.currentTarget as HTMLInputElement).files?.[0] ?? null)} />
+							{#if draftFile && draftFile.size > DRAFT_MAX_MB * 1024 * 1024}<p class="hint warn-text" style="margin-top:6px">{Math.round(draftFile.size / 1048576)} MB is too big. Add a Drive link below instead.</p>{/if}
+						</div>
+						<div class="f"><label for="dr-link">Or a link to it</label><input class="inp" id="dr-link" placeholder="Google Drive or WeTransfer link" bind:value={draftForm.link} /></div>
 						<div class="f"><label for="dr-cap">Caption <span class="cap-start">Start from the brief: <button type="button" class="lnk" onclick={() => c && (draftForm.caption = captionStarter(c, 'short'))}>Short</button> · <button type="button" class="lnk" onclick={() => c && (draftForm.caption = captionStarter(c, 'detailed'))}>Detailed</button></span></label><textarea class="inp" id="dr-cap" rows="3" placeholder="#ad The caption you plan to post, with @brand tag" bind:value={draftForm.caption}></textarea>
 							{#if draftForm.caption.trim()}
 								{@const bc = briefCheck(draftForm.caption, c.brand.instagram, c.brief_details)}
@@ -470,7 +481,7 @@
 							{/if}
 						</div>
 						<div class="f"><label for="dr-note">Note for the brand <span class="hint">(optional)</span></label><input class="inp" id="dr-note" bind:value={draftForm.note} /></div>
-						<button class="btn sm primary" type="submit" disabled={draftBusy || (!draftForm.link.trim() && !draftForm.caption.trim())}><Icon name="send" />Send draft {c.drafts.length + 1} for approval</button>
+						<button class="btn sm primary" type="submit" disabled={draftBusy || (!draftFile && !draftForm.link.trim() && !draftForm.caption.trim())}><Icon name="send" />Send draft {c.drafts.length + 1} for approval</button>
 					</form>
 				{:else}
 					<p class="hint">Waiting for the brand to review round {lastDraft.round}.</p>

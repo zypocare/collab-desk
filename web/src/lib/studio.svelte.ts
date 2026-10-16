@@ -22,7 +22,7 @@ export const studio = $state<{
 	packages: Package[];
 }>({ loaded: false, error: '', collabs: [], brands: [], notes: {}, settings: null, alerts: [], ig: null, media: [], followersHistory: [], packages: [] });
 
-const COLLAB_SELECT = '*, brand:brands(*), deliverables(*), events:collab_events(*), quotes(*), drafts(*), invoices(*), posts:collab_posts(matched_by, media:ig_media(*)), reports:brand_reports(*), messages:collab_messages(id, sender, created_at), reads:collab_reads(side, read_at)';
+const COLLAB_SELECT = '*, brand:brands(*), deliverables(*), events:collab_events(*), quotes(*), drafts(*, comments:draft_comments(*)), invoices(*), posts:collab_posts(matched_by, media:ig_media(*)), reports:brand_reports(*), messages:collab_messages(id, sender, created_at), reads:collab_reads(side, read_at)';
 
 function normalise(c: Collab): Collab {
 	c.fee = Number(c.fee) || 0;
@@ -329,8 +329,23 @@ export async function withdrawQuote(q: Quote) {
 	await reloadOne(q.collab_id);
 }
 
-export async function shareDraft(c: Collab, d: { link: string; caption: string; note: string }) {
-	const { error } = await supabase.from('drafts').insert({ collab_id: c.id, ...d });
+export const DRAFT_MAX_MB = 50;
+export async function shareDraft(c: Collab, d: { link: string; caption: string; note: string }, file?: File | null) {
+	let file_path: string | null = null;
+	if (file) {
+		if (file.size > DRAFT_MAX_MB * 1024 * 1024) {
+			toast(`That file is over ${DRAFT_MAX_MB} MB. Share a Google Drive link instead.`, 'alert');
+			return false;
+		}
+		const ext = (file.name.split('.').pop() || 'mp4').toLowerCase().replace(/[^a-z0-9]/g, '');
+		file_path = `${c.id}/${crypto.randomUUID()}.${ext}`;
+		const up = await supabase.storage.from('drafts').upload(file_path, file, { contentType: file.type || undefined, upsert: false });
+		if (up.error) {
+			toast(`Couldn't upload the file: ${errMessage(up.error)}`, 'alert');
+			return false;
+		}
+	}
+	const { error } = await supabase.from('drafts').insert({ collab_id: c.id, ...d, file_path, file_type: file?.type ?? '' });
 	if (error) {
 		toast(`Couldn't share the draft: ${errMessage(error)}`, 'alert');
 		return false;

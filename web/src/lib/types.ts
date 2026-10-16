@@ -69,6 +69,9 @@ export type Draft = {
 	submitted_at: string;
 	responded_at: string | null;
 	responded_by: string | null;
+	file_path: string | null;
+	file_type: string;
+	comments?: { id: number; at_seconds: number | null; body: string; name: string; author: 'brand' | 'creator' }[];
 };
 
 export type Checklist = Partial<Record<'paid_label' | 'ad_tag' | 'brand_tag' | 'link', boolean>>;
@@ -78,6 +81,8 @@ export type BriefDetails = { message?: string; hashtags?: string[]; mentions?: s
 export type PackageItem = { kind: string; qty: number };
 export type Package = { id: string; name: string; description: string; items: PackageItem[]; price: number; badge: string; active: boolean; position: number; created_at: string };
 export type PublicPackage = Pick<Package, 'id' | 'name' | 'description' | 'items' | 'price' | 'badge'>;
+
+export type DraftComment = { id: number; at: number | null; body: string; name?: string };
 
 export type Message = { id: string; collab_id: string; sender: 'creator' | 'brand'; body: string; created_at: string };
 export type ReadMark = { collab_id: string; side: 'creator' | 'brand'; read_at: string };
