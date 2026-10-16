@@ -32,5 +32,10 @@
 		"bits-ui": "^2.19.5",
 		"pdf-lib": "^1.17.1",
 		"qrcode-generator": "^2.0.4"
+	},
+	"overrides": {
+		"runed": {
+			"@sveltejs/kit": "$@sveltejs/kit"
+		}
 	}
 }
