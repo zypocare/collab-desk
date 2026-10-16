@@ -1705,3 +1705,10 @@ body:has(.batch-bar) .fab{display:none}
   .confirm-dlg .row{flex-direction:column-reverse}
   .confirm-dlg .row .btn{width:100%;justify-content:center}
 }
+
+/* Numbered setup steps */
+.steps{margin:0;padding:0;list-style:none;counter-reset:st;display:flex;flex-direction:column;gap:10px}
+.steps li{counter-increment:st;display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:13px}
+.steps li::before{content:counter(st);width:24px;height:24px;border-radius:50%;display:grid;place-items:center;flex:none;font-size:12px;font-weight:700;background:color-mix(in oklab,var(--accent) 14%,transparent);color:var(--accent)}
+.steps li > span{flex:1;min-width:200px}
+.ap-log .rv-row:disabled{cursor:default}

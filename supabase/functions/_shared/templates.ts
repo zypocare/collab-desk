@@ -423,6 +423,19 @@ export function render(kind: string, p: Payload, s: Settings): Omit<Mail, 'to'> 
     };
   }
 
+  if (kind === 'email_request') {
+    return {
+      subject: `New request by email: ${brand}`,
+      html: layout(
+        s,
+        `${brand} emailed you`,
+        `<p style="margin:0">${esc(p.contact || p.email)} (${esc(p.email)}) wrote “${esc(p.subject)}”. It's saved as request <b>${esc(code)}</b>${p.deliverables ? ` for ${esc(p.deliverables)}` : ''}${Number(p.fee) ? `, budget ${esc(inr(p.fee))}` : ''}. Check what was picked up and reply from the studio.</p>`,
+        { label: 'Review the request', href: url(s, `/studio/collabs?open=${encodeURIComponent(code)}`) },
+      ),
+      text: `${brand} emailed you. Saved as ${code}.`,
+    };
+  }
+
   if (kind === 'brief_request') {
     const NAMES: Record<string, string> = { message: 'the key message', hashtags: 'hashtags to use', dos: "do's and don'ts", tag: 'which accounts to tag' };
     const list = (Array.isArray(p.missing) ? p.missing : []).map((k: string) => NAMES[k] ?? k);

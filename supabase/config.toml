@@ -438,6 +438,10 @@ verify_jwt = false
 [functions.bank-alert]
 verify_jwt = false
 
+# Brand emails from her Gmail script (protected by the private inbox token).
+[functions.inbound-email]
+verify_jwt = false
+
 # Daily Instagram sync: called by cron (shared secret) or by the creator (checked inside).
 [functions.instagram-sync]
 verify_jwt = false

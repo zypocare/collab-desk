@@ -1,56 +1,67 @@
 /**
- * Gmail watcher for Collab Desk.
+ * Collab Desk: Gmail watcher. Every 10 minutes it sends two kinds of email to your studio:
+ *   1. Brand emails you give the label "collab-desk" (by hand, or with a Gmail filter):
+ *      new ones become requests, replies go into that collab's messages.
+ *   2. "Money credited" alerts from your bank: the matching invoice is marked paid.
+ * Nothing else in your mailbox is read or sent anywhere.
  *
- * Every 10 minutes it looks for "money credited" emails from your bank and sends them to the app,
- * which marks the matching invoice as paid. Nothing else in your mailbox is read or sent anywhere.
- *
- * Setup (5 minutes):
- *   1. Open https://script.google.com while signed in to the Gmail that gets your bank alerts → New project.
- *   2. Paste this whole file, replacing what's there.
- *   3. Fill in ENDPOINT and TOKEN below (copy both from the app: My page → Billing → "Address" and "Private key").
- *   4. Put your bank's alert sender in BANK_SENDERS (open one credit alert email and copy the "from" address).
- *   5. Choose the function "setup" in the toolbar and press Run. Allow the permissions Google asks for.
- * Done. To test right away, run "checkBankAlerts".
+ * Easiest: copy it from the app (My page → Inbox, alerts & phone → Brand emails) with your key filled in.
+ * Or by hand: fill BASE and TOKEN below, then paste this whole file at https://script.google.com (New project), choose "setup"
+ * in the toolbar, press Run and allow the permissions Google asks for. Done.
  */
 
-const ENDPOINT = 'https://YOUR-PROJECT-REF.supabase.co/functions/v1/bank-alert';
+const BASE = 'https://YOUR-PROJECT-REF.supabase.co/functions/v1';
 const TOKEN = 'PASTE-YOUR-PRIVATE-KEY';
 
-// The address your bank sends alerts from. Examples only; check one of your own alert emails.
+// Brand emails: give them this label in Gmail.
+const BRAND_LABEL = 'collab-desk';
+// Your bank's alert sender (open one "credited" email and check the from address). Leave as is if unsure.
 const BANK_SENDERS = ['alerts@hdfcbank.net', 'credit_cards@icicibank.com', 'alerts@axisbank.com', 'donotreply.sbiatm@alerts.sbi.co.in', 'BankAlerts@kotak.com'];
 
-const LABEL = 'collab-checked';
+const DONE = 'collab-checked';
+
+function send(path, m) {
+  const res = UrlFetchApp.fetch(BASE + '/' + path, {
+    method: 'post',
+    contentType: 'application/json',
+    headers: { 'x-inbox-token': TOKEN },
+    payload: JSON.stringify({ id: m.getId(), from: m.getFrom(), subject: m.getSubject(), body: m.getPlainBody().slice(0, 6000), date: m.getDate().toISOString() }),
+    muteHttpExceptions: true,
+  });
+  console.log(path + ': ' + m.getSubject() + ' -> ' + res.getResponseCode() + ' ' + res.getContentText());
+}
+
+function checkBrandEmails() {
+  const done = GmailApp.getUserLabelByName(DONE) || GmailApp.createLabel(DONE);
+  GmailApp.getUserLabelByName(BRAND_LABEL) || GmailApp.createLabel(BRAND_LABEL);
+  GmailApp.search('label:' + BRAND_LABEL + ' newer_than:14d', 0, 30).forEach((thread) => {
+    const seen = PropertiesService.getScriptProperties();
+    thread.getMessages().forEach((m) => {
+      if (seen.getProperty(m.getId())) return;
+      send('inbound-email', m);
+      seen.setProperty(m.getId(), '1');
+    });
+    thread.addLabel(done);
+  });
+}
 
 function checkBankAlerts() {
-  const label = GmailApp.getUserLabelByName(LABEL) || GmailApp.createLabel(LABEL);
+  const done = GmailApp.getUserLabelByName(DONE) || GmailApp.createLabel(DONE);
   const from = BANK_SENDERS.map((s) => 'from:' + s).join(' OR ');
-  const query = `(${from}) (credited OR credit) newer_than:3d -label:${LABEL}`;
-  const threads = GmailApp.search(query, 0, 30);
-
-  threads.forEach((thread) => {
-    thread.getMessages().forEach((m) => {
-      const res = UrlFetchApp.fetch(ENDPOINT, {
-        method: 'post',
-        contentType: 'application/json',
-        headers: { 'x-inbox-token': TOKEN },
-        payload: JSON.stringify({
-          id: m.getId(),
-          from: m.getFrom(),
-          subject: m.getSubject(),
-          body: m.getPlainBody().slice(0, 4000),
-          date: m.getDate().toISOString(),
-        }),
-        muteHttpExceptions: true,
-      });
-      console.log(m.getSubject() + ' → ' + res.getResponseCode() + ' ' + res.getContentText());
-    });
-    thread.addLabel(label);
+  GmailApp.search('(' + from + ') (credited OR credit) newer_than:3d -label:' + DONE, 0, 30).forEach((thread) => {
+    thread.getMessages().forEach((m) => send('bank-alert', m));
+    thread.addLabel(done);
   });
+}
+
+function run() {
+  checkBrandEmails();
+  checkBankAlerts();
 }
 
 /** Run once: checks your inbox every 10 minutes from now on. */
 function setup() {
   ScriptApp.getProjectTriggers().forEach((t) => ScriptApp.deleteTrigger(t));
-  ScriptApp.newTrigger('checkBankAlerts').timeBased().everyMinutes(10).create();
-  checkBankAlerts();
+  ScriptApp.newTrigger('run').timeBased().everyMinutes(10).create();
+  run();
 }

@@ -62,7 +62,7 @@
 	<div class="switch-row" style="flex-wrap:wrap">
 		<div style="min-width:220px">
 			<b>Match bank credits automatically</b>
-			<small>A small Google script reads your bank's "credited" emails and marks the right invoice as paid. Setup takes 5 minutes (see the setup guide, "Bank alerts").</small>
+			<small>The same Gmail script as brand emails reads your bank's "credited" alerts and marks the right invoice as paid. Set it up once under Inbox, alerts &amp; phone → Brand emails.</small>
 		</div>
 		<button class="btn sm" onclick={() => copyText(webhook, 'Address copied')}><Icon name="copy" />Address</button>
 		<button class="btn sm" onclick={() => copyText(s.inbox_token, 'Private key copied. Keep it secret.')}><Icon name="copy" />Private key</button>
