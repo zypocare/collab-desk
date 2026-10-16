@@ -90,16 +90,53 @@ export async function runSync(db: SupabaseClient, opts: SyncOptions = {}) {
     const avgViews = avg((last12 ?? []).map((r) => r.views));
     const avgReach = avg((last12 ?? []).map((r) => r.reach));
 
+    // 4b. What brands ask for: the last 30 days (and the 30 before, for the change), averages per
+    // format over 90 days, and follower growth.
+    const now = new Date();
+    const [cur, prev] = await Promise.all([
+      ig.accountTotals(token, new Date(Date.now() - 30 * DAY), now).catch(() => ({})),
+      ig.accountTotals(token, new Date(Date.now() - 60 * DAY), new Date(Date.now() - 30 * DAY)).catch(() => ({})),
+    ]);
+    const { data: m90 } = await db.from('ig_media').select('media_type, product_type, views, reach, interactions, likes, comments')
+      .gte('posted_at', new Date(Date.now() - 90 * DAY).toISOString());
+    const fmtStats = (xs: { views: number | null; reach: number | null; interactions: number | null; likes: number | null; comments: number | null }[]) => {
+      const inter = avg(xs.map((r) => r.interactions ?? (r.likes === null && r.comments === null ? null : (r.likes ?? 0) + (r.comments ?? 0))));
+      const v = avg(xs.map((r) => r.views));
+      const re = avg(xs.map((r) => r.reach));
+      return {
+        posts: xs.length, avg_views: v === null ? null : Math.round(v), avg_reach: re === null ? null : Math.round(re),
+        avg_interactions: inter === null ? null : Math.round(inter),
+        er: inter !== null && p.followers_count ? Math.round((inter / p.followers_count) * 10000) / 100 : null,
+      };
+    };
+    const all90 = m90 ?? [];
+    const isStory = (r: { product_type: string }) => r.product_type === 'STORY';
+    const formats = {
+      reels: fmtStats(all90.filter((r) => !isStory(r) && (r.product_type === 'REELS' || r.media_type === 'VIDEO'))),
+      carousels: fmtStats(all90.filter((r) => !isStory(r) && r.media_type === 'CAROUSEL_ALBUM')),
+      photos: fmtStats(all90.filter((r) => !isStory(r) && r.media_type === 'IMAGE')),
+      stories: fmtStats(all90.filter(isStory)),
+    };
+    const followersOn = async (daysAgo: number) =>
+      // The count on (or just before) that day; nothing if the history doesn't go back that far yet.
+      (await db.from('ig_followers_history').select('followers').lte('day', new Date(Date.now() - daysAgo * DAY).toISOString().slice(0, 10)).order('day', { ascending: false }).limit(1)).data?.[0]?.followers ?? null;
+    const [f30, f90] = await Promise.all([followersOn(30), followersOn(90)]);
+    const insights = {
+      from: new Date(Date.now() - 30 * DAY).toISOString().slice(0, 10), to: now.toISOString().slice(0, 10),
+      totals: cur, prev, formats,
+      growth: { d30: f30 === null ? null : p.followers_count - f30, d90: f90 === null ? null : p.followers_count - f90 },
+    };
+
     // 5. Audience, once a week.
     const { data: acct } = await db.from('ig_account').select('demographics, updated_at').eq('id', 1).single();
-    const demographicsStale = !acct?.demographics || !Object.keys(acct.demographics).length || Date.now() - Date.parse(acct.updated_at) > 7 * DAY;
+    const demographicsStale = !acct?.demographics || !acct.demographics.country || Date.now() - Date.parse(acct.updated_at) > 7 * DAY;
     const demographics = demographicsStale ? await ig.demographics(token) : acct.demographics;
 
     await db.from('ig_account').update({
       connected: true, ig_user_id: p.user_id, username: p.username, name: p.name ?? '', profile_picture_url: p.profile_picture_url ?? '',
       followers: p.followers_count, follows: p.follows_count, media_count: p.media_count,
       engagement_rate: engagement, avg_views: avgViews === null ? null : Math.round(avgViews), avg_reach: avgReach === null ? null : Math.round(avgReach),
-      demographics, last_sync_at: new Date().toISOString(), last_error: '', updated_at: new Date().toISOString(),
+      demographics, insights, last_sync_at: new Date().toISOString(), last_error: '', updated_at: new Date().toISOString(),
       token_expires_at: (await db.from('ig_token').select('expires_at').eq('id', 1).single()).data?.expires_at,
     }).eq('id', 1);
     // The brand page shows these.

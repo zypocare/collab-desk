@@ -13,6 +13,8 @@
 	import { downloadMediaKit } from '#lib/mediaKitPdf.ts';
 	import { rateValue } from '#lib/priority.ts';
 	import Avatar from '#lib/components/Avatar.svelte';
+	import { supabase } from '#lib/supabase.ts';
+	import type { PublicInsights } from '#lib/insights.ts';
 
 	const preview = $derived(page.url.searchParams.has('preview'));
 
@@ -21,7 +23,12 @@
 		if (auth.account?.role === 'creator' && !preview) goto('/studio', { replace: true });
 	});
 
-	onMount(loadPublicPage);
+	// Shared insights (null when she has them off): the 30-day reach goes in the stats, plus a link.
+	let ins = $state<PublicInsights | null>(null);
+	onMount(() => {
+		loadPublicPage();
+		supabase.rpc('public_insights').then(({ data }) => (ins = (data as PublicInsights | null) ?? null));
+	});
 
 	const p = $derived(pub.data);
 	const signedInBrand = $derived(auth.account?.role === 'brand');
@@ -41,7 +48,8 @@
 			? [
 					{ raw: p.followers, label: 'followers' },
 					{ raw: p.engagement, label: 'avg. engagement' },
-					...(p.instagram?.avg_views ? [{ raw: compact(p.instagram.avg_views), label: 'avg. views per post' }] : [])
+					...(p.instagram?.avg_views ? [{ raw: compact(p.instagram.avg_views), label: 'avg. views per post' }] : []),
+					...(ins?.insights?.totals?.reach ? [{ raw: compact(ins.insights.totals.reach), label: 'reached in 30 days' }] : [])
 				].filter((s) => s.raw)
 			: []
 	);
@@ -86,7 +94,7 @@
 						</div>
 					{/if}
 					{#if p.instagram}
-						<p class="live-chip rv" style="--i:4"><span class="dt pulse k-live"></span>Live from Instagram{p.instagram.updated_at ? ` · updated ${fmt(p.instagram.updated_at.slice(0, 10))}` : ''}</p>
+						<p class="live-chip rv" style="--i:4"><span class="dt pulse k-live"></span>Live from Instagram{p.instagram.updated_at ? ` · updated ${fmt(p.instagram.updated_at.slice(0, 10))}` : ''}{#if ins}<a class="lnk ins-link" href="/insights">See full insights<Icon name="chevR" /></a>{/if}</p>
 					{/if}
 					{#if p.worked_with.length}
 						<div class="marquee rv" style="--i:5">

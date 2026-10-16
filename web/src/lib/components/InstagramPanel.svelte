@@ -2,6 +2,9 @@
 	import { studio } from '../studio.svelte';
 	import { countUp } from '../ui.svelte';
 	import { compact, fmt, mediaLabel } from '../util';
+	import { change as pctChange, type InsightsData } from '../insights';
+	import { copyText } from '../ui.svelte';
+	import Icon from './Icon.svelte';
 
 	const ig = $derived(studio.ig);
 	const hist = $derived(studio.followersHistory);
@@ -16,6 +19,8 @@
 		const ys = hist.map((h) => h.followers), min = Math.min(...ys), max = Math.max(...ys), span = max - min || 1;
 		return hist.map((h, i) => `${(i / (hist.length - 1)) * 100},${30 - ((h.followers - min) / span) * 28}`).join(' ');
 	});
+	const t30 = $derived((ig?.insights as InsightsData | undefined)?.totals ?? {});
+	const p30 = $derived((ig?.insights as InsightsData | undefined)?.prev ?? {});
 	const brandOf = (id: string) => studio.collabs.find((c) => c.posts.some((p) => p.media.id === id))?.brand.name;
 	const recent = $derived(studio.media.slice(0, 6));
 </script>
@@ -32,7 +37,12 @@
 			</div>
 			<div class="ig-stat"><span class="lbl">Engagement</span><b class="big">{ig.engagement_rate ?? '—'}%</b><small>last 12 posts</small></div>
 			<div class="ig-stat"><span class="lbl">Avg. views</span><b class="big">{compact(ig.avg_views)}</b><small>avg. reach {compact(ig.avg_reach)}</small></div>
+			{#if t30.reach}
+				{@const ch = pctChange(t30.reach, p30.reach)}
+				<div class="ig-stat"><span class="lbl">Reached · 30 days</span><b class="big">{compact(t30.reach)}</b><small class:up={(ch ?? 0) >= 0} class:down={(ch ?? 0) < 0}>{ch !== null ? `${ch >= 0 ? '+' : ''}${ch}% vs last 30 days` : `${compact(t30.views)} views`}</small></div>
+			{/if}
 		</div>
+		<div class="row-btns" style="border-top:0;padding-top:0"><a class="btn sm" href="/insights" target="_blank" rel="noopener"><Icon name="eye" />Insights page brands see</a><button class="btn sm ghost" onclick={() => copyText(`${location.origin}/insights`, 'Insights link copied. Send it to brands')}><Icon name="copy" />Copy link</button></div>
 		<div class="ig-posts">
 			{#each recent as m (m.id)}
 				{@const brand = brandOf(m.id)}

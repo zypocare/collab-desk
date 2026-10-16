@@ -1,5 +1,7 @@
 // Builds her media kit (one A4 page) in the browser from live data: Instagram numbers, audience,
 // packages, rates, brands she has worked with, and a QR code to her brand page.
+import { supabase } from './supabase';
+import type { PublicInsights } from './insights';
 import fontkit from '@pdf-lib/fontkit';
 import { PDFDocument, rgb, type PDFFont, type PDFImage, type PDFPage, type RGB } from 'pdf-lib';
 import { qrMatrix } from './invoice';
@@ -54,7 +56,7 @@ async function circlePhoto(url: string): Promise<Uint8Array | null> {
 	}
 }
 
-export async function mediaKitPdf(p: PublicPage, link: string): Promise<Uint8Array> {
+export async function mediaKitPdf(p: PublicPage, link: string, ins: PublicInsights | null = null): Promise<Uint8Array> {
 	const doc = await PDFDocument.create();
 	doc.registerFontkit(fontkit);
 	const [regBytes, boldBytes] = await loadFonts();
@@ -118,6 +120,29 @@ export async function mediaKitPdf(p: PublicPage, link: string): Promise<Uint8Arr
 			text(s.k, x + 14, y - 49, 8.5, reg, MUTED);
 		});
 		y -= th + 26;
+	}
+
+	// ---- last 30 days (what brands ask for) ----
+	const t = ins?.insights?.totals ?? {};
+	const fm = ins?.insights?.formats;
+	const month = [
+		{ v: t.reach, k: 'Accounts reached' },
+		{ v: t.views, k: 'Views' },
+		{ v: t.accounts_engaged, k: 'Accounts engaged' },
+		{ v: fm?.reels?.avg_views, k: 'Avg. Reel views' },
+		{ v: fm?.stories?.avg_reach, k: 'Avg. Story reach' }
+	].filter((s): s is { v: number; k: string } => typeof s.v === 'number' && s.v > 0);
+	if (month.length) {
+		label('Last 30 days · verified from Instagram', M, y);
+		y -= 14;
+		const gap = 8, tw = (W - 2 * M - gap * (month.length - 1)) / month.length, th = 44;
+		month.forEach((s, i) => {
+			const x = M + i * (tw + gap);
+			page.drawRectangle({ x, y: y - th, width: tw, height: th, color: SOFT });
+			text(compact(s.v), x + 10, y - 22, 15, bold);
+			text(s.k, x + 10, y - 36, 7.5, reg, MUTED);
+		});
+		y -= th + 22;
 	}
 
 	// ---- audience ----
@@ -234,7 +259,8 @@ export async function mediaKitPdf(p: PublicPage, link: string): Promise<Uint8Arr
 }
 
 export async function downloadMediaKit(p: PublicPage, link: string) {
-	const bytes = await mediaKitPdf(p, link);
+	const { data } = await supabase.rpc('public_insights');
+	const bytes = await mediaKitPdf(p, link, (data as PublicInsights | null) ?? null);
 	saveBlob(bytes, `${p.display_name.replace(/[^\w]+/g, '-')}-media-kit.pdf`);
 }
 

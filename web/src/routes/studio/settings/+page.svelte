@@ -155,6 +155,7 @@
 				<p>Put this in your Instagram bio and send it in DMs. Brands sign in with their work email to send and track requests.</p>
 				<div class="row">
 					<button class="btn" onclick={() => copyText(link, 'Link copied')}><Icon name="copy" />Copy link</button>
+					{#if s.show_insights && studio.ig?.connected}<button class="btn out" onclick={() => copyText(`${link}/insights`, 'Insights link copied. Send it when brands ask for insights')}><Icon name="chart" />Insights link</button>{/if}
 					<a class="btn out" href="/?preview=1" target="_blank" rel="noopener"><Icon name="eye" />Preview your page</a>
 					<button class="btn out" onclick={kit} disabled={kitBusy}>{#if kitBusy}<span class="spinner"></span>{:else}<Icon name="film" />{/if}Media kit PDF</button>
 				</div>
@@ -193,6 +194,12 @@
 							</div>
 						</section>
 						<InstagramSettings />
+						<section class="panel rv" style="--i:3">
+							<div class="switch-row" style="border-top:0">
+								<div><b>Share an insights page with brands</b><small>Reach, views, engagement, audience and top posts, live from Instagram, at <a class="lnk" href="/insights" target="_blank" rel="noopener">{link.replace(/^https?:\/\//, '')}/insights</a>. Send it instead of screenshots.</small></div>
+								<input type="checkbox" class="tgl" checked={s.show_insights} aria-label="Share an insights page" onchange={(e) => saveSettings({ show_insights: (e.currentTarget as HTMLInputElement).checked })} />
+							</div>
+						</section>
 					{:else if active === 'rates'}
 						<section class="panel rv" style="--i:1">
 							<div class="panel-h"><h2>Rate card</h2><small>switch off what you don't offer</small></div>

@@ -33,7 +33,7 @@
 		{/each}
 		<div class="row-btns" style="border:0;padding:4px 0 0">
 			<button class="btn sm" onclick={() => save([...list, { id: id(), title: 'New reply', body: 'Hi {name}, \n{me}' }])}><Icon name="plus" />Add a reply</button>
-			{#if !list.length}<button class="btn sm grad" onclick={() => save(STARTER_REPLIES.map((x) => ({ ...x, id: id() })))}><Icon name="spark" />Add 4 starter replies</button>{/if}
+			{#if !list.length}<button class="btn sm grad" onclick={() => save(STARTER_REPLIES.map((x) => ({ ...x, id: id() })))}><Icon name="spark" />Add starter replies</button>{/if}
 		</div>
 	</div>
 </section>

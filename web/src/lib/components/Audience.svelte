@@ -1,5 +1,12 @@
 <script lang="ts">
-	let { demo }: { demo: Partial<Record<'age' | 'gender' | 'city', Record<string, number>>> } = $props();
+	let { demo, i = 5 }: { demo: Partial<Record<'age' | 'gender' | 'city' | 'country', Record<string, number>>>; i?: number } = $props();
+	const countryName = (code: string) => {
+		try {
+			return new Intl.DisplayNames(['en'], { type: 'region' }).of(code) ?? code;
+		} catch {
+			return code;
+		}
+	};
 
 	const pct = (part: Record<string, number> | undefined) => {
 		const entries = Object.entries(part ?? {});
@@ -9,12 +16,13 @@
 	const age = $derived(pct(demo.age).sort((a, b) => a.k.localeCompare(b.k)));
 	const gender = $derived(pct(demo.gender).map((g) => ({ ...g, k: g.k === 'F' ? 'Women' : g.k === 'M' ? 'Men' : 'Other' })).sort((a, b) => b.p - a.p));
 	const cities = $derived(pct(demo.city).sort((a, b) => b.p - a.p).slice(0, 5).map((c) => ({ ...c, k: c.k.split(',')[0] })));
+	const countries = $derived(pct(demo.country).sort((a, b) => b.p - a.p).slice(0, 5).map((c) => ({ ...c, k: countryName(c.k) })));
 	const maxAge = $derived(Math.max(1, ...age.map((a) => a.p)));
 	const has = $derived(age.length || gender.length || cities.length);
 </script>
 
 {#if has}
-	<section class="panel rv audience" style="--i:5">
+	<section class="panel rv audience" style="--i:{i}">
 		<div class="panel-h"><h2>Audience</h2><small>from Instagram</small></div>
 		<div class="aud-grid">
 			{#if age.length}
@@ -40,6 +48,12 @@
 				<div>
 					<span class="lbl">Top cities</span>
 					<ul class="aud-list">{#each cities as c (c.k)}<li>{c.k}<b>{c.p}%</b></li>{/each}</ul>
+				</div>
+			{/if}
+			{#if countries.length}
+				<div>
+					<span class="lbl">Top countries</span>
+					<ul class="aud-list">{#each countries as c (c.k)}<li>{c.k}<b>{c.p}%</b></li>{/each}</ul>
 				</div>
 			{/if}
 		</div>

@@ -12,7 +12,9 @@ export type Media = {
   thumbnail_url?: string; media_url?: string; like_count?: number; comments_count?: number;
 };
 export type Insights = { views?: number; reach?: number; saved?: number; shares?: number; likes?: number; comments?: number; replies?: number; total_interactions?: number };
-export type Demographics = Record<'age' | 'gender' | 'city', Record<string, number>>;
+export type Demographics = Record<'age' | 'gender' | 'city' | 'country', Record<string, number>>;
+/** Account totals for a period: reach, views, accounts_engaged, total_interactions, likes, comments, shares, saves, profile_links_taps. */
+export type AccountTotals = Record<string, number>;
 
 export class IgError extends Error {
   constructor(message: string, public code?: number) {
@@ -107,10 +109,38 @@ const real = {
     return {};
   },
 
+  // Account totals between two dates (Instagram allows at most 30 days per call). Metrics that don't
+  // exist for this account make the whole call fail, so smaller sets are tried after.
+  async accountTotals(token: string, since: Date, until: Date): Promise<AccountTotals> {
+    const sets = [
+      'reach,views,accounts_engaged,total_interactions,likes,comments,shares,saves,profile_links_taps',
+      'reach,accounts_engaged,total_interactions,likes,comments,shares,saves',
+      'reach,accounts_engaged,total_interactions',
+      'reach',
+    ];
+    for (const metric of sets) {
+      try {
+        const r = await get('/me/insights', {
+          metric, period: 'day', metric_type: 'total_value',
+          since: String(Math.floor(since.getTime() / 1000)), until: String(Math.floor(until.getTime() / 1000)), access_token: token,
+        });
+        const out: AccountTotals = {};
+        for (const m of r.data ?? []) {
+          const v = m.total_value?.value ?? (m.values ?? []).reduce((a: number, x: { value: number }) => a + (Number(x.value) || 0), 0);
+          if (typeof v === 'number') out[m.name] = v;
+        }
+        return out;
+      } catch (e) {
+        if (!(e instanceof IgError)) throw e;
+      }
+    }
+    return {};
+  },
+
   // Needs at least 100 followers; returns {} if Instagram has no data.
   async demographics(token: string): Promise<Partial<Demographics>> {
     const out: Partial<Demographics> = {};
-    for (const breakdown of ['age', 'gender', 'city'] as const) {
+    for (const breakdown of ['age', 'gender', 'city', 'country'] as const) {
       try {
         const r = await get('/me/insights', { metric: 'follower_demographics', period: 'lifetime', metric_type: 'total_value', breakdown, access_token: token });
         const results = r.data?.[0]?.total_value?.breakdowns?.[0]?.results ?? [];
@@ -158,7 +188,13 @@ const mock = {
     age: { '18-24': 31200, '25-34': 118400, '35-44': 52100, '45-54': 14800 },
     gender: { F: 172300, M: 76100, U: 2900 },
     city: { 'Bengaluru, Karnataka': 41200, 'Mumbai, Maharashtra': 33800, 'Delhi, Delhi': 22100, 'Hyderabad, Telangana': 15600, 'Pune, Maharashtra': 11900 },
+    country: { IN: 221400, AE: 8100, US: 6900, GB: 4200, SG: 2600 },
   }),
+  accountTotals: async (_t: string, since: Date, _u: Date): Promise<AccountTotals> => {
+    const older = Date.now() - since.getTime() > 45 * 864e5;
+    const k = older ? 0.86 : 1;
+    return { reach: Math.round(1840000 * k), views: Math.round(5210000 * k), accounts_engaged: Math.round(96400 * k), total_interactions: Math.round(312000 * k), likes: Math.round(251000 * k), comments: Math.round(8400 * k), shares: Math.round(21800 * k), saves: Math.round(30800 * k), profile_links_taps: Math.round(4100 * k) };
+  },
 };
 
 export const ig = MOCK ? mock : real;

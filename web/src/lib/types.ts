@@ -182,7 +182,8 @@ export type IgAccount = {
 	engagement_rate: number | null;
 	avg_views: number | null;
 	avg_reach: number | null;
-	demographics: Partial<Record<'age' | 'gender' | 'city', Record<string, number>>>;
+	demographics: Partial<Record<'age' | 'gender' | 'city' | 'country', Record<string, number>>>;
+	insights?: Record<string, unknown>;
 	token_expires_at: string | null;
 	last_sync_at: string | null;
 	last_error: string;
@@ -278,6 +279,7 @@ export type Settings = {
 	autopilot_review: boolean;
 	nudge_days: number;
 	autopilot_brief: boolean;
+	show_insights: boolean;
 	saved_replies: { id: string; title: string; body: string }[];
 	piece_hours: Record<string, number>;
 	weekly_hours: number;
