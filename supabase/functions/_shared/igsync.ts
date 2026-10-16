@@ -181,9 +181,9 @@ async function detectPosts(db: SupabaseClient, media: MediaRow[]) {
   const taken = new Set((links ?? []).map((l) => l.media_id));
   const { data: collabs } = await db
     .from('collabs')
-    .select('id, code, stage, received_on, live_date, checklist, contact_name, brand:brands(name, instagram), posts:collab_posts(media_id)')
+    .select('id, code, stage, received_on, live_date, checklist, contact_name, brief_details, brand:brands(name, instagram), posts:collab_posts(media_id)')
     .in('stage', ['confirmed', 'creating', 'live']);
-  type C = { id: string; code: string; stage: string; received_on: string; live_date: string | null; checklist: Record<string, boolean>; brand: { name: string; instagram: string }; posts: { media_id: string }[] };
+  type C = { id: string; code: string; stage: string; received_on: string; live_date: string | null; checklist: Record<string, boolean>; brief_details: { hashtags?: string[]; mentions?: string[] } | null; brand: { name: string; instagram: string }; posts: { media_id: string }[] };
   const candidates = ((collabs ?? []) as unknown as C[]).filter((c) => c.brand?.instagram && (c.stage !== 'live' || !c.posts.length));
 
   let found = 0;
@@ -198,6 +198,9 @@ async function detectPosts(db: SupabaseClient, media: MediaRow[]) {
     taken.add(m.id);
     found++;
     const hasAd = adTagged(m.caption);
+    // Hashtags and @mentions the brief asked for that the caption doesn't have.
+    const capLower = m.caption.toLowerCase();
+    const missingItems = [...(c.brief_details?.mentions ?? []), ...(c.brief_details?.hashtags ?? [])].filter((t) => !capLower.includes(t.toLowerCase()));
     await db.from('collab_posts').insert({ collab_id: c.id, media_id: m.id, matched_by: 'auto' });
     await db.from('collab_events').insert({ collab_id: c.id, kind: 'post', text: `Post spotted on Instagram: ${m.permalink}`, visible_to_brand: true });
     const checklist = { ...c.checklist, brand_tag: true, ad_tag: hasAd || !!c.checklist?.ad_tag };
@@ -210,8 +213,8 @@ async function detectPosts(db: SupabaseClient, media: MediaRow[]) {
     }
     await notifyCreator(
       db, 'post_detected',
-      { code: c.code, brand: c.brand.name, permalink: m.permalink, missing_ad: !hasAd },
-      `📸 Your post for <b>${esc(c.brand.name)}</b> is live and moved to Live.${hasAd ? '' : '\n⚠️ The caption has no #ad or #collab in the first line. Add it to follow ASCI rules.'}`,
+      { code: c.code, brand: c.brand.name, permalink: m.permalink, missing_ad: !hasAd, missing_items: missingItems },
+      `📸 Your post for <b>${esc(c.brand.name)}</b> is live and moved to Live.${hasAd ? '' : '\n⚠️ The caption has no #ad or #collab in the first line. Add it to follow ASCI rules.'}${missingItems.length ? `\n⚠️ The brief asked for: ${esc(missingItems.join(' '))}` : ''}`,
     );
     candidates.splice(candidates.indexOf(c), 1);
   }

@@ -5,11 +5,12 @@
 	import { brandData, loadRequests } from '#lib/brand.svelte.ts';
 	import { pub } from '#lib/publicPage.svelte.ts';
 	import { supabase } from '#lib/supabase.ts';
-	import type { CollabType } from '#lib/types.ts';
+	import type { BriefDetails, CollabType } from '#lib/types.ts';
 	import { confetti, copyText } from '#lib/ui.svelte.ts';
 	import { KINDS, USAGE, delivText, errMessage, firstName, inr, rel } from '#lib/util.ts';
 	import BrandDetailsForm from '#lib/components/BrandDetailsForm.svelte';
 	import Icon from '#lib/components/Icon.svelte';
+	import BriefEditor from '#lib/components/BriefEditor.svelte';
 	import Select from '#lib/components/Select.svelte';
 	import DatePicker from '#lib/components/DatePicker.svelte';
 	import { brandAdvice, type Advice } from '#lib/priority.ts';
@@ -27,6 +28,7 @@
 	let preferred = $state('');
 	let usage = $state('Organic only');
 	let brief = $state('');
+	let briefDetails = $state<BriefDetails>({});
 	let busy = $state(false);
 	let error = $state('');
 	let errDel = $state('');
@@ -132,7 +134,8 @@
 				product_value: Number(productValue) || 0,
 				preferred_live: preferred || null,
 				usage,
-				brief
+				brief,
+				brief_details: briefDetails
 			}
 		});
 		busy = false;
@@ -238,8 +241,12 @@
 						{/if}
 						<div class="f"><label for="b-date">Preferred go-live date</label><DatePicker id="b-date" min={rel(3)} bind:value={preferred} placeholder="No preference" /></div>
 						<div class="f"><label for="b-usage">Usage rights</label><Select id="b-usage" bind:value={usage} options={USAGE.map((u) => ({ value: u, label: u }))} /></div>
-						<div class="f span2"><label for="b-brief">Brief</label><textarea class="inp" id="b-brief" rows="4" placeholder="What's launching, key messages, hashtags, links and anything to avoid." bind:value={brief}></textarea></div>
 					</div>
+				</div>
+				<div class="bsec">
+					<div class="bsec-h"><i>04</i><h2>Brief</h2></div>
+					<BriefEditor bind:value={briefDetails} idp="b" />
+					<div class="f" style="margin-top:12px"><label for="b-brief">Anything else</label><textarea class="inp" id="b-brief" rows="3" placeholder="What's launching, context, timing notes" bind:value={brief}></textarea></div>
 				</div>
 				{#if advice}
 					{#key advice.title}

@@ -32,6 +32,7 @@
 		stageIndex
 	} from '../util';
 	import Icon from './Icon.svelte';
+	import BriefEditor from './BriefEditor.svelte';
 	import BrandRating from './BrandRating.svelte';
 	import UsageRights from './UsageRights.svelte';
 	import ProductShipping from './ProductShipping.svelte';
@@ -49,6 +50,7 @@
 		QUOTE_STATUS,
 		acceptedQuote,
 		captionCheck,
+		briefCheck,
 		checklistMissing,
 		clashes,
 		latestDraft,
@@ -126,6 +128,12 @@
 	function save(field: Field, value: unknown) {
 		if (!c) return;
 		updateCollab(c.id, { [field]: value } as Partial<Collab>);
+	}
+	// Brief edits come in bursts (one field after another): save the whole brief once, a moment later.
+	let briefTimer: ReturnType<typeof setTimeout> | undefined;
+	function saveBrief(v: Collab['brief_details']) {
+		clearTimeout(briefTimer);
+		briefTimer = setTimeout(() => save('brief_details', v), 400);
 	}
 	const num = (e: Event) => Math.max(0, Number((e.currentTarget as HTMLInputElement).value) || 0);
 	const val = (e: Event) => (e.currentTarget as HTMLInputElement).value;
@@ -358,7 +366,14 @@
 					{/if}
 					<form class="draft-form" onsubmit={sendDraft}>
 						<div class="f"><label for="dr-link">Link to the draft</label><input class="inp" id="dr-link" placeholder="Google Drive or WeTransfer link" bind:value={draftForm.link} /></div>
-						<div class="f"><label for="dr-cap">Caption</label><textarea class="inp" id="dr-cap" rows="3" placeholder="#ad The caption you plan to post, with @brand tag" bind:value={draftForm.caption}></textarea></div>
+						<div class="f"><label for="dr-cap">Caption</label><textarea class="inp" id="dr-cap" rows="3" placeholder="#ad The caption you plan to post, with @brand tag" bind:value={draftForm.caption}></textarea>
+							{#if draftForm.caption.trim()}
+								{@const bc = briefCheck(draftForm.caption, c.brand.instagram, c.brief_details)}
+								<div class="cap-check" aria-live="polite">
+									{#each bc.items as it (it.label)}<span class:ok={it.ok}><Icon name={it.ok ? 'check' : 'x'} />{it.label}</span>{/each}
+								</div>
+							{/if}
+						</div>
 						<div class="f"><label for="dr-note">Note for the brand <span class="hint">(optional)</span></label><input class="inp" id="dr-note" bind:value={draftForm.note} /></div>
 						<button class="btn sm primary" type="submit" disabled={draftBusy || (!draftForm.link.trim() && !draftForm.caption.trim())}><Icon name="send" />Send draft {c.drafts.length + 1} for approval</button>
 					</form>
@@ -467,7 +482,8 @@
 
 			<section class="sec">
 				<h3>Brief</h3>
-				<textarea class="inp" id="f-brief" placeholder="Key messages, hashtags, do's and don'ts" value={c.brief} onchange={(e) => save('brief', val(e))}></textarea>
+				{#key c.id}<BriefEditor value={c.brief_details ?? {}} idp="f" onchange={saveBrief} />{/key}
+				<div class="f" style="margin-top:12px"><label for="f-brief">Notes</label><textarea class="inp" id="f-brief" placeholder="Anything else from the brand" value={c.brief} onchange={(e) => save('brief', val(e))}></textarea></div>
 			</section>
 
 			<section class="sec">

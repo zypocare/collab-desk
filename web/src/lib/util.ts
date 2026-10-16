@@ -1,3 +1,4 @@
+import type { BriefDetails } from './types';
 import type { BrandPrivate, Checklist, Collab, CollabType, Draft, PayStatus, Quote, QuoteItem, Stage } from './types';
 
 export const STAGES: { id: Stage; label: string; pub: string }[] = [
@@ -240,6 +241,33 @@ export const checklistDone = (c: Collab) => CHECKLIST.every((i) => c.checklist?.
 export const checklistMissing = (c: Collab) => CHECKLIST.filter((i) => !c.checklist?.[i.key]).map((i) => i.label);
 
 /** Reads a caption and says which disclosure items it already covers. */
+/** "#GlowUp, skincare #glowup" -> ['#GlowUp', '#skincare'] (case-insensitive, no repeats). */
+export function parseTags(text: string, sign: '#' | '@') {
+	const seen = new Set<string>();
+	const out: string[] = [];
+	for (const raw of text.split(/[\s,]+/)) {
+		const t = raw.replace(sign === '#' ? /^#+/ : /^@+/, '').replace(/[^\p{L}\p{N}_.]/gu, '');
+		if (!t || seen.has(t.toLowerCase())) continue;
+		seen.add(t.toLowerCase());
+		out.push(sign + (sign === '@' ? t.toLowerCase() : t));
+	}
+	return out;
+}
+
+/** Everything the caption must have: disclosure, the brand tag, and the brief's hashtags and @mentions. */
+export function briefCheck(caption: string, handle: string, d: BriefDetails | null | undefined) {
+	const base = captionCheck(caption, handle);
+	const lower = caption.toLowerCase();
+	const has = (tag: string) => new RegExp(`${tag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?![\\p{L}\\p{N}_])`, 'iu').test(lower);
+	const items = [
+		{ label: '#ad or #collab in the first line', ok: base.ad_tag },
+		...(handle ? [{ label: `@${handle.replace(/^@/, '')}`, ok: base.brand_tag }] : []),
+		...(d?.mentions ?? []).filter((m) => m.toLowerCase() !== `@${handle.toLowerCase().replace(/^@/, '')}`).map((m) => ({ label: m, ok: has(m.toLowerCase()) })),
+		...(d?.hashtags ?? []).map((h) => ({ label: h, ok: has(h.toLowerCase()) }))
+	];
+	return { items, missing: items.filter((i) => !i.ok).map((i) => i.label) };
+}
+
 export function captionCheck(caption: string, handle: string) {
 	const firstLine = caption.trim().split(/\r?\n/)[0]?.slice(0, 140) ?? '';
 	return {

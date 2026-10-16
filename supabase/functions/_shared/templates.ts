@@ -232,7 +232,8 @@ export function render(kind: string, p: Payload, s: Settings): Omit<Mail, 'to'> 
         s,
         missing ? 'Your post is live, but needs #ad' : 'Your post is live',
         `<p style="margin:0">We spotted your post for <b>${esc(brand)}</b> (${esc(code)}) on Instagram and moved the collab to Live. The brand has been told.</p>
-         ${missing ? quoteBox('Action needed', 'The first line of the caption has no #ad or #collab. Indian advertising rules (ASCI) need paid and gifted posts to be clearly marked. Edit the caption and turn on the "Paid partnership" label.') : ''}`,
+         ${missing ? quoteBox('Action needed', 'The first line of the caption has no #ad or #collab. Indian advertising rules (ASCI) need paid and gifted posts to be clearly marked. Edit the caption and turn on the "Paid partnership" label.') : ''}
+         ${Array.isArray(p.missing_items) && p.missing_items.length ? quoteBox('Missing from the brief', `The brief asked for ${(p.missing_items as string[]).join(' ')}. Add them to the caption so the brand is happy.`) : ''}`,
         { label: 'Open the post', href: String(p.permalink) },
       ),
       text: `Your ${brand} post is live: ${p.permalink}${missing ? '. Add #ad to the first line of the caption.' : ''}`,

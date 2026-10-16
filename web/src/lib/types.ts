@@ -73,6 +73,8 @@ export type Draft = {
 
 export type Checklist = Partial<Record<'paid_label' | 'ad_tag' | 'brand_tag' | 'link', boolean>>;
 
+export type BriefDetails = { message?: string; hashtags?: string[]; mentions?: string[]; link?: string; dos?: string; donts?: string; references?: string };
+
 export type PackageItem = { kind: string; qty: number };
 export type Package = { id: string; name: string; description: string; items: PackageItem[]; price: number; badge: string; active: boolean; position: number; created_at: string };
 export type PublicPackage = Pick<Package, 'id' | 'name' | 'description' | 'items' | 'price' | 'badge'>;
@@ -123,6 +125,7 @@ export type Collab = {
 	posts: { matched_by: 'auto' | 'manual'; media: IgMedia }[];
 	reports: BrandReport[];
 	package_name: string;
+	brief_details: BriefDetails;
 	usage_ends: string | null;
 	usage_ext_days: number;
 	usage_ext_price: number;

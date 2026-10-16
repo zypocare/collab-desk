@@ -22,6 +22,8 @@
 		todayIso
 	} from '#lib/util.ts';
 	import Icon from '#lib/components/Icon.svelte';
+	import type { BriefDetails } from '#lib/types.ts';
+	import BriefView from '#lib/components/BriefView.svelte';
 	import BrandUsage from '#lib/components/BrandUsage.svelte';
 	import BrandShipping from '#lib/components/BrandShipping.svelte';
 	import MessageThread from '#lib/components/MessageThread.svelte';
@@ -38,6 +40,12 @@
 
 	// Leaving the page: refresh the unread counts on My requests.
 	$effect(() => () => void loadUnread());
+
+	let briefD = $state<BriefDetails | null>(null);
+	$effect(() => {
+		const code = r?.code;
+		if (code) supabase.rpc('brief_info', { p_code: code }).then(({ data }) => (briefD = data && Object.keys(data).length ? (data as BriefDetails) : null));
+	});
 
 	let reports = $state<{ code: string; token: string; sent_at: string }[]>([]);
 	$effect(() => {
@@ -290,10 +298,11 @@
 		</section>
 	{/if}
 
-	{#if r.brief}
+	{#if r.brief || briefD}
 		<section class="panel rv" style="--i:6;margin-top:18px">
 			<div class="panel-h"><h2>Your brief</h2><small>{r.usage}</small></div>
-			<p style="padding:0 20px 20px;white-space:pre-wrap;color:var(--ink-2)">{r.brief}</p>
+			{#if briefD}<div style="padding:0 20px"><BriefView d={briefD} /></div>{/if}
+			{#if r.brief}<p style="padding:0 20px 20px;white-space:pre-wrap;color:var(--ink-2)">{r.brief}</p>{/if}
 		</section>
 	{/if}
 {/if}
