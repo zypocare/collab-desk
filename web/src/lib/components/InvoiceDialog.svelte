@@ -52,7 +52,15 @@
 	let items = $state<InvoiceItem[]>(start.items);
 	let taxMode = $state<Invoice['tax_mode']>(start.tax_mode as Invoice['tax_mode']);
 	let gstRate = $state(start.e?.gst_rate || s.gst_rate || 18);
-	let tdsRate = $state(start.e?.tds_rate ?? 0);
+	// Same TDS as this brand's last invoice (brands deduct the same rate every time).
+	const lastForBrand = untrack(() =>
+		studio.collabs
+			.filter((x) => x.brand_id === c.brand_id)
+			.flatMap((x) => x.invoices)
+			.filter((i) => i.status !== 'draft' && i.status !== 'cancelled')
+			.sort((a, b) => b.created_at.localeCompare(a.created_at))[0]
+	);
+	let tdsRate = $state(start.e?.tds_rate ?? lastForBrand?.tds_rate ?? 0);
 	let issueDate = $state(start.e?.issue_date ?? todayIso());
 	let dueDate = $state(start.due);
 	let sendTo = $state(start.e?.send_to ?? start.accounts);

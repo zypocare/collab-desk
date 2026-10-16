@@ -51,6 +51,16 @@
 			fee = String(k.price);
 		});
 	});
+	// Their usual type and usage, unless a package or "book again" says otherwise.
+	$effect(() => {
+		const last = brandData.requests[0];
+		if (!last || page.url.searchParams.get('package') || page.url.searchParams.get('again')) return;
+		untrack(() => {
+			if (last.type !== 'barter' || pub.data?.barter?.mode !== 'closed') type = last.type;
+			usage = last.usage || usage;
+		});
+	});
+
 	// Booking again (/brand/new?again=CODE): start from that collab.
 	let againCode = $state('');
 	$effect(() => {

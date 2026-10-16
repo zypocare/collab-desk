@@ -269,7 +269,10 @@ export async function createCollab(brandName: string, extra?: NewCollabExtra): P
 		toast(`Couldn't add collab: ${errMessage(error)}`, 'alert');
 		return null;
 	}
-	const deliv = extra?.deliverables.length ? extra.deliverables : [{ kind: 'Reel', qty: 1 }];
+	// Nothing pasted? Start from what this brand booked last time.
+	const last = studio.collabs.filter((x) => x.brand_id === brand!.id && x.id !== data.id).sort((a, b) => b.created_at.localeCompare(a.created_at))[0];
+	if (!extra && last) await supabase.from('collabs').update({ type: last.type, usage: last.usage, contact_name: last.contact_name, contact_email: last.contact_email, contact_phone: last.contact_phone }).eq('id', data.id);
+	const deliv = extra?.deliverables.length ? extra.deliverables : last?.deliverables.length ? last.deliverables.map((d) => ({ kind: d.kind, qty: d.qty })) : [{ kind: 'Reel', qty: 1 }];
 	await supabase.from('deliverables').insert(deliv.map((d, i) => ({ collab_id: data.id, kind: d.kind, qty: d.qty, position: i })));
 	await supabase.from('collab_events').insert({ collab_id: data.id, kind: 'note', text: extra ? 'Added from a pasted message' : 'Added manually (DM, email or call)' });
 	await reloadOne(data.id);
