@@ -47,6 +47,7 @@
 	import Select from './Select.svelte';
 	import DatePicker from './DatePicker.svelte';
 	import { bestTime, timeLabel, timeOptions } from '../postTime';
+	import { BRIEF_NEEDS, briefMissing } from '../content';
 	import Mono from './Mono.svelte';
 	import QuoteDialog from './QuoteDialog.svelte';
 	import CollabPosts from './CollabPosts.svelte';
@@ -63,7 +64,8 @@
 		payTerms,
 		waLink
 	} from '../util';
-	import { cancelInvoice, setChecklist, setInvoiceFlags, shareDraft, withdrawQuote } from '../studio.svelte';
+	import { cancelInvoice, reloadCollabs, setChecklist, setInvoiceFlags, shareDraft, withdrawQuote } from '../studio.svelte';
+	import { errMessage } from '../util';
 	import type { Quote } from '../types';
 	import { INVOICE_STATUS, KIND_LABEL, balanceDue, type Invoice } from '../invoice';
 	import InvoiceDialog from './InvoiceDialog.svelte';
@@ -160,6 +162,17 @@
 	const next = $derived(c ? nextStep(c) : null);
 	const dates = $derived(c && studio.settings ? suggestDates(c, studio.settings, studio.collabs) : null);
 	const best = $derived(bestTime(studio.media));
+	const missingBrief = $derived(c ? briefMissing(c) : []);
+	let askBusy = $state(false);
+	async function askBrief() {
+		if (!c) return;
+		askBusy = true;
+		const { data, error } = await supabase.rpc('ask_brief', { p_collab: c.id });
+		askBusy = false;
+		if (error) return toast(`Couldn't send: ${errMessage(error)}`, 'alert');
+		toast(data ? `Asked ${c.contact_name || c.brand.name} for the missing details` : 'Nothing missing to ask for', data ? 'send' : 'check');
+		await reloadCollabs();
+	}
 	async function scrollTo(id: string, focus?: string) {
 		await tick();
 		document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -564,6 +577,13 @@
 
 			<section class="sec">
 				<h3>Brief</h3>
+				{#if missingBrief.length && !['declined', 'wrapped'].includes(c.stage)}
+					<div class="date-sug brief-gap">
+						<Icon name="alert" />
+						<span><b>Missing:</b> {missingBrief.map((k) => BRIEF_NEEDS[k]).join(', ')}{c.brief_asked_at ? `. Asked ${fmt(c.brief_asked_at.slice(0, 10))}` : ''}</span>
+						{#if c.contact_email}<button class="btn sm" disabled={askBusy} onclick={askBrief}>{c.brief_asked_at ? 'Ask again' : 'Ask the brand'}</button>{/if}
+					</div>
+				{/if}
 				{#key c.id}<BriefEditor value={c.brief_details ?? {}} idp="f" category={c.brand.category} onchange={saveBrief} />{/key}
 				<div class="f" style="margin-top:12px"><label for="f-brief">Notes</label><textarea class="inp" id="f-brief" placeholder="Anything else from the brand" value={c.brief} onchange={(e) => save('brief', val(e))}></textarea></div>
 			</section>

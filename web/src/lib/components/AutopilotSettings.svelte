@@ -47,6 +47,13 @@
 	</div>
 	<div class="switch-row">
 		<div>
+			<b>Ask for missing brief details</b>
+			<small>When a collab is confirmed and the brief has no key message, hashtags, do's or who to tag, the brand gets a two-minute form to fill them in.</small>
+		</div>
+		<input type="checkbox" class="tgl" checked={s.autopilot_brief} aria-label="Ask for missing brief details" onchange={on('autopilot_brief')} />
+	</div>
+	<div class="switch-row">
+		<div>
 			<b>Thank and ask for a review</b>
 			<small>When you mark a collab wrapped, the brand gets a thank-you with a 20-second review link.</small>
 		</div>

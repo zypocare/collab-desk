@@ -423,6 +423,35 @@ export function render(kind: string, p: Payload, s: Settings): Omit<Mail, 'to'> 
     };
   }
 
+  if (kind === 'brief_request') {
+    const NAMES: Record<string, string> = { message: 'the key message', hashtags: 'hashtags to use', dos: "do's and don'ts", tag: 'which accounts to tag' };
+    const list = (Array.isArray(p.missing) ? p.missing : []).map((k: string) => NAMES[k] ?? k);
+    return {
+      subject: `${code}: a few details so ${first(s.display_name)} can start creating`,
+      html: layout(
+        s,
+        `A few details, then we're shooting`,
+        `<p style="margin:0">Hi ${esc(firstOf(p.contact))}, great to have <b>${esc(code)}</b> confirmed! Before ${esc(first(s.display_name))} plans the shoot, could you add ${esc(list.join(', ').replace(/, ([^,]*)$/, ' and $1'))}? It takes two minutes and avoids revisions later. No sign-in needed.</p>`,
+        p.action ? { label: 'Add the details', href: url(s, `/brief/${p.action}`) } : { label: 'Open your request', href: url(s, `/brand/r/${encodeURIComponent(code)}`) },
+      ),
+      text: `Please add ${list.join(', ')} for ${code}: ${url(s, p.action ? `/brief/${p.action}` : `/brand/r/${code}`)}`,
+    };
+  }
+
+  if (kind === 'brief_completed') {
+    const left = Array.isArray(p.still_missing) && p.still_missing.length;
+    return {
+      subject: `${brand} added the brief details (${code})`,
+      html: layout(
+        s,
+        `${brand} filled in the brief`,
+        `<p style="margin:0">The brief for <b>${esc(code)}</b> is ${left ? 'updated, though a few things are still empty' : 'complete'}. Your shot list and caption starter now use it.</p>`,
+        { label: 'Open in your studio', href: url(s, `/studio/collabs?open=${encodeURIComponent(code)}`) },
+      ),
+      text: `${brand} added the brief details for ${code}.`,
+    };
+  }
+
   if (kind === 'post_now') {
     const extra = [p.promo && `Promo code: ${p.promo}`, p.link && `Link: ${p.link}`].filter(Boolean).join(' · ');
     return {

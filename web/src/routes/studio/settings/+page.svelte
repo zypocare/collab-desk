@@ -74,7 +74,7 @@
 	// Settings are split into a few sections and only the one she picks is shown.
 	// On phones the menu is its own screen: tap a section, and "All settings" (or Back) returns.
 	type Sec = 'profile' | 'rates' | 'bookings' | 'autopilot' | 'payments' | 'reviews' | 'alerts' | 'account';
-	const autoOn = $derived([s.autopilot_packages, s.autopilot_counter, s.autopilot_nudge, s.autopilot_review].filter(Boolean).length);
+	const autoOn = $derived([s.autopilot_packages, s.autopilot_counter, s.autopilot_nudge, s.autopilot_brief, s.autopilot_review].filter(Boolean).length);
 	const hasPay = $derived(!!(s.upi_id || s.bank_details));
 	const sections = $derived<{ id: Sec; label: string; icon: string; sub: string; warn?: string }[]>([
 		{
@@ -92,7 +92,7 @@
 			sub: s.accepting ? `Open · ${s.weekly_capacity} a week · barter ${s.barter_mode}` : 'Paused: not taking requests',
 			warn: s.accepting ? undefined : 'New requests are paused'
 		},
-		{ id: 'autopilot', label: 'Auto-pilot', icon: 'spark', sub: autoOn ? `${autoOn} of 4 rules on` : 'All rules off' },
+		{ id: 'autopilot', label: 'Auto-pilot', icon: 'spark', sub: autoOn ? `${autoOn} of 5 rules on` : 'All rules off' },
 		{
 			id: 'payments',
 			label: 'Invoices & payments',

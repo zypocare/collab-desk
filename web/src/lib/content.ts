@@ -67,6 +67,18 @@ export function makeShotList(c: Collab): Shot[] {
 	return out.map((t) => ({ t, done: false }));
 }
 
+export const BRIEF_NEEDS: Record<string, string> = { message: 'key message', hashtags: 'hashtags', dos: "do's or don'ts", tag: 'accounts to tag' };
+/** What the brief is missing before she can plan the shoot (same rules as the database). */
+export function briefMissing(c: Collab): string[] {
+	const d = c.brief_details ?? {};
+	return [
+		!d.message?.trim() && 'message',
+		!d.hashtags?.length && 'hashtags',
+		!d.dos?.trim() && !d.donts?.trim() && 'dos',
+		!c.brand.instagram?.trim() && !d.mentions?.length && 'tag'
+	].filter((x): x is string => !!x);
+}
+
 /** Monday of the week a date falls in. */
 export function weekOf(iso: string) {
 	const d = new Date(iso + 'T00:00:00');

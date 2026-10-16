@@ -133,6 +133,7 @@ export type Collab = {
 	counter_fee: number | null;
 	counter_status: '' | 'sent' | 'taken' | 'kept';
 	shoot_date: string | null;
+	brief_asked_at: string | null;
 	live_time: string | null;
 	post_alert_at: string | null;
 	shot_list: { t: string; done: boolean }[];
@@ -268,6 +269,7 @@ export type Settings = {
 	autopilot_nudge: boolean;
 	autopilot_review: boolean;
 	nudge_days: number;
+	autopilot_brief: boolean;
 	piece_hours: Record<string, number>;
 	weekly_hours: number;
 };

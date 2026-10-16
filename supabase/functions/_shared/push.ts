@@ -53,6 +53,8 @@ export function pushFor(kind: string, p: Record<string, unknown>): Push | null {
       return { title: `${brand} shipped the product`, body: [p.carrier, p.tracking].filter(Boolean).join(' · '), url: open(code), tag: code };
     case 'usage_ext_requested':
       return { title: `${brand} wants to extend usage`, body: `${p.days} more days for ${inr(p.price)}`, url: open(code), tag: code };
+    case 'brief_completed':
+      return { title: `${brand} filled in the brief`, body: `${code}: ready to plan the shoot.`, url: open(code), tag: `brief-${code}` };
     case 'post_now':
       return { title: `Post ${brand} at ${p.time}`, body: p.caption ? 'Caption is ready: tap to copy it.' : `${p.deliverables}. Tap to get your caption.`, url: `/studio/content?post=${encodeURIComponent(code)}`, tag: `post-${code}` };
     case 'counter_taken':
