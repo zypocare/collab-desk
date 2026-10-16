@@ -8,6 +8,8 @@
 	import { page } from '$app/state';
 	import Icon from '#lib/components/Icon.svelte';
 	import Mono from '#lib/components/Mono.svelte';
+	import InstagramPanel from '#lib/components/InstagramPanel.svelte';
+	import ContentTips from '#lib/components/ContentTips.svelte';
 
 	// Her making week, without any of the business: what to shoot when, what's with the brand, what to post.
 	const s = $derived(studio.settings!);
@@ -121,3 +123,7 @@
 		{/if}
 	</div>
 </div>
+
+<!-- How posts are doing, and what to make next. -->
+<InstagramPanel />
+<ContentTips />

@@ -96,3 +96,20 @@
 }
 [data-side="studio"] .board .col.empty .col-h .dt{display:none}
 .t-a .hc-foot b{white-space:normal;overflow:visible;text-overflow:clip;font-size:16px;line-height:1.25}
+
+/* ---------- paired pages: tabs at the top (Board · Brands, Content · Calendar, Payments · Reports) ---------- */
+.subtabs{display:inline-flex;gap:4px;padding:5px;margin:0 0 18px;border-radius:999px;background:var(--sx-card);border:1px solid var(--sx-border);box-shadow:var(--shadow-sm)}
+.subtabs a{padding:8px 18px;border-radius:999px;font-size:15.5px;font-weight:600;text-decoration:none;color:var(--ink-2);transition:background .3s,color .3s}
+.subtabs a:hover{color:var(--ink)}
+.subtabs a[aria-current="page"]{background:var(--grad);color:#fff;box-shadow:0 6px 18px -6px color-mix(in oklab,var(--g2) 60%,transparent)}
+
+/* ---------- collab page: only this stage's sections, the rest one tap away ---------- */
+.sec-wrap{display:contents}
+.more-row{grid-column:1/-1;display:flex;justify-content:center;padding:4px 0 8px}
+.more-row .btn{border-radius:999px;padding:0 20px;height:44px}
+.by-hand{margin:0 0 12px}
+.by-hand summary{cursor:pointer;list-style:none;font-size:14.5px;font-weight:700;color:var(--ink-3);padding:4px 0}
+.by-hand summary::-webkit-details-marker{display:none}
+.by-hand summary::before{content:"+ "}
+.by-hand[open] summary::before{content:"− "}
+.by-hand[open] summary{margin-bottom:10px}

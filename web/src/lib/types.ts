@@ -276,6 +276,9 @@ export type Settings = {
 	show_results: boolean;
 	whatsapp: string;
 	autopilot_packages: boolean;
+	autopilot_invoice: boolean;
+	autopilot_dates: boolean;
+	autopilot_track: boolean;
 	autopilot_counter: boolean;
 	autopilot_nudge: boolean;
 	autopilot_review: boolean;

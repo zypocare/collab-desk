@@ -16,21 +16,22 @@
 
 	let { children }: LayoutProps = $props();
 
-	const NAV = [
+	// Five places, related pages paired as tabs inside them.
+	type Tab = { href: string; label: string };
+	const NAV: { href: string; label: string; short?: string; icon: string; tabs?: Tab[]; also?: string[] }[] = [
 		{ href: '/studio', label: 'Today', icon: 'home' },
-		{ href: '/studio/collabs', label: 'Collabs', icon: 'board' },
-		{ href: '/studio/content', label: 'Content', icon: 'film' },
-		{ href: '/studio/calendar', label: 'Calendar', short: 'Dates', icon: 'cal' },
-		{ href: '/studio/payments', label: 'Payments', short: 'Money', icon: 'wallet' },
-		{ href: '/studio/brands', label: 'Brands', icon: 'users' },
-		{ href: '/studio/reports', label: 'Reports', short: 'Stats', icon: 'chart' },
+		{ href: '/studio/collabs', label: 'Collabs', icon: 'board', tabs: [{ href: '/studio/collabs', label: 'Board' }, { href: '/studio/brands', label: 'Brands' }], also: ['/studio/c/', '/studio/import'] },
+		{ href: '/studio/content', label: 'Plan', icon: 'cal', tabs: [{ href: '/studio/content', label: 'Content' }, { href: '/studio/calendar', label: 'Calendar' }] },
+		{ href: '/studio/payments', label: 'Money', icon: 'wallet', tabs: [{ href: '/studio/payments', label: 'Payments' }, { href: '/studio/reports', label: 'Reports' }] },
 		{ href: '/studio/settings', label: 'My page', short: 'Page', icon: 'link' }
 	];
-	const current = $derived(
-		NAV.slice()
-			.reverse()
-			.find((n) => (n.href === '/studio' ? page.url.pathname === '/studio' : page.url.pathname.startsWith(n.href) || (n.href === '/studio/collabs' && page.url.pathname.startsWith('/studio/c/'))))?.href
+	const path = $derived(page.url.pathname);
+	const group = $derived(
+		NAV.find((n) => (n.href === '/studio' ? path === '/studio' : [n.href, ...(n.tabs ?? []).map((t) => t.href), ...(n.also ?? [])].some((h) => path.startsWith(h))))
 	);
+	const current = $derived(group?.href);
+	// Tabs show on the paired pages themselves (not on a single collab's page).
+	const tabs = $derived(group?.tabs && group.tabs.some((t) => path === t.href) ? group.tabs : null);
 	const newCount = $derived(studio.collabs.filter((c) => c.stage === 'request').length);
 	const allowed = $derived(auth.account?.role === 'creator');
 
@@ -142,6 +143,11 @@
 				<div class="err-box">Couldn't load your data: {studio.error}</div>
 			{/if}
 			{#if studio.loaded}
+				{#if tabs}
+					<nav class="subtabs" aria-label="{group?.label} pages">
+						{#each tabs as t (t.href)}<a href={t.href} aria-current={path === t.href ? 'page' : undefined}>{t.label}</a>{/each}
+					</nav>
+				{/if}
 				{@render children()}
 			{:else if !studio.error}
 				<div class="loader" style="min-height:60vh"><span class="ring"><span></span></span></div>

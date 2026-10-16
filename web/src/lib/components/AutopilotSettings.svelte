@@ -23,6 +23,27 @@
 	<div class="panel-h"><h2>Auto-pilot</h2><small>switch on once, it runs by itself</small></div>
 	<div class="switch-row" style="border-top:0">
 		<div>
+			<b>Send invoices for you</b>
+			<small>The advance invoice when a brand accepts a quote with an advance, and the full or balance invoice when the post goes live. Reminders follow on their own until it's paid.</small>
+		</div>
+		<input type="checkbox" class="tgl" checked={s.autopilot_invoice} aria-label="Send invoices for you" onchange={on('autopilot_invoice')} />
+	</div>
+	<div class="switch-row">
+		<div>
+			<b>Fill in dates</b>
+			<small>When a quote is accepted, the go-live becomes the date the brand asked for, and the draft is due 4 days before go-live. You can still change them.</small>
+		</div>
+		<input type="checkbox" class="tgl" checked={s.autopilot_dates} aria-label="Fill in dates" onchange={on('autopilot_dates')} />
+	</div>
+	<div class="switch-row">
+		<div>
+			<b>Send brands their tracking link</b>
+			<small>For collabs you add yourself: once there's a brand email, they get their private page to follow progress. No more copying links into DMs.</small>
+		</div>
+		<input type="checkbox" class="tgl" checked={s.autopilot_track} aria-label="Send brands their tracking link" onchange={on('autopilot_track')} />
+	</div>
+	<div class="switch-row">
+		<div>
 			<b>Send quotes for package bookings</b>
 			<small>When a brand books a package for a week you have open, the quote goes out at the package price with your usual terms. They accept in one tap.</small>
 		</div>

@@ -28,8 +28,6 @@
 	} from '#lib/util.ts';
 	import Icon from '#lib/components/Icon.svelte';
 	import PriorityBadge from '#lib/components/PriorityBadge.svelte';
-	import InstagramPanel from '#lib/components/InstagramPanel.svelte';
-	import ContentTips from '#lib/components/ContentTips.svelte';
 	import AlertsPrompt from '#lib/components/AlertsPrompt.svelte';
 	import BrandQuestions from '#lib/components/BrandQuestions.svelte';
 
@@ -66,18 +64,6 @@
 			.sort((a, b) => parse(a.pay_due!).getTime() - parse(b.pay_due!).getTime())[0]
 	);
 
-	// Payments received per month, last 6 months.
-	const months = $derived.by(() => {
-		const out: { label: string; v: number; cur: boolean }[] = [];
-		for (let i = 5; i >= 0; i--) {
-			const m = new Date(T.getFullYear(), T.getMonth() - i, 1);
-			const key = iso(m).slice(0, 7);
-			const v = list.filter((c) => c.paid_on?.startsWith(key)).reduce((a, c) => a + c.pay_received, 0);
-			out.push({ label: m.toLocaleDateString('en-IN', { month: 'short' }), v, cur: i === 0 });
-		}
-		return out;
-	});
-	const max = $derived(Math.max(50000, Math.ceil(Math.max(...months.map((m) => m.v)) / 50000) * 50000));
 
 	const evs = $derived(events(list));
 	const week = $derived(
@@ -217,26 +203,3 @@
 	</div>
 </div>
 
-<div class="t-row t-c">
-	<section class="panel glow rv" style="--i:5">
-		<div class="panel-h"><h2>Payments received</h2><small>last 6 months · {months[5].label} so far</small></div>
-		<div class="chart">
-			<div class="plot" role="img" aria-label="Payments received: {months.map((m) => `${m.label} ${inr(m.v)}`).join(', ')}">
-				{#each [1, 0.5, 0] as f (f)}
-					<div class="gl" class:base={f === 0} style="bottom:{f * 100}%"><span>{f === 0 ? '0' : inrS(max * f)}</span></div>
-				{/each}
-				<div class="bars">
-					{#each months as m, i (m.label)}
-						<div class="bcol" style="--i:{i}">
-							<div class="bar" class:cur={m.cur} style="height:{(m.v / max) * 100}%"></div>
-							<span class="bl" class:cur={m.cur} style="bottom:calc({(m.v / max) * 100}% + 6px)">{m.v ? inrS(m.v) : '₹0'}</span>
-						</div>
-					{/each}
-				</div>
-			</div>
-			<div class="months">{#each months as m (m.label)}<span class:cur={m.cur}>{m.label}</span>{/each}</div>
-		</div>
-	</section>
-</div>
-<InstagramPanel />
-<ContentTips />

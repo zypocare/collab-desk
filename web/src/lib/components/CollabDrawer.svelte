@@ -85,12 +85,25 @@
 	const JUMPS = [['sec-msg', 'Messages'], ['sec-deal', 'Deal'], ['sec-drafts', 'Drafts'], ['sec-dates', 'Dates'], ['sec-pay', 'Payment'], ['sec-brand', 'Brand'], ['sec-brief', 'Brief'], ['sec-activity', 'Activity']];
 	let present = $state<string[]>([]);
 	let { page = false }: { page?: boolean } = $props();
+	// Full page: only the parts that matter at this stage; everything else one tap away.
+	const FOCUS: Record<string, string[]> = {
+		request: ['deal', 'quote', 'deliv', 'brief', 'contact'],
+		negotiating: ['deal', 'quote', 'deliv', 'brief', 'contact'],
+		confirmed: ['quote', 'deliv', 'product', 'dates', 'drafts', 'pay', 'brand', 'brief'],
+		creating: ['deliv', 'product', 'dates', 'drafts', 'check', 'files', 'brand', 'brief'],
+		live: ['check', 'posts', 'pay', 'dates', 'files', 'usage', 'costs'],
+		wrapped: ['pay', 'posts', 'review', 'costs', 'files', 'usage'],
+		declined: ['deal', 'activity']
+	};
+	let showAll = $state(false);
+	const sh = (k: string) => !page || showAll || (FOCUS[c?.stage ?? ''] ?? []).includes(k);
 	$effect(() => {
 		if (!page) return;
 		void c?.id;
 		void c?.stage;
 		void c?.type;
-		tick().then(() => (present = JUMPS.map(([id]) => id).filter((id) => document.getElementById(id))));
+		void showAll;
+		tick().then(() => (present = JUMPS.map(([id]) => id).filter((id) => document.getElementById(id)?.offsetParent)));
 	});
 	const c = $derived(byId(ui.openCollab));
 	// Phones: short stage names so the six labels fit side by side.
@@ -358,7 +371,7 @@
 				{/key}
 			</section>
 
-			<section class="sec" id="sec-deal">
+			<section class="sec" id="sec-deal" hidden={!sh('deal')}>
 				<h3>Deal</h3>
 				<div class="fields">
 					<div class="f">
@@ -397,7 +410,7 @@
 				{#if c.preferred_live}<p class="hint" style="margin-top:12px">Brand's preferred go-live date: {fmt(c.preferred_live)}</p>{/if}
 			</section>
 
-			<section class="sec">
+			<section class="sec" hidden={!sh('quote')}>
 				<h3>Quote &amp; agreement {#if quote}<span class="pill tint {QUOTE_STATUS[quote.status].k}">{QUOTE_STATUS[quote.status].label}</span>{/if}</h3>
 				{#if !quote}
 					<p class="hint" style="margin:0 0 12px">No quote yet. Build one from your rate card; the brand accepts it online and it becomes the agreement.</p>
@@ -442,7 +455,7 @@
 				{/if}
 			</section>
 
-			<section class="sec">
+			<section class="sec" hidden={!sh('deliv')}>
 				<h3>Deliverables <span>{done} of {c.deliverables.length} done</span></h3>
 				<div class="dl">
 					{#each c.deliverables as d (d.id)}
@@ -459,11 +472,11 @@
 				<Select action class="add-sel" ariaLabel="Add deliverable" placeholder="+ Add deliverable" options={KINDS.map((k) => ({ value: k, label: k }))} onchange={(k) => c && addDeliverable(c, k)} />
 			</section>
 
-			{#if c.stage === 'live' || c.stage === 'wrapped'}<section class="sec"><h3>How was {c.brand.name}?<small class="sec-sub">private</small></h3><BrandRating brand={c.brand} compact /></section>{/if}
-			{#if c.usage_ends}<section class="sec"><h3>Usage rights</h3><UsageRights {c} /></section>{/if}
-			{#if hasProduct(c)}<ProductShipping {c} />{/if}
+			{#if c.stage === 'live' || c.stage === 'wrapped'}<section class="sec" hidden={!sh('review')}><h3>How was {c.brand.name}?<small class="sec-sub">private</small></h3><BrandRating brand={c.brand} compact /></section>{/if}
+			{#if c.usage_ends}<section class="sec" hidden={!sh('usage')}><h3>Usage rights</h3><UsageRights {c} /></section>{/if}
+			{#if hasProduct(c)}<div class="sec-wrap" hidden={!sh('product')}><ProductShipping {c} /></div>{/if}
 
-			<section class="sec" id="sec-dates">
+			<section class="sec" id="sec-dates" hidden={!sh('dates')}>
 				<h3>Dates</h3>
 				{#if dates && c.stage !== 'live' && c.stage !== 'wrapped' && c.stage !== 'declined' && (c.draft_date !== dates.draft || c.live_date !== dates.live)}
 					<div class="date-sug">
@@ -494,7 +507,7 @@
 				{/if}
 			</section>
 
-			<section class="sec" id="sec-drafts">
+			<section class="sec" id="sec-drafts" hidden={!sh('drafts')}>
 				<h3>
 					Drafts for approval
 					{#if roundsIncluded !== null}<span>{Math.max(0, c.drafts.length - 1)} of {roundsIncluded} revision{roundsIncluded === 1 ? '' : 's'} used</span>{/if}
@@ -540,7 +553,7 @@
 			</section>
 
 			{#if ['confirmed', 'creating', 'live', 'wrapped'].includes(c.stage)}
-				<section class="sec">
+				<section class="sec" hidden={!sh('check')}>
 					<h3>Posting checklist <span>{CHECKLIST.length - checklistMissing(c).length} of {CHECKLIST.length}</span></h3>
 					{#each CHECKLIST as item (item.key)}
 						<label class="check-row">
@@ -554,10 +567,10 @@
 				</section>
 			{/if}
 
-			<CollabPosts {c} />
+			<div class="sec-wrap" hidden={!sh('posts')}><CollabPosts {c} /></div>
 
 			{#if isPaid(c)}
-				<section class="sec" id="sec-pay">
+				<section class="sec" id="sec-pay" hidden={!sh('pay')}>
 					<h3>Payment {#if issuedInvoices.length}<span>{issuedInvoices.length} invoice{issuedInvoices.length === 1 ? '' : 's'}</span>{/if}</h3>
 					{#each c.invoices as inv (inv.id)}
 						<div class="inv-row" class:muted={inv.status === 'cancelled'}>
@@ -600,7 +613,9 @@
 					{/each}
 					<button class="btn sm {issuedInvoices.length ? '' : 'primary'}" style="margin-bottom:14px" onclick={() => (invoiceOpen = {})}><Icon name="plus" />Create invoice</button>
 					{#if !issuedInvoices.length}
-					<p class="hint" style="margin:0 0 10px">No invoice from the app yet. You can also track a payment by hand:</p>
+					<p class="hint" style="margin:0 0 10px">{c.stage === 'live' || c.stage === 'wrapped' ? 'Not invoiced yet. Tap Create invoice: it fills in from the agreed quote.' : studio.settings?.autopilot_invoice && c.type !== 'barter' ? (c.contact_email ? 'Auto-pilot sends the invoice when the post goes live (and any advance when the quote is accepted).' : 'Add the brand email under Brand contact and auto-pilot sends the invoice when the post goes live.') : 'No invoice from the app yet.'}</p>
+					<details class="by-hand">
+					<summary>Track a payment by hand instead</summary>
 					<div class="fields">
 						<div class="f">
 							<label for="p-st">Status</label>
@@ -613,6 +628,7 @@
 						<div class="f"><label for="p-inv">Invoice no.</label><input class="inp" id="p-inv" value={c.invoice_no} placeholder="INV-1048" onchange={(e) => save('invoice_no', val(e))} /></div>
 						<div class="f"><label for="p-due">Payment due</label><DatePicker id="p-due" value={c.pay_due} onchange={(v) => save('pay_due', v || null)} /></div>
 					</div>
+					</details>
 					{/if}
 					<div class="balance">
 						{#if c.pay_status === 'paid'}
@@ -626,10 +642,10 @@
 				</section>
 			{/if}
 
-			{#if ['confirmed', 'creating', 'live', 'wrapped'].includes(c.stage) || c.files?.length}<CollabFiles {c} />{/if}
-			{#if ['confirmed', 'creating', 'live', 'wrapped'].includes(c.stage) || c.expenses?.length}<CollabCosts {c} />{/if}
+			{#if ['confirmed', 'creating', 'live', 'wrapped'].includes(c.stage) || c.files?.length}<div class="sec-wrap" hidden={!sh('files')}><CollabFiles {c} /></div>{/if}
+			{#if ['confirmed', 'creating', 'live', 'wrapped'].includes(c.stage) || c.expenses?.length}<div class="sec-wrap" hidden={!sh('costs')}><CollabCosts {c} /></div>{/if}
 
-			<section class="sec">
+			<section class="sec" hidden={!sh('follow')}>
 				<h3>Follow-up reminder</h3>
 				<div class="fields">
 					<div class="f"><label for="fu-d">Remind me on</label><DatePicker id="fu-d" value={c.follow_date} onchange={(v) => save('follow_date', v || null)} /></div>
@@ -638,7 +654,7 @@
 				{#if c.follow_date}<button class="btn sm follow-done" onclick={() => c && completeFollow(c)}><Icon name="check" />Mark follow-up done</button>{/if}
 			</section>
 
-			<section class="sec" id="sec-brand">
+			<section class="sec" id="sec-brand" hidden={!sh('brand')}>
 				<h3>Brand access {#if c.track_sent_at}<span>link sent {fmt(c.track_sent_at.slice(0, 10))}</span>{/if}</h3>
 				<div class="trk-box">
 					<span class="lbl-t">Private tracking link</span>
@@ -657,7 +673,7 @@
 				</div>
 			</section>
 
-			<section class="sec" id="sec-brief">
+			<section class="sec" id="sec-brief" hidden={!sh('brief')}>
 				<h3>Brief</h3>
 				{#if missingBrief.length && !['declined', 'wrapped'].includes(c.stage)}
 					<div class="date-sug brief-gap">
@@ -670,7 +686,7 @@
 				<div class="f" style="margin-top:12px"><label for="f-brief">Notes</label><textarea class="inp" id="f-brief" placeholder="Anything else from the brand" value={c.brief} onchange={(e) => save('brief', val(e))}></textarea></div>
 			</section>
 
-			<section class="sec">
+			<section class="sec" hidden={!sh('contact')}>
 				<h3>Brand contact</h3>
 				<div class="fields">
 					<div class="f"><label for="c-n">Name</label><input class="inp" id="c-n" value={c.contact_name} onchange={(e) => save('contact_name', val(e))} /></div>
@@ -686,7 +702,7 @@
 				<p class="hint" style="margin-top:10px">The brand signs in with this email to see their requests.</p>
 			</section>
 
-			<section class="sec" id="sec-activity">
+			<section class="sec" id="sec-activity" hidden={!sh('activity')}>
 				<h3>Activity</h3>
 				<ol class="log">
 					{#each c.events as ev (ev.id)}
@@ -694,6 +710,11 @@
 					{/each}
 				</ol>
 			</section>
+			{#if page}
+				<div class="more-row">
+					<button class="btn" onclick={() => (showAll = !showAll)}><Icon name={showAll ? 'chevL' : 'layers'} />{showAll ? 'Show only what this stage needs' : 'Show all details'}</button>
+				</div>
+			{/if}
 		</div>
 
 		<footer class="dr-f">
