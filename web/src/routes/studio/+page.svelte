@@ -93,6 +93,7 @@
 		}, 330);
 	}
 	const when = (t: Task) => {
+		if (t.kind === 'msg') return { text: 'waiting for your reply', cls: 'today' };
 		if (t.kind === 'new') return { text: `received ${relWord(diff(t.c.received_on))}`, cls: '' };
 		if (t.kind === 'pay') return { text: `due ${fmt(t.c.pay_due)}, ${-t.d} day${-t.d > 1 ? 's' : ''} late`, cls: 'late' };
 		if (t.d < 0) return { text: `${-t.d} day${-t.d > 1 ? 's' : ''} late`, cls: 'late' };
@@ -176,8 +177,8 @@
 						<button class="btn sm" onclick={() => leaveThen(t.c.id + t.kind, () => completeFollow(t.c))}><Icon name="check" />Done</button>
 					{:else if t.kind === 'pay'}
 						<button class="btn sm" onclick={() => leaveThen(t.c.id + t.kind, () => markPaid(t.c))}>Mark paid</button>
-					{:else if t.kind === 'new'}
-						<button class="btn sm" onclick={() => (ui.openCollab = t.c.id)}>Review</button>
+					{:else if t.kind === 'new' || t.kind === 'msg'}
+						<button class="btn sm" onclick={() => (ui.openCollab = t.c.id)}>{t.kind === 'msg' ? 'Reply' : 'Review'}</button>
 					{/if}
 					<button class="icon-btn sm go" onclick={() => (ui.openCollab = t.c.id)} aria-label="Open {t.c.brand.name}"><Icon name="arrow" /></button>
 				</div>

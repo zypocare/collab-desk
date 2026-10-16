@@ -4,7 +4,7 @@ import { scoreCollab } from './priority';
 import { supabase } from './supabase';
 import type { BankAlert, Brand, BrandPrivate, BrandReport, Checklist, Collab, Deliverable, IgAccount, IgMedia, Quote, Settings, Stage } from './types';
 import { balanceDue, normaliseInvoice, type Invoice, type InvoiceItem } from './invoice';
-import { confetti, toast } from './ui.svelte';
+import { confetti, toast, ui } from './ui.svelte';
 import { errMessage, inr, stageLabel, todayIso } from './util';
 
 export const studio = $state<{
@@ -20,7 +20,7 @@ export const studio = $state<{
 	followersHistory: { day: string; followers: number }[];
 }>({ loaded: false, error: '', collabs: [], brands: [], notes: {}, settings: null, alerts: [], ig: null, media: [], followersHistory: [] });
 
-const COLLAB_SELECT = '*, brand:brands(*), deliverables(*), events:collab_events(*), quotes(*), drafts(*), invoices(*), posts:collab_posts(matched_by, media:ig_media(*)), reports:brand_reports(*)';
+const COLLAB_SELECT = '*, brand:brands(*), deliverables(*), events:collab_events(*), quotes(*), drafts(*), invoices(*), posts:collab_posts(matched_by, media:ig_media(*)), reports:brand_reports(*), messages:collab_messages(id, sender, created_at), reads:collab_reads(side, read_at)';
 
 function normalise(c: Collab): Collab {
 	c.fee = Number(c.fee) || 0;
@@ -36,6 +36,8 @@ function normalise(c: Collab): Collab {
 	c.checklist = c.checklist ?? {};
 	c.posts = (c.posts ?? []).filter((p) => p.media).sort((a, b) => a.media.posted_at.localeCompare(b.media.posted_at));
 	c.reports = (c.reports ?? []).sort((a, b) => b.created_at.localeCompare(a.created_at));
+	c.messages = (c.messages ?? []).sort((a, b) => a.created_at.localeCompare(b.created_at));
+	c.reads = c.reads ?? [];
 	return c;
 }
 
@@ -91,6 +93,12 @@ export function watchStudio() {
 		.on('postgres_changes', { event: '*', schema: 'public', table: 'invoices' }, schedule)
 		.on('postgres_changes', { event: '*', schema: 'public', table: 'collab_posts' }, schedule)
 		.on('postgres_changes', { event: '*', schema: 'public', table: 'brand_reports' }, schedule)
+		.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'collab_messages' }, (p) => {
+			const m = p.new as { sender: string; collab_id: string };
+			if (m.sender === 'brand' && ui.openCollab !== m.collab_id) toast(`New message from ${byId(m.collab_id)?.brand.name ?? 'a brand'}`, 'mail');
+			schedule();
+		})
+		.on('postgres_changes', { event: '*', schema: 'public', table: 'collab_reads' }, schedule)
 		.on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'ig_account' }, () => loadInstagram())
 		.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'bank_alerts' }, () => {
 			toast('Your bank reported a payment', 'wallet');

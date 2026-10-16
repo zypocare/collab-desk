@@ -3,13 +3,21 @@ import { supabase } from './supabase';
 import type { BrandRequest } from './types';
 import { errMessage } from './util';
 
-export const brandData = $state<{ loaded: boolean; error: string; requests: BrandRequest[] }>({
+export const brandData = $state<{ loaded: boolean; error: string; requests: BrandRequest[]; unread: Record<string, number> }>({
 	loaded: false,
 	error: '',
-	requests: []
+	requests: [],
+	unread: {}
 });
 
+/** Unread messages from the creator, by request code. */
+export async function loadUnread() {
+	const { data } = await supabase.rpc('my_unread');
+	brandData.unread = (data as Record<string, number>) ?? {};
+}
+
 export async function loadRequests() {
+	loadUnread();
 	const { data, error } = await supabase.rpc('my_requests');
 	if (error) brandData.error = errMessage(error);
 	else {

@@ -32,6 +32,7 @@
 		stageIndex
 	} from '../util';
 	import Icon from './Icon.svelte';
+	import MessageThread from './MessageThread.svelte';
 	import { isRanked } from '../priority';
 	import PriorityPanel from './PriorityPanel.svelte';
 	import Select from './Select.svelte';
@@ -202,6 +203,18 @@
 			</section>
 
 			{#if isRanked(c)}<PriorityPanel {c} />{/if}
+
+			<section class="sec">
+				<h3>Messages{#if c.contact_name}<small class="sec-sub">with {c.contact_name}</small>{/if}</h3>
+				{#key c.id}
+					<MessageThread
+						collabId={c.id}
+						side="creator"
+						otherName={c.contact_name || c.brand.name}
+						quick={['Thanks! I’ll get back to you shortly.', 'Could you share the full brief and references?', 'Sounds good, let’s go ahead!']}
+					/>
+				{/key}
+			</section>
 
 			<section class="sec">
 				<h3>Deal</h3>

@@ -124,10 +124,18 @@ export function nextLine(c: Collab): NextLine {
 	}
 }
 
-export type Task = { c: Collab; kind: 'new' | 'follow' | 'draft' | 'live' | 'product' | 'pay' | 'quote' | 'revise'; d: number; title: string; order: number };
+/** Messages from the brand she hasn't read yet. */
+export function unreadFor(c: Collab) {
+	const seen = c.reads?.find((r) => r.side === 'creator')?.read_at ?? '';
+	return (c.messages ?? []).filter((m) => m.sender === 'brand' && m.created_at > seen).length;
+}
+
+export type Task = { c: Collab; kind: 'new' | 'follow' | 'draft' | 'live' | 'product' | 'pay' | 'quote' | 'revise' | 'msg'; d: number; title: string; order: number };
 export function tasks(collabs: Collab[]): Task[] {
 	const out: Task[] = [];
 	for (const c of collabs) {
+		const unread = unreadFor(c);
+		if (unread) out.push({ c, kind: 'msg', d: 0, title: `Reply to ${unread} new message${unread > 1 ? 's' : ''}`, order: -1 });
 		if (c.stage === 'declined') continue;
 		if (c.stage === 'request') out.push({ c, kind: 'new', d: Math.min(0, diff(c.received_on)), title: 'Review new request', order: 0 });
 		const q = latestQuote(c);
@@ -160,7 +168,7 @@ export function events(collabs: Collab[]): CalEvent[] {
 	}
 	return ev;
 }
-export const KIND_ICON: Record<string, string> = { follow: 'bell', draft: 'film', live: 'spark', pay: 'wallet', new: 'inbox', product: 'box', quote: 'rupee', revise: 'edit' };
+export const KIND_ICON: Record<string, string> = { follow: 'bell', draft: 'film', live: 'spark', pay: 'wallet', new: 'inbox', product: 'box', quote: 'rupee', revise: 'edit', msg: 'mail' };
 export const KIND_LABEL: Record<string, string> = { draft: 'Draft due', live: 'Go live', follow: 'Follow-up', pay: 'Payment due', product: 'Product arrives' };
 export const evLabel = (e: CalEvent) => (e.kind === 'live' && stageIndex(e.c.stage) >= 4 ? 'Went live' : KIND_LABEL[e.kind]);
 

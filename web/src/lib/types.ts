@@ -65,6 +65,8 @@ export type Draft = {
 
 export type Checklist = Partial<Record<'paid_label' | 'ad_tag' | 'brand_tag' | 'link', boolean>>;
 
+export type Message = { id: string; collab_id: string; sender: 'creator' | 'brand'; body: string; created_at: string };
+export type ReadMark = { collab_id: string; side: 'creator' | 'brand'; read_at: string };
 export type CollabEvent = { id: number; collab_id: string; at: string; kind: string; text: string; visible_to_brand: boolean };
 
 export type Collab = {
@@ -108,6 +110,8 @@ export type Collab = {
 	invoices: Invoice[];
 	posts: { matched_by: 'auto' | 'manual'; media: IgMedia }[];
 	reports: BrandReport[];
+	messages: Pick<Message, 'id' | 'sender' | 'created_at'>[];
+	reads: Pick<ReadMark, 'side' | 'read_at'>[];
 };
 
 export type IgMedia = {

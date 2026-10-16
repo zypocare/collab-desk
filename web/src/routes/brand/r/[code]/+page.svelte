@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { auth } from '#lib/auth.svelte.ts';
-	import { brandData, loadRequests } from '#lib/brand.svelte.ts';
+	import { brandData, loadRequests, loadUnread } from '#lib/brand.svelte.ts';
 	import { pub } from '#lib/publicPage.svelte.ts';
 	import { supabase } from '#lib/supabase.ts';
 	import { confetti, toast } from '#lib/ui.svelte.ts';
@@ -22,6 +22,7 @@
 		todayIso
 	} from '#lib/util.ts';
 	import Icon from '#lib/components/Icon.svelte';
+	import MessageThread from '#lib/components/MessageThread.svelte';
 	import { INVOICE_STATUS } from '#lib/invoice.ts';
 
 	const r = $derived(brandData.requests.find((x) => x.code.toUpperCase() === (page.params.code ?? '').toUpperCase()));
@@ -32,6 +33,9 @@
 	const accepted = $derived(r?.quotes?.find((q) => q.status === 'accepted'));
 	const expired = $derived(!!openQuote?.valid_until && openQuote.valid_until < todayIso());
 	const pendingDraft = $derived(r?.drafts?.find((d) => d.status === 'pending'));
+
+	// Leaving the page: refresh the unread counts on My requests.
+	$effect(() => () => void loadUnread());
 
 	let reports = $state<{ code: string; token: string; sent_at: string }[]>([]);
 	$effect(() => {
@@ -200,6 +204,13 @@
 			{/if}
 		</section>
 	{/if}
+
+	<section class="panel rv msg-panel" style="--i:3;margin-top:18px">
+		<div class="panel-h"><h2>Messages</h2><small>with {pub.data?.display_name ?? 'the creator'}</small></div>
+		<div style="padding:0 20px 18px">
+			{#key r.id}<MessageThread collabId={r.id} side="brand" otherName={pub.data?.display_name ?? 'the creator'} />{/key}
+		</div>
+	</section>
 
 	<section class="panel rv" style="--i:3;padding:24px;margin-top:18px">
 		{#if r.note_for_brand}

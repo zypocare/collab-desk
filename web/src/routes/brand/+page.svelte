@@ -49,6 +49,7 @@
 					<div class="req-h">
 						<span class="id">{r.code}</span>
 						<b>{delivText(r.deliverables)}</b>
+						{#if brandData.unread[r.code]}<span class="msg-dot"><Icon name="mail" />{brandData.unread[r.code]} new</span>{/if}
 						{#if r.quotes?.[0]?.status === 'sent' || r.drafts?.some((d) => d.status === 'pending')}<span class="pill tint k-new"><span class="dt pulse"></span>Needs your answer</span>{/if}
 						<span class="chip tint st-{r.stage === 'declined' ? 'request' : r.stage}" style={r.stage === 'declined' ? '--hue:var(--bad)' : ''}>{r.stage_label}</span>
 					</div>

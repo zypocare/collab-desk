@@ -266,5 +266,32 @@ export function render(kind: string, p: Payload, s: Settings): Omit<Mail, 'to'> 
     };
   }
 
+  if (kind === 'message_to_creator') {
+    return {
+      subject: `${brand} sent you a message (${code})`,
+      html: layout(
+        s,
+        `New message from ${brand}`,
+        `<p style="margin:0">${esc(firstOf(p.contact) === 'there' ? brand : firstOf(p.contact))} wrote about <b>${esc(code)}</b>:</p>${quoteBox('Message', p.body)}`,
+        { label: 'Reply in your studio', href: url(s, `/studio/collabs?open=${encodeURIComponent(code)}`) },
+      ),
+      text: `${brand} (${code}): ${p.body}`,
+    };
+  }
+
+  if (kind === 'message_to_brand') {
+    return {
+      subject: `${first(s.display_name)} replied about ${code}`,
+      html: layout(
+        s,
+        `New message from ${s.display_name}`,
+        `<p style="margin:0">Hi ${esc(firstOf(p.contact))}, ${esc(first(s.display_name))} sent you a message about your request <b>${esc(code)}</b>:</p>${quoteBox(`From ${first(s.display_name)}`, p.body)}
+         <p style="margin:14px 0 0;font-size:13px;color:#8c8288">Reply from your request page so everything stays in one place.</p>`,
+        { label: 'Reply', href: url(s, `/brand/r/${encodeURIComponent(code)}`) },
+      ),
+      text: `${s.display_name} about ${code}: ${p.body} Reply at ${url(s, `/brand/r/${code}`)}`,
+    };
+  }
+
   throw new Error(`Unknown email kind: ${kind}`);
 }

@@ -3,7 +3,7 @@
 	import { isRanked } from '../priority';
 	import { priorityOf } from '../studio.svelte';
 	import { ui } from '../ui.svelte';
-	import { delivText, diff, fmt, inr, inrS, nextLine, stageIndex, stageLabel } from '../util';
+	import { delivText, diff, fmt, inr, inrS, nextLine, stageIndex, stageLabel, unreadFor } from '../util';
 	import Icon from './Icon.svelte';
 	import PriorityBadge from './PriorityBadge.svelte';
 	import Mono from './Mono.svelte';
@@ -13,6 +13,7 @@
 
 	const n = $derived(nextLine(c));
 	const prio = $derived(isRanked(c) ? priorityOf(c) : null);
+	const unread = $derived(unreadFor(c));
 	const done = $derived(c.deliverables.filter((d) => d.done).length);
 	const showProg = $derived(stageIndex(c.stage) >= 2 && stageIndex(c.stage) <= 4 && c.deliverables.length > 0);
 	const followTone = $derived(c.follow_date ? (diff(c.follow_date) < 0 ? 'late' : diff(c.follow_date) === 0 ? 'soon' : '') : '');
@@ -40,7 +41,7 @@
 	<div class="card-h">
 		<Mono name={c.brand.name} />
 		<div><b>{c.brand.name}</b><small><span class="id">{c.code}</span> · {c.brand.category}</small></div>
-		{#if c.stage === 'request'}<span class="new-badge">NEW</span>{/if}
+		{#if unread}<span class="msg-dot" title="{unread} unread message{unread > 1 ? 's' : ''}"><Icon name="mail" />{unread}</span>{:else if c.stage === 'request'}<span class="new-badge">NEW</span>{/if}
 	</div>
 	<div class="deliv">{delivText(c.deliverables)}</div>
 	{#if showProg}
