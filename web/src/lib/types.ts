@@ -14,6 +14,8 @@ export type Brand = {
 	billing_address: string;
 	state: string;
 	accounts_email: string;
+	country: string;
+	currency: string;
 	created_at: string;
 };
 
@@ -33,6 +35,8 @@ export type QuoteItem = { kind: string; qty: number; rate: number };
 export type QuoteStatus = 'draft' | 'sent' | 'accepted' | 'changes' | 'withdrawn';
 export type Quote = {
 	id: string;
+	currency: string;
+	inr_rate: number;
 	collab_id: string;
 	version: number;
 	items: QuoteItem[];
@@ -253,6 +257,8 @@ export type Settings = {
 	state: string;
 	address: string;
 	upi_id: string;
+	lut_arn: string;
+	intl_bank_details: string;
 	bank_details: string;
 	invoice_prefix: string;
 	invoice_footer: string;
@@ -363,7 +369,7 @@ export type BrandRequest = {
 	events: { at: string; text: string }[];
 	quotes: Quote[];
 	drafts: Draft[];
-	invoices: { number: string; kind: string; total: number; payable: number; status: string; issue_date: string; due_date: string | null; token: string; claimed?: boolean }[];
+	invoices: { number: string; kind: string; total: number; payable: number; status: string; issue_date: string; due_date: string | null; token: string; claimed?: boolean; currency?: string }[];
 	live_time: string | null;
 	product_date: string | null;
 	shipped_at: string | null;

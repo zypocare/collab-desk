@@ -42,6 +42,8 @@
 		<div class="f"><label for="bl-upi">UPI ID</label><input class="inp" id="bl-upi" value={s.upi_id} placeholder="name@okicici" onchange={(e) => set('upi_id', val(e))} />{#if errors.upi_id}<div class="err">{errors.upi_id}</div>{/if}</div>
 		<div class="f"><label for="bl-prefix">Invoice number prefix</label><input class="inp" id="bl-prefix" value={s.invoice_prefix} onchange={(e) => set('invoice_prefix', val(e))} />{#if errors.invoice_prefix}<div class="err">{errors.invoice_prefix}</div>{:else}<p class="hint" style="margin-top:5px">Numbers look like {s.invoice_prefix}/26-27/001</p>{/if}</div>
 		<div class="f span2"><label for="bl-bank">Bank details for transfers</label><textarea class="inp" id="bl-bank" rows="3" placeholder={'Account name\nBank and branch\nA/c number · IFSC'} value={s.bank_details} onchange={(e) => set('bank_details', val(e))}></textarea></div>
+		<div class="f span2"><label for="bl-intl">Bank details for international payments <span class="hint">(foreign brands)</span></label><textarea class="inp" id="bl-intl" rows="3" placeholder={'Account name and number\nBank name and address\nSWIFT code'} value={s.intl_bank_details} onchange={(e) => set('intl_bank_details', val(e))}></textarea></div>
+		<div class="f span2"><label for="bl-lut">LUT number <span class="hint">(ARN, for export invoices without GST)</span></label><input class="inp" id="bl-lut" value={s.lut_arn} placeholder="AD2904240012345" onchange={(e) => set('lut_arn', val(e).trim().toUpperCase())} /></div>
 		<div class="f span2"><label for="bl-foot">Line at the bottom of invoices</label><input class="inp" id="bl-foot" value={s.invoice_footer} onchange={(e) => set('invoice_footer', val(e))} /></div>
 	</div>
 	<div class="switch-row">

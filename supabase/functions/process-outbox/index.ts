@@ -37,6 +37,18 @@ Deno.serve(async (req) => {
 
   let sent = 0, failed = 0, skipped = 0;
   for (const row of rows ?? []) {
+    // Amounts for a foreign brand are in their currency: older payloads don't say which, so look it up
+    // from the collab's latest quote (the collab fee itself is kept in rupees).
+    const p = (row.payload ?? {}) as Record<string, unknown>;
+    if (!p.currency && p.code && (p.total || p.payable)) {
+      const { data: c } = await supabase.from('collabs').select('id, brand:brands(currency)').eq('code', String(p.code)).maybeSingle();
+      const cc = c as { id: string; brand?: { currency?: string } } | null;
+      if (cc?.brand?.currency && cc.brand.currency !== 'INR') {
+        const { data: q } = await supabase.from('quotes').select('currency').eq('collab_id', cc.id).order('version', { ascending: false }).limit(1).maybeSingle();
+        if ((q as { currency?: string } | null)?.currency) p.currency = (q as { currency: string }).currency;
+      }
+      row.payload = p;
+    }
     // Phone alert for things that need her (independent of the email going out).
     const alert = pushFor(row.kind, row.payload ?? {});
     if (alert) await pushToCreator(supabase, alert).catch((e) => console.error('[push]', e));

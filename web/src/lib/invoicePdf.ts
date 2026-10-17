@@ -9,7 +9,10 @@ const LINE = rgb(0.88, 0.85, 0.85);
 const ACCENT = rgb(0.78, 0.15, 0.37);
 const PAID = rgb(0.17, 0.48, 0.27);
 
-const money = (n: number) => '₹' + n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+// Set for each invoice: amounts in its own currency.
+let CUR = 'INR';
+const SIGN: Record<string, string> = { INR: '₹', USD: '$', EUR: '€', GBP: '£', AED: 'AED ', SGD: 'S$' };
+const money = (n: number) => (SIGN[CUR] ?? CUR + ' ') + n.toLocaleString(CUR === 'INR' ? 'en-IN' : 'en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const dateText = (d: string | null) =>
 	d ? new Date(d.slice(0, 10) + 'T00:00:00').toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—';
 
@@ -37,6 +40,7 @@ export const loadFonts = () =>
 	]));
 
 export async function invoicePdf(inv: InvoiceView): Promise<Uint8Array> {
+	CUR = inv.currency || 'INR';
 	const doc = await PDFDocument.create();
 	doc.registerFontkit(fontkit);
 	const [regBytes, boldBytes] = await loadFonts();
@@ -139,7 +143,7 @@ export async function invoicePdf(inv: InvoiceView): Promise<Uint8Array> {
 		trow('Amount payable', money(inv.payable), true, ACCENT);
 	}
 	if (inv.amount_received > 0 && inv.status !== 'paid') trow('Received so far', '− ' + money(inv.amount_received));
-	const wordsLines = wrap(amountInWords(inv.tds_amount > 0 ? inv.payable : inv.total), reg, 8.5, 230);
+	const wordsLines = wrap(amountInWords(inv.tds_amount > 0 ? inv.payable : inv.total, CUR), reg, 8.5, 230);
 	wordsLines.forEach((l, i) => text(l, tx, y - i * 11, 8.5, reg, MUTED));
 	y -= wordsLines.length * 11 + 16;
 
@@ -153,11 +157,13 @@ export async function invoicePdf(inv: InvoiceView): Promise<Uint8Array> {
 	y -= 22;
 	const due = balanceDue(inv);
 	// The heading only when there is something under it (UPI or bank details).
-	if ((inv.seller.upi_id && due > 0) || inv.seller.bank_details) {
+	const foreign = CUR !== 'INR';
+	const bank = foreign && inv.seller.intl_bank ? inv.seller.intl_bank : inv.seller.bank_details;
+	if ((!foreign && inv.seller.upi_id && due > 0) || bank) {
 		text('HOW TO PAY', M, y, 7.5, bold, MUTED);
 		y -= 6;
 	}
-	if (inv.seller.upi_id && due > 0) {
+	if (!foreign && inv.seller.upi_id && due > 0) {
 		const m = qrMatrix(upiLink(inv));
 		const size = 104, cell = size / m.length;
 		const qx = M, qy = y - size - 8;
@@ -171,19 +177,23 @@ export async function invoicePdf(inv: InvoiceView): Promise<Uint8Array> {
 		if (due > 100000) text('UPI limits are often ₹1 lakh a day; use bank transfer for larger amounts.', px, y - 80, 8, reg, MUTED);
 		y = qy - 22;
 	}
-	if (inv.seller.bank_details) {
-		text('Bank transfer', M, y, 10, bold);
+	if (bank) {
+		text(foreign ? 'International bank transfer' : 'Bank transfer', M, y, 10, bold);
 		y -= 14;
-		for (const l of wrap(inv.seller.bank_details, reg, 9, W - 2 * M)) (text(l, M, y, 9, reg, MUTED), (y -= 12));
+		for (const l of wrap(bank, reg, 9, W - 2 * M)) (text(l, M, y, 9, reg, MUTED), (y -= 12));
 		y -= 10;
 	}
-	if (inv.seller.upi_id || inv.seller.bank_details) {
+	if ((!foreign && inv.seller.upi_id) || bank) {
 		hr(y + 2);
 		y -= 16;
 	}
 	const footer = [
 		inv.notes,
-		!inv.seller.gst_registered ? 'The supplier is not registered under GST, so no GST is charged.' : '',
+		inv.tax_mode === 'export'
+			? `Supply meant for export under LUT without payment of IGST${inv.seller.lut_arn ? ` (LUT ARN ${inv.seller.lut_arn})` : ''}.`
+			: !inv.seller.gst_registered
+				? 'The supplier is not registered under GST, so no GST is charged.'
+				: '',
 		inv.seller.footer
 	].filter(Boolean);
 	for (const f of footer) for (const l of wrap(f, reg, 9, W - 2 * M)) (text(l, M, y, 9, reg, MUTED), (y -= 12));

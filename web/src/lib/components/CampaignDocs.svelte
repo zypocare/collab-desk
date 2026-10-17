@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { BrandRequest } from '../types';
+	import { money } from '../currency';
 	import { supabase } from '../supabase';
 	import { toast } from '../ui.svelte';
 	import { fmt, inr } from '../util';
@@ -38,10 +39,10 @@
 		<div class="panel-h"><h2>Documents</h2><small>{count + 1} for this campaign</small></div>
 		<button class="prod-row doc-btn" disabled={sumBusy} onclick={summary}><div><b>Collab summary</b><small>One page for your records: terms, dates, invoices, results · PDF</small></div>{#if sumBusy}<span class="spinner"></span>{:else}<Icon name="arrow" />{/if}</button>
 		{#if accepted}
-			<a class="prod-row" href="/agreement/{accepted.id}" style="text-decoration:none"><div><b>Agreement</b><small>Accepted {fmt(accepted.responded_at?.slice(0, 10))} · {inr(accepted.total)}</small></div><Icon name="check" /></a>
+			<a class="prod-row" href="/agreement/{accepted.id}" style="text-decoration:none"><div><b>Agreement</b><small>Accepted {fmt(accepted.responded_at?.slice(0, 10))} · {money(accepted.total, accepted.currency)}</small></div><Icon name="check" /></a>
 		{/if}
 		{#each r.invoices ?? [] as inv (inv.token)}
-			<a class="prod-row" href="/invoice/{inv.token}" style="text-decoration:none"><div><b>Invoice {inv.number}</b><small>{fmt(inv.issue_date)} · {inr(inv.payable)}</small></div><Icon name="wallet" /></a>
+			<a class="prod-row" href="/invoice/{inv.token}" style="text-decoration:none"><div><b>Invoice {inv.number}</b><small>{fmt(inv.issue_date)} · {money(inv.payable, inv.currency)}</small></div><Icon name="wallet" /></a>
 		{/each}
 		{#if r.report_token}
 			<a class="prod-row" href="/report/{r.report_token}" style="text-decoration:none"><div><b>Results report</b><small>Views, reach, cost per view · PDF</small></div><Icon name="chart" /></a>

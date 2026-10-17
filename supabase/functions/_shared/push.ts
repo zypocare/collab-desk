@@ -31,11 +31,18 @@ export async function pushToCreator(db: SupabaseClient, msg: Push) {
   return { sent, devices: subs?.length ?? 0, failed };
 }
 
-const inr = (n: unknown) => '₹' + Math.round(Number(n) || 0).toLocaleString('en-IN');
+// Amounts in the payload's currency (foreign brands are quoted and invoiced in theirs).
+const SIGN: Record<string, string> = { INR: '₹', USD: '$', EUR: '€', GBP: '£', AED: 'AED ', SGD: 'S$' };
+let CUR = 'INR';
+const inr = (n: unknown) =>
+  CUR === 'INR'
+    ? '₹' + Math.round(Number(n) || 0).toLocaleString('en-IN')
+    : (SIGN[CUR] ?? CUR + ' ') + (Number(n) || 0).toLocaleString('en-US', { maximumFractionDigits: 2 });
 const open = (code: unknown) => `/studio/collabs?open=${encodeURIComponent(String(code ?? ''))}`;
 
 /** The phone alert for an email that went to her, if that kind deserves one. */
 export function pushFor(kind: string, p: Record<string, unknown>): Push | null {
+  CUR = typeof p.currency === 'string' && p.currency ? p.currency : 'INR';
   const brand = String(p.brand ?? 'A brand');
   const code = String(p.code ?? '');
   switch (kind) {

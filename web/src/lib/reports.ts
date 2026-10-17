@@ -30,21 +30,23 @@ export function buildReport(collabs: Collab[], fy: FY) {
 	for (const c of collabs) {
 		const issued = c.invoices.filter((i) => i.status !== 'draft' && i.status !== 'cancelled');
 		for (const i of issued) {
+			// Foreign-currency invoices count in rupees, at the rate they were made at.
+			const r = Number(i.inr_rate) || 1;
 			if (inFy(i.issue_date, fy)) {
 				const m = month(i.issue_date)!;
-				m.taxable += i.subtotal;
-				m.gst += i.cgst + i.sgst + i.igst;
+				m.taxable += i.subtotal * r;
+				m.gst += (i.cgst + i.sgst + i.igst) * r;
 				m.invoices++;
-				brandRow(c).taxable += i.subtotal;
+				brandRow(c).taxable += i.subtotal * r;
 				register.push({ inv: i, c });
 			}
 			if (inFy(i.paid_on, fy) && (i.amount_received > 0 || i.tds_deducted > 0)) {
 				const m = month(i.paid_on!)!;
-				m.received += i.amount_received;
-				m.tds += i.tds_deducted;
+				m.received += i.amount_received * r;
+				m.tds += i.tds_deducted * r;
 				const b = brandRow(c);
-				b.received += i.amount_received;
-				b.tds += i.tds_deducted;
+				b.received += i.amount_received * r;
+				b.tds += i.tds_deducted * r;
 				if (i.tds_deducted > 0 && !i.tds_certificate) b.tdsCertsMissing++;
 			}
 		}

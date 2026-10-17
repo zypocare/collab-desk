@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { portal } from '../portal';
+	import { money } from '../currency';
 	import { untrack } from 'svelte';
 	import { recordPayment } from '../studio.svelte';
 	import { balanceDue, type Invoice } from '../invoice';
@@ -31,7 +32,7 @@
 	<div class="dialog" role="dialog" aria-modal="true" aria-labelledby="pay-title">
 		<form onsubmit={submit}>
 			<h2 id="pay-title">Record a payment</h2>
-			<p>{inv.number} · {inr(inv.total)} total{inv.tds_amount ? `, ${inr(inv.payable)} after TDS` : ''}{inv.amount_received ? ` · ${inr(inv.amount_received)} received before` : ''}</p>
+			<p>{inv.number} · {money(inv.total, inv.currency)} total{inv.tds_amount ? `, ${money(inv.payable, inv.currency)} after TDS` : ''}{inv.amount_received ? ` · ${money(inv.amount_received, inv.currency)} received before` : ''}</p>
 			<div class="fields">
 				<div class="f"><label for="pd-amt">Amount received</label><div class="pre"><span>₹</span><input class="inp num" id="pd-amt" type="number" min="0" step="0.01" bind:value={amount} /></div></div>
 				<div class="f"><label for="pd-tds">TDS deducted</label><div class="pre"><span>₹</span><input class="inp num" id="pd-tds" type="number" min="0" step="0.01" bind:value={tds} /></div></div>

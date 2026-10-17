@@ -1,12 +1,15 @@
 <script lang="ts">
-	import { markPaid, studio } from '#lib/studio.svelte.ts';
-	import { countUp, ui } from '#lib/ui.svelte.ts';
-	import { delivText, diff, fmt, hasProduct, inr, isPaid, outstanding, overdue, parse, payState, relWord, stageIndex, stageLabel } from '#lib/util.ts';
+	import { markPaid, reloadCollabs, setInvoiceFlags, studio } from '#lib/studio.svelte.ts';
+	import { countUp, toast, ui } from '#lib/ui.svelte.ts';
+	import { delivText, diff, errMessage, fmt, hasProduct, inr, isPaid, outstanding, overdue, parse, payState, relWord, stageIndex, stageLabel } from '#lib/util.ts';
 	import Icon from '#lib/components/Icon.svelte';
 	import Mono from '#lib/components/Mono.svelte';
 	import PayPill from '#lib/components/PayPill.svelte';
 	import Segmented from '#lib/components/Segmented.svelte';
 	import BankCredits from '#lib/components/BankCredits.svelte';
+	import { tdsToCollect } from '#lib/tds.ts';
+	import { supabase } from '#lib/supabase.ts';
+	import { money } from '#lib/currency.ts';
 
 	let filter = $state<'all' | 'due' | 'overdue' | 'paid'>('all');
 	let swapKey = $state(0);
@@ -28,6 +31,17 @@
 						: (a.pay_due ? parse(a.pay_due).getTime() : 9e15) - (b.pay_due ? parse(b.pay_due).getTime() : 9e15))
 			)
 	);
+	// TDS certificates (Form 16A) still to come from brands.
+	const certs = $derived(tdsToCollect(studio.collabs));
+	let asking = $state('');
+	async function askCert(id: string, brand: string) {
+		asking = id;
+		const { data, error } = await supabase.rpc('request_tds_certificate', { p_invoice: id });
+		asking = '';
+		if (error) return toast(errMessage(error), 'alert');
+		toast(`Asked ${brand} for the certificate (${(data as { to: string }).to})`, 'send');
+		await reloadCollabs();
+	}
 	const prods = $derived(studio.collabs.filter((c) => hasProduct(c) && c.product_value && c.stage !== 'declined'));
 </script>
 
@@ -103,6 +117,24 @@
 			{/each}
 		{/key}
 	</section>
+	{#if certs.length}
+		<section class="panel rv tds-panel" style="--i:6">
+			<div class="panel-h"><h2>TDS certificates to collect</h2><small>Form 16A, to claim TDS when you file</small></div>
+			{#each certs as t (t.inv.id)}
+				<div class="prod-row tds-row">
+					<Mono name={t.c.brand.name} size="sm" />
+					<div>
+						<b>{t.c.brand.name} · {t.inv.number}</b>
+						<small>{money(t.inv.tds_deducted, t.inv.currency)} TDS · {t.overdue ? `due since ${fmt(t.due)}` : `due by ${fmt(t.due)}`}{t.inv.tds_requested_at ? ` · asked ${fmt(t.inv.tds_requested_at.slice(0, 10))}` : ''}</small>
+					</div>
+					<div class="tds-acts">
+						{#if t.overdue}<button class="btn sm" disabled={asking === t.inv.id || t.askedRecently} onclick={() => askCert(t.inv.id, t.c.brand.name)}>{#if asking === t.inv.id}<span class="spinner"></span>{:else}<Icon name="send" />{/if}{t.askedRecently ? 'Asked' : 'Ask for it'}</button>{/if}
+						<button class="btn sm primary" onclick={() => setInvoiceFlags(t.inv, { tds_certificate: true })}><Icon name="check" />Got it</button>
+					</div>
+				</div>
+			{/each}
+		</section>
+	{/if}
 	<section class="panel rv" style="--i:6">
 		<div class="panel-h"><h2>Barter products</h2><small>{inr(prods.reduce((a, c) => a + c.product_value, 0))} in total</small></div>
 		{#each prods as c (c.id)}

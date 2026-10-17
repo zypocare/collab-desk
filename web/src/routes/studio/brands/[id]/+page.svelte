@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/state';
+	import { COUNTRIES, CURRENCIES, currencyFor } from '#lib/currency.ts';
 	import { brandStats } from '#lib/brandStats.ts';
 	import { saveBrand, saveBrandNotes, studio } from '#lib/studio.svelte.ts';
 	import { countUp, ui } from '#lib/ui.svelte.ts';
@@ -80,6 +81,14 @@
 						<Select id="b-cat" value={brand.category} options={CATS.map((c) => ({ value: c, label: c }))} onchange={(v) => brand && saveBrand(brand.id, { category: v })} />
 					</div>
 					<div class="f span2"><label for="b-web">Website</label><input class="inp" id="b-web" value={brand.website} placeholder="https://" onchange={(e) => saveBrand(brand.id, { website: val(e) })} /></div>
+					<div class="f">
+						<label for="b-country">Country</label>
+						<Select id="b-country" value={brand.country || 'India'} options={COUNTRIES.map((x) => ({ value: x, label: x }))} onchange={(v) => brand && saveBrand(brand.id, { country: v, currency: v === 'India' ? 'INR' : brand.currency !== 'INR' ? brand.currency : currencyFor(v) })} />
+					</div>
+					<div class="f">
+						<label for="b-cur">Quotes and invoices in</label>
+						<Select id="b-cur" value={brand.currency || 'INR'} options={CURRENCIES} onchange={(v) => brand && saveBrand(brand.id, { currency: v })} />
+					</div>
 				</div>
 			</section>
 			<section class="panel rv" style="--i:7">

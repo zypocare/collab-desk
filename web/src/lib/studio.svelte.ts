@@ -341,7 +341,7 @@ export async function saveBrandNotes(brandId: string, patch: Partial<Omit<BrandP
 
 export type QuoteInput = Pick<
 	Quote,
-	'items' | 'usage' | 'usage_fee' | 'discount' | 'advance_pct' | 'pay_days' | 'revision_rounds' | 'exclusivity_days' | 'valid_until' | 'notes'
+	'items' | 'usage' | 'usage_fee' | 'discount' | 'advance_pct' | 'pay_days' | 'revision_rounds' | 'exclusivity_days' | 'valid_until' | 'notes' | 'currency' | 'inr_rate'
 >;
 
 /** Saves a quote. Editing a draft updates it; anything else becomes a new version. */
@@ -401,6 +401,8 @@ export type InvoiceInput = {
 	items: InvoiceItem[];
 	tax_mode: Invoice['tax_mode'];
 	gst_rate: number;
+	currency?: string;
+	inr_rate?: number;
 	tds_rate: number;
 	issue_date: string;
 	due_date: string | null;

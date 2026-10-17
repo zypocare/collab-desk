@@ -17,10 +17,10 @@
 
 	function exportRegister() {
 		downloadCsv(`invoices-${fy.label.replace(' ', '-')}.csv`, [
-			['Invoice no.', 'Date', 'Brand', 'Brand GSTIN', 'Brand state', 'Collab', 'Taxable value', 'CGST', 'SGST', 'IGST', 'Invoice total', 'TDS rate %', 'TDS deducted', 'Amount received', 'Status', 'Paid on', 'Payment ref', 'TDS certificate'],
+			['Invoice no.', 'Date', 'Brand', 'Brand GSTIN', 'Brand state', 'Collab', 'Taxable value', 'CGST', 'SGST', 'IGST', 'Invoice total', 'TDS rate %', 'TDS deducted', 'Amount received', 'Status', 'Paid on', 'Payment ref', 'TDS certificate', 'Currency', 'Rate to INR', 'Taxable value in INR'],
 			...r.register.map(({ inv, c }) => [
 				inv.number, dmy(inv.issue_date), c.brand.name, c.brand.gstin, inv.bill_to?.state || c.brand.state, c.code, n2(inv.subtotal), n2(inv.cgst), n2(inv.sgst), n2(inv.igst),
-				n2(inv.total), inv.tds_rate, n2(inv.tds_deducted), n2(inv.amount_received), inv.status, dmy(inv.paid_on), inv.payment_ref, inv.tds_deducted ? (inv.tds_certificate ? 'Yes' : 'No') : ''
+				n2(inv.total), inv.tds_rate, n2(inv.tds_deducted), n2(inv.amount_received), inv.status, dmy(inv.paid_on), inv.payment_ref, inv.tds_deducted ? (inv.tds_certificate ? 'Yes' : 'No') : '', inv.currency || 'INR', inv.inr_rate || 1, n2(inv.subtotal * (Number(inv.inr_rate) || 1))
 			])
 		]);
 	}

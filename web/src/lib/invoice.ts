@@ -6,8 +6,9 @@ export type InvoiceStatus = 'draft' | 'sent' | 'partly_paid' | 'paid' | 'cancell
 export type Seller = {
 	name: string; display_name: string; handle: string; pan: string; gstin: string; sac: string; address: string;
 	state: string; email: string; upi_id: string; bank_details: string; footer: string; gst_registered: boolean;
+	lut_arn?: string; intl_bank?: string;
 };
-export type BillTo = { name: string; gstin: string; address: string; state: string; contact: string; email: string; code: string };
+export type BillTo = { name: string; gstin: string; address: string; state: string; contact: string; email: string; code: string; country?: string };
 
 export type InvoiceView = {
 	number: string;
@@ -16,7 +17,9 @@ export type InvoiceView = {
 	due_date: string | null;
 	items: InvoiceItem[];
 	subtotal: number;
-	tax_mode: 'none' | 'intra' | 'inter';
+	tax_mode: 'none' | 'intra' | 'inter' | 'export';
+	currency?: string;
+	inr_rate?: number;
 	gst_rate: number;
 	cgst: number;
 	sgst: number;
@@ -46,6 +49,7 @@ export type Invoice = Omit<InvoiceView, 'token' | 'number'> & {
 	public_token: string;
 	payment_ref: string;
 	tds_certificate: boolean;
+	tds_requested_at?: string | null;
 	send_to: string;
 	auto_remind: boolean;
 	reminders_sent: number[];
@@ -109,7 +113,22 @@ function threeDigits(n: number) {
 	const h = Math.floor(n / 100), rest = n % 100;
 	return [h ? `${ONES[h]} Hundred` : '', rest ? twoDigits(rest) : ''].filter(Boolean).join(' ');
 }
-export function amountInWords(amount: number) {
+const CUR_WORDS: Record<string, [string, string]> = { USD: ['US Dollars', 'Cents'], EUR: ['Euros', 'Cents'], GBP: ['Pounds Sterling', 'Pence'], AED: ['UAE Dirhams', 'Fils'], SGD: ['Singapore Dollars', 'Cents'] };
+function intlWords(n: number) {
+	const parts: string[] = [];
+	const b = Math.floor(n / 1e9), m = Math.floor((n % 1e9) / 1e6), t = Math.floor((n % 1e6) / 1e3), r = n % 1e3;
+	if (b) parts.push(`${threeDigits(b)} Billion`);
+	if (m) parts.push(`${threeDigits(m)} Million`);
+	if (t) parts.push(`${threeDigits(t)} Thousand`);
+	if (r) parts.push(threeDigits(r));
+	return parts.join(' ') || 'Zero';
+}
+export function amountInWords(amount: number, currency = 'INR') {
+	if (currency && currency !== 'INR') {
+		const [major, minor] = CUR_WORDS[currency] ?? [currency, 'Cents'];
+		const whole = Math.floor(amount), cents = Math.round((amount - whole) * 100);
+		return `${major} ${intlWords(whole)}${cents ? ` and ${twoDigits(cents)} ${minor}` : ''} Only`;
+	}
 	const rupees = Math.floor(amount);
 	const paise = Math.round((amount - rupees) * 100);
 	if (rupees === 0 && paise === 0) return 'Rupees Zero Only';

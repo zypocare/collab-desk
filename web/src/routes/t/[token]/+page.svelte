@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/state';
+	import { money } from '#lib/currency.ts';
 	import { onMount } from 'svelte';
 	import { supabase } from '#lib/supabase.ts';
 	import { loadPublicPage, pub } from '#lib/publicPage.svelte.ts';
@@ -50,9 +51,9 @@
 				<div class="panel-h"><h2>Needs you</h2></div>
 				<div class="trk-act-b">
 					<ul>
-						{#if openQuote}<li>Accept the quote of <b>{inr(openQuote.total)}</b></li>{/if}
+						{#if openQuote}<li>Accept the quote of <b>{money(openQuote.total, openQuote.currency)}</b></li>{/if}
 						{#if pendingDraft}<li>Review draft {pendingDraft.round}</li>{/if}
-						{#each unpaid as i (i.token)}<li>Pay invoice {i.number} (<b>{inr(Number(i.payable))}</b>{i.due_date ? `, due ${fmt(i.due_date)}` : ''}) · <a class="lnk" href="/invoice/{i.token}">open the invoice</a></li>{/each}
+						{#each unpaid as i (i.token)}<li>Pay invoice {i.number} (<b>{money(Number(i.payable), i.currency)}</b>{i.due_date ? `, due ${fmt(i.due_date)}` : ''}) · <a class="lnk" href="/invoice/{i.token}">open the invoice</a></li>{/each}
 					</ul>
 					{#if openQuote || pendingDraft}
 						<a class="btn grad" href={signIn}><Icon name="check" />Sign in to answer</a>

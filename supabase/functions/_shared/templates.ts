@@ -6,7 +6,13 @@ type Payload = Record<string, unknown>;
 
 const esc = (v: unknown) =>
   String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
-const inr = (n: unknown) => '₹' + Math.round(Number(n) || 0).toLocaleString('en-IN');
+// Amounts in the payload's currency (foreign brands are quoted and invoiced in theirs).
+const SIGN: Record<string, string> = { INR: '₹', USD: '$', EUR: '€', GBP: '£', AED: 'AED ', SGD: 'S$' };
+let CUR = 'INR';
+const inr = (n: unknown) =>
+  CUR === 'INR'
+    ? '₹' + Math.round(Number(n) || 0).toLocaleString('en-IN')
+    : (SIGN[CUR] ?? CUR + ' ') + (Number(n) || 0).toLocaleString('en-US', { maximumFractionDigits: 2 });
 const first = (name: string) => (name || '').split(' ')[0] || 'there';
 const url = (s: Settings, path: string) => s.site_url.replace(/\/$/, '') + path;
 
@@ -30,6 +36,7 @@ const row = (label: string, value: unknown) =>
     : `<tr><td style="padding:6px 12px 6px 0;color:#8c8288;font-size:13px;white-space:nowrap;vertical-align:top">${esc(label)}</td><td style="padding:6px 0;font-size:14px">${esc(value)}</td></tr>`;
 
 export function render(kind: string, p: Payload, s: Settings): Omit<Mail, 'to'> {
+  CUR = typeof p.currency === 'string' && p.currency ? p.currency : 'INR';
   const code = String(p.code ?? '');
   const brand = String(p.brand ?? '');
 
@@ -244,6 +251,21 @@ export function render(kind: string, p: Payload, s: Settings): Omit<Mail, 'to'> 
         { label: 'View and pay invoice', href: String(p.link) },
       ),
       text: `Invoice ${p.number} (${inr(p.due_amount)}) ${when}. View and pay: ${p.link}`,
+    };
+  }
+
+  if (kind === 'tds_cert_request') {
+    return {
+      subject: `TDS certificate (Form 16A) for invoice ${p.number}`,
+      html: layout(
+        s,
+        'TDS certificate request',
+        `<p style="margin:0 0 12px">Hi ${esc(firstOf(p.contact))}, thank you for the payment for invoice <b>${esc(p.number)}</b> (${esc(p.code)}). TDS of <b>${esc(inr(p.tds))}</b> was deducted.</p>
+<p style="margin:0 0 12px">Could you please share the TDS certificate (Form 16A) for ${esc(p.quarter)}? It's needed to claim the TDS when filing.</p>
+<table role="presentation" cellpadding="0" cellspacing="0">${row('Deductee', p.name)}${row('PAN', p.pan)}${row('Invoice', p.number)}${row('TDS deducted', inr(p.tds))}</table>
+<p style="margin:12px 0 0">You can reply to this email with the PDF. Thank you!</p>`,
+      ),
+      text: `Hi ${firstOf(p.contact)}, could you please share the TDS certificate (Form 16A) for invoice ${p.number} (${p.quarter})? TDS deducted: ${inr(p.tds)}. Deductee: ${p.name}, PAN ${p.pan}. Thank you!`,
     };
   }
 

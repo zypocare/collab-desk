@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/state';
+	import { money } from '#lib/currency.ts';
 	import { supabase } from '#lib/supabase.ts';
 	import { confetti } from '#lib/ui.svelte.ts';
 	import { errMessage, firstName, fmtLong, inr, payTerms, plural, usageLabel } from '#lib/util.ts';
@@ -25,6 +26,7 @@
 			usage_fee: number;
 			discount: number;
 			total: number;
+			currency?: string;
 			advance_pct: number;
 			pay_days: number;
 			revision_rounds: number;
@@ -150,11 +152,11 @@
 				<table class="doc-table">
 					<thead><tr><th>Deliverable</th><th>Qty</th><th>Rate</th><th>Amount</th></tr></thead>
 					<tbody>
-						{#each q.items as it, i (i)}<tr><td>{plural(it.kind, it.qty)}</td><td>{it.qty}</td><td>{inr(it.rate)}</td><td>{inr(it.qty * it.rate)}</td></tr>{/each}
-						{#if q.usage_fee}<tr><td>{usageLabel(q.usage)}</td><td></td><td></td><td>{inr(q.usage_fee)}</td></tr>{/if}
-						{#if q.discount}<tr><td>Discount</td><td></td><td></td><td>− {inr(q.discount)}</td></tr>{/if}
+						{#each q.items as it, i (i)}<tr><td>{plural(it.kind, it.qty)}</td><td>{it.qty}</td><td>{money(it.rate, q.currency)}</td><td>{money(it.qty * it.rate, q.currency)}</td></tr>{/each}
+						{#if q.usage_fee}<tr><td>{usageLabel(q.usage)}</td><td></td><td></td><td>{money(q.usage_fee, q.currency)}</td></tr>{/if}
+						{#if q.discount}<tr><td>Discount</td><td></td><td></td><td>− {money(q.discount, q.currency)}</td></tr>{/if}
 					</tbody>
-					<tfoot><tr><td colspan="3">Total</td><td>{inr(q.total)}</td></tr></tfoot>
+					<tfoot><tr><td colspan="3">Total</td><td>{money(q.total, q.currency)}</td></tr></tfoot>
 				</table>
 				<ExpectedResults lines={q.items.map((x) => ({ kind: x.kind, qty: x.qty }))} cost={q.total} />
 				<ul class="act-terms">

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { ask } from '../confirm.svelte';
+	import { money } from '../currency';
 	import { tick } from 'svelte';
 	import { goto } from '$app/navigation';
 	import {
@@ -427,7 +428,7 @@
 				{:else}
 					<div class="q-card">
 						<div class="q-card-h">
-							<b class="num">{inr(quote.total)}</b><span class="hint">Version {quote.version}{quote.sent_at ? ` · sent ${fmt(quote.sent_at)}` : ''}</span>
+							<b class="num">{money(quote.total, quote.currency)}</b><span class="hint">Version {quote.version}{quote.sent_at ? ` · sent ${fmt(quote.sent_at)}` : ''}</span>
 						</div>
 						<div class="hint">{quote.items.map((i) => `${i.qty} ${plural(i.kind, i.qty)}`).join(' · ')} · {usageLabel(quote.usage)}</div>
 						<div class="hint">{payTerms(quote)} · {quote.revision_rounds} revision round{quote.revision_rounds === 1 ? '' : 's'}{quote.exclusivity_days ? ` · ${quote.exclusivity_days} days exclusivity` : ''}</div>
@@ -456,7 +457,7 @@
 						{#if showOld}
 							<ul class="old-list">
 								{#each c.quotes.slice(1) as q (q.id)}
-									<li><span>Version {q.version}</span><b class="num">{inr(q.total)}</b><span class="pill tint {QUOTE_STATUS[q.status].k}">{QUOTE_STATUS[q.status].label}</span></li>
+									<li><span>Version {q.version}</span><b class="num">{money(q.total, q.currency)}</b><span class="pill tint {QUOTE_STATUS[q.status].k}">{QUOTE_STATUS[q.status].label}</span></li>
 								{/each}
 							</ul>
 						{/if}
@@ -587,7 +588,7 @@
 								<b>{inv.number ?? 'Draft invoice'}</b>
 								<span class="pill tint {INVOICE_STATUS[inv.status].k}">{INVOICE_STATUS[inv.status].label}</span>
 								<span class="hint">{KIND_LABEL[inv.kind]}</span>
-								<b class="num" style="margin-left:auto">{inr(inv.total)}</b>
+								<b class="num" style="margin-left:auto">{money(inv.total, inv.currency)}</b>
 							</div>
 							<div class="hint">
 								{#if inv.status === 'paid'}Paid {fmt(inv.paid_on)}{inv.tds_deducted ? ` · TDS ${inr(inv.tds_deducted)}` : ''}{inv.payment_ref ? ` · Ref ${inv.payment_ref}` : ''}

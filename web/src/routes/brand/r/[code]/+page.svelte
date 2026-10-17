@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/state';
+	import { money } from '#lib/currency.ts';
 	import { auth } from '#lib/auth.svelte.ts';
 	import { brandData, loadRequests, loadUnread } from '#lib/brand.svelte.ts';
 	import { pub } from '#lib/publicPage.svelte.ts';
@@ -187,11 +188,11 @@
 			<div class="quote-view">
 				<div class="qv-lines">
 					{#each openQuote.items as it, i (i)}
-						<div class="qv-line"><span>{it.qty} {plural(it.kind, it.qty)}</span><span class="num">{inr(it.qty * it.rate)}</span></div>
+						<div class="qv-line"><span>{it.qty} {plural(it.kind, it.qty)}</span><span class="num">{money(it.qty * it.rate, openQuote.currency)}</span></div>
 					{/each}
-					{#if openQuote.usage_fee}<div class="qv-line"><span>{usageLabel(openQuote.usage)}</span><span class="num">{inr(openQuote.usage_fee)}</span></div>{/if}
-					{#if openQuote.discount}<div class="qv-line"><span>Discount</span><span class="num">− {inr(openQuote.discount)}</span></div>{/if}
-					<div class="qv-line total"><span>Total</span><b class="num">{inr(openQuote.total)}</b></div>
+					{#if openQuote.usage_fee}<div class="qv-line"><span>{usageLabel(openQuote.usage)}</span><span class="num">{money(openQuote.usage_fee, openQuote.currency)}</span></div>{/if}
+					{#if openQuote.discount}<div class="qv-line"><span>Discount</span><span class="num">− {money(openQuote.discount, openQuote.currency)}</span></div>{/if}
+					<div class="qv-line total"><span>Total</span><b class="num">{money(openQuote.total, openQuote.currency)}</b></div>
 				</div>
 				<ExpectedResults lines={openQuote.items.map((x) => ({ kind: x.kind, qty: x.qty }))} cost={openQuote.total} />
 				<dl class="facts" style="margin-top:16px">
@@ -311,7 +312,7 @@
 			<p class="hint">{creator} isn't able to take this one on. Thank you for thinking of {creator}.</p>
 		{/if}
 		<dl class="facts">
-			<div><dt>{accepted ? 'Agreed' : 'Offer'}</dt><dd>{r.type === 'barter' ? r.product : `${r.fee ? inr(r.fee) : 'Quote requested'}${r.type === 'hybrid' ? ` + ${r.product}` : ''}`}</dd></div>
+			<div><dt>{accepted ? 'Agreed' : 'Offer'}</dt><dd>{r.type === 'barter' ? r.product : `${accepted?.total ? money(accepted.total, accepted.currency) : r.fee ? inr(r.fee) : 'Quote requested'}${r.type === 'hybrid' ? ` + ${r.product}` : ''}`}</dd></div>
 			<div><dt>Go-live date</dt><dd>{r.live_date ? fmtLong(r.live_date) : r.preferred_live ? `You asked for ${fmt(r.preferred_live)}` : 'To be agreed'}</dd></div>
 			<div><dt>Invoice</dt><dd>{payText}</dd></div>
 		</dl>

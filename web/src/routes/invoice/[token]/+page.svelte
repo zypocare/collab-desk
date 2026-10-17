@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/state';
+	import { money } from '#lib/currency.ts';
 	import { onMount } from 'svelte';
 	import { supabase } from '#lib/supabase.ts';
 	import { amountInWords, balanceDue, INVOICE_STATUS, normaliseInvoice, qrSvgPath, upiLink, type InvoiceView } from '#lib/invoice.ts';
@@ -18,7 +19,9 @@
 	});
 
 	const due = $derived(inv ? balanceDue(inv) : 0);
-	const upi = $derived(inv && inv.seller.upi_id && due > 0 ? upiLink(inv) : '');
+	// UPI is for rupees only; foreign brands pay by international transfer.
+	const foreign = $derived(!!inv && !!inv.currency && inv.currency !== 'INR');
+	const upi = $derived(inv && !foreign && inv.seller.upi_id && due > 0 ? upiLink(inv) : '');
 	const qr = $derived(upi ? qrSvgPath(upi) : null);
 	const isMobile = typeof navigator !== 'undefined' && /Android|iPhone|iPad/i.test(navigator.userAgent);
 
@@ -56,6 +59,8 @@
 		}
 		busy = false;
 	}
+	// Amounts in the invoice's own currency.
+	const cm = (n: number | null | undefined) => money(n, inv?.currency);
 </script>
 
 <svelte:head><title>{inv ? `Invoice ${inv.number}` : 'Invoice'}</title><meta name="robots" content="noindex" /></svelte:head>
@@ -76,8 +81,8 @@
 				<section class="pay-card rv no-print">
 					<div class="pay-main">
 						<span class="lbl">Amount to pay</span>
-						<b class="num">{inr(due)}</b>
-						<small>{inv.due_date ? `Due ${fmtLong(inv.due_date)}` : ''}{inv.tds_amount ? ` · after ${inr(inv.tds_amount)} TDS` : ''}</small>
+						<b class="num">{cm(due)}</b>
+						<small>{inv.due_date ? `Due ${fmtLong(inv.due_date)}` : ''}{inv.tds_amount ? ` · after ${cm(inv.tds_amount)} TDS` : ''}</small>
 						{#if upi}
 							<div class="pay-actions">
 								{#if isMobile}<a class="btn grad lg" href={upi}><Icon name="send" />Pay with UPI app</a>{/if}
@@ -87,18 +92,18 @@
 					</div>
 					{#if qr}
 						<figure class="qr">
-							<svg viewBox="-2 -2 {qr.size + 4} {qr.size + 4}" role="img" aria-label="UPI QR code for {inr(due)}"><rect x="-2" y="-2" width={qr.size + 4} height={qr.size + 4} fill="#fff" /><path d={qr.d} fill="#000" /></svg>
+							<svg viewBox="-2 -2 {qr.size + 4} {qr.size + 4}" role="img" aria-label="UPI QR code for {cm(due)}"><rect x="-2" y="-2" width={qr.size + 4} height={qr.size + 4} fill="#fff" /><path d={qr.d} fill="#000" /></svg>
 							<figcaption>Scan with GPay, PhonePe, Paytm or any UPI app</figcaption>
 						</figure>
 					{/if}
 				</section>
 				{#if inv.claim_at}
-					<section class="claim-card rv no-print"><Icon name="clock" /><div><b>Payment reported: {inr(Number(inv.claim_amount))}</b><small>Paid {inv.claim_on ? fmtLong(inv.claim_on) : ''} · ref {inv.claim_ref}. Waiting for {inv.seller.name} to confirm it arrived.</small></div></section>
+					<section class="claim-card rv no-print"><Icon name="clock" /><div><b>Payment reported: {cm(Number(inv.claim_amount))}</b><small>Paid {inv.claim_on ? fmtLong(inv.claim_on) : ''} · ref {inv.claim_ref}. Waiting for {inv.seller.name} to confirm it arrived.</small></div></section>
 				{:else if claimOpen}
 					<form class="panel claim-form rv no-print" onsubmit={sendClaim}>
 						<div class="panel-h"><h2>Tell {inv.seller.name} you've paid</h2><small>so the reminders stop</small></div>
 						<div class="form-b">
-							<div class="f"><label for="cl-amt">Amount paid (₹)</label><input class="inp num" id="cl-amt" type="number" inputmode="decimal" min="1" bind:value={claim.amount} /></div>
+							<div class="f"><label for="cl-amt">Amount paid ({inv.currency && inv.currency !== 'INR' ? inv.currency : '₹'})</label><input class="inp num" id="cl-amt" type="number" inputmode="decimal" min="1" bind:value={claim.amount} /></div>
 							<div class="f"><label for="cl-ref">UTR / transaction reference</label><input class="inp" id="cl-ref" placeholder="e.g. 412345678901" bind:value={claim.ref} /></div>
 							<div class="f"><label for="cl-on">Paid on</label><input class="inp" id="cl-on" type="date" bind:value={claim.on} /></div>
 							<div class="f"><label for="cl-name">Your name <span class="hint">(optional)</span></label><input class="inp" id="cl-name" bind:value={claim.name} /></div>
@@ -136,28 +141,28 @@
 				<div style="overflow-x:auto">
 					<table class="doc-table">
 						<thead><tr><th>Description</th><th>Qty</th><th>Rate</th><th>Amount</th></tr></thead>
-						<tbody>{#each inv.items as it, i (i)}<tr><td>{it.description}</td><td>{it.qty}</td><td>{inr(it.rate)}</td><td>{inr(it.qty * it.rate)}</td></tr>{/each}</tbody>
+						<tbody>{#each inv.items as it, i (i)}<tr><td>{it.description}</td><td>{it.qty}</td><td>{cm(it.rate)}</td><td>{cm(it.qty * it.rate)}</td></tr>{/each}</tbody>
 						<tfoot>
-							<tr class="sub"><td colspan="3">Subtotal</td><td>{inr(inv.subtotal)}</td></tr>
+							<tr class="sub"><td colspan="3">Subtotal</td><td>{cm(inv.subtotal)}</td></tr>
 							{#if inv.tax_mode === 'intra'}
-								<tr class="sub"><td colspan="3">CGST @ {inv.gst_rate / 2}%</td><td>{inr(inv.cgst)}</td></tr>
-								<tr class="sub"><td colspan="3">SGST @ {inv.gst_rate / 2}%</td><td>{inr(inv.sgst)}</td></tr>
+								<tr class="sub"><td colspan="3">CGST @ {inv.gst_rate / 2}%</td><td>{cm(inv.cgst)}</td></tr>
+								<tr class="sub"><td colspan="3">SGST @ {inv.gst_rate / 2}%</td><td>{cm(inv.sgst)}</td></tr>
 							{:else if inv.tax_mode === 'inter'}
-								<tr class="sub"><td colspan="3">IGST @ {inv.gst_rate}%</td><td>{inr(inv.igst)}</td></tr>
+								<tr class="sub"><td colspan="3">IGST @ {inv.gst_rate}%</td><td>{cm(inv.igst)}</td></tr>
 							{/if}
-							<tr><td colspan="3">Total</td><td>{inr(inv.total)}</td></tr>
+							<tr><td colspan="3">Total</td><td>{cm(inv.total)}</td></tr>
 							{#if inv.tds_amount}
-								<tr class="sub"><td colspan="3">Less TDS @ {inv.tds_rate}% (if deducted)</td><td>− {inr(inv.tds_amount)}</td></tr>
-								<tr><td colspan="3">Amount payable</td><td>{inr(inv.payable)}</td></tr>
+								<tr class="sub"><td colspan="3">Less TDS @ {inv.tds_rate}% (if deducted)</td><td>− {cm(inv.tds_amount)}</td></tr>
+								<tr><td colspan="3">Amount payable</td><td>{cm(inv.payable)}</td></tr>
 							{/if}
 						</tfoot>
 					</table>
 				</div>
-				<p class="hint" style="margin-top:8px">{amountInWords(inv.tds_amount ? inv.payable : inv.total)}</p>
-				{#if inv.seller.bank_details}<h2>Bank transfer</h2><p style="white-space:pre-wrap">{inv.seller.bank_details}</p>{/if}
+				<p class="hint" style="margin-top:8px">{amountInWords(inv.tds_amount ? inv.payable : inv.total, inv.currency)}</p>
+				{#if foreign && inv.seller.intl_bank}<h2>International bank transfer</h2><p style="white-space:pre-wrap">{inv.seller.intl_bank}</p>{:else if inv.seller.bank_details}<h2>Bank transfer</h2><p style="white-space:pre-wrap">{inv.seller.bank_details}</p>{/if}
 				<footer class="doc-sign">
 					{#if inv.notes}<p>{inv.notes}</p>{/if}
-					{#if !inv.seller.gst_registered}<p class="hint">The supplier is not registered under GST, so no GST is charged.</p>{/if}
+					{#if inv.tax_mode === 'export'}<p class="hint">Supply meant for export under LUT without payment of IGST{inv.seller.lut_arn ? ` (LUT ARN ${inv.seller.lut_arn})` : ''}.</p>{:else if !inv.seller.gst_registered}<p class="hint">The supplier is not registered under GST, so no GST is charged.</p>{/if}
 					<p class="hint">{inv.seller.footer}</p>
 				</footer>
 			</article>

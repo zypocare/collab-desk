@@ -1,4 +1,5 @@
 import type { BriefDetails } from './types';
+import { money } from './currency';
 import type { BrandPrivate, Checklist, Collab, CollabType, Draft, PayStatus, Quote, QuoteItem, Stage } from './types';
 
 export const STAGES: { id: Stage; label: string; pub: string }[] = [
@@ -182,7 +183,16 @@ export function unreadFor(c: Collab) {
 	return (c.messages ?? []).filter((m) => m.sender === 'brand' && m.created_at > seen).length;
 }
 
-export type Task = { c: Collab; kind: 'new' | 'follow' | 'draft' | 'live' | 'product' | 'pay' | 'quote' | 'revise' | 'msg' | 'usage' | 'shoot' | 'claim'; d: number; title: string; order: number };
+/** When a brand's TDS certificate (Form 16A) is due: 15 Aug, 15 Nov, 15 Feb or 15 Jun after the quarter. */
+export function certDueDate(paidOn: string) {
+	const [y, m] = paidOn.split('-').map(Number);
+	if (m >= 4 && m <= 6) return `${y}-08-15`;
+	if (m >= 7 && m <= 9) return `${y}-11-15`;
+	if (m >= 10) return `${y + 1}-02-15`;
+	return `${y}-06-15`;
+}
+
+export type Task = { c: Collab; kind: 'new' | 'follow' | 'draft' | 'live' | 'product' | 'pay' | 'quote' | 'revise' | 'msg' | 'usage' | 'shoot' | 'claim' | 'tds'; d: number; title: string; order: number };
 export function tasks(collabs: Collab[]): Task[] {
 	const out: Task[] = [];
 	for (const c of collabs) {
@@ -210,7 +220,14 @@ export function tasks(collabs: Collab[]): Task[] {
 			out.push({ c, kind: 'product', d: diff(c.product_date), title: 'Product arriving, check the parcel', order: 4 });
 		for (const inv of c.invoices ?? [])
 			if (inv.claim_at && (inv.status === 'sent' || inv.status === 'partly_paid'))
-				out.push({ c, kind: 'claim', d: 0, title: `Brand says they paid ${inr(Number(inv.claim_amount))} (ref ${inv.claim_ref}): confirm it`, order: 0 });
+				out.push({ c, kind: 'claim', d: 0, title: `Brand says they paid ${money(Number(inv.claim_amount), inv.currency)} (ref ${inv.claim_ref}): confirm it`, order: 0 });
+		// The brand's TDS certificate is due and hasn't come (and she hasn't asked in the last two weeks).
+		for (const inv of c.invoices ?? []) {
+			if (!(inv.tds_deducted > 0) || inv.tds_certificate || inv.status === 'cancelled' || inv.status === 'draft') continue;
+			const due = certDueDate(inv.paid_on ?? inv.issue_date);
+			const asked = inv.tds_requested_at && Date.now() - new Date(inv.tds_requested_at).getTime() < 14 * 864e5;
+			if (diff(due) <= 0 && !asked) out.push({ c, kind: 'tds', d: diff(due), title: `Ask for the TDS certificate (Form 16A) for ${inv.number}`, order: 7 });
+		}
 		if (overdue(c)) out.push({ c, kind: 'pay', d: diff(c.pay_due!), title: `Payment overdue · ${inr(outstanding(c))}`, order: 5 });
 	}
 	return out.sort((a, b) => a.d - b.d || a.order - b.order);
@@ -231,7 +248,7 @@ export function events(collabs: Collab[]): CalEvent[] {
 	}
 	return ev;
 }
-export const KIND_ICON: Record<string, string> = { claim: 'wallet', shoot: 'cal', follow: 'bell', draft: 'film', live: 'spark', pay: 'wallet', new: 'inbox', product: 'box', quote: 'rupee', revise: 'edit', msg: 'mail', usage: 'eye' };
+export const KIND_ICON: Record<string, string> = { tds: 'rupee', claim: 'wallet', shoot: 'cal', follow: 'bell', draft: 'film', live: 'spark', pay: 'wallet', new: 'inbox', product: 'box', quote: 'rupee', revise: 'edit', msg: 'mail', usage: 'eye' };
 export const KIND_LABEL: Record<string, string> = { shoot: 'Shoot day', draft: 'Draft due', live: 'Go live', follow: 'Follow-up', pay: 'Payment due', product: 'Product arrives' };
 export const evLabel = (e: CalEvent) => (e.kind === 'live' && stageIndex(e.c.stage) >= 4 ? 'Went live' : KIND_LABEL[e.kind]);
 

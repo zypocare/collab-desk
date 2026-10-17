@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
+	import { money } from '#lib/currency.ts';
 	import { page } from '$app/state';
 	import { auth, homeFor } from '#lib/auth.svelte.ts';
 	import { supabase } from '#lib/supabase.ts';
@@ -63,12 +64,12 @@
 					<thead><tr><th>Deliverable</th><th>Qty</th><th>Rate</th><th>Amount</th></tr></thead>
 					<tbody>
 						{#each q.items as it, i (i)}
-							<tr><td>{plural(it.kind, it.qty)}</td><td>{it.qty}</td><td>{inr(it.rate)}</td><td>{inr(it.qty * it.rate)}</td></tr>
+							<tr><td>{plural(it.kind, it.qty)}</td><td>{it.qty}</td><td>{money(it.rate, q.currency)}</td><td>{money(it.qty * it.rate, q.currency)}</td></tr>
 						{/each}
-						{#if Number(q.usage_fee)}<tr><td colspan="3">Usage rights: {usageLabel(q.usage)}</td><td>{inr(q.usage_fee)}</td></tr>{/if}
-						{#if Number(q.discount)}<tr><td colspan="3">Discount</td><td>− {inr(q.discount)}</td></tr>{/if}
+						{#if Number(q.usage_fee)}<tr><td colspan="3">Usage rights: {usageLabel(q.usage)}</td><td>{money(q.usage_fee, q.currency)}</td></tr>{/if}
+						{#if Number(q.discount)}<tr><td colspan="3">Discount</td><td>− {money(q.discount, q.currency)}</td></tr>{/if}
 					</tbody>
-					<tfoot><tr><td colspan="3">Total fee (taxes extra if applicable)</td><td>{inr(q.total)}</td></tr></tfoot>
+					<tfoot><tr><td colspan="3">Total fee (taxes extra if applicable)</td><td>{money(q.total, q.currency)}</td></tr></tfoot>
 				</table>
 				{#if a.type !== 'paid' && a.product}<p>Products supplied by the brand: {a.product}{a.product_value ? ` (value ${inr(a.product_value)})` : ''}.</p>{/if}
 
