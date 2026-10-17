@@ -7,6 +7,7 @@ import type { BankAlert, Brand, BrandPrivate, BrandReport, Checklist, Collab, De
 import { balanceDue, normaliseInvoice, type Invoice, type InvoiceItem } from './invoice';
 import { confetti, toast, ui } from './ui.svelte';
 import { errMessage, inr, stageLabel, todayIso } from './util';
+import { isNetworkError, load as loadSaved, net, save as saveLocal } from './offline.svelte';
 
 export const studio = $state<{
 	loaded: boolean;
@@ -46,7 +47,32 @@ function normalise(c: Collab): Collab {
 	return c;
 }
 
+// ---------- Offline: the last loaded data is kept on this device and shown while offline ----------
+const savedKey = async () => `studio:${(await supabase.auth.getSession()).data.session?.user.id ?? ''}`;
+type Saved = Pick<typeof studio, 'collabs' | 'brands' | 'notes' | 'settings' | 'alerts' | 'ig' | 'media' | 'followersHistory' | 'packages' | 'me'> & { at: string };
+let saveTimer: ReturnType<typeof setTimeout> | undefined;
+/** Keep a copy of what's loaded (a second after the last change). */
+export function keepCopy() {
+	if (!studio.loaded) return;
+	clearTimeout(saveTimer);
+	saveTimer = setTimeout(async () => {
+		const at = new Date().toISOString();
+		const { collabs, brands, notes, settings, alerts, ig, media, followersHistory, packages, me } = studio;
+		await saveLocal(await savedKey(), { collabs, brands, notes, settings, alerts, ig, media, followersHistory, packages, me, at });
+		net.savedAt = at;
+	}, 1000);
+}
+async function restoreCopy() {
+	const s = await loadSaved<Saved>(await savedKey());
+	if (!s?.settings || studio.loaded) return false;
+	Object.assign(studio, { ...s, loaded: true, error: '' });
+	net.savedAt = s.at;
+	return true;
+}
+
 export async function loadStudio() {
+	// Show the saved copy straight away (instant start, and the app works offline), then refresh.
+	if (!studio.loaded) await restoreCopy();
 	const [collabs, brands, notes, settings] = await Promise.all([
 		supabase.from('collabs').select(COLLAB_SELECT).order('received_on', { ascending: false }),
 		supabase.from('brands').select('*').order('name'),
@@ -59,7 +85,9 @@ export async function loadStudio() {
 	supabase.rpc('studio_account').then(({ data }) => (studio.me = (data as typeof studio.me) ?? null));
 	const err = collabs.error || brands.error || notes.error || settings.error;
 	if (err) {
-		studio.error = errMessage(err);
+		// Offline with a saved copy: keep showing it.
+		if (studio.loaded && isNetworkError(err)) return;
+		studio.error = isNetworkError(err) ? "You're offline and nothing is saved on this phone yet. Connect once and it will work offline after that." : errMessage(err);
 		return;
 	}
 	studio.collabs = (collabs.data as Collab[]).map(normalise);
@@ -68,6 +96,7 @@ export async function loadStudio() {
 	studio.settings = settings.data as Settings;
 	studio.loaded = true;
 	studio.error = '';
+	keepCopy();
 }
 
 let channel: RealtimeChannel | null = null;
@@ -124,6 +153,7 @@ export async function reloadCollabs() {
 	if (!error && data) studio.collabs = (data as Collab[]).map(normalise);
 	const b = await supabase.from('brands').select('*').order('name');
 	if (!b.error && b.data) studio.brands = b.data as Brand[];
+	keepCopy();
 }
 
 async function reloadOne(id: string) {
@@ -133,6 +163,7 @@ async function reloadOne(id: string) {
 	const i = studio.collabs.findIndex((c) => c.id === id);
 	if (i >= 0) studio.collabs[i] = fresh;
 	else studio.collabs.unshift(fresh);
+	keepCopy();
 }
 
 export const byId = (id: string | null | undefined) => studio.collabs.find((c) => c.id === id);
@@ -184,8 +215,10 @@ export async function markPaid(c: Collab, quiet = false) {
 // Packages
 // ---------------------------------------------------------------------------
 export async function loadPackages() {
-	const { data } = await supabase.from('packages').select('*').order('position').order('created_at');
+	const { data, error } = await supabase.from('packages').select('*').order('position').order('created_at');
+	if (error && isNetworkError(error)) return;
 	studio.packages = ((data as Package[]) ?? []).map((p) => ({ ...p, price: Number(p.price) || 0 }));
+	keepCopy();
 }
 
 export async function savePackage(p: Partial<Package> & { id?: string }) {
@@ -428,7 +461,8 @@ export async function cancelInvoice(inv: Invoice) {
 }
 
 export async function loadAlerts() {
-	const { data } = await supabase.from('bank_alerts').select('*').order('created_at', { ascending: false }).limit(50);
+	const { data, error } = await supabase.from('bank_alerts').select('*').order('created_at', { ascending: false }).limit(50);
+	if (error && isNetworkError(error)) return;
 	studio.alerts = ((data ?? []) as BankAlert[]).map((a) => ({ ...a, amount: a.amount === null ? null : Number(a.amount) }));
 }
 
@@ -454,9 +488,11 @@ export async function loadInstagram() {
 		supabase.from('ig_media').select('*').order('posted_at', { ascending: false }).limit(40),
 		supabase.from('ig_followers_history').select('*').order('day', { ascending: false }).limit(60)
 	]);
+	if (acct.error && isNetworkError(acct.error)) return;
 	studio.ig = (acct.data as IgAccount) ?? null;
 	studio.media = (media.data as IgMedia[]) ?? [];
 	studio.followersHistory = ((hist.data as { day: string; followers: number }[]) ?? []).reverse();
+	keepCopy();
 }
 
 async function invokeFn(name: string, body: Record<string, unknown>) {

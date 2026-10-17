@@ -13,6 +13,7 @@
 	import NewCollabDialog from '#lib/components/NewCollabDialog.svelte';
 	import CommandPalette from '#lib/components/CommandPalette.svelte';
 	import { phone, startPhone } from '#lib/phone.svelte.ts';
+	import { net } from '#lib/offline.svelte.ts';
 
 	let palette = $state<CommandPalette>();
 
@@ -175,6 +176,17 @@
 		return () => (meta.content = before);
 	});
 
+	// Back online: fetch the latest straight away.
+	let wasOffline = false;
+	$effect(() => {
+		if (!net.online) wasOffline = true;
+		else if (wasOffline && studio.loaded) {
+			wasOffline = false;
+			untrack(() => loadStudio());
+		}
+	});
+	const savedWhen = $derived(net.savedAt ? new Date(net.savedAt).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }) : '');
+
 	async function logout() {
 		await signOut();
 		goto('/login', { replace: true });
@@ -278,6 +290,9 @@
 					<button class="btn grad tb-new" use:magnetic onclick={() => (ui.newCollab = true)}><Icon name="plus" />New collab</button>
 				</div>
 			</div>
+			{#if !net.online}
+				<div class="offline-bar" role="status"><span class="ob-dot"></span><span><b>You're offline.</b> Showing what was saved{savedWhen ? ` at ${savedWhen}` : ''}. Changes need a connection.</span></div>
+			{/if}
 			{#if studio.error}
 				<div class="err-box">Couldn't load your data: {studio.error}</div>
 			{/if}

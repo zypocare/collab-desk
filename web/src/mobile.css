@@ -18,6 +18,11 @@
 .iw-t small{font-size:14px;color:var(--ink-3);line-height:1.4}
 .imp-h{display:none}
 
+/* Offline: a calm strip at the top of the screen. */
+.offline-bar{display:flex;align-items:center;gap:10px;margin:0 0 14px;padding:10px 14px;border-radius:14px;background:color-mix(in oklab,var(--warn) 14%,var(--surface));border:1px solid color-mix(in oklab,var(--warn) 35%,transparent);font-size:14px;line-height:1.4}
+.offline-bar b{font-weight:700}
+.ob-dot{flex:none;width:8px;height:8px;border-radius:50%;background:var(--warn);animation:ping 1.8s infinite}
+
 /* Desktop never shows the phone-only bits. */
 .m-next,.m-open-chat{display:none}
 /* A chat opened on a laptop: the same screen as a normal page. */

@@ -3,11 +3,54 @@
 /// <reference lib="esnext" />
 /// <reference lib="webworker" />
 // Shows push notifications (new requests, messages, payments…) and opens the right screen when
-// one is tapped. It deliberately caches nothing, so a new deploy is always picked up straight away.
-const sw = self as unknown as ServiceWorkerGlobalScope;
+// one is tapped. It also keeps a copy of the app itself, so it opens without a connection:
+// pages always try the network first (a new deploy is picked up straight away) and fall back to
+// the saved copy only when offline. The data is saved separately by the app (lib/offline.ts).
+import { assets, immutable } from '$app/manifest';
+import { version } from '$app/env';
 
-sw.addEventListener('install', () => sw.skipWaiting());
-sw.addEventListener('activate', (e) => e.waitUntil(sw.clients.claim()));
+const sw = self as unknown as ServiceWorkerGlobalScope;
+const CACHE = `app-${version}`;
+// The app's code (file names change with every deploy), the icons and fonts, and the page itself.
+const SHELL = [...immutable.map((f) => `/${f.path}`.replace(/^\/+/, '/')), ...assets.map((f) => `/${f.path}`.replace(/^\/+/, '/')).filter((f) => !f.endsWith('.map')), '/'];
+
+sw.addEventListener('install', (e) => {
+	e.waitUntil(
+		caches
+			.open(CACHE)
+			.then((c) => c.addAll(SHELL))
+			.catch(() => {
+				/* a file failed: the app still works online, and the next deploy tries again */
+			})
+			.then(() => sw.skipWaiting())
+	);
+});
+sw.addEventListener('activate', (e) =>
+	e.waitUntil(
+		(async () => {
+			for (const k of await caches.keys()) if (k !== CACHE) await caches.delete(k);
+			await sw.clients.claim();
+		})()
+	)
+);
+
+sw.addEventListener('fetch', (e) => {
+	const req = e.request;
+	if (req.method !== 'GET') return;
+	const url = new URL(req.url);
+	if (url.origin !== sw.location.origin) return; // Supabase, Instagram images… go straight to the network.
+	// Opening any screen: the network first, the saved app when offline.
+	if (req.mode === 'navigate') {
+		e.respondWith(
+			fetch(req).catch(async () => (await caches.match('/', { ignoreSearch: true })) ?? Response.error())
+		);
+		return;
+	}
+	// The app's own files: from the saved copy when there is one (their names change on every deploy).
+	if (SHELL.includes(url.pathname)) {
+		e.respondWith(caches.match(url.pathname).then((hit) => hit ?? fetch(req)));
+	}
+});
 
 sw.addEventListener('push', (e) => {
 	let data: { title?: string; body?: string; url?: string; tag?: string } = {};
@@ -42,6 +85,3 @@ sw.addEventListener('notificationclick', (e) => {
 		})()
 	);
 });
-
-// A network-only fetch handler, so phones offer "Install app".
-sw.addEventListener('fetch', () => {});

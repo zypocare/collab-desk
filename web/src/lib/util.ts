@@ -238,6 +238,9 @@ export const evLabel = (e: CalEvent) => (e.kind === 'live' && stageIndex(e.c.sta
 export function errMessage(e: unknown): string {
 	if (!e) return 'Something went wrong.';
 	if (typeof e === 'string') return e;
+	// No connection: say so plainly instead of "TypeError: Failed to fetch".
+	if (typeof navigator !== 'undefined' && (!navigator.onLine || /failed to fetch|networkerror|load failed/i.test(String((e as { message?: unknown })?.message ?? ''))))
+		return "You're offline. Try again when you're connected.";
 	if (typeof e === 'object' && e && 'message' in e) return String((e as { message: unknown }).message);
 	return 'Something went wrong.';
 }

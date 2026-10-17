@@ -1,6 +1,7 @@
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from './supabase';
 import type { Account } from './types';
+import { forgetAll, isNetworkError } from './offline.svelte';
 
 export const auth = $state<{ ready: boolean; session: Session | null; account: Account | null }>({
 	ready: false,
@@ -26,12 +27,27 @@ export async function initAuth() {
 
 export async function refreshAccount() {
 	const { data, error } = await supabase.rpc('my_account');
+	const uid = auth.session?.user.id ?? '';
 	if (error) {
+		// Offline: who this is was saved last time.
+		if (isNetworkError(error)) {
+			try {
+				const saved = JSON.parse(localStorage.getItem('cd-account') ?? 'null') as { uid: string; account: Account } | null;
+				if (saved?.uid === uid) return (auth.account = saved.account);
+			} catch {
+				/* nothing saved */
+			}
+		}
 		console.error(error);
 		auth.account = null;
 		return null;
 	}
 	auth.account = data as Account | null;
+	try {
+		localStorage.setItem('cd-account', JSON.stringify({ uid, account: auth.account }));
+	} catch {
+		/* storage blocked */
+	}
 	return auth.account;
 }
 
@@ -45,6 +61,7 @@ export async function switchBrand(id: string) {
 export const homeFor = (a: Account | null) => (a?.role === 'creator' ? '/studio' : '/brand');
 
 export async function signOut() {
+	await forgetAll();
 	await supabase.auth.signOut();
 	auth.session = null;
 	auth.account = null;

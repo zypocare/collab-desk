@@ -8,6 +8,7 @@
 	import { supabase } from '#lib/supabase.ts';
 	import { signOut } from '#lib/auth.svelte.ts';
 	import { phone } from '#lib/phone.svelte.ts';
+	import { exportEverything } from '#lib/exportAll.ts';
 	import { install, pwa } from '#lib/pwa.svelte.ts';
 	import { theme, toggleTheme } from '#lib/ui.svelte.ts';
 	import { downloadMediaKit } from '#lib/mediaKitPdf.ts';
@@ -356,6 +357,13 @@
 						<TeamSettings />
 					{:else if active === 'account'}
 						<ShippingSettings />
+						<section class="panel rv" style="--i:3">
+							<div class="panel-h"><h2>Export everything</h2><small>a backup for your records or your CA</small></div>
+							<div class="form-b" style="display:block">
+								<p class="hint" style="margin:0 0 12px">One .zip with a spreadsheet for collabs, brands, invoices, deliverables, messages, expenses and history, plus a complete copy of your data. Works offline too.</p>
+								<button class="btn" type="button" onclick={() => toast(`Export ready: ${exportEverything()} files in one .zip`, 'check')}><Icon name="download" />Download all my data</button>
+							</div>
+						</section>
 						<section class="panel rv" style="--i:4">
 							<div class="panel-h"><h2>App</h2></div>
 							<div class="form-b">
