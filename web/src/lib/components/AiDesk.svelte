@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { isRanked } from '../priority';
+	import { askAi } from '../ai';
 	import { supabase } from '../supabase';
 	import { decisionOf, studio } from '../studio.svelte';
 	import { ui } from '../ui.svelte';
@@ -20,10 +21,17 @@
 			.sort((a, b) => b.d!.score - a.d!.score)
 			.slice(0, 4)
 	);
-	let left = $state<number | null>(null);
+	// Free AI left today: Cloudflare's daily amount as a percentage, and whether the Gemini backup is on.
+	type Left = { pct: number; gemini?: boolean; gemini_left?: number };
+	let left = $state<Left | null>(null);
 	onMount(() => {
-		supabase.rpc('ai_left').then(({ data }) => (left = typeof data === 'number' ? data : null));
+		askAi<Left>('status', {})
+			.then((r) => (left = r))
+			.catch(() => supabase.rpc('ai_left').then(({ data }) => (left = (data as Left | null) ?? null)));
 	});
+	const leftTitle = $derived(
+		left ? `Free AI left today: ${left.pct}%. Resets at 5:30 am.${left.gemini ? ` Then the free Gemini backup (${left.gemini_left ?? 0} uses left).` : ''} Never charged.` : ''
+	);
 	const sub = $derived(
 		open.length ? `Read ${open.length === 1 ? 'your new request' : `your ${open.length} open requests`} and scored ${open.length === 1 ? 'it' : 'them'}.` : "When a brand writes, I'll read it and tell you if it's worth it."
 	);
@@ -54,7 +62,7 @@
 
 {#if phone}
 	<section class="hs">
-		<header class="hs-h"><h2>AI assistant</h2>{#if left !== null}<span class="ai-left-chip"><Icon name="spark" />{left} left today</span>{/if}</header>
+		<header class="hs-h"><h2>AI assistant</h2>{#if left}<span class="ai-left-chip" title={leftTitle}><Icon name="spark" />{left.pct}% free left{left.gemini ? ' + backup' : ''}</span>{/if}</header>
 		<div class="ai-desk ai-desk-m">
 			<span class="ai-desk-fx" aria-hidden="true"></span>
 			<div class="ai-desk-h">
@@ -70,7 +78,7 @@
 		<header class="ai-desk-h">
 			<span class="ai-desk-ic"><Icon name="spark" /></span>
 			<div><h2>Your AI assistant</h2><small>{sub}</small></div>
-			{#if left !== null}<span class="ai-left" title="Free AI uses left today">{left}<small>left today</small></span>{/if}
+			{#if left}<span class="ai-left" title={leftTitle}>{left.pct}%<small>free AI left today{left.gemini ? ' + backup' : ''}</small></span>{/if}
 		</header>
 		{@render body()}
 	</section>

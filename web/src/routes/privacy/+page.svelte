@@ -35,7 +35,7 @@
 			<p>We don't sell personal data and don't use it for advertising. Instagram data is used only for the purposes above, as Meta's Platform Terms allow.</p>
 
 			<h2>Who processes it</h2>
-			<p>Data is stored with Supabase (database and files) and the website runs on Cloudflare. Emails are sent from {who}'s own email account. Optional AI features run on Cloudflare's AI service and only receive the text or image being processed at that moment.</p>
+			<p>Data is stored with Supabase (database and files) and the website runs on Cloudflare. Emails are sent from {who}'s own email account. Optional AI features run on Cloudflare's AI service and only receive the text or image being processed at that moment. If that service's free daily amount is used up, Google's Gemini service may be used instead, with email addresses and phone numbers removed first; screenshots and incoming Instagram messages are never sent to it.</p>
 
 			<h2>How long it's kept</h2>
 			<p>Collaboration records and invoices are kept as long as needed for the work and for tax records (in India, usually 8 years for invoices). Instagram data is refreshed daily and removed when the account is disconnected or on request.</p>

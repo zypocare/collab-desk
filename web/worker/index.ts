@@ -1,13 +1,24 @@
 // The site's own small server on Cloudflare. It serves the app's files as before, and answers
-// /api/ai/* with Cloudflare's free AI models: reading a DM screenshot, drafting replies, writing
-// a caption from a brief. Only the creator (signed in) can use it, and at most 50 times a day
-// (counted in the database) so it stays inside the free daily allowance.
+// /api/ai/* with free AI: reading a DM or screenshot, drafting replies, captions, pitches, and the
+// "Should I take it?" reading. Only the creator (signed in) can use it.
+// Nothing here can cost money: Cloudflare's AI is counted by size and stops before its free daily
+// amount (checked by the database); after that, Google Gemini's free key is the backup (a key with
+// no billing attached, set as the GEMINI_API_KEY secret), with emails and phone numbers removed.
 
 type Env = {
 	ASSETS: { fetch: (req: Request) => Promise<Response> };
 	AI: { run: (model: string, input: Record<string, unknown>) => Promise<unknown> };
 	SUPABASE_URL: string;
+	GEMINI_API_KEY?: string;
 };
+/** One AI job: which service runs it, and how much Cloudflare AI it used (in neurons). */
+type Run = { env: Env; gemini: boolean; neurons: number };
+
+// Expected size of each job in Cloudflare neurons (reserved before, corrected after).
+const COST: Record<string, number> = { dm: 160, reply: 110, caption: 110, pitch: 140, fit: 230, classify: 40 };
+// Cloudflare's price list in neurons per token (Llama 3.3 70B fast; Llama 3.2 11B vision).
+const PER_TOKEN = { text: [0.0267, 0.2048], vision: [0.0045, 0.0615] };
+const USED_UP = "Today's free AI is used up. It's back at 5:30 am.";
 
 const TEXT = '@cf/meta/llama-3.3-70b-instruct-fp8-fast';
 const VISION = '@cf/meta/llama-3.2-11b-vision-instruct';
@@ -20,36 +31,75 @@ export default {
 		if (req.method !== 'POST') return json({ error: 'Use POST.' }, 405);
 		try {
 			const kind = url.pathname.slice('/api/ai/'.length);
+			if (kind === 'status') return json(await status(req, env));
 			if (!['dm', 'reply', 'caption', 'pitch', 'classify', 'fit'].includes(kind)) return json({ error: 'Unknown.' }, 404);
-			// Checking an incoming Instagram DM comes from the DM webhook with a single-use pass.
-			const allowed = kind === 'classify' ? await takeTicket(req, env) : await take(req, env, kind);
-			if (allowed !== true) return json({ error: allowed }, 403);
 			const body = (await req.json()) as Record<string, unknown>;
-			if (kind === 'dm') return json(await readDm(env, body));
-			if (kind === 'reply') return json(await replies(env, body));
-			if (kind === 'pitch') return json(await pitch(env, body));
-			if (kind === 'classify') return json(await classify(env, body));
-			if (kind === 'fit') return json(await fit(env, body));
-			return json(await caption(env, body));
+			const job = (x: Run) =>
+				kind === 'dm' ? readDm(x, body) : kind === 'reply' ? replies(x, body) : kind === 'pitch' ? pitch(x, body) : kind === 'classify' ? classify(x, body) : kind === 'fit' ? fit(x, body) : caption(x, body);
+
+			// Checking an incoming Instagram DM comes from the DM webhook with a single-use pass
+			// (Cloudflare only: DMs are never sent to the backup automatically).
+			if (kind === 'classify') {
+				const allowed = await takeTicket(req, env);
+				if (allowed !== true) return json({ error: allowed }, 403);
+				return json(await job({ env, gemini: false, neurons: 0 }));
+			}
+
+			const est = (COST[kind] ?? 150) + (kind === 'dm' && String(body.image ?? '') ? 100 : 0);
+			const t = await take(req, env, kind, est);
+			if (t === 'auth') return json({ error: 'Sign in again to use AI.' }, 403);
+			if (t === 'ok') {
+				const x: Run = { env, gemini: false, neurons: 0 };
+				try {
+					const res = await job(x);
+					await settle(req, env, kind, Math.round(x.neurons) - est);
+					return json(res);
+				} catch (e) {
+					// Cloudflare says its free amount is gone (counted differently from ours): use the backup.
+					if (!/neuron|allocation|4006|quota|limit/i.test(String((e as Error)?.message))) throw e;
+					await settle(req, env, kind, 9000);
+				}
+			}
+			// Cloudflare's free amount is used up today: the free Gemini backup, if it's set up.
+			if (!env.GEMINI_API_KEY || !(await takeGemini(req, env, kind))) return json({ error: USED_UP }, 429);
+			return json(await job({ env, gemini: true, neurons: 0 }));
 		} catch (e) {
-			return json({ error: `The AI couldn't answer just now (${String((e as Error)?.message ?? e).slice(0, 160)}). Try again in a minute.` }, 502);
+			const m = String((e as Error)?.message ?? e);
+			if (m === 'USED_UP') return json({ error: USED_UP }, 429);
+			return json({ error: m.startsWith('!') ? m.slice(1) : `The AI couldn't answer just now (${m.slice(0, 160)}). Try again in a minute.` }, 502);
 		}
 	}
 };
 
-/** Signed in as the creator, and under today's limit? (checked by the database) */
-async function take(req: Request, env: Env, kind: string): Promise<true | string> {
+/** Ask the database (as the signed-in creator). */
+async function rpc(req: Request, env: Env, fn: string, args: Record<string, unknown>) {
 	const auth = req.headers.get('authorization') ?? '';
 	const apikey = req.headers.get('apikey') ?? '';
-	if (!auth.startsWith('Bearer ') || !apikey) return 'Sign in again to use AI.';
-	const r = await fetch(`${env.SUPABASE_URL}/rest/v1/rpc/ai_take`, {
+	if (!auth.startsWith('Bearer ') || !apikey) return null;
+	const r = await fetch(`${env.SUPABASE_URL}/rest/v1/rpc/${fn}`, {
 		method: 'POST',
 		headers: { authorization: auth, apikey, 'content-type': 'application/json' },
-		body: JSON.stringify({ p_kind: kind })
-	});
-	if (!r.ok) return 'Sign in again to use AI.';
-	const res = (await r.json()) as { ok: boolean; left?: number };
-	return res.ok ? true : "You've used today's free AI. It resets at midnight.";
+		body: JSON.stringify(args)
+	}).catch(() => null);
+	return r?.ok ? ((await r.json().catch(() => null)) as Record<string, unknown> | null) : null;
+}
+/** Signed in as the creator, and room left in Cloudflare's free amount today? */
+async function take(req: Request, env: Env, kind: string, cost: number): Promise<'ok' | 'budget' | 'auth'> {
+	const res = await rpc(req, env, 'ai_take2', { p_kind: kind, p_cost: cost });
+	return res?.ok ? 'ok' : res?.reason === 'budget' ? 'budget' : 'auth';
+}
+/** Correct the reserved size to what the job really used. */
+async function settle(req: Request, env: Env, kind: string, delta: number) {
+	if (delta) await rpc(req, env, 'ai_settle', { p_kind: kind, p_delta: delta });
+}
+async function takeGemini(req: Request, env: Env, kind: string) {
+	return !!(await rpc(req, env, 'ai_take_gemini', { p_kind: kind }))?.ok;
+}
+/** What's left today, for the app. */
+async function status(req: Request, env: Env) {
+	const left = await rpc(req, env, 'ai_left', {});
+	if (!left) return { error: 'Sign in again to use AI.' };
+	return { ...left, gemini: !!env.GEMINI_API_KEY };
 }
 
 /** A single-use pass made by the DM webhook (checked and spent by the database). */
@@ -78,15 +128,54 @@ function firstJson(s: string) {
 		return null;
 	}
 }
-async function chat(env: Env, system: string, user: string, max = 700) {
-	return out(await env.AI.run(TEXT, { messages: [{ role: 'system', content: system }, { role: 'user', content: user }], max_tokens: max, temperature: 0.3 }));
+type Usage = { usage?: { prompt_tokens?: number; completion_tokens?: number } };
+/** Count what a Cloudflare model used (it reports tokens; if not, about 4 characters a token). */
+function meter(x: Run, r: unknown, model: 'text' | 'vision', input: string, extraIn = 0) {
+	const u = (r as Usage)?.usage;
+	const tin = u?.prompt_tokens ?? input.length / 4 + extraIn;
+	const tout = u?.completion_tokens ?? out(r).length / 4;
+	x.neurons += tin * PER_TOKEN[model][0] + tout * PER_TOKEN[model][1];
+}
+async function chat(x: Run, system: string, user: string, max = 700) {
+	if (x.gemini) return gemini(x.env, system, private_(user), max);
+	const r = await x.env.AI.run(TEXT, { messages: [{ role: 'system', content: system }, { role: 'user', content: user }], max_tokens: max, temperature: 0.3 });
+	meter(x, r, 'text', system + user);
+	return out(r);
+}
+/** Emails and phone numbers stay out of what goes to Google (the app reads those itself). */
+const private_ = (t: string) => t.replace(/[\w.+-]+@[\w-]+\.[\w.]{2,}/g, '[email]').replace(/(?:\+?91[\s-]?)?[6-9]\d{4}[\s-]?\d{5}\b/g, '[phone]').replace(/\+?\d[\d\s-]{8,}\d/g, (m) => (m.replace(/\D/g, '').length >= 10 ? '[phone]' : m));
+
+/** Google Gemini's free tier (a key with no billing attached, so it can't charge). */
+async function gemini(env: Env, system: string, user: string, max: number) {
+	for (const model of ['gemini-flash-latest', 'gemini-2.5-flash']) {
+		for (const thinking of [true, false]) {
+			const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+				method: 'POST',
+				headers: { 'content-type': 'application/json', 'x-goog-api-key': env.GEMINI_API_KEY ?? '' },
+				body: JSON.stringify({
+					systemInstruction: { parts: [{ text: system }] },
+					contents: [{ role: 'user', parts: [{ text: user }] }],
+					generationConfig: { temperature: 0.3, maxOutputTokens: max, ...(thinking ? { thinkingConfig: { thinkingBudget: 0 } } : {}) }
+				})
+			});
+			if (r.status === 429) throw new Error('USED_UP');
+			const j = (await r.json().catch(() => ({}))) as { candidates?: { content?: { parts?: { text?: string }[] } }[]; error?: { message?: string } };
+			if (r.status === 404) break; // try the next model name
+			if (r.status === 400 && thinking && /think/i.test(j.error?.message ?? '')) continue; // a model without that setting
+			if (!r.ok) throw new Error(j.error?.message ?? `Gemini ${r.status}`);
+			return (j.candidates?.[0]?.content?.parts ?? []).map((p) => p.text ?? '').join('').trim();
+		}
+	}
+	throw new Error('Gemini model not found');
 }
 
 // ---------- 1. A DM (text or screenshot) into collab details ----------
-async function readDm(env: Env, b: Record<string, unknown>) {
+async function readDm(x: Run, b: Record<string, unknown>) {
 	let text = String(b.text ?? '').slice(0, 6000);
 	const image = String(b.image ?? '');
 	if (image.startsWith('data:image/')) {
+		if (x.gemini) throw new Error("!Reading screenshots is used up for today. Paste the message text instead; it's back at 5:30 am.");
+		const env = x.env;
 		const bytes = [...Uint8Array.from(atob(image.split(',')[1] ?? ''), (c) => c.charCodeAt(0))];
 		const ask = {
 			messages: [
@@ -106,12 +195,13 @@ async function readDm(env: Env, b: Record<string, unknown>) {
 				r = await env.AI.run(VISION, ask);
 			} else throw e;
 		}
+		meter(x, r, 'vision', '', 1600);
 		text = `${out(r)}\n${text}`.trim();
 	}
 	if (!text) return { error: 'Nothing to read.' };
 	const today = new Date().toISOString().slice(0, 10);
 	const reply = await chat(
-		env,
+		x,
 		`You help an Indian Instagram creator log brand collaboration requests. Today is ${today}. From the conversation, return ONLY a JSON object:
 {"brand": "brand name", "instagram": "brand handle without @", "contact": "person's name", "email": "", "phone": "",
  "type": "paid" | "hybrid" | "barter" | null, "fee": number in rupees (0 if not said),
@@ -128,11 +218,11 @@ Rules: "hybrid" = money plus product; "barter" = product only (vouchers, gift ca
 }
 
 // ---------- 2. Reply drafts for a brand chat ----------
-async function replies(env: Env, b: Record<string, unknown>) {
+async function replies(x: Run, b: Record<string, unknown>) {
 	const thread = (Array.isArray(b.thread) ? b.thread : []).slice(-12) as { from: string; text: string }[];
 	const ctx = b.context as Record<string, unknown> | undefined;
 	const reply = await chat(
-		env,
+		x,
 		`You draft short replies for an Indian Instagram creator answering a brand about a paid collaboration. Warm, professional, plain English, no emojis overload (one at most), 1 to 3 sentences each. Never invent prices, dates or promises that aren't in the facts. Facts: ${JSON.stringify(ctx ?? {})}.
 Return ONLY JSON: {"replies": ["...", "...", "..."]} with three different options (e.g. agree, ask a question, propose next step).`,
 		thread.map((m) => `${m.from === 'creator' ? 'Creator' : 'Brand'}: ${String(m.text).slice(0, 800)}`).join('\n') || 'No messages yet. Write a friendly first message.',
@@ -144,9 +234,9 @@ Return ONLY JSON: {"replies": ["...", "...", "..."]} with three different option
 }
 
 // ---------- 3. A caption (and shot list) from the brief ----------
-async function caption(env: Env, b: Record<string, unknown>) {
+async function caption(x: Run, b: Record<string, unknown>) {
 	const reply = await chat(
-		env,
+		x,
 		`You write Instagram captions for an Indian lifestyle creator's brand collaborations. The caption must sound like her (first person, natural, not salesy), start with a hook line, include the brand's key message and required tags/hashtags from the brief, mention the promo code if given, and start with "#ad" or include "#ad" as Indian ASCI rules require. Keep it under 120 words. Also give a short shot list for the Reel.
 Return ONLY JSON: {"caption": "...", "hashtags": ["#..."], "shots": ["...", "..."]}`,
 		JSON.stringify(b).slice(0, 4000),
@@ -161,9 +251,9 @@ Return ONLY JSON: {"caption": "...", "hashtags": ["#..."], "shots": ["...", "...
 }
 
 // ---------- 4. A first pitch email to a brand she'd like to work with ----------
-async function pitch(env: Env, b: Record<string, unknown>) {
+async function pitch(x: Run, b: Record<string, unknown>) {
 	const reply = await chat(
-		env,
+		x,
 		`You write short pitch emails for an Indian Instagram creator to a brand she would like to collaborate with. Personal, specific to the brand, confident, not pushy. 90 to 140 words. Mention one concrete content idea for the brand, her audience fit (only facts given), and end with an easy next step and her page link. No made-up numbers. Sign with her name.
 Return ONLY JSON: {"subject": "...", "body": "..."} (body is plain text with blank lines between paragraphs).`,
 		JSON.stringify(b).slice(0, 3000),
@@ -174,9 +264,9 @@ Return ONLY JSON: {"subject": "...", "body": "..."} (body is plain text with bla
 }
 
 // ---------- 5. Does an Instagram DM look like a brand collaboration? ----------
-async function classify(env: Env, b: Record<string, unknown>) {
+async function classify(x: Run, b: Record<string, unknown>) {
 	const reply = await chat(
-		env,
+		x,
 		`You sort Instagram DMs for an Indian lifestyle creator. Decide whether the conversation is a brand or agency asking about a paid, barter or gifted collaboration (or her rates). Fans, friends, giveaways she didn't run, "promote your page" spam, follower selling, crypto, job scams and anything asking for money or logins are NOT collabs.
 Return ONLY JSON: {"collab": "likely" | "maybe" | "no", "brand": "brand name or ''", "summary": "under 12 words, e.g. 'Sunveda: paid Reel for SPF launch, ~₹40k'"}`,
 		String(b.text ?? '').slice(0, 3000),
@@ -209,10 +299,10 @@ async function drive(a: { lat: number; lng: number }, b: { lat: number; lng: num
 	return { km, min: (km / 30) * 60, routed: false };
 }
 
-async function fit(env: Env, b: Record<string, unknown>) {
+async function fit(x: Run, b: Record<string, unknown>) {
 	const me = (b.creator ?? {}) as Record<string, unknown>;
 	const reply = await chat(
-		env,
+		x,
 		`You help an Indian Instagram creator decide whether to accept a brand collaboration. Read the request and return ONLY a JSON object with facts from the text:
 {"visit": true if she must go somewhere (store, event, cafe, shoot location) else false,
  "location": "the place she must go: name, area, city (as precise as the text allows)" or "",
