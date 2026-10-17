@@ -128,6 +128,19 @@
 .dm-av img,.ig-pic{width:100%;height:100%;border-radius:50%;object-fit:cover}
 .ig-pic{width:36px;height:36px}
 .ig-closed{margin:0;padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--line)}
+/* DMs that look like a collab */
+.collab-tag{display:flex;align-items:center;gap:4px;min-width:0;font-size:12.5px;font-weight:600;color:var(--accent);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.collab-tag .ic{flex:none;width:13px;height:13px}
+.ig-filter{display:inline-flex;align-items:center;gap:6px;margin:0 0 10px;padding:7px 12px;border-radius:999px;border:1px solid var(--line);background:none;color:var(--ink);font:inherit;font-size:13.5px;font-weight:600}
+.ig-filter .ic{width:15px;height:15px;color:var(--accent)}
+.ig-filter.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.ig-filter.on .ic{color:#fff}
+.collab-banner{display:flex;flex-wrap:wrap;align-items:center;gap:10px 12px;margin:0 0 12px;padding:12px 14px;border-radius:16px;border:1px solid color-mix(in srgb,var(--accent) 35%,transparent);background:color-mix(in srgb,var(--accent) 9%,transparent)}
+.collab-banner>div{flex:1;min-width:160px;display:flex;flex-direction:column;gap:2px}
+.collab-banner b{font-size:15px}
+.collab-banner small{font-size:13.5px;color:var(--ink-2)}
+.cb-ic{flex:none;width:34px;height:34px;display:grid;place-items:center;border-radius:50%;background:var(--accent);color:#fff}
+.cb-ic .ic{width:18px;height:18px}
 .sp{margin-top:10px}
 .sp-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:6px}
 .sp-form{display:flex;flex-direction:column;gap:10px;margin-top:10px;padding:12px;border-radius:14px;border:1px solid var(--line)}
@@ -418,6 +431,8 @@
   .chat-who span{min-width:0;display:flex;flex-direction:column}
   .chat-who b{font-size:16px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .chat-who small{font-size:12.5px;color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .chat .collab-banner{flex:none;margin:8px 10px 0;padding:10px 12px}
+  .chat .collab-banner .btn{flex:1}
   .chat .thread{flex:1;min-height:0;border:0;border-radius:0;background:none}
   .chat .th-list{flex:1;max-height:none;padding:12px 12px 6px;gap:3px}
   .chat .th-day span{background:none;font-size:12px}

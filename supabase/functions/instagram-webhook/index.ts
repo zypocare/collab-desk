@@ -7,6 +7,30 @@ const GRAPH = 'https://graph.instagram.com';
 const SECRET = Deno.env.get('INSTAGRAM_APP_SECRET') ?? '';
 const VERIFY = Deno.env.get('IG_VERIFY_TOKEN') ?? '';
 
+// Business words: only DMs with one of these go to the AI check (fan messages don't use the allowance).
+const BUSINESS = /\b(collab\w*|partner\w*|paid|budget|barter|campaign|promot\w*|sponsor\w*|brand|rates?|charges?|commercials?|ugc|reels?|deliverables?|launch|pr package|gift\w*|product|influencer|marketing|agency|quote|price|pricing|fee|inr|rs\.?)\b|₹|\d+\s?k\b/i;
+
+/** Ask the site's free AI whether the conversation looks like a brand collaboration, and label it. */
+async function checkCollab(db: ReturnType<typeof admin>, igsid: string, username: string) {
+  const { data: t } = await db.from('ig_threads').select('collab_flag, collab_id').eq('igsid', igsid).maybeSingle();
+  if (t?.collab_id || t?.collab_flag === 'likely' || t?.collab_flag === 'no') return;
+  const { data: msgs } = await db.from('ig_dms').select('from_me, text, created_at').eq('igsid', igsid).order('created_at', { ascending: false }).limit(8);
+  const text = (msgs ?? []).reverse().map((m) => `${m.from_me ? 'Creator' : username || 'Them'}: ${m.text}`).join('\n');
+  if (!BUSINESS.test(text)) return;
+  const { data: s } = await db.from('creator_settings').select('site_url').eq('id', 1).single();
+  const site = String(s?.site_url || 'https://collab-desk.zypocare.workers.dev').replace(/\/$/, '');
+  const ticket = crypto.randomUUID() + crypto.randomUUID();
+  await db.from('ai_tickets').insert({ token: ticket });
+  const anon = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
+  const r = await fetch(`${site}/api/ai/classify`, { method: 'POST', headers: { 'content-type': 'application/json', 'x-ai-ticket': ticket, apikey: anon }, body: JSON.stringify({ text }) }).catch(() => null);
+  const j = (await r?.json().catch(() => null)) as { collab?: string; brand?: string; summary?: string } | null;
+  if (!j?.collab || j.collab === 'no') return;
+  await db.from('ig_threads').update({ collab_flag: j.collab, collab_hint: j.summary || j.brand || '' }).eq('igsid', igsid);
+  if (j.collab === 'likely' && t?.collab_flag !== 'maybe') {
+    await db.from('outbox').insert({ kind: 'ig_collab', to_email: '', payload: { from: username, brand: j.brand ?? '', text: j.summary ?? '', igsid } });
+  }
+}
+
 async function validSignature(raw: string, header: string | null) {
   if (!SECRET || !header?.startsWith('sha256=')) return false;
   const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(SECRET), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
@@ -58,7 +82,11 @@ Deno.serve(async (req) => {
       });
       await db.from('ig_dms').upsert({ mid: m.mid, igsid, from_me: fromMe, text, attachments: m.attachments ?? [], created_at: at });
       if (!fromMe) {
-        await db.from('outbox').insert({ kind: 'ig_dm', to_email: '', payload: { from: profile.username || thread?.username || 'Someone', text: text.slice(0, 140), igsid } });
+        const who = profile.username || thread?.username || 'Someone';
+        await db.from('outbox').insert({ kind: 'ig_dm', to_email: '', payload: { from: who, text: text.slice(0, 140), igsid } });
+        // Collab check in the background, so Meta gets its answer straight away.
+        const job = checkCollab(db, igsid, who).catch((e) => console.error('[collab check]', e));
+        (globalThis as unknown as { EdgeRuntime?: { waitUntil: (p: Promise<unknown>) => void } }).EdgeRuntime?.waitUntil(job);
       }
     }
   }

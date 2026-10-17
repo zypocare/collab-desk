@@ -2,6 +2,7 @@
 	import { portal } from '../portal';
 	import { onMount } from 'svelte';
 	import { createCollab, studio } from '../studio.svelte';
+	import { supabase } from '../supabase';
 	import { parseDm } from '../parseDm';
 	import { toast, ui } from '../ui.svelte';
 	import { askAi, mergeDm, shrinkImage } from '../ai';
@@ -12,6 +13,8 @@
 	// Text shared into the app arrives here once.
 	let pasted = $state(ui.pasteText);
 	ui.pasteText = '';
+	const fromIg = ui.fromIg;
+	ui.fromIg = '';
 	let nameTouched = $state(false);
 	let busy = $state(false);
 	let box = $state<HTMLTextAreaElement>();
@@ -109,6 +112,7 @@
 		);
 		busy = false;
 		if (c) {
+			if (fromIg) await supabase.from('ig_threads').update({ collab_id: c.id }).eq('igsid', fromIg);
 			ui.newCollab = false;
 			ui.openCollab = c.id;
 		}

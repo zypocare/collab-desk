@@ -20,13 +20,15 @@ export default {
 		if (req.method !== 'POST') return json({ error: 'Use POST.' }, 405);
 		try {
 			const kind = url.pathname.slice('/api/ai/'.length);
-			if (!['dm', 'reply', 'caption', 'pitch'].includes(kind)) return json({ error: 'Unknown.' }, 404);
-			const allowed = await take(req, env, kind);
+			if (!['dm', 'reply', 'caption', 'pitch', 'classify'].includes(kind)) return json({ error: 'Unknown.' }, 404);
+			// Checking an incoming Instagram DM comes from the DM webhook with a single-use pass.
+			const allowed = kind === 'classify' ? await takeTicket(req, env) : await take(req, env, kind);
 			if (allowed !== true) return json({ error: allowed }, 403);
 			const body = (await req.json()) as Record<string, unknown>;
 			if (kind === 'dm') return json(await readDm(env, body));
 			if (kind === 'reply') return json(await replies(env, body));
 			if (kind === 'pitch') return json(await pitch(env, body));
+			if (kind === 'classify') return json(await classify(env, body));
 			return json(await caption(env, body));
 		} catch (e) {
 			return json({ error: `The AI couldn't answer just now (${String((e as Error)?.message ?? e).slice(0, 160)}). Try again in a minute.` }, 502);
@@ -47,6 +49,20 @@ async function take(req: Request, env: Env, kind: string): Promise<true | string
 	if (!r.ok) return 'Sign in again to use AI.';
 	const res = (await r.json()) as { ok: boolean; left?: number };
 	return res.ok ? true : "You've used today's free AI. It resets at midnight.";
+}
+
+/** A single-use pass made by the DM webhook (checked and spent by the database). */
+async function takeTicket(req: Request, env: Env): Promise<true | string> {
+	const ticket = req.headers.get('x-ai-ticket') ?? '';
+	const apikey = req.headers.get('apikey') ?? '';
+	if (!ticket || !apikey) return 'Not allowed.';
+	const r = await fetch(`${env.SUPABASE_URL}/rest/v1/rpc/ai_take_ticket`, {
+		method: 'POST',
+		headers: { apikey, authorization: `Bearer ${apikey}`, 'content-type': 'application/json' },
+		body: JSON.stringify({ p_ticket: ticket })
+	});
+	if (!r.ok) return 'Not allowed.';
+	return ((await r.json()) as { ok: boolean }).ok ? true : 'Not allowed.';
 }
 
 /** Text out of whatever the model returned. */
@@ -154,5 +170,19 @@ Return ONLY JSON: {"subject": "...", "body": "..."} (body is plain text with bla
 	);
 	const j = firstJson(reply) ?? {};
 	return { subject: String(j.subject ?? '').trim(), body: String(j.body ?? '').trim() };
+}
+
+// ---------- 5. Does an Instagram DM look like a brand collaboration? ----------
+async function classify(env: Env, b: Record<string, unknown>) {
+	const reply = await chat(
+		env,
+		`You sort Instagram DMs for an Indian lifestyle creator. Decide whether the conversation is a brand or agency asking about a paid, barter or gifted collaboration (or her rates). Fans, friends, giveaways she didn't run, "promote your page" spam, follower selling, crypto, job scams and anything asking for money or logins are NOT collabs.
+Return ONLY JSON: {"collab": "likely" | "maybe" | "no", "brand": "brand name or ''", "summary": "under 12 words, e.g. 'Sunveda: paid Reel for SPF launch, ~₹40k'"}`,
+		String(b.text ?? '').slice(0, 3000),
+		200
+	);
+	const j = firstJson(reply) ?? {};
+	const c = String(j.collab ?? 'no');
+	return { collab: ['likely', 'maybe', 'no'].includes(c) ? c : 'no', brand: String(j.brand ?? ''), summary: String(j.summary ?? '').slice(0, 120) };
 }
 

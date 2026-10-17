@@ -10,7 +10,7 @@
 
 	// One Instagram DM conversation: read it, reply (within Instagram's 24-hour window), or turn it
 	// into a collab.
-	type T = { igsid: string; username: string; name: string; picture: string; last_from_them_at: string | null; collab_id: string | null };
+	type T = { igsid: string; username: string; name: string; picture: string; last_from_them_at: string | null; collab_id: string | null; collab_flag: string; collab_hint: string };
 	type M = { mid: string; from_me: boolean; text: string; created_at: string };
 	const igsid = $derived(page.params.igsid ?? '');
 	let t = $state<T | null>(null);
@@ -36,10 +36,16 @@
 			.channel(`igdm-${igsid}`)
 			.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'ig_dms', filter: `igsid=eq.${igsid}` }, () => load())
 			.subscribe();
+		const ch2 = supabase
+			.channel(`igth-${igsid}`)
+			.on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'ig_threads', filter: `igsid=eq.${igsid}` }, (p) => (t = { ...(t as T), ...(p.new as T) }))
+			.subscribe();
 		return () => {
 			supabase.removeChannel(ch);
+			supabase.removeChannel(ch2);
 		};
 	});
+	const flagged = $derived(!!t && !t.collab_id && (t.collab_flag === 'likely' || t.collab_flag === 'maybe'));
 	const open24 = $derived(!!t?.last_from_them_at && Date.now() - Date.parse(t.last_from_them_at) < 24 * 3600e3);
 
 	async function send(e: SubmitEvent) {
@@ -61,9 +67,14 @@
 		text = '';
 		load();
 	}
+	async function notCollab() {
+		await supabase.from('ig_threads').update({ collab_flag: 'no' }).eq('igsid', igsid);
+		if (t) t.collab_flag = 'no';
+	}
 	function addCollab() {
 		// The conversation goes into "Add a collab", where the AI can read it.
 		ui.pasteText = msgs.slice(-15).map((m) => `${m.from_me ? studio.settings?.display_name ?? 'Me' : t?.username || 'Brand'}: ${m.text}`).join('\n');
+		ui.fromIg = igsid;
 		ui.newCollab = true;
 	}
 	const time = (iso: string) => new Date(iso).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
@@ -78,8 +89,16 @@
 			{#if t?.picture}<img class="ig-pic" src={t.picture} alt="" referrerpolicy="no-referrer" />{:else}<Mono name={t?.username || 'IG'} />{/if}
 			<span><b>@{t?.username || 'Instagram user'}</b><small>{t?.name || 'Instagram DM'}</small></span>
 		</div>
-		{#if t?.collab_id}<a class="m-ib" href="/studio/collabs" aria-label="Collab"><Icon name="info" /></a>{:else}<button class="btn sm" onclick={addCollab}><Icon name="plus" />Add as collab</button>{/if}
+		{#if t?.collab_id}<a class="m-ib" href="/studio/collabs" aria-label="Collab"><Icon name="info" /></a>{:else if !flagged}<button class="btn sm" onclick={addCollab}><Icon name="plus" />Add as collab</button>{/if}
 	</header>
+	{#if flagged && t}
+		<div class="collab-banner">
+			<span class="cb-ic"><Icon name="spark" /></span>
+			<div><b>Looks like a collab{t.collab_flag === 'maybe' ? '?' : ''}</b><small>{t.collab_hint || 'A brand may be asking about working together.'}</small></div>
+			<button class="btn sm primary" onclick={addCollab}><Icon name="plus" />Add as collab</button>
+			<button class="lnk" onclick={notCollab}>Not a collab</button>
+		</div>
+	{/if}
 	<div class="thread">
 		<div class="th-list" bind:this={list}>
 			{#each msgs as m (m.mid)}

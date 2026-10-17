@@ -12,7 +12,8 @@
 	let q = $state('');
 	// Two inboxes: brands writing in the app, and Instagram DMs (when she has allowed them).
 	let tab = $state<'app' | 'ig'>('app');
-	type IgT = { igsid: string; username: string; name: string; picture: string; last_text: string; last_at: string | null; unread: number };
+	type IgT = { igsid: string; username: string; name: string; picture: string; last_text: string; last_at: string | null; unread: number; collab_flag: string; collab_hint: string; collab_id: string | null };
+	let collabsOnly = $state(false);
 	let igThreads = $state<IgT[]>([]);
 	let igOn = $state(false);
 	async function loadIg() {
@@ -22,13 +23,20 @@
 	}
 	onMount(() => {
 		loadIg();
-		const ch = supabase.channel('ig-inbox').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'ig_dms' }, () => loadIg()).subscribe();
+		const ch = supabase.channel('ig-inbox').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'ig_dms' }, () => loadIg()).on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'ig_threads' }, () => loadIg()).subscribe();
 		return () => {
 			supabase.removeChannel(ch);
 		};
 	});
 	const igUnread = $derived(igThreads.reduce((a, t) => a + (t.unread || 0), 0));
-	const igShown = $derived(igThreads.filter((t) => !q.trim() || `${t.username} ${t.name} ${t.last_text}`.toLowerCase().includes(q.trim().toLowerCase())));
+	// Chats that look like a collab (and aren't on the board yet) come first.
+	const isCollab = (t: IgT) => (t.collab_flag === 'likely' || t.collab_flag === 'maybe') && !t.collab_id;
+	const igCollabs = $derived(igThreads.filter(isCollab).length);
+	const igShown = $derived(
+		igThreads
+			.filter((t) => (!collabsOnly || isCollab(t)) && (!q.trim() || `${t.username} ${t.name} ${t.last_text} ${t.collab_hint}`.toLowerCase().includes(q.trim().toLowerCase())))
+			.sort((a, b) => Number(isCollab(b)) - Number(isCollab(a)))
+	);
 	const ago = (iso: string) => {
 		const s = (Date.now() - new Date(iso).getTime()) / 1000;
 		if (s < 60) return 'now';
@@ -97,11 +105,12 @@
 {:else if !igOn && !igThreads.length}
 	<div class="m-empty ig-setup"><Icon name="send" /><b>Instagram DMs here</b><span>Allow DMs on <a class="lnk" href="/studio/settings?s=profile">Profile &amp; Instagram</a> and brand DMs on Instagram show up here, ready to reply or turn into a collab.</span></div>
 {:else}
+	{#if igCollabs}<button class="ig-filter" class:on={collabsOnly} onclick={() => (collabsOnly = !collabsOnly)}><Icon name="spark" />{igCollabs} look{igCollabs === 1 ? 's' : ''} like a collab{collabsOnly ? ' · show all' : ''}</button>{/if}
 	<div class="dm-list">
 		{#each igShown as t (t.igsid)}
 			<a class="dm-row" class:unread={t.unread > 0} href="/studio/inbox/ig/{t.igsid}">
 				<span class="dm-av" class:ring-on={t.unread > 0}>{#if t.picture}<img src={t.picture} alt="" referrerpolicy="no-referrer" />{:else}<Mono name={t.username || 'IG'} />{/if}</span>
-				<span class="dm-b"><b>@{t.username || 'Instagram user'}{#if t.name}<span class="dm-who"> · {t.name}</span>{/if}</b><span class="dm-prev"><span class="dm-txt">{t.last_text}</span></span></span>
+				<span class="dm-b"><b>@{t.username || 'Instagram user'}{#if t.name}<span class="dm-who"> · {t.name}</span>{/if}</b><span class="dm-prev"><span class="dm-txt">{t.last_text}</span></span>{#if isCollab(t)}<span class="collab-tag"><Icon name="spark" /><span class="dm-txt">Collab? {t.collab_hint}</span></span>{/if}</span>
 				{#if t.unread}<span class="dm-dot" aria-label="{t.unread} unread"></span>{/if}
 			</a>
 		{:else}
