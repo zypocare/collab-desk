@@ -182,7 +182,7 @@
 </script>
 
 {#if allowed}
-	<div class="app" class:m-detail={detail || chat || path === '/studio/inbox'}>
+	<div class="app" class:m-detail={detail || chat || path === '/studio/inbox' || path === '/studio/import'}>
 		<nav class="rail" aria-label="Main">
 			<div class="logo">
 				<span class="logo-mark"

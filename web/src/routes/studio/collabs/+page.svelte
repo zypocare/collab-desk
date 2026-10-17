@@ -161,6 +161,7 @@
 	</div>
 </header>
 
+{#if studio.collabs.length}
 <div class="toolbar rv" style="--i:1">
 	<label class="search"><Icon name="search" /><span class="sr">Search collabs</span><input type="search" placeholder="Search brand, code or category" bind:value={q} autocomplete="off" /></label>
 	<Segmented
@@ -181,22 +182,41 @@
 	<button class="btn" class:primary={selecting} title="Drag cards between columns, or select several to act on together" aria-pressed={selecting} onclick={() => (selecting ? stopSelecting() : (selecting = true))}><Icon name={selecting ? 'x' : 'check'} />{selecting ? 'Done' : 'Select'}</button>
 	{/if}
 </div>
+{/if}
 
 {#if !studio.collabs.some((c) => c.stage !== 'declined')}
 	<!-- Nothing yet: what the board is for, and the three ways collabs get here. -->
 	<section class="board-empty rv" style="--i:2">
-		<span class="be-ic"><Icon name="board" /></span>
-		<div>
-			<h2>Your board is ready</h2>
-			<p>Requests from your brand page land here on their own. Add the collabs you already have from DMs one by one, or import them all at once, and each one moves across as it progresses.</p>
+		<!-- A few sample cards floating, so the empty board shows what it will look like. -->
+		<div class="be-art" aria-hidden="true">
+			<div class="be-card c1"><span class="bc-av" style="--hue:var(--m2)">LS</span><span class="bc-l"><i></i><i></i></span><span class="bc-chip">₹30k</span></div>
+			<div class="be-card c2"><span class="bc-av" style="--hue:var(--m4)">GC</span><span class="bc-l"><i></i><i></i></span><span class="bc-chip live">Live</span></div>
+			<div class="be-card c3"><span class="bc-av" style="--hue:var(--m5)">KK</span><span class="bc-l"><i></i><i></i></span><span class="bc-chip new">New</span></div>
+			<span class="be-glow"></span>
 		</div>
-		<div class="be-acts">
-			<button class="btn grad" onclick={() => (ui.newCollab = true)}><Icon name="plus" />Add a collab</button>
-			<a class="btn" href="/studio/import"><Icon name="layers" />Import from DMs</a>
-			<button class="btn" onclick={() => copyText((studio.settings?.site_url || location.origin).replace(/\/$/, ''), 'Your page link is copied. Put it in your Instagram bio.')}><Icon name="link" />Copy your page link</button>
+		<h2>Your collabs live here</h2>
+		<p>Requests from your page land here on their own. Bring in the ones you already have, and each one moves along as it progresses.</p>
+		<div class="be-opts">
+			<button class="be-opt be-main" onclick={() => (ui.newCollab = true)}>
+				<span class="bo-ic"><Icon name="plus" /></span>
+				<span class="bo-t"><b>Add a collab</b><small>Paste a DM or just type the brand's name</small></span>
+				<Icon name="chevR" class="bo-go" />
+			</button>
+			<a class="be-opt" href="/studio/import">
+				<span class="bo-ic"><Icon name="layers" /></span>
+				<span class="bo-t"><b>Import from DMs</b><small>Bring in all the collabs you already have, at once</small></span>
+				<Icon name="chevR" class="bo-go" />
+			</a>
+			<button class="be-opt" onclick={() => copyText((studio.settings?.site_url || location.origin).replace(/\/$/, ''), 'Your page link is copied. Put it in your Instagram bio.')}>
+				<span class="bo-ic"><Icon name="link" /></span>
+				<span class="bo-t"><b>Share your page link</b><small>Brands send requests straight to this board</small></span>
+				<Icon name="copy" class="bo-go" />
+			</button>
 		</div>
 		<ol class="be-flow" aria-label="How a collab moves">
-			{#each ['New request', 'Negotiating', 'Confirmed', 'Creating', 'Live', 'Wrapped'] as st (st)}<li><span>{st}</span></li>{/each}
+			{#each [['New', 'request'], ['Talks', 'negotiating'], ['Agreed', 'confirmed'], ['Creating', 'creating'], ['Live', 'live'], ['Done', 'wrapped']] as [st, id], k (st)}
+				<li class="st-{id}" style="--k:{k}"><i></i><span>{st}</span></li>
+			{/each}
 		</ol>
 	</section>
 {:else if phone.on}

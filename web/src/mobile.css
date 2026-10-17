@@ -5,6 +5,19 @@
    and messages as their own inbox and full-screen chats. Same colours as the rest of the app.
    ========================================================================================== */
 
+/* ---------- Import collabs: two ways in, one card per collab ---------- */
+.imp-intro{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));gap:10px;margin-bottom:14px}
+.imp-way{display:flex;align-items:center;gap:14px;padding:16px;border-radius:20px;border:1px solid var(--line);background:var(--surface);color:inherit;font:inherit;text-align:left;cursor:pointer;transition:transform .3s var(--spring),border-color .25s,box-shadow .25s}
+.imp-way:hover{transform:translateY(-2px)}
+.imp-way.on{border-color:color-mix(in oklab,var(--accent) 45%,var(--line));box-shadow:0 0 0 4px color-mix(in oklab,var(--accent) 12%,transparent)}
+.iw-ic{flex:none;width:46px;height:46px;border-radius:15px;display:grid;place-items:center;background:color-mix(in oklab,var(--ink) 7%,transparent)}
+.iw-ic.grad{background:var(--grad);color:#fff;box-shadow:0 10px 22px -10px color-mix(in oklab,var(--g2) 70%,transparent)}
+.iw-ic .ic{width:22px;height:22px}
+.iw-t{display:flex;flex-direction:column;gap:2px;min-width:0}
+.iw-t b{font-size:16px;font-weight:600}
+.iw-t small{font-size:14px;color:var(--ink-3);line-height:1.4}
+.imp-h{display:none}
+
 /* Desktop never shows the phone-only bits. */
 .m-next,.m-open-chat{display:none}
 /* A chat opened on a laptop: the same screen as a normal page. */
@@ -567,6 +580,39 @@
   .pp-bar i{display:block;width:100%;height:calc(max(var(--h),.06) * 100%);border-radius:inherit;background:linear-gradient(180deg,color-mix(in oklab,var(--hue) 70%,#fff),var(--hue));transform-origin:bottom;animation:growy 1s calc(.3s + var(--i) * 80ms) cubic-bezier(.2,.8,.2,1) both}
   .pp-s b{font-size:20px;font-weight:700;font-variant-numeric:tabular-nums}
   .pp-s small{font-size:11px;color:var(--ink-3);text-align:center;line-height:1.2}
+
+
+  /* ---------- Import collabs on a phone ---------- */
+  [data-side="studio"] .imp-ph{display:none}
+  [data-side="studio"] .imp-row{display:flex;flex-direction:column;gap:12px;margin:0;padding:14px 16px 12px;border:1px solid var(--ig-sep);border-radius:22px;background:var(--ig-fill-2)}
+  [data-side="studio"] .imp-list{gap:12px}
+  [data-side="studio"] .imp-num{display:none}
+  .imp-h{display:flex;align-items:center;gap:12px}
+  .imp-h .mono,.imp-n{flex:none;width:40px;height:40px;border-radius:50%}
+  .imp-n{display:grid;place-items:center;background:var(--grad);color:#fff;font-weight:700;font-size:15px}
+  .imp-ht{flex:1;min-width:0;display:flex;flex-direction:column}
+  .imp-ht b{font-size:16px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .imp-ht small{font-size:12.5px;color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .imp-x{flex:none;width:36px;height:36px;border:0;border-radius:50%;display:grid;place-items:center;background:var(--ig-fill);color:var(--ink-2)}
+  .imp-x .ic{width:16px;height:16px}
+  [data-side="studio"] .imp-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:8px}
+  [data-side="studio"] .imp-grid .f > label .hint{display:inline-block;margin-left:4px;padding:0 6px;border-radius:99px;background:var(--ig-fill);font-size:11px;line-height:17px;vertical-align:1px}
+  [data-side="studio"] .imp-foot{justify-content:center;margin:0}
+  [data-side="studio"] .imp-foot .shot-x{display:none}
+  [data-side="studio"] .imp-dm{height:36px;padding:0 14px;border-radius:99px;background:var(--ig-fill);text-decoration:none;font-size:14px;font-weight:600;color:var(--ink)}
+  [data-side="studio"] .imp-row > textarea{margin:0}
+  /* Actions stay at the bottom of the screen, like an app's footer. */
+  [data-side="studio"] .imp-actions{position:fixed;left:0;right:0;bottom:0;z-index:30;display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px 10px;margin:0;padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));border-radius:0;border:0;border-top:1px solid var(--ig-sep);background:var(--ig-bar);box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none}
+  [data-side="studio"] .imp-actions > .hint{display:none}
+  [data-side="studio"] .imp-actions .imp-send{grid-column:1/-1;order:-1;font-size:13.5px;color:var(--ink-2)}
+  [data-side="studio"] .imp-actions .btn{height:46px;border-radius:14px}
+  [data-side="studio"] .imp-actions .btn.lg{width:100%;justify-content:center;font-size:16px}
+  [data-side="studio"] .app:has(.imp-actions) .main{padding-bottom:calc(140px + env(safe-area-inset-bottom,0px))}
+
+  /* ---------- Empty board on a phone ---------- */
+  [data-side="studio"] .board-empty{margin:4px 0 0;padding:22px 16px 18px;border-radius:24px;background:var(--ig-fill-2);border-color:var(--ig-sep);box-shadow:none}
+  [data-side="studio"] .be-opt{background:var(--bg)}
+  [data-side="studio"] .be-opt.be-main{background:linear-gradient(135deg,color-mix(in oklab,var(--accent) 16%,var(--bg)),var(--bg))}
 
   /* Rich avatars: each brand's colour as a soft gradient. */
   [data-side="studio"] .mono.tint{background:linear-gradient(145deg,color-mix(in oklab,var(--hue) 55%,var(--surface)),color-mix(in oklab,var(--hue) 22%,var(--surface)));color:color-mix(in oklab,var(--hue) 35%,var(--ink));font-weight:700}

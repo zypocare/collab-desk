@@ -9,6 +9,8 @@
 	import DatePicker from '#lib/components/DatePicker.svelte';
 	import Icon from '#lib/components/Icon.svelte';
 	import Select from '#lib/components/Select.svelte';
+	import Mono from '#lib/components/Mono.svelte';
+	import { PHONE_Q } from '#lib/phone.svelte.ts';
 
 	// Bring in the collabs she already has going (from DMs, WhatsApp, email): one row each.
 	// Brands are not emailed about anything imported (brand updates start switched off).
@@ -28,7 +30,20 @@
 	];
 	let n = 0;
 	const blank = (): Row => ({ id: ++n, brand: '', instagram: '', contact: '', email: '', what: '1 Reel', type: 'paid', fee: '', product: '', worth: '', where: 'confirmed', date: '', paid: false, dm: '', showDm: false });
-	let rows = $state<Row[]>([blank(), blank(), blank()]);
+	// A phone starts with one card (add more as you go); a laptop with three rows.
+	const onPhone = typeof matchMedia !== 'undefined' && matchMedia(PHONE_Q).matches;
+	let rows = $state<Row[]>(onPhone ? [blank()] : [blank(), blank(), blank()]);
+	const typeLabel = (t: CollabType) => TYPES.find((x) => x.value === t)?.label ?? '';
+	const whereLabel = (w: Where) => WHERE.find((x) => x.value === w)?.label ?? '';
+	async function addRow() {
+		rows = [...rows, blank()];
+		await new Promise((r) => setTimeout(r, 30));
+		document.getElementById(`ib-${rows[rows.length - 1].id}`)?.focus();
+	}
+	function oneByOne() {
+		showBulk = false;
+		document.getElementById(`ib-${rows[0]?.id}`)?.focus();
+	}
 	let bulk = $state('');
 	let showBulk = $state(false);
 	let busy = $state(false);
@@ -117,14 +132,25 @@
 
 <svelte:head><title>Import collabs · {studio.settings?.app_name}</title></svelte:head>
 
-<header class="ph rv">
+<header class="ph imp-ph rv">
 	<div>
 		<div class="eb">Bring in what you have</div>
 		<h1>Import <em>collabs</em></h1>
 		<p>Add the collabs already going from DMs, WhatsApp or email, one row each. Brands only hear from you if you tick “Email brands their tracking link” below; otherwise copy each link into their DM from the collab.</p>
 	</div>
-	<div class="acts"><button class="btn" onclick={() => (showBulk = !showBulk)}><Icon name="copy" />Paste many DMs</button></div>
 </header>
+
+<!-- Two ways in: paste a pile of DMs, or fill the cards one by one. -->
+<div class="imp-intro rv" style="--i:1">
+	<button class="imp-way" class:on={showBulk} onclick={() => (showBulk = !showBulk)}>
+		<span class="iw-ic grad"><Icon name="spark" /></span>
+		<span class="iw-t"><b>Paste your DMs</b><small>Paste several messages at once and the details fill themselves in</small></span>
+	</button>
+	<button class="imp-way" onclick={oneByOne}>
+		<span class="iw-ic"><Icon name="edit" /></span>
+		<span class="iw-t"><b>Add one by one</b><small>Type the brand, what you agreed and where it stands</small></span>
+	</button>
+</div>
 
 {#if showBulk}
 	<section class="panel rv imp-bulk">
@@ -141,6 +167,11 @@
 	{#each rows as r, i (r.id)}
 		<section class="panel imp-row rv" style="--i:{Math.min(i, 6)}">
 			<div class="imp-num">{i + 1}</div>
+			<header class="imp-h">
+				{#if r.brand.trim()}<Mono name={r.brand} />{:else}<span class="imp-n">{i + 1}</span>{/if}
+				<span class="imp-ht"><b>{r.brand.trim() || `Collab ${i + 1}`}</b><small>{r.what || 'Content'} · {typeLabel(r.type)}{r.type !== 'barter' && Number(r.fee) ? ` · ${inr(Number(r.fee))}` : ''} · {whereLabel(r.where)}</small></span>
+				<button class="imp-x" aria-label="Remove collab {i + 1}" onclick={() => (rows = rows.filter((x) => x.id !== r.id))}><Icon name="x" /></button>
+			</header>
 			<div class="imp-grid">
 				<div class="f"><label for="ib-{r.id}">Brand</label><input class="inp" id="ib-{r.id}" list="imp-brands" placeholder="Brand name" bind:value={r.brand} /></div>
 				<div class="f"><label for="ii-{r.id}">Instagram <span class="hint">(optional)</span></label><input class="inp" id="ii-{r.id}" placeholder="@brand" bind:value={r.instagram} /></div>
@@ -158,7 +189,7 @@
 				<div class="f"><label for="ie-{r.id}">Their email <span class="hint">(optional)</span></label><input class="inp" id="ie-{r.id}" type="email" placeholder="name@brand.com" bind:value={r.email} /></div>
 			</div>
 			<div class="imp-foot">
-				<button class="lnk" onclick={() => (r.showDm = !r.showDm)}><Icon name="copy" />{r.showDm ? 'Hide message' : 'Paste their DM to fill this row'}</button>
+				<button class="lnk imp-dm" onclick={() => (r.showDm = !r.showDm)}><Icon name="copy" />{r.showDm ? 'Hide message' : 'Paste their DM to fill this in'}</button>
 				<button class="shot-x" style="opacity:1" aria-label="Remove row {i + 1}" onclick={() => (rows = rows.filter((x) => x.id !== r.id))}><Icon name="x" /></button>
 			</div>
 			{#if r.showDm}
@@ -170,7 +201,7 @@
 </div>
 
 <div class="imp-actions">
-	<button class="btn" onclick={() => (rows = [...rows, blank()])}><Icon name="plus" />Add a row</button>
+	<button class="btn imp-add" onclick={addRow}><Icon name="plus" /><span class="nav-long">Add a row</span><span class="nav-short">Add another</span></button>
 	<span class="hint">{ready.length} ready{total ? ` · ${inr(total)} in fees` : ''}</span>
 	<label class="check-row imp-send"><input type="checkbox" class="cbx" bind:checked={sendLinks} /><span>Email brands (with an email) their tracking link</span></label>
 	<button class="btn grad lg" disabled={busy || !ready.length} onclick={save}>{#if busy}<span class="spinner"></span>Saving {progress} of {ready.length}{:else}<Icon name="check" />Import {ready.length || ''} collab{ready.length === 1 ? '' : 's'}{/if}</button>

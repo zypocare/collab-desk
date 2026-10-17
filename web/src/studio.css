@@ -518,17 +518,43 @@ a.btn{text-decoration:none}
 [data-side="studio"] .toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 [data-side="studio"] .toolbar .tb-gap{flex:1}
 [data-side="studio"] .toolbar .search{height:50px}
-.board-empty{display:grid;grid-template-columns:auto minmax(0,1fr);gap:18px 22px;align-items:start;padding:clamp(22px,3vw,36px);border-radius:28px;background:var(--sx-card);border:1px dashed color-mix(in oklab,var(--ink) 18%,transparent);margin-top:6px}
-.be-ic{grid-row:span 2;width:56px;height:56px;border-radius:18px;display:grid;place-items:center;background:var(--grad);color:#fff;box-shadow:0 14px 30px -12px color-mix(in oklab,var(--g2) 60%,transparent)}
-.be-ic svg{width:26px;height:26px}
-.board-empty h2{font-size:clamp(22px,2.4vw,28px);letter-spacing:-.035em}
-.board-empty p{color:var(--ink-3);font-size:17px;max-width:64ch;margin-top:6px;line-height:1.55}
-.be-acts{grid-column:2;display:flex;flex-wrap:wrap;gap:10px}
-.be-flow{grid-column:1/-1;list-style:none;margin:8px 0 0;padding:16px 0 0;border-top:1px dashed var(--sx-border);display:flex;flex-wrap:wrap;align-items:center;gap:8px}
-.be-flow li{display:flex;align-items:center;gap:8px;font-size:16px;font-weight:600;color:var(--ink-2)}
-.be-flow li span{padding:6px 12px;border-radius:999px;background:color-mix(in oklab,var(--ink) 5%,transparent);border:1px solid var(--sx-border)}
-.be-flow li + li::before{content:"→";color:var(--ink-3)}
-@media (max-width:640px){ .board-empty{grid-template-columns:minmax(0,1fr)} .be-ic{grid-row:auto} .be-acts{grid-column:auto} }
+/* ---------- Empty board: floating sample cards, three clear ways to start, the stages as a stepper ---------- */
+.board-empty{position:relative;display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px;max-width:640px;margin:10px auto 0;padding:clamp(22px,4vw,40px) clamp(16px,3vw,32px) clamp(20px,3vw,30px);border-radius:30px;background:var(--sx-card);border:1px solid var(--sx-border);box-shadow:var(--sx-hi),var(--sx-shadow);overflow:hidden;isolation:isolate}
+.be-art{position:relative;width:260px;height:150px;margin-bottom:6px}
+.be-glow{position:absolute;left:50%;top:50%;width:220px;height:140px;margin:-70px 0 0 -110px;z-index:-1;border-radius:50%;background:radial-gradient(closest-side,color-mix(in oklab,var(--g2) 45%,transparent),transparent);filter:blur(14px);animation:be-breathe 5s ease-in-out infinite}
+.be-card{position:absolute;display:flex;align-items:center;gap:8px;width:190px;padding:10px 12px;border-radius:16px;background:var(--surface);border:1px solid var(--sx-border-2);box-shadow:0 14px 30px -16px rgba(30,10,30,.45)}
+.be-card.c1{left:0;top:10px;transform:rotate(-7deg);animation:be-float 6s ease-in-out infinite}
+.be-card.c2{right:0;top:44px;transform:rotate(6deg);animation:be-float 7s ease-in-out -2s infinite}
+.be-card.c3{left:30px;top:88px;transform:rotate(-2deg);animation:be-float 6.5s ease-in-out -4s infinite;z-index:1}
+.bc-av{flex:none;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:700;background:color-mix(in oklab,var(--hue) 30%,var(--surface));color:color-mix(in oklab,var(--hue) 60%,var(--ink))}
+.bc-l{flex:1;display:flex;flex-direction:column;gap:5px}
+.bc-l i{display:block;height:6px;border-radius:99px;background:color-mix(in oklab,var(--ink) 12%,transparent)}
+.bc-l i + i{width:60%;background:color-mix(in oklab,var(--ink) 7%,transparent)}
+.bc-chip{flex:none;padding:3px 8px;border-radius:99px;font-size:11px;font-weight:700;background:color-mix(in oklab,var(--ok) 16%,transparent);color:var(--ok)}
+.bc-chip.live{background:color-mix(in oklab,var(--h-live) 18%,transparent);color:var(--h-live)}
+.bc-chip.new{background:var(--grad);color:#fff}
+.board-empty h2{font-size:clamp(22px,2.6vw,28px);letter-spacing:-.03em}
+.board-empty > p{color:var(--ink-3);font-size:16px;max-width:46ch;line-height:1.55;margin:0}
+.be-opts{width:100%;display:flex;flex-direction:column;gap:8px;margin-top:10px;text-align:left}
+.be-opt{display:flex;align-items:center;gap:14px;width:100%;text-align:left;padding:14px 16px;border-radius:18px;border:1px solid var(--sx-border);background:color-mix(in oklab,var(--ink) 3%,transparent);color:inherit;font:inherit;text-decoration:none;cursor:pointer;transition:transform .3s var(--spring),border-color .25s,background .25s}
+.be-opt:hover{transform:translateY(-2px);border-color:color-mix(in oklab,var(--accent) 30%,var(--sx-border))}
+.be-opt:active{transform:scale(.98)}
+.be-opt.be-main{background:linear-gradient(135deg,color-mix(in oklab,var(--accent) 14%,var(--surface)),var(--surface));border-color:color-mix(in oklab,var(--accent) 30%,var(--sx-border))}
+.bo-ic{flex:none;width:44px;height:44px;border-radius:14px;display:grid;place-items:center;background:color-mix(in oklab,var(--ink) 7%,transparent);color:var(--ink)}
+.be-opt.be-main .bo-ic{background:var(--grad);color:#fff;box-shadow:0 10px 22px -10px color-mix(in oklab,var(--g2) 70%,transparent)}
+.bo-ic .ic{width:21px;height:21px}
+.bo-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.bo-t b{font-size:16px;font-weight:600}
+.bo-t small{font-size:14px;color:var(--ink-3)}
+.bo-go{width:18px;height:18px;color:var(--ink-3);flex:none}
+.be-flow{position:relative;width:100%;list-style:none;margin:18px 0 0;padding:16px 0 0;border-top:1px dashed var(--sx-border);display:grid;grid-template-columns:repeat(6,minmax(0,1fr))}
+.be-flow::before{content:"";position:absolute;left:8.33%;right:8.33%;top:30px;height:2px;border-radius:2px;background:linear-gradient(90deg,var(--g1),var(--g2),var(--g3));opacity:.35}
+.be-flow li{position:relative;display:flex;flex-direction:column;align-items:center;gap:8px;font-size:12.5px;font-weight:600;color:var(--ink-2)}
+.be-flow li i{width:14px;height:14px;border-radius:50%;background:var(--surface);border:3px solid var(--hue,var(--accent));box-shadow:0 0 0 4px var(--sx-card);animation:be-dot 3.6s ease-in-out infinite;animation-delay:calc(var(--k) * .3s)}
+@keyframes be-float{0%,100%{translate:0 0}50%{translate:0 -8px}}
+@keyframes be-breathe{0%,100%{opacity:.6;transform:scale(1)}50%{opacity:1;transform:scale(1.12)}}
+@keyframes be-dot{0%,70%,100%{transform:scale(1)}80%{transform:scale(1.45);background:var(--hue,var(--accent))}}
+@media (prefers-reduced-motion: reduce){ .be-card,.be-glow,.be-flow li i{animation:none} }
 /* The top bar already has "← Collabs": no second and third back button on a collab's page. */
 [data-side="studio"] .drawer.as-page .dr-h > .icon-btn,[data-side="studio"] .drawer.as-page .dr-f .btn.primary{display:none}
 @media (min-width:641px){ [data-side="studio"] .board-wrap{margin-inline:0;padding-inline:0;max-width:100%} }
