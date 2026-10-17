@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { ask } from '../confirm.svelte';
+	import CollabLink from './CollabLink.svelte';
 	import { money } from '../currency';
 	import { tick } from 'svelte';
 	import { goto } from '$app/navigation';
@@ -91,9 +92,9 @@
 		request: ['deal', 'quote', 'deliv', 'brief', 'contact'],
 		negotiating: ['deal', 'quote', 'deliv', 'brief', 'contact'],
 		confirmed: ['quote', 'deliv', 'product', 'dates', 'drafts', 'pay', 'brand', 'brief'],
-		creating: ['deliv', 'product', 'dates', 'drafts', 'check', 'files', 'brand', 'brief'],
-		live: ['check', 'posts', 'pay', 'dates', 'files', 'usage', 'costs'],
-		wrapped: ['pay', 'posts', 'review', 'costs', 'files', 'usage'],
+		creating: ['deliv', 'product', 'dates', 'drafts', 'check', 'link', 'files', 'brand', 'brief'],
+		live: ['check', 'posts', 'link', 'pay', 'dates', 'files', 'usage', 'costs'],
+		wrapped: ['pay', 'posts', 'link', 'review', 'costs', 'files', 'usage'],
 		declined: ['deal', 'activity']
 	};
 	let showAll = $state(false);
@@ -304,7 +305,7 @@
 						if (v && c) saveBrand(c.brand_id, { name: v });
 					}}
 				/>
-				<div class="dr-sub"><span class="id">{c.code}</span> · {TYPE_LABEL[c.type]} · received {fmt(c.received_on)}</div>
+				<div class="dr-sub"><span class="id">{c.code}</span> · {TYPE_LABEL[c.type]} · received {fmt(c.received_on)}{#if c.referred_by && studio.brands.find((b) => b.id === c.referred_by)} · <span class="ref-by"><Icon name="users" />Referred by {studio.brands.find((b) => b.id === c.referred_by)?.name}</span>{/if}</div>
 			</div>
 			<button class="icon-btn" onclick={close} aria-label={page ? 'Back' : 'Close'} bind:this={closeBtn}><Icon name={page ? 'back' : 'x'} /></button>
 		</header>
@@ -578,6 +579,7 @@
 			{/if}
 
 			<div class="sec-wrap" hidden={!sh('posts')}><CollabPosts {c} /></div>
+			{#if c.type !== 'barter' || c.links?.length}<div class="sec-wrap" hidden={!sh('link')}><CollabLink {c} /></div>{/if}
 
 			{#if isPaid(c)}
 				<section class="sec" id="sec-pay" hidden={!sh('pay')}>

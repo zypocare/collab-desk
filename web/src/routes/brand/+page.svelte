@@ -7,8 +7,17 @@
 	import { money } from '#lib/roi.ts';
 	import BrandDetailsForm from '#lib/components/BrandDetailsForm.svelte';
 	import Icon from '#lib/components/Icon.svelte';
+	import { onMount } from 'svelte';
+	import { supabase } from '#lib/supabase.ts';
+	import { copyText } from '#lib/ui.svelte.ts';
 
 	const acc = $derived(auth.account?.role === 'brand' ? auth.account : null);
+	// Their own link for recommending her to other brands.
+	let refCode = $state('');
+	onMount(() => {
+		supabase.rpc('my_ref_code').then(({ data }) => (refCode = (data as string | null) ?? ''));
+	});
+	const refLink = $derived(refCode ? `${location.origin}/?ref=${refCode}` : '');
 	const creator = $derived(firstName(pub.data?.display_name ?? ''));
 	// Finished collabs: a quick summary and one-tap repeats.
 	const done = $derived(brandData.requests.filter((r) => r.stage === 'live' || r.stage === 'wrapped'));
@@ -69,6 +78,19 @@
 					{/each}
 				</div>
 			{/if}
+		</section>
+	{/if}
+
+	{#if done.length && refLink}
+		<section class="panel rv recommend" style="--i:2">
+			<div class="rec-in">
+				<span class="rec-ic"><Icon name="users" /></span>
+				<div><b>Know a brand that would like {creator || 'this creator'}?</b><small>Share your link. They'll see your recommendation, and {creator || 'the creator'} will know it came from you.</small></div>
+			</div>
+			<div class="rec-acts">
+				<button class="btn" onclick={() => copyText(refLink, 'Link copied')}><Icon name="copy" />Copy link</button>
+				<a class="btn" href={`https://wa.me/?text=${encodeURIComponent(`Worth working with ${pub.data?.display_name ?? ''}: ${refLink}`)}`} target="_blank" rel="noopener"><Icon name="send" />WhatsApp</a>
+			</div>
 		</section>
 	{/if}
 

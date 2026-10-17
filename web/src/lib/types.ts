@@ -92,6 +92,9 @@ export type Message = { id: string; collab_id: string; sender: 'creator' | 'bran
 export type ReadMark = { collab_id: string; side: 'creator' | 'brand'; read_at: string };
 export type CollabEvent = { id: number; collab_id: string; at: string; kind: string; text: string; visible_to_brand: boolean };
 
+/** Her short link and the brand's promo code for a collab. */
+export type CollabLink = { id: string; collab_id: string; slug: string; target: string; promo_code: string; clicks: number; sales: number | null; revenue: number | null; sales_note: string; sales_by: string; sales_at: string | null };
+
 /** A monthly deal: the collab for each month is created on its own. */
 export type Retainer = {
 	id: string;
@@ -116,6 +119,8 @@ export type Collab = {
 	brand_id: string;
 	source: 'brand_page' | 'manual' | 'email' | 'retainer';
 	retainer_id?: string | null;
+	links?: CollabLink[];
+	referred_by?: string | null;
 	retainer_month?: string | null;
 	contact_name: string;
 	contact_email: string;

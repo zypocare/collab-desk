@@ -254,6 +254,19 @@ export function render(kind: string, p: Payload, s: Settings): Omit<Mail, 'to'> 
     };
   }
 
+  if (kind === 'sales_reported') {
+    return {
+      subject: `${p.brand} reported sales from your code (${code})`,
+      html: layout(
+        s,
+        'Sales from your code',
+        `<p style="margin:0 0 12px"><b>${esc(p.brand)}</b> reported <b>${esc(p.sales)} orders</b>${Number(p.revenue) ? ` worth <b>${esc(inr(p.revenue))}</b>` : ''} from your promo code for ${esc(code)}.</p>${p.note ? `<p style="margin:0">"${esc(p.note)}"</p>` : ''}`,
+        { label: 'Open the collab', href: url(s, `/studio/c/${code}`) },
+      ),
+      text: `${p.brand} reported ${p.sales} orders${Number(p.revenue) ? ` worth ${inr(p.revenue)}` : ''} from your code for ${code}.`,
+    };
+  }
+
   if (kind === 'tds_cert_request') {
     return {
       subject: `TDS certificate (Form 16A) for invoice ${p.number}`,

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/state';
+	import { useReferral } from '#lib/referral.ts';
 	import { untrack } from 'svelte';
 	import { auth, refreshAccount } from '#lib/auth.svelte.ts';
 	import { CATS } from '#lib/util.ts';
@@ -306,6 +307,7 @@
 		}
 		sentReply = replyIn ?? null;
 		sent = (data as { code: string }).code;
+		useReferral(sent);
 		loadRequests();
 		scrollTo({ top: 0, behavior: 'smooth' });
 		setTimeout(() => {

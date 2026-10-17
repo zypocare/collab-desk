@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { studio } from '#lib/studio.svelte.ts';
+	import { dealStats } from '#lib/dealStats.ts';
 	import { countUp } from '#lib/ui.svelte.ts';
 	import { buildReport, dmy, downloadCsv, fyFromStart, fyOf, n2 } from '#lib/reports.ts';
 	import { inr, inrS, today } from '#lib/util.ts';
@@ -10,6 +11,18 @@
 	let fyStart = $state(String(current.start));
 	const fy = $derived(fyFromStart(Number(fyStart)));
 	const r = $derived(buildReport(studio.collabs, fy));
+	const d = $derived(dealStats(studio.collabs, fy.from, fy.to, studio.settings?.rates ?? {}));
+	const pct = (x: number | null) => (x === null ? '—' : `${Math.round(x * 100)}%`);
+	const dayText = (x: number | null) => (x === null ? '—' : `${Math.round(x)} day${Math.round(x) === 1 ? '' : 's'}`);
+	// One plain-words tip from the numbers.
+	const tip = $derived.by(() => {
+		if (d.fullPriceRate !== null && d.discountRate !== null && d.fullPriceRate >= d.discountRate - 0.05)
+			return `Brands accept ${pct(d.fullPriceRate)} of quotes at your full rate card, about as often as discounted ones (${pct(d.discountRate)}). You can hold your price more often.`;
+		if (d.avgDiscount !== null && d.avgDiscount > 0.15) return `You give away ${pct(d.avgDiscount)} on average. Try offering fewer Stories instead of a lower price.`;
+		const best = d.byCategory.find((g) => g.avgFee && g.won >= 2);
+		if (best) return `${best.key} brands pay you the most on average (${inr(best.avgFee ?? 0)}). Worth pitching more of them.`;
+		return '';
+	});
 	const s = $derived(studio.settings!);
 	const max = $derived(Math.max(50000, Math.ceil(Math.max(...r.months.map((m) => m.received)) / 50000) * 50000));
 	const barterFlags = $derived(r.brands.filter((b) => b.barter > 20000));
@@ -102,6 +115,32 @@
 		</div>
 	</section>
 </div>
+
+<section class="panel rv deals" style="--i:8;margin-bottom:18px">
+	<div class="panel-h"><h2>Your deals</h2><small>requests received in {fy.label}</small></div>
+	<div class="dl-kpis">
+		<div><b>{pct(d.winRate)}</b><small>of decided requests won ({d.wonCount} won, {d.declined} not)</small></div>
+		<div><b>{pct(d.quoteRate)}</b><small>of quotes accepted ({d.quotesSent} sent)</small></div>
+		<div><b>{d.avgDiscount === null ? '—' : pct(Math.max(0, d.avgDiscount))}</b><small>average discount from your rate card</small></div>
+		<div><b>{dayText(d.avgClose)}</b><small>from request to accepted quote</small></div>
+		<div><b>{dayText(d.avgAnswer)}</b><small>for brands to answer a quote</small></div>
+		<div><b>{d.avgFee === null ? '—' : inr(d.avgFee)}</b><small>average fee per paid collab</small></div>
+	</div>
+	{#if tip}<p class="dl-tip"><Icon name="spark" />{tip}</p>{/if}
+	<div class="dl-tables">
+		{#each [{ title: 'By category', rows: d.byCategory }, { title: 'Where they came from', rows: d.bySource }, { title: 'By type', rows: d.byType }] as { title, rows } (title)}
+			<div>
+				<h3>{title}</h3>
+				<table class="doc-table rep-table">
+					<thead><tr><th></th><th>Requests</th><th>Won</th><th>Avg. fee</th></tr></thead>
+					<tbody>
+						{#each rows as g (g.key)}<tr><td>{g.key}</td><td>{g.deals}</td><td>{g.rate === null ? '—' : pct(g.rate)}</td><td>{g.avgFee ? inr(g.avgFee) : '—'}</td></tr>{:else}<tr><td colspan="4" class="hint">No requests in this year yet.</td></tr>{/each}
+					</tbody>
+				</table>
+			</div>
+		{/each}
+	</div>
+</section>
 
 <section class="panel rv" style="--i:8;margin-bottom:18px">
 	<div class="panel-h"><h2>By brand</h2><button class="btn sm" onclick={exportBrands}><Icon name="arrow" />CSV</button></div>

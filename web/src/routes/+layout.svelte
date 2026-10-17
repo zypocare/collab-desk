@@ -1,5 +1,6 @@
 <script lang="ts">
 	import '../app.css';
+	import { keepReferral } from '#lib/referral.ts';
 	import '../brand.css';
 	import '../studio.css';
 	import '../mobile-type.css';
@@ -22,6 +23,7 @@
 		initAuth();
 		watchInstall();
 		startReveal();
+		keepReferral(new URL(location.href));
 	});
 	// Brand pages get their own look (brand.css); the studio keeps its own.
 	$effect(() => {

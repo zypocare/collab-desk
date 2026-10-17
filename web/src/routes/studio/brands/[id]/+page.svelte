@@ -28,6 +28,8 @@
 		newComp = '';
 	}
 	const val = (e: Event) => (e.currentTarget as HTMLInputElement).value;
+	// Brands that came through this brand's recommendation link.
+	const referred = $derived(brand ? studio.collabs.filter((x) => x.referred_by === brand.id) : []);
 </script>
 
 <svelte:head><title>{brand?.name ?? 'Brand'} · {studio.settings?.app_name}</title></svelte:head>
@@ -43,6 +45,7 @@
 			<div>
 				<div class="eb">{brand.category}{brand.instagram ? ` · @${brand.instagram}` : ''}</div>
 				<h1>{brand.name}</h1>
+				{#if referred.length}<p class="ref-by"><Icon name="users" />Recommended you to {referred.length} brand{referred.length === 1 ? '' : 's'}: {[...new Set(referred.map((x) => x.brand.name))].join(', ')}</p>{/if}
 			</div>
 		</div>
 	</header>

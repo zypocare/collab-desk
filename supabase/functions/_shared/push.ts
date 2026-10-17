@@ -50,6 +50,8 @@ export function pushFor(kind: string, p: Record<string, unknown>): Push | null {
       return { title: `New request from ${brand}`, body: [p.deliverables, p.type === 'barter' ? 'Barter' : Number(p.fee) ? inr(p.fee) : 'Asked for a quote'].filter(Boolean).join(' · '), url: open(code), tag: code };
     case 'message_to_creator':
       return { title: `${brand} sent a message`, body: String(p.body ?? '').slice(0, 140), url: open(code), tag: `msg-${code}` };
+    case 'sales_reported':
+      return { title: `${brand} reported ${p.sales} orders from your code`, body: `${Number(p.revenue) ? `${inr(p.revenue)} in sales · ` : ''}${code}`, url: open(code), tag: code };
     case 'quote_accepted':
       return { title: `${brand} accepted your quote`, body: `${inr(p.total)} · ${code}. The collab is confirmed.`, url: open(code), tag: code };
     case 'quote_changes':
