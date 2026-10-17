@@ -16,9 +16,13 @@
 	let date = $state(todayIso());
 	let ref = $state('');
 	let busy = $state(false);
+	// Never more than what's left on the invoice (an extra zero would inflate every report).
+	const room = $derived(Math.max(0, inv.total - inv.amount_received - Math.max(inv.tds_deducted, Number(tds) || 0)));
+	const tooMuch = $derived((Number(amount) || 0) > room + 1);
 
 	async function submit(e: SubmitEvent) {
 		e.preventDefault();
+		if (tooMuch) return;
 		busy = true;
 		const ok = await recordPayment(inv, { amount: Number(amount) || 0, tds: Number(tds) || 0, date, ref: ref.trim() });
 		busy = false;
@@ -39,10 +43,11 @@
 				<div class="f"><label for="pd-date">Date</label><DatePicker id="pd-date" bind:value={date} clearable={false} /></div>
 				<div class="f"><label for="pd-ref">UTR / reference <span class="hint">(optional)</span></label><input class="inp" id="pd-ref" bind:value={ref} /></div>
 			</div>
+			{#if tooMuch}<p class="err" style="margin:12px 0 0">That's more than the {money(room, inv.currency)} still to receive on {inv.number}. Check the amount.</p>{/if}
 			<p class="hint" style="margin:12px 0 0">TDS the brand deducted counts as paid; you claim it back when you file your income tax return.</p>
 			<div class="row">
 				<button type="button" class="btn ghost" onclick={onclose}>Cancel</button>
-				<button type="submit" class="btn primary" disabled={busy || (Number(amount) <= 0 && Number(tds) <= 0)}>{#if busy}<span class="spinner"></span>{:else}<Icon name="check" />{/if}Record payment</button>
+				<button type="submit" class="btn primary" disabled={busy || tooMuch || (Number(amount) <= 0 && Number(tds) <= 0)}>{#if busy}<span class="spinner"></span>{:else}<Icon name="check" />{/if}Record payment</button>
 			</div>
 		</form>
 	</div>

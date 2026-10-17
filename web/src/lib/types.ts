@@ -404,6 +404,8 @@ export type Account =
 	  };
 
 export type BrandRequest = {
+	/** An experience (stay, meal, event) is never shipped. */
+	barter_kind?: 'product' | 'experience';
 	id: string;
 	code: string;
 	stage: Stage;

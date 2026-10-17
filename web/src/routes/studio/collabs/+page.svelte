@@ -4,7 +4,7 @@
 	import { page } from '$app/state';
 	import { untrack } from 'svelte';
 	import { SvelteSet } from 'svelte/reactivity';
-	import { byCode, byId, markPaid, priorityOf, reloadCollabs, setStage, studio } from '#lib/studio.svelte.ts';
+	import { byCode, byId, markPaid, owedOn, priorityOf, reloadCollabs, setStage, studio } from '#lib/studio.svelte.ts';
 	import { supabase } from '#lib/supabase.ts';
 	import type { Stage } from '#lib/types.ts';
 	import { confetti, copyText, pointer, toast, ui } from '#lib/ui.svelte.ts';
@@ -51,12 +51,13 @@
 	async function batchPaid() {
 		const list = payable;
 		if (!list.length) return;
-		if (!(await ask({ title: `Mark ${list.length} as paid?`, body: `${inr(list.reduce((a, c) => a + c.fee, 0))} in total, received today. Open invoices are settled in full.`, ok: 'Mark paid' }))) return;
+		if (!(await ask({ title: `Mark ${list.length} as paid?`, body: `${inr(list.reduce((a, c) => a + owedOn(c), 0))} still owed in total, recorded as received today. Open invoices are settled in full.`, ok: 'Mark paid' }))) return;
 		busy = true;
+		const total = list.reduce((a, c) => a + owedOn(c), 0);
 		for (const c of list) await markPaid(c, true);
 		busy = false;
 		confetti();
-		toast(`${inr(list.reduce((a, c) => a + c.fee, 0))} from ${list.length} collab${list.length > 1 ? 's' : ''} marked as paid`, 'wallet');
+		toast(`${inr(total)} from ${list.length} collab${list.length > 1 ? 's' : ''} marked as paid`, 'wallet');
 		stopSelecting();
 	}
 	async function batchTrack() {

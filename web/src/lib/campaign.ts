@@ -17,7 +17,8 @@ export function milestones(r: BrandRequest, creator: string): Milestone[] {
 	const open = r.quotes?.find((q) => q.status === 'sent');
 	const pending = r.drafts?.find((d) => d.status === 'pending');
 	const approved = r.drafts?.find((d) => d.status === 'approved');
-	const product = r.type !== 'paid';
+	// Only a product is shipped: an experience (stay, meal, event) has no shipping step.
+	const product = r.type !== 'paid' && r.barter_kind !== 'experience';
 	const confirmed = ['confirmed', 'creating', 'live', 'wrapped'].includes(r.stage);
 	const live = ['live', 'wrapped'].includes(r.stage);
 

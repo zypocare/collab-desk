@@ -5,7 +5,7 @@
 	import { supabase } from '#lib/supabase.ts';
 	import { askAi } from '#lib/ai.ts';
 	import { toast, ui } from '#lib/ui.svelte.ts';
-	import { errMessage, fmt } from '#lib/util.ts';
+	import { emailOk, errMessage, fmt } from '#lib/util.ts';
 	import AiThinking from '#lib/components/AiThinking.svelte';
 	import Icon from '#lib/components/Icon.svelte';
 	import Mono from '#lib/components/Mono.svelte';
@@ -67,6 +67,8 @@
 	async function save(send: boolean) {
 		if (!open?.brand_name?.trim()) return;
 		if (!open.subject?.trim() || !open.body?.trim()) Object.assign(open, template(open));
+		// Check the email before anything is saved, so a failed send doesn't leave a hidden copy behind.
+		if (send && !emailOk(open.email)) return toast("Add the brand's email (like name@brand.com) to send the pitch.", 'alert');
 		busy = true;
 		const { id, ...row } = open;
 		const { data, error } = id
@@ -76,6 +78,8 @@
 			busy = false;
 			return toast(`Couldn't save: ${errMessage(error)}`, 'alert');
 		}
+		// From now on this is the saved pitch: trying again updates it instead of adding another.
+		open.id = (data as Pitch).id;
 		if (send) {
 			const r = await supabase.rpc('send_pitch', { p_id: (data as Pitch).id });
 			if (r.error) {

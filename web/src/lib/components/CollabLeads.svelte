@@ -15,7 +15,7 @@
 	let busy = $state<string | null>(null);
 
 	/** "Add": the chat goes into Add a collab, where it's read and filled in. */
-	async function add(igsid: string, username: string) {
+	async function add(igsid: string, username: string, name = '') {
 		busy = igsid;
 		const { data, error } = await supabase.from('ig_dms').select('from_me, text').eq('igsid', igsid).order('created_at', { ascending: false }).limit(15);
 		busy = null;
@@ -23,6 +23,8 @@
 		const me = studio.settings?.display_name || 'Me';
 		ui.pasteText = (data ?? []).reverse().map((m) => `${m.from_me ? me : username || 'Brand'}: ${m.text}`).join('\n');
 		ui.fromIg = igsid;
+		ui.fromIgUser = username;
+		ui.fromIgName = name;
 		ui.newCollab = true;
 	}
 </script>
@@ -40,7 +42,7 @@
 							<small>{t.collab_hint || (t.collab_flag === 'likely' ? 'May want to work with you' : 'Might be asking about a collab')}</small>
 						</span>
 					</a>
-					<button class="ail-add" disabled={busy === t.igsid} onclick={() => add(t.igsid, t.username)} aria-label="Add @{t.username || 'this chat'} as a collab">
+					<button class="ail-add" disabled={busy === t.igsid} onclick={() => add(t.igsid, t.username, t.name)} aria-label="Add @{t.username || 'this chat'} as a collab">
 						{#if busy === t.igsid}<span class="spinner"></span>{:else}<Icon name="plus" />{/if}Add
 					</button>
 				</li>

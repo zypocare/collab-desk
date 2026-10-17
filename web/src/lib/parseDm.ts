@@ -119,7 +119,7 @@ export function parseDm(text: string, ownHandle = ''): Parsed {
 			]
 				.map((re) => (t.match(re)?.[1] ?? '').replace(/\s+(?:as (?:a )?gift|in (?:exchange|return)|for (?:a|an|you|your|the|creating|making)|to (?:try|review|use)|which|that|who|worth|valued?|mrp|on our|from our|plus|along with|and (?:₹|rs\.?|inr|\d))\b.*$/i, '').trim())
 				.find((p) => p && !ASKED.test(p)) ?? ''
-			).replace(/^\w/, (c) => c.toUpperCase())
+			).replace(/\s*[(\[]?\s*(?:worth|valued?(?:\s+at)?|mrp|₹|rs\.?\s*\d).*$/i, '').trim().replace(/^\w/, (c) => c.toUpperCase())
 		: '';
 
 	// Date: "by 25th Oct", "on 3 November", "before 10/11".
@@ -132,6 +132,18 @@ export function parseDm(text: string, ownHandle = ''): Parsed {
 		const d = new Date(now.getFullYear(), mon, day);
 		if (d < new Date(now.getFullYear(), now.getMonth(), now.getDate())) d.setFullYear(d.getFullYear() + 1);
 		if (day >= 1 && day <= 31 && mon >= 0) preferredLive = iso(d);
+	}
+	// Indian-style numbers: "30/11", "30-11-2026", "30.11.2026" (a dot only with a year, so "2.5" isn't a date).
+	if (!preferredLive) {
+		const nd = t.match(/(?<![\d₹.,])(\d{1,2})([/-])(\d{1,2})(?:\2(\d{2}|\d{4}))?(?![\d/-])/) ?? t.match(/(?<![\d₹.,])(\d{1,2})(\.)(\d{1,2})\.(\d{2}|\d{4})(?![\d.])/);
+		if (nd) {
+			const day = Number(nd[1]), mon = Number(nd[3]) - 1;
+			const now = new Date();
+			const yr = nd[4] ? (nd[4].length === 2 ? 2000 + Number(nd[4]) : Number(nd[4])) : now.getFullYear();
+			const d = new Date(yr, mon, day);
+			if (!nd[4] && d < new Date(now.getFullYear(), now.getMonth(), now.getDate())) d.setFullYear(d.getFullYear() + 1);
+			if (day >= 1 && day <= 31 && mon >= 0 && mon <= 11 && d.getDate() === day) preferredLive = iso(d);
+		}
 	}
 
 	// Usage.

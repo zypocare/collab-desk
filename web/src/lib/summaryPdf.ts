@@ -1,6 +1,7 @@
 // "Collab summary": one A4 page a brand can file or forward to finance or legal. Who, what, money,
 // usage rights, key dates, invoices and results, as they stand today.
 import fontkit from '@pdf-lib/fontkit';
+import { todayIso } from './util';
 import { PDFDocument, rgb, type PDFFont, type RGB } from 'pdf-lib';
 import { milestones } from './campaign';
 import { loadFonts, wrap } from './invoicePdf';
@@ -43,7 +44,7 @@ export async function summaryPdf(r: BrandRequest, brand: string, creator: { name
 	page.drawRectangle({ x: 0, y: H - 104, width: W, height: 4, color: G2 });
 	text(`COLLAB SUMMARY · ${r.code}`, M, H - 38, 8, bold, rgb(0.75, 0.7, 0.74));
 	text(`${brand} × ${creator.name}`, M, H - 64, 20, bold, WHITE);
-	text(`${delivText(r.deliverables)} · ${r.stage_label} · as of ${fmtLong(new Date().toISOString().slice(0, 10))}`, M, H - 84, 9.5, reg, rgb(0.85, 0.8, 0.84));
+	text(`${delivText(r.deliverables)} · ${r.stage_label} · as of ${fmtLong(todayIso())}`, M, H - 84, 9.5, reg, rgb(0.85, 0.8, 0.84));
 
 	let y = H - 134;
 	const accepted = r.quotes?.find((q) => q.status === 'accepted');
@@ -54,7 +55,7 @@ export async function summaryPdf(r: BrandRequest, brand: string, creator: { name
 	y = row('Creator', `${creator.name} (@${creator.handle})`, y);
 	y = row('Type', TYPE_LABEL[r.type], y);
 	y = row('Content', r.deliverables.map((d) => `${d.qty} × ${d.kind}${d.done ? ' (done)' : ''}`).join(', '), y);
-	if (r.type !== 'paid' && r.product) y = row('Product', `${r.product}${r.product_value ? ` (worth ${inr(r.product_value)})` : ''}`, y);
+	if (r.type !== 'paid' && r.product) y = row(r.barter_kind === 'experience' ? 'Experience' : 'Product', `${r.product}${r.product_value ? ` (worth ${inr(r.product_value)})` : ''}`, y);
 	y -= 8;
 
 	label('Agreement', y);
@@ -114,7 +115,7 @@ export async function summaryPdf(r: BrandRequest, brand: string, creator: { name
 		});
 	}
 
-	text(`Generated from Collab Desk on ${fmtLong(new Date().toISOString().slice(0, 10))}. The accepted quote is the agreement; see the agreement page for the full terms.`, M, M - 10, 7.5, reg, MUTED);
+	text(`Generated from Collab Desk on ${fmtLong(todayIso())}. The accepted quote is the agreement; see the agreement page for the full terms.`, M, M - 10, 7.5, reg, MUTED);
 	return doc.save();
 }
 

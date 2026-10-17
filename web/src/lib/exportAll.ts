@@ -1,6 +1,7 @@
 // "Export everything": one .zip with a spreadsheet (CSV) per kind of record, plus a complete
 // copy as JSON. Built in the browser from the data already loaded, so it works offline too.
-import { studio } from './studio.svelte';
+import { studio } from './studio.svelte';
+import { todayIso } from './util';
 import { toCsv } from './reports';
 import { delivText } from './util';
 import { saveBlob } from './download';
@@ -131,6 +132,6 @@ export function exportEverything() {
 		}
 	];
 	const blob = zip(files);
-	void saveBlob(blob, `collab-desk-export-${new Date().toISOString().slice(0, 10)}.zip`);
+	void saveBlob(blob, `collab-desk-export-${todayIso()}.zip`);
 	return files.length;
 }

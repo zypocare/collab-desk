@@ -2,7 +2,7 @@
 	import { page } from '$app/state';
 	import BrandLink from '#lib/components/BrandLink.svelte';
 	import { money } from '#lib/currency.ts';
-	import { auth } from '#lib/auth.svelte.ts';
+	import { auth, switchBrand } from '#lib/auth.svelte.ts';
 	import { brandData, loadRequests, loadUnread } from '#lib/brand.svelte.ts';
 	import { pub } from '#lib/publicPage.svelte.ts';
 	import ExpectedResults from '#lib/components/ExpectedResults.svelte';
@@ -37,6 +37,20 @@
 	import CampaignDocs from '#lib/components/CampaignDocs.svelte';
 
 	const r = $derived(brandData.requests.find((x) => x.code.toUpperCase() === (page.params.code ?? '').toUpperCase()));
+	// An agency's other brand: switch to it and show the request (once per visit).
+	let triedSwitch = '';
+	$effect(() => {
+		const code = page.params.code ?? '';
+		const acc = auth.account;
+		if (!brandData.loaded || r || triedSwitch === code || acc?.role !== 'brand' || (acc.brands?.length ?? 0) < 2) return;
+		triedSwitch = code;
+		supabase.rpc('request_brand', { p_code: code }).then(async ({ data }) => {
+			if (!data || data === acc.brand?.id) return;
+			await switchBrand(data as string);
+			await loadRequests();
+			toast(`Switched to ${auth.account?.role === 'brand' ? (auth.account.brand?.name ?? 'that brand') : 'that brand'}`, 'check');
+		});
+	});
 	// Short names for the progress tracker, in stage order.
 	const TRACK = ['Sent', 'Talking', 'Agreed', 'Creating', 'Live', 'Done'];
 	const si = $derived(r ? (r.stage === 'declined' ? -1 : stageIndex(r.stage)) : 0);
@@ -136,7 +150,7 @@
 	const payText = $derived(
 		!r
 			? ''
-			: r.type === 'barter'
+			: r.type === 'barter' || r.stage === 'declined'
 				? 'Not applicable'
 				: r.pay_status === 'paid'
 					? 'Received, thank you'
@@ -183,6 +197,9 @@
 	<!-- Wide screens: what needs the brand on the left, status and documents on the right. -->
 	<div class="r-grid">
 		<div class="r-main">
+	{#if quote?.status === 'changes'}
+		<div class="date-sug"><Icon name="edit" /><span><b>You asked for changes to quote v{quote.version}</b>{#if quote.response_note}: “{quote.response_note}”{/if}. {pub.data?.display_name?.split(' ')[0] ?? 'The creator'} will send a revised quote.</span></div>
+	{/if}
 	{#if openQuote}
 		<section class="panel rv action-panel" style="--i:1">
 			<div class="panel-h"><h2>Quote from {creator}</h2><span class="pill tint k-new">Needs your answer</span></div>

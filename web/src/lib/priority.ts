@@ -123,7 +123,8 @@ export function brandAdvice(
 	const lines = [`${who} reviews paid collaborations first. Barter requests usually get a reply within ${b.reply_time}.`];
 	if (b.slots_left === 0) lines.push(`Barter spots for this month are taken, so yours would be planned for next month.`);
 	else if (b.slots_left !== null && b.slots_left <= 2) lines.push(`Only ${b.slots_left} barter spot${b.slots_left === 1 ? '' : 's'} left this month.`);
-	if (rate && o.productValue) {
+	// Only when she has no minimum of her own: meeting her minimum is her "yes, that works".
+	if (rate && o.productValue && !b.min_value) {
 		const r = worth / rate;
 		if (r < 0.5) {
 			const fits = o.lines.length > 1 || o.lines[0]?.qty > 1 ? ' Or ask for fewer deliverables.' : '';

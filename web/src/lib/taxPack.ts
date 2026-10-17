@@ -19,7 +19,8 @@ export function quarters(fy: FY): Quarter[] {
 	});
 }
 export function currentQuarter(fy: FY, today = new Date()) {
-	const iso = today.toISOString().slice(0, 10);
+	// Her local date (not UTC, which is still yesterday until 5:30 am in India).
+	const iso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 	return quarters(fy).find((q) => iso >= q.from && iso <= q.to)?.q ?? 1;
 }
 

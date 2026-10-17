@@ -4,6 +4,7 @@
 	import { onMount } from 'svelte';
 	import type { LayoutProps } from './$types';
 	import { auth } from '#lib/auth.svelte.ts';
+	import { ui } from '#lib/ui.svelte.ts';
 	import { loadRequests } from '#lib/brand.svelte.ts';
 	import { loadPublicPage, pub } from '#lib/publicPage.svelte.ts';
 	import BrandTopbar from '#lib/components/BrandTopbar.svelte';
@@ -18,8 +19,8 @@
 
 	// Brands only. The creator has her own studio.
 	$effect(() => {
-		if (!auth.session && page.url.pathname !== '/brand/new') goto(`/login?next=${encodeURIComponent(page.url.pathname + page.url.search)}`, { replace: true });
-		else if (auth.account?.role === 'creator') goto('/studio', { replace: true });
+		if (!auth.session && page.url.pathname !== '/brand/new') goto(`/login?next=${encodeURIComponent(page.url.pathname + page.url.search)}`, { replaceState: true });
+		else if (auth.account?.role === 'creator' && !ui.holdRedirect) goto('/studio', { replaceState: true });
 	});
 
 	onMount(() => {

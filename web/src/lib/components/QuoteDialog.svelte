@@ -91,8 +91,11 @@
 	function addItem(kind: string) {
 		items.push({ kind, qty: 1, rate: rates[kind] ?? 0 });
 	}
+	// Something to quote: at least one piece of content with a quantity (and no negative prices).
+	const hasContent = $derived(items.some((i) => Number(i.qty) > 0));
 	async function submit(send: boolean) {
-		if (!items.length) return;
+		if (!items.length || !hasContent) return;
+		for (const i of items) i.rate = Math.max(0, Number(i.rate) || 0);
 		busy = true;
 		const ok = await saveQuote(
 			c,
@@ -148,7 +151,7 @@
 				<div class="q-row">
 					<span class="q-kind">{plural(it.kind, it.qty)}</span>
 					<input class="inp num" type="number" min="1" max="50" aria-label="Quantity of {it.kind}" bind:value={it.qty} />
-					<div class="pre"><span>{sign}</span><input class="inp num" type="number" min="0" aria-label="Rate for {it.kind}" bind:value={it.rate} /></div>
+					<div class="pre"><span>{sign}</span><input class="inp num" type="number" min="0" aria-label="Rate for {it.kind}" bind:value={it.rate} onchange={() => (it.rate = Math.max(0, Number(it.rate) || 0))} /></div>
 					<b class="num">{money(it.qty * it.rate, cur)}</b>
 					<button class="icon-btn sm" onclick={() => items.splice(i, 1)} aria-label="Remove {it.kind}"><Icon name="x" /></button>
 				</div>
@@ -195,8 +198,8 @@
 
 		<div class="row">
 			<button class="btn ghost" onclick={onclose}>Cancel</button>
-			<button class="btn" disabled={busy || !items.length} onclick={() => submit(false)}>Save draft</button>
-			<button class="btn grad" disabled={busy || !items.length || !c.contact_email} onclick={() => submit(true)}>
+			<button class="btn" disabled={busy || !hasContent} onclick={() => submit(false)}>Save draft</button>
+			<button class="btn grad" disabled={busy || !hasContent || !c.contact_email} title={hasContent ? '' : 'Add at least one piece of content'} onclick={() => submit(true)}>
 				{#if busy}<span class="spinner"></span>{:else}<Icon name="send" />{/if}Send to brand
 			</button>
 		</div>

@@ -106,18 +106,20 @@ export function render(kind: string, p: Payload, s: Settings): Omit<Mail, 'to'> 
 
   // ---------------------------------------------------------------- requests
   if (kind === 'request_received_brand') {
+    // Barter requests get her barter reply time (filled in by the sender).
+    const reply = String(p.reply_time || s.reply_time);
     return {
       subject: `We've received your collaboration request (${code})`,
       html: layout(
         s,
         `Thank you, ${firstOf(p.contact)}. Your request is with ${me}.`,
-        `${hi(p.contact)}${P(`Thank you for reaching out to collaborate with ${esc(s.display_name)}. Your request has been received and saved under the reference <b>${esc(code)}</b>. ${esc(me)} reviews every request personally and usually replies within <b>${esc(s.reply_time)}</b>.`)}
+        `${hi(p.contact)}${P(`Thank you for reaching out to collaborate with ${esc(s.display_name)}. Your request has been received and saved under the reference <b>${esc(code)}</b>. ${esc(me)} reviews every request personally and usually replies within <b>${esc(reply)}</b>.`)}
          ${table(row('Reference', code), row('Brand', brand), row('Content requested', p.deliverables))}
          ${P(`You can follow your request at any time by signing in with this email address. There's no password: we'll send you a 6-digit code.`)}`,
         { label: 'Track your request', href: url(s, '/brand') },
-        { code, preheader: `${me} usually replies within ${s.reply_time}. Your reference is ${code}.`, next: [`${esc(me)} reviews the brief, the content and the timing.`, `You'll receive a reply, or a quote you can accept online in one tap.`, `Once agreed, dates, drafts and invoices all stay in one place for you to follow.`] },
+        { code, preheader: `${me} usually replies within ${reply}. Your reference is ${code}.`, next: [`${esc(me)} reviews the brief, the content and the timing.`, `You'll receive a reply, or a quote you can accept online in one tap.`, `Once agreed, dates, drafts and invoices all stay in one place for you to follow.`] },
       ),
-      text: `Hi ${firstOf(p.contact)},\n\nThank you for reaching out to collaborate with ${s.display_name}. Your request has been received (reference ${code}) for ${p.deliverables}. ${me} usually replies within ${s.reply_time}.\n\nTrack your request: ${url(s, '/brand')}${sign}`,
+      text: `Hi ${firstOf(p.contact)},\n\nThank you for reaching out to collaborate with ${s.display_name}. Your request has been received (reference ${code}) for ${p.deliverables}. ${me} usually replies within ${reply}.\n\nTrack your request: ${url(s, '/brand')}${sign}`,
     };
   }
 
@@ -129,18 +131,34 @@ export function render(kind: string, p: Payload, s: Settings): Omit<Mail, 'to'> 
         s,
         `${brand} sent you a collaboration request`,
         `${P(`A new request has come in through your page. Here's what ${esc(brand)} is asking for:`)}
-         ${table(row('Reference', code), row('Contact', p.contact), row('Email', p.email), row('Phone', p.phone), row('Package', p.package), row('Content', p.deliverables), row('Offer', money))}
+         ${table(row('Reference', code), row('Contact', p.contact), row('Email', p.email), row('Phone', p.phone), row('Package', p.package), row('Content', p.deliverables), row('Offer', money), row('Usage', p.usage), row('Preferred go-live', p.preferred_live), row('Referred by', p.referred_by))}
          ${quoteBox('Their brief', p.brief)}`,
         { label: 'Open the request', href: studio() },
         { to: 'creator', preheader: `${p.deliverables} · ${money}`, next: [`Check the "Should you take it?" score and the brief.`, `Reply, send a quote, or decline politely from the request.`, `The brand sees your answer by email straight away.`] },
       ),
-      text: `New request ${code} from ${brand} (${p.contact}, ${p.email}). ${p.deliverables}. ${money}.\n\nOpen it: ${studio()}`,
+      text: `New request ${code} from ${brand} (${p.contact}, ${p.email}). ${p.deliverables}. ${money}.${p.brief ? `\n\nTheir brief: ${p.brief}` : ''}\n\nOpen it: ${studio()}`,
     };
   }
 
   if (kind === 'stage_changed') {
     const label = String(p.stage_label ?? '');
     const note = String(p.note ?? '');
+    // Declined: a proper, polite "not this time" (with her note if she wrote one), not a status update.
+    if (p.stage === 'declined') {
+      return {
+        subject: `About your collaboration request ${code}`,
+        html: layout(
+          s,
+          `Thank you for thinking of ${me}`,
+          `${hi(p.contact)}${P(`Thank you for reaching out about <b>${esc(code)}</b>. ${esc(me)} has looked at your request carefully and won't be able to take this one on.`)}
+           ${quoteBox(`A note from ${me}`, note)}
+           ${P(`This isn't a no to working together in future. You're always welcome to send a new request when you have your next campaign.`)}`,
+          { label: 'Send a new request', href: url(s, '/brand/new') },
+          { code, preheader: `${me} can't take on ${code} this time.` },
+        ),
+        text: `Hi ${firstOf(p.contact)},\n\nThank you for reaching out about ${code}. ${me} won't be able to take this one on.${note ? `\n\n${me}: ${note}` : ''}\n\nYou're always welcome to send a new request for a future campaign: ${url(s, '/brand/new')}${sign}`,
+      };
+    }
     return {
       subject: `${code}: your collaboration is now "${label}"`,
       html: layout(
@@ -203,7 +221,7 @@ export function render(kind: string, p: Payload, s: Settings): Omit<Mail, 'to'> 
         { label: 'Open the collab', href: studio() },
         { to: 'creator', preheader: `${inr(p.total)} confirmed for ${code}.`, next: [`Set the shoot and go-live dates.`, `Check the brief has what you need (the app can ask the brand for anything missing).`, `Raise the advance invoice if your terms include one.`] },
       ),
-      text: `${brand} (${p.name}) accepted your quote of ${inr(p.total)} for ${code}. ${p.note ? `Their note: ${p.note}. ` : ''}Open it: ${studio()}`,
+      text: `${brand} (${p.name}) accepted your quote of ${inr(p.total)} for ${code}. ${p.note ? `Their note: "${String(p.note).trim()}" ` : ''}Open it: ${studio()}`,
     };
   }
 
@@ -425,6 +443,51 @@ export function render(kind: string, p: Payload, s: Settings): Omit<Mail, 'to'> 
     };
   }
 
+  if (kind === 'team_added') {
+    return {
+      subject: `${s.display_name} added you to ${s.app_name}`,
+      html: layout(
+        s,
+        `You're on ${esc(me)}'s team`,
+        `${hi(p.name || 'there')}${P(`${esc(s.display_name)} has added you as a manager in ${esc(s.app_name)}, where her brand collaborations, content plan and payments are run.`)}
+         ${P(`Sign in with this email address. There's no password: you'll get a 6-digit code each time.`)}`,
+        { label: `Sign in to ${s.app_name}`, href: String(p.link) },
+        { to: 'creator', preheader: `${me} added you as a manager.`, next: [`Sign in with this email and the code we send.`, `You'll see her collabs, messages and money, just as she does.`] },
+      ),
+      text: `Hi ${firstOf(p.name || 'there')},\n\n${s.display_name} has added you as a manager in ${s.app_name}. Sign in with this email (you'll get a 6-digit code): ${p.link}${sign}`,
+    };
+  }
+
+  if (kind === 'invoice_cancelled') {
+    return {
+      subject: `Invoice ${p.number} for ${code} has been cancelled`,
+      html: layout(
+        s,
+        `Invoice ${esc(p.number)} is cancelled`,
+        `${hi(p.contact)}${P(`Please note that invoice <b>${esc(p.number)}</b> (${inr(p.total)}) for <b>${esc(code)}</b> has been cancelled. There's nothing to pay on it, so please don't process it.`)}
+         ${P(`If a corrected invoice is needed, ${esc(me)} will send it separately. Your request page always shows the invoices that are due.`)}`,
+        { label: 'See your request', href: url(s, '/brand') },
+        { code, preheader: `Nothing to pay on ${p.number}: it's cancelled.` },
+      ),
+      text: `Hi ${firstOf(p.contact)},\n\nInvoice ${p.number} for ${code} has been cancelled, so there's nothing to pay on it. If a corrected invoice is needed, it will be sent separately.\n\nYour request: ${url(s, '/brand')}${sign}`,
+    };
+  }
+
+  if (kind === 'payment_not_received') {
+    return {
+      subject: `Payment for invoice ${p.number} hasn't arrived yet`,
+      html: layout(
+        s,
+        `The payment hasn't arrived yet`,
+        `${hi(p.contact)}${P(`Thank you for letting us know you paid invoice <b>${esc(p.number)}</b> for <b>${esc(code)}</b>. ${esc(me)} has checked, and the payment hasn't reached the account yet.`)}
+         ${P(`Could you please check the transfer (the account or UPI ID, and the UTR / reference)? Bank transfers can take a day or two; if it has already gone through, you can report it again on the invoice page with the reference.`)}`,
+        { label: 'Open the invoice', href: String(p.link) },
+        { code, preheader: `The payment for ${p.number} hasn't arrived yet.` },
+      ),
+      text: `Hi ${firstOf(p.contact)},\n\nThe payment you reported for invoice ${p.number} (${code}) hasn't reached the account yet. Could you please check the transfer and its reference? Invoice: ${p.link}${sign}`,
+    };
+  }
+
   if (kind === 'payment_thanks') {
     return {
       subject: `Payment received for invoice ${p.number}. Thank you!`,
@@ -432,11 +495,11 @@ export function render(kind: string, p: Payload, s: Settings): Omit<Mail, 'to'> 
         s,
         `Payment received, thank you`,
         `${hi(p.contact)}${P(`This is to confirm that the payment for invoice <b>${esc(p.number)}</b> has been received in full. Thank you for the prompt payment.`)}
-         ${P(`It was a pleasure working with you, and ${esc(me)} would love to collaborate again. Your receipt is available on the invoice page.`)}`,
+         ${P(p.advance ? `${esc(me)} is getting started on the content and will keep you posted on your request page. Your receipt is available on the invoice page.` : `It was a pleasure working with you, and ${esc(me)} would love to collaborate again. Your receipt is available on the invoice page.`)}`,
         { label: 'View the receipt', href: String(p.link) },
         { code, preheader: `Payment for ${p.number} received.` },
       ),
-      text: `Hi ${firstOf(p.contact)},\n\nThe payment for invoice ${p.number} has been received. Thank you, it was a pleasure working with you. Receipt: ${p.link}${sign}`,
+      text: `Hi ${firstOf(p.contact)},\n\nThe payment for invoice ${p.number} has been received. Thank you${p.advance ? `; ${me} is getting started on the content` : ', it was a pleasure working with you'}. Receipt: ${p.link}${sign}`,
     };
   }
 
@@ -609,7 +672,7 @@ export function render(kind: string, p: Payload, s: Settings): Omit<Mail, 'to'> 
         { label: 'Reply', href: request() },
         { code, preheader: String(p.body ?? '').slice(0, 90) },
       ),
-      text: `Hi ${firstOf(p.contact)},\n\n${me} about ${code}:\n\n${p.body}\n\nReply at ${request()}${sign}`,
+      text: `Hi ${firstOf(p.contact)},\n\n${me} sent you a message about ${code}:\n\n${p.body}\n\nReply at ${request()}${sign}`,
     };
   }
 
@@ -669,7 +732,9 @@ export function render(kind: string, p: Payload, s: Settings): Omit<Mail, 'to'> 
         { label: 'Open the collab', href: studio() },
         { to: 'creator', next: [`Tap "Mark received" when it arrives.`, `Your draft deadline counts from that day.`] },
       ),
-      text: `${brand} shipped ${p.product || 'the product'} for ${code} via ${p.carrier} ${p.tracking}.`,
+      text: `${brand} shipped ${p.product || 'the product'} for ${code} via ${p.carrier} ${p.tracking}.
+
+Open the collab: ${studio()}`,
     };
   }
 

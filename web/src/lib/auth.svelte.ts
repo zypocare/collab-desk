@@ -33,7 +33,10 @@ export async function refreshAccount() {
 		if (isNetworkError(error)) {
 			try {
 				const saved = JSON.parse(localStorage.getItem('cd-account') ?? 'null') as { uid: string; account: Account } | null;
-				if (saved?.uid === uid) return (auth.account = saved.account);
+				if (saved?.uid === uid) {
+					auth.account = saved.account;
+					return auth.account;
+				}
 			} catch {
 				/* nothing saved */
 			}

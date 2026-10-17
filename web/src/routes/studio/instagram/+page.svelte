@@ -36,7 +36,7 @@
 			await igConnect(code, `${location.origin}/studio/instagram`);
 			confetti();
 			toast('Instagram connected');
-			goto('/studio/settings?s=profile', { replace: true });
+			goto('/studio/settings?s=profile', { replaceState: true });
 		} catch (e) {
 			status = 'error';
 			message = errMessage(e);

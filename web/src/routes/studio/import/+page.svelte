@@ -5,7 +5,7 @@
 	import { parseDm } from '#lib/parseDm.ts';
 	import type { CollabType, Stage } from '#lib/types.ts';
 	import { confetti, toast } from '#lib/ui.svelte.ts';
-	import { delivText, inr, todayIso } from '#lib/util.ts';
+	import { delivText, emailOk, inr, todayIso } from '#lib/util.ts';
 	import DatePicker from '#lib/components/DatePicker.svelte';
 	import Icon from '#lib/components/Icon.svelte';
 	import Select from '#lib/components/Select.svelte';
@@ -88,7 +88,19 @@
 	const total = $derived(ready.reduce((a, r) => a + (r.type === 'barter' ? 0 : Number(r.fee) || 0), 0));
 
 	async function save() {
+		// Check every row first, and say which one needs fixing.
+		const bad = ready
+			.map((r) => {
+				const n = rows.indexOf(r) + 1;
+				if (r.type !== 'barter' && r.fee !== '' && !(Number(r.fee) >= 0)) return `Row ${n}: the fee can't be below ₹0.`;
+				if (r.type !== 'paid' && r.worth !== '' && !(Number(r.worth) >= 0)) return `Row ${n}: the product value can't be below ₹0.`;
+				if (r.email.trim() && !emailOk(r.email)) return `Row ${n}: the email doesn't look right.`;
+				return '';
+			})
+			.filter(Boolean);
+		if (bad.length) return toast(bad[0] + (bad.length > 1 ? ` (and ${bad.length - 1} more)` : ''), 'alert');
 		busy = true;
+		const done = new Set<number>();
 		progress = 0;
 		let ok = 0;
 		const imported: string[] = [];
@@ -116,6 +128,7 @@
 			});
 			if (c) {
 				ok++;
+				done.add(r.id);
 				if (r.email.trim()) imported.push(c.id);
 				if (['live', 'wrapped'].includes(stage)) await supabase.from('deliverables').update({ done: true }).eq('collab_id', c.id);
 			}
@@ -124,7 +137,12 @@
 		if (sendLinks && imported.length) await supabase.rpc('send_track_links', { p_ids: imported, p_notify: true });
 		await loadStudio();
 		busy = false;
-		if (ok) {
+		const failed = ready.length - ok;
+		if (failed) {
+			// Keep the rows that didn't save on screen (the saved ones go), so nothing is lost.
+			rows = rows.filter((r) => !done.has(r.id));
+			toast(`${ok ? `${ok} imported. ` : ''}${failed} row${failed > 1 ? 's' : ''} couldn't be saved and ${failed > 1 ? 'are' : 'is'} still here to fix.`, 'alert');
+		} else if (ok) {
 			confetti();
 			toast(`${ok} collab${ok > 1 ? 's' : ''} imported${sendLinks && imported.length ? `, ${imported.length} tracking link${imported.length > 1 ? 's' : ''} emailed` : ''}`, 'check');
 			goto('/studio/collabs');

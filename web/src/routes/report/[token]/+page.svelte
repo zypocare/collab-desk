@@ -5,7 +5,7 @@
 	import { deliv, money, roiOf, type ReportFull } from '#lib/roi.ts';
 	import { downloadReport } from '#lib/reportPdf.ts';
 	import { countUp } from '#lib/ui.svelte.ts';
-	import { compact, fmtLong } from '#lib/util.ts';
+	import { compact, fmtLong, localDay } from '#lib/util.ts';
 	import Icon from '#lib/components/Icon.svelte';
 
 	let r = $state<ReportFull | null>(null);
@@ -100,7 +100,7 @@
 					</div>
 				{/each}
 			</section>
-			<p class="foot">Figures are Instagram's own numbers for organic activity, taken {fmtLong((r.generated_at ?? '').slice(0, 10))}. Instagram can take up to 48 hours to update them. "—" means Instagram doesn't share that number.</p>
+			<p class="foot">Figures are Instagram's own numbers for organic activity, taken {fmtLong(localDay(r.generated_at))}. Instagram can take up to 48 hours to update them. "—" means Instagram doesn't share that number.</p>
 		{/if}
 	</div>
 </div>

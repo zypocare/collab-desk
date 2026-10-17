@@ -76,9 +76,10 @@ export function normaliseInvoice<T extends object>(i: T): T {
 	return i;
 }
 
-/** What is still to be paid (after expected TDS). */
-export const balanceDue = (i: Pick<InvoiceView, 'payable' | 'amount_received' | 'status'>) =>
-	i.status === 'paid' || i.status === 'cancelled' ? 0 : Math.max(0, num(i.payable) - num(i.amount_received));
+/** Cash still to arrive: the total, less what was received, less the TDS (what the brand actually
+ *  deducted, or the TDS expected on the invoice if that's more). */
+export const balanceDue = (i: Pick<InvoiceView, 'total' | 'tds_amount' | 'amount_received' | 'status'> & { tds_deducted?: number }) =>
+	i.status === 'paid' || i.status === 'cancelled' ? 0 : Math.max(0, num(i.total) - num(i.amount_received) - Math.max(num(i.tds_amount), num(i.tds_deducted)));
 
 /** UPI payment link with the amount filled in. Opens GPay, PhonePe, Paytm and other UPI apps on a phone. */
 export function upiLink(i: InvoiceView) {

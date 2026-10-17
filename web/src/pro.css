@@ -195,3 +195,15 @@
   .td .ai-desk-ic { width: 32px; height: 32px; border-radius: 9px; box-shadow: none; animation: none; }
   .td .ai-desk-ic .ic { animation: none; }
 }
+
+/* My page link card on narrower laptops: the buttons go under the text instead of squeezing it. */
+@media (min-width: 761px) and (max-width: 1279px) {
+  [data-side="studio"] .linkcard .hc-in { grid-template-columns: minmax(0, 1fr); grid-template-areas: "eb" "url" "p" "row"; row-gap: 6px; }
+  [data-side="studio"] .linkcard .row { flex-wrap: wrap; justify-content: flex-start; margin-top: 10px; }
+}
+
+/* Calendar: an event chip always stays inside its own day (long names end in "…"). */
+@media (min-width: 761px) {
+  [data-side="studio"] .cal-grid .cell { overflow: hidden; align-items: stretch; }
+  [data-side="studio"] .cal-grid .cell .ev { display: block; max-width: 100%; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+}

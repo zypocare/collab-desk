@@ -4,7 +4,7 @@
 	import { COUNTRIES, CURRENCIES, currencyFor } from '#lib/currency.ts';
 	import { brandStats } from '#lib/brandStats.ts';
 	import { saveBrand, saveBrandNotes, studio } from '#lib/studio.svelte.ts';
-	import { countUp, ui } from '#lib/ui.svelte.ts';
+	import { countUp, toast, ui } from '#lib/ui.svelte.ts';
 	import { CATS, delivText, fmt, inr, stageLabel } from '#lib/util.ts';
 	import Icon from '#lib/components/Icon.svelte';
 	import BrandRating from '#lib/components/BrandRating.svelte';
@@ -54,7 +54,7 @@
 		<div class="kpi glow rv" style="--i:1"><div><div class="lbl">Earned</div><div class="big" use:countUp={{ value: s.paid, money: true }}>{inr(s.paid)}</div><div class="sub">{s.outstanding ? `${inr(s.outstanding)} still due` : 'nothing due'}</div></div></div>
 		<div class="kpi glow rv" style="--i:2"><div><div class="lbl">Collabs</div><div class="big" use:countUp={{ value: s.count }}>{s.count}</div><div class="sub">{s.active} active</div></div></div>
 		<div class="kpi glow rv" style="--i:3"><div><div class="lbl">Barter value</div><div class="big" use:countUp={{ value: s.barter, money: true }}>{inr(s.barter)}</div><div class="sub">products received</div></div></div>
-		<div class="kpi glow rv" style="--i:4"><div><div class="lbl">Pays in</div><div class="big">{s.avgDaysToPay === null ? '—' : `${s.avgDaysToPay}d`}</div><div class="sub">{s.onTimeRate === null ? 'no paid invoices yet' : `${Math.round(s.onTimeRate * 100)}% paid on time`}</div></div></div>
+		<div class="kpi glow rv" style="--i:4"><div><div class="lbl">Pays in</div><div class="big">{s.avgDaysToPay === null ? '—' : `${s.avgDaysToPay}d`}</div><div class="sub">{s.avgDaysToPay === null ? 'no paid invoices yet' : s.onTimeRate === null ? 'from invoice to payment' : `${Math.round(s.onTimeRate * 100)}% paid on time`}</div></div></div>
 	</section>
 
 	<div class="page-grid">
@@ -85,7 +85,15 @@
 						<label for="b-cat">Category</label>
 						<Select id="b-cat" value={brand.category} options={CATS.map((c) => ({ value: c, label: c }))} onchange={(v) => brand && saveBrand(brand.id, { category: v })} />
 					</div>
-					<div class="f span2"><label for="b-web">Website</label><input class="inp" id="b-web" value={brand.website} placeholder="https://" onchange={(e) => saveBrand(brand.id, { website: val(e) })} /></div>
+					<div class="f span2"><label for="b-web">Website</label><input class="inp" id="b-web" value={brand.website} placeholder="https://" onchange={(e) => {
+						const w = val(e).trim();
+						if (w && !/^(https?:\/\/)?[^\s/.]+\.[^\s]{2,}$/.test(w)) {
+							toast('That doesn’t look like a website. Use something like brand.com.', 'alert');
+							e.currentTarget.value = brand.website ?? '';
+							return;
+						}
+						saveBrand(brand.id, { website: w && !/^https?:/.test(w) ? `https://${w}` : w });
+					}} /></div>
 					<div class="f">
 						<label for="b-country">Country</label>
 						<Select id="b-country" value={brand.country || 'India'} options={COUNTRIES.map((x) => ({ value: x, label: x }))} onchange={(v) => brand && saveBrand(brand.id, { country: v, currency: v === 'India' ? 'INR' : brand.currency !== 'INR' ? brand.currency : currencyFor(v) })} />

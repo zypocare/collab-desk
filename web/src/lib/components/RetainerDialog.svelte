@@ -75,9 +75,9 @@
 <svelte:window onkeydown={(ev) => ev.key === 'Escape' && onclose()} />
 
 <div class="dialog-scrim" role="presentation" use:portal onclick={(ev) => ev.target === ev.currentTarget && onclose()}>
-	<div class="dialog quote-dialog" role="dialog" aria-modal="true" aria-labelledby="rt-title">
+	<div class="dialog quote-dialog" role="dialog" aria-modal="true" aria-labelledby="rt-heading">
 		<form onsubmit={submit}>
-			<h2 id="rt-title">{e ? 'Change monthly deal' : 'Set up a monthly deal'}</h2>
+			<h2 id="rt-heading">{e ? 'Change monthly deal' : 'Set up a monthly deal'}</h2>
 			<p>For ambassador and retainer deals. Each month's collab is created on its own, with its go-live date and invoice.</p>
 			<div class="fields">
 				<div class="f">

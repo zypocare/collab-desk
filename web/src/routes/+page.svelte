@@ -22,7 +22,7 @@
 
 	// The creator works in the studio; this page is for brands (the creator can still preview it).
 	$effect(() => {
-		if (auth.account?.role === 'creator' && !preview) goto('/studio', { replace: true });
+		if (auth.account?.role === 'creator' && !preview) goto('/studio', { replaceState: true });
 	});
 
 	// Shared insights (null when they're off): the 30-day reach goes in the stats, plus a link.

@@ -75,7 +75,7 @@ export function monthFacts(month: string, collabs: Collab[], s: Settings, media:
 			declined: reqs.filter((c) => c.stage === 'declined').length
 		},
 		wentLive: live.map((c) => c.brand.name),
-		barterValue: collabs.filter((c) => c.type !== 'paid' && ym(c.product_received_at ?? c.product_date) === month).reduce((a, c) => a + c.product_value, 0),
+		barterValue: collabs.filter((c) => c.type !== 'paid' && ym(c.product_received_at ?? (c.barter_kind === 'experience' && (c.stage === 'live' || c.stage === 'wrapped') ? c.live_date : null)) === month).reduce((a, c) => a + c.product_value, 0),
 		collabPosts: posts.map((p) => ({ brand: p.brand, views: p.m?.views ?? null, reach: p.m?.reach ?? null, engagement: p.m ? er(p.m) : null })).slice(0, 6),
 		ownPosts: { count: own.length, avgViews: views.length ? Math.round(views.reduce((a, b) => a + b, 0) / views.length) : null, best: best ? { caption: (best.caption ?? '').slice(0, 80), views: best.views ?? 0 } : null },
 		followers: h.length >= 2 ? { start: h[0].followers, end: h[h.length - 1].followers } : null,

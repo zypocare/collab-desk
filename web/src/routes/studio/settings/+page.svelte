@@ -13,7 +13,7 @@
 	import { theme, toggleTheme } from '#lib/ui.svelte.ts';
 	import { downloadMediaKit } from '#lib/mediaKitPdf.ts';
 	import { copyText, toast } from '#lib/ui.svelte.ts';
-	import { KINDS, compact, inr, offeredKinds } from '#lib/util.ts';
+	import { KINDS, compact, inr, offeredKinds, phoneOk } from '#lib/util.ts';
 	import { rateCheck, suggestRates } from '#lib/rateSuggest.ts';
 	import Icon from '#lib/components/Icon.svelte';
 	import ShippingSettings from '#lib/components/ShippingSettings.svelte';
@@ -50,10 +50,21 @@
 		{ k: 'reply_time', label: 'Usual reply time', ph: '2 days' },
 		{ k: 'whatsapp', label: 'WhatsApp for brands (optional)', ph: '98450 00000' }
 	];
-	function saveText(k: TextKey, v: string) {
+	/** Saves a profile field; a value that can't be right is refused with a message and the old value comes back. */
+	function saveText(k: TextKey, v: string, el?: HTMLInputElement) {
 		let clean = k === 'handle' ? v.trim().replace(/^@/, '') : v.trim();
 		if (k === 'reply_time') clean = clean.replace(/^1 (day|hour|week)s\b/i, '1 $1');
-		if ((k === 'display_name' || k === 'app_name' || k === 'site_url') && !clean) return;
+		const problem =
+			(k === 'display_name' || k === 'app_name' || k === 'site_url') && !clean ? 'This can’t be empty.'
+			: k === 'handle' && clean && !/^[A-Za-z0-9._]{1,30}$/.test(clean) ? 'An Instagram handle has only letters, numbers, dots and underscores (no spaces).'
+			: k === 'site_url' && !/^https?:\/\/[^\s/.]+\.[^\s]+$/.test(clean) ? 'Use a full web address, like https://yourdomain.com.'
+			: k === 'whatsapp' && !phoneOk(clean) ? 'That number doesn’t look right. Use digits, like 98450 00000.'
+			: '';
+		if (problem) {
+			toast(problem, 'alert');
+			if (el) el.value = String(s[k] ?? '');
+			return;
+		}
 		saveSettings({ [k]: clean } as Partial<Settings>);
 	}
 	// Hand the studio to another email (e.g. hers), optionally keeping the current one as a manager.
@@ -79,7 +90,7 @@
 		if (error) return toast(error.message, 'alert');
 		if (!keepMe) {
 			await signOut();
-			return goto('/login', { replace: true });
+			return goto('/login', { replaceState: true });
 		}
 		studio.settings!.creator_email = to;
 		const { data } = await supabase.rpc('studio_account');
@@ -263,7 +274,7 @@
 							<div class="panel-h"><h2>Profile</h2><small>shown on your brand page</small></div>
 							<div class="form-b">
 								{#each fields as f (f.k)}
-									<div class="f"><label for="me-{f.k}">{f.label}</label><input class="inp" id="me-{f.k}" value={s[f.k]} placeholder={f.ph ?? ''} onchange={(e) => saveText(f.k, val(e))} /></div>
+									<div class="f"><label for="me-{f.k}">{f.label}</label><input class="inp" id="me-{f.k}" value={s[f.k]} placeholder={f.ph ?? ''} onchange={(e) => saveText(f.k, val(e), e.currentTarget)} /></div>
 								{/each}
 							</div>
 						</section>
@@ -346,7 +357,7 @@
 						<section class="panel rv" style="--i:1">
 							<div class="panel-h"><h2>Income goal</h2><small>tracked on Today</small></div>
 							<div class="form-b">
-								<div class="f span2"><label for="me-goal">Monthly income goal (₹)</label><input class="inp num" id="me-goal" type="number" inputmode="numeric" value={s.monthly_goal} onchange={(e) => saveSettings({ monthly_goal: num(e) })} /></div>
+								<div class="f span2"><label for="me-goal">Monthly income goal (₹)</label><input class="inp num" id="me-goal" type="number" inputmode="numeric" value={s.monthly_goal} min="0" onchange={(e) => saveSettings({ monthly_goal: Math.max(0, num(e)) })} /></div>
 							</div>
 						</section>
 						<BillingSettings />
@@ -371,8 +382,8 @@
 						<section class="panel rv" style="--i:4">
 							<div class="panel-h"><h2>App</h2></div>
 							<div class="form-b">
-								<div class="f span2"><label for="me-app">App name</label><input class="inp" id="me-app" value={s.app_name} onchange={(e) => saveText('app_name', val(e))} /></div>
-								<div class="f span2"><label for="me-site">Website address</label><input class="inp" id="me-site" value={s.site_url} placeholder="https://yourdomain.com" onchange={(e) => saveText('site_url', val(e))} /></div>
+								<div class="f span2"><label for="me-app">App name</label><input class="inp" id="me-app" value={s.app_name} onchange={(e) => saveText('app_name', val(e), e.currentTarget)} /></div>
+								<div class="f span2"><label for="me-site">Website address</label><input class="inp" id="me-site" value={s.site_url} placeholder="https://yourdomain.com" onchange={(e) => saveText('site_url', val(e), e.currentTarget)} /></div>
 								<div class="f span2">
 									<label for="me-email">Owner sign-in email</label>
 									{#if !moving}

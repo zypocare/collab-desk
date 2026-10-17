@@ -115,7 +115,7 @@
 		</div>
 	{:else if info.state !== 'open'}
 		<div class="empty-card">
-			<h2>{info.state === 'used' ? 'Already done' : info.state === 'closed' ? 'Already answered' : info.state === 'expired' ? 'This link has expired' : 'This link is not valid'}</h2>
+			<h2>{info.state === 'used' ? 'Already answered' : info.state === 'closed' ? 'Already answered' : info.state === 'expired' ? 'This link has expired' : 'This link is not valid'}</h2>
 			<p>{info.state === 'missing' ? 'Check that you copied the whole link from the email.' : 'You can see everything about this request on your request page.'}</p>
 			{#if info.code}<a class="btn" href="/brand/r/{info.code}">Open your request</a>{/if}
 		</div>

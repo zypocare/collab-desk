@@ -20,7 +20,8 @@ export function brandStats(brand: Brand, all: Collab[]): BrandStats {
 	const collabs = all.filter((c) => c.brand_id === brand.id).sort((a, b) => b.received_on.localeCompare(a.received_on));
 	const live = collabs.filter((c) => c.stage !== 'declined');
 	const paidOnes = live.filter((c) => c.pay_status === 'paid' && c.paid_on);
-	const timed = paidOnes.filter((c) => c.invoiced_on);
+	// Days from each invoice to its payment (advance and balance invoices counted separately, never negative).
+	const waits = live.flatMap((c) => (c.invoices ?? []).filter((i) => i.status === 'paid' && i.paid_on && i.issue_date).map((i) => Math.max(0, (parse(i.paid_on!).getTime() - parse(i.issue_date).getTime()) / DAY)));
 	const withDue = paidOnes.filter((c) => c.pay_due);
 	return {
 		brand,
@@ -32,9 +33,7 @@ export function brandStats(brand: Brand, all: Collab[]): BrandStats {
 		outstanding: live
 			.filter((c) => c.type !== 'barter' && c.pay_status !== 'paid' && ['confirmed', 'creating', 'live', 'wrapped'].includes(c.stage))
 			.reduce((a, c) => a + Math.max(0, c.fee - c.pay_received), 0),
-		avgDaysToPay: timed.length
-			? Math.round(timed.reduce((a, c) => a + (parse(c.paid_on!).getTime() - parse(c.invoiced_on!).getTime()) / DAY, 0) / timed.length)
-			: null,
+		avgDaysToPay: waits.length ? Math.round(waits.reduce((a, d) => a + d, 0) / waits.length) : null,
 		onTimeRate: withDue.length ? withDue.filter((c) => c.paid_on! <= c.pay_due!).length / withDue.length : null,
 		lastDate: live[0]?.live_date ?? live[0]?.received_on ?? null
 	};

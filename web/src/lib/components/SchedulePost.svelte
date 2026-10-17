@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount } from 'svelte';
+	import { todayIso } from '../util';
 	import { ask } from '../confirm.svelte';
 	import { studio } from '../studio.svelte';
 	import { supabase } from '../supabase';
@@ -34,7 +35,7 @@
 
 	function start() {
 		// Default: the go-live date at 7 pm (or tomorrow 7 pm), in her own time.
-		const upcoming = !!c.live_date && c.live_date >= new Date().toISOString().slice(0, 10);
+		const upcoming = !!c.live_date && c.live_date >= todayIso();
 		const base = upcoming ? new Date(c.live_date + 'T19:00') : new Date(Date.now() + 864e5);
 		if (!upcoming) base.setHours(19, 0, 0, 0);
 		const pad = (n: number) => String(n).padStart(2, '0');

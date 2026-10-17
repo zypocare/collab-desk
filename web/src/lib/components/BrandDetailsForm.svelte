@@ -27,6 +27,7 @@
 		if (!name.trim()) return (error = 'Add your brand name.');
 		if (!fullName.trim()) return (error = 'Add your name so we know who to reply to.');
 		if (!phoneOk(phone)) return (error = 'That phone number doesn’t look right. Use digits, like +91 98450 00000, or leave it empty.');
+		if (website.trim() && !/^(https?:\/\/)?[^\s/.]+\.[^\s]{2,}$/.test(website.trim())) return (error = 'That website doesn’t look right. Use something like brand.com, or leave it empty.');
 		busy = true;
 		const { error: err } = await supabase.rpc('register_brand', {
 			p_name: name,

@@ -59,7 +59,8 @@ export function buildReport(collabs: Collab[], fy: FY) {
 		// Costs she logged against the collab, by the month they were spent.
 		for (const x of c.expenses ?? []) if (inFy(x.spent_on, fy)) month(x.spent_on)!.costs += Number(x.amount) || 0;
 		// Products received (barter / paid + product).
-		const got = c.product_date ?? (c.stage === 'live' || c.stage === 'wrapped' ? c.live_date : null);
+		// Only once it actually arrived (a parcel on its way doesn't count yet); an experience counts once it's live.
+		const got = c.product_received_at?.slice(0, 10) ?? (c.barter_kind === 'experience' && (c.stage === 'live' || c.stage === 'wrapped') ? c.live_date : null);
 		if (c.type !== 'paid' && c.product_value > 0 && c.stage !== 'declined' && inFy(got, fy)) {
 			month(got!)!.barter += c.product_value;
 			brandRow(c).barter += c.product_value;

@@ -39,8 +39,9 @@
 	let show = $state<'all' | 'active' | 'done' | 'declined'>('all');
 	const groups = $derived({
 		all: brandData.requests,
-		active: brandData.requests.filter((r) => !['live', 'wrapped', 'declined'].includes(r.stage)),
-		done: brandData.requests.filter((r) => r.stage === 'live' || r.stage === 'wrapped'),
+		active: brandData.requests.filter((r) => r.stage !== 'declined' && r.stage !== 'wrapped' && !(r.stage === 'live' && (r.type === 'barter' || r.pay_status === 'paid'))),
+		// Completed: wrapped, or live with nothing left to settle.
+		done: brandData.requests.filter((r) => r.stage === 'wrapped' || (r.stage === 'live' && (r.type === 'barter' || r.pay_status === 'paid'))),
 		declined: brandData.requests.filter((r) => r.stage === 'declined')
 	});
 	const ig = $derived(pub.data?.instagram ?? null);

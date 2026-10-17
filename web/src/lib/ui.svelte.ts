@@ -4,7 +4,8 @@ import { inr } from './util';
 export const REDUCED = typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 type Toast = { id: number; msg: string; icon: string; out: boolean };
-export const ui = $state<{ toasts: Toast[]; openCollab: string | null; newCollab: boolean; pendingNext: string | null; pasteText: string; fromIg: string }>({
+/** holdRedirect: a guest's sign-in code is being checked; don't move them off the request form yet. */
+export const ui = $state<{ toasts: Toast[]; openCollab: string | null; newCollab: boolean; pendingNext: string | null; pasteText: string; fromIg: string; holdRedirect?: boolean; /** The Instagram account it came from (username, name). */ fromIgUser?: string; fromIgName?: string }>({
 	toasts: [],
 	openCollab: null,
 	newCollab: false,

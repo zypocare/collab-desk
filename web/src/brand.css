@@ -474,3 +474,13 @@ html:has([data-side="brand"]),[data-side="brand"]{scroll-behavior:smooth}
   .brq{grid-template-columns:minmax(0,1fr)}
   .brq-side{border-left:0;border-top:1px solid var(--line)}
 }
+
+/* Narrower laptops: the brand top bar stays on one line (links never wrap; the email chip and
+   "Sign out" text make room first). */
+[data-side="brand"] .topbar nav a{white-space:nowrap}
+@media (min-width:761px) and (max-width:1180px){
+  [data-side="brand"] .topbar{gap:8px}
+  [data-side="brand"] .topbar .who-chip{display:none}
+  [data-side="brand"] .topbar .signout span{display:none}
+  [data-side="brand"] .topbar .brandmark b{font-size:16px}
+}

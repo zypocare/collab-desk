@@ -23,9 +23,11 @@
 
 	// Five places, related pages paired as tabs inside them.
 	type Tab = { href: string; label: string };
-	const NAV: { href: string; label: string; short?: string; icon: string; tabs?: Tab[]; also?: string[] }[] = [
+	// desk: laptop sidebar only (phones reach Messages from the top bar).
+	const NAV: { href: string; label: string; short?: string; icon: string; tabs?: Tab[]; also?: string[]; desk?: boolean }[] = [
 		{ href: '/studio', label: 'Today', icon: 'home' },
 		{ href: '/studio/collabs', label: 'Collabs', icon: 'board', tabs: [{ href: '/studio/collabs', label: 'Board' }, { href: '/studio/brands', label: 'Brands' }, { href: '/studio/pitches', label: 'Pitches' }], also: ['/studio/c/', '/studio/import'] },
+		{ href: '/studio/inbox', label: 'Messages', icon: 'inbox', desk: true },
 		{ href: '/studio/content', label: 'Plan', icon: 'cal', tabs: [{ href: '/studio/content', label: 'Content' }, { href: '/studio/calendar', label: 'Calendar' }] },
 		{ href: '/studio/payments', label: 'Money', icon: 'wallet', tabs: [{ href: '/studio/payments', label: 'Payments' }, { href: '/studio/reports', label: 'Reports' }] },
 		{ href: '/studio/settings', label: 'My page', short: 'Page', icon: 'link', also: ['/studio/profile'] }
@@ -52,8 +54,8 @@
 
 	// Only the creator may be here.
 	$effect(() => {
-		if (!auth.session) goto(`/login?next=${encodeURIComponent(page.url.pathname + page.url.search)}`, { replace: true });
-		else if (auth.account && auth.account.role !== 'creator') goto('/brand', { replace: true });
+		if (!auth.session) goto(`/login?next=${encodeURIComponent(page.url.pathname + page.url.search)}`, { replaceState: true });
+		else if (auth.account && auth.account.role !== 'creator') goto('/brand', { replaceState: true });
 	});
 
 	onMount(() => {
@@ -194,7 +196,7 @@
 
 	async function logout() {
 		await signOut();
-		goto('/login', { replace: true });
+		goto('/login', { replaceState: true });
 	}
 	// The top bar turns solid once the page scrolls under it.
 	let winY = $state(0);
@@ -230,9 +232,9 @@
 			<div class="rail-lbl">Workspace</div>
 			<div class="navs" bind:this={navs} use:cascade={{ selector: '.nav', delay: 0.1, gap: 0.06 }}>
 				<span class="nav-ind" bind:this={ind}></span>
-				{#each NAV as n (n.href)}
+				{#each NAV.filter((n) => !n.desk || !phone.on) as n (n.href)}
 					<a class="nav" href={phone.on && n.href === '/studio/settings' ? '/studio/profile' : n.href} aria-current={current === n.href ? 'page' : undefined} aria-label={phone.on && n.href === '/studio/settings' ? 'Profile' : undefined}
-						><span class="nav-ic">{#if phone.on && n.href === '/studio/settings'}<Avatar name={studio.settings?.display_name ?? ''} src={studio.ig?.connected ? studio.ig.profile_picture_url : ''} size="28px" />{:else}<Icon name={n.icon} />{/if}</span><span class="nav-t" class:nav-long={!!n.short}>{n.label}</span>{#if n.short}<span class="nav-short" aria-hidden="true">{n.short}</span>{/if}{#if n.href === '/studio/collabs' && newCount}<span class="badge" aria-label="{newCount} new"
+						><span class="nav-ic">{#if phone.on && n.href === '/studio/settings'}<Avatar name={studio.settings?.display_name ?? ''} src={studio.ig?.connected ? studio.ig.profile_picture_url : ''} size="28px" />{:else}<Icon name={n.icon} />{/if}</span><span class="nav-t" class:nav-long={!!n.short}>{n.label}</span>{#if n.short}<span class="nav-short" aria-hidden="true">{n.short}</span>{/if}{#if n.href === '/studio/inbox' && unread}<span class="badge" aria-label="{unread} unread">{unread}</span>{/if}{#if n.href === '/studio/collabs' && newCount}<span class="badge" aria-label="{newCount} new"
 								>{newCount}</span
 							>{/if}</a
 					>

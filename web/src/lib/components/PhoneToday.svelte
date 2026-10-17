@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { receivedIn } from '../invoice';
 	import { onMount } from 'svelte';
-	import { completeFollow, markPaid, markReceived, priorityOf, studio } from '../studio.svelte';
+	import { askPaid, completeFollow, markPaid, markReceived, priorityOf, studio } from '../studio.svelte';
 	import { copyText, countUp, ui } from '../ui.svelte';
 	import {
 		KIND_ICON,
@@ -180,7 +180,7 @@
 						{#if t.kind === 'follow'}
 							<button class="dk-go" onclick={() => leaveThen(key, () => completeFollow(t.c))}><Icon name="check" />Done</button>
 						{:else if t.kind === 'pay'}
-							<button class="dk-go" onclick={() => leaveThen(key, () => markPaid(t.c))}><Icon name="wallet" />Mark paid</button>
+							<button class="dk-go" onclick={async () => (await askPaid(t.c)) && leaveThen(key, () => markPaid(t.c, false, true))}><Icon name="wallet" />Mark paid</button>
 						{:else if t.kind === 'product' && inTransit(t.c)}
 							<button class="dk-go" onclick={() => leaveThen(key, () => markReceived(t.c))}><Icon name="box" />Received</button>
 						{:else if t.kind === 'msg'}

@@ -8,7 +8,7 @@
 	import { pub } from '#lib/publicPage.svelte.ts';
 	import { supabase } from '#lib/supabase.ts';
 	import type { BriefDetails, CollabType } from '#lib/types.ts';
-	import { confetti, copyText } from '#lib/ui.svelte.ts';
+	import { confetti, copyText, toast, ui } from '#lib/ui.svelte.ts';
 	import { KINDS, USAGE, TYPE_LABEL, delivText, fmtLong, usageLabel, usageOption, errMessage, firstName, inr, offeredKinds, packageOffered, rel } from '#lib/util.ts';
 	import { budgetCombos, type Combo } from '#lib/suggest.ts';
 	import BrandDetailsForm from '#lib/components/BrandDetailsForm.svelte';
@@ -37,14 +37,29 @@
 		if (!guest) return;
 		try {
 			const d = JSON.parse(localStorage.getItem(DRAFT) ?? 'null');
-			if (d && !page.url.searchParams.get('package')) untrack(() => Object.assign(g, d.g ?? {}));
+			if (d && !page.url.searchParams.get('package')) untrack(() => {
+				Object.assign(g, d.g ?? {});
+				// The request itself too (not when the link already picks something: a package, an item, "again").
+				const f = d.form;
+				if (f && !page.url.searchParams.get('item') && !page.url.searchParams.get('again')) {
+					type = f.type ?? type;
+					qty = { ...qty, ...(f.qty ?? {}) };
+					fee = f.fee ?? '';
+					product = f.product ?? '';
+					productValue = f.productValue ?? '';
+					barterKind = f.barterKind ?? 'product';
+					preferred = f.preferred ?? '';
+					usage = f.usage ?? usage;
+					brief = f.brief ?? '';
+				}
+			});
 		} catch {
 			/* storage blocked */
 		}
 	});
 	$effect(() => {
 		if (!guest) return;
-		const snapshot = JSON.stringify({ g });
+		const snapshot = JSON.stringify({ g, form: { type, qty, fee, product, productValue, barterKind, preferred, usage, brief } });
 		try {
 			localStorage.setItem(DRAFT, snapshot);
 		} catch {
@@ -79,16 +94,28 @@
 		if (token.length !== 6) return (codeErr = 'Enter the 6-digit code from the email.');
 		codeBusy = true;
 		codeErr = '';
+		ui.holdRedirect = true;
 		const { error: err } = await supabase.auth.verifyOtp({ email: g.email.trim().toLowerCase(), token, type: 'email' });
 		if (err) {
 			codeBusy = false;
+			ui.holdRedirect = false;
 			return (codeErr = 'That code is wrong or has expired. Check the latest email or send a new code.');
 		}
 		const account = await refreshAccount();
 		if (account?.role === 'creator') {
+			// Not a brand: sign that out again here (the form stays as it was) and say why.
+			await supabase.auth.signOut({ scope: 'local' });
+			auth.session = null;
+			auth.account = null;
+			ui.holdRedirect = false;
 			codeBusy = false;
-			return (codeErr = "This is the creator's email. Use your brand's email to send a request.");
+			codeStep = false;
+			return (gErr = "This is the creator's email. Use your brand's work email to send a request.");
 		}
+		ui.holdRedirect = false;
+		// This email already belongs to a company: the request goes there; say so.
+		if (account?.role === 'brand' && account.brand && account.brand.name.trim().toLowerCase() !== g.brand.trim().toLowerCase())
+			toast(`This email is already set up for ${account.brand.name}, so the request is sent as ${account.brand.name}.`, 'info');
 		if (account?.role === 'brand' && !account.brand) {
 			const { error: rErr } = await supabase.rpc('register_brand', {
 				p_name: g.brand, p_instagram: g.instagram, p_website: '', p_category: g.category, p_full_name: g.name, p_phone: g.phone
@@ -271,7 +298,11 @@
 		const deliverables = shown.filter((k) => qty[k] > 0).map((k) => ({ kind: k, qty: qty[k] }));
 		if (!deliverables.length) errDel = 'Choose at least one deliverable.';
 		if (type !== 'paid' && !product.trim()) errProduct = exp ? 'Tell us what you are offering: the stay, meal or event.' : 'Tell us which product you will send.';
-		if (errDel || errProduct) return;
+		// Amounts that can't be right are caught here (not saved as a 'Great fit').
+		const f = Number(fee) || 0, pv = Number(productValue) || 0;
+		if (f < 0 || pv < 0) error = 'Amounts can’t be below ₹0.';
+		else if (f > 50000000 || pv > 50000000) error = 'That amount looks too large. Check the number of zeros.';
+		if (errDel || errProduct || error) return;
 		if (guest) {
 			if (!validGuest()) return;
 			busy = true;
@@ -413,7 +444,7 @@
 						</div>
 					{/if}
 					{#if type === 'barter' && barter && barter.mode !== 'closed'}
-						<p class="bk-note"><Icon name="info" />{creator || 'The creator'} reviews paid requests first.{#if barter.min_value} Barter worth less than {inr(barter.min_value)} can still be sent, but it's reviewed last.{/if}</p>
+						<p class="bk-note"><Icon name="info" />{creator || 'The creator'} reviews paid requests first.{' '}{#if barter.min_value}Barter worth less than {inr(barter.min_value)} can still be sent, but it's reviewed last.{/if}</p>
 					{/if}
 				</div>
 				<div class="bsec rq-card" id="rq-content">
@@ -436,7 +467,7 @@
 					<div class="bsec-h"><i>{guest ? '04' : '03'}</i><h2>Budget, product and timing</h2></div>
 					<div class="fields">
 						{#if type !== 'barter'}
-							<div class="f"><label for="b-budget">Budget</label><div class="pre"><span>₹</span><input class="inp num" id="b-budget" type="number" inputmode="numeric" min="0" placeholder="Leave blank for a quote" bind:value={fee} /></div></div>
+							<div class="f"><label for="b-budget">Budget</label><div class="pre"><span>₹</span><input class="inp num" id="b-budget" type="number" inputmode="numeric" min="0" max="50000000" placeholder="Leave blank for a quote" bind:value={fee} /></div></div>
 							{#if combos.length && !pkg}
 								<div class="f span2 combos">
 									<span class="lbl-t">{inr(Number(fee))} gets you</span>
@@ -454,7 +485,7 @@
 							<div class="f"><label for="b-value">{exp ? 'Value of the experience' : 'Product value'}</label><div class="pre"><span>₹</span><input class="inp num" id="b-value" type="number" inputmode="numeric" min="0" bind:value={productValue} /></div></div>
 							<div class="f span2">
 								<label for="b-product">{exp ? "What you're offering" : "Product you'll send"}</label>
-								<input class="inp" class:bad={!!errProduct} id="b-product" placeholder={exp ? 'e.g. Dinner for two at our Indiranagar outlet' : 'e.g. Vitamin C serum, 30 ml'} bind:value={product} oninput={() => (errProduct = '')} />
+								<input class="inp" class:bad={!!errProduct} id="b-product" placeholder={exp ? 'e.g. Dinner for two at our Indiranagar outlet' : 'e.g. Vitamin C serum, 30 ml'} maxlength="200" bind:value={product} oninput={() => (errProduct = '')} />
 								{#if errProduct}<div class="err">{errProduct}</div>{/if}
 							</div>
 						{/if}
@@ -477,7 +508,7 @@
 				<div class="bsec rq-card" id="rq-brief">
 					<div class="bsec-h"><i>{guest ? '05' : '04'}</i><h2>Brief</h2></div>
 					<BriefEditor bind:value={briefDetails} idp="b" category={acc?.brand?.category ?? g.category} />
-					<div class="f" style="margin-top:12px"><label for="b-brief">Anything else</label><textarea class="inp" id="b-brief" rows="3" placeholder="What's launching, context, timing notes" bind:value={brief}></textarea></div>
+					<div class="f" style="margin-top:12px"><label for="b-brief">Anything else</label><textarea class="inp" id="b-brief" rows="3" placeholder="What's launching, context, timing notes" maxlength="4000" bind:value={brief}></textarea>{#if brief.length > 3600}<small class="hint">{4000 - brief.length} characters left</small>{/if}</div>
 				</div>
 				{#if codeStep}
 					<div class="code-step" role="dialog" aria-label="Confirm your email">

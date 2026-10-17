@@ -106,7 +106,8 @@
 				{/snippet}
 			</Calendar.Root>
 			<div class="dp-foot">
-				<button type="button" class="lnk" onclick={() => set(today(TZ).toString())}>Today</button>
+				<!-- "Today" only when today is allowed (e.g. a go-live date needs a few days' notice). -->
+				{#if !min || today(TZ).toString() >= min}<button type="button" class="lnk" onclick={() => set(today(TZ).toString())}>Today</button>{/if}
 				{#if clearable && picked}<button type="button" class="lnk muted" onclick={() => set('')}>Clear</button>{/if}
 			</div>
 		</Popover.Content>

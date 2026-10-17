@@ -9,6 +9,7 @@ import type { Package } from './types';
 import type { BankAlert, Brand, BrandPrivate, BrandReport, Checklist, Collab, Deliverable, IgAccount, IgMedia, Quote, Retainer, Settings, Stage } from './types';
 import { balanceDue, normaliseInvoice, type Invoice, type InvoiceItem } from './invoice';
 import { confetti, toast, ui } from './ui.svelte';
+import { ask } from './confirm.svelte';
 import { diff, errMessage, inr, stageLabel, todayIso } from './util';
 import { isNetworkError, load as loadSaved, net, save as saveLocal } from './offline.svelte';
 
@@ -95,7 +96,9 @@ export async function loadStudio() {
 	loadRetainers();
 	loadFits();
 	loadLeads();
-	supabase.rpc('studio_account').then(({ data }) => (studio.me = (data as typeof studio.me) ?? null));
+	supabase.rpc('studio_account').then(({ data }) => {
+		studio.me = (data as typeof studio.me) ?? null;
+	});
 	const err = collabs.error || brands.error || notes.error || settings.error;
 	if (err) {
 		// Offline with a saved copy: keep showing it.
@@ -200,7 +203,7 @@ export const priorityOf = (c: Collab): Priority | null => {
 
 /** Instagram chats that look like a collab and aren't on the board yet. */
 export async function loadLeads() {
-	const { data } = await supabase
+	let { data } = await supabase
 		.from('ig_threads')
 		.select('igsid, username, name, picture, collab_flag, collab_hint, last_at')
 		.is('collab_id', null)
@@ -208,6 +211,13 @@ export async function loadLeads() {
 		.order('last_at', { ascending: false, nullsFirst: false })
 		.limit(12);
 	if (data) {
+		// Not a new collab if that brand already has one going (by handle, or a clearly matching name:
+		// @sunveda.in and "Sunveda").
+		const norm = (x: string) => x.toLowerCase().replace(/[^a-z0-9]/g, '');
+		const busy = studio.brands.filter((br) => studio.collabs.some((c) => c.brand_id === br.id && c.stage !== 'declined'));
+		const known = (u: string) =>
+			busy.some((br) => (br.instagram && norm(br.instagram) === norm(u)) || (norm(br.name).length >= 4 && norm(u).startsWith(norm(br.name))));
+		data = (data as typeof studio.leads).filter((t) => !known(t.username || ''));
 		// A possible collab that wasn't there before: chime and say so (not on the first load).
 		const fresh = (data as typeof studio.leads).filter((t) => !seenLeads.has(t.igsid));
 		if (leadsLoaded && fresh.length) speak(fresh.length === 1 ? 'You might have a new collab.' : `You might have ${fresh.length} new collabs.`);
@@ -307,7 +317,15 @@ export async function updateCollab(id: string, patch: CollabPatch) {
 export async function setStage(c: Collab, stage: Stage, quiet = false) {
 	if (c.stage === stage) return;
 	const patch: CollabPatch = { stage };
-	if (stage === 'live' && !c.live_date) patch.live_date = todayIso();
+	// Posted today: a planned go-live date still in the future becomes today (invoice dates follow it).
+	if (stage === 'live' && (!c.live_date || c.live_date > todayIso())) patch.live_date = todayIso();
+	// Agreed after she sent a quote: the fee is what she quoted (so the go-live invoice charges that).
+	const early = c.stage === 'request' || c.stage === 'negotiating';
+	const q = [...(c.quotes ?? [])].sort((a, b) => b.version - a.version)[0];
+	if (early && ['confirmed', 'creating', 'live'].includes(stage) && q && (q.status === 'sent' || q.status === 'accepted')) {
+		const quoted = Math.round(q.total * (q.inr_rate || 1));
+		if (quoted > 0 && quoted !== c.fee) patch.fee = quoted;
+	}
 	await updateCollab(c.id, patch);
 	if (stage === 'live' && c.deliverables.some((d) => !d.done)) {
 		await supabase.from('deliverables').update({ done: true }).eq('collab_id', c.id);
@@ -318,7 +336,16 @@ export async function setStage(c: Collab, stage: Stage, quiet = false) {
 	toast(`${c.brand.name} moved to ${stageLabel(stage)}`, 'layers');
 }
 
-export async function markPaid(c: Collab, quiet = false) {
+/** What's still owed on a collab: the fee less what has come in. */
+export const owedOn = (c: Collab) => Math.max(0, (Number(c.fee) || 0) - (Number(c.pay_received) || 0));
+
+/** "Mark paid" is money she's saying arrived (the brand may be emailed): always confirm it first. */
+export const askPaid = (c: Collab) =>
+	ask({ title: `Mark ${inr(owedOn(c))} from ${c.brand.name} as paid?`, body: 'It’s recorded as received today and counts in this month’s money. Open invoices are settled in full.', ok: 'Mark paid' });
+
+export async function markPaid(c: Collab, quiet = false, asked = false) {
+	if (!quiet && !asked && !(await askPaid(c))) return false;
+	const owed = owedOn(c);
 	const open = c.invoices.filter((i) => i.status === 'sent' || i.status === 'partly_paid');
 	if (open.length) {
 		// With invoices, "paid in full" means every open invoice was paid (TDS deducted as expected).
@@ -326,9 +353,10 @@ export async function markPaid(c: Collab, quiet = false) {
 	} else {
 		await updateCollab(c.id, { pay_status: 'paid', pay_received: c.fee, paid_on: todayIso(), ...(c.stage === 'live' ? { stage: 'wrapped' as Stage } : {}) });
 	}
-	if (quiet) return;
+	if (quiet) return true;
 	confetti();
-	toast(`${inr(c.fee)} from ${c.brand.name} marked as paid`, 'wallet');
+	toast(`${inr(owed)} from ${c.brand.name} marked as paid`, 'wallet');
+	return true;
 }
 
 // ---------------------------------------------------------------------------
@@ -452,13 +480,20 @@ export async function deleteRetainer(id: string) {
 export async function createCollab(brandName: string, extra?: NewCollabExtra): Promise<Collab | null> {
 	const brand = await ensureBrand(brandName, extra?.instagram ?? '');
 	if (!brand) return null;
+	const brandIsNew = !studio.collabs.some((x) => x.brand_id === brand.id);
 	const { data, error } = await supabase
 		.from('collabs')
 		.insert({ ...(extra?.collab ?? {}), brand_id: brand.id, source: 'manual', code: '' })
 		.select('id')
 		.single();
 	if (error || !data) {
-		toast(`Couldn't add collab: ${errMessage(error)}`, 'alert');
+		// Don't leave behind a brand made just for this collab.
+		if (brandIsNew) {
+			await supabase.from('brands').delete().eq('id', brand.id);
+			studio.brands = studio.brands.filter((b) => b.id !== brand.id);
+		}
+		const m = errMessage(error);
+		toast(`Couldn't add ${brandName}: ${/fee_check/.test(m) ? "the fee can't be below ₹0." : /product_value/.test(m) ? "the product value can't be below ₹0." : m}`, 'alert');
 		return null;
 	}
 	// Nothing pasted? Start from what this brand booked last time.
@@ -581,6 +616,11 @@ export async function saveInvoice(c: Collab, input: InvoiceInput, issue: boolean
 }
 
 export async function recordPayment(inv: Invoice, p: { amount: number; tds: number; date: string; ref: string }, quiet = false) {
+	const room = inv.total - inv.amount_received - Math.max(inv.tds_deducted, Math.max(0, p.tds));
+	if (p.amount > room + 1) {
+		toast(`That's more than the ${inr(Math.max(0, room))} still to receive on ${inv.number}.`, 'alert');
+		return false;
+	}
 	const { error } = await supabase
 		.from('invoices')
 		.update({

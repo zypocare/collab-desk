@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { page } from '$app/state';
+	import { page } from '$app/state';
+	import { todayIso } from '#lib/util.ts';
 	import { money } from '#lib/currency.ts';
 	import { onMount } from 'svelte';
 	import { supabase } from '#lib/supabase.ts';
@@ -32,7 +33,7 @@
 	let claimErr = $state('');
 	function openClaim() {
 		claim.amount = String(Math.round(due));
-		claim.on = new Date().toISOString().slice(0, 10);
+		claim.on = todayIso();
 		claimOpen = true;
 	}
 	async function sendClaim(e: SubmitEvent) {

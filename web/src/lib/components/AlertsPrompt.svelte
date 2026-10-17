@@ -1,5 +1,8 @@
 <script lang="ts">
+	// Phone or laptop, in the words she'd use.
+	const device = typeof window !== 'undefined' && matchMedia('(pointer: coarse)').matches ? 'phone' : 'laptop';
 	import { onMount } from 'svelte';
+	import { todayIso } from '../util';
 	import { enablePush, isIos, logAlerts, pushState, pwa } from '../pwa.svelte';
 	import { supabase } from '../supabase';
 	import { toast } from '../ui.svelte';
@@ -15,7 +18,7 @@
 
 	onMount(async () => {
 		try {
-			hidden = localStorage.getItem(KEY) === new Date().toISOString().slice(0, 10);
+			hidden = localStorage.getItem(KEY) === todayIso();
 		} catch {
 			/* private mode */
 		}
@@ -41,7 +44,7 @@
 	function later() {
 		hidden = true;
 		try {
-			localStorage.setItem(KEY, new Date().toISOString().slice(0, 10));
+			localStorage.setItem(KEY, todayIso());
 		} catch {
 			/* private mode */
 		}
@@ -53,7 +56,7 @@
 	<section class="alert-prompt rv" style="--i:1">
 		<span class="ap-ic"><Icon name="bell" /></span>
 		<div>
-			<b>{iosBrowser ? 'Get alerts on your iPhone' : status === 'blocked' ? 'Alerts are blocked on this phone' : 'Get alerts on this phone'}</b>
+			<b>{iosBrowser ? 'Get alerts on your iPhone' : status === 'blocked' ? `Alerts are blocked on this ${device}` : `Get alerts on this ${device}`}</b>
 			<small>
 				{#if iosBrowser}Tap the Share button in Safari, then <b>Add to Home Screen</b>. Open Collab Desk from the home screen and turn alerts on there.
 				{:else if status === 'blocked'}Open the phone's Settings → Apps → Collab Desk (or Chrome) → Notifications, allow them, then come back.

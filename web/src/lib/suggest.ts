@@ -180,7 +180,7 @@ export function suggestDates(c: Collab, s: Settings, all: Collab[]): DateSuggest
 	const today = new Date();
 	today.setHours(0, 0, 0, 0);
 	const days = s.draft_days_after_product ?? 7;
-	const needsProduct = c.type !== 'paid' && !c.product_received_at;
+	const needsProduct = c.type !== 'paid' && c.barter_kind !== 'experience' && !c.product_received_at;
 	// The product has to arrive first; if it isn't shipped yet, allow a few days for that.
 	const arrives = c.product_received_at ? parse(c.product_received_at.slice(0, 10)) : needsProduct ? (c.product_date && parse(c.product_date) > today ? parse(c.product_date) : addDays(today, 5)) : today;
 	let draft = addDays(arrives > today ? arrives : today, c.type === 'paid' ? 5 : days);

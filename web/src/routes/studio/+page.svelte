@@ -2,7 +2,7 @@
 	import { receivedIn } from '#lib/invoice.ts';
 	import { phone } from '#lib/phone.svelte.ts';
 	import PhoneToday from '#lib/components/PhoneToday.svelte';
-	import { completeFollow, markPaid, markReceived, priorityOf, studio } from '#lib/studio.svelte.ts';
+	import { askPaid, completeFollow, markPaid, markReceived, priorityOf, studio } from '#lib/studio.svelte.ts';
 	import { countUp, ui } from '#lib/ui.svelte.ts';
 	import { flip } from '#lib/motion.ts';
 	import {
@@ -59,9 +59,10 @@
 	const active = $derived(list.filter(isActive));
 	const prodGot = $derived(list.filter((c) => hasProduct(c) && stageIndex(c.stage) >= 2 && c.product_date && diff(c.product_date) <= 0));
 	const barter = $derived(prodGot.reduce((a, c) => a + c.product_value, 0));
-	const goal = $derived(s.monthly_goal || 1);
-	const pct = $derived(Math.min(1, received / goal));
-	const pctN = $derived(Math.round((received / goal) * 100));
+	// No goal set (0): no percentage, just the amount.
+	const goal = $derived(Math.max(0, s.monthly_goal || 0));
+	const pct = $derived(goal ? Math.min(1, received / goal) : 0);
+	const pctN = $derived(goal ? Math.round((received / goal) * 100) : 0);
 	const nextPayout = $derived(
 		list
 			.filter((c) => isPaid(c) && c.pay_status !== 'paid' && c.pay_due && diff(c.pay_due) >= 0)
@@ -119,8 +120,8 @@
 		<div class="td-kpi" class:zero={!received}>
 			<small>Received in {monthName}</small>
 			<b use:countUp={{ value: received, money: true }}>{inr(received)}</b>
-			<span class="td-goal"><i style="--p:{pct}"></i></span>
-			<em>{pctN}% of {inrS(goal)} goal</em>
+			{#if goal}<span class="td-goal"><i style="--p:{pct}"></i></span>
+			<em>{pctN}% of {inrS(goal)} goal</em>{:else}<em><a href="/studio/settings?s=payments">Set a monthly goal</a></em>{/if}
 		</div>
 		<div class="td-kpi" class:zero={!outs}>
 			<small>Still to come</small>
@@ -138,7 +139,7 @@
 			<span class="segbar td-seg" role="img" aria-label={pipe.map((p) => `${p.n} ${p.st.label}`).join(', ')}>
 				{#each pipe as p, i (p.st.id)}{#if p.n}<i class="st-{p.st.id}" style="flex:{p.n};--d:{i}"></i>{/if}{/each}
 			</span>
-			<em>{pipe[0].n} new · {pipe[1].n} talking · {pipe[2].n + pipe[3].n} in work</em>
+			<em>{pipe[0].n} new · {pipe[1].n} talking · {pipe[2].n + pipe[3].n} in work{pipe[4]?.n ? ` · ${pipe[4].n} live` : ''}</em>
 		</a>
 		<div class="td-kpi" class:zero={!barter}>
 			<small>Barter received</small>
@@ -161,7 +162,7 @@
 							{#if t.kind === 'follow'}
 								<button class="btn sm" onclick={() => leaveThen(t.c.id + t.kind, () => completeFollow(t.c))}><Icon name="check" />Done</button>
 							{:else if t.kind === 'pay'}
-								<button class="btn sm" onclick={() => leaveThen(t.c.id + t.kind, () => markPaid(t.c))}>Mark paid</button>
+								<button class="btn sm" onclick={async () => (await askPaid(t.c)) && leaveThen(t.c.id + t.kind, () => markPaid(t.c, false, true))}>Mark paid</button>
 							{:else if t.kind === 'product' && inTransit(t.c)}
 								<button class="btn sm" onclick={() => leaveThen(t.c.id + t.kind, () => markReceived(t.c))}><Icon name="box" />Received</button>
 							{:else if t.kind === 'new' || t.kind === 'msg' || t.kind === 'usage'}

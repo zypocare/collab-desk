@@ -37,7 +37,7 @@
 
 	async function logout() {
 		await signOut();
-		goto('/', { replace: true });
+		goto('/', { replaceState: true });
 	}
 
 	// ---------- Phones: an app bar with the screen's title, Back on screens opened from a tab ----------

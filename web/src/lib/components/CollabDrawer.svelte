@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { ask } from '../confirm.svelte';
+	import { ask, askNote } from '../confirm.svelte';
 	import SchedulePost from './SchedulePost.svelte';
 	import { askAi } from '../ai';
 	import { collabFacts } from '../ai';
@@ -82,7 +82,7 @@
 		waLink
 	} from '../util';
 	import { DRAFT_MAX_MB, cancelInvoice, recordPayment, reloadCollabs, setChecklist, setInvoiceFlags, shareDraft, withdrawQuote } from '../studio.svelte';
-	import { errMessage, todayIso } from '../util';
+	import { emailOk, errMessage, todayIso } from '../util';
 	import type { Quote } from '../types';
 	import { INVOICE_STATUS, KIND_LABEL, balanceDue, type Invoice } from '../invoice';
 	import InvoiceDialog from './InvoiceDialog.svelte';
@@ -105,6 +105,21 @@
 	};
 	let showAll = $state(false);
 	let scriptOpen = $state(false);
+	// Decline, with an optional note the brand sees in the email and on their request page.
+	async function declineIt() {
+		if (!c) return;
+		const note = await askNote({
+			title: `Decline ${c.brand.name}?`,
+			body: c.notify_brand ? 'The brand gets a polite email that you can’t take this on. You can reopen it later.' : 'It moves to Declined. You can reopen it later.',
+			note: c.notify_brand ? 'A note for the brand (optional)' : '',
+			placeholder: 'e.g. My calendar is full this month, but I’d love to work together later.',
+			ok: 'Decline',
+			danger: true
+		});
+		if (note === null || !c) return;
+		if (note) await save('note_for_brand', note);
+		changeStage('declined');
+	}
 	// Free AI: a caption (and shot list) in her voice, from the brief.
 	let capBusy = $state(false);
 	let shots = $state<string[]>([]);
@@ -327,7 +342,15 @@
 					autocomplete="off"
 					onchange={(e) => {
 						const v = val(e).trim();
-						if (v && c) saveBrand(c.brand_id, { name: v });
+						if (!v || !c) return;
+						// Two brands with the same name get mixed up everywhere (stats, pitches, search).
+						const twin = studio.brands.find((b) => b.id !== c!.brand_id && b.name.trim().toLowerCase() === v.toLowerCase());
+						if (twin) {
+							toast(`You already have a brand called ${twin.name}. Use a different name, or add this collab to that brand.`, 'alert');
+							(e.currentTarget as HTMLInputElement).value = c.brand.name;
+							return;
+						}
+						saveBrand(c.brand_id, { name: v });
 					}}
 				/>
 				<div class="dr-sub"><span class="id">{c.code}</span> · {TYPE_LABEL[c.type]} · received {fmt(c.received_on)}{#if c.referred_by && studio.brands.find((b) => b.id === c.referred_by)} · <span class="ref-by"><Icon name="users" />Referred by {studio.brands.find((b) => b.id === c.referred_by)?.name}</span>{/if}</div>
@@ -377,7 +400,7 @@
 					</div>
 				{/each}
 				{#if (c.stage === 'request' || c.stage === 'negotiating') && !['paid', 'invoiced', 'advance'].includes(c.pay_status)}
-					<button class="btn sm ghost danger" style="margin-top:14px" onclick={async () => (await ask({ title: `Decline ${c.brand.name}?`, body: c.notify_brand ? 'The brand is told politely that you can’t take this on. You can reopen it later.' : 'It moves to Declined. You can reopen it later.', ok: 'Decline', danger: true })) && changeStage('declined')}><Icon name="x" />Decline this request</button>
+					<button class="btn sm ghost danger" style="margin-top:14px" onclick={declineIt}><Icon name="x" />Decline this request</button>
 				{:else if c.stage === 'declined'}
 					<p class="hint" style="margin:0 0 10px">The brand sees this request as "Not going ahead".</p>
 					<button class="btn sm" onclick={() => changeStage('request')}><Icon name="refresh" />Reopen request</button>
@@ -528,7 +551,7 @@
 					</div>
 				{/if}
 				<div class="fields">
-					{#if hasProduct(c) || c.product_date}
+					{#if ships(c) || c.product_date}
 						<div class="f"><label for="d-product">Product arrives</label><DatePicker id="d-product" value={c.product_date} onchange={(v) => save('product_date', v || null)} /></div>
 					{/if}
 					{#if ['confirmed', 'creating'].includes(c.stage) || c.shoot_date}
@@ -678,7 +701,7 @@
 						{#if c.pay_status === 'paid'}
 							<span class="pill tint k-pay"><Icon name="check" />Paid in full</span><b>{inr(c.fee)}</b><span class="hint">on {fmt(c.paid_on)}</span>
 						{:else}
-							<span>Balance</span><b>{inr(balance)}</b>
+							<span title="Your fee not yet received (before GST and TDS)">Fee still to come</span><b>{inr(balance)}</b>
 							{#if overdue(c)}<span class="pill tint k-bad">Overdue</span>{/if}
 							<button class="btn sm" onclick={() => c && markPaid(c)}>Mark paid in full</button>
 						{/if}
@@ -744,7 +767,15 @@
 					<div class="f"><label for="c-p">Phone</label><input class="inp" id="c-p" value={c.contact_phone} inputmode="tel" onchange={(e) => save('contact_phone', val(e))} /></div>
 					<div class="f span2">
 						<label for="c-e">Email</label>
-						<input class="inp" id="c-e" value={c.contact_email} inputmode="email" onchange={(e) => save('contact_email', val(e).trim().toLowerCase())} />
+						<input class="inp" id="c-e" value={c.contact_email} inputmode="email" onchange={(e) => {
+							const v = val(e).trim().toLowerCase();
+							if (v && !emailOk(v)) {
+								toast('That email doesn’t look right (like name@brand.com). Not saved.', 'alert');
+								(e.currentTarget as HTMLInputElement).value = c?.contact_email ?? '';
+								return;
+							}
+							save('contact_email', v);
+						}} />
 					</div>
 				</div>
 				{#if waLink(c.contact_phone, '')}

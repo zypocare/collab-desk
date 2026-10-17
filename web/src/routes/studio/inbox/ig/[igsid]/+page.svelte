@@ -22,6 +22,7 @@
 	let list = $state<HTMLElement>();
 	let drafts = $state<string[]>([]);
 	let drafting = $state(false);
+	let loaded = $state(false);
 
 	// AI reply ideas: as her, from the chat and (if it's become a collab) the collab's facts.
 	async function suggest() {
@@ -50,6 +51,8 @@
 		]);
 		t = (a.data as T | null) ?? null;
 		msgs = (b.data as M[]) ?? [];
+		loaded = true;
+		if (!t) return;
 		await supabase.from('ig_threads').update({ unread: 0 }).eq('igsid', igsid);
 		await tick();
 		list?.scrollTo({ top: list.scrollHeight });
@@ -110,6 +113,9 @@
 
 <svelte:head><title>@{t?.username ?? 'Instagram'} · Messages · {studio.settings?.app_name}</title></svelte:head>
 
+{#if loaded && !t}
+	<div class="empty-card"><h2>Chat not found</h2><p>It may have been removed, or it was never a possible collab.</p><a class="btn" href="/studio/inbox">All messages</a></div>
+{:else}
 <div class="chat">
 	<header class="chat-h">
 		<button class="m-ib" onclick={() => history.back()} aria-label="Back"><Icon name="chevL" /></button>
@@ -151,3 +157,4 @@
 		{/if}
 	</div>
 </div>
+{/if}

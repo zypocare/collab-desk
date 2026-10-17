@@ -19,6 +19,7 @@
 			<span class="cf-ic" class:danger={q.danger}><Icon name={q.danger ? 'alert' : 'check'} /></span>
 			<h2 id="cf-title">{q.title}</h2>
 			{#if q.body}<p id="cf-body">{q.body}</p>{/if}
+			{#if q.note}<div class="f cf-note"><label for="cf-note">{q.note}</label><textarea class="inp" id="cf-note" rows="3" maxlength="600" placeholder={q.placeholder ?? ''} bind:value={asking.text}></textarea></div>{/if}
 			<div class="row">
 				<button class="btn ghost" onclick={() => answer(false)}>{q.cancel ?? 'Cancel'}</button>
 				<button class="btn {q.danger ? 'danger-solid' : 'primary'}" bind:this={okBtn} onclick={() => answer(true)}>{q.ok ?? 'Yes'}</button>

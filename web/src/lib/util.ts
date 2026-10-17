@@ -15,6 +15,9 @@ export const stageLabel = (s: Stage) => (s === 'declined' ? 'Declined' : STAGES[
 export const stagePub = (s: Stage) => (s === 'declined' ? 'Not going ahead' : STAGES[stageIndex(s)].pub);
 
 /** WhatsApp click-to-chat link (free). Indian 10-digit numbers get +91. Empty if no usable number. */
+/** An email address someone can actually receive at: one @, a name, and a domain with a dot. */
+export const emailOk = (v: string | null | undefined) => /^[^\s@]+@[^\s@]+\.[^\s@.]{2,}$/.test(String(v ?? '').trim());
+
 /** A phone or WhatsApp number (optional): empty, or 8 to 15 digits with an optional +, spaces, dashes or brackets. */
 export const phoneOk = (v: string | null | undefined) => {
 	const t = String(v ?? '').trim();
@@ -76,6 +79,8 @@ export const today = () => {
 export const iso = (d: Date) =>
 	`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 export const todayIso = () => iso(today());
+/** The local calendar day of a timestamp (a UTC slice would give yesterday until 5:30 am in India). */
+export const localDay = (ts?: string | null) => (ts ? iso(new Date(ts)) : '');
 export const rel = (n: number) => {
 	const x = today();
 	x.setDate(x.getDate() + n);

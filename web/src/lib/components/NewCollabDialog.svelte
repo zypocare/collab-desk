@@ -6,7 +6,7 @@
 	import { parseDm } from '../parseDm';
 	import { toast, ui } from '../ui.svelte';
 	import { askAi, mergeDm, shrinkImage } from '../ai';
-	import { delivText, fmt, inr, TYPE_LABEL } from '../util';
+	import { delivText, emailOk, fmt, inr, TYPE_LABEL } from '../util';
 	import AiThinking from './AiThinking.svelte';
 	import Icon from './Icon.svelte';
 
@@ -16,6 +16,11 @@
 	ui.pasteText = '';
 	const fromIg = ui.fromIg;
 	ui.fromIg = '';
+	// From an Instagram chat: its account names the brand when the message itself doesn't.
+	const igUser = (ui.fromIgUser ?? '').replace(/^@/, '');
+	const igName = ui.fromIgName ?? '';
+	ui.fromIgUser = ui.fromIgName = '';
+	const igBrand = igUser ? (studio.brands.find((b) => (b.instagram ?? '').toLowerCase() === igUser.toLowerCase())?.name ?? (igName || igUser.replace(/[._]+/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()).trim())) : '';
 	let nameTouched = $state(false);
 	let busy = $state(false);
 	let box = $state<HTMLTextAreaElement>();
@@ -65,7 +70,9 @@
 		(e.currentTarget as HTMLInputElement).value = '';
 	}
 	$effect(() => {
-		if (parsed?.brand && !nameTouched) name = studio.brands.find((b) => b.name.toLowerCase() === parsed.brand.toLowerCase())?.name ?? parsed.brand;
+		if (nameTouched) return;
+		if (parsed?.brand) name = studio.brands.find((b) => b.name.toLowerCase() === parsed.brand.toLowerCase())?.name ?? parsed.brand;
+		else if (igBrand && !name) name = igBrand;
 	});
 	const chips = $derived(
 		parsed
@@ -96,7 +103,7 @@
 				? {
 						collab: {
 							contact_name: p.contact,
-							contact_email: p.email,
+							contact_email: emailOk(p.email) ? p.email : '',
 							contact_phone: p.phone,
 							...(p.type ? { type: p.type } : {}),
 							fee: p.type === 'barter' ? 0 : p.fee,
@@ -107,7 +114,7 @@
 							brief: p.brief
 						},
 						deliverables: p.deliverables,
-						instagram: p.instagram
+						instagram: p.instagram || igUser
 					}
 				: undefined
 		);

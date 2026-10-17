@@ -22,7 +22,7 @@ Deno.serve(async (req) => {
 
   const { data: settings, error: settingsError } = await supabase
     .from('creator_settings')
-    .select('app_name, display_name, site_url, reply_time, creator_email, handle, city')
+    .select('app_name, display_name, site_url, reply_time, barter_reply_time, creator_email, handle, city')
     .eq('id', 1)
     .single<Settings>();
   if (settingsError) return Response.json({ error: settingsError.message }, { status: 500 });
@@ -47,6 +47,32 @@ Deno.serve(async (req) => {
         const { data: q } = await supabase.from('quotes').select('currency').eq('collab_id', cc.id).order('version', { ascending: false }).limit(1).maybeSingle();
         if ((q as { currency?: string } | null)?.currency) p.currency = (q as { currency: string }).currency;
       }
+      row.payload = p;
+    }
+    // A barter request's confirmation gives her barter reply time (paid ones are answered sooner).
+    if (row.kind === 'request_received_brand' && p.code && !p.reply_time) {
+      const { data: c } = await supabase.from('collabs').select('type').eq('code', String(p.code)).maybeSingle();
+      const bt = String((settings as Settings & { barter_reply_time?: string }).barter_reply_time ?? '');
+      if ((c as { type?: string } | null)?.type === 'barter' && bt) p.reply_time = bt;
+      row.payload = p;
+    }
+    // A new request: the creator's email also shows the usage, preferred go-live and who referred them.
+    if (row.kind === 'request_received_creator' && p.code && p.usage === undefined) {
+      const { data: c } = await supabase.from('collabs').select('usage, preferred_live, referred_by').eq('code', String(p.code)).maybeSingle();
+      const cc = c as { usage?: string; preferred_live?: string | null; referred_by?: string | null } | null;
+      p.usage = cc?.usage ?? '';
+      p.preferred_live = cc?.preferred_live ? new Date(cc.preferred_live + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+      p.referred_by = '';
+      if (cc?.referred_by) {
+        const { data: rb } = await supabase.from('brands').select('name').eq('id', cc.referred_by).maybeSingle();
+        p.referred_by = (rb as { name?: string } | null)?.name ?? '';
+      }
+      row.payload = p;
+    }
+    // A payment receipt: an advance isn't the end of the collab, so it mustn't read like a goodbye.
+    if (row.kind === 'payment_thanks' && p.number && p.advance === undefined) {
+      const { data: inv } = await supabase.from('invoices').select('kind').eq('number', String(p.number)).maybeSingle();
+      p.advance = (inv as { kind?: string } | null)?.kind === 'advance';
       row.payload = p;
     }
     // Phone alert for things that need her (independent of the email going out).
