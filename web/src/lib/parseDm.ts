@@ -24,6 +24,8 @@ const KIND_PATTERNS: [RegExp, string][] = [
 	[/stor(?:y|ies)\b/i, 'Story'],
 	[/carousels?\b/i, 'Carousel'],
 	[/ugc(?:\s*videos?)?\b/i, 'UGC video'],
+	// "Create a video" for an Instagram creator means a Reel (not a video call).
+	[/(?<!ugc\s{0,3})videos?\b(?!\s*call)/i, 'Reel'],
 	[/(?:static\s*)?(?:feed\s*)?posts?\b/i, 'Static post']
 ];
 const MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
@@ -68,7 +70,7 @@ export function parseDm(text: string, ownHandle = ''): Parsed {
 
 	// Deliverables: "2 reels", "one story", "a carousel", "3x stories".
 	const found = new Map<string, number>();
-	for (const m of t.matchAll(/\b(\d{1,2}|a|an|one|two|three|four|five|six|couple)\s*(?:x\s*)?(?:of\s+)?(?:instagram\s+|ig\s+|insta\s+)?(reels?|stor(?:y|ies)|carousels?|ugc(?:\s*videos?)?|(?:static\s*)?(?:feed\s*)?posts?)\b/gi)) {
+	for (const m of t.matchAll(/\b(\d{1,2}|a|an|one|two|three|four|five|six|couple)\s*(?:x\s*)?(?:of\s+)?(?:instagram\s+|ig\s+|insta\s+)?(reels?|stor(?:y|ies)|carousels?|ugc(?:\s*videos?)?|videos?(?!\s*call)|(?:static\s*)?(?:feed\s*)?posts?)\b/gi)) {
 		const n = /^\d+$/.test(m[1]) ? Number(m[1]) : (WORDS[m[1].toLowerCase()] ?? 1);
 		const kind = KIND_PATTERNS.find(([re]) => re.test(m[2]))?.[1];
 		if (kind && n > 0) found.set(kind, (found.get(kind) ?? 0) + Math.min(n, 20));
@@ -93,12 +95,21 @@ export function parseDm(text: string, ownHandle = ''): Parsed {
 
 	// Barter or paid.
 	// "Gift" only when they're gifting it to her, not a product name like "Diwali gift box".
-	const barterish = /\b(barter|gifted|gifting|gift (?:you|it)|as a gift|pr (?:package|box|kit)|in exchange|complimentary|free (?:product|stay|meal)|send you (?:our|the|a|some))\b/i.test(t);
+	const barterish = /\b(barter|gifted|gifting|gift (?:you|it)|as a gift|pr (?:package|box|kit)|in (?:exchange|return)|complimentary|free (?:product|stay|meal)|send you (?:our|the|a|some)|vouchers?|gift cards?|store credit|hampers?)\b/i.test(t);
 	const type: CollabType | null = barterish ? (fee ? 'hybrid' : 'barter') : fee ? 'paid' : null;
+	// What she gets: "in return we will be gifting you shopping vouchers", "send you our new serum".
+	// Not what they ask her for ("share the screenshot of your insights", "your contact number").
+	const GIVE = '(?:gift(?:ing)?|send(?:ing)?|offer(?:ing)?|provid(?:e|ing)|giv(?:e|ing)|shar(?:e|ing) with)';
+	const ASKED = /\b(screenshots?|insights?|profile|details|contact|number|rates?|rate card|media kit|portfolio|analytics|demographics?|name|address|availability|quote)\b/i;
 	const product = barterish
-		? (t.match(/(?:send you|gift you|share)\s+(?:our|the|a|an|some)?\s*([^.,\n!?]{3,60})/i)?.[1] ?? t.match(/(?:our|the)\s+(new\s+)?([a-z][\w\s-]{2,40}?)\s+(?:launch|range|collection)/i)?.[0] ?? '')
-				.replace(/\s+(?:as (?:a )?gift|in exchange|for (?:a|an|you|your|the)|to (?:try|review|use)|which|that|worth|valued?|mrp)\b.*$/i, '')
-				.trim()
+		? ([
+				new RegExp(`in (?:return|exchange)[^.\\n]{0,50}?\\b(?:we(?:'ll|’ll| will| would| shall)?(?: be)?|you(?:'ll|’ll| will| would) (?:get|receive))\\s+(?:${GIVE}\\s+)?(?:you\\s+)?(?:with\\s+)?(?:our|the|a|an|some)?\\s*([^.,\\n!?]{3,60})`, 'i'),
+				new RegExp(`\\b${GIVE}\\s+you\\s+(?:with\\s+)?(?:our|the|a|an|some)?\\s*([^.,\\n!?]{3,60})`, 'i'),
+				/(?:our|the)\s+(?:new\s+)?([a-z][\w\s-]{2,40}?\s+(?:launch|range|collection))/i
+			]
+				.map((re) => (t.match(re)?.[1] ?? '').replace(/\s+(?:as (?:a )?gift|in (?:exchange|return)|for (?:a|an|you|your|the|creating|making)|to (?:try|review|use)|which|that|who|worth|valued?|mrp|on our|from our|plus|along with|and (?:₹|rs\.?|inr|\d))\b.*$/i, '').trim())
+				.find((p) => p && !ASKED.test(p)) ?? ''
+			).replace(/^\w/, (c) => c.toUpperCase())
 		: '';
 
 	// Date: "by 25th Oct", "on 3 November", "before 10/11".

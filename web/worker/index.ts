@@ -118,7 +118,7 @@ async function readDm(env: Env, b: Record<string, unknown>) {
  "deliverables": [{"kind": "Reel" | "Story" | "Static post" | "Carousel" | "UGC video", "qty": number}],
  "preferred_live": "YYYY-MM-DD" or "", "usage": "Organic only" | "Paid usage 30 days" | "Paid usage 90 days" | "",
  "summary": "one sentence: what the brand wants"}
-Rules: "hybrid" = money plus product; "barter" = product only. "30k" = 30000, "1.5L" = 150000. The creator's own handle is ${String(b.handle ?? '')}; never use it as the brand. Leave fields empty when not mentioned. Use only facts in the text.`,
+Rules: "hybrid" = money plus product; "barter" = product only (vouchers, gift cards, a free stay or meal count as product). "product" is only what the CREATOR RECEIVES; never something the brand asks her to send (screenshots, insights, contact details, rates). A "video" for Instagram means a Reel. Mention store visits or events in the summary. "30k" = 30000, "1.5L" = 150000. The creator's own handle is ${String(b.handle ?? '')}; never use it as the brand. Leave fields empty when not mentioned. Use only facts in the text.`,
 		text,
 		600
 	);
