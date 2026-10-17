@@ -410,7 +410,7 @@ export type Agreement = {
 	product_value: number;
 	live_date: string | null;
 	preferred_live: string | null;
-	brand: { name: string; instagram: string; website: string };
+	brand: { name: string; instagram: string; website: string; gstin?: string; address?: string; country?: string };
 	contact: { name: string; email: string };
-	creator: { name: string; handle: string; city: string; app_name: string };
+	creator: { name: string; handle: string; city: string; app_name: string; legal_name: string; email: string; pan?: string };
 };

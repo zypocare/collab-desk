@@ -24,6 +24,18 @@
 
 	const q = $derived(a?.quote);
 	const isAgreement = $derived(q?.status === 'accepted');
+	let pdfBusy = $state(false);
+	async function pdf() {
+		if (!a) return;
+		pdfBusy = true;
+		const { downloadAgreement } = await import('#lib/agreementPdf.ts');
+		await downloadAgreement(a).catch((e) => console.error(e));
+		pdfBusy = false;
+	}
+	let fp = $state('');
+	$effect(() => {
+		if (a?.quote.status === 'accepted') import('#lib/agreementPdf.ts').then((m) => m.fingerprint(a!)).then((f) => (fp = f));
+	});
 	const back = $derived(auth.account?.role === 'creator' ? '/studio/collabs' : a ? `/brand/r/${a.code}` : homeFor(auth.account));
 </script>
 
@@ -33,7 +45,12 @@
 	<div class="wrap doc-wrap">
 		<div class="doc-tools no-print">
 			<a class="back" href={back}><Icon name="back" />Back</a>
-			{#if a}<button class="btn" onclick={() => print()}><Icon name="copy" />Print or save as PDF</button>{/if}
+			{#if a}
+				<span class="doc-acts">
+					<button class="btn" onclick={() => print()}><Icon name="copy" />Print</button>
+					<button class="btn primary" disabled={pdfBusy} onclick={pdf}>{#if pdfBusy}<span class="spinner"></span>{:else}<Icon name="download" />{/if}{isAgreement ? 'Download signed PDF' : 'Download PDF'}</button>
+				</span>
+			{/if}
 		</div>
 
 		{#if !loaded}
@@ -93,6 +110,7 @@
 						<p>This quote{q.valid_until ? ` is valid until ${fmtLong(q.valid_until)} and` : ''} becomes the agreement when the brand accepts it online.</p>
 					{/if}
 					<p class="hint">Prepared with {a.creator.app_name} · {q.sent_at ? `sent ${fmtTime(q.sent_at)}` : ''}</p>
+					{#if fp}<p class="hint">Document fingerprint (SHA-256): <span class="id">{fp}</span></p>{/if}
 				</footer>
 			</article>
 		{/if}
