@@ -246,11 +246,11 @@ otp_expiry = 3600
 
 # Sign-in code emails. Both templates show the 6-digit code ({{ .Token }}) instead of a link.
 [auth.email.template.magic_link]
-subject = "Your sign-in code: {{ .Token }}"
+subject = "{{ .Token }} is your Collab Desk sign-in code"
 content_path = "./supabase/templates/otp.html"
 
 [auth.email.template.confirmation]
-subject = "Your sign-in code: {{ .Token }}"
+subject = "{{ .Token }} is your Collab Desk sign-in code"
 content_path = "./supabase/templates/otp.html"
 
 # Uncomment to customize notification email template
