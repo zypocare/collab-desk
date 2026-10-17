@@ -3,6 +3,7 @@ import type { RealtimeChannel } from '@supabase/supabase-js';
 import type { Priority } from './priority';
 import { decide, type Decision, type FitData } from './decide';
 import { askAi } from './ai';
+import { voiceAlert, voiceLine } from './voice';
 import { supabase } from './supabase';
 import type { Package } from './types';
 import type { BankAlert, Brand, BrandPrivate, BrandReport, Checklist, Collab, Deliverable, IgAccount, IgMedia, Quote, Retainer, Settings, Stage } from './types';
@@ -124,6 +125,7 @@ export function watchStudio() {
 		.on('postgres_changes', { event: '*', schema: 'public', table: 'collabs' }, (p) => {
 			if (p.eventType === 'INSERT' && (p.new as Collab).code && !byId((p.new as Collab).id)) {
 				toast(`New request ${(p.new as Collab).code}`, 'inbox');
+				speak('New request.');
 			}
 			schedule();
 		})
@@ -205,7 +207,21 @@ export async function loadLeads() {
 		.in('collab_flag', ['likely', 'maybe'])
 		.order('last_at', { ascending: false, nullsFirst: false })
 		.limit(12);
-	if (data) studio.leads = data as typeof studio.leads;
+	if (data) {
+		// A possible collab that wasn't there before: chime and say so (not on the first load).
+		const fresh = (data as typeof studio.leads).filter((t) => !seenLeads.has(t.igsid));
+		if (leadsLoaded && fresh.length) speak(fresh.length === 1 ? 'You might have a new collab.' : `You might have ${fresh.length} new collabs.`);
+		for (const t of data as typeof studio.leads) seenLeads.add(t.igsid);
+		leadsLoaded = true;
+		studio.leads = data as typeof studio.leads;
+	}
+}
+const seenLeads = new Set<string>();
+let leadsLoaded = false;
+/** Her voice alert, if she has it on. */
+function speak(what: string) {
+	const s = studio.settings;
+	if (s) voiceAlert(voiceLine(s.alert_name ?? '', what), { on: s.voice_alerts !== false });
 }
 
 export async function loadFits() {

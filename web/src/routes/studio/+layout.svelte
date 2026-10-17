@@ -2,6 +2,7 @@
 	import { afterNavigate, goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { onMount, tick, untrack } from 'svelte';
+	import { watchVoiceUnlock } from '#lib/voice.ts';
 	import type { LayoutProps } from './$types';
 	import { auth, signOut } from '#lib/auth.svelte.ts';
 	import { byId, loadStudio, studio, stopWatching, watchStudio } from '#lib/studio.svelte.ts';
@@ -55,6 +56,7 @@
 	});
 
 	onMount(() => {
+		watchVoiceUnlock();
 		if (auth.account?.role === 'creator') {
 			loadStudio();
 			watchStudio();
