@@ -10,6 +10,7 @@
 	import Mono from '#lib/components/Mono.svelte';
 	import InstagramPanel from '#lib/components/InstagramPanel.svelte';
 	import ContentTips from '#lib/components/ContentTips.svelte';
+	import { phone } from '#lib/phone.svelte.ts';
 
 	// Her making week, without any of the business: what to shoot when, what's with the brand, what to post.
 	const s = $derived(studio.settings!);
@@ -42,6 +43,9 @@
 	});
 	const cap = $derived(s.weekly_hours || 25);
 	const pieces = $derived([...toMake, ...waitingProduct].reduce((a, c) => a + c.deliverables.filter((d) => !d.done).reduce((n, d) => n + d.qty, 0), 0));
+	// Phone: this week's hours as a ring (like Home's goal ring), the coming weeks as tiles.
+	const wk = $derived(weeks[0]);
+	const wkPct = $derived(cap ? Math.min(1, wk.hours / cap) : 0);
 	const dayLabel = (iso: string) => (diff(iso) === 0 ? 'Today' : diff(iso) === 1 ? 'Tomorrow' : diff(iso) < 0 ? `${fmtLong(iso)} · missed` : fmtLong(iso));
 </script>
 
@@ -55,6 +59,38 @@
 	</div>
 </header>
 
+{#if phone.on}
+	<section class="hero-card glow m-hero m-pipe m-week" aria-label="This week">
+		<div class="mesh" aria-hidden="true"></div>
+		<div class="hc-in">
+			<div class="hc-top">
+				<span class="hc-eb">This week</span>
+				<a class="glass-chip" href="/studio/calendar"><Icon name="cal" />Calendar</a>
+			</div>
+			<div class="hc-main">
+				<div>
+					<div class="hc-val">{wk.hours}<span class="hc-unit"> h</span></div>
+					<div class="hc-sub">{pieces ? `${pieces} piece${pieces > 1 ? 's' : ''} to make` : 'Nothing to make right now'}{wk.hours > cap ? ` · ${wk.hours - cap} h over your ${cap} h` : ` · ${cap - wk.hours} h free`}</div>
+				</div>
+				<div class="goal" class:over={wk.hours > cap} style="--p:{wkPct}">
+					<svg viewBox="0 0 120 120" aria-hidden="true"
+						><defs
+							><linearGradient id="weekGradM" x1="0" y1="0" x2="1" y2="1"
+								><stop offset="0" style="stop-color:var(--g3)" /><stop offset=".5" style="stop-color:var(--g2)" /><stop offset="1" style="stop-color:var(--g1)" /></linearGradient
+							></defs
+						><circle class="g-track" cx="60" cy="60" r="50" /><circle class="g-prog" cx="60" cy="60" r="50" pathLength="100" style="stroke:url(#weekGradM)" /></svg
+					>
+					<div class="g-txt"><b>{Math.round((wk.hours / (cap || 1)) * 100)}%</b><small>of {cap} h</small></div>
+				</div>
+			</div>
+			<div class="hc-foot">
+				{#each weeks.slice(1) as w (w.w)}
+					<div class:over={w.hours > cap}><small>{w.label}</small><b>{w.hours} h</b><span class="m-wbar"><i style="--p:{Math.min(1, w.hours / (cap || 1))}"></i></span></div>
+				{/each}
+			</div>
+		</div>
+	</section>
+{:else}
 <section class="ct-weeks rv" style="--i:1" aria-label="Hours planned per week">
 	{#each weeks as w (w.w)}
 		<div class="ct-week" class:over={w.hours > cap}>
@@ -65,6 +101,7 @@
 		</div>
 	{/each}
 </section>
+{/if}
 
 <div class="ct-grid">
 	<div class="ct-col">

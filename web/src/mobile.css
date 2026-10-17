@@ -1487,3 +1487,68 @@ textarea.inp.ng-text{min-height:132px;line-height:1.55}
 }
 @media (max-width:760px) and (prefers-reduced-motion:reduce){.m-ccard,.pipe-bar i{animation:none}}
 @media (max-width:760px){ [data-side="studio"] .m-search{margin:0 0 10px} }
+
+/* Phone Payments and Content, in Home's look (cards reuse the Collabs card). */
+@media (max-width:760px){
+  /* Payments: a card with its own "Paid?" button. */
+  .m-plist{gap:10px}
+  .m-pcard{padding:0;gap:0;align-items:stretch}
+  .m-pc-open{flex:1;min-width:0;display:flex;align-items:center;gap:14px;padding:14px 8px 14px 14px;border:0;background:none;color:inherit;font:inherit;text-align:left;cursor:pointer}
+  .m-pc-pay{flex:none;width:68px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border:0;border-left:1px solid var(--ig-sep);background:none;color:var(--accent);font:inherit;cursor:pointer;border-radius:0 22px 22px 0}
+  .m-pc-pay .ic{width:22px;height:22px}
+  .m-pc-pay small{font-size:11.5px;font-weight:700;color:var(--ink-2)}
+  .m-pc-pay:active{background:var(--ig-fill)}
+  .m-pbar{display:block;height:5px;margin:6px 0 2px;border-radius:99px;background:var(--ig-fill);overflow:hidden}
+  .m-pbar i{display:block;height:100%;width:calc(var(--p) * 100%);border-radius:99px;background:var(--hue);transition:width .6s var(--ease)}
+  .m-cc-n.late{color:var(--bad)}
+  .m-cc-n .pill{height:20px;font-size:11.5px}
+  .m-mini-acts{display:flex;gap:8px;margin-top:8px}
+  .m-mini-acts .btn{flex:1;justify-content:center}
+  .m-hs-r{margin-left:auto;font-size:14px;font-weight:600;color:var(--ink-2)}
+  button.m-ccard{width:100%;font:inherit;text-align:left;cursor:pointer}
+
+  /* Content: the "This week" card. */
+  [data-side="studio"] .m-week .hc-main{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:12px}
+  [data-side="studio"] .m-week .hc-val{margin-top:0;font-size:52px}
+  .m-week .hc-unit{font-size:24px;font-weight:600;opacity:.7}
+  .m-week .goal.over .g-prog{stroke:var(--bad)!important}
+  [data-side="studio"] .m-week .hc-foot > div{min-width:0;padding:10px 12px;border-radius:14px;background:color-mix(in oklab,var(--hero-ink) 6%,transparent);border:1px solid color-mix(in oklab,var(--hero-ink) 12%,transparent)}
+  [data-side="studio"] .m-week .hc-foot > div.over b{color:color-mix(in oklab,var(--bad) 60%,var(--hero-ink))}
+  [data-side="studio"] .m-week .hc-foot b{font-size:18px}
+  .m-wbar{display:block;height:4px;margin-top:6px;border-radius:99px;background:color-mix(in oklab,var(--hero-ink) 14%,transparent);overflow:hidden}
+  .m-wbar i{display:block;height:100%;width:calc(var(--p) * 100%);border-radius:99px;background:linear-gradient(90deg,var(--g1),var(--g2),var(--g3))}
+  .m-week .hc-foot > div.over .m-wbar i{background:var(--bad)}
+
+  /* Content: sections like Home's, each collab a card. */
+  [data-side="studio"] .ct-grid{display:flex;flex-direction:column;gap:0}
+  [data-side="studio"] .ct-grid .panel{margin:18px 0 0;padding:0;border:0;border-radius:0;background:none;box-shadow:none;overflow:visible}
+  [data-side="studio"] .ct-grid .panel-h{display:flex;align-items:baseline;gap:8px;min-height:0;margin:0 0 10px;padding:0;border:0;background:none}
+  [data-side="studio"] .ct-grid .panel-h h2{display:flex;align-items:center;gap:8px;font-size:18px;font-weight:700;letter-spacing:-.01em}
+  [data-side="studio"] .ct-grid .panel-h h2 .ic{width:18px;height:18px;color:var(--accent)}
+  [data-side="studio"] .ct-grid .panel-h small{margin-left:auto;font-size:13.5px;color:var(--ink-3)}
+  [data-side="studio"] .ct-day.today .panel-h h2{color:var(--accent)}
+  [data-side="studio"] .ct-row,[data-side="studio"] .ct-mini{position:relative;margin:0 0 10px;padding:14px;border-radius:22px;border:1px solid transparent;color:inherit;
+    background:linear-gradient(var(--ig-fill-2),var(--ig-fill-2)) padding-box,linear-gradient(var(--bg),var(--bg)) padding-box,linear-gradient(135deg,color-mix(in oklab,var(--accent) 45%,var(--ig-sep)),var(--ig-sep) 55%) border-box;
+    animation:m-rise .45s var(--spring-ig) both}
+  [data-side="studio"] .ct-main{flex-wrap:wrap;align-items:center;gap:12px}
+  [data-side="studio"] .ct-main > .mono{width:52px;height:52px;border-radius:50%;font-size:17px;box-shadow:0 0 0 2.5px var(--bg),0 0 0 5px color-mix(in oklab,var(--accent) 55%,var(--ig-sep))}
+  [data-side="studio"] .ct-t{flex:1 1 calc(100% - 70px)}
+  [data-side="studio"] .ct-name{font-size:16.5px;font-weight:700;text-align:left}
+  [data-side="studio"] .ct-t > small{font-size:14px}
+  [data-side="studio"] .ct-meta{gap:4px 8px;margin-top:6px;font-size:12.5px}
+  [data-side="studio"] .ct-meta span{height:24px;padding:0 9px;border-radius:99px;background:var(--ig-fill)}
+  [data-side="studio"] .ct-main > .btn{flex:1 1 0;height:40px;justify-content:center}
+  [data-side="studio"] .ct-plan{margin:10px 0 0;gap:8px}
+  [data-side="studio"] .ct-plan > .btn{height:40px}
+  [data-side="studio"] .ct-plan > :last-child{flex:1;min-width:0}
+  [data-side="studio"] .ct-list{margin:12px 0 0}
+  [data-side="studio"] .ct-mini{display:flex;align-items:center;gap:12px;width:100%;font:inherit;text-align:left}
+  [data-side="studio"] .ct-mini > .mono{width:44px;height:44px;border-radius:50%}
+  [data-side="studio"] .ct-mini b{font-size:15.5px}
+  [data-side="studio"] .ct-none{padding:18px 16px;border-radius:22px;background:var(--ig-fill-2);border:1px dashed var(--ig-sep);color:var(--ink-3)}
+}
+@media (max-width:760px){
+  [data-side="studio"] .m-week .hc-foot{grid-template-columns:repeat(3,minmax(0,1fr))}
+  [data-side="studio"] .m-week .hc-foot > div:last-child{grid-column:auto}
+  [data-side="studio"] .m-pipe .hc-foot b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+}

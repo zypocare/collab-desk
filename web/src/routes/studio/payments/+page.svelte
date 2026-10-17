@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { markPaid, reloadCollabs, setInvoiceFlags, studio } from '#lib/studio.svelte.ts';
 	import { countUp, toast, ui } from '#lib/ui.svelte.ts';
-	import { delivText, diff, errMessage, fmt, hasProduct, inr, isPaid, outstanding, overdue, parse, payState, relWord, stageIndex, stageLabel } from '#lib/util.ts';
+	import { delivText, diff, errMessage, fmt, hasProduct, inr, inrS, isPaid, outstanding, overdue, parse, payState, relWord, stageIndex, stageLabel } from '#lib/util.ts';
 	import Icon from '#lib/components/Icon.svelte';
 	import Mono from '#lib/components/Mono.svelte';
 	import PayPill from '#lib/components/PayPill.svelte';
@@ -10,6 +10,7 @@
 	import { tdsToCollect } from '#lib/tds.ts';
 	import { supabase } from '#lib/supabase.ts';
 	import { money } from '#lib/currency.ts';
+	import { phone } from '#lib/phone.svelte.ts';
 
 	let filter = $state<'all' | 'due' | 'overdue' | 'paid'>('all');
 	let swapKey = $state(0);
@@ -42,6 +43,14 @@
 		toast(`Asked ${brand} for the certificate (${(data as { to: string }).to})`, 'send');
 		await reloadCollabs();
 	}
+	// Phone: the "Still to come" card, the next payment, and a colour per status.
+	const next = $derived(rows.filter((c) => payState(c) !== 'paid' && c.pay_due).sort((a, b) => a.pay_due!.localeCompare(b.pay_due!))[0]);
+	const counts = $derived({ all: rows.length, due: rows.filter((c) => payState(c) === 'due').length, overdue: nOd, paid: rows.filter((c) => payState(c) === 'paid').length });
+	const HUE = { paid: 'var(--ok)', due: 'var(--warn,#e0a23a)', overdue: 'var(--bad)' } as const;
+	const pick = (f: typeof filter) => {
+		filter = filter === f ? 'all' : f;
+		swapKey++;
+	};
 	const prods = $derived(studio.collabs.filter((c) => hasProduct(c) && c.product_value && c.stage !== 'declined'));
 </script>
 
@@ -55,6 +64,109 @@
 	</div>
 </header>
 
+{#if phone.on}
+	<section class="hero-card glow m-hero m-pipe" aria-label="Money still to come">
+		<div class="mesh" aria-hidden="true"></div>
+		<div class="hc-in">
+			<div class="hc-top">
+				<span class="hc-eb">Still to come</span>
+				{#if nOd}<button class="glass-chip" onclick={() => pick('overdue')}><Icon name="alert" />{nOd} overdue</button>{/if}
+			</div>
+			<div class="hc-val" use:countUp={{ value: due + od, money: true }}>{inr(due + od)}</div>
+			<div class="hc-sub">{next ? `Next: ${next.brand.name} · ${fmt(next.pay_due)}` : 'Nothing waiting to be paid'}</div>
+			{#if recd + due + od > 0}
+				<div class="pipe-bar" aria-hidden="true">
+					{#if recd}<i style="flex:{recd};--hue:var(--ok)"></i>{/if}
+					{#if due}<i style="flex:{due};--hue:var(--warn,#e0a23a)"></i>{/if}
+					{#if od}<i style="flex:{od};--hue:var(--bad)"></i>{/if}
+				</div>
+			{/if}
+			<div class="hc-foot">
+				{#each [['paid', 'Received', recd], ['due', 'Due', due], ['overdue', 'Overdue', od]] as const as [k, label, v] (k)}
+					<button class:on={filter === k} onclick={() => pick(k)}><small><span class="dt" style="--hue:{HUE[k]}"></span>{label}</small><b>{inrS(v)}</b></button>
+				{/each}
+			</div>
+		</div>
+	</section>
+	<BankCredits />
+	<div class="m-stages" role="tablist" aria-label="Filter payments">
+		{#each [['all', 'All'], ['due', 'Due'], ['overdue', 'Overdue'], ['paid', 'Paid']] as const as [k, label] (k)}
+			<button role="tab" aria-selected={filter === k} class:on={filter === k} onclick={() => ((filter = k), swapKey++)}><i class="dt" style="--hue:{k === 'all' ? 'var(--accent)' : HUE[k]}"></i>{label}<span>{counts[k]}</span></button>
+		{/each}
+	</div>
+	<div class="m-list m-plist">
+		{#key swapKey}
+			{#each list as c, i (c.id)}
+				{@const p = c.fee ? Math.min(1, c.pay_received / c.fee) : 0}
+				{@const st = payState(c)}
+				<div class="m-ccard m-pcard" style="--i:{Math.min(i, 8)};--hue:{HUE[st]}">
+					<button class="m-pc-open" onclick={() => (ui.openCollab = c.id)} aria-label="Open {c.brand.name}">
+						<span class="m-cc-av" class:fresh={st === 'overdue'}><Mono name={c.brand.name} /></span>
+						<span class="m-cc-b">
+							<span class="m-cc-t"><b>{c.brand.name}</b></span>
+							<span class="m-cc-s">{delivText(c.deliverables)}{c.invoice_no ? ` · ${c.invoice_no}` : ''}</span>
+							<span class="m-pbar" title="{inr(c.pay_received)} received"><i style="--p:{p}"></i></span>
+							<span class="m-cc-f">
+								<span class="m-cc-money">{inr(c.fee)}</span>
+								<span class="m-cc-n" class:late={st === 'overdue'}>
+									{#if c.pay_status === 'paid'}<Icon name="check" />Paid {fmt(c.paid_on)}
+									{:else if c.pay_due}<Icon name="clock" />{diff(c.pay_due) < 0 ? `${-diff(c.pay_due)} days late` : `Due ${fmt(c.pay_due)}`}
+									{:else}<PayPill {c} />{/if}
+								</span>
+							</span>
+						</span>
+					</button>
+					{#if c.pay_status !== 'paid'}<button class="m-pc-pay" onclick={() => markPaid(c)} aria-label="Mark {c.brand.name} as paid"><Icon name="wallet" /><small>Paid?</small></button>{/if}
+				</div>
+			{:else}
+				<div class="clear hero-card glow m-none">
+					<div class="mesh" aria-hidden="true"></div>
+					<span class="clear-ic"><Icon name="wallet" /></span>
+					<b>{filter === 'overdue' ? 'Nothing overdue' : filter === 'paid' ? 'No payments yet' : 'Nothing due'}</b>
+					<small>{filter === 'overdue' ? 'Every brand has paid on time.' : 'Payments show up here once a collab is agreed.'}</small>
+				</div>
+			{/each}
+		{/key}
+	</div>
+	{#if certs.length}
+		<section class="hs">
+			<header class="hs-h"><h2>TDS certificates</h2><span class="m-gn">{certs.length}</span></header>
+			<div class="m-list">
+				{#each certs as t (t.inv.id)}
+					<div class="m-ccard m-mini" style="--hue:var(--accent)">
+						<span class="m-cc-av"><Mono name={t.c.brand.name} /></span>
+						<span class="m-cc-b">
+							<span class="m-cc-t"><b>{t.c.brand.name}</b></span>
+							<span class="m-cc-s">{money(t.inv.tds_deducted, t.inv.currency)} TDS · {t.inv.number}</span>
+							<span class="m-cc-n" class:late={t.overdue}>{t.overdue ? `Form 16A due since ${fmt(t.due)}` : `Form 16A due by ${fmt(t.due)}`}</span>
+							<span class="m-mini-acts">
+								{#if t.overdue}<button class="btn sm" disabled={asking === t.inv.id || t.askedRecently} onclick={() => askCert(t.inv.id, t.c.brand.name)}>{#if asking === t.inv.id}<span class="spinner"></span>{:else}<Icon name="send" />{/if}{t.askedRecently ? 'Asked' : 'Ask for it'}</button>{/if}
+								<button class="btn sm" onclick={() => setInvoiceFlags(t.inv, { tds_certificate: true })}><Icon name="check" />Got it</button>
+							</span>
+						</span>
+					</div>
+				{/each}
+			</div>
+		</section>
+	{/if}
+	{#if prods.length}
+		<section class="hs">
+			<header class="hs-h"><h2>Barter products</h2><span class="m-gn">{prods.length}</span><small class="m-hs-r">{inr(prods.reduce((a, c) => a + c.product_value, 0))}</small></header>
+			<div class="m-list">
+				{#each prods as c, i (c.id)}
+					<button class="m-ccard" style="--i:{Math.min(i, 8)};--hue:var(--g2)" onclick={() => (ui.openCollab = c.id)}>
+						<span class="m-cc-av"><Mono name={c.brand.name} /></span>
+						<span class="m-cc-b">
+							<span class="m-cc-t"><b>{c.product || 'Product'}</b></span>
+							<span class="m-cc-s">{c.brand.name} · {stageLabel(c.stage)}</span>
+						</span>
+						<span class="m-cc-money">{inr(c.product_value)}</span>
+					</button>
+				{/each}
+			</div>
+		</section>
+	{/if}
+{:else}
 <section class="kpis" aria-label="Payment summary">
 	<div class="kpi glow rv" style="--i:1">
 		<span class="mini-ic tint k-pay"><Icon name="check" /></span>
@@ -148,3 +260,4 @@
 		{/each}
 	</section>
 </div>
+{/if}
