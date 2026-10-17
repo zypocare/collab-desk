@@ -104,6 +104,25 @@
 .pt-write{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 10px}
 @media (max-width:760px){ .pt-row{flex-wrap:wrap;padding:12px 16px} .pt-acts{width:100%;justify-content:flex-start;padding-left:48px} }
 
+/* YouTube */
+.yt-panel{margin-top:18px}
+.yt-panel .panel-h h2{display:flex;align-items:center;gap:8px}
+.yt-dot{width:12px;height:12px;border-radius:4px;background:#ff0033}
+.yt-connect .row-inline{display:flex;gap:8px;margin-top:10px}
+.yt-connect .row-inline .inp{flex:1}
+.yt-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:0 20px}
+.yt-stats > div{padding:12px;border-radius:14px;border:1px solid var(--line)}
+.yt-stats b{display:block;font-size:22px;font-weight:700}
+.yt-stats small{font-size:12.5px;color:var(--ink-3)}
+.yt-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:6px;padding:12px 20px 0}
+.yt-v{position:relative;display:block;aspect-ratio:16/9;border-radius:10px;overflow:hidden;background:var(--surface-2)}
+.yt-v.short{aspect-ratio:9/12}
+.yt-v img{width:100%;height:100%;object-fit:cover}
+.yt-views{position:absolute;left:6px;bottom:6px;display:flex;align-items:center;gap:4px;font-size:12px;font-weight:700;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.7)}
+.yt-views .ic{width:13px;height:13px}
+.yt-tag{position:absolute;top:6px;right:6px;padding:2px 6px;border-radius:6px;background:rgba(0,0,0,.6);color:#fff;font-size:10.5px;font-weight:700}
+.yt-foot{margin:0;padding:12px 20px 18px}
+
 /* Desktop never shows the phone-only bits. */
 .m-next,.m-open-chat{display:none}
 /* A chat opened on a laptop: the same screen as a normal page. */

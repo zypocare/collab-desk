@@ -10,6 +10,7 @@
 	import Mono from '#lib/components/Mono.svelte';
 	import InstagramPanel from '#lib/components/InstagramPanel.svelte';
 	import ContentTips from '#lib/components/ContentTips.svelte';
+	import YoutubePanel from '#lib/components/YoutubePanel.svelte';
 
 	// Her making week, without any of the business: what to shoot when, what's with the brand, what to post.
 	const s = $derived(studio.settings!);
@@ -126,4 +127,5 @@
 
 <!-- How posts are doing, and what to make next. -->
 <InstagramPanel />
+<YoutubePanel />
 <ContentTips />

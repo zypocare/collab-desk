@@ -53,7 +53,10 @@
 					// Reels engagement when the insights have it (labelled so); otherwise the all-posts figure.
 					ins?.insights?.formats?.reels?.er ? { raw: `${ins.insights.formats.reels.er}%`, label: 'Reels engagement' } : { raw: p.engagement, label: 'Avg. engagement' },
 					...(p.instagram?.avg_views ? [{ raw: compact(p.instagram.avg_views), label: 'Avg. views per post' }] : []),
-					...(ins && reachOk(ins.insights?.totals) ? [{ raw: compact(ins.insights.totals!.reach), label: 'Reached in 30 days' }] : [])
+					...(ins && reachOk(ins.insights?.totals) ? [{ raw: compact(ins.insights.totals!.reach), label: 'Reached in 30 days' }] : []),
+					// YouTube, when her channel is added: typical Short views (and subscribers when known).
+					...(pub.yt?.shorts_avg_views ? [{ raw: compact(pub.yt.shorts_avg_views), label: 'YouTube Shorts views' }] : []),
+					...(pub.yt?.subscribers ? [{ raw: compact(pub.yt.subscribers), label: 'YouTube subscribers' }] : [])
 				].filter((s) => s.raw)
 			: []
 	);
