@@ -132,6 +132,10 @@
 .sp-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:6px}
 .sp-form{display:flex;flex-direction:column;gap:10px;margin-top:10px;padding:12px;border-radius:14px;border:1px solid var(--line)}
 
+.legal h2{font-size:18px;margin:22px 0 8px}
+.legal p,.legal li{line-height:1.6}
+.legal ul{padding-left:20px}
+
 /* Desktop never shows the phone-only bits. */
 .m-next,.m-open-chat{display:none}
 /* A chat opened on a laptop: the same screen as a normal page. */
