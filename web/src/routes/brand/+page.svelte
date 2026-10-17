@@ -10,6 +10,9 @@
 	import { onMount } from 'svelte';
 	import { supabase } from '#lib/supabase.ts';
 	import { copyText } from '#lib/ui.svelte.ts';
+	import { phone } from '#lib/phone.svelte.ts';
+	import BrandRequestCard from '#lib/components/BrandRequestCard.svelte';
+	import Mono from '#lib/components/Mono.svelte';
 
 	const acc = $derived(auth.account?.role === 'brand' ? auth.account : null);
 	// Their own link for recommending her to other brands.
@@ -32,6 +35,15 @@
 	const todo = $derived(
 		brandData.requests.flatMap((r) => milestones(r, creator || 'the creator').filter((m) => m.who === 'you').map((m) => ({ r, m })))
 	);
+	// Laptop: filter the list.
+	let show = $state<'all' | 'active' | 'done' | 'declined'>('all');
+	const groups = $derived({
+		all: brandData.requests,
+		active: brandData.requests.filter((r) => !['live', 'wrapped', 'declined'].includes(r.stage)),
+		done: brandData.requests.filter((r) => r.stage === 'live' || r.stage === 'wrapped'),
+		declined: brandData.requests.filter((r) => r.stage === 'declined')
+	});
+	const ig = $derived(pub.data?.instagram ?? null);
 	const toPay = $derived(
 		brandData.requests.reduce((a, r) => a + (r.invoices ?? []).filter((i) => (i.status === 'sent' || i.status === 'partly_paid') && !i.claimed).reduce((x, i) => x + Number(i.payable), 0), 0)
 	);
@@ -59,6 +71,8 @@
 	</header>
 
 	{#if brandData.error}<div class="err-box">{brandData.error}</div>{/if}
+
+	<div class="bd-grid"><div class="bd-main">
 
 	{#if done.length}
 		<section class="again rv" style="--i:1">
@@ -111,6 +125,21 @@
 			<p>Send your first collaboration request. You'll be able to follow it here.</p>
 			<a class="btn grad lg" href="/brand/new"><Icon name="send" />Send a request</a>
 		</div>
+	{:else if !phone.on}
+		<div class="brq-tabs" role="tablist">
+			{#each [['all', 'All'], ['active', 'Active'], ['done', 'Completed'], ['declined', 'Not going ahead']] as [k, label] (k)}
+				{#if k === 'all' || groups[k as 'active'].length}
+					<button role="tab" aria-selected={show === k} class:on={show === k} onclick={() => (show = k as typeof show)}>{label}<span>{groups[k as 'all'].length}</span></button>
+				{/if}
+			{/each}
+		</div>
+		<div class="brq-list">
+			{#each groups[show] as r (r.id)}
+				<BrandRequestCard {r} {creator} unread={brandData.unread[r.code] ?? 0} />
+			{:else}
+				<p class="hint">Nothing here.</p>
+			{/each}
+		</div>
 	{:else}
 		<div class="req-list">
 			{#each brandData.requests as r, i (r.id)}
@@ -134,4 +163,23 @@
 			{/each}
 		</div>
 	{/if}
+	</div>
+	<aside class="bd-side">
+		<section class="bd-creator">
+			<div class="bdc-head">
+				{#if ig?.profile_picture_url}<img src={ig.profile_picture_url} alt="" referrerpolicy="no-referrer" />{:else}<Mono name={pub.data?.display_name ?? 'C'} />{/if}
+				<div><b>{pub.data?.display_name ?? ''}</b><small>@{pub.data?.handle ?? ''}{pub.data?.city ? ` · ${pub.data.city}` : ''}</small></div>
+			</div>
+			{#if pub.data?.niche}<p class="bdc-niche">{pub.data.niche}</p>{/if}
+			<div class="bdc-stats">
+				<div><b>{ig?.followers ? compact(ig.followers) : pub.data?.followers || '—'}</b><small>followers</small></div>
+				<div><b>{ig?.engagement_rate ? `${ig.engagement_rate}%` : pub.data?.engagement || '—'}</b><small>engagement</small></div>
+				<div><b>{ig?.avg_views ? compact(ig.avg_views) : '—'}</b><small>avg. views</small></div>
+			</div>
+			<p class="bdc-reply"><span class="dt" style="--hue:var(--ok)"></span>Usually replies within {pub.data?.reply_time ?? 'a few days'}</p>
+			{#if pub.data?.accepting !== false}<a class="btn grad bdc-cta" href="/brand/new"><Icon name="send" />New request</a>{/if}
+			<a class="btn bdc-cta" href="/insights"><Icon name="chart" />See audience insights</a>
+		</section>
+	</aside>
+	</div>
 {/if}
