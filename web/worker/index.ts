@@ -117,7 +117,11 @@ async function takeTicket(req: Request, env: Env): Promise<true | string> {
 }
 
 /** Text out of whatever the model returned. */
-const out = (r: unknown) => String((r as { response?: unknown })?.response ?? (typeof r === 'string' ? r : '')).trim();
+// (When the answer is JSON, Cloudflare may hand it back already parsed, as an object.)
+const out = (r: unknown) => {
+	const v = (r as { response?: unknown })?.response ?? r;
+	return (typeof v === 'string' ? v : v && typeof v === 'object' ? JSON.stringify(v) : '').trim();
+};
 /** The first JSON object in a reply (models sometimes wrap it in words or code fences). */
 function firstJson(s: string) {
 	const a = s.indexOf('{'), b = s.lastIndexOf('}');
@@ -276,7 +280,7 @@ Return ONLY JSON: {"collab": "likely" | "maybe" | "no", "brand": "brand name or 
 	);
 	const j = firstJson(reply) ?? {};
 	const c = String(j.collab ?? 'no');
-	return { collab: ['likely', 'maybe', 'no'].includes(c) ? c : 'no', brand: String(j.brand ?? ''), summary: String(j.summary ?? '').slice(0, 120) };
+	return { collab: ['likely', 'maybe', 'no'].includes(c) ? c : 'no', brand: String(j.brand ?? ''), summary: String(j.summary ?? '').slice(0, 120), ...(b.debug ? { raw: reply.slice(0, 400) } : {}) };
 }
 
 // ---------- 6. "Should I take it?": what a request really involves ----------
