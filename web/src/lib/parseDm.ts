@@ -54,7 +54,13 @@ export function parseDm(text: string, ownHandle = ''): Parsed {
 
 	// Brand name: "from Lumière Skin", "team at X", "I'm Asha, X's marketing" -> else from the handle or email domain.
 	// Words may have accents (Lumière) and dots inside (wick.and), but a full stop ends the name.
+	const NAME = String.raw`\p{Lu}[\p{L}\p{N}&'’-]*(?:\.(?=\p{L})[\p{L}\p{N}]*)*(?:\s+(?:&\s+)?\p{Lu}[\p{L}\p{N}&'’-]*(?:\.(?=\p{L})[\p{L}\p{N}]*)*){0,3}`;
 	const named = (
+		// "Team Plum here", "Plum team here", "We at Plum", "Regards, Team Plum".
+		t.match(new RegExp(String.raw`\b[Tt]eam\s+(${NAME})\s+(?:here|this side)\b`, 'u'))?.[1] ??
+		t.match(new RegExp(String.raw`(${NAME})\s+[Tt]eam\s+(?:here|this side)\b`, 'u'))?.[1] ??
+		t.match(new RegExp(String.raw`\b(?:[Ww]e at|[Ww]e(?:'re|’re| are))\s+(${NAME})`, 'u'))?.[1] ??
+		t.match(new RegExp(String.raw`(?:[Rr]egards|[Tt]hanks|[Cc]heers|[Bb]est|[Ww]arm wishes)[,!\s]*\n\s*[Tt]eam\s+(${NAME})`, 'u'))?.[1] ??
 		t.match(/(?:\bfrom|\bat|\bteam|\bbehalf of|\bwith)\s+(?:the\s+)?(\p{Lu}[\p{L}\p{N}&'’-]*(?:\.(?=\p{L})[\p{L}\p{N}]*)*(?:\s+(?:&\s+)?\p{Lu}[\p{L}\p{N}&'’-]*(?:\.(?=\p{L})[\p{L}\p{N}]*)*){0,3})/u)?.[1] ??
 		t.match(/(\p{Lu}[\p{L}\p{N}&'’-]*(?:\s+\p{Lu}[\p{L}\p{N}&'’-]*){0,2})(?:'s|’s)\s+(?:marketing|brand|team|founder)/u)?.[1] ??
 		''
@@ -65,8 +71,12 @@ export function parseDm(text: string, ownHandle = ''): Parsed {
 	const contact = (
 		t.match(/(?:\b[Ii]\s?am|\bI['’]m|\b[Tt]his is|\b[Mm]y name is|\b[Ii]t['’]s)\s+(\p{Lu}\p{Ll}+(?:\s+\p{Lu}\p{Ll}+)?)/u)?.[1] ??
 		t.match(/(?:[Rr]egards|[Tt]hanks|[Cc]heers|[Bb]est|[Ww]arm wishes)[,!\s]*\n\s*(\p{Lu}\p{Ll}+(?:\s+\p{Lu}\p{Ll}+)?)/u)?.[1] ??
+		// "Riya here from Sunveda".
+		t.match(/(\p{Lu}\p{Ll}+(?:\s+\p{Lu}\p{Ll}+)?)\s+here\s+from\b/u)?.[1] ??
 		''
-	).trim();
+	)
+		.trim()
+		.replace(/^Team\b.*$/, ''); // a sign-off like "Team Bewakoof" is the brand, not a person
 
 	// Deliverables: "2 reels", "one story", "a carousel", "3x stories".
 	const found = new Map<string, number>();

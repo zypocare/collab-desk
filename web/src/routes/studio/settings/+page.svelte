@@ -24,6 +24,7 @@
 	import PackagesSettings from '#lib/components/PackagesSettings.svelte';
 	import AvailabilitySettings from '#lib/components/AvailabilitySettings.svelte';
 	import DecisionSettings from '#lib/components/DecisionSettings.svelte';
+	import RateLearn from '#lib/components/RateLearn.svelte';
 	import ReviewsSettings from '#lib/components/ReviewsSettings.svelte';
 	import AppSettings from '#lib/components/AppSettings.svelte';
 	import AutopilotSettings from '#lib/components/AutopilotSettings.svelte';
@@ -327,6 +328,7 @@
 								<input type="checkbox" class="tgl" checked={s.show_rates} aria-label="Show starting rates" onchange={(e) => toggle('show_rates', (e.currentTarget as HTMLInputElement).checked)} />
 							</div>
 						</section>
+						<RateLearn />
 						<PackagesSettings />
 					{:else if active === 'bookings'}
 						<section class="panel rv" style="--i:1">

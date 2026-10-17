@@ -15,7 +15,7 @@ type Env = {
 type Run = { env: Env; gemini: boolean; neurons: number };
 
 // Expected size of each job in Cloudflare neurons (reserved before, corrected after).
-const COST: Record<string, number> = { dm: 160, reply: 110, caption: 110, pitch: 140, fit: 230, classify: 40 };
+const COST: Record<string, number> = { dm: 160, reply: 110, caption: 110, pitch: 140, fit: 230, classify: 40, summary: 220 };
 // Cloudflare's price list in neurons per token (Llama 3.3 70B fast; Llama 3.2 11B vision).
 const PER_TOKEN = { text: [0.0267, 0.2048], vision: [0.0045, 0.0615] };
 const USED_UP = "Today's free AI is used up. It's back at 5:30 am.";
@@ -32,10 +32,10 @@ export default {
 		try {
 			const kind = url.pathname.slice('/api/ai/'.length);
 			if (kind === 'status') return json(await status(req, env));
-			if (!['dm', 'reply', 'caption', 'pitch', 'classify', 'fit'].includes(kind)) return json({ error: 'Unknown.' }, 404);
+			if (!['dm', 'reply', 'caption', 'pitch', 'classify', 'fit', 'summary'].includes(kind)) return json({ error: 'Unknown.' }, 404);
 			const body = (await req.json()) as Record<string, unknown>;
 			const job = (x: Run) =>
-				kind === 'dm' ? readDm(x, body) : kind === 'reply' ? replies(x, body) : kind === 'pitch' ? pitch(x, body) : kind === 'classify' ? classify(x, body) : kind === 'fit' ? fit(x, body) : caption(x, body);
+				kind === 'dm' ? readDm(x, body) : kind === 'reply' ? replies(x, body) : kind === 'pitch' ? pitch(x, body) : kind === 'classify' ? classify(x, body) : kind === 'fit' ? fit(x, body) : kind === 'summary' ? summary(x, body) : caption(x, body);
 
 			// Checking an incoming Instagram DM comes from the DM webhook with a single-use pass
 			// (Cloudflare only: DMs are never sent to the backup automatically).
@@ -221,9 +221,11 @@ Rules: "hybrid" = money plus product; "barter" = product only (vouchers, gift ca
 async function replies(x: Run, b: Record<string, unknown>) {
 	const thread = (Array.isArray(b.thread) ? b.thread : []).slice(-12) as { from: string; text: string }[];
 	const ctx = b.context as Record<string, unknown> | undefined;
+	const ig = ctx?.channel === 'instagram';
+	if (ig && x.gemini) throw new Error("!Today's free AI is used up. It's back at 5:30 am.");
 	const reply = await chat(
 		x,
-		`You draft short replies for an Indian Instagram creator answering a brand about a paid collaboration. Warm, professional, plain English, no emojis overload (one at most), 1 to 3 sentences each. Never invent prices, dates or promises that aren't in the facts. Facts: ${JSON.stringify(ctx ?? {})}.
+		`${ig ? 'You draft short Instagram DM replies for an Indian Instagram creator. The other person may be a brand, an agency or a follower: answer what they actually asked, in her voice. For brands, be warm and professional and move towards the details (deliverables, budget, dates); never quote a price unless it is in the facts.' : 'You draft short replies for an Indian Instagram creator answering a brand about a paid collaboration.'} Warm, professional, plain English, no emojis overload (one at most), 1 to 3 sentences each. Never invent prices, dates or promises that aren't in the facts. Facts: ${JSON.stringify(ctx ?? {})}.
 Return ONLY JSON: {"replies": ["...", "...", "..."]} with three different options (e.g. agree, ask a question, propose next step).`,
 		thread.map((m) => `${m.from === 'creator' ? 'Creator' : 'Brand'}: ${String(m.text).slice(0, 800)}`).join('\n') || 'No messages yet. Write a friendly first message.',
 		500
@@ -354,3 +356,19 @@ Rules: a store visit, event or shoot at their place means visit=true. "Outfit sp
 	return { ai, travel, home: homeFound, read_at: new Date().toISOString() };
 }
 
+// ---------- 7. "Your month in review" from the month's facts ----------
+async function summary(x: Run, b: Record<string, unknown>) {
+	const reply = await chat(
+		x,
+		`You are the business coach of an Indian Instagram creator. From the facts of one month (money in rupees, brand deals, content results, followers, price lessons), write her monthly review. Warm, direct, specific, in plain English. Use only the numbers given; never invent any. Mention brands by name where useful.
+Return ONLY JSON: {"headline": "one line, under 14 words, the story of the month",
+ "wins": ["2-4 short points: what went well, with numbers"],
+ "watch": ["1-3 short points: what needs attention (late payments, low acceptance, slow months)"],
+ "actions": ["3 concrete things to do this month, e.g. raise Reel price to ₹X, chase Y for ₹Z, pitch more of a category"]}`,
+		JSON.stringify(b.facts ?? {}).slice(0, 6000),
+		700
+	);
+	const j = firstJson(reply) ?? {};
+	const list = (v: unknown, n: number) => (Array.isArray(v) ? v.map(String).filter(Boolean).slice(0, n) : []);
+	return { headline: String(j.headline ?? '').trim(), wins: list(j.wins, 4), watch: list(j.watch, 3), actions: list(j.actions, 3) };
+}

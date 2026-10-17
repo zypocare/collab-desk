@@ -6,6 +6,8 @@
 	import { inr, inrS, today } from '#lib/util.ts';
 	import Icon from '#lib/components/Icon.svelte';
 	import Segmented from '#lib/components/Segmented.svelte';
+	import MonthReview from '#lib/components/MonthReview.svelte';
+	import TaxPack from '#lib/components/TaxPack.svelte';
 
 	const current = fyOf(today());
 	let fyStart = $state(String(current.start));
@@ -68,6 +70,8 @@
 		/>
 	</div>
 </header>
+
+<MonthReview />
 
 <section class="kpis k4" aria-label="Year summary">
 	<div class="kpi glow rv" style="--i:1"><div><div class="lbl">Money received</div><div class="big" use:countUp={{ value: r.total.received, money: true }}>{inr(r.total.received)}</div><div class="sub">+ {inr(r.total.tds)} TDS deducted</div></div></div>
@@ -157,6 +161,8 @@
 		</table>
 	</div>
 </section>
+
+<TaxPack {fy} />
 
 <section class="panel rv" style="--i:9">
 	<div class="panel-h"><h2>For your accountant</h2><small>CSV files open in Excel and Google Sheets</small></div>

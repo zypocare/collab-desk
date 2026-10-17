@@ -1,0 +1,50 @@
+# Automatic checks of the main flows (web/tests/e2e) against a fresh local copy of the database
+# with test data. Runs once a day, on pull requests, and when started by hand (Actions > Checks >
+# Run workflow). Not on every push: the free GitHub plan has 2,000 minutes a month, and this keeps
+# well inside it. Nothing here touches the live site or real emails.
+name: Checks
+
+on:
+  schedule:
+    - cron: '30 22 * * *' # 4 am in India
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Start the local database with test data
+        run: supabase start -x studio,imgproxy,logflare,vector,supavisor
+      - name: Point the website at it
+        run: |
+          eval "$(supabase status -o env)"
+          printf 'VITE_SUPABASE_URL=%s\nVITE_SUPABASE_ANON_KEY=%s\n' "$API_URL" "$ANON_KEY" > web/.env
+      - run: npm ci
+        working-directory: web
+      - run: npx playwright install --with-deps chromium
+        working-directory: web
+      - name: Type check
+        run: npm run check
+        working-directory: web
+      - name: Main flows
+        run: npm run test:e2e
+        working-directory: web
+        env:
+          CI: '1'
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: test-report
+          path: web/playwright-report
+          retention-days: 7

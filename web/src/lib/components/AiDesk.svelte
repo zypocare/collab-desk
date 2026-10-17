@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import { isRanked } from '../priority';
 	import { askAi } from '../ai';
+	import { monthLabel, prevMonth } from '../monthSummary';
 	import { supabase } from '../supabase';
 	import { decisionOf, studio } from '../studio.svelte';
 	import { ui } from '../ui.svelte';
@@ -53,6 +54,9 @@
 				</li>
 			{/each}
 		</ul>
+	{/if}
+	{#if new Date().getDate() <= 10}
+		<a class="ai-desk-review" href="/studio/reports?m={prevMonth()}"><Icon name="chart" /><span><b>Your {monthLabel(prevMonth()).split(' ')[0]} in review</b><small>What you earned, what worked, what to charge next</small></span><Icon name="chevR" /></a>
 	{/if}
 	<div class="ai-desk-acts">
 		<button class="btn sm ai-btn" onclick={() => (ui.newCollab = true)}><Icon name="spark" />Read a DM</button>

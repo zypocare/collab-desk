@@ -2,7 +2,9 @@
 	import { page } from '$app/state';
 	import { onMount, tick } from 'svelte';
 	import { supabase } from '#lib/supabase.ts';
-	import { studio } from '#lib/studio.svelte.ts';
+	import { byId, studio } from '#lib/studio.svelte.ts';
+	import { askAi, collabFacts } from '#lib/ai.ts';
+	import AiThinking from '#lib/components/AiThinking.svelte';
 	import { toast, ui } from '#lib/ui.svelte.ts';
 	import { errMessage } from '#lib/util.ts';
 	import Icon from '#lib/components/Icon.svelte';
@@ -18,6 +20,28 @@
 	let text = $state('');
 	let busy = $state(false);
 	let list = $state<HTMLElement>();
+	let drafts = $state<string[]>([]);
+	let drafting = $state(false);
+
+	// AI reply ideas: as her, from the chat and (if it's become a collab) the collab's facts.
+	async function suggest() {
+		drafting = true;
+		try {
+			const s = studio.settings;
+			const c = byId(t?.collab_id);
+			const context = {
+				channel: 'instagram',
+				...(c && s ? collabFacts(c, s) : { creator: s?.display_name, handle: s?.handle, niche: s?.niche, rate_card: s?.rates, reply_time: s?.reply_time }),
+				...(t?.collab_hint && !c ? { looks_like: t.collab_hint } : {})
+			};
+			const r = await askAi<{ replies: string[] }>('reply', { thread: msgs.slice(-12).map((m) => ({ from: m.from_me ? 'creator' : 'brand', text: m.text })), context });
+			drafts = r.replies;
+			if (!drafts.length) toast("The AI didn't have a suggestion this time. Try again.", 'alert');
+		} catch (e) {
+			toast((e as Error).message, 'alert');
+		}
+		drafting = false;
+	}
 
 	async function load() {
 		const [a, b] = await Promise.all([
@@ -108,6 +132,12 @@
 			{/each}
 		</div>
 		{#if open24}
+			{#if !text}
+				<div class="th-ai">
+					{#if drafting}<AiThinking label="Writing replies" />{:else}<button type="button" class="btn sm ai-btn" onclick={suggest}><Icon name="spark" />{drafts.length ? 'More replies' : 'Suggest replies'}</button>{/if}
+					{#each drafts as d, i (i)}<button type="button" class="ai-draft" onclick={() => ((text = d), (drafts = []))}>{d}</button>{/each}
+				</div>
+			{/if}
 			<form class="th-box" onsubmit={send}>
 				<textarea class="inp" rows="1" placeholder="Message…" bind:value={text}></textarea>
 				<button class="btn grad send-btn" type="submit" disabled={busy || !text.trim()} aria-label="Send">{#if busy}<span class="spinner"></span>{:else}<Icon name="send" />{/if}</button>

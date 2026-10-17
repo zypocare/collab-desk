@@ -24,3 +24,7 @@ vite.config.ts.timestamp-*
 
 # Wrangler (Cloudflare)
 .wrangler
+
+# Test runs
+/test-results
+/playwright-report

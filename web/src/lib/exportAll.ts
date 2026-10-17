@@ -19,7 +19,7 @@ function crc32(b: Uint8Array) {
 	for (let i = 0; i < b.length; i++) c = CRC[(c ^ b[i]) & 0xff] ^ (c >>> 8);
 	return (c ^ 0xffffffff) >>> 0;
 }
-function zip(files: { name: string; text: string }[]): Blob {
+export function zip(files: { name: string; text: string }[]): Blob {
 	const enc = new TextEncoder();
 	const parts: Uint8Array[] = [];
 	const central: Uint8Array[] = [];
