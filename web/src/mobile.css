@@ -23,7 +23,7 @@
     --ig-sep:color-mix(in oklab,var(--ink) 10%,transparent);
     --ig-fill:color-mix(in oklab,var(--ink) 8%,transparent);
     --ig-fill-2:color-mix(in oklab,var(--ink) 5%,transparent);
-    --ig-bar:color-mix(in oklab,var(--bg) 96%,transparent);
+    --ig-bar:var(--bg);
     overscroll-behavior-y:contain;
   }
   [data-side="studio"] body{overscroll-behavior-y:contain;background:var(--bg)}
@@ -108,12 +108,69 @@
   [data-side="studio"] :is(.search,.ig-search){display:flex;align-items:center;gap:8px;height:38px;padding:0 12px;border-radius:10px;border:0;background:var(--ig-fill);box-shadow:none;color:var(--ink-3)}
   [data-side="studio"] :is(.search,.ig-search) input{flex:1;min-width:0;border:0;background:none;outline:none;font:inherit;font-size:16px;color:var(--ink)}
   [data-side="studio"] :is(.search,.ig-search) .ic{width:17px;height:17px}
+  /* Forms like Instagram's Edit profile: one field per row, the label inside the box. */
+  [data-side="studio"] .fields{grid-template-columns:minmax(0,1fr)!important;gap:10px}
+  [data-side="studio"] .fields > *{grid-column:auto!important}
+  [data-side="studio"] .f{position:relative;padding:8px 14px 9px;border:1px solid var(--ig-sep);border-radius:12px;background:var(--ig-fill-2);transition:border-color .15s}
+  [data-side="studio"] .f:focus-within{border-color:color-mix(in oklab,var(--ink) 45%,transparent)}
+  [data-side="studio"] .f > label,[data-side="studio"] .f > .lbl-t{display:block;margin:0 0 1px;font-size:12.5px;font-weight:400;color:var(--ink-3);letter-spacing:0}
+  [data-side="studio"] .f :is(.inp,.sel){width:100%;height:28px;min-height:0;padding:0;border:0;border-radius:0;background:none;box-shadow:none;font-size:16px;font-weight:400}
+  [data-side="studio"] .f textarea.inp{height:auto;min-height:76px;padding:2px 0;line-height:1.45}
+  [data-side="studio"] .f .sel .sel-ic{margin-right:-4px}
+  [data-side="studio"] .f .pre > span{left:0}
+  [data-side="studio"] .f .pre .inp{padding-left:16px}
+  [data-side="studio"] input[type="file"]{font:inherit;font-size:14px;color:var(--ink-3);max-width:100%}
+  [data-side="studio"] input[type="file"]::file-selector-button{margin-right:10px;padding:7px 14px;border:0;border-radius:8px;background:var(--ig-fill);color:var(--ink);font:inherit;font-size:14px;font-weight:600}
+  [data-side="studio"] .f :is(.hint,small){display:block;margin-top:4px;font-size:12.5px}
+  [data-side="studio"] .f:has(> .pills,> .btabs,> .chips,> .cat-chips,> .row){background:none;border:0;padding:0}
+  [data-side="studio"] .f:has(> .pills,> .btabs,> .chips,> .cat-chips,> .row) > label{margin-bottom:6px}
+
+  /* Settings rows: words on the left, the switch on the right; a dropdown goes under the words, full width. */
+  [data-side="studio"] .switch-row{padding:12px 16px;gap:14px;border-top:1px solid var(--ig-sep)}
+  [data-side="studio"] .switch-row b{font-size:16px;font-weight:500}
+  [data-side="studio"] .switch-row small{font-size:13.5px;line-height:1.4}
+  [data-side="studio"] .switch-row:has(> .sel,> div > .sel,> .btn,> .pills){flex-wrap:wrap}
+  [data-side="studio"] .switch-row:has(> .sel,> div > .sel,> .btn,> .pills) > div:first-child{flex:1 1 100%}
+  [data-side="studio"] .switch-row > .sel{flex:1 1 100%;width:100%}
+  [data-side="studio"] .switch-row > :is(.btn,.pills){margin-left:0}
+  /* Instagram-style switch and round tick boxes, in the app's colour. */
+  [data-side="studio"] .tgl{width:50px;height:30px;background:color-mix(in oklab,var(--ink) 22%,transparent)}
+  [data-side="studio"] .tgl::after{top:3px;left:3px;width:24px;height:24px;background:#fff;box-shadow:0 2px 4px rgba(0,0,0,.25)}
+  [data-side="studio"] .tgl:checked{background:var(--accent)}
+  [data-side="studio"] .tgl:checked::after{transform:translateX(20px)}
+  [data-side="studio"] .cbx{width:22px;height:22px;border-radius:50%;border:1.5px solid color-mix(in oklab,var(--ink) 40%,transparent);background:none}
+  [data-side="studio"] .cbx:checked{background:var(--accent);border-color:var(--accent)}
+
   [data-side="studio"] :is(.pills,.btabs){background:var(--ig-fill);border:0;box-shadow:none;border-radius:10px}
   [data-side="studio"] .chip{border-radius:7px}
 
   /* ---------- flat screens split by hairlines (no cards) ---------- */
   [data-side="studio"] :is(.panel,.kpi,.sec){background:transparent;border:0;border-radius:0;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none}
-  [data-side="studio"] .panel{margin-inline:-16px;padding-inline:0;border-bottom:1px solid var(--ig-sep)}
+  [data-side="studio"] .panel{margin-inline:-16px;border-bottom:1px solid var(--ig-sep)}
+  /* Everything inside a screen lines up 16px from the edge, like the top bar title. */
+  [data-side="studio"] :is(.pipe,.mini){padding:16px}
+  [data-side="studio"] :is(.task,.bq-panel > .bq){padding-inline:16px}
+  [data-side="studio"] .task .tact{margin-left:auto}
+  [data-side="studio"] .week-wrap{padding:0 16px 16px;scrollbar-width:none}
+  [data-side="studio"] .week-wrap::-webkit-scrollbar{display:none}
+  [data-side="studio"] .t-b .week{grid-template-columns:repeat(7,72px);gap:8px}
+  [data-side="studio"] .panel-h{flex-wrap:wrap;row-gap:2px}
+  [data-side="studio"] .empty:not(tr){padding:28px 16px}
+  [data-side="studio"] :is(.switch-row,.form-b,.imp-row,.panel > .hint,.ct-none,.story-stats,.rv-row,.rules-b,.row-btns,.pay-row,.brand-row,.ilink,.hrs-grid,.chart,.ct-mini,.team-add,.prod-row,.ag,.legend){padding-left:16px;padding-right:16px}
+  [data-side="studio"] .panel :is([style*="padding:0 20px"],[style*="padding:20px"]){padding-left:16px!important;padding-right:16px!important}
+  /* Full-bleed blocks inside Today's rows too. */
+  [data-side="studio"] :is(.t-row,.side-stack) > .panel{margin-inline:-16px}
+  /* Questions from brands: a flat list like everything else. */
+  [data-side="studio"] .bq-panel{padding:0 16px 8px}
+  [data-side="studio"] .bq-panel > .panel-h{padding:16px 0 4px}
+  [data-side="studio"] .bq-panel > .bq{padding:12px 0;border:0;border-top:1px solid var(--ig-sep);border-radius:0;background:none;box-shadow:none}
+  /* Next 7 days: a strip of small day tiles, number over weekday. */
+  [data-side="studio"] .t-b .week{grid-template-columns:repeat(7,64px)}
+  [data-side="studio"] .day{padding:10px 8px;border-radius:12px;min-height:0}
+  [data-side="studio"] .day-h{flex-direction:column;align-items:flex-start;gap:0}
+  [data-side="studio"] .day-h b{font-size:20px}
+  [data-side="studio"] .day-h small{font-size:11px;letter-spacing:.06em}
+  [data-side="studio"] .day .none{font-size:12px}
   [data-side="studio"] .panel-h{padding:16px 16px 6px}
   [data-side="studio"] .panel-h h2{font-size:16px;font-weight:700}
   [data-side="studio"] .glow::after{display:none}
