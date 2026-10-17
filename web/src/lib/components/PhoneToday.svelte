@@ -193,7 +193,17 @@
 			{/each}
 		</div>
 	{:else}
-		<div class="clear"><span class="clear-ic"><Icon name="check" /></span><b>You're all caught up</b><small>New requests, payments and follow-ups land here.</small></div>
+		<!-- Nothing to do: the same glowing card as the money one, with two good next steps. -->
+		<div class="clear hero-card glow">
+			<div class="mesh" aria-hidden="true"></div>
+			<span class="clear-ic"><Icon name="check" /></span>
+			<b>You're all caught up</b>
+			<small>New requests, payments and follow-ups land here.</small>
+			<div class="clear-acts">
+				<a class="glass-chip" href="/studio/calendar"><Icon name="cal" />Plan your week</a>
+				<a class="glass-chip" href="/studio/pitches"><Icon name="send" />Pitch a brand</a>
+			</div>
+		</div>
 	{/if}
 </section>
 
