@@ -446,10 +446,10 @@
   .qa-n{position:absolute;top:-5px;right:-5px;min-width:20px;height:20px;padding:0 5px;border-radius:99px;display:grid;place-items:center;background:var(--bad);color:#fff;font-size:11px;font-style:normal;font-weight:700;border:2px solid var(--bg);animation:m-pop .5s .4s var(--spring-ig) both}
 
   /* Money: cards you swipe through, with dots */
-  .mc-wrap{margin:18px -16px 0}
+  .mc-wrap{margin:14px -16px 0}
   .mc-track{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;padding:4px 16px 10px;scroll-padding-inline:16px}
   .mc-track::-webkit-scrollbar{display:none}
-  .mc{flex:0 0 calc(100% - 48px);scroll-snap-align:start;position:relative;isolation:isolate;overflow:hidden;min-height:184px;padding:18px 18px 16px;border-radius:24px;display:flex;flex-direction:column;gap:6px;color:#fff;text-decoration:none;
+  .mc{flex:0 0 calc(100% - 48px);scroll-snap-align:start;position:relative;isolation:isolate;overflow:hidden;min-height:236px;padding:18px 18px 16px;border-radius:24px;display:flex;flex-direction:column;gap:6px;color:#fff;text-decoration:none;
     box-shadow:0 20px 44px -26px rgba(0,0,0,.75);animation:mc-in .7s cubic-bezier(.2,.8,.2,1) both;transition:transform .3s var(--spring-ig)}
   .mc:nth-child(2){animation-delay:.08s} .mc:nth-child(3){animation-delay:.16s} .mc:nth-child(4){animation-delay:.24s}
   .mc:active{transform:scale(.97)}
@@ -459,8 +459,28 @@
   .mc-2{background:#0e2a2c} .mc-2::before{background:radial-gradient(closest-side at 20% 25%,rgba(52,211,153,.55),transparent),radial-gradient(closest-side at 80% 80%,rgba(56,189,248,.45),transparent)}
   .mc-3{background:#1c1440} .mc-3::before{background:radial-gradient(closest-side at 75% 25%,color-mix(in oklab,var(--g1) 80%,transparent),transparent),radial-gradient(closest-side at 20% 85%,rgba(129,140,248,.5),transparent)}
   .mc-4{background:#3a0d18} .mc-4::before{background:radial-gradient(closest-side at 25% 30%,rgba(244,63,94,.6),transparent),radial-gradient(closest-side at 80% 80%,rgba(251,146,60,.45),transparent)}
+
+  /* Living card backgrounds: colour blobs drift, small lights float up, a shine passes now and then. */
+  .fx{position:absolute;inset:0;z-index:-1;overflow:hidden;border-radius:inherit;pointer-events:none}
+  .fx i{position:absolute;border-radius:50%;filter:blur(30px);opacity:.75;mix-blend-mode:screen;animation:fx-drift 11s ease-in-out infinite alternate}
+  .fx i:nth-child(1){width:62%;aspect-ratio:1;left:-14%;top:-24%;background:var(--fx1,var(--g2))}
+  .fx i:nth-child(2){width:54%;aspect-ratio:1;right:-16%;bottom:-30%;background:var(--fx2,var(--g1));animation-duration:14s;animation-delay:-4s}
+  .fx i:nth-child(3){width:38%;aspect-ratio:1;left:38%;top:30%;background:var(--fx3,var(--g3));opacity:.45;animation-duration:9s;animation-delay:-7s}
+  .fx b{position:absolute;bottom:-10px;width:5px;height:5px;border-radius:50%;background:#fff;opacity:0;box-shadow:0 0 8px 2px rgba(255,255,255,.55);animation:fx-rise 7s linear infinite}
+  .fx b:nth-of-type(1){left:12%;animation-delay:0s}
+  .fx b:nth-of-type(2){left:34%;width:3px;height:3px;animation-delay:2.2s;animation-duration:8.5s}
+  .fx b:nth-of-type(3){left:58%;animation-delay:4.1s}
+  .fx b:nth-of-type(4){left:76%;width:4px;height:4px;animation-delay:1.3s;animation-duration:9.5s}
+  .fx b:nth-of-type(5){left:90%;width:3px;height:3px;animation-delay:5.6s}
+  .fx::after{content:"";position:absolute;inset:0;background:linear-gradient(115deg,transparent 30%,rgba(255,255,255,.14) 45%,transparent 58%);transform:translateX(-130%);animation:sweep 7s 2s ease-in-out infinite}
+  .mc-1{--fx1:#e0559c;--fx2:#8b5cf6;--fx3:#f59e8b}
+  .mc-2{--fx1:#10b981;--fx2:#0ea5e9;--fx3:#a7f3d0}
+  .mc-3{--fx1:#8b5cf6;--fx2:#ec4899;--fx3:#818cf8}
+  .mc-4{--fx1:#f43f5e;--fx2:#fb923c;--fx3:#fda4af}
+  .dk .fx i{mix-blend-mode:soft-light;opacity:.9}
+  .mc::before,.dk::after{display:none}
   .mc-l{font-size:13px;font-weight:600;opacity:.85}
-  .mc-v{font-size:34px;font-weight:700;letter-spacing:-.02em;line-height:1.1;font-variant-numeric:tabular-nums}
+  .mc-v{font-size:40px;font-weight:700;letter-spacing:-.02em;line-height:1.1;font-variant-numeric:tabular-nums}
   .mc-bar{height:8px;margin-top:auto;border-radius:99px;background:rgba(255,255,255,.18);overflow:hidden}
   .mc-bar i{display:block;height:100%;width:calc(var(--p) * 100%);min-width:8px;border-radius:inherit;background:linear-gradient(90deg,#fff,color-mix(in oklab,var(--g3) 70%,#fff));transform-origin:left;animation:growx 1.2s .3s cubic-bezier(.2,.8,.2,1) both;box-shadow:0 0 14px rgba(255,255,255,.5)}
   .mc-s{font-size:13px;opacity:.85}
@@ -472,9 +492,9 @@
   .mc-list small{opacity:.7;font-size:12px}
   .mc-list b{font-weight:700}
   .mc-none{opacity:.8}
-  .mc-chart{display:flex;align-items:flex-end;gap:8px;height:74px;margin-top:auto}
+  .mc-chart{display:flex;align-items:flex-end;gap:8px;height:96px;margin-top:auto}
   .mc-col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:4px}
-  .mc-col i{display:block;width:100%;height:calc(var(--h) * 54px);border-radius:7px;background:rgba(255,255,255,.28);transform-origin:bottom;animation:growy .9s calc(.3s + var(--d) * 90ms) cubic-bezier(.2,.8,.2,1) both}
+  .mc-col i{display:block;width:100%;height:calc(var(--h) * 74px);border-radius:7px;background:rgba(255,255,255,.28);transform-origin:bottom;animation:growy .9s calc(.3s + var(--d) * 90ms) cubic-bezier(.2,.8,.2,1) both}
   .mc-col.now i{background:linear-gradient(180deg,#fff,color-mix(in oklab,var(--g3) 70%,#fff));box-shadow:0 0 14px rgba(255,255,255,.45)}
   .mc-col small{font-size:11px;opacity:.75}
   .mc-dots{display:flex;justify-content:center;gap:6px;margin-top:2px}
@@ -491,7 +511,7 @@
   /* Needs you: a deck of colour cards you swipe through */
   .deck{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;margin:0 -16px;padding:4px 16px 12px;scroll-padding-inline:16px}
   .deck::-webkit-scrollbar{display:none}
-  .dk{flex:0 0 80%;scroll-snap-align:start;position:relative;isolation:isolate;overflow:hidden;min-height:262px;padding:14px;border-radius:24px;display:flex;flex-direction:column;color:#fff;
+  .dk{flex:0 0 80%;scroll-snap-align:start;position:relative;isolation:isolate;overflow:hidden;min-height:300px;padding:14px;border-radius:24px;display:flex;flex-direction:column;color:#fff;
     background:radial-gradient(120% 90% at 0% 0%,color-mix(in oklab,var(--hue) 85%,#fff 8%),transparent 62%),radial-gradient(90% 80% at 100% 100%,color-mix(in oklab,var(--g2) 85%,transparent),transparent 66%),linear-gradient(160deg,color-mix(in oklab,var(--hue) 60%,#1a0d1c),color-mix(in oklab,var(--g1) 60%,#120a14));
     box-shadow:0 20px 44px -26px rgba(0,0,0,.8);animation:dk-in .7s calc(var(--i) * 80ms) cubic-bezier(.2,.8,.2,1) both;transition:transform .4s var(--spring-ig),opacity .35s}
   .dk:only-child{flex-basis:100%}
@@ -677,6 +697,8 @@
 @keyframes dk-in{from{opacity:0;transform:translateX(44px) scale(.95)}}
 @keyframes sweep{0%{transform:translateX(-130%)}35%,100%{transform:translateX(130%)}}
 @keyframes growy{from{transform:scaleY(0)}}
+@keyframes fx-drift{0%{transform:translate(0,0) scale(1)}33%{transform:translate(18%,12%) scale(1.15)}66%{transform:translate(-8%,20%) scale(.92)}100%{transform:translate(10%,-10%) scale(1.08)}}
+@keyframes fx-rise{0%{transform:translateY(0) scale(.6);opacity:0}15%{opacity:.9}80%{opacity:.5}100%{transform:translateY(-260px) scale(1.1);opacity:0}}
 @keyframes orb-in{from{opacity:0;transform:scale(.6) rotate(-20deg)}}
 @keyframes twinkle{0%,100%{opacity:.2;transform:scale(.6)}50%{opacity:1;transform:scale(1.2)}}
 @keyframes m-in-r{from{transform:translateX(100%)}}
@@ -694,5 +716,5 @@
 @keyframes m-sheet{from{transform:translateY(100%)}}
 @media (prefers-reduced-motion: reduce){
   html[data-nav]::view-transition-old(root),html[data-nav]::view-transition-new(root){animation:none}
-  .ht-glow i,.ht-hi em,.ht-dot,.ht-orb,.orb-ring,.orb-spark,.mc,.mc::before,.dk,.dk::after,.dk-ic,.qa-b,.wkx-d,.pp-s,.pp-bar i,.mc-col i,.mc-bar i,.st-ring::before,.m-crow,.dm-row,.set-item,.pf-tile,.hl,.story,.m-group h3{animation:none!important}
+  .fx i,.fx b,.fx::after,.ht-glow i,.ht-hi em,.ht-dot,.ht-orb,.orb-ring,.orb-spark,.mc,.mc::before,.dk,.dk::after,.dk-ic,.qa-b,.wkx-d,.pp-s,.pp-bar i,.mc-col i,.mc-bar i,.st-ring::before,.m-crow,.dm-row,.set-item,.pf-tile,.hl,.story,.m-group h3{animation:none!important}
 }

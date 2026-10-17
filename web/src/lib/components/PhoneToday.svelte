@@ -26,7 +26,6 @@
 		relWord,
 		tasks,
 		today,
-		unreadFor,
 		type Task
 	} from '../util';
 	import Icon from './Icon.svelte';
@@ -53,7 +52,6 @@
 	});
 	const urgent = $derived(ts.filter((t) => t.d <= 0).length);
 	const active = $derived(list.filter(isActive));
-	const unread = $derived(list.reduce((a, c) => a + unreadFor(c), 0));
 
 	// Money
 	const received = $derived(list.filter((c) => c.pay_status === 'paid' && (c.paid_on ?? '').startsWith(ym)).reduce((a, c) => a + c.pay_received, 0));
@@ -149,16 +147,11 @@
 
 <Stories />
 
-<nav class="qa" aria-label="Shortcuts">
-	<button class="qa-b" onclick={() => (ui.newCollab = true)}><span class="qa-i grad"><Icon name="plus" /></span>New collab</button>
-	<a class="qa-b" href="/studio/inbox"><span class="qa-i"><Icon name="send" />{#if unread}<i class="qa-n">{unread}</i>{/if}</span>Messages</a>
-	<button class="qa-b" onclick={() => copyText(link, 'Your link is copied. Put it in your Instagram bio.')}><span class="qa-i"><Icon name="link" /></span>My link</button>
-	<a class="qa-b" href="/studio/calendar"><span class="qa-i"><Icon name="cal" /></span>Calendar</a>
-</nav>
 
 <section class="mc-wrap" aria-label="Money">
 	<div class="mc-track" bind:this={track} onscroll={onTrack}>
 		<a class="mc mc-1" href="/studio/payments">
+			<span class="fx" aria-hidden="true"><i></i><i></i><i></i><b></b><b></b><b></b><b></b><b></b></span>
 			<span class="mc-l">Received in {monthName}</span>
 			<b class="mc-v" use:countUp={{ value: received, money: true }}>{inr(received)}</b>
 			{#if goal}
@@ -169,6 +162,7 @@
 			{/if}
 		</a>
 		<a class="mc mc-2" href="/studio/payments">
+			<span class="fx" aria-hidden="true"><i></i><i></i><i></i><b></b><b></b><b></b><b></b><b></b></span>
 			<span class="mc-l">Still to come</span>
 			<b class="mc-v" use:countUp={{ value: outs, money: true }}>{inr(outs)}</b>
 			<ul class="mc-list">
@@ -176,6 +170,7 @@
 			</ul>
 		</a>
 		<a class="mc mc-3" href="/studio/reports">
+			<span class="fx" aria-hidden="true"><i></i><i></i><i></i><b></b><b></b><b></b><b></b><b></b></span>
 			<span class="mc-l">Last 6 months</span>
 			<b class="mc-v" use:countUp={{ value: sixTotal, money: true }}>{inr(sixTotal)}</b>
 			<div class="mc-chart">
@@ -184,6 +179,7 @@
 		</a>
 		{#if od.length}
 			<a class="mc mc-4" href="/studio/payments">
+			<span class="fx" aria-hidden="true"><i></i><i></i><i></i><b></b><b></b><b></b><b></b><b></b></span>
 				<span class="mc-l">Overdue</span>
 				<b class="mc-v" use:countUp={{ value: odSum, money: true }}>{inr(odSum)}</b>
 				<span class="mc-s">{od.length} invoice{od.length > 1 ? 's' : ''} past the due date. Tap to send reminders.</span>
@@ -200,6 +196,7 @@
 			{#each ts as t, i (t.c.id + t.kind)}
 				{@const key = t.c.id + t.kind}
 				<article class="dk k-{t.kind === 'pay' ? 'bad' : t.kind}" class:leaving={leaving === key} style="--hue:var(--m{hueOf(t.c.brand.name)});--i:{i}">
+					<span class="fx" aria-hidden="true"><i></i><i></i><i></i><b></b><b></b><b></b><b></b><b></b></span>
 					<a class="dk-top" href="/studio/c/{t.c.code}"><Mono name={t.c.brand.name} size="sm" /><b>{t.c.brand.name}</b><small>{when(t)}</small></a>
 					<a class="dk-body" href="/studio/c/{t.c.code}">
 						<span class="dk-ic"><Icon name={KIND_ICON[t.kind]} /></span>
