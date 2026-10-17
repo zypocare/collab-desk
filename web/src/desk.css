@@ -16,7 +16,8 @@
   }
 
   /* ---------- page frame ---------- */
-  [data-side="studio"] .pg { max-width: 1280px; margin-inline: auto; }
+  /* Every page uses the full width of the screen, beside the sidebar. */
+  [data-side="studio"] .pg { max-width: none; }
   [data-side="studio"] .pg.pg-wide { max-width: none; }
   [data-side="studio"] .aurora { opacity: .45; }
 
@@ -52,7 +53,7 @@
   .td-goal i { display: block; height: 100%; width: calc(var(--p) * 100%); min-width: 4px; border-radius: inherit; background: var(--grad); }
   .td-seg { height: 4px; margin: 6px 0 2px; }
 
-  .td-grid { display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: var(--d-gap); align-items: start; }
+  .td-grid { display: grid; grid-template-columns: minmax(0, 1fr) clamp(360px, 24vw, 460px); gap: var(--d-gap); align-items: start; }
   .td-main, .td-side { display: flex; flex-direction: column; gap: var(--d-gap); min-width: 0; }
   .td-main > *, .td-side > * { margin: 0 !important; }
   .td .needs-panel .task { padding: 12px 20px; }
@@ -252,4 +253,61 @@
   [data-side="studio"] .board-empty > .be-opts { grid-area: opts; align-self: center; margin: 0; }
   [data-side="studio"] .board-empty > .be-flow { grid-area: flow; margin-top: 24px; }
   [data-side="studio"] .be-opt { border-radius: 14px; padding: 16px 18px; }
+}
+
+/* ---------- full width everywhere: My page's settings use the whole column too ---------- */
+@media (min-width: 761px) {
+  [data-side="studio"] .set-panels { max-width: none; }
+}
+
+/* ---------- Import (laptop): a table, a line per collab ---------- */
+@media (min-width: 761px) {
+  [data-side="studio"] .imp-bulk { margin-bottom: var(--d-gap); }
+  [data-side="studio"] .ib-b { padding: 16px 20px; }
+  [data-side="studio"] .ib-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 10px; }
+  [data-side="studio"] .ph .acts .btn.ai-btn { display: inline-flex; }
+  .it { overflow: visible; }
+  .it-row { display: grid; grid-template-columns: 44px minmax(150px, 1.4fr) minmax(110px, 1fr) minmax(140px, 1.3fr) 150px minmax(110px, .9fr) 190px 160px 76px; align-items: center; gap: 0; min-height: 52px; }
+  .it-row > * { min-width: 0; }
+  .it-head { min-height: 44px; border-bottom: 1px solid var(--d-line); font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); }
+  .it-head > span { padding: 0 12px; }
+  .it-head > span:first-child { padding: 0; text-align: center; }
+  .it-item { border-bottom: 1px solid var(--d-line); }
+  .it-item.open { background: var(--d-soft); }
+  .it-n { justify-self: center; font-size: 13px; font-weight: 600; color: var(--ink-3); font-variant-numeric: tabular-nums; }
+  /* Cells: plain until you point at them. */
+  .it-in, .it-row :is(.sel, .dpk > button, .dpk .inp) { width: 100%; height: 40px; padding: 0 12px; border: 1px solid transparent; border-radius: 8px; background: transparent; box-shadow: none; color: var(--ink); font: inherit; font-size: 15px; }
+  .it-row .dpk { width: 100%; }
+  .it-in::placeholder { color: var(--ink-3); opacity: .7; }
+  .it-in:hover, .it-row :is(.sel, .dpk > button, .dpk .inp):hover { border-color: var(--d-line); background: var(--d-soft); }
+  .it-in:focus, .it-row :is(.sel, .dpk > button, .dpk .inp):focus-visible { outline: none; border-color: color-mix(in oklab, var(--accent) 55%, transparent); background: var(--surface); box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 16%, transparent); }
+  .it-in.num { text-align: left; font-variant-numeric: tabular-nums; -moz-appearance: textfield; }
+  .it-in.num::-webkit-outer-spin-button, .it-in.num::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .it-money { display: flex; align-items: center; }
+  .it-money > span { padding-left: 12px; margin-right: -8px; color: var(--ink-3); font-size: 15px; }
+  .it-acts { display: flex; justify-content: flex-end; gap: 2px; padding-right: 8px; }
+  .it-ib { width: 32px; height: 32px; display: grid; place-items: center; border: 0; border-radius: 8px; background: none; color: var(--ink-3); cursor: pointer; }
+  .it-ib:hover, .it-ib.on { background: var(--d-soft); color: var(--ink); }
+  .it-ib .ic { width: 16px; height: 16px; }
+  .it-more { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px 16px; padding: 6px 20px 18px 56px; }
+  .it-more .f { display: flex; flex-direction: column; gap: 6px; margin: 0; }
+  .it-more .f > span { font-size: 13px; font-weight: 600; color: var(--ink-2); }
+  .it-more .f > span small { font-weight: 400; color: var(--ink-3); }
+  .it-more .inp { height: 40px; }
+  .it-more textarea.inp { height: auto; }
+  .it-more .it-dm { grid-column: 1 / -1; }
+  .it-more .imp-paid { align-self: end; padding: 0 0 10px; }
+  .it-foot { position: sticky; bottom: 0; z-index: 3; display: flex; align-items: center; gap: 16px; padding: 12px 16px 12px 20px; background: var(--surface); border-radius: 0 0 var(--d-r) var(--d-r); }
+  .it-foot .hint { flex: 1; font-size: 14px; }
+  .it-foot .imp-send { font-size: 14px; }
+}
+@media (min-width: 761px) and (max-width: 1560px) {
+  .it-row { grid-template-columns: 36px minmax(120px, 1.3fr) minmax(90px, 1fr) minmax(110px, 1.2fr) 124px minmax(84px, .8fr) 164px 134px 68px; }
+  .it-in, .it-row :is(.sel, .dpk > button, .dpk .inp) { padding: 0 8px; font-size: 14px; }
+}
+@media (min-width: 761px) and (max-width: 1180px) {
+  /* Small laptops and tablets: the table scrolls sideways inside its card, the page doesn't. */
+  .it { overflow-x: auto; }
+  .it-row, .it-more { min-width: 940px; }
+  .it-foot { position: static; min-width: 940px; box-sizing: border-box; }
 }

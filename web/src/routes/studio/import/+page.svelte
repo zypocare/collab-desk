@@ -10,7 +10,7 @@
 	import Icon from '#lib/components/Icon.svelte';
 	import Select from '#lib/components/Select.svelte';
 	import Mono from '#lib/components/Mono.svelte';
-	import { PHONE_Q } from '#lib/phone.svelte.ts';
+	import { PHONE_Q, phone } from '#lib/phone.svelte.ts';
 
 	// Bring in the collabs she already has going (from DMs, WhatsApp, email): one row each.
 	// Brands are not emailed about anything imported (brand updates start switched off).
@@ -49,6 +49,8 @@
 	let busy = $state(false);
 	let progress = $state(0);
 	let sendLinks = $state(true);
+	// Laptop: each row's details (contact, email, product, their DM) open under it.
+	let open = $state<number | null>(null);
 
 	// A pasted DM fills its row.
 	function fromDm(r: Row, text: string) {
@@ -132,6 +134,7 @@
 
 <svelte:head><title>Import collabs · {studio.settings?.app_name}</title></svelte:head>
 
+{#if phone.on}
 <header class="ph imp-ph rv">
 	<div>
 		<div class="eb">Bring in what you have</div>
@@ -206,3 +209,71 @@
 	<label class="check-row imp-send"><input type="checkbox" class="cbx" bind:checked={sendLinks} /><span>Email brands (with an email) their tracking link</span></label>
 	<button class="btn grad lg" disabled={busy || !ready.length} onclick={save}>{#if busy}<span class="spinner"></span>Saving {progress} of {ready.length}{:else}<Icon name="check" />Import {ready.length || ''} collab{ready.length === 1 ? '' : 's'}{/if}</button>
 </div>
+{:else}
+<!-- Laptop: one table, a line per collab, details opening under a row. -->
+<header class="ph imp-ph rv">
+	<div>
+		<div class="eb">Bring in what you have</div>
+		<h1>Import collabs</h1>
+		<p>Add the collabs already going in DMs, WhatsApp or email: one line each. Brands only hear from you if you tick "Email brands their tracking link".</p>
+	</div>
+	<div class="acts"><button class="btn ai-btn" class:on={showBulk} onclick={() => (showBulk = !showBulk)}><Icon name="spark" />Paste DMs</button></div>
+</header>
+
+{#if showBulk}
+	<section class="panel rv imp-bulk">
+		<div class="panel-h"><h2>Paste several messages</h2><small>each becomes a line you can check</small></div>
+		<div class="ib-b">
+			<textarea class="inp" rows="7" placeholder={'Hi! I’m Asha from Lumière Skin (@lumiere.skin). 1 reel + 3 stories, budget 30k, live by 25th Oct…\n---\nHey, Rahul from Kora Kids here. Barter for 2 reels, products worth 8k…'} bind:value={bulk}></textarea>
+			<div class="ib-foot"><span class="hint">Put a line with <b>---</b> (or two empty lines) between messages.</span><button class="btn sm grad" onclick={splitBulk} disabled={!bulk.trim()}><Icon name="spark" />Fill lines</button></div>
+		</div>
+	</section>
+{/if}
+
+<section class="panel it rv" style="--i:1">
+	<div class="it-row it-head" role="row">
+		<span>#</span><span>Brand</span><span>Instagram</span><span>Content</span><span>Type</span><span>Fee</span><span>Where it stands</span><span>Go-live date</span><span></span>
+	</div>
+	{#each rows as r, i (r.id)}
+		<div class="it-item" class:open={open === r.id}>
+			<div class="it-row" role="row">
+				<span class="it-n">{i + 1}</span>
+				<input class="it-in" id="ib-{r.id}" list="imp-brands" placeholder="Brand name" aria-label="Brand" bind:value={r.brand} />
+				<input class="it-in" placeholder="@brand" aria-label="Instagram" bind:value={r.instagram} />
+				<input class="it-in" placeholder="1 Reel + 3 Stories" aria-label="Content" bind:value={r.what} />
+				<Select bind:value={r.type} options={TYPES} />
+				{#if r.type === 'barter'}
+					<span class="it-money"><span>₹</span><input class="it-in num" type="number" inputmode="numeric" placeholder="Worth" aria-label="Product worth" bind:value={r.worth} /></span>
+				{:else}
+					<span class="it-money"><span>₹</span><input class="it-in num" type="number" inputmode="numeric" placeholder="0" aria-label="Fee" bind:value={r.fee} /></span>
+				{/if}
+				<Select bind:value={r.where} options={WHERE} />
+				<DatePicker bind:value={r.date} />
+				<span class="it-acts">
+					<button class="it-ib" class:on={open === r.id} title="Contact, email, product and their DM" aria-label="More for line {i + 1}" aria-expanded={open === r.id} onclick={() => (open = open === r.id ? null : r.id)}><Icon name="more" /></button>
+					<button class="it-ib" title="Remove" aria-label="Remove line {i + 1}" onclick={() => (rows = rows.filter((x) => x.id !== r.id))}><Icon name="x" /></button>
+				</span>
+			</div>
+			{#if open === r.id}
+				<div class="it-more">
+					<label class="f"><span>Contact</span><input class="inp" placeholder="Name" bind:value={r.contact} /></label>
+					<label class="f"><span>Their email</span><input class="inp" type="email" placeholder="name@brand.com" bind:value={r.email} /></label>
+					{#if r.type !== 'paid'}
+						<label class="f"><span>Product they send</span><input class="inp" placeholder="What they send" bind:value={r.product} /></label>
+						{#if r.type === 'hybrid'}<label class="f"><span>Product worth</span><div class="pre"><span>₹</span><input class="inp num" type="number" inputmode="numeric" placeholder="0" bind:value={r.worth} /></div></label>{/if}
+					{/if}
+					{#if r.where === 'live' && r.type !== 'barter'}<label class="check-row imp-paid"><input type="checkbox" class="cbx" bind:checked={r.paid} /><span>Already paid</span></label>{/if}
+					<label class="f it-dm"><span>Their DM <small>(paste it to fill this line in)</small></span><textarea class="inp" rows="3" placeholder="Paste the brand's DM or email" value={r.dm} oninput={(e) => fromDm(r, (e.currentTarget as HTMLTextAreaElement).value)}></textarea></label>
+				</div>
+			{/if}
+		</div>
+	{/each}
+	<datalist id="imp-brands">{#each studio.brands as b (b.id)}<option value={b.name}></option>{/each}</datalist>
+	<div class="it-foot">
+		<button class="btn sm" onclick={addRow}><Icon name="plus" />Add a line</button>
+		<span class="hint">{ready.length} ready{total ? ` · ${inr(total)} in fees` : ''}</span>
+		<label class="check-row imp-send"><input type="checkbox" class="cbx" bind:checked={sendLinks} /><span>Email brands their tracking link</span></label>
+		<button class="btn grad" disabled={busy || !ready.length} onclick={save}>{#if busy}<span class="spinner"></span>Saving {progress} of {ready.length}{:else}<Icon name="check" />Import {ready.length || ''} collab{ready.length === 1 ? '' : 's'}{/if}</button>
+	</div>
+</section>
+{/if}
