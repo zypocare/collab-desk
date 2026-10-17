@@ -302,7 +302,12 @@
 				<div class="err-box">Couldn't load your data: {studio.error}</div>
 			{/if}
 			{#if studio.loaded}
-				{@render children()}
+				{#if phone.on}
+					{@render children()}
+				{:else}
+					<!-- Laptop: pages sit at a readable width; the board uses all of it. -->
+					<div class="pg" class:pg-wide={path === '/studio/collabs'}>{@render children()}</div>
+				{/if}
 			{:else if !studio.error && phone.on}
 				<div class="skel" aria-label="Loading">
 					<div class="skel-row">{#each [0, 1, 2, 3, 4] as i (i)}<span class="sk sk-c"></span>{/each}</div>

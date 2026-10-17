@@ -3,6 +3,7 @@
 	import { keepReferral } from '#lib/referral.ts';
 	import '../brand.css';
 	import '../studio.css';
+	import '../desk.css';
 	import '../mobile-type.css';
 	import '../mobile.css';
 	import type { LayoutProps } from './$types';
