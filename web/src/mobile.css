@@ -514,6 +514,23 @@
   .mc-dots button{width:6px;height:6px;padding:0;border:0;border-radius:99px;background:color-mix(in oklab,var(--ink) 22%,transparent);transition:width .35s var(--spring-ig),background .3s}
   .mc-dots button.on{width:20px;background:var(--ink)}
 
+  /* Money this month: the same card as on a laptop. */
+  [data-side="studio"] .m-hero{margin:16px 0 4px;border-radius:24px}
+  [data-side="studio"] .m-hero .hc-in{padding:20px 18px 18px}
+  [data-side="studio"] .m-hero .hc-eb{font-size:12px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;opacity:.72}
+  [data-side="studio"] .m-hero .glass-chip{height:30px;padding:0 12px;font-size:13px;text-decoration:none;color:inherit}
+  [data-side="studio"] .m-hero .hc-main{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:14px}
+  [data-side="studio"] .m-hero .hc-val{font-size:52px;font-weight:700;letter-spacing:-.05em;line-height:1}
+  [data-side="studio"] .m-hero .hc-sub{margin-top:10px;font-size:14px;line-height:1.4}
+  [data-side="studio"] .m-hero .goal{flex:none;width:104px;height:104px}
+  [data-side="studio"] .m-hero .g-txt b{font-size:22px}
+  [data-side="studio"] .m-hero .g-txt small{font-size:11.5px}
+  [data-side="studio"] .m-hero .hc-foot{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:18px;background:none;overflow:visible}
+  [data-side="studio"] .m-hero .hc-foot > a{display:block;min-width:0;padding:10px 12px;border-radius:14px;color:inherit;text-decoration:none;background:color-mix(in oklab,var(--hero-ink) 6%,transparent);border:1px solid color-mix(in oklab,var(--hero-ink) 12%,transparent);transition:transform .25s var(--spring-ig)}
+  [data-side="studio"] .m-hero .hc-foot > a:active{transform:scale(.96)}
+  [data-side="studio"] .m-hero .hc-foot small{font-size:12px}
+  [data-side="studio"] .m-hero .hc-foot b{font-size:14.5px;line-height:1.25;white-space:normal;overflow:visible}
+
   /* Section headings */
   .hs{margin-top:24px}
   .hs-h{display:flex;align-items:center;gap:8px;margin:0 0 12px}
@@ -725,6 +742,16 @@
   .b-chev{width:18px;height:18px;color:var(--ink-3)}
   .b-out{color:var(--bad)}
   .b-out .b-ri{background:color-mix(in oklab,var(--bad) 14%,transparent);color:var(--bad)}
+}
+
+/* Nothing may push the screen sideways (a spinning ring, a glow): clip it, without breaking sticky bars. */
+@media (max-width:760px){
+  [data-side="studio"] .main,[data-side="studio"] .ht,[data-side="brand"] .page{overflow-x:clip}
+}
+/* Touch screens scroll without visible scroll bars, like an installed app. */
+@media (max-width:760px),(hover:none) and (pointer:coarse){
+  html,body,[data-side="studio"],[data-side="studio"] *,[data-side="brand"],[data-side="brand"] *{scrollbar-width:none!important}
+  html::-webkit-scrollbar,body::-webkit-scrollbar,*::-webkit-scrollbar{display:none!important;width:0!important;height:0!important}
 }
 
 /* Pull to refresh */

@@ -60,21 +60,13 @@
 	const outs = $derived(list.reduce((a, c) => a + outstanding(c), 0));
 	const od = $derived(list.filter(overdue));
 	const odSum = $derived(od.reduce((a, c) => a + outstanding(c), 0));
-	const dues = $derived(
+	const paidN = $derived(list.filter((c) => c.pay_status === 'paid' && (c.paid_on ?? '').startsWith(ym)).length);
+	const pctN = $derived(goal ? Math.round((received / goal) * 100) : 0);
+	const nextPayout = $derived(
 		list
-			.filter((c) => isPaid(c) && c.pay_status !== 'paid' && outstanding(c) > 0)
-			.sort((a, b) => (a.pay_due ? parse(a.pay_due).getTime() : 9e15) - (b.pay_due ? parse(b.pay_due).getTime() : 9e15))
-			.slice(0, 3)
+			.filter((c) => isPaid(c) && c.pay_status !== 'paid' && c.pay_due && diff(c.pay_due) >= 0)
+			.sort((a, b) => parse(a.pay_due!).getTime() - parse(b.pay_due!).getTime())[0]
 	);
-	const months = $derived(
-		Array.from({ length: 6 }, (_, i) => {
-			const d = new Date(T.getFullYear(), T.getMonth() - 5 + i, 1);
-			const key = iso(d).slice(0, 7);
-			return { key, label: d.toLocaleDateString('en-IN', { month: 'short' }), sum: list.filter((c) => (c.paid_on ?? '').startsWith(key)).reduce((a, c) => a + c.pay_received, 0) };
-		})
-	);
-	const best = $derived(Math.max(1, ...months.map((m) => m.sum)));
-	const sixTotal = $derived(months.reduce((a, m) => a + m.sum, 0));
 
 	// The week
 	const evs = $derived(events(list));
@@ -82,17 +74,6 @@
 	const upcoming = $derived(evs.filter((e) => diff(e.date) >= 0 && diff(e.date) <= 6).sort((a, b) => a.date.localeCompare(b.date)).slice(0, 3));
 	const pipe = $derived(STAGES.slice(0, 5).map((st) => ({ st, n: list.filter((c) => c.stage === st.id).length })));
 	const pipeMax = $derived(Math.max(1, ...pipe.map((p) => p.n)));
-
-	// Money cards: which one is showing (for the dots).
-	let track = $state<HTMLElement>();
-	let card = $state(0);
-	const cards = $derived(od.length ? 4 : 3);
-	const onTrack = () => {
-		if (!track) return;
-		const w = (track.firstElementChild as HTMLElement | null)?.offsetWidth ?? 1;
-		card = Math.round(track.scrollLeft / (w + 12));
-	};
-	const goCard = (i: number) => track?.scrollTo({ left: i * (((track.firstElementChild as HTMLElement | null)?.offsetWidth ?? 0) + 12), behavior: 'smooth' });
 
 	// The header drifts and fades a little as the screen scrolls.
 	let sy = $state(0);
@@ -148,45 +129,32 @@
 <Stories />
 
 
-<section class="mc-wrap" aria-label="Money">
-	<div class="mc-track" bind:this={track} onscroll={onTrack}>
-		<a class="mc mc-1" href="/studio/payments">
-			<span class="fx" aria-hidden="true"><i></i><i></i><i></i><b></b><b></b><b></b><b></b><b></b></span>
-			<span class="mc-l">Received in {monthName}</span>
-			<b class="mc-v" use:countUp={{ value: received, money: true }}>{inr(received)}</b>
-			{#if goal}
-				<div class="mc-bar"><i style="--p:{pct}"></i></div>
-				<span class="mc-s"><b>{Math.round(pct * 100)}%</b> of your {inrS(goal)} goal</span>
-			{:else}
-				<span class="mc-s">Set a monthly goal in Invoices & payments</span>
-			{/if}
-		</a>
-		<a class="mc mc-2" href="/studio/payments">
-			<span class="fx" aria-hidden="true"><i></i><i></i><i></i><b></b><b></b><b></b><b></b><b></b></span>
-			<span class="mc-l">Still to come</span>
-			<b class="mc-v" use:countUp={{ value: outs, money: true }}>{inr(outs)}</b>
-			<ul class="mc-list">
-				{#each dues as c (c.id)}<li><Mono name={c.brand.name} size="sm" /><span>{c.brand.name}</span><small>{c.pay_due ? fmt(c.pay_due) : 'no date'}</small><b>{inrS(outstanding(c))}</b></li>{:else}<li class="mc-none">Nothing waiting. Nice.</li>{/each}
-			</ul>
-		</a>
-		<a class="mc mc-3" href="/studio/reports">
-			<span class="fx" aria-hidden="true"><i></i><i></i><i></i><b></b><b></b><b></b><b></b><b></b></span>
-			<span class="mc-l">Last 6 months</span>
-			<b class="mc-v" use:countUp={{ value: sixTotal, money: true }}>{inr(sixTotal)}</b>
-			<div class="mc-chart">
-				{#each months as m, i (m.key)}<div class="mc-col" class:now={i === 5}><i style="--h:{Math.max(0.05, m.sum / best)};--d:{i}"></i><small>{m.label}</small></div>{/each}
+<section class="hero-card glow m-hero" aria-label="Money this month">
+	<div class="mesh" aria-hidden="true"></div>
+	<div class="hc-in">
+		<div class="hc-top"><span class="hc-eb">Received in {monthName}</span>{#if goal}<a class="glass-chip" href="/studio/settings?s=payments"><Icon name="spark" />Goal {inrS(goal)}</a>{/if}</div>
+		<div class="hc-main">
+			<div>
+				<div class="hc-val" use:countUp={{ value: received, money: true }}>{inr(received)}</div>
+				<div class="hc-sub">from {paidN} brand{paidN === 1 ? '' : 's'}{#if goal}{' · '}<b>{pctN}%</b> of this month's goal{/if}</div>
 			</div>
-		</a>
-		{#if od.length}
-			<a class="mc mc-4" href="/studio/payments">
-			<span class="fx" aria-hidden="true"><i></i><i></i><i></i><b></b><b></b><b></b><b></b><b></b></span>
-				<span class="mc-l">Overdue</span>
-				<b class="mc-v" use:countUp={{ value: odSum, money: true }}>{inr(odSum)}</b>
-				<span class="mc-s">{od.length} invoice{od.length > 1 ? 's' : ''} past the due date. Tap to send reminders.</span>
-			</a>
-		{/if}
+			<div class="goal" style="--p:{pct}">
+				<svg viewBox="0 0 120 120" aria-hidden="true"
+					><defs
+						><linearGradient id="goalGradM" x1="0" y1="0" x2="1" y2="1"
+							><stop offset="0" style="stop-color:var(--g3)" /><stop offset=".5" style="stop-color:var(--g2)" /><stop offset="1" style="stop-color:var(--g1)" /></linearGradient
+						></defs
+					><circle class="g-track" cx="60" cy="60" r="50" /><circle class="g-prog" cx="60" cy="60" r="50" pathLength="100" style="stroke:url(#goalGradM)" /></svg
+				>
+				<div class="g-txt"><b use:countUp={{ value: pctN, suffix: '%' }}>{pctN}%</b><small>of goal</small></div>
+			</div>
+		</div>
+		<div class="hc-foot">
+			<a href="/studio/payments"><small>Still to come</small><b use:countUp={{ value: outs, money: true }}>{inr(outs)}</b></a>
+			<a href="/studio/payments"><small>Overdue</small><b class:od={odSum > 0} use:countUp={{ value: odSum, money: true }}>{inr(odSum)}</b></a>
+			<a href="/studio/payments"><small>Next payout</small><b>{nextPayout ? `${nextPayout.brand.name} · ${fmt(nextPayout.pay_due)}` : 'None scheduled'}</b></a>
+		</div>
 	</div>
-	<div class="mc-dots">{#each Array.from({ length: cards }, (_, i) => i) as i (i)}<button class:on={card === i} aria-label="Card {i + 1}" onclick={() => goCard(i)}></button>{/each}</div>
 </section>
 
 <section class="hs">
