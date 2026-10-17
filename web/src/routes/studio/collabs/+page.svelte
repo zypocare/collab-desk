@@ -7,7 +7,7 @@
 	import { byCode, byId, markPaid, owedOn, priorityOf, reloadCollabs, setStage, studio } from '#lib/studio.svelte.ts';
 	import { supabase } from '#lib/supabase.ts';
 	import type { Stage } from '#lib/types.ts';
-	import { confetti, copyText, pointer, toast, ui } from '#lib/ui.svelte.ts';
+	import { confetti, copyText, countUp, pointer, toast, ui } from '#lib/ui.svelte.ts';
 	import { STAGES, errMessage, inr, inrS, parse, stageLabel } from '#lib/util.ts';
 	import Select from '#lib/components/Select.svelte';
 	import CollabCard from '#lib/components/CollabCard.svelte';
@@ -136,6 +136,14 @@
 			.map((g) => ({ ...g, sum: g.cs.reduce((a, c) => a + c.fee + c.product_value, 0) }))
 			.filter((g) => g.cs.length && (mstage === 'active' ? ACTIVE.includes(g.s.id) : g.s.id === mstage))
 	);
+	// The pipeline card (phones): what's in play across active collabs.
+	const PIPE_TILES: [Stage, string][] = [['request', 'New'], ['negotiating', 'In talks'], ['live', 'Live']];
+	const activeList = $derived(visible.filter((c) => ACTIVE.includes(c.stage)));
+	const activeN = $derived(activeList.length);
+	const pipeValue = $derived(activeList.reduce((a, c) => a + (c.type === 'barter' ? 0 : Number(c.fee) || 0), 0));
+	const pipeProducts = $derived(activeList.reduce((a, c) => a + (c.type === 'paid' ? 0 : Number(c.product_value) || 0), 0));
+	const waiting = $derived(visible.filter((c) => c.stage === 'request').length);
+	const pipeStages = $derived(ACTIVE.map((id) => ({ id, n: activeList.filter((c) => c.stage === id).length })));
 	const declinedCount = $derived(studio.collabs.filter((c) => c.stage === 'declined').length);
 
 	async function drop(e: DragEvent, stage: Stage) {
@@ -162,7 +170,7 @@
 	</div>
 </header>
 
-{#if studio.collabs.length}
+{#if studio.collabs.length && !phone.on}
 <div class="toolbar rv" style="--i:1">
 	<label class="search"><Icon name="search" /><span class="sr">Search collabs</span><input type="search" placeholder="Search brand, code or category" bind:value={q} autocomplete="off" /></label>
 	<Segmented
@@ -221,20 +229,56 @@
 		</ol>
 	</section>
 {:else if phone.on}
+	<!-- Phone: the same look as Home. A glowing pipeline card (tap a tile to filter), stage chips,
+	     then a card per collab, grouped by stage. -->
+	<section class="hero-card glow m-hero m-pipe" aria-label="Your pipeline">
+		<div class="mesh" aria-hidden="true"></div>
+		<div class="hc-in">
+			<div class="hc-top">
+				<span class="hc-eb">Your pipeline</span>
+				{#if waiting}<button class="glass-chip" onclick={() => (mstage = 'request')}><Icon name="inbox" />{waiting} waiting for you</button>{/if}
+			</div>
+			<div class="hc-val" use:countUp={{ value: pipeValue, money: true }}>{inr(pipeValue)}</div>
+			<div class="hc-sub">in {activeN} active collab{activeN === 1 ? '' : 's'}{pipeProducts ? ` · + ${inrS(pipeProducts)} in products` : ''}</div>
+			{#if activeN}
+				<div class="pipe-bar" aria-hidden="true">
+					{#each pipeStages as st (st.id)}{#if st.n}<i class="st-{st.id}" style="flex:{st.n}"></i>{/if}{/each}
+				</div>
+			{/if}
+			<div class="hc-foot">
+				{#each PIPE_TILES as [id, label] (id)}
+					<button class:on={mstage === id} onclick={() => (mstage = mstage === id ? 'active' : id)}>
+						<small><span class="dt st-{id}"></span>{label}</small><b>{visible.filter((c) => c.stage === id).length}</b>
+					</button>
+				{/each}
+			</div>
+		</div>
+	</section>
+
+	<label class="search m-search"><Icon name="search" /><span class="sr">Search collabs</span><input type="search" placeholder="Search brand, code or category" bind:value={q} autocomplete="off" /></label>
 	<div class="m-stages" role="tablist" aria-label="Stage">
 		{#each mtabs as t (t.id)}
-			<button role="tab" aria-selected={mstage === t.id} class:on={mstage === t.id} onclick={() => (mstage = t.id)}>{t.label}<span>{t.n}</span></button>
+			<button role="tab" aria-selected={mstage === t.id} class:on={mstage === t.id} class="st-{t.id}" onclick={() => (mstage = t.id)}><i class="dt"></i>{t.label}<span>{t.n}</span></button>
 		{/each}
 	</div>
 	{#each mgroups as g (g.s.id)}
 		<section class="m-group st-{g.s.id}">
-			<h3><span class="dt"></span>{g.s.label}<small>{g.cs.length}{g.sum ? ` · ${inrS(g.sum)}` : ''}</small></h3>
+			<header class="m-gh"><span class="dt"></span><h2>{g.s.label}</h2><span class="m-gn">{g.cs.length}</span>{#if g.sum}<small>{inrS(g.sum)}</small>{/if}</header>
 			<div class="m-list">
-				{#each g.cs as c (c.id)}<CollabRow {c} />{/each}
+				{#each g.cs as c, i (c.id)}<CollabRow {c} {i} />{/each}
 			</div>
 		</section>
 	{:else}
-		<div class="m-empty"><Icon name="board" /><b>{q ? 'No matches' : 'Nothing here'}</b><span>{q ? 'Try another name or code.' : 'Collabs at this stage show up here.'}</span></div>
+		<div class="clear hero-card glow m-none">
+			<div class="mesh" aria-hidden="true"></div>
+			<span class="clear-ic"><Icon name={q ? 'search' : 'board'} /></span>
+			<b>{q ? 'No matches' : 'Nothing at this stage'}</b>
+			<small>{q ? 'Try another brand name or code.' : 'Collabs show up here as they move along.'}</small>
+			<div class="clear-acts">
+				{#if q}<button class="glass-chip" onclick={() => (q = '')}><Icon name="x" />Clear search</button>{:else}<button class="glass-chip" onclick={() => (mstage = 'active')}><Icon name="board" />All active</button>{/if}
+				<button class="glass-chip" onclick={() => (ui.newCollab = true)}><Icon name="plus" />New collab</button>
+			</div>
+		</div>
 	{/each}
 {:else}
 <div class="board-wrap">
