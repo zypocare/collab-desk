@@ -151,7 +151,7 @@ export type Collab = {
 	ship_tracking: string;
 	shipped_at: string | null;
 	product_received_at: string | null;
-	messages: Pick<Message, 'id' | 'sender' | 'created_at'>[];
+	messages: Pick<Message, 'id' | 'sender' | 'body' | 'created_at'>[];
 	reads: Pick<ReadMark, 'side' | 'read_at'>[];
 };
 

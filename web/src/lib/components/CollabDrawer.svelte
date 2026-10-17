@@ -361,6 +361,15 @@
 
 			<section class="sec" id="sec-msg">
 				<h3>Messages{#if c.contact_name}<small class="sec-sub">with {c.contact_name}</small>{/if}</h3>
+				{#if page}
+					{@const lastMsg = c.messages[c.messages.length - 1]}
+					<!-- Phones: the chat opens on its own screen. -->
+					<a class="m-open-chat" href="/studio/inbox/{c.code}">
+						<Mono name={c.brand.name} />
+						<span><b>{c.contact_name || c.brand.name}</b><small>{lastMsg ? `${lastMsg.sender === 'creator' ? 'You: ' : ''}${lastMsg.body}` : 'No messages yet. Say hello.'}</small></span>
+						<span class="btn sm primary">Message</span>
+					</a>
+				{/if}
 				{#key c.id}
 					<MessageThread
 						collabId={c.id}
@@ -719,6 +728,7 @@
 
 		<footer class="dr-f">
 			<button class="btn" onclick={() => c && copyText(statusMessage(c), 'Status message copied. Paste it in your DM or email.')}><Icon name="link" /><span class="nav-long">Copy status message</span><span class="nav-short">Copy status</span></button>
+			{#if page && next}<button class="btn grad m-next" onclick={() => next && runNext(next.key)}><Icon name={next.icon} />{next.label}</button>{/if}
 			<button class="btn primary" onclick={close}>{#if page}<span class="nav-long">Back to collabs</span><span class="nav-short">Back</span>{:else}Done{/if}</button>
 		</footer>
 	{/if}

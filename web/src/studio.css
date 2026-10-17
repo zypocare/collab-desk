@@ -426,6 +426,7 @@ a.btn{text-decoration:none}
 [data-side="studio"] .dialog h2{font-size:22px;letter-spacing:-.04em}
 [data-side="studio"] .dialog p{font-size:16px}
 [data-side="studio"] .drawer{border-left:1px solid var(--sx-border-2)}
+[data-side="studio"] .drawer.as-page{border-left:0}
 [data-side="studio"] .cmdk{border-radius:26px;border:1px solid var(--sx-border-2);background:color-mix(in oklab,var(--surface) 93%,transparent);-webkit-backdrop-filter:blur(30px) saturate(1.8);backdrop-filter:blur(30px) saturate(1.8);box-shadow:var(--sx-hi),0 50px 110px -30px rgba(30,8,30,.65)}
 [data-side="studio"] .cmdk-in{padding:18px 20px;border-bottom-color:var(--sx-border)}
 [data-side="studio"] .cmdk-in input{font-size:17px}

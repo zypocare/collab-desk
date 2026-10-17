@@ -13,6 +13,8 @@
 	import CollabCard from '#lib/components/CollabCard.svelte';
 	import Icon from '#lib/components/Icon.svelte';
 	import Segmented from '#lib/components/Segmented.svelte';
+	import CollabRow from '#lib/components/CollabRow.svelte';
+	import { phone } from '#lib/phone.svelte.ts';
 
 	let filter = $state<'all' | 'paid' | 'barter'>('all');
 	let q = $state('');
@@ -118,6 +120,21 @@
 			return { s, cs, sum: cs.reduce((a, c) => a + c.fee + c.product_value, 0) };
 		})
 	);
+	// Phone: a list instead of the board, filtered by stage with a row of chips.
+	let mstage = $state<'active' | Stage>('active');
+	const ACTIVE: Stage[] = ['request', 'negotiating', 'confirmed', 'creating', 'live'];
+	const mtabs = $derived(
+		[
+			{ id: 'active' as const, label: 'Active', n: visible.filter((c) => ACTIVE.includes(c.stage)).length },
+			...[...STAGES, { id: 'declined' as Stage, label: 'Declined' }].map((s) => ({ id: s.id, label: s.label, n: visible.filter((c) => c.stage === s.id).length }))
+		].filter((t) => t.id === 'active' || t.n || t.id === mstage)
+	);
+	const mgroups = $derived(
+		[...STAGES, { id: 'declined' as Stage, label: 'Declined' }]
+			.map((s) => ({ s, cs: columns.find((x) => x.s.id === s.id)?.cs ?? visible.filter((c) => c.stage === s.id) }))
+			.map((g) => ({ ...g, sum: g.cs.reduce((a, c) => a + c.fee + c.product_value, 0) }))
+			.filter((g) => g.cs.length && (mstage === 'active' ? ACTIVE.includes(g.s.id) : g.s.id === mstage))
+	);
 	const declinedCount = $derived(studio.collabs.filter((c) => c.stage === 'declined').length);
 
 	async function drop(e: DragEvent, stage: Stage) {
@@ -182,6 +199,22 @@
 			{#each ['New request', 'Negotiating', 'Confirmed', 'Creating', 'Live', 'Wrapped'] as st (st)}<li><span>{st}</span></li>{/each}
 		</ol>
 	</section>
+{:else if phone.on}
+	<div class="m-stages" role="tablist" aria-label="Stage">
+		{#each mtabs as t (t.id)}
+			<button role="tab" aria-selected={mstage === t.id} class:on={mstage === t.id} onclick={() => (mstage = t.id)}>{t.label}<span>{t.n}</span></button>
+		{/each}
+	</div>
+	{#each mgroups as g (g.s.id)}
+		<section class="m-group st-{g.s.id}">
+			<h3><span class="dt"></span>{g.s.label}<small>{g.cs.length}{g.sum ? ` · ${inrS(g.sum)}` : ''}</small></h3>
+			<div class="m-list">
+				{#each g.cs as c (c.id)}<CollabRow {c} />{/each}
+			</div>
+		</section>
+	{:else}
+		<div class="m-empty"><Icon name="board" /><b>{q ? 'No matches' : 'Nothing here'}</b><span>{q ? 'Try another name or code.' : 'Collabs at this stage show up here.'}</span></div>
+	{/each}
 {:else}
 <div class="board-wrap">
 	<div class="board">

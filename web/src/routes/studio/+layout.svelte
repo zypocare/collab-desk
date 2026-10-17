@@ -1,17 +1,18 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
+	import { afterNavigate, goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { onMount, tick, untrack } from 'svelte';
 	import type { LayoutProps } from './$types';
 	import { auth, signOut } from '#lib/auth.svelte.ts';
 	import { byId, loadStudio, studio, stopWatching, watchStudio } from '#lib/studio.svelte.ts';
 	import { theme, toggleTheme, ui } from '#lib/ui.svelte.ts';
-	import { inrS, iso, today } from '#lib/util.ts';
+	import { inrS, iso, today, unreadFor } from '#lib/util.ts';
 	import { cascade, magnetic } from '#lib/motion.ts';
 	import Icon from '#lib/components/Icon.svelte';
 	import Avatar from '#lib/components/Avatar.svelte';
 	import NewCollabDialog from '#lib/components/NewCollabDialog.svelte';
 	import CommandPalette from '#lib/components/CommandPalette.svelte';
+	import { phone, startPhone } from '#lib/phone.svelte.ts';
 
 	let palette = $state<CommandPalette>();
 
@@ -24,7 +25,7 @@
 		{ href: '/studio/collabs', label: 'Collabs', icon: 'board', tabs: [{ href: '/studio/collabs', label: 'Board' }, { href: '/studio/brands', label: 'Brands' }], also: ['/studio/c/', '/studio/import'] },
 		{ href: '/studio/content', label: 'Plan', icon: 'cal', tabs: [{ href: '/studio/content', label: 'Content' }, { href: '/studio/calendar', label: 'Calendar' }] },
 		{ href: '/studio/payments', label: 'Money', icon: 'wallet', tabs: [{ href: '/studio/payments', label: 'Payments' }, { href: '/studio/reports', label: 'Reports' }] },
-		{ href: '/studio/settings', label: 'My page', short: 'Page', icon: 'link' }
+		{ href: '/studio/settings', label: 'My page', short: 'Page', icon: 'link', also: ['/studio/profile'] }
 	];
 	const path = $derived(page.url.pathname);
 	const group = $derived(
@@ -104,6 +105,66 @@
 		return () => removeEventListener('resize', moveInd);
 	});
 
+	// ---------- Phone: laid out like the Instagram app ----------
+	const TITLES: Record<string, string> = {
+		'/studio/collabs': 'Collabs',
+		'/studio/brands': 'Brands',
+		'/studio/content': 'Content',
+		'/studio/calendar': 'Calendar',
+		'/studio/payments': 'Payments',
+		'/studio/reports': 'Reports',
+		'/studio/settings': 'Settings and activity',
+		'/studio/inbox': 'Messages',
+		'/studio/import': 'Import collabs',
+		'/studio/instagram': 'Instagram',
+		'/studio/share': 'Add from a share'
+	};
+	const SECTIONS: Record<string, string> = {
+		profile: 'Edit profile',
+		rates: 'Rates & packages',
+		bookings: 'Bookings & barter',
+		autopilot: 'Auto-pilot',
+		payments: 'Invoices & payments',
+		reviews: 'Results & reviews',
+		alerts: 'Inbox, replies & alerts',
+		team: 'Team',
+		account: 'Shipping & account'
+	};
+	const sec = $derived(path === '/studio/settings' ? page.url.searchParams.get('s') : null);
+	const detail = $derived(path.startsWith('/studio/c/'));
+	const chat = $derived(/^\/studio\/inbox\/./.test(path));
+	const openC = $derived(detail ? studio.collabs.find((c) => c.code === path.split('/')[3]) : undefined);
+	const brandId = $derived(/^\/studio\/brands\/./.test(path) ? path.split('/')[3] : '');
+	const title = $derived(
+		path === '/studio/profile' ? (studio.settings?.handle ?? '')
+		: openC ? openC.brand.name
+		: sec ? (SECTIONS[sec] ?? '')
+		: brandId ? (studio.brands.find((b) => b.id === brandId)?.name ?? 'Brand')
+		: (TITLES[path] ?? group?.label ?? '')
+	);
+	const back = $derived(
+		detail ? '/studio/collabs'
+		: sec ? '/studio/settings'
+		: path === '/studio/settings' ? '/studio/profile'
+		: path === '/studio/inbox' ? '/studio'
+		: brandId ? '/studio/brands'
+		: path.startsWith('/studio/instagram') ? '/studio/content'
+		: /^\/studio\/(import|share)/.test(path) ? '/studio/collabs'
+		: ''
+	);
+	const unread = $derived(studio.collabs.reduce((a, c) => a + unreadFor(c), 0));
+	// Back returns to wherever she came from inside the app; from a link, to the screen above it.
+	let inApp = false;
+	afterNavigate((n) => {
+		if (n.from) inApp = true;
+	});
+	const goBack = () => (inApp && history.length > 1 ? history.back() : goto(back));
+	onMount(() =>
+		startPhone(async () => {
+			await loadStudio();
+		})
+	);
+
 	async function logout() {
 		await signOut();
 		goto('/login', { replace: true });
@@ -111,7 +172,7 @@
 </script>
 
 {#if allowed}
-	<div class="app">
+	<div class="app" class:m-detail={detail || chat || path === '/studio/inbox'}>
 		<nav class="rail" aria-label="Main">
 			<div class="logo">
 				<span class="logo-mark"
@@ -139,8 +200,8 @@
 			<div class="navs" bind:this={navs} use:cascade={{ selector: '.nav', delay: 0.1, gap: 0.06 }}>
 				<span class="nav-ind" bind:this={ind}></span>
 				{#each NAV as n (n.href)}
-					<a class="nav" href={n.href} aria-current={current === n.href ? 'page' : undefined}
-						><span class="nav-ic"><Icon name={n.icon} /></span><span class="nav-t" class:nav-long={!!n.short}>{n.label}</span>{#if n.short}<span class="nav-short" aria-hidden="true">{n.short}</span>{/if}{#if n.href === '/studio/collabs' && newCount}<span class="badge" aria-label="{newCount} new"
+					<a class="nav" href={phone.on && n.href === '/studio/settings' ? '/studio/profile' : n.href} aria-current={current === n.href ? 'page' : undefined} aria-label={phone.on && n.href === '/studio/settings' ? 'Profile' : undefined}
+						><span class="nav-ic">{#if phone.on && n.href === '/studio/settings'}<Avatar name={studio.settings?.display_name ?? ''} src={studio.ig?.connected ? studio.ig.profile_picture_url : ''} size="28px" />{:else}<Icon name={n.icon} />{/if}</span><span class="nav-t" class:nav-long={!!n.short}>{n.label}</span>{#if n.short}<span class="nav-short" aria-hidden="true">{n.short}</span>{/if}{#if n.href === '/studio/collabs' && newCount}<span class="badge" aria-label="{newCount} new"
 								>{newCount}</span
 							>{/if}</a
 					>
@@ -166,6 +227,31 @@
 			</div>
 		</nav>
 		<main class="main">
+			{#if phone.on && !chat}
+				<header class="m-bar" class:scrolled={phone.scrolled} class:sub={!!back}>
+					{#if back}
+						<button class="m-ib m-back" onclick={goBack} aria-label="Back"><Icon name="chevL" /></button>
+						<div class="m-title">{title}</div>
+						<div class="m-r"></div>
+					{:else}
+						<div class="m-brand" class:wordmark={path === '/studio'}>{path === '/studio' ? (studio.settings?.app_name ?? 'Collab Desk') : title}</div>
+						<div class="m-r">
+							{#if path === '/studio' || path === '/studio/collabs' || path === '/studio/profile'}<button class="m-ib" onclick={() => (ui.newCollab = true)} aria-label="New collab"><Icon name="plus" /></button>{/if}
+							{#if path === '/studio/profile'}
+								<a class="m-ib" href="/studio/settings" aria-label="Settings and activity"><Icon name="menu" /></a>
+							{:else}
+								<button class="m-ib" onclick={() => palette?.show()} aria-label="Search and actions"><Icon name="search" /></button>
+							{/if}
+							{#if path === '/studio'}<a class="m-ib" href="/studio/inbox" aria-label="Messages{unread ? `, ${unread} unread` : ''}"><Icon name="send" />{#if unread}<span class="m-badge">{unread}</span>{/if}</a>{/if}
+						</div>
+					{/if}
+				</header>
+				{#if tabs}
+					<nav class="m-seg" aria-label="{group?.label} pages">
+						{#each tabs as t (t.href)}<a href={t.href} aria-current={path === t.href ? 'page' : undefined}>{t.label}</a>{/each}
+					</nav>
+				{/if}
+			{/if}
 			<div class="sx-top">
 				{#if tabs}
 					<nav class="subtabs" aria-label="{group?.label} pages" bind:this={subs}>

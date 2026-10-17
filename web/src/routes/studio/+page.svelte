@@ -1,4 +1,6 @@
 <script lang="ts">
+	import Stories from '#lib/components/Stories.svelte';
+	import { phone } from '#lib/phone.svelte.ts';
 	import { completeFollow, markPaid, markReceived, priorityOf, studio } from '#lib/studio.svelte.ts';
 	import { countUp, ui } from '#lib/ui.svelte.ts';
 	import { flip, tilt } from '#lib/motion.ts';
@@ -105,6 +107,8 @@
 	</div>
 	<div class="acts"><button class="btn primary" onclick={() => (ui.newCollab = true)}><Icon name="plus" />Add collab</button></div>
 </header>
+
+{#if phone.on}<Stories />{/if}
 
 <AlertsPrompt />
 

@@ -2,6 +2,7 @@
 	import '../app.css';
 	import '../brand.css';
 	import '../studio.css';
+	import '../mobile.css';
 	import type { LayoutProps } from './$types';
 	import { onMount } from 'svelte';
 	import { onNavigate } from '$app/navigation';
@@ -11,6 +12,7 @@
 	import { initTheme, ui } from '#lib/ui.svelte.ts';
 	import { watchInstall } from '#lib/pwa.svelte.ts';
 	import Icon from '#lib/components/Icon.svelte';
+	import { PHONE_Q, depth } from '#lib/phone.svelte.ts';
 
 	let { children }: LayoutProps = $props();
 
@@ -27,7 +29,12 @@
 	// A soft cross-fade between pages where the browser supports it.
 	onNavigate((nav) => {
 		const d = document as Document & { startViewTransition?: (cb: () => Promise<void>) => unknown };
-		if (!d.startViewTransition || nav.from?.url.pathname === nav.to?.url.pathname || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+		if (!d.startViewTransition || !nav.from || !nav.to || nav.from.url.href === nav.to.url.href || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+		// On a phone in the Studio: screens opened from a tab slide in from the right and slide back out.
+		const app = matchMedia(PHONE_Q).matches && nav.to.url.pathname.startsWith('/studio') && nav.from.url.pathname.startsWith('/studio');
+		if (nav.from.url.pathname === nav.to.url.pathname && !app) return;
+		const a = depth(nav.from.url), b = depth(nav.to.url);
+		document.documentElement.dataset.nav = !app ? '' : b > a ? 'push' : b < a ? 'pop' : 'tab';
 		return new Promise<void>((resolve) => {
 			d.startViewTransition!(async () => {
 				resolve();

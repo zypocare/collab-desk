@@ -23,7 +23,7 @@ export const studio = $state<{
 	me: { role: 'creator'; email: string; team_role: 'owner' | 'manager'; name?: string } | null;
 }>({ me: null, loaded: false, error: '', collabs: [], brands: [], notes: {}, settings: null, alerts: [], ig: null, media: [], followersHistory: [], packages: [] });
 
-const COLLAB_SELECT = '*, brand:brands(*), deliverables(*), events:collab_events(*), quotes(*), drafts(*, comments:draft_comments(*)), expenses:collab_expenses(*), files:collab_files(*), invoices(*), posts:collab_posts(matched_by, media:ig_media(*)), reports:brand_reports(*), messages:collab_messages(id, sender, created_at), reads:collab_reads(side, read_at)';
+const COLLAB_SELECT = '*, brand:brands(*), deliverables(*), events:collab_events(*), quotes(*), drafts(*, comments:draft_comments(*)), expenses:collab_expenses(*), files:collab_files(*), invoices(*), posts:collab_posts(matched_by, media:ig_media(*)), reports:brand_reports(*), messages:collab_messages(id, sender, body, created_at), reads:collab_reads(side, read_at)';
 
 function normalise(c: Collab): Collab {
 	c.fee = Number(c.fee) || 0;
@@ -102,7 +102,7 @@ export function watchStudio() {
 		.on('postgres_changes', { event: '*', schema: 'public', table: 'brand_reports' }, schedule)
 		.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'collab_messages' }, (p) => {
 			const m = p.new as { sender: string; collab_id: string };
-			if (m.sender === 'brand' && ui.openCollab !== m.collab_id) toast(`New message from ${byId(m.collab_id)?.brand.name ?? 'a brand'}`, 'mail');
+			if (m.sender === 'brand' && ui.openCollab !== m.collab_id && !location.pathname.endsWith(`/inbox/${byId(m.collab_id)?.code}`)) toast(`New message from ${byId(m.collab_id)?.brand.name ?? 'a brand'}`, 'mail');
 			schedule();
 		})
 		.on('postgres_changes', { event: '*', schema: 'public', table: 'collab_reads' }, schedule)

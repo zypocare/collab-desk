@@ -7,6 +7,9 @@
 	import type { PublicPage, Settings } from '#lib/types.ts';
 	import { supabase } from '#lib/supabase.ts';
 	import { signOut } from '#lib/auth.svelte.ts';
+	import { phone } from '#lib/phone.svelte.ts';
+	import { install, pwa } from '#lib/pwa.svelte.ts';
+	import { theme, toggleTheme } from '#lib/ui.svelte.ts';
 	import { downloadMediaKit } from '#lib/mediaKitPdf.ts';
 	import { copyText, toast } from '#lib/ui.svelte.ts';
 	import { KINDS, compact, inr, offeredKinds } from '#lib/util.ts';
@@ -226,6 +229,23 @@
 			</a>
 		{/each}
 	</nav>
+	{#if phone.on && !active}
+		<!-- Phone: the rest of "Settings and activity", after the sections. -->
+		<div class="set-more">
+			<div class="set-more-h">More</div>
+			<nav class="set-menu" aria-label="More">
+				<a class="set-item" href="/studio/import"><span class="set-ic"><Icon name="layers" /></span><span class="set-t"><b>Import collabs</b><small>Paste the DMs you already have</small></span><Icon name="chevR" class="set-chev" /></a>
+				<button class="set-item" onclick={toggleTheme}><span class="set-ic"><Icon name={theme.value === 'dark' ? 'sun' : 'moon'} /></span><span class="set-t"><b>{theme.value === 'dark' ? 'Light look' : 'Dark look'}</b><small>Switch how the app looks on this phone</small></span></button>
+				{#if pwa.installEvent && !pwa.installed}
+					<button class="set-item" onclick={install}><span class="set-ic"><Icon name="download" /></span><span class="set-t"><b>Install the app</b><small>Open it from your home screen like any app</small></span></button>
+				{/if}
+			</nav>
+			<div class="set-more-h">Login</div>
+			<nav class="set-menu" aria-label="Login">
+				<button class="set-item set-out" onclick={async () => (await signOut(), goto('/login', { replaceState: true }))}><span class="set-t"><b>Log out @{s.handle}</b></span></button>
+			</nav>
+		</div>
+	{/if}
 
 	{#if active && current}
 		<div class="set-body">
