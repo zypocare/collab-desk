@@ -1,12 +1,14 @@
 // The creator's data: loads everything once, keeps it live with realtime, and saves edits.
 import type { RealtimeChannel } from '@supabase/supabase-js';
-import { scoreCollab } from './priority';
+import type { Priority } from './priority';
+import { decide, type Decision, type FitData } from './decide';
+import { askAi } from './ai';
 import { supabase } from './supabase';
 import type { Package } from './types';
 import type { BankAlert, Brand, BrandPrivate, BrandReport, Checklist, Collab, Deliverable, IgAccount, IgMedia, Quote, Retainer, Settings, Stage } from './types';
 import { balanceDue, normaliseInvoice, type Invoice, type InvoiceItem } from './invoice';
 import { confetti, toast, ui } from './ui.svelte';
-import { errMessage, inr, stageLabel, todayIso } from './util';
+import { diff, errMessage, inr, stageLabel, todayIso } from './util';
 import { isNetworkError, load as loadSaved, net, save as saveLocal } from './offline.svelte';
 
 export const studio = $state<{
@@ -15,6 +17,10 @@ export const studio = $state<{
 	collabs: Collab[];
 	brands: Brand[];
 	notes: Record<string, BrandPrivate>;
+	/** The AI's reading of each request for the "Should I take it?" report, by collab id. */
+	fits: Record<string, FitData>;
+	/** Requests the AI is reading right now. */
+	reading: string[];
 	settings: Settings | null;
 	alerts: BankAlert[];
 	ig: IgAccount | null;
@@ -23,7 +29,7 @@ export const studio = $state<{
 	packages: Package[];
 	retainers: Retainer[];
 	me: { role: 'creator'; email: string; team_role: 'owner' | 'manager'; name?: string } | null;
-}>({ me: null, loaded: false, error: '', collabs: [], brands: [], notes: {}, settings: null, alerts: [], ig: null, media: [], followersHistory: [], packages: [], retainers: [] });
+}>({ me: null, loaded: false, error: '', collabs: [], brands: [], notes: {}, fits: {}, reading: [], settings: null, alerts: [], ig: null, media: [], followersHistory: [], packages: [], retainers: [] });
 
 const COLLAB_SELECT = '*, brand:brands(*), deliverables(*), events:collab_events(*), quotes(*), drafts(*, comments:draft_comments(*)), expenses:collab_expenses(*), files:collab_files(*), invoices(*), posts:collab_posts(matched_by, media:ig_media(*)), reports:brand_reports(*), messages:collab_messages(id, sender, body, created_at), reads:collab_reads(side, read_at), links:collab_links(*)';
 
@@ -84,6 +90,7 @@ export async function loadStudio() {
 	loadInstagram();
 	loadPackages();
 	loadRetainers();
+	loadFits();
 	supabase.rpc('studio_account').then(({ data }) => (studio.me = (data as typeof studio.me) ?? null));
 	const err = collabs.error || brands.error || notes.error || settings.error;
 	if (err) {
@@ -156,6 +163,7 @@ export async function reloadCollabs() {
 	const b = await supabase.from('brands').select('*').order('name');
 	if (!b.error && b.data) studio.brands = b.data as Brand[];
 	keepCopy();
+	autoFit();
 }
 
 async function reloadOne(id: string) {
@@ -170,8 +178,86 @@ async function reloadOne(id: string) {
 
 export const byId = (id: string | null | undefined) => studio.collabs.find((c) => c.id === id);
 export const byCode = (code: string) => studio.collabs.find((c) => c.code.toUpperCase() === code.toUpperCase());
-/** Priority score for a request (see priority.ts). */
-export const priorityOf = (c: Collab) => (studio.settings ? scoreCollab(c, studio.settings, studio.collabs, studio.notes[c.brand_id]) : null);
+/** "Should I take it?" for a request (see decide.ts). */
+export const decisionOf = (c: Collab): Decision | null => (studio.settings ? decide(c, studio.settings, studio.collabs, studio.notes[c.brand_id], studio.fits[c.id]) : null);
+/** The same score in the shape the badges and sorting use. */
+export const priorityOf = (c: Collab): Priority | null => {
+	const d = decisionOf(c);
+	if (!d) return null;
+	return {
+		score: d.score,
+		tier: d.score >= 80 ? 'top' : d.score >= 70 ? 'high' : d.score >= 50 ? 'normal' : 'low',
+		reasons: d.factors.map((f) => ({ text: `${f.label}: ${f.headline}`, pts: Math.round(f.score) })),
+		counterFee: d.counterFee
+	};
+};
+
+export async function loadFits() {
+	const { data } = await supabase.from('collab_fit').select('collab_id, data');
+	if (data) studio.fits = Object.fromEntries(data.map((r) => [r.collab_id as string, r.data as FitData]));
+	autoFit();
+}
+
+/** Ask the AI to read a request (store visit, location, look, red flags) and keep the result. */
+export async function readFit(c: Collab) {
+	const s = studio.settings;
+	if (!s) return;
+	studio.reading = [...studio.reading, c.id];
+	try {
+		await readFitNow(c, s);
+	} finally {
+		studio.reading = studio.reading.filter((x) => x !== c.id);
+	}
+}
+async function readFitNow(c: Collab, s: Settings) {
+	const res = await askAi<FitData & { home?: { lat: number; lng: number } | null }>('fit', {
+		collab: {
+			brand: c.brand.name,
+			category: c.brand.category,
+			website: c.brand.website,
+			instagram: c.brand.instagram,
+			type: c.type,
+			fee: c.fee,
+			product: c.product,
+			product_value: c.product_value,
+			deliverables: c.deliverables.map((d) => `${d.qty} ${d.kind}`).join(', '),
+			usage: c.usage,
+			go_live: c.preferred_live,
+			package: c.package_name,
+			brief: c.brief.slice(0, 3000),
+			brief_details: c.brief_details,
+			messages: c.messages.filter((m) => m.sender === 'brand').slice(-6).map((m) => m.body.slice(0, 500))
+		},
+		creator: { niche: s.niche, city: s.city, avoid: s.avoid_brands, home_area: s.home_area, home_lat: s.home_lat, home_lng: s.home_lng }
+	});
+	if (res.home && !s.home_lat) saveSettings({ home_lat: res.home.lat, home_lng: res.home.lng });
+	const data: FitData = { ai: res.ai ?? {}, travel: res.travel ?? null, read_at: res.read_at };
+	studio.fits[c.id] = data;
+	await supabase.from('collab_fit').upsert({ collab_id: c.id, data });
+}
+
+// New requests are read in the background, a few at a time (each read uses one of the 50 free AI
+// calls a day). Recent ones first; older or decided ones only when she asks.
+const tried = new Set<string>();
+let fitting = false;
+export async function autoFit() {
+	if (fitting || !studio.settings || typeof navigator === 'undefined' || !navigator.onLine) return;
+	const due = studio.collabs
+		.filter((c) => (c.stage === 'request' || c.stage === 'negotiating') && !studio.fits[c.id] && !tried.has(c.id) && -diff(c.received_on) <= 30)
+		.slice(0, 4);
+	if (!due.length) return;
+	fitting = true;
+	try {
+		for (const c of due) {
+			tried.add(c.id);
+			await readFit(c);
+		}
+	} catch {
+		// AI unavailable (limit reached, offline, local app): the report still works from her numbers.
+	} finally {
+		fitting = false;
+	}
+}
 
 type CollabPatch = Partial<Omit<Collab, 'id' | 'brand' | 'deliverables' | 'events'>>;
 

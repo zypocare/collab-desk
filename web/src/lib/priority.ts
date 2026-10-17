@@ -1,9 +1,8 @@
-// The priority rule engine: paid first, paid + product next, barter last, then adjusted by how
-// the offer compares with her rate card, barter rules, the brand's history and timing.
-// The studio uses it to rank and explain requests; the brand form uses the same rules to tell
-// brands, before they send, how a barter request will be treated and how to improve it.
-import type { BrandPrivate, Collab, CollabType, PublicPage, Settings } from './types';
-import { diff, inr, overdue, todayIso } from './util';
+// Barter rules and rate-card maths. The studio scores requests in decide.ts ("Should I take it?");
+// the brand form uses the rules here to tell brands, before they send, how a barter request will
+// be treated and how to improve it.
+import type { Collab, CollabType, PublicPage } from './types';
+import { inr, todayIso } from './util';
 
 export type BarterMode = 'open' | 'selective' | 'closed';
 export type Rules = {
@@ -17,11 +16,11 @@ export type Tier = 'top' | 'high' | 'normal' | 'low';
 export type Reason = { text: string; pts: number };
 export type Priority = { score: number; tier: Tier; reasons: Reason[]; counterFee: number | null };
 
-export const TIER_LABEL: Record<Tier, string> = { top: 'Top priority', high: 'High', normal: 'Normal', low: 'Low' };
+// Badge labels: the "Should I take it?" verdict (decide.ts) behind the same four tiers.
+export const TIER_LABEL: Record<Tier, string> = { top: 'Take it', high: 'Take it', normal: 'Negotiate', low: 'Pass' };
 
 // A product counts for less than the same amount in cash: it can't pay bills.
 export const PRODUCT_WORTH = 0.4;
-const BASE: Record<CollabType, number> = { paid: 55, hybrid: 45, barter: 20 };
 
 type Line = { kind: string; qty: number };
 
@@ -40,8 +39,6 @@ export function fairFee(rate: number, productValue: number) {
 export const offerWorth = (type: CollabType, fee: number, productValue: number) =>
 	(type === 'barter' ? 0 : fee) + (type === 'paid' ? 0 : productValue * PRODUCT_WORTH);
 
-const tierOf = (s: number): Tier => (s >= 75 ? 'top' : s >= 55 ? 'high' : s >= 35 ? 'normal' : 'low');
-const pct = (r: number) => `${Math.round(r * 100)}%`;
 
 /** Barter collabs she has said yes to this month (same rule as the database's barter_slots_used). */
 export function barterSlotsUsed(collabs: Collab[]) {
@@ -49,67 +46,6 @@ export function barterSlotsUsed(collabs: Collab[]) {
 	return collabs.filter(
 		(c) => c.type === 'barter' && ['confirmed', 'creating', 'live', 'wrapped'].includes(c.stage) && (c.live_date ?? c.preferred_live ?? c.received_on).startsWith(ym)
 	).length;
-}
-
-/** Score a request for the studio. */
-export function scoreCollab(c: Collab, s: Settings, all: Collab[], notes?: BrandPrivate): Priority {
-	const reasons: Reason[] = [];
-	const add = (pts: number, text: string) => pts && reasons.push({ pts, text });
-
-	add(BASE[c.type], c.type === 'paid' ? 'Paid collaboration' : c.type === 'hybrid' ? 'Paid + product' : 'Barter (product only)');
-
-	const rate = rateValue(c.deliverables, s.rates);
-	const worth = offerWorth(c.type, c.fee, c.product_value);
-	if (c.type !== 'barter' && !c.fee) add(5, 'Budget open: you set the price');
-	else if (rate > 0) {
-		const r = worth / rate;
-		if (r >= 1) add(25, 'Offer meets your rate card');
-		else if (r >= 0.75) add(15, `Offer is ${pct(r)} of your rate card`);
-		else if (r >= 0.5) add(5, `Offer is ${pct(r)} of your rate card`);
-		else add(-10, `Offer is only ${pct(r)} of your rate card (${inr(rate)})`);
-	}
-
-	if (c.type === 'barter') {
-		if (s.barter_min_value > 0 && c.product_value < s.barter_min_value) add(-15, `Product below your ${inr(s.barter_min_value)} barter minimum`);
-		if (s.barter_monthly_cap > 0 && barterSlotsUsed(all) >= s.barter_monthly_cap) add(-10, 'Barter slots for this month are full');
-		if (s.barter_mode === 'closed') add(-10, "You're taking paid collabs only");
-	}
-
-	const history = all.filter((x) => x.brand_id === c.brand_id && x.id !== c.id);
-	if (history.some(overdue)) add(-15, 'Brand has an overdue payment');
-	else if (history.some((x) => x.pay_status === 'paid')) add(10, 'Brand has paid you before');
-	else if (history.some((x) => x.stage === 'wrapped')) add(5, 'Worked together before');
-
-	// Her private ratings of this brand (1-5 stars), and how fast they actually paid.
-	const stars = [notes?.rate_pay, notes?.rate_brief, notes?.rate_again].filter((x): x is number => typeof x === 'number');
-	if (stars.length) {
-		const avg = stars.reduce((a, b) => a + b, 0) / stars.length;
-		const pts = Math.round((avg - 3) * 5);
-		if (pts) add(pts, `You rated this brand ${avg.toFixed(1)}★`);
-	}
-	const withDue = history.filter((x) => x.pay_status === 'paid' && x.paid_on && x.pay_due);
-	if (withDue.length) {
-		const late = withDue.filter((x) => x.paid_on! > x.pay_due!).length / withDue.length;
-		if (late >= 0.5) add(-8, `Paid late on ${Math.round(late * 100)}% of invoices`);
-		else if (late === 0 && withDue.length >= 2) add(5, 'Always pays on time');
-	}
-
-	if (c.package_name) add(12, `Booked your “${c.package_name}” package`);
-
-	if (s.priority_categories?.includes(c.brand.category)) add(8, `${c.brand.category} is a category you prefer`);
-
-	if (c.stage === 'request') {
-		const waiting = -diff(c.received_on);
-		if (waiting >= 2) add(Math.min(10, waiting * 2), `Waiting ${waiting} days for your reply`);
-	}
-	if (c.preferred_live) {
-		const d = diff(c.preferred_live);
-		if (d >= 0 && d <= 10) add(5, `Wants to go live in ${d} day${d === 1 ? '' : 's'}`);
-	}
-
-	const score = Math.max(0, Math.min(100, reasons.reduce((a, r) => a + r.pts, 0)));
-	const counterFee = c.type === 'barter' && rate > 0 ? fairFee(rate, c.product_value) || null : null;
-	return { score, tier: tierOf(score), reasons, counterFee };
 }
 
 /** Requests still being decided get ranked; everything later is just work to do. */

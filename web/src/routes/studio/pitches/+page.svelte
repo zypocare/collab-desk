@@ -6,6 +6,7 @@
 	import { askAi } from '#lib/ai.ts';
 	import { toast, ui } from '#lib/ui.svelte.ts';
 	import { errMessage, fmt } from '#lib/util.ts';
+	import AiThinking from '#lib/components/AiThinking.svelte';
 	import Icon from '#lib/components/Icon.svelte';
 	import Mono from '#lib/components/Mono.svelte';
 	import Segmented from '#lib/components/Segmented.svelte';
@@ -161,7 +162,7 @@
 				<div class="f"><label for="pt-email">Their email</label><input class="inp" id="pt-email" type="email" bind:value={open.email} placeholder="collabs@brand.com" /></div>
 			</div>
 			<div class="pt-write">
-				<button class="btn sm ai-btn" disabled={writing} onclick={writeAi}>{#if writing}<span class="spinner"></span>Writing…{:else}<Icon name="spark" />Write with AI{/if}</button>
+				{#if writing}<AiThinking label="Writing your pitch" />{:else}<button class="btn sm ai-btn" onclick={writeAi}><Icon name="spark" />Write with AI</button>{/if}
 				<button class="btn sm ghost" onclick={() => open && Object.assign(open, template(open))}><Icon name="edit" />Use a template</button>
 			</div>
 			<div class="f"><label for="pt-subj">Subject</label><input class="inp" id="pt-subj" bind:value={open.subject} /></div>

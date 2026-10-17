@@ -54,7 +54,7 @@
 	import ProductShipping from './ProductShipping.svelte';
 	import MessageThread from './MessageThread.svelte';
 	import { isRanked } from '../priority';
-	import PriorityPanel from './PriorityPanel.svelte';
+	import DecisionCard from './DecisionCard.svelte';
 	import Select from './Select.svelte';
 	import DatePicker from './DatePicker.svelte';
 	import { bestTime, timeLabel, timeOptions } from '../postTime';
@@ -383,7 +383,7 @@
 				{/if}
 			</section>
 
-			{#if isRanked(c)}<PriorityPanel {c} />{/if}
+			{#if isRanked(c)}<DecisionCard {c} />{/if}
 
 			<section class="sec" id="sec-msg">
 				<h3>Messages{#if c.contact_name}<small class="sec-sub">with {c.contact_name}</small>{/if}</h3>

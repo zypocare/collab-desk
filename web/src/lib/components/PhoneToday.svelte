@@ -28,6 +28,7 @@
 		today,
 		type Task
 	} from '../util';
+	import AiDesk from './AiDesk.svelte';
 	import Icon from './Icon.svelte';
 	import Mono from './Mono.svelte';
 	import Stories from './Stories.svelte';
@@ -192,6 +193,8 @@
 		<div class="clear"><span class="clear-ic"><Icon name="check" /></span><b>You're all caught up</b><small>New requests, payments and follow-ups land here.</small></div>
 	{/if}
 </section>
+
+<AiDesk phone />
 
 <AlertsPrompt />
 

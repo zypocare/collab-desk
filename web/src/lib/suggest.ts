@@ -207,7 +207,7 @@ export function nextStep(c: Collab): NextStep | null {
 					? { key: 'nudge', label: 'Nudge brand', hint: 'No answer to your quote for 3+ days', icon: 'bell' }
 					: null;
 			return c.type === 'barter'
-				? { key: 'quote', label: 'Counter or quote', hint: 'Barter request: send a quote, or reply from the priority panel', icon: 'rupee' }
+				? { key: 'quote', label: 'Counter or quote', hint: 'Barter request: send a quote, or a reply from "Should you take it?"', icon: 'rupee' }
 				: { key: 'quote', label: 'Send quote', hint: 'Pick a ready quote in one tap', icon: 'rupee' };
 		case 'confirmed':
 			if (c.type !== 'paid' && !c.shipped_at && !c.product_received_at) return { key: 'ask-product', label: 'Ask for the product', hint: 'Remind them to ship it', icon: 'box' };

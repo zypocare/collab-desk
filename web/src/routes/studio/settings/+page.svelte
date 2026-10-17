@@ -23,6 +23,7 @@
 	import PriorityRules from '#lib/components/PriorityRules.svelte';
 	import PackagesSettings from '#lib/components/PackagesSettings.svelte';
 	import AvailabilitySettings from '#lib/components/AvailabilitySettings.svelte';
+	import DecisionSettings from '#lib/components/DecisionSettings.svelte';
 	import ReviewsSettings from '#lib/components/ReviewsSettings.svelte';
 	import AppSettings from '#lib/components/AppSettings.svelte';
 	import AutopilotSettings from '#lib/components/AutopilotSettings.svelte';
@@ -336,6 +337,7 @@
 						</section>
 						<AvailabilitySettings />
 						<PriorityRules />
+						<DecisionSettings />
 					{:else if active === 'autopilot'}
 						<AutopilotSettings />
 					{:else if active === 'payments'}

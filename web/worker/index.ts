@@ -20,7 +20,7 @@ export default {
 		if (req.method !== 'POST') return json({ error: 'Use POST.' }, 405);
 		try {
 			const kind = url.pathname.slice('/api/ai/'.length);
-			if (!['dm', 'reply', 'caption', 'pitch', 'classify'].includes(kind)) return json({ error: 'Unknown.' }, 404);
+			if (!['dm', 'reply', 'caption', 'pitch', 'classify', 'fit'].includes(kind)) return json({ error: 'Unknown.' }, 404);
 			// Checking an incoming Instagram DM comes from the DM webhook with a single-use pass.
 			const allowed = kind === 'classify' ? await takeTicket(req, env) : await take(req, env, kind);
 			if (allowed !== true) return json({ error: allowed }, 403);
@@ -29,6 +29,7 @@ export default {
 			if (kind === 'reply') return json(await replies(env, body));
 			if (kind === 'pitch') return json(await pitch(env, body));
 			if (kind === 'classify') return json(await classify(env, body));
+			if (kind === 'fit') return json(await fit(env, body));
 			return json(await caption(env, body));
 		} catch (e) {
 			return json({ error: `The AI couldn't answer just now (${String((e as Error)?.message ?? e).slice(0, 160)}). Try again in a minute.` }, 502);
@@ -184,5 +185,82 @@ Return ONLY JSON: {"collab": "likely" | "maybe" | "no", "brand": "brand name or 
 	const j = firstJson(reply) ?? {};
 	const c = String(j.collab ?? 'no');
 	return { collab: ['likely', 'maybe', 'no'].includes(c) ? c : 'no', brand: String(j.brand ?? ''), summary: String(j.summary ?? '').slice(0, 120) };
+}
+
+// ---------- 6. "Should I take it?": what a request really involves ----------
+// The AI reads the request (store visit? where? what outfit and makeup? red flags?), then free
+// OpenStreetMap services work out the drive from her home area. The app scores it from these facts.
+const UA = { 'user-agent': 'CollabDesk/1.0 (collab-desk.zypocare.workers.dev)', 'accept-language': 'en' };
+
+async function geocode(q: string): Promise<{ lat: number; lng: number; name: string } | null> {
+	if (!q.trim()) return null;
+	const r = await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=in&q=${encodeURIComponent(q)}`, { headers: UA }).catch(() => null);
+	const j = (await r?.json().catch(() => null)) as { lat: string; lon: string; display_name: string }[] | null;
+	return j?.[0] ? { lat: Number(j[0].lat), lng: Number(j[0].lon), name: j[0].display_name.split(',').slice(0, 3).join(',') } : null;
+}
+
+/** Driving distance and time (no traffic), or a straight-line estimate if routing is unavailable. */
+async function drive(a: { lat: number; lng: number }, b: { lat: number; lng: number }) {
+	const r = await fetch(`https://router.project-osrm.org/route/v1/driving/${a.lng},${a.lat};${b.lng},${b.lat}?overview=false`, { headers: UA }).catch(() => null);
+	const j = (await r?.json().catch(() => null)) as { routes?: { distance: number; duration: number }[] } | null;
+	if (j?.routes?.[0]) return { km: j.routes[0].distance / 1000, min: j.routes[0].duration / 60, routed: true };
+	const rad = (d: number) => (d * Math.PI) / 180;
+	const km = 2 * 6371 * Math.asin(Math.sqrt(Math.sin(rad(b.lat - a.lat) / 2) ** 2 + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(rad(b.lng - a.lng) / 2) ** 2)) * 1.35;
+	return { km, min: (km / 30) * 60, routed: false };
+}
+
+async function fit(env: Env, b: Record<string, unknown>) {
+	const me = (b.creator ?? {}) as Record<string, unknown>;
+	const reply = await chat(
+		env,
+		`You help an Indian Instagram creator decide whether to accept a brand collaboration. Read the request and return ONLY a JSON object with facts from the text:
+{"visit": true if she must go somewhere (store, event, cafe, shoot location) else false,
+ "location": "the place she must go: name, area, city (as precise as the text allows)" or "",
+ "visit_hours": hours she must spend there (0 if unknown),
+ "outfit": "none" | "own" | "specific" | "provided", "outfit_note": "short, e.g. 'ethnic wear in brand colours'",
+ "makeup": "none" | "natural" | "glam" | "professional" | "provided", "makeup_note": "",
+ "looks": number of different looks/outfits (1 if one),
+ "category": "the brand's category, e.g. fashion, skincare, food",
+ "fit": 0-10 how well the brand suits the creator's niche, "fit_note": "one short reason",
+ "exclusivity": "any exclusivity or non-compete asked, else ''",
+ "payment_terms": "when/how they pay, if said, else ''",
+ "red_flags": ["short facts that are risky: e.g. asks for payment, vague brand, no website, unpaid usage rights, very tight deadline, many deliverables for little"],
+ "good_signs": ["short facts that are good"],
+ "questions": ["2-4 short questions she should ask before saying yes, about missing facts (voucher value, address, timing, usage, payment)"],
+ "summary": "one plain sentence: what they want and what she gets"}
+Rules: a store visit, event or shoot at their place means visit=true. "Outfit specific" = they ask for a particular look/colour/style she may need to buy; "provided" = they give the outfit or makeup artist. If makeup isn't mentioned, use "natural" for on-camera content and "none" for product-only content. Never invent facts. The creator: ${JSON.stringify({ niche: me.niche, city: me.city, avoid: me.avoid })}.`,
+		JSON.stringify(b.collab ?? {}).slice(0, 5000),
+		900
+	);
+	const ai = firstJson(reply) ?? {};
+
+	// Travel: her home (saved once the app knows it) to the place.
+	let home = me.home_lat && me.home_lng ? { lat: Number(me.home_lat), lng: Number(me.home_lng) } : null;
+	let homeFound: { lat: number; lng: number } | null = null;
+	if (!home && String(me.home_area ?? '').trim()) {
+		const g = await geocode(String(me.home_area));
+		if (g) home = homeFound = { lat: g.lat, lng: g.lng };
+	}
+	let travel: Record<string, unknown> | null = null;
+	const place = String(ai.location ?? '').trim();
+	if (ai.visit && place) {
+		// The exact shop often isn't on the map: fall back to its area ("Mustard, Koramangala, Bengaluru" -> "Koramangala, Bengaluru").
+		const city = String(me.city ?? '').trim();
+		const parts = place.split(',').map((x) => x.trim()).filter(Boolean);
+		if (city && !place.toLowerCase().includes(city.toLowerCase().split(/[ ,]/)[0]) && !/bangalore|bengaluru|mumbai|delhi|chennai|hyderabad|pune|kolkata/i.test(place)) parts.push(city);
+		let g: Awaited<ReturnType<typeof geocode>> = null;
+		let approx = false;
+		for (let i = 0; i < parts.length - 1 && !g; i++) {
+			if (homeFound || i) await new Promise((r) => setTimeout(r, 1100)); // OpenStreetMap asks for at most one search a second
+			g = await geocode(parts.slice(i).join(', '));
+			approx = i > 0;
+		}
+		if (!g && parts.length === 1) g = await geocode(parts[0]);
+		if (g && home) {
+			const d = await drive(home, g);
+			travel = { place: g.name, approx, lat: g.lat, lng: g.lng, km: Math.round(d.km * 10) / 10, drive_min: Math.round(d.min), routed: d.routed };
+		} else if (g) travel = { place: g.name, approx, lat: g.lat, lng: g.lng };
+	}
+	return { ai, travel, home: homeFound, read_at: new Date().toISOString() };
 }
 

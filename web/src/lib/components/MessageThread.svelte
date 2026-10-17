@@ -5,6 +5,7 @@
 	import type { Message } from '../types';
 	import { toast } from '../ui.svelte';
 	import { errMessage, firstName } from '../util';
+	import AiThinking from './AiThinking.svelte';
 	import Icon from './Icon.svelte';
 
 	let {
@@ -164,7 +165,7 @@
 	</div>
 	{#if facts && !text}
 		<div class="th-ai">
-			<button type="button" class="btn sm ai-btn" disabled={drafting} onclick={suggestReplies}>{#if drafting}<span class="spinner"></span>Writing…{:else}<Icon name="spark" />{drafts.length ? 'More replies' : 'Suggest replies'}{/if}</button>
+			{#if drafting}<AiThinking label="Writing replies" />{:else}<button type="button" class="btn sm ai-btn" onclick={suggestReplies}><Icon name="spark" />{drafts.length ? 'More replies' : 'Suggest replies'}</button>{/if}
 			{#each drafts as d, i (i)}<button type="button" class="ai-draft" onclick={() => ((drafts = []), useReply(d))}>{d}</button>{/each}
 		</div>
 	{/if}

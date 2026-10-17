@@ -94,7 +94,7 @@
 	{#if flagged && t}
 		<div class="collab-banner">
 			<span class="cb-ic"><Icon name="spark" /></span>
-			<div><b>Looks like a collab{t.collab_flag === 'maybe' ? '?' : ''}</b><small>{t.collab_hint || 'A brand may be asking about working together.'}</small></div>
+			<div><b>Looks like a collab{t.collab_flag === 'maybe' ? '?' : ''} <span class="ai-tag"><Icon name="spark" />AI</span></b><small>{t.collab_hint || 'A brand may be asking about working together.'}</small></div>
 			<button class="btn sm primary" onclick={addCollab}><Icon name="plus" />Add as collab</button>
 			<button class="lnk" onclick={notCollab}>Not a collab</button>
 		</div>

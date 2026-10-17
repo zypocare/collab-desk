@@ -301,6 +301,15 @@ export type Settings = {
 	draft_days_after_product: number;
 	usage_ext_pct: number;
 	weekly_capacity: number;
+	/** For the "Should I take it?" report: home area (travel time only, never shown to brands). */
+	home_area: string;
+	home_lat: number | null;
+	home_lng: number | null;
+	travel_mode: 'car' | 'bike' | 'cab' | 'public';
+	travel_max_min: number;
+	makeup_cost: number;
+	outfit_cost: number;
+	avoid_brands: string;
 	away_weeks: string[];
 	show_availability: boolean;
 	offered_kinds: string[];

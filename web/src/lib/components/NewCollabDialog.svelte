@@ -7,6 +7,7 @@
 	import { toast, ui } from '../ui.svelte';
 	import { askAi, mergeDm, shrinkImage } from '../ai';
 	import { delivText, fmt, inr, TYPE_LABEL } from '../util';
+	import AiThinking from './AiThinking.svelte';
 	import Icon from './Icon.svelte';
 
 	let name = $state('');
@@ -128,16 +129,16 @@
 		<div class="f">
 			<label for="nc-paste">Their message <span class="hint">(optional)</span>{#if canPaste}<button type="button" class="lnk paste-btn" onclick={pasteClip}>Paste</button>{/if}</label>
 			<div class="ai-row">
-				<button type="button" class="btn sm ai-btn" disabled={aiBusy} onclick={() => shotInput?.click()}>{#if aiBusy}<span class="spinner"></span>{:else}<Icon name="spark" />{/if}Add a screenshot</button>
-				{#if pasted.trim().length > 20}<button type="button" class="btn sm ghost" disabled={aiBusy} onclick={() => readWithAi()}><Icon name="spark" />Read with AI</button>{/if}
+				<button type="button" class="btn sm ai-btn" disabled={aiBusy} onclick={() => shotInput?.click()}><Icon name="spark" />Read a screenshot</button>
+				{#if pasted.trim().length > 20}<button type="button" class="btn sm ai-btn" disabled={aiBusy} onclick={() => readWithAi()}><Icon name="spark" />Read with AI</button>{/if}
 				<input type="file" accept="image/*" hidden bind:this={shotInput} onchange={pickShot} />
 			</div>
-			{#if aiNote}<p class="hint ai-note">{aiNote}</p>{/if}
+			{#if aiBusy}<p class="ai-note"><AiThinking label={aiNote.replace('…', '')} /></p>{:else if aiNote}<p class="hint ai-note"><span class="ai-tag"><Icon name="spark" />AI</span> {aiNote}</p>{/if}
 			<textarea class="inp" id="nc-paste" rows="5" placeholder={'Hi! I’m Asha from Lumière Skin (@lumiere.skin). We’d love 1 reel + 3 stories for our Vitamin C launch, budget ₹30k, live by 25th Oct…'} bind:value={pasted} bind:this={box}></textarea>
 		</div>
 		{#if chips.length}
 			<div class="dm-found" aria-live="polite">
-				<span class="lbl-t">Found</span>
+				<span class="lbl-t">Found{#if aiFields}<span class="ai-tag"><Icon name="spark" />AI</span>{/if}</span>
 				<div>{#each chips as ch (ch.k)}<span class="dm-chip"><small>{ch.k}</small>{ch.v}</span>{/each}</div>
 			</div>
 		{/if}

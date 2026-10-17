@@ -31,6 +31,7 @@
 	} from '#lib/util.ts';
 	import Icon from '#lib/components/Icon.svelte';
 	import PriorityBadge from '#lib/components/PriorityBadge.svelte';
+	import AiDesk from '#lib/components/AiDesk.svelte';
 	import AlertsPrompt from '#lib/components/AlertsPrompt.svelte';
 	import BrandQuestions from '#lib/components/BrandQuestions.svelte';
 
@@ -170,6 +171,8 @@
 		</div>
 	</section>
 </div>
+
+<AiDesk />
 
 <BrandQuestions />
 
