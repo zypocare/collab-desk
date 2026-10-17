@@ -7,7 +7,7 @@ import { render, type Settings } from '../_shared/templates.ts';
 import { pushFor, pushToCreator } from '../_shared/push.ts';
 
 // Alerts only: a brand opening her insights link.
-const PUSH_ONLY = new Set(['insights_viewed']);
+const PUSH_ONLY = new Set(['insights_viewed', 'ig_dm']);
 
 const CRON_SECRET = Deno.env.get('CRON_SECRET') ?? '';
 

@@ -472,3 +472,15 @@ user = "env(SMTP_USER)"
 pass = "env(SMTP_PASS)"
 admin_email = "env(SMTP_USER)"
 sender_name = "env(SMTP_SENDER_NAME)"
+
+# Meta calls this for new Instagram DMs (signed with the app secret, checked in the function).
+[functions.instagram-webhook]
+verify_jwt = false
+
+# Called by the database every 5 minutes (shared secret) and by the creator.
+[functions.instagram-publish]
+verify_jwt = false
+
+# Called by the database daily (shared secret) and by the creator.
+[functions.youtube-sync]
+verify_jwt = false

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { ask } from '../confirm.svelte';
+	import SchedulePost from './SchedulePost.svelte';
 	import { askAi } from '../ai';
 	import { collabFacts } from '../ai';
 	import CollabLink from './CollabLink.svelte';
@@ -558,6 +559,7 @@
 						{#if d.link}<a class="lnk draft-link" href={d.link} target="_blank" rel="noopener">{d.link}</a>{/if}
 						{#if d.caption}<p class="draft-cap">{d.caption}</p>{/if}
 						{#if d.feedback}<blockquote class="note" style="margin:8px 0 0"><span>{d.status === 'approved' ? 'Brand note' : 'Changes asked'} · {d.responded_by}</span><p>{d.feedback}</p></blockquote>{/if}
+						<SchedulePost {c} {d} />
 					</div>
 				{/each}
 				{#if !lastDraft || lastDraft.status !== 'pending'}

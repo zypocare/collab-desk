@@ -1,0 +1,100 @@
+<script lang="ts">
+	import { page } from '$app/state';
+	import { onMount, tick } from 'svelte';
+	import { supabase } from '#lib/supabase.ts';
+	import { studio } from '#lib/studio.svelte.ts';
+	import { toast, ui } from '#lib/ui.svelte.ts';
+	import { errMessage } from '#lib/util.ts';
+	import Icon from '#lib/components/Icon.svelte';
+	import Mono from '#lib/components/Mono.svelte';
+
+	// One Instagram DM conversation: read it, reply (within Instagram's 24-hour window), or turn it
+	// into a collab.
+	type T = { igsid: string; username: string; name: string; picture: string; last_from_them_at: string | null; collab_id: string | null };
+	type M = { mid: string; from_me: boolean; text: string; created_at: string };
+	const igsid = $derived(page.params.igsid ?? '');
+	let t = $state<T | null>(null);
+	let msgs = $state<M[]>([]);
+	let text = $state('');
+	let busy = $state(false);
+	let list = $state<HTMLElement>();
+
+	async function load() {
+		const [a, b] = await Promise.all([
+			supabase.from('ig_threads').select('*').eq('igsid', igsid).maybeSingle(),
+			supabase.from('ig_dms').select('mid, from_me, text, created_at').eq('igsid', igsid).order('created_at')
+		]);
+		t = (a.data as T | null) ?? null;
+		msgs = (b.data as M[]) ?? [];
+		await supabase.from('ig_threads').update({ unread: 0 }).eq('igsid', igsid);
+		await tick();
+		list?.scrollTo({ top: list.scrollHeight });
+	}
+	onMount(() => {
+		load();
+		const ch = supabase
+			.channel(`igdm-${igsid}`)
+			.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'ig_dms', filter: `igsid=eq.${igsid}` }, () => load())
+			.subscribe();
+		return () => {
+			supabase.removeChannel(ch);
+		};
+	});
+	const open24 = $derived(!!t?.last_from_them_at && Date.now() - Date.parse(t.last_from_them_at) < 24 * 3600e3);
+
+	async function send(e: SubmitEvent) {
+		e.preventDefault();
+		const body = text.trim();
+		if (!body) return;
+		busy = true;
+		const { data, error } = await supabase.functions.invoke('instagram-dm', { body: { igsid, text: body } });
+		busy = false;
+		if (error || (data as { error?: string })?.error) {
+			let msg = (data as { error?: string })?.error ?? errMessage(error);
+			try {
+				msg = (await (error as { context?: Response })?.context?.json())?.error ?? msg;
+			} catch {
+				/* keep it */
+			}
+			return toast(msg, 'alert');
+		}
+		text = '';
+		load();
+	}
+	function addCollab() {
+		// The conversation goes into "Add a collab", where the AI can read it.
+		ui.pasteText = msgs.slice(-15).map((m) => `${m.from_me ? studio.settings?.display_name ?? 'Me' : t?.username || 'Brand'}: ${m.text}`).join('\n');
+		ui.newCollab = true;
+	}
+	const time = (iso: string) => new Date(iso).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
+</script>
+
+<svelte:head><title>@{t?.username ?? 'Instagram'} · Messages · {studio.settings?.app_name}</title></svelte:head>
+
+<div class="chat">
+	<header class="chat-h">
+		<button class="m-ib" onclick={() => history.back()} aria-label="Back"><Icon name="chevL" /></button>
+		<div class="chat-who">
+			{#if t?.picture}<img class="ig-pic" src={t.picture} alt="" referrerpolicy="no-referrer" />{:else}<Mono name={t?.username || 'IG'} />{/if}
+			<span><b>@{t?.username || 'Instagram user'}</b><small>{t?.name || 'Instagram DM'}</small></span>
+		</div>
+		{#if t?.collab_id}<a class="m-ib" href="/studio/collabs" aria-label="Collab"><Icon name="info" /></a>{:else}<button class="btn sm" onclick={addCollab}><Icon name="plus" />Add as collab</button>{/if}
+	</header>
+	<div class="thread">
+		<div class="th-list" bind:this={list}>
+			{#each msgs as m (m.mid)}
+				<div class="bub-row" class:mine={m.from_me}><div class="bub"><p>{m.text}</p><time datetime={m.created_at}>{time(m.created_at)}</time></div></div>
+			{:else}
+				<div class="th-empty"><Icon name="send" /><p>No messages yet.</p></div>
+			{/each}
+		</div>
+		{#if open24}
+			<form class="th-box" onsubmit={send}>
+				<textarea class="inp" rows="1" placeholder="Message…" bind:value={text}></textarea>
+				<button class="btn grad send-btn" type="submit" disabled={busy || !text.trim()} aria-label="Send">{#if busy}<span class="spinner"></span>{:else}<Icon name="send" />{/if}</button>
+			</form>
+		{:else}
+			<p class="hint ig-closed">Instagram only lets apps reply within 24 hours of their last message. <a class="lnk" href="https://ig.me/m/{t?.username ?? ''}" target="_blank" rel="noopener">Reply in Instagram</a></p>
+		{/if}
+	</div>
+</div>

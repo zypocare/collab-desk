@@ -32,7 +32,7 @@ Deno.serve(async (req) => {
 
   try {
     const t = await ig.exchangeCode(String(code), String(redirect_uri));
-    await db.from('ig_token').upsert({ id: 1, access_token: t.token, obtained_at: new Date().toISOString(), expires_at: new Date(Date.now() + t.expiresIn * 1000).toISOString() });
+    await db.from('ig_token').upsert({ id: 1, access_token: t.token, obtained_at: new Date().toISOString(), expires_at: new Date(Date.now() + t.expiresIn * 1000).toISOString(), permissions: (t as { permissions?: string }).permissions ?? '' });
     const summary = await runSync(db);
     return reply({ ok: true, summary });
   } catch (e) {

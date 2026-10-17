@@ -43,7 +43,9 @@ const real = {
     const short = await res.json();
     if (!short.access_token) throw new IgError(short.error_message ?? short.error?.message ?? 'Instagram did not accept the sign-in code.');
     const long = await get('/access_token', { grant_type: 'ig_exchange_token', client_secret: APP_SECRET, access_token: short.access_token });
-    return { token: long.access_token as string, expiresIn: Number(long.expires_in) || 5184000 };
+    // Which permissions she allowed (DMs and posting are optional extras).
+    const perms = Array.isArray(short.permissions) ? short.permissions.join(',') : String(short.permissions ?? '');
+    return { token: long.access_token as string, expiresIn: Number(long.expires_in) || 5184000, permissions: perms };
   },
 
   async refresh(token: string) {
