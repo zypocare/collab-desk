@@ -111,11 +111,11 @@ export function brandAdvice(
 			suggest: { type: 'hybrid', fee: fee || 5000, label: fee ? `Switch to Paid + product (${inr(fee)} fee)` : 'Switch to Paid + product' }
 		};
 	}
-	if (b.mode === 'selective' && !minOk) {
+	if (b.min_value && !minOk && o.productValue >= 0) {
 		return {
-			tone: 'block',
-			title: `Barter starts at products worth ${inr(b.min_value)}`,
-			lines: [`A lower-value product can still work with a small fee on top.`],
+			tone: 'warn',
+			title: 'You can send this, but it will be reviewed last',
+			lines: [`${who}'s barter offers start at ${inr(b.min_value)}. Offers below that go to the end of the list, so a reply can take longer. Adding a fee gets it seen sooner.`],
 			suggest: { type: 'hybrid', fee: fee || 3000, label: fee ? `Switch to Paid + product (${inr(fee)} fee)` : 'Switch to Paid + product' }
 		};
 	}

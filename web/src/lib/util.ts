@@ -122,6 +122,8 @@ export const firstName = (name: string) => (name || '').split(' ')[0];
 // ---- collab logic ----
 export const isPaid = (c: Pick<Collab, 'type'>) => c.type !== 'barter';
 export const hasProduct = (c: Pick<Collab, 'type'>) => c.type !== 'paid';
+/** Something gets shipped to her (not an experience like a stay, a meal or an event). */
+export const ships = (c: Pick<Collab, 'type' | 'barter_kind'>) => c.type !== 'paid' && c.barter_kind !== 'experience';
 /** Shipped by the brand, not yet marked received. */
 export const inTransit = (c: Pick<Collab, 'shipped_at' | 'product_received_at'>) => !!c.shipped_at && !c.product_received_at;
 
@@ -154,7 +156,7 @@ export function nextLine(c: Collab): NextLine {
 			return c.follow_date ? r(`Follow up ${relWord(diff(c.follow_date))}`, diff(c.follow_date), 'bell') : r('Waiting on brand', null);
 		case 'confirmed':
 			if (inTransit(c)) return r(`Parcel on the way · ${c.ship_carrier}`, null, 'box');
-			if (hasProduct(c) && !c.shipped_at && !c.product_received_at && !(c.product_date && diff(c.product_date) <= 0)) return r('Waiting for the brand to ship', null, 'box');
+			if (ships(c) && !c.shipped_at && !c.product_received_at && !(c.product_date && diff(c.product_date) <= 0)) return r('Waiting for the brand to ship', null, 'box');
 			if (c.product_date && diff(c.product_date) >= 0) return r(`Product arrives ${relWord(diff(c.product_date))}`, diff(c.product_date), 'box');
 			return c.draft_date ? r(`Draft due ${relWord(diff(c.draft_date))}`, diff(c.draft_date), 'film') : r('Set a draft date', null);
 		case 'creating':

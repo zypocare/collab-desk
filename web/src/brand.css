@@ -381,3 +381,22 @@ html:has([data-side="brand"]),[data-side="brand"]{scroll-behavior:smooth}
 [data-side="brand"] .pre .inp{padding-left:32px}
 [data-side="brand"] .f label{font-size:15px;margin-bottom:8px}
 [data-side="brand"] .fields{gap:16px 18px}
+
+/* Brand request: what a barter is (a product or an experience) */
+.bk{margin-top:14px}
+.bk-opts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.bk-opt{position:relative;display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:14px;border:1px solid var(--line);background:var(--surface);cursor:pointer}
+.bk-opt input{position:absolute;opacity:0;pointer-events:none}
+.bk-opt .ic{flex:none;width:20px;height:20px;color:var(--ink-3)}
+.bk-opt span{display:flex;flex-direction:column;min-width:0}
+.bk-opt b{font-size:15px}
+.bk-opt small{font-size:13px;color:var(--ink-3)}
+.bk-opt.on{border-color:color-mix(in oklab,var(--accent) 55%,var(--line));background:color-mix(in oklab,var(--accent) 7%,var(--surface))}
+.bk-opt.on .ic{color:var(--accent)}
+.bk-opt:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:2px}
+.bk-note{display:flex;align-items:flex-start;gap:8px;margin:12px 0 0;font-size:14px;color:var(--ink-2);line-height:1.45}
+.bk-note .ic{flex:none;width:16px;height:16px;margin-top:2px;color:var(--accent)}
+#rq-budget .advice{margin:16px 0 0;min-width:0;max-width:100%;box-sizing:border-box}
+#rq-budget .advice > div{min-width:0;overflow-wrap:anywhere}
+#rq-budget .advice .btn{max-width:100%;white-space:normal;height:auto;min-height:34px;text-align:left}
+@media (max-width:560px){.bk-opts{grid-template-columns:minmax(0,1fr)}}

@@ -115,6 +115,9 @@
 	let fee = $state('');
 	let product = $state('');
 	let productValue = $state('');
+	// Barter can be a product they send, or an experience (a stay, a meal at their place, an event).
+	let barterKind = $state<'product' | 'experience'>('product');
+	const exp = $derived(barterKind === 'experience');
 	let preferred = $state('');
 	let usage = $state('Organic only');
 	let brief = $state('');
@@ -189,7 +192,7 @@
 	const types = $derived<{ v: CollabType; t: string; d: string; i: string; tag: string; off?: boolean }[]>([
 		{ v: 'paid', t: 'Paid', d: 'A fee for content', i: 'rupee', tag: 'Reviewed first' },
 		{ v: 'hybrid', t: 'Paid + product', d: 'A fee plus your product', i: 'layers', tag: 'Reviewed first' },
-		{ v: 'barter', t: 'Barter', d: 'Product in exchange for content', i: 'gift', tag: barter?.mode === 'closed' ? 'Paused' : 'Reviewed after paid', off: barter?.mode === 'closed' }
+		{ v: 'barter', t: 'Barter', d: 'A product or an experience for content', i: 'gift', tag: barter?.mode === 'closed' ? 'Paused' : 'Reviewed after paid', off: barter?.mode === 'closed' }
 	]);
 
 	// Live guidance from the creator's priority rules (same engine the studio uses).
@@ -266,7 +269,7 @@
 		error = errDel = errProduct = '';
 		const deliverables = shown.filter((k) => qty[k] > 0).map((k) => ({ kind: k, qty: qty[k] }));
 		if (!deliverables.length) errDel = 'Choose at least one deliverable.';
-		if (type !== 'paid' && !product.trim()) errProduct = 'Tell us which product you will send.';
+		if (type !== 'paid' && !product.trim()) errProduct = exp ? 'Tell us what you are offering: the stay, meal or event.' : 'Tell us which product you will send.';
 		if (errDel || errProduct) return;
 		if (guest) {
 			if (!validGuest()) return;
@@ -294,6 +297,7 @@
 				fee: type === 'barter' ? 0 : Number(fee) || 0,
 				product,
 				product_value: Number(productValue) || 0,
+				barter_kind: type === 'paid' ? 'product' : barterKind,
 				preferred_live: preferred || null,
 				usage,
 				brief,
@@ -398,6 +402,18 @@
 							<label class="type-card" class:off={t.off}><Icon name={t.i} /><input type="radio" name="btype" value={t.v} bind:group={type} /><b>{t.t}</b><small>{t.d}</small><em class="type-tag" class:first={t.v !== 'barter'}>{t.tag}</em></label>
 						{/each}
 					</div>
+					{#if type !== 'paid'}
+						<div class="bk" role="radiogroup" aria-label="What you'll give">
+							<span class="lbl-t">What you'll give</span>
+							<div class="bk-opts">
+								<label class="bk-opt" class:on={!exp}><input type="radio" name="bkind" value="product" bind:group={barterKind} /><Icon name="box" /><span><b>A product</b><small>Sent to {creator || 'the creator'}</small></span></label>
+								<label class="bk-opt" class:on={exp}><input type="radio" name="bkind" value="experience" bind:group={barterKind} /><Icon name="gift" /><span><b>An experience</b><small>A stay, a meal at your place, an event or a service</small></span></label>
+							</div>
+						</div>
+					{/if}
+					{#if type === 'barter' && barter && barter.mode !== 'closed'}
+						<p class="bk-note"><Icon name="info" />{creator || 'The creator'} reviews paid requests first.{#if barter.min_value} Barter worth less than {inr(barter.min_value)} can still be sent, but it's reviewed last.{/if}</p>
+					{/if}
 				</div>
 				<div class="bsec rq-card" id="rq-content">
 					<div class="bsec-h"><i>{guest ? '03' : '02'}</i><h2>What you'd like</h2></div>
@@ -434,34 +450,34 @@
 							{/if}
 						{/if}
 						{#if type !== 'paid'}
-							<div class="f"><label for="b-value">Product value</label><div class="pre"><span>₹</span><input class="inp num" id="b-value" type="number" inputmode="numeric" min="0" bind:value={productValue} /></div></div>
+							<div class="f"><label for="b-value">{exp ? 'Value of the experience' : 'Product value'}</label><div class="pre"><span>₹</span><input class="inp num" id="b-value" type="number" inputmode="numeric" min="0" bind:value={productValue} /></div></div>
 							<div class="f span2">
-								<label for="b-product">Product you'll send</label>
-								<input class="inp" class:bad={!!errProduct} id="b-product" placeholder="e.g. Vitamin C serum, 30 ml" bind:value={product} oninput={() => (errProduct = '')} />
+								<label for="b-product">{exp ? "What you're offering" : "Product you'll send"}</label>
+								<input class="inp" class:bad={!!errProduct} id="b-product" placeholder={exp ? 'e.g. Dinner for two at our Indiranagar outlet' : 'e.g. Vitamin C serum, 30 ml'} bind:value={product} oninput={() => (errProduct = '')} />
 								{#if errProduct}<div class="err">{errProduct}</div>{/if}
 							</div>
 						{/if}
 						<div class="f"><label for="b-date">Preferred go-live date</label><DatePicker id="b-date" min={rel(3)} bind:value={preferred} placeholder="No preference" {unavailable} />{#if busyWeek}<p class="hint" style="margin-top:6px">{busyWeek}</p>{/if}</div>
 						<div class="f"><label for="b-usage">Usage rights</label><Select id="b-usage" bind:value={usage} options={USAGE.map((u) => ({ value: u, label: usageOption(u) }))} /><p class="hint" style="margin-top:6px">{usage === 'Organic only' ? `${creator} posts it on Instagram. No ads.` : `Your brand runs ${creator}'s content as ads from your own ad account. This is charged on top of the content fee; the quote shows the amount.`}</p></div>
 					</div>
+					{#if advice}
+						{#key advice.title}
+							<div class="advice tone-{advice.tone}" role="status">
+								<span class="adv-ic"><Icon name={advice.tone === 'good' ? 'check' : advice.tone === 'block' || advice.tone === 'warn' ? 'alert' : 'spark'} /></span>
+								<div>
+									<b>{advice.title}</b>
+									{#each advice.lines as l (l)}<p>{l}</p>{/each}
+									{#if advice.suggest}<button type="button" class="btn sm {advice.tone === 'block' ? 'grad' : ''}" onclick={takeSuggestion}><Icon name="rupee" />{advice.suggest.label}</button>{/if}
+								</div>
+							</div>
+						{/key}
+					{/if}
 				</div>
 				<div class="bsec rq-card" id="rq-brief">
 					<div class="bsec-h"><i>{guest ? '05' : '04'}</i><h2>Brief</h2></div>
 					<BriefEditor bind:value={briefDetails} idp="b" category={acc?.brand?.category ?? g.category} />
 					<div class="f" style="margin-top:12px"><label for="b-brief">Anything else</label><textarea class="inp" id="b-brief" rows="3" placeholder="What's launching, context, timing notes" bind:value={brief}></textarea></div>
 				</div>
-				{#if advice}
-					{#key advice.title}
-						<div class="advice tone-{advice.tone}" role="status">
-							<span class="adv-ic"><Icon name={advice.tone === 'good' ? 'check' : advice.tone === 'block' || advice.tone === 'warn' ? 'alert' : 'spark'} /></span>
-							<div>
-								<b>{advice.title}</b>
-								{#each advice.lines as l (l)}<p>{l}</p>{/each}
-								{#if advice.suggest}<button type="button" class="btn sm {advice.tone === 'block' ? 'grad' : ''}" onclick={takeSuggestion}><Icon name="rupee" />{advice.suggest.label}</button>{/if}
-							</div>
-						</div>
-					{/key}
-				{/if}
 				{#if codeStep}
 					<div class="code-step" role="dialog" aria-label="Confirm your email">
 						<Icon name="mail" />
@@ -484,7 +500,7 @@
 						{:else if lines.length && (estimate || pkg)}
 							<span class="lt-what">{delivText(lines)}</span>
 							<b class="lt-sum">{inr(pkg ? pkg.price : estimate)}</b>
-							<span class="lt-note">{pkg ? 'package price' : type === 'barter' ? `at ${creator}'s rates, for your product` : `at ${creator}'s rates`}{#if !pkg && type !== 'barter' && Number(fee) > 0}{' · '}your budget {inr(Number(fee))}{Number(fee) < estimate ? ` (${Math.round((Number(fee) / estimate) * 100)}%)` : ''}{/if}</span>
+							<span class="lt-note">{pkg ? 'package price' : type === 'barter' ? `at ${creator}'s rates, for your ${exp ? 'experience' : 'product'}` : `at ${creator}'s rates`}{#if !pkg && type !== 'barter' && Number(fee) > 0}{' · '}your budget {inr(Number(fee))}{Number(fee) < estimate ? ` (${Math.round((Number(fee) / estimate) * 100)}%)` : ''}{/if}</span>
 						{:else}<span class="rq-default">You'll get a request code and an email copy.</span>{/if}
 					</p>
 					<button class="btn grad lg" class:blocked={advice?.tone === 'block'} type="submit" disabled={busy || advice?.tone === 'block'} title={advice?.tone === 'block' ? advice.title : undefined}>{#if busy}<span class="spinner"></span>Sending…{:else}<Icon name="send" />Send request{/if}</button>
@@ -498,7 +514,7 @@
 					{#if !lines.length}<p class="rq-empty">Choose at least one piece of content to see the total.</p>{/if}
 					<dl>
 						<div><dt>Type</dt><dd>{TYPE_LABEL[type]}</dd></div>
-						<div><dt>Budget</dt><dd>{pkg ? inr(pkg.price) : type === 'barter' ? 'Your product' : Number(fee) > 0 ? inr(Number(fee)) : 'Asking for a quote'}</dd></div>
+						<div><dt>Budget</dt><dd>{pkg ? inr(pkg.price) : type === 'barter' ? (exp ? 'Your experience' : 'Your product') : Number(fee) > 0 ? inr(Number(fee)) : 'Asking for a quote'}</dd></div>
 						{#if estimate && !pkg && lines.length}<div><dt>At {creator}'s rates</dt><dd>{inr(estimate)}</dd></div>{/if}
 						{#if type !== 'paid' && product.trim()}<div><dt>Product</dt><dd>{product}</dd></div>{/if}
 						<div><dt>Go-live</dt><dd>{preferred ? fmtLong(preferred) : 'No preference'}</dd></div>

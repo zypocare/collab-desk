@@ -35,6 +35,7 @@
 		fmt,
 		fmtTime,
 		hasProduct,
+		ships,
 		hueOf,
 		inr,
 		isPaid,
@@ -426,12 +427,16 @@
 					{/if}
 					{#if hasProduct(c)}
 						<div class="f">
-							<label for="f-value">Product value</label>
+							<label for="f-kind">What they give</label>
+							<Select id="f-kind" value={c.barter_kind ?? 'product'} options={[{ value: 'product', label: 'A product (shipped)' }, { value: 'experience', label: 'An experience (stay, meal, event)' }]} onchange={(v) => save('barter_kind', v)} />
+						</div>
+						<div class="f">
+							<label for="f-value">{c.barter_kind === 'experience' ? 'Its value' : 'Product value'}</label>
 							<div class="pre"><span>₹</span><input class="inp num" id="f-value" type="number" inputmode="numeric" min="0" value={c.product_value || ''} onchange={(e) => save('product_value', num(e))} /></div>
 						</div>
 						<div class="f span2">
-							<label for="f-product">Product</label>
-							<input class="inp" id="f-product" value={c.product} placeholder="What the brand is sending" onchange={(e) => save('product', val(e))} />
+							<label for="f-product">{c.barter_kind === 'experience' ? 'The experience' : 'Product'}</label>
+							<input class="inp" id="f-product" value={c.product} placeholder={c.barter_kind === 'experience' ? 'e.g. Dinner for two, 1-night stay' : 'What the brand is sending'} onchange={(e) => save('product', val(e))} />
 						</div>
 					{/if}
 					<div class="f">
@@ -510,7 +515,7 @@
 
 			{#if c.stage === 'live' || c.stage === 'wrapped'}<section class="sec" hidden={!sh('review')}><h3>How was {c.brand.name}?<small class="sec-sub">private</small></h3><BrandRating brand={c.brand} compact /></section>{/if}
 			{#if c.usage_ends}<section class="sec" hidden={!sh('usage')}><h3>Usage rights</h3><UsageRights {c} /></section>{/if}
-			{#if hasProduct(c)}<div class="sec-wrap" hidden={!sh('product')}><ProductShipping {c} /></div>{/if}
+			{#if ships(c)}<div class="sec-wrap" hidden={!sh('product')}><ProductShipping {c} /></div>{/if}
 
 			<section class="sec" id="sec-dates" hidden={!sh('dates')}>
 				<h3>Dates</h3>

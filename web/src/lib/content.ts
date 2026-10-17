@@ -1,7 +1,7 @@
 // The content side of a collab: what she still has to make, when she shoots it, how long it takes,
 // and a shot list made from the brief so she can walk on set and just follow it.
 import type { Collab, Settings } from './types';
-import { allDone, diff, hasProduct, latestDraft, todayIso } from './util';
+import { allDone, diff, latestDraft, ships, todayIso } from './util';
 
 export type Shot = { t: string; done: boolean };
 export const DEFAULT_HOURS: Record<string, number> = { Reel: 6, Story: 1, 'Static post': 3, Carousel: 4, 'UGC video': 4 };
@@ -20,7 +20,7 @@ export function contentState(c: Collab): ContentState {
 	if (dr?.status === 'pending') return 'with_brand';
 	if (dr?.status === 'approved') return 'to_post';
 	if (allDone(c) && !dr) return 'to_post';
-	if (hasProduct(c) && !c.product_received_at && !(c.product_date && diff(c.product_date) <= 0)) return 'waiting_product';
+	if (ships(c) && !c.product_received_at && !(c.product_date && diff(c.product_date) <= 0)) return 'waiting_product';
 	return 'to_make';
 }
 

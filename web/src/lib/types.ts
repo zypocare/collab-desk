@@ -130,6 +130,8 @@ export type Collab = {
 	fee: number;
 	product: string;
 	product_value: number;
+	/** Barter: a product sent to her, or an experience (a stay, a meal, an event, a service). */
+	barter_kind: 'product' | 'experience';
 	usage: string;
 	brief: string;
 	preferred_live: string | null;
