@@ -242,3 +242,14 @@
   /* The chat already sits in a card: no second box around it. */
   [data-side="studio"] .drawer .sec .thread { border: 0; background: none; border-radius: 0; box-shadow: none; }
 }
+
+/* ---------- Collabs board, empty: full width, two columns ---------- */
+@media (min-width: 761px) {
+  [data-side="studio"] .board-empty { max-width: none; margin: 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); grid-template-areas: "art opts" "title opts" "text opts" "flow flow"; grid-template-rows: auto auto 1fr auto; align-items: start; column-gap: clamp(32px, 5vw, 80px); row-gap: 10px; text-align: left; padding: 40px clamp(28px, 4vw, 56px) 30px; border-radius: var(--d-r); background: var(--d-card); border: 1px solid var(--d-line); box-shadow: 0 1px 2px rgba(0, 0, 0, .18); }
+  [data-side="studio"] .board-empty > .be-art { grid-area: art; margin: 0 0 8px; }
+  [data-side="studio"] .board-empty > h2 { grid-area: title; font-size: 28px; }
+  [data-side="studio"] .board-empty > p { grid-area: text; font-size: 16px; }
+  [data-side="studio"] .board-empty > .be-opts { grid-area: opts; align-self: center; margin: 0; }
+  [data-side="studio"] .board-empty > .be-flow { grid-area: flow; margin-top: 24px; }
+  [data-side="studio"] .be-opt { border-radius: 14px; padding: 16px 18px; }
+}
