@@ -30,6 +30,13 @@ ${button ? `<tr><td style="padding:14px 32px 6px"><a href="${esc(button.href)}" 
 </table></td></tr></table></body></html>`;
 }
 
+// A plain personal email (pitches): her words in paragraphs, no app branding.
+const personal = (body: string) =>
+  `<div style="font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:15px;line-height:1.6;color:#1e171c;max-width:560px">${body
+    .split(/\n{2,}/)
+    .map((x) => `<p style="margin:0 0 14px">${esc(x).replace(/\n/g, '<br>')}</p>`)
+    .join('')}</div>`;
+
 const row = (label: string, value: unknown) =>
   value === '' || value == null
     ? ''
@@ -251,6 +258,27 @@ export function render(kind: string, p: Payload, s: Settings): Omit<Mail, 'to'> 
         { label: 'View and pay invoice', href: String(p.link) },
       ),
       text: `Invoice ${p.number} (${inr(p.due_amount)}) ${when}. View and pay: ${p.link}`,
+    };
+  }
+
+  // Pitches go out like a personal email from her (no app branding): just her words.
+  if (kind === 'pitch') {
+    return {
+      subject: String(p.subject ?? ''),
+      html: personal(String(p.body ?? '')),
+      text: String(p.body ?? ''),
+    };
+  }
+
+  if (kind === 'pitch_follow') {
+    const first2 = String(p.contact ?? '').split(' ')[0] || 'there';
+    const body = Number(p.round) === 1
+      ? `Hi ${first2},\n\nJust bringing this back to the top of your inbox in case it got buried. I'd love to create something for ${p.brand}. Happy to share ideas, rates or my insights whenever suits you: ${p.link}\n\nThanks,\n${p.name}`
+      : `Hi ${first2},\n\nOne last note from me so I don't fill your inbox. If a collaboration with ${p.brand} makes sense later, everything is here: ${p.link}\n\nWishing you a great launch season,\n${p.name}`;
+    return {
+      subject: String(p.subject ?? ''),
+      html: personal(body),
+      text: body,
     };
   }
 

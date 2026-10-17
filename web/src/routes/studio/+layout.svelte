@@ -23,7 +23,7 @@
 	type Tab = { href: string; label: string };
 	const NAV: { href: string; label: string; short?: string; icon: string; tabs?: Tab[]; also?: string[] }[] = [
 		{ href: '/studio', label: 'Today', icon: 'home' },
-		{ href: '/studio/collabs', label: 'Collabs', icon: 'board', tabs: [{ href: '/studio/collabs', label: 'Board' }, { href: '/studio/brands', label: 'Brands' }], also: ['/studio/c/', '/studio/import'] },
+		{ href: '/studio/collabs', label: 'Collabs', icon: 'board', tabs: [{ href: '/studio/collabs', label: 'Board' }, { href: '/studio/brands', label: 'Brands' }, { href: '/studio/pitches', label: 'Pitches' }], also: ['/studio/c/', '/studio/import'] },
 		{ href: '/studio/content', label: 'Plan', icon: 'cal', tabs: [{ href: '/studio/content', label: 'Content' }, { href: '/studio/calendar', label: 'Calendar' }] },
 		{ href: '/studio/payments', label: 'Money', icon: 'wallet', tabs: [{ href: '/studio/payments', label: 'Payments' }, { href: '/studio/reports', label: 'Reports' }] },
 		{ href: '/studio/settings', label: 'My page', short: 'Page', icon: 'link', also: ['/studio/profile'] }
@@ -110,6 +110,7 @@
 	const TITLES: Record<string, string> = {
 		'/studio/collabs': 'Collabs',
 		'/studio/brands': 'Brands',
+		'/studio/pitches': 'Pitches',
 		'/studio/content': 'Content',
 		'/studio/calendar': 'Calendar',
 		'/studio/payments': 'Payments',

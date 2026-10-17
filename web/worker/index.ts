@@ -20,12 +20,13 @@ export default {
 		if (req.method !== 'POST') return json({ error: 'Use POST.' }, 405);
 		try {
 			const kind = url.pathname.slice('/api/ai/'.length);
-			if (!['dm', 'reply', 'caption'].includes(kind)) return json({ error: 'Unknown.' }, 404);
+			if (!['dm', 'reply', 'caption', 'pitch'].includes(kind)) return json({ error: 'Unknown.' }, 404);
 			const allowed = await take(req, env, kind);
 			if (allowed !== true) return json({ error: allowed }, 403);
 			const body = (await req.json()) as Record<string, unknown>;
 			if (kind === 'dm') return json(await readDm(env, body));
 			if (kind === 'reply') return json(await replies(env, body));
+			if (kind === 'pitch') return json(await pitch(env, body));
 			return json(await caption(env, body));
 		} catch (e) {
 			return json({ error: `The AI couldn't answer just now (${String((e as Error)?.message ?? e).slice(0, 160)}). Try again in a minute.` }, 502);
@@ -141,3 +142,17 @@ Return ONLY JSON: {"caption": "...", "hashtags": ["#..."], "shots": ["...", "...
 		shots: Array.isArray(j.shots) ? (j.shots as unknown[]).map(String).slice(0, 8) : []
 	};
 }
+
+// ---------- 4. A first pitch email to a brand she'd like to work with ----------
+async function pitch(env: Env, b: Record<string, unknown>) {
+	const reply = await chat(
+		env,
+		`You write short pitch emails for an Indian Instagram creator to a brand she would like to collaborate with. Personal, specific to the brand, confident, not pushy. 90 to 140 words. Mention one concrete content idea for the brand, her audience fit (only facts given), and end with an easy next step and her page link. No made-up numbers. Sign with her name.
+Return ONLY JSON: {"subject": "...", "body": "..."} (body is plain text with blank lines between paragraphs).`,
+		JSON.stringify(b).slice(0, 3000),
+		600
+	);
+	const j = firstJson(reply) ?? {};
+	return { subject: String(j.subject ?? '').trim(), body: String(j.body ?? '').trim() };
+}
+
