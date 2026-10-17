@@ -269,7 +269,7 @@ Return ONLY JSON: {"subject": "...", "body": "..."} (body is plain text with bla
 async function classify(x: Run, b: Record<string, unknown>) {
 	const reply = await chat(
 		x,
-		`You sort Instagram DMs for an Indian lifestyle creator. Decide whether the conversation is a brand or agency asking about a paid, barter or gifted collaboration (or her rates). Fans, friends, giveaways she didn't run, "promote your page" spam, follower selling, crypto, job scams and anything asking for money or logins are NOT collabs.
+		`You sort Instagram DMs for an Indian lifestyle creator. Decide whether someone is offering or asking about a collaboration: paid, barter or gifted content (a Reel, Story, post or video), a budget, her rates, or a campaign. This counts even if no brand is named yet: "would you do a paid Reel? Budget 30k" is "likely". Use "maybe" for vague business interest. Only these are "no": fans, friends and personal chat, giveaways she didn't run, "promote your page" or follower-selling spam, crypto, job scams, and anyone asking HER to pay or for logins.
 Return ONLY JSON: {"collab": "likely" | "maybe" | "no", "brand": "brand name or ''", "summary": "under 12 words, e.g. 'Sunveda: paid Reel for SPF launch, ~₹40k'"}`,
 		String(b.text ?? '').slice(0, 3000),
 		200
