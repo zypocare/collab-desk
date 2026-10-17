@@ -3,7 +3,7 @@
 	import { useReferral } from '#lib/referral.ts';
 	import { untrack } from 'svelte';
 	import { auth, refreshAccount } from '#lib/auth.svelte.ts';
-	import { CATS } from '#lib/util.ts';
+	import { CATS, phoneOk } from '#lib/util.ts';
 	import { brandData, loadRequests } from '#lib/brand.svelte.ts';
 	import { pub } from '#lib/publicPage.svelte.ts';
 	import { supabase } from '#lib/supabase.ts';
@@ -57,6 +57,7 @@
 		if (!g.brand.trim()) gErr = 'Add your brand name.';
 		else if (!g.name.trim()) gErr = 'Add your name so we know who to reply to.';
 		else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(g.email.trim())) gErr = 'Add a valid work email, like name@brand.com.';
+		else if (!phoneOk(g.phone)) gErr = 'That phone number doesn’t look right. Use digits, like +91 98450 00000, or leave it empty.';
 		if (gErr) document.getElementById('g-sec')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
 		return !gErr;
 	}
@@ -202,7 +203,7 @@
 		pkg
 			? { tone: 'good', title: 'Booking a package', lines: [`This is one of ${creator}'s own packages at the listed price, so it goes to the top of the list.`] }
 			: pub.data
-				? brandAdvice({ type, fee: Number(fee) || 0, productValue: Number(productValue) || 0, lines }, pub.data, creator)
+				? brandAdvice({ type, fee: Number(fee) || 0, productValue: Number(productValue) || 0, lines, exp }, pub.data, creator)
 				: null
 	);
 	// Weeks she is full or away can't be picked as the go-live date.
@@ -499,8 +500,8 @@
 						{#if error}<span class="err" style="display:block;margin:0">{error}</span>
 						{:else if lines.length && (estimate || pkg)}
 							<span class="lt-what">{delivText(lines)}</span>
-							<b class="lt-sum">{inr(pkg ? pkg.price : estimate)}</b>
-							<span class="lt-note">{pkg ? 'package price' : type === 'barter' ? `at ${creator}'s rates, for your ${exp ? 'experience' : 'product'}` : `at ${creator}'s rates`}{#if !pkg && type !== 'barter' && Number(fee) > 0}{' · '}your budget {inr(Number(fee))}{Number(fee) < estimate ? ` (${Math.round((Number(fee) / estimate) * 100)}%)` : ''}{/if}</span>
+							<b class="lt-sum">{pkg ? inr(pkg.price) : type === 'barter' ? 'Barter' : inr(estimate)}</b>
+							<span class="lt-note">{pkg ? 'package price' : type === 'barter' ? `worth ${inr(estimate)} at ${creator}'s rates, for your ${exp ? 'experience' : 'product'}` : `at ${creator}'s rates`}{#if !pkg && type !== 'barter' && Number(fee) > 0}{' · '}your budget {inr(Number(fee))}{Number(fee) < estimate ? ` (${Math.round((Number(fee) / estimate) * 100)}%)` : ''}{/if}</span>
 						{:else}<span class="rq-default">You'll get a request code and an email copy.</span>{/if}
 					</p>
 					<button class="btn grad lg" class:blocked={advice?.tone === 'block'} type="submit" disabled={busy || advice?.tone === 'block'} title={advice?.tone === 'block' ? advice.title : undefined}>{#if busy}<span class="spinner"></span>Sending…{:else}<Icon name="send" />Send request{/if}</button>

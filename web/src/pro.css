@@ -145,7 +145,8 @@
   /* ---------- forms: compact, quiet fields (the Import table keeps its own cells) ---------- */
   [data-side="studio"] :is(.inp, .sel):not(.it-in):not(.it-row *) { height: 40px; padding: 0 12px; border-radius: 10px; font-size: 14.5px; border: 1px solid var(--pro-line-2); background: var(--surface); box-shadow: none; }
   [data-side="studio"] textarea.inp:not(.it-in) { height: auto; min-height: 96px; padding: 10px 12px; line-height: 1.5; }
-  [data-side="studio"] .pre .inp { padding-left: 30px; }
+  /* Fields with a ₹ or @ in front: room for the sign (as strong as the field rule above, so it wins). */
+  [data-side="studio"] .pre :is(.inp, .sel):not(.it-in):not(.it-row *) { padding-left: 30px; }
   [data-side="studio"] :is(.inp, .sel):not(.it-in):not(.it-row *):hover { border-color: color-mix(in oklab, var(--ink) 24%, transparent); }
   [data-side="studio"] :is(.inp, .sel):not(.it-in):not(.it-row *):focus-visible { border-color: color-mix(in oklab, var(--accent) 60%, transparent); box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 14%, transparent); }
   [data-side="studio"] :is(.f label, .lbl-t) { font-size: 13px; font-weight: 500; margin-bottom: 6px; color: var(--ink-2); letter-spacing: 0; }

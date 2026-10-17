@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { receivedIn } from '#lib/invoice.ts';
 	import { phone } from '#lib/phone.svelte.ts';
 	import PhoneToday from '#lib/components/PhoneToday.svelte';
 	import { completeFollow, markPaid, markReceived, priorityOf, studio } from '#lib/studio.svelte.ts';
@@ -52,8 +53,7 @@
 	const monthName = T.toLocaleDateString('en-IN', { month: 'long' });
 	const ym = iso(T).slice(0, 7);
 
-	const paidThisMonth = $derived(list.filter((c) => c.pay_status === 'paid' && (c.paid_on ?? '').startsWith(ym)));
-	const received = $derived(paidThisMonth.reduce((a, c) => a + c.pay_received, 0));
+	const received = $derived(list.reduce((a, c) => a + receivedIn(c, ym), 0));
 	const outs = $derived(list.reduce((a, c) => a + outstanding(c), 0));
 	const od = $derived(list.filter(overdue).reduce((a, c) => a + outstanding(c), 0));
 	const active = $derived(list.filter(isActive));
@@ -108,7 +108,7 @@
 			<div class="eb">{T.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}</div>
 			<h1>{greet}, {firstName(s.display_name)}</h1>
 			<p>
-				{#if urgent}<span class="dt pulse k-bad"></span>{urgent} thing{urgent > 1 ? 's' : ''} need{urgent > 1 ? '' : 's'} you today.{:else}Nothing urgent today. Enjoy creating.{/if}
+				{#if urgent}<span class="dt pulse k-bad"></span>{urgent} due today{ts.length > urgent ? `, ${ts.length} on your list` : ''}.{:else}Nothing urgent today. Enjoy creating.{/if}
 			</p>
 		</div>
 	</header>

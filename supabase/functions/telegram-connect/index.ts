@@ -21,11 +21,13 @@ Deno.serve(async (req) => {
   const { data: isCreator } = await asUser.rpc('is_creator');
   if (isCreator !== true) return reply({ error: 'Only the creator can do this.' }, 403);
 
+  const { action, code } = await req.json().catch(() => ({}));
   if (!telegramConfigured) {
+    // Asking whether it's available isn't an error: settings show "not set up yet".
+    if (action === 'info') return reply({ bot: '', configured: false });
     return reply({ error: 'Telegram is not set up yet. Add TELEGRAM_BOT_TOKEN to the server secrets (see docs/SETUP.md).' }, 400);
   }
 
-  const { action, code } = await req.json().catch(() => ({}));
   const db = admin();
 
   try {

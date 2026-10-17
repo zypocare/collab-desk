@@ -15,6 +15,12 @@ export const stageLabel = (s: Stage) => (s === 'declined' ? 'Declined' : STAGES[
 export const stagePub = (s: Stage) => (s === 'declined' ? 'Not going ahead' : STAGES[stageIndex(s)].pub);
 
 /** WhatsApp click-to-chat link (free). Indian 10-digit numbers get +91. Empty if no usable number. */
+/** A phone or WhatsApp number (optional): empty, or 8 to 15 digits with an optional +, spaces, dashes or brackets. */
+export const phoneOk = (v: string | null | undefined) => {
+	const t = String(v ?? '').trim();
+	return !t || (/^\+?[\d\s\-()]+$/.test(t) && t.replace(/\D/g, '').length >= 8 && t.replace(/\D/g, '').length <= 15);
+};
+
 export function waLink(phone: string | null | undefined, text: string) {
 	let n = (phone ?? '').replace(/\D/g, '');
 	if (n.length === 11 && n.startsWith('0')) n = n.slice(1);

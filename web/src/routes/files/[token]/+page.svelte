@@ -27,7 +27,7 @@
 <svelte:head><title>Your files</title></svelte:head>
 
 <header class="topbar">
-	<a class="brandmark" href="/"><span class="ring"><span></span></span><b>{info?.creator ? `Collaborate with ${firstName(info.creator)}` : ''}</b></a>
+	<a class="brandmark" href="/" aria-label="Collab Desk home"><span class="ring"><span></span></span><b>{info?.creator ? `Collaborate with ${firstName(info.creator)}` : ''}</b></a>
 </header>
 
 <div class="page"><div class="wrap act-wrap">

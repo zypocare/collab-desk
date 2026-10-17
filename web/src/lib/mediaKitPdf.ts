@@ -10,6 +10,7 @@ import { qrMatrix } from './invoice';
 import { loadFonts, wrap } from './invoicePdf';
 import type { PublicPage } from './types';
 import { compact, fmt, fmtUpdated, initials } from './util';
+import { saveBlob } from './download';
 
 const INK = rgb(0.12, 0.09, 0.11);
 const MUTED = rgb(0.45, 0.41, 0.44);
@@ -514,16 +515,10 @@ async function insightsPages(doc: PDFDocument, p: PublicPage, d: PublicInsights,
 export async function downloadMediaKit(p: PublicPage, link: string, hide: string[] = []) {
 	const { data } = await supabase.rpc('public_insights');
 	const bytes = await mediaKitPdf(p, link, (data as PublicInsights | null) ?? null, hide);
-	saveBlob(bytes, `${p.display_name.replace(/[^\w]+/g, '-')}-media-kit.pdf`);
+	savePdf(bytes, `${p.display_name.replace(/[^\w]+/g, '-')}-media-kit.pdf`);
 }
 
-function saveBlob(bytes: Uint8Array, name: string) {
+function savePdf(bytes: Uint8Array, name: string) {
 	const blob = new Blob([bytes as BlobPart], { type: 'application/pdf' });
-	const a = document.createElement('a');
-	a.href = URL.createObjectURL(blob);
-	a.download = name;
-	document.body.appendChild(a);
-	a.click();
-	a.remove();
-	setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+	void saveBlob(blob, name);
 }

@@ -4,6 +4,7 @@ import { PDFDocument, rgb, type PDFFont, type RGB } from 'pdf-lib';
 import { loadFonts } from './invoicePdf';
 import { deliv, money, roiOf, type ReportFull } from './roi';
 import { compact } from './util';
+import { saveBlob } from './download';
 
 const INK = rgb(0.12, 0.09, 0.11);
 const MUTED = rgb(0.45, 0.41, 0.44);
@@ -110,11 +111,5 @@ export async function reportPdf(r: ReportFull): Promise<Uint8Array> {
 
 export async function downloadReport(r: ReportFull) {
 	const bytes = await reportPdf(r);
-	const a = document.createElement('a');
-	a.href = URL.createObjectURL(new Blob([bytes as BlobPart], { type: 'application/pdf' }));
-	a.download = `${r.brand.replace(/[^\w]+/g, '-')}-results-${r.code}.pdf`;
-	document.body.appendChild(a);
-	a.click();
-	a.remove();
-	setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+	void saveBlob(new Blob([bytes as BlobPart], { type: 'application/pdf' }), `${r.brand.replace(/[^\w]+/g, '-')}-results-${r.code}.pdf`);
 }

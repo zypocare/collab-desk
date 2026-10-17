@@ -60,7 +60,8 @@ function say(text: string) {
 	if (v) u.voice = v;
 	u.rate = 1;
 	u.pitch = 1.05;
-	speechSynthesis.cancel();
+	// Only cancel when something is playing: on iPhone, cancel() straight before speak() can drop the line.
+	if (speechSynthesis.speaking || speechSynthesis.pending) speechSynthesis.cancel();
 	speechSynthesis.speak(u);
 }
 
@@ -71,6 +72,13 @@ export const voiceLine = (name: string, what: string) => `Hey ${name.trim() || '
 export function voiceAlert(text: string, opts: { on: boolean; force?: boolean }) {
 	if (typeof window === 'undefined' || (!opts.on && !opts.force)) return;
 	if (!opts.force && document.visibilityState !== 'visible') return;
+	// "Hear it" (a tap): speak at once, inside the tap, or iPhones block it.
+	if (opts.force) {
+		void ctx?.resume();
+		say(text);
+		chime();
+		return;
+	}
 	chime();
 	setTimeout(() => say(text), 650);
 }

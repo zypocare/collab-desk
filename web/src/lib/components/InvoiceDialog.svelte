@@ -186,7 +186,7 @@
 			<div class="q-row head inv"><span>Description</span><span>Qty</span><span>Amount</span><span></span></div>
 			{#each items as it, i (i)}
 				<div class="q-row inv">
-					<input class="inp" aria-label="Description" bind:value={it.description} />
+					<input class="inp" aria-label="Description" placeholder="What it is for" bind:value={it.description} />
 					<input class="inp num" type="number" min="1" aria-label="Quantity" bind:value={it.qty} />
 					<div class="pre"><span>{CURRENCIES.find((x) => x.value === cur)?.sign.trim()}</span><input class="inp num" type="number" min="0" aria-label="Amount" bind:value={it.rate} /></div>
 					<button class="icon-btn sm" onclick={() => items.splice(i, 1)} aria-label="Remove line"><Icon name="x" /></button>

@@ -100,8 +100,25 @@ export function quoteOptions(c: Collab, s: Settings, packages: Package[]): Quote
 				dropped.length ? `drops ${summarise(dropped)}` : '',
 				discount ? `${Math.round((discount / Math.max(1, itemsSum(kept))) * 100)}% off` : ''
 			].filter(Boolean);
-			out.push(make('budget', 'Match budget', parts.length ? `${parts.join(', ')} to meet ${budgetText(budget)}` : `Fits ${budgetText(budget)}`, kept, usage, discount));
+			const o = make('budget', 'Match budget', parts.length ? `${parts.join(', ')} to meet ${budgetText(budget)}` : `Fits ${budgetText(budget)}`, kept, usage, discount);
+			// Still above their budget (she won't go lower than this): say so plainly.
+			if (o.total > budget * 1.05) {
+				o.title = 'Closest to budget';
+				o.sub = `${parts.length ? parts.join(', ') + ': ' : ''}${inrText(o.total - budget)} above their ${budgetText(budget)}`;
+			}
+			out.push(o);
 		}
+	} else if (budget > rate.total * 1.03 && rate.total > 0) {
+		// They offered more than her rate card: quote what they offered (never undercut their own budget).
+		const f = budget / rate.total;
+		const items = base.map((i) => ({ ...i, rate: round500(i.rate * f) }));
+		const o = make('budget', 'Their budget', `They offered ${budgetText(budget)}, more than your rate card`, items, usage);
+		const top = [...items].sort((x, y) => y.rate * y.qty - x.rate * x.qty)[0];
+		if (top && o.total !== budget) {
+			top.rate = Math.max(0, Math.round(top.rate + (budget - o.total) / Math.max(1, top.qty)));
+			Object.assign(o, make('budget', o.title, o.sub, items, usage));
+		}
+		out.push(o);
 	}
 
 	out.push(rate);
@@ -126,6 +143,7 @@ export function quoteOptions(c: Collab, s: Settings, packages: Package[]): Quote
 }
 
 const budgetText = (n: number) => '₹' + Math.round(n).toLocaleString('en-IN') + ' budget';
+const inrText = (n: number) => '₹' + Math.round(n).toLocaleString('en-IN');
 const summarise = (kinds: string[]) => {
 	const counts = kinds.reduce<Record<string, number>>((a, k) => ((a[k] = (a[k] ?? 0) + 1), a), {});
 	return Object.entries(counts).map(([k, n]) => `${n} ${plural(k, n)}`).join(' and ');
@@ -200,6 +218,9 @@ export function nextStep(c: Collab): NextStep | null {
 	switch (c.stage) {
 		case 'request':
 		case 'negotiating':
+			// Already invoiced or paid: the deal is clearly on, so the next step is to mark it agreed.
+			if (c.pay_status === 'paid' || c.pay_status === 'invoiced' || c.pay_status === 'advance')
+				return { key: 'confirm', label: 'Confirm collab', hint: c.pay_status === 'paid' ? 'Already paid: move it to Agreed' : 'Already invoiced: move it to Agreed', icon: 'check' };
 			if (q?.status === 'changes') return { key: 'revise-quote', label: 'Revise quote', hint: 'The brand asked for changes', icon: 'edit' };
 			if (q?.status === 'accepted') return { key: 'confirm', label: 'Confirm collab', hint: 'They accepted your quote', icon: 'check' };
 			if (q?.status === 'sent')

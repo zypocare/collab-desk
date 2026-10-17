@@ -2,6 +2,7 @@
 import type { Invoice } from './invoice';
 import type { Collab } from './types';
 import { parse } from './util';
+import { saveBlob } from './download';
 
 export type FY = { start: number; label: string; from: string; to: string };
 export function fyOf(d: Date): FY {
@@ -84,13 +85,7 @@ export const toCsv = (rows: unknown[][]) => rows.map((r) => r.map(cell).join(','
 export function downloadCsv(name: string, rows: unknown[][]) {
 	// The BOM makes Excel read the ₹ sign and Indian names correctly.
 	const blob = new Blob(['﻿' + toCsv(rows)], { type: 'text/csv;charset=utf-8' });
-	const a = document.createElement('a');
-	a.href = URL.createObjectURL(blob);
-	a.download = name;
-	document.body.appendChild(a);
-	a.click();
-	a.remove();
-	setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+	void saveBlob(blob, name);
 }
 
 export const n2 = (n: number) => (Math.round(n * 100) / 100).toFixed(2);

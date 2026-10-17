@@ -2,6 +2,7 @@
 import fontkit from '@pdf-lib/fontkit';
 import { PDFDocument, rgb, type PDFFont, type PDFPage } from 'pdf-lib';
 import { amountInWords, balanceDue, qrMatrix, upiLink, type InvoiceView } from './invoice';
+import { saveBlob } from './download';
 
 const INK = rgb(0.12, 0.09, 0.11);
 const MUTED = rgb(0.45, 0.41, 0.44);
@@ -214,11 +215,5 @@ export async function invoicePdf(inv: InvoiceView): Promise<Uint8Array> {
 export async function downloadInvoicePdf(inv: InvoiceView) {
 	const bytes = await invoicePdf(inv);
 	const blob = new Blob([bytes as BlobPart], { type: 'application/pdf' });
-	const a = document.createElement('a');
-	a.href = URL.createObjectURL(blob);
-	a.download = `${inv.number.replace(/\//g, '-')}.pdf`;
-	document.body.appendChild(a);
-	a.click();
-	a.remove();
-	setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+	void saveBlob(blob, `${inv.number.replace(/\//g, '-')}.pdf`);
 }

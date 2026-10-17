@@ -148,3 +148,14 @@ export const INDIAN_STATES = [
 	'Andaman and Nicobar Islands', 'Chandigarh', 'Dadra and Nagar Haveli and Daman and Diu', 'Delhi', 'Jammu and Kashmir',
 	'Ladakh', 'Lakshadweep', 'Puducherry'
 ];
+
+/** Money she received in a month ("YYYY-MM"), before GST, in rupees: every paid invoice (advances
+ *  too) by the day it was paid, plus collabs marked paid without an invoice. Today's figures use this,
+ *  so an advance counts in the month it arrived. */
+export function receivedIn(c: import('./types').Collab, ym: string): number {
+	const live = (c.invoices ?? []).filter((i) => i.status !== 'draft' && i.status !== 'cancelled');
+	if (!live.length) return c.pay_status === 'paid' && (c.paid_on ?? '').startsWith(ym) ? Number(c.pay_received) || 0 : 0;
+	return live
+		.filter((i) => i.status === 'paid' && (i.paid_on ?? '').startsWith(ym))
+		.reduce((a, i) => a + (Number(i.subtotal) || 0) * (Number(i.inr_rate) || 1), 0);
+}

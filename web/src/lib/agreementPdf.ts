@@ -6,6 +6,7 @@ import { PDFDocument, rgb, type PDFFont, type PDFPage, type RGB } from 'pdf-lib'
 import { loadFonts, wrap } from './invoicePdf';
 import type { Agreement } from './types';
 import { fmtLong, fmtTime, payTerms, plural, usageLabel } from './util';
+import { saveBlob } from './download';
 
 const INK = rgb(0.12, 0.09, 0.11);
 const MUTED = rgb(0.45, 0.41, 0.44);
@@ -181,11 +182,5 @@ export async function agreementPdf(a: Agreement): Promise<Uint8Array> {
 
 export async function downloadAgreement(a: Agreement) {
 	const bytes = await agreementPdf(a);
-	const link = document.createElement('a');
-	link.href = URL.createObjectURL(new Blob([bytes as BlobPart], { type: 'application/pdf' }));
-	link.download = `${a.code}-agreement${a.quote.status === 'accepted' ? '-signed' : ''}.pdf`;
-	document.body.appendChild(link);
-	link.click();
-	link.remove();
-	setTimeout(() => URL.revokeObjectURL(link.href), 4000);
+	void saveBlob(new Blob([bytes as BlobPart], { type: 'application/pdf' }), `${a.code}-agreement${a.quote.status === 'accepted' ? '-signed' : ''}.pdf`);
 }

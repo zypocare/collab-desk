@@ -136,7 +136,8 @@
 	}
 
 	function keydown(e: KeyboardEvent) {
-		if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
+		// Enter sends on a keyboard; on a phone, Return adds a new line and the send button sends.
+		if (e.key === 'Enter' && !e.shiftKey && !e.isComposing && !matchMedia('(pointer: coarse)').matches) {
 			e.preventDefault();
 			send();
 		}

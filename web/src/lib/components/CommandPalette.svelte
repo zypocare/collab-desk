@@ -103,6 +103,7 @@
 				<Icon name="search" />
 				<input bind:this={input} bind:value={q} placeholder="Search collabs, brands, pages or actions…" onkeydown={keydown} aria-controls="cmdk-list" aria-activedescendant={results[active] ? `cmdk-${results[active].id}` : undefined} role="combobox" aria-expanded="true" />
 				<kbd>Esc</kbd>
+				<button type="button" class="cmdk-cancel" onclick={() => (open = false)}>Cancel</button>
 			</div>
 			<div class="cmdk-list" id="cmdk-list" role="listbox" bind:this={list}>
 				{#each results as it, i (it.id)}

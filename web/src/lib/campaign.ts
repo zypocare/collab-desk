@@ -1,6 +1,7 @@
 // A brand's campaign at a glance: dated milestones (who acts next), and a calendar file of them.
 import type { BrandRequest } from './types';
 import { fmt } from './util';
+import { saveBlob } from './download';
 
 export type Milestone = { key: string; date: string | null; title: string; who: 'you' | 'creator' | 'done'; note?: string };
 
@@ -94,12 +95,6 @@ export function downloadIcs(r: BrandRequest, creator: string, url: string) {
 		].join('\r\n')
 	);
 	const body = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Collab Desk//EN', 'CALSCALE:GREGORIAN', ...ev, 'END:VCALENDAR'].join('\r\n') + '\r\n';
-	const a = document.createElement('a');
-	a.href = URL.createObjectURL(new Blob([body], { type: 'text/calendar' }));
-	a.download = `${r.code}.ics`;
-	document.body.appendChild(a);
-	a.click();
-	a.remove();
-	setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+	void saveBlob(new Blob([body], { type: 'text/calendar' }), `${r.code}.ics`);
 	return items.length;
 }

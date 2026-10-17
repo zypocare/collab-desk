@@ -62,7 +62,8 @@ export const homeFor = (a: Account | null) => (a?.role === 'creator' ? '/studio'
 
 export async function signOut() {
 	await forgetAll();
-	await supabase.auth.signOut();
+	// This device only: signing out on her phone must not sign her laptop out too.
+	await supabase.auth.signOut({ scope: 'local' });
 	auth.session = null;
 	auth.account = null;
 }

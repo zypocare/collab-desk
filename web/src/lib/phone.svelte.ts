@@ -11,6 +11,18 @@ export function startPhone(refresh: () => Promise<unknown>) {
 	onMq();
 	mq.addEventListener('change', onMq);
 
+	// The part of the screen the keyboard leaves free (iPhone shrinks only this "visual viewport"):
+	// full-screen chats size to it, so the header stays and the message box sits just above the keyboard.
+	const vv = window.visualViewport;
+	const onVv = () => {
+		if (!vv) return;
+		document.documentElement.style.setProperty('--vv-h', `${Math.round(vv.height)}px`);
+		document.documentElement.style.setProperty('--vv-top', `${Math.round(vv.offsetTop)}px`);
+	};
+	onVv();
+	vv?.addEventListener('resize', onVv);
+	vv?.addEventListener('scroll', onVv);
+
 	// Like Instagram: the top bar slides away while scrolling down and comes back on the way up.
 	let last = scrollY;
 	const onScroll = () => {
@@ -29,6 +41,8 @@ export function startPhone(refresh: () => Promise<unknown>) {
 	const offPull = pullToRefresh(refresh);
 	return () => {
 		mq.removeEventListener('change', onMq);
+		vv?.removeEventListener('resize', onVv);
+		vv?.removeEventListener('scroll', onVv);
 		removeEventListener('scroll', onScroll);
 		offSheet();
 		offPull();

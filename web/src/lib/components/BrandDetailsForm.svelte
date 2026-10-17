@@ -3,7 +3,7 @@
 	import { auth, refreshAccount } from '../auth.svelte';
 	import { supabase } from '../supabase';
 	import { toast } from '../ui.svelte';
-	import { CATS, errMessage } from '../util';
+	import { CATS, errMessage, phoneOk } from '../util';
 	import Icon from './Icon.svelte';
 	import Select from './Select.svelte';
 
@@ -26,6 +26,7 @@
 		error = '';
 		if (!name.trim()) return (error = 'Add your brand name.');
 		if (!fullName.trim()) return (error = 'Add your name so we know who to reply to.');
+		if (!phoneOk(phone)) return (error = 'That phone number doesn’t look right. Use digits, like +91 98450 00000, or leave it empty.');
 		busy = true;
 		const { error: err } = await supabase.rpc('register_brand', {
 			p_name: name,

@@ -33,7 +33,9 @@
 
 	onMount(async () => {
 		try {
-			bot = (await tg('info')).bot ?? '';
+			const r = await tg('info');
+			bot = r.bot ?? '';
+			if (r.configured === false) tgError = 'Telegram alerts aren’t set up for this app yet.';
 		} catch (e) {
 			tgError = errMessage(e);
 		}

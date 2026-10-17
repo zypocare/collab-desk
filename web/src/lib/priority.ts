@@ -63,7 +63,7 @@ export type Advice = {
 };
 
 export function brandAdvice(
-	o: { type: CollabType; fee: number; productValue: number; lines: Line[] },
+	o: { type: CollabType; fee: number; productValue: number; lines: Line[]; exp?: boolean },
 	page: PublicPage,
 	creator: string
 ): Advice | null {
@@ -90,7 +90,7 @@ export function brandAdvice(
 	const fee = rate ? fairFee(rate, o.productValue) : 0;
 
 	if (o.type === 'hybrid') {
-		if (!rate || !o.fee) return { tone: 'good', title: 'Paid + product gets priority', lines: [`Requests with a fee are reviewed first, usually within ${replyPaid}.`] };
+		if (!rate || !o.fee) return { tone: 'good', title: `Paid + ${o.exp ? 'experience' : 'product'} gets priority`, lines: [`Requests with a fee are reviewed first, usually within ${replyPaid}.`] };
 		const r = worth / rate;
 		return r >= 0.75
 			? { tone: 'good', title: 'Strong offer', lines: [`Fee plus product covers ${who}'s rates well. Expect a reply within ${replyPaid}.`] }
@@ -108,7 +108,7 @@ export function brandAdvice(
 			tone: 'block',
 			title: `${who} is taking paid collaborations only right now`,
 			lines: ['Barter requests are paused. Add a fee to send this request.'],
-			suggest: { type: 'hybrid', fee: fee || 5000, label: fee ? `Switch to Paid + product (${inr(fee)} fee)` : 'Switch to Paid + product' }
+			suggest: { type: 'hybrid', fee: fee || 5000, label: fee ? `Add a ${inr(fee)} fee` : 'Add a fee' }
 		};
 	}
 	if (b.min_value && !minOk && o.productValue >= 0) {
@@ -116,7 +116,7 @@ export function brandAdvice(
 			tone: 'warn',
 			title: 'You can send this, but it will be reviewed last',
 			lines: [`${who}'s barter offers start at ${inr(b.min_value)}. Offers below that go to the end of the list, so a reply can take longer. Adding a fee gets it seen sooner.`],
-			suggest: { type: 'hybrid', fee: fee || 3000, label: fee ? `Switch to Paid + product (${inr(fee)} fee)` : 'Switch to Paid + product' }
+			suggest: { type: 'hybrid', fee: fee || 3000, label: fee ? `Add a ${inr(fee)} fee` : 'Add a fee' }
 		};
 	}
 
@@ -127,7 +127,7 @@ export function brandAdvice(
 		const r = worth / rate;
 		if (r < 0.5) {
 			const fits = o.lines.length > 1 || o.lines[0]?.qty > 1 ? ' Or ask for fewer deliverables.' : '';
-			lines.push(`For a product worth ${inr(o.productValue)}, this is a lot of content.${fits}`);
+			lines.push(`For ${o.exp ? 'an experience' : 'a product'} worth ${inr(o.productValue)}, this is a lot of content.${fits}`);
 		}
 	}
 	return {

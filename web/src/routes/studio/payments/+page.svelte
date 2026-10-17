@@ -58,7 +58,7 @@
 <section class="kpis" aria-label="Payment summary">
 	<div class="kpi glow rv" style="--i:1">
 		<span class="mini-ic tint k-pay"><Icon name="check" /></span>
-		<div><div class="lbl">Received</div><div class="big" use:countUp={{ value: recd, money: true }}>{inr(recd)}</div><div class="sub">across {rows.filter((c) => c.pay_received).length} collabs</div></div>
+		<div><div class="lbl">Received</div><div class="big" use:countUp={{ value: recd, money: true }}>{inr(recd)}</div><div class="sub">all time · across {rows.filter((c) => c.pay_received).length} collabs</div></div>
 	</div>
 	<div class="kpi glow rv" style="--i:2">
 		<span class="mini-ic tint k-product"><Icon name="clock" /></span>

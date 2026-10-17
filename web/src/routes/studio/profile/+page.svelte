@@ -54,8 +54,9 @@
 			try {
 				await nav.share({ title: s.display_name, text: `Work with ${s.display_name}`, url: link });
 				return;
-			} catch {
-				/* closed: fall back to copying */
+			} catch (e) {
+				// She closed the share sheet: leave it there (no "Link copied"). Only a real failure copies instead.
+				if ((e as Error)?.name === 'AbortError') return;
 			}
 		}
 		copyText(link, 'Link copied. Put it in your Instagram bio.');

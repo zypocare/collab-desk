@@ -4,6 +4,7 @@
 import { zip } from './exportAll';
 import { dmy, n2, toCsv, type FY } from './reports';
 import type { Collab, Settings } from './types';
+import { saveBlob } from './download';
 
 export type Quarter = { q: 1 | 2 | 3 | 4; label: string; from: string; to: string; due: string };
 
@@ -128,11 +129,7 @@ export function quarterPack(collabs: Collab[], s: Settings, q: Quarter, fy: FY) 
 export function downloadPack(files: { name: string; text: string }[], name: string) {
 	// A byte-order mark so Excel opens ₹ and names correctly.
 	const blob = zip(files.map((f) => ({ name: f.name, text: '﻿' + f.text })));
-	const a = document.createElement('a');
-	a.href = URL.createObjectURL(blob);
-	a.download = name;
-	a.click();
-	setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+	void saveBlob(blob, name);
 }
 
 // GST state codes: the first two digits of a GSTIN, or from the state's name.

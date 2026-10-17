@@ -3,6 +3,7 @@
 import { studio } from './studio.svelte';
 import { toCsv } from './reports';
 import { delivText } from './util';
+import { saveBlob } from './download';
 
 // ---- a minimal .zip writer (files stored as they are, no compression needed for text) ----
 const CRC = (() => {
@@ -130,12 +131,6 @@ export function exportEverything() {
 		}
 	];
 	const blob = zip(files);
-	const a = document.createElement('a');
-	a.href = URL.createObjectURL(blob);
-	a.download = `collab-desk-export-${new Date().toISOString().slice(0, 10)}.zip`;
-	document.body.appendChild(a);
-	a.click();
-	a.remove();
-	setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+	void saveBlob(blob, `collab-desk-export-${new Date().toISOString().slice(0, 10)}.zip`);
 	return files.length;
 }

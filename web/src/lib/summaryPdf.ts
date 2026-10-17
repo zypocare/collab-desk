@@ -6,6 +6,7 @@ import { milestones } from './campaign';
 import { loadFonts, wrap } from './invoicePdf';
 import type { BrandRequest } from './types';
 import { TYPE_LABEL, compact, delivText, fmtLong, inr, payTerms } from './util';
+import { saveBlob } from './download';
 
 const INK = rgb(0.12, 0.09, 0.11);
 const MUTED = rgb(0.45, 0.41, 0.44);
@@ -119,11 +120,5 @@ export async function summaryPdf(r: BrandRequest, brand: string, creator: { name
 
 export async function downloadSummary(r: BrandRequest, brand: string, creator: { name: string; handle: string }) {
 	const bytes = await summaryPdf(r, brand, creator);
-	const a = document.createElement('a');
-	a.href = URL.createObjectURL(new Blob([bytes as BlobPart], { type: 'application/pdf' }));
-	a.download = `${r.code}-collab-summary.pdf`;
-	document.body.appendChild(a);
-	a.click();
-	a.remove();
-	setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+	void saveBlob(new Blob([bytes as BlobPart], { type: 'application/pdf' }), `${r.code}-collab-summary.pdf`);
 }

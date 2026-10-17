@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { receivedIn } from '../invoice';
 	import { onMount } from 'svelte';
 	import { completeFollow, markPaid, markReceived, priorityOf, studio } from '../studio.svelte';
 	import { copyText, countUp, ui } from '../ui.svelte';
@@ -55,13 +56,13 @@
 	const active = $derived(list.filter(isActive));
 
 	// Money
-	const received = $derived(list.filter((c) => c.pay_status === 'paid' && (c.paid_on ?? '').startsWith(ym)).reduce((a, c) => a + c.pay_received, 0));
+	const received = $derived(list.reduce((a, c) => a + receivedIn(c, ym), 0));
 	const goal = $derived(s.monthly_goal || 0);
 	const pct = $derived(goal ? Math.min(1, received / goal) : 0);
 	const outs = $derived(list.reduce((a, c) => a + outstanding(c), 0));
 	const od = $derived(list.filter(overdue));
 	const odSum = $derived(od.reduce((a, c) => a + outstanding(c), 0));
-	const paidN = $derived(list.filter((c) => c.pay_status === 'paid' && (c.paid_on ?? '').startsWith(ym)).length);
+	const paidN = $derived(new Set(list.filter((c) => receivedIn(c, ym) > 0).map((c) => c.brand_id)).size);
 	const pctN = $derived(goal ? Math.round((received / goal) * 100) : 0);
 	const nextPayout = $derived(
 		list
@@ -123,7 +124,7 @@
 	<h1 class="ht-hi">{greet},<br /><em>{firstName(s.display_name)}</em></h1>
 	<p class="ht-sum">
 		<span class="ht-dot" class:calm={!urgent}></span>
-		{urgent ? `${urgent} thing${urgent > 1 ? 's' : ''} need${urgent > 1 ? '' : 's'} you today` : 'All clear today'} · {active.length} active collab{active.length === 1 ? '' : 's'}
+		{urgent ? `${urgent} due today` : 'Nothing due today'} · {active.length} active collab{active.length === 1 ? '' : 's'}
 	</p>
 </section>
 

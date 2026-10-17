@@ -150,7 +150,7 @@
 <svelte:head><title>Sign in</title></svelte:head>
 
 <header class="topbar">
-	<a class="brandmark" href="/"><span class="ring"><span></span></span><b>Collab Desk</b></a>
+	<a class="brandmark" href="/" aria-label="Collab Desk home"><span class="ring"><span></span></span><b>Collab Desk</b></a>
 </header>
 
 <div class="auth-wrap">

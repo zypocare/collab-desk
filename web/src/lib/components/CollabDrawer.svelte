@@ -376,7 +376,7 @@
 						<span>{cl.reason[0].toUpperCase() + cl.reason.slice(1)}. <button class="lnk" onclick={() => (ui.openCollab = cl.other.id)}>Open it</button></span>
 					</div>
 				{/each}
-				{#if c.stage === 'request' || c.stage === 'negotiating'}
+				{#if (c.stage === 'request' || c.stage === 'negotiating') && !['paid', 'invoiced', 'advance'].includes(c.pay_status)}
 					<button class="btn sm ghost danger" style="margin-top:14px" onclick={async () => (await ask({ title: `Decline ${c.brand.name}?`, body: c.notify_brand ? 'The brand is told politely that you can’t take this on. You can reopen it later.' : 'It moves to Declined. You can reopen it later.', ok: 'Decline', danger: true })) && changeStage('declined')}><Icon name="x" />Decline this request</button>
 				{:else if c.stage === 'declined'}
 					<p class="hint" style="margin:0 0 10px">The brand sees this request as "Not going ahead".</p>

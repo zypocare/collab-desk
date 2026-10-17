@@ -123,7 +123,7 @@
 <div class="dialog-scrim" role="presentation" use:portal onclick={(e) => e.target === e.currentTarget && onclose()}>
 	<div class="dialog quote-dialog" role="dialog" aria-modal="true" aria-labelledby="q-title">
 		<h2 id="q-title">{editing ? 'Edit quote' : base ? `Quote version ${(c.quotes[0]?.version ?? 0) + 1}` : 'Build a quote'} · {c.brand.name}</h2>
-		<p>Prices start from your rate card. {#if brandBudget}The brand's budget was {inr(brandBudget)}.{/if}</p>
+		<p>Prices start from your rate card. {#if brandBudget}The fee on this collab is {inr(brandBudget)}.{/if}</p>
 		<div class="fields cur-row">
 			<div class="f"><label for="q-cur">Currency</label><Select id="q-cur" value={cur} options={CURRENCIES} onchange={(v) => useCurrency(v as Currency)} /></div>
 			{#if foreign}<div class="f"><label for="q-fx">1 {cur} in rupees</label><div class="pre"><span>₹</span><input class="inp num" id="q-fx" type="number" min="0" step="0.01" value={fx} onchange={(e) => setFx(Number((e.currentTarget as HTMLInputElement).value))} /></div></div>{/if}

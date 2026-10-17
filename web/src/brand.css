@@ -398,7 +398,7 @@ html:has([data-side="brand"]),[data-side="brand"]{scroll-behavior:smooth}
 .bk-note .ic{flex:none;width:16px;height:16px;margin-top:2px;color:var(--accent)}
 #rq-budget .advice{margin:16px 0 0;min-width:0;max-width:100%;box-sizing:border-box}
 #rq-budget .advice > div{min-width:0;overflow-wrap:anywhere}
-#rq-budget .advice .btn{max-width:100%;white-space:normal;height:auto;min-height:34px;text-align:left}
+[data-side] #rq-budget .advice .btn{max-width:100%;white-space:normal;height:auto;min-height:40px;padding-block:8px;text-align:left;flex-wrap:nowrap}
 @media (max-width:560px){.bk-opts{grid-template-columns:minmax(0,1fr)}}
 
 /* ---------- Brand "Your requests" on laptops: list + creator card ---------- */
