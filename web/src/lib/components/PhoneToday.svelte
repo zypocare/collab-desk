@@ -29,7 +29,6 @@
 		type Task
 	} from '../util';
 	import AiDesk from './AiDesk.svelte';
-	import CollabLeads from './CollabLeads.svelte';
 	import Icon from './Icon.svelte';
 	import Mono from './Mono.svelte';
 	import Stories from './Stories.svelte';
@@ -159,7 +158,8 @@
 	</div>
 </section>
 
-<CollabLeads phone />
+<!-- A possible collab in her DMs puts the AI assistant (which lists it) above Needs you. -->
+{#if studio.leads.length}<AiDesk phone />{/if}
 
 <section class="hs">
 	<header class="hs-h"><h2>Needs you</h2>{#if ts.length}<span class="hs-n">{ts.length}</span>{/if}</header>
@@ -207,7 +207,7 @@
 	{/if}
 </section>
 
-<AiDesk phone />
+{#if !studio.leads.length}<AiDesk phone />{/if}
 
 <AlertsPrompt />
 

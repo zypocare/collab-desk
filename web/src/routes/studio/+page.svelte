@@ -32,7 +32,6 @@
 	import Icon from '#lib/components/Icon.svelte';
 	import PriorityBadge from '#lib/components/PriorityBadge.svelte';
 	import AiDesk from '#lib/components/AiDesk.svelte';
-	import CollabLeads from '#lib/components/CollabLeads.svelte';
 	import AlertsPrompt from '#lib/components/AlertsPrompt.svelte';
 	import BrandQuestions from '#lib/components/BrandQuestions.svelte';
 
@@ -150,7 +149,6 @@
 
 	<div class="td-grid">
 		<div class="td-main">
-			<CollabLeads />
 			<section class="panel needs-panel rv" style="--i:2">
 				<div class="panel-h"><h2>Needs you</h2><span class="count-chip tint {urgent ? 'k-bad' : 'k-pay'}">{ts.length} item{ts.length === 1 ? '' : 's'}</span></div>
 				<div class="task-list" use:flip>

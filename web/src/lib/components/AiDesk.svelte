@@ -7,6 +7,7 @@
 	import { decisionOf, studio } from '../studio.svelte';
 	import { ui } from '../ui.svelte';
 	import AiThinking from './AiThinking.svelte';
+	import CollabLeads from './CollabLeads.svelte';
 	import Icon from './Icon.svelte';
 	import Mono from './Mono.svelte';
 	import ScoreRing from './ScoreRing.svelte';
@@ -33,13 +34,20 @@
 	const leftTitle = $derived(
 		left ? `Free AI left today: ${left.pct}%. Resets at 5:30 am.${left.gemini ? ` Then the free Gemini backup (${left.gemini_left ?? 0} uses left).` : ''} Never charged.` : ''
 	);
+	const leads = $derived(studio.leads.length);
 	const sub = $derived(
-		open.length ? `Read ${open.length === 1 ? 'your new request' : `your ${open.length} open requests`} and scored ${open.length === 1 ? 'it' : 'them'}.` : "When a brand writes, I'll read it and tell you if it's worth it."
+		leads
+			? open.length
+				? 'I spotted these in your Instagram DMs and scored your open requests.'
+				: 'I spotted these in your Instagram DMs.'
+			: open.length ? `Read ${open.length === 1 ? 'your new request' : `your ${open.length} open requests`} and scored ${open.length === 1 ? 'it' : 'them'}.` : "When a brand writes, I'll read it and tell you if it's worth it."
 	);
 </script>
 
 {#snippet body()}
+	<CollabLeads />
 	{#if open.length}
+		{#if leads}<p class="ai-desk-lbl">Open requests, scored</p>{/if}
 		<ul class="ai-desk-list">
 			{#each open as { c, d } (c.id)}
 				<li>
@@ -60,7 +68,7 @@
 	{/if}
 	<div class="ai-desk-acts">
 		<button class="btn sm ai-btn" onclick={() => (ui.newCollab = true)}><Icon name="spark" />Read a DM</button>
-		<a class="btn sm ghost" href="/studio/inbox"><Icon name="send" />Messages</a>
+		<a class="btn sm ghost" href="/studio/inbox"><Icon name="send" />Messages{#if leads}<span class="ai-acts-n">{leads}</span>{/if}</a>
 	</div>
 {/snippet}
 
