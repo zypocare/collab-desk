@@ -22,7 +22,7 @@
 			<ul>
 				<li><b>Brands and their teams:</b> name, work email, phone (if given), company details and billing details you enter, the requests, messages, files and feedback you send.</li>
 				<li><b>Instagram data of {who}'s own account:</b> profile, follower numbers, posts and their insights (views, reach, likes, saves), audience breakdowns, and Instagram direct messages sent to the account, through Meta's official Instagram API. Only {who}'s own account is connected.</li>
-				<li><b>People who message {who} on Instagram:</b> your Instagram username, name, profile picture and the messages in the conversation, so {who} can read and reply from this app.</li>
+				<li><b>People who message {who} on Instagram:</b> only conversations that look like a brand collaboration are kept: your Instagram username, name, profile picture and the messages in that conversation, so {who} can reply and plan the collaboration. Other messages are checked automatically when they arrive and are not stored.</li>
 				<li><b>Technical data:</b> sign-in sessions, the device's notification subscription (if you allow alerts), and basic logs needed to keep the service secure.</li>
 			</ul>
 

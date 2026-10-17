@@ -91,9 +91,13 @@
 		text = '';
 		load();
 	}
+	// Not a collab: the chat is removed from the app (their messages and details), and their later
+	// messages stay out.
 	async function notCollab() {
-		await supabase.from('ig_threads').update({ collab_flag: 'no' }).eq('igsid', igsid);
-		if (t) t.collab_flag = 'no';
+		const { error } = await supabase.rpc('ig_not_collab', { p_igsid: igsid });
+		if (error) return toast(errMessage(error), 'alert');
+		toast('Removed. Their messages will stay out of the app.', 'check');
+		history.back();
 	}
 	function addCollab() {
 		// The conversation goes into "Add a collab", where the AI can read it.

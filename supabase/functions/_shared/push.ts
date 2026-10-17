@@ -14,6 +14,12 @@ export type Push = { title: string; body: string; url: string; tag?: string };
 export async function pushToCreator(db: SupabaseClient, msg: Push) {
   if (!pushConfigured) return { sent: 0, skipped: 'push not configured' };
   const { data: subs } = await db.from('push_subscriptions').select('id, endpoint, p256dh, auth, device');
+  // Her own greeting, if she set one in My page > Alerts.
+  const { data: me } = await db.from('creator_settings').select('alert_name, alert_line').eq('id', 1).maybeSingle();
+  const name = String(me?.alert_name ?? '').trim();
+  const line = String(me?.alert_line ?? '').trim();
+  if (name) msg = { ...msg, title: `Hey ${name}! ${msg.title}` };
+  if (line) msg = { ...msg, body: msg.body ? `${msg.body}\n${line}` : line };
   let sent = 0;
   const failed: { device: string; code: number | null; error: string }[] = [];
   for (const s of subs ?? []) {

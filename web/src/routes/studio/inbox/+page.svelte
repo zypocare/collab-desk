@@ -7,6 +7,7 @@
 	import Segmented from '#lib/components/Segmented.svelte';
 	import { onMount } from 'svelte';
 	import { supabase } from '#lib/supabase.ts';
+	import { toast } from '#lib/ui.svelte.ts';
 
 	// Every brand conversation in one place, newest first, like a phone's message inbox.
 	let q = $state('');
@@ -16,9 +17,20 @@
 	let collabsOnly = $state(false);
 	let igThreads = $state<IgT[]>([]);
 	let igOn = $state(false);
+	let oldChats = $state(0);
+	async function forgetOld() {
+		const { data, error } = await supabase.rpc('ig_forget_non_collab');
+		if (error) return toast(error.message, 'alert');
+		oldChats = 0;
+		toast(`Removed ${data ?? 0} chat${data === 1 ? '' : 's'} that weren't collabs`, 'check');
+		loadIg();
+	}
 	async function loadIg() {
-		const [{ data }, perms] = await Promise.all([supabase.from('ig_threads').select('*').order('last_at', { ascending: false, nullsFirst: false }).limit(60), supabase.rpc('ig_permissions')]);
+		const [{ data }, perms] = await Promise.all([supabase.from('ig_threads').select('*').or('collab_id.not.is.null,collab_flag.in.(likely,maybe)').order('last_at', { ascending: false, nullsFirst: false }).limit(60), supabase.rpc('ig_permissions')]);
 		igThreads = (data as IgT[]) ?? [];
+		// Chats saved before only collabs were kept (other people's messages): offer to remove them.
+		const old = await supabase.from('ig_threads').select('igsid', { count: 'exact', head: true }).is('collab_id', null).eq('collab_flag', '');
+		oldChats = old.count ?? 0;
 		igOn = String(perms.data ?? '').includes('instagram_business_manage_messages');
 	}
 	onMount(() => {
@@ -114,7 +126,11 @@
 				{#if t.unread}<span class="dm-dot" aria-label="{t.unread} unread"></span>{/if}
 			</a>
 		{:else}
-			<div class="m-empty"><Icon name="send" /><b>No Instagram DMs yet</b><span>New DMs to your account show up here.</span></div>
+			<div class="m-empty"><Icon name="send" /><b>No possible collabs yet</b><span>Only DMs that look like a brand collaboration are kept here. Your other messages stay in Instagram.</span></div>
 		{/each}
 	</div>
+	<p class="hint ig-private"><Icon name="info" />Only possible collabs are kept. Other DMs aren't saved and don't alert you.</p>
+	{#if oldChats}
+		<div class="ig-old"><span><b>{oldChats} older chat{oldChats === 1 ? '' : 's'} from before this</b><small>Saved when every DM was kept. Hidden here; remove them for good?</small></span><button class="btn sm" onclick={forgetOld}>Remove them</button></div>
+	{/if}
 {/if}

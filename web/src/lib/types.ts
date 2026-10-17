@@ -310,6 +310,9 @@ export type Settings = {
 	makeup_cost: number;
 	outfit_cost: number;
 	avoid_brands: string;
+	/** Her greeting on phone alerts: "Hey {alert_name}! ...", and an optional line under each. */
+	alert_name: string;
+	alert_line: string;
 	away_weeks: string[];
 	show_availability: boolean;
 	offered_kinds: string[];

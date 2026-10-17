@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { saveSettings, studio } from '../studio.svelte';
 	import { onMount } from 'svelte';
 	import { disablePush, enablePush, install, isIos, logAlerts, pushState, pwa } from '../pwa.svelte';
 	import { supabase } from '../supabase';
@@ -72,6 +73,11 @@
 		{#if status === 'on' || status === 'off'}
 			<input type="checkbox" class="tgl" checked={status === 'on'} disabled={busy} aria-label="Notifications on this device" onchange={toggle} />
 		{/if}
+	</div>
+	<div class="form-b alert-greet">
+		<div class="f"><label for="al-name">Call me</label><input class="inp" id="al-name" maxlength="30" placeholder="e.g. Nivy" value={studio.settings?.alert_name ?? ''} onchange={(e) => saveSettings({ alert_name: (e.currentTarget as HTMLInputElement).value.trim() })} /></div>
+		<div class="f"><label for="al-line">A line under each alert <span class="hint">(optional)</span></label><input class="inp" id="al-line" maxlength="80" placeholder="e.g. Check your collab app" value={studio.settings?.alert_line ?? ''} onchange={(e) => saveSettings({ alert_line: (e.currentTarget as HTMLInputElement).value.trim() })} /></div>
+		<p class="hint span2">Alerts then read: <b>{studio.settings?.alert_name ? `Hey ${studio.settings.alert_name}! ` : ''}Sunveda may want a collab</b>{studio.settings?.alert_line ? ` · ${studio.settings.alert_line}` : ''}. The sound is your phone's usual one: web apps can't choose their own.</p>
 	</div>
 	{#if status === 'on'}
 		<div class="row-btns"><button class="btn sm" onclick={test}><Icon name="bell" />Send a test</button></div>

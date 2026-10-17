@@ -1,6 +1,9 @@
-// Instagram DMs arrive here (Meta webhook, "messages" field). Each message is saved under its
-// conversation, and she gets a phone alert. Meta checks the address once with a verify token
-// (secret IG_VERIFY_TOKEN); every delivery is signed with the app secret, which is checked here.
+// Instagram DMs arrive here (Meta webhook, "messages" field). Meta sends every DM; only possible
+// brand collaborations are kept. Each new message is checked first (plain rules, then the free AI)
+// and anything else is dropped straight away: not saved, no alert. Once a chat is a possible collab
+// (or linked to one), its messages and her replies are kept, with an alert for each brand message.
+// Meta checks the address once with a verify token (secret IG_VERIFY_TOKEN); every delivery is
+// signed with the app secret, which is checked here.
 import { admin } from '../_shared/admin.ts';
 import { parseDm } from '../_shared/parseDm.ts';
 
@@ -33,32 +36,21 @@ function ruleHint(text: string, username: string) {
   return `${p.brand || '@' + username}: ${parts.join(', ') || 'asking about a collab'}`.slice(0, 120);
 }
 
-/** Label a conversation that looks like a brand collaboration (rules first, then the free AI), and alert her. */
-async function checkCollab(db: ReturnType<typeof admin>, igsid: string, username: string) {
-  const { data: t } = await db.from('ig_threads').select('collab_flag, collab_id').eq('igsid', igsid).maybeSingle();
-  if (t?.collab_id || t?.collab_flag === 'likely' || t?.collab_flag === 'no') return;
-  const { data: msgs } = await db.from('ig_dms').select('from_me, text, created_at').eq('igsid', igsid).order('created_at', { ascending: false }).limit(8);
-  const theirs = (msgs ?? []).filter((m) => !m.from_me).map((m) => m.text).join('\n');
-  const text = (msgs ?? []).reverse().map((m) => `${m.from_me ? 'Creator' : username || 'Them'}: ${m.text}`).join('\n');
-  const rule = ruleCheck(theirs);
-  if (!rule && !BUSINESS.test(text)) return;
+/** Is this message a possible collab? Rules first, then the free AI (Cloudflare only). */
+async function verdict(db: ReturnType<typeof admin>, text: string): Promise<{ flag: '' | 'likely' | 'maybe'; hint: string; brand: string }> {
+  const rule = ruleCheck(text);
+  if (!rule && !BUSINESS.test(text)) return { flag: '', hint: '', brand: '' };
   const { data: s } = await db.from('creator_settings').select('site_url').eq('id', 1).single();
   const site = String(s?.site_url || 'https://collab-desk.zypocare.workers.dev').replace(/\/$/, '');
   const ticket = crypto.randomUUID() + crypto.randomUUID();
   await db.from('ai_tickets').insert({ token: ticket });
   const anon = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
-  const r = await fetch(`${site}/api/ai/classify`, { method: 'POST', headers: { 'content-type': 'application/json', 'x-ai-ticket': ticket, apikey: anon }, body: JSON.stringify({ text }) }).catch(() => null);
+  const r = await fetch(`${site}/api/ai/classify`, { method: 'POST', headers: { 'content-type': 'application/json', 'x-ai-ticket': ticket, apikey: anon }, body: JSON.stringify({ text: `Them: ${text}` }) }).catch(() => null);
   const j = (await r?.json().catch(() => null)) as { collab?: string; brand?: string; summary?: string } | null;
   const ai = j?.collab === 'likely' || j?.collab === 'maybe' ? j.collab : '';
   // The stronger of the two readings: the AI can raise a label, but not drop a clear offer.
   const flag = rule === 'likely' || ai === 'likely' ? 'likely' : rule || ai;
-  if (!flag) return;
-  const hint = (ai && j?.summary) || ruleHint(theirs, username);
-  await db.from('ig_threads').update({ collab_flag: flag, collab_hint: hint }).eq('igsid', igsid);
-  // One alert when a chat first looks like a collab.
-  if (!t?.collab_flag) {
-    await db.from('outbox').insert({ kind: 'ig_collab', to_email: '', payload: { from: username, brand: j?.brand ?? '', text: hint, igsid } });
-  }
+  return { flag, hint: (ai && j?.summary) || '', brand: j?.brand ?? '' };
 }
 
 async function validSignature(raw: string, header: string | null) {
@@ -96,32 +88,45 @@ Deno.serve(async (req) => {
       const at = new Date(Number(ev.timestamp) || Date.now()).toISOString();
       const text = String(m.text ?? (m.attachments?.length ? '[Photo or video]' : ''));
 
-      // Who it is (once per conversation).
       const { data: thread } = await db.from('ig_threads').select('igsid, username, unread, collab_flag, collab_id').eq('igsid', igsid).maybeSingle();
-      let profile: { username?: string; name?: string; profile_pic?: string } = {};
-      if (!thread?.username && tok?.access_token) {
-        const r = await fetch(`${GRAPH}/${igsid}?fields=username,name,profile_pic&access_token=${tok.access_token}`).catch(() => null);
-        profile = (await r?.json().catch(() => ({}))) ?? {};
+      const kept = !!thread && (!!thread.collab_id || thread.collab_flag === 'likely' || thread.collab_flag === 'maybe');
+
+      if (kept) {
+        // A chat about a collab: keep the message (hers too), alert for theirs.
+        await db.from('ig_threads').update({ last_text: text.slice(0, 300), last_at: at, ...(fromMe ? {} : { last_from_them_at: at, unread: (thread.unread ?? 0) + 1 }) }).eq('igsid', igsid);
+        await db.from('ig_dms').upsert({ mid: m.mid, igsid, from_me: fromMe, text, attachments: m.attachments ?? [], created_at: at });
+        if (!fromMe) await db.from('outbox').insert({ kind: 'ig_dm', to_email: '', payload: { from: thread.username || 'Someone', text: text.slice(0, 140), igsid } });
+        continue;
       }
-      await db.from('ig_threads').upsert({
-        igsid,
-        ...(profile.username ? { username: profile.username, name: profile.name ?? '', picture: profile.profile_pic ?? '' } : {}),
-        last_text: text.slice(0, 300),
-        last_at: at,
-        ...(fromMe ? {} : { last_from_them_at: at, unread: (thread?.unread ?? 0) + 1 })
-      });
-      await db.from('ig_dms').upsert({ mid: m.mid, igsid, from_me: fromMe, text, attachments: m.attachments ?? [], created_at: at });
-      if (!fromMe) {
-        const who = profile.username || thread?.username || 'Someone';
-        // Alert only for chats that are about a collab (linked to one, or labelled as one). Other DMs
-        // still show in Messages; a new chat that looks like a collab alerts from the check below.
-        if (thread?.collab_id || thread?.collab_flag === 'likely' || thread?.collab_flag === 'maybe') {
-          await db.from('outbox').insert({ kind: 'ig_dm', to_email: '', payload: { from: who, text: text.slice(0, 140), igsid } });
+      // Anything else: her own messages and chats she marked "Not a collab" are never kept.
+      if (fromMe || thread?.collab_flag === 'no' || !m.text) continue;
+
+      // A new message in a chat that isn't a collab yet: check it before keeping anything.
+      const job = (async () => {
+        const v = await verdict(db, text);
+        if (!v.flag) return; // not a collab: dropped, nothing saved
+        let profile: { username?: string; name?: string; profile_pic?: string } = {};
+        if (tok?.access_token) {
+          const r = await fetch(`${GRAPH}/${igsid}?fields=username,name,profile_pic&access_token=${tok.access_token}`).catch(() => null);
+          profile = (await r?.json().catch(() => ({}))) ?? {};
         }
-        // Collab check in the background, so Meta gets its answer straight away.
-        const job = checkCollab(db, igsid, who).catch((e) => console.error('[collab check]', e));
-        (globalThis as unknown as { EdgeRuntime?: { waitUntil: (p: Promise<unknown>) => void } }).EdgeRuntime?.waitUntil(job);
-      }
+        const who = profile.username || thread?.username || 'someone';
+        const hint = v.hint || ruleHint(text, who);
+        await db.from('ig_threads').upsert({
+          igsid,
+          ...(profile.username ? { username: profile.username, name: profile.name ?? '', picture: profile.profile_pic ?? '' } : {}),
+          last_text: text.slice(0, 300),
+          last_at: at,
+          last_from_them_at: at,
+          unread: (thread?.unread ?? 0) + 1,
+          collab_flag: v.flag,
+          collab_hint: hint
+        });
+        await db.from('ig_dms').upsert({ mid: m.mid, igsid, from_me: false, text, attachments: m.attachments ?? [], created_at: at });
+        await db.from('outbox').insert({ kind: 'ig_collab', to_email: '', payload: { from: who, brand: v.brand, text: hint, igsid } });
+      })().catch((e) => console.error('[collab check]', e));
+      // In the background, so Meta gets its answer straight away.
+      (globalThis as unknown as { EdgeRuntime?: { waitUntil: (p: Promise<unknown>) => void } }).EdgeRuntime?.waitUntil(job);
     }
   }
   return new Response('ok');
