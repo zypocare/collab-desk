@@ -11,6 +11,7 @@
 		events,
 		firstName,
 		fmt,
+		compact,
 		hueOf,
 		inTransit,
 		inr,
@@ -120,10 +121,24 @@
 		return t.d === 0 ? 'today' : relWord(t.d);
 	};
 	const link = $derived((s.site_url || location.origin).replace(/\/$/, ''));
+	// Beside the greeting: live Instagram numbers, or this month's goal when Instagram isn't connected.
+	const ig = $derived(studio.ig?.connected ? studio.ig : null);
 </script>
 
 <section class="ht" style="--sy:{sy}">
 	<div class="ht-glow" aria-hidden="true"><i></i><i></i><i></i></div>
+	<a class="ht-orb" href={ig ? '/insights' : '/studio/payments'} target={ig ? '_blank' : undefined} rel="noopener" aria-label={ig ? 'Your Instagram insights' : `${monthName} goal`}>
+		<span class="orb-ring" aria-hidden="true"></span>
+		<span class="orb-in">
+			{#if ig}
+				<b>{compact(ig.followers ?? 0)}</b><small>followers</small>
+				{#if ig.engagement_rate}<i>{ig.engagement_rate.toFixed(1)}% eng.</i>{/if}
+			{:else}
+				<b>{Math.round(pct * 100)}%</b><small>of {monthName} goal</small>
+			{/if}
+		</span>
+		<span class="orb-spark s1" aria-hidden="true"></span><span class="orb-spark s2" aria-hidden="true"></span><span class="orb-spark s3" aria-hidden="true"></span>
+	</a>
 	<p class="ht-date">{T.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
 	<h1 class="ht-hi">{greet},<br /><em>{firstName(s.display_name)}</em></h1>
 	<p class="ht-sum">

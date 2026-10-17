@@ -215,6 +215,9 @@
   .st-ring::before{content:"";position:absolute;inset:0;z-index:-1;border-radius:50%;background:conic-gradient(from 210deg,var(--g3),var(--g2),var(--g1),var(--g3));animation:st-in .9s cubic-bezier(.2,.8,.2,1) both}
   .story.seen .st-ring::before{background:var(--ig-sep)}
   .story:nth-child(2) .st-ring::before{animation-delay:.05s} .story:nth-child(3) .st-ring::before{animation-delay:.1s} .story:nth-child(4) .st-ring::before{animation-delay:.15s} .story:nth-child(n+5) .st-ring::before{animation-delay:.2s}
+  .st-ring.st-tip::before{background:none;border:1.5px dashed color-mix(in oklab,var(--ink) 30%,transparent)}
+  .st-ic{width:100%;height:100%;border-radius:50%;display:grid;place-items:center;background:var(--ig-fill-2);color:var(--ink)}
+  .st-ic .ic{width:24px;height:24px}
   .st-ring.plain{padding:2px}
   .st-ring.plain::before{display:none}
   .st-ring .mono{width:100%;height:100%;border-radius:50%;font-size:20px;border:3px solid var(--bg)}
@@ -412,6 +415,18 @@
   .ht-glow i:nth-child(1){background:var(--g1);left:-30px;top:10px}
   .ht-glow i:nth-child(2){background:var(--g2);right:-40px;top:30px;animation-delay:-5s;animation-duration:17s}
   .ht-glow i:nth-child(3){background:var(--g3);left:35%;top:120px;width:170px;height:170px;opacity:.35;animation-delay:-9s}
+  /* Live numbers beside the greeting: a slowly turning gradient ring with sparkles. */
+  .ht-orb{position:absolute;top:8px;right:16px;width:122px;height:122px;display:grid;place-items:center;border-radius:50%;color:var(--ink);text-decoration:none;animation:orb-in .8s .15s cubic-bezier(.2,.9,.3,1.2) both;transition:transform .3s var(--spring-ig)}
+  .ht-orb:active{transform:scale(.94)}
+  .orb-ring{position:absolute;inset:0;border-radius:50%;padding:3px;background:conic-gradient(from 0deg,var(--g3),var(--g2),var(--g1),transparent 70%,var(--g3));-webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 3px),#000 calc(100% - 3px));mask:radial-gradient(farthest-side,transparent calc(100% - 3px),#000 calc(100% - 3px));animation:spin 6s linear infinite}
+  .orb-in{position:absolute;inset:9px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;
+    background:radial-gradient(circle at 30% 25%,color-mix(in oklab,var(--surface) 70%,transparent),color-mix(in oklab,var(--bg) 55%,transparent));border:1px solid color-mix(in oklab,var(--ink) 10%,transparent);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 18px 36px -18px color-mix(in oklab,var(--g2) 60%,transparent)}
+  .orb-in b{font-size:24px;font-weight:700;letter-spacing:-.02em;line-height:1}
+  .orb-in small{margin-top:3px;font-size:11.5px;color:var(--ink-2)}
+  .orb-in i{margin-top:6px;padding:2px 8px;border-radius:99px;background:color-mix(in oklab,var(--ok) 18%,transparent);color:var(--ok);font-size:11px;font-style:normal;font-weight:700}
+  .orb-spark{position:absolute;width:6px;height:6px;border-radius:50%;background:#fff;box-shadow:0 0 10px 2px color-mix(in oklab,var(--g2) 80%,transparent);animation:twinkle 2.8s ease-in-out infinite}
+  .orb-spark.s1{top:4px;left:22px} .orb-spark.s2{bottom:12px;right:2px;width:4px;height:4px;animation-delay:.9s} .orb-spark.s3{top:44px;left:-6px;width:3px;height:3px;animation-delay:1.7s}
+  .ht-date,.ht-hi{max-width:calc(100% - 132px)}
   .ht-date{margin:0;font-size:13px;font-weight:600;color:var(--ink-2);animation:m-rise .5s both}
   .ht-hi{margin:6px 0 0;font-size:30px;font-weight:700;line-height:1.08;letter-spacing:-.02em;animation:m-rise .6s .06s both}
   .ht-hi em{font-family:var(--f-serif);font-style:italic;font-weight:400;font-size:44px;line-height:1;letter-spacing:-.01em;padding-right:.08em;
@@ -662,6 +677,8 @@
 @keyframes dk-in{from{opacity:0;transform:translateX(44px) scale(.95)}}
 @keyframes sweep{0%{transform:translateX(-130%)}35%,100%{transform:translateX(130%)}}
 @keyframes growy{from{transform:scaleY(0)}}
+@keyframes orb-in{from{opacity:0;transform:scale(.6) rotate(-20deg)}}
+@keyframes twinkle{0%,100%{opacity:.2;transform:scale(.6)}50%{opacity:1;transform:scale(1.2)}}
 @keyframes m-in-r{from{transform:translateX(100%)}}
 @keyframes m-out-l{to{transform:translateX(-25%);opacity:.6}}
 @keyframes m-in-l{from{transform:translateX(-25%);opacity:.6}}
@@ -677,5 +694,5 @@
 @keyframes m-sheet{from{transform:translateY(100%)}}
 @media (prefers-reduced-motion: reduce){
   html[data-nav]::view-transition-old(root),html[data-nav]::view-transition-new(root){animation:none}
-  .st-ring::before,.m-crow,.dm-row,.set-item,.pf-tile,.hl,.story,.m-group h3{animation:none!important}
+  .ht-glow i,.ht-hi em,.ht-dot,.ht-orb,.orb-ring,.orb-spark,.mc,.mc::before,.dk,.dk::after,.dk-ic,.qa-b,.wkx-d,.pp-s,.pp-bar i,.mc-col i,.mc-bar i,.st-ring::before,.m-crow,.dm-row,.set-item,.pf-tile,.hl,.story,.m-group h3{animation:none!important}
 }
