@@ -81,6 +81,19 @@
 .rec-in small{display:block;color:var(--ink-3);font-size:14px;margin-top:2px}
 .rec-acts{display:flex;flex-wrap:wrap;gap:8px;padding:14px 20px 18px}
 
+/* Free AI */
+.ai-row{display:flex;flex-wrap:wrap;gap:8px;margin:2px 0 8px}
+.ai-btn{background:linear-gradient(135deg,color-mix(in oklab,var(--g1) 16%,var(--surface)),color-mix(in oklab,var(--g2) 14%,var(--surface)));border-color:color-mix(in oklab,var(--g2) 30%,var(--line))}
+.ai-btn .ic,.ai-lnk .ic{color:var(--g2)}
+.ai-note{margin:-2px 0 8px}
+.ai-lnk{display:inline-flex;align-items:center;gap:3px}
+.ai-lnk .ic{width:13px;height:13px}
+.th-ai{display:flex;flex-direction:column;align-items:flex-start;gap:6px;padding:8px 12px 2px}
+.ai-draft{max-width:100%;padding:9px 12px;border-radius:14px;border:1px solid color-mix(in oklab,var(--g2) 28%,var(--line));background:color-mix(in oklab,var(--g2) 6%,var(--surface));color:var(--ink);font:inherit;font-size:14px;line-height:1.4;text-align:left;cursor:pointer;animation:m-rise .35s both}
+.ai-draft:hover{border-color:var(--g2)}
+.ai-shots{margin-top:8px;padding:10px 12px;border-radius:12px;background:color-mix(in oklab,var(--ink) 4%,transparent)}
+.ai-shots ol{margin:4px 0 0;padding-left:18px;font-size:14px;line-height:1.5}
+
 /* Desktop never shows the phone-only bits. */
 .m-next,.m-open-chat{display:none}
 /* A chat opened on a laptop: the same screen as a normal page. */

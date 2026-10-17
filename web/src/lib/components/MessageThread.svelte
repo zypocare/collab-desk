@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount, tick } from 'svelte';
+	import { askAi } from '../ai';
 	import { supabase } from '../supabase';
 	import type { Message } from '../types';
 	import { toast } from '../ui.svelte';
@@ -10,14 +11,32 @@
 		collabId,
 		side,
 		otherName,
-		quick = []
+		quick = [],
+		facts
 	}: {
 		collabId: string;
 		side: 'creator' | 'brand';
 		otherName: string;
 		/** Suggested replies shown above the box: tap to put the text in the box, edit, send. */
 		quick?: (string | { label: string; text: string; saved?: boolean })[];
+		/** Creator side: facts the AI may use to draft replies. */
+		facts?: Record<string, unknown>;
 	} = $props();
+
+	// Free AI: three reply drafts from the conversation so far.
+	let drafts = $state<string[]>([]);
+	let drafting = $state(false);
+	async function suggestReplies() {
+		drafting = true;
+		try {
+			const r = await askAi<{ replies: string[] }>('reply', { thread: messages.map((m) => ({ from: m.sender, text: m.body })), context: facts ?? {} });
+			drafts = r.replies;
+			if (!drafts.length) toast("The AI didn't have a suggestion this time. Try again.", 'alert');
+		} catch (e) {
+			toast((e as Error).message, 'alert');
+		}
+		drafting = false;
+	}
 
 	const other = $derived(side === 'creator' ? 'brand' : 'creator');
 	let messages = $state<Message[]>([]);
@@ -143,6 +162,12 @@
 			{#if seen}<div class="th-seen"><Icon name="check" />Seen</div>{/if}
 		{/if}
 	</div>
+	{#if facts && !text}
+		<div class="th-ai">
+			<button type="button" class="btn sm ai-btn" disabled={drafting} onclick={suggestReplies}>{#if drafting}<span class="spinner"></span>Writing…{:else}<Icon name="spark" />{drafts.length ? 'More replies' : 'Suggest replies'}{/if}</button>
+			{#each drafts as d, i (i)}<button type="button" class="ai-draft" onclick={() => ((drafts = []), useReply(d))}>{d}</button>{/each}
+		</div>
+	{/if}
 	{#if quick.length && !text}
 		<div class="th-quick">
 			{#each quick as q, i (i)}

@@ -3,7 +3,8 @@
 	import { onMount } from 'svelte';
 	import { createCollab, studio } from '../studio.svelte';
 	import { parseDm } from '../parseDm';
-	import { ui } from '../ui.svelte';
+	import { toast, ui } from '../ui.svelte';
+	import { askAi, mergeDm, shrinkImage } from '../ai';
 	import { delivText, fmt, inr, TYPE_LABEL } from '../util';
 	import Icon from './Icon.svelte';
 
@@ -29,7 +30,36 @@
 	}
 
 	// Read the pasted message as she types/pastes, and fill the brand name unless she typed one.
-	const parsed = $derived(pasted.trim().length > 10 ? parseDm(pasted, studio.settings?.handle ?? '') : null);
+	// What the free AI read (from a screenshot or the pasted text) is added on top.
+	let aiFields = $state<Parameters<typeof mergeDm>[1]>(null);
+	let aiBusy = $state(false);
+	let aiNote = $state('');
+	const parsed = $derived(mergeDm(pasted.trim().length > 10 ? parseDm(pasted, studio.settings?.handle ?? '') : null, aiFields));
+	async function readWithAi(image?: string) {
+		aiBusy = true;
+		aiNote = image ? 'Reading the screenshot…' : 'Reading the message…';
+		try {
+			const r = await askAi<{ transcript: string; fields: Parameters<typeof mergeDm>[1] }>('dm', { text: image ? '' : pasted, image: image ?? '', handle: studio.settings?.handle ?? '' });
+			if (r.transcript) pasted = r.transcript;
+			aiFields = r.fields;
+			aiNote = 'Filled in by AI. Check the details before adding.';
+		} catch (e) {
+			aiNote = '';
+			toast((e as Error).message, 'alert');
+		}
+		aiBusy = false;
+	}
+	let shotInput = $state<HTMLInputElement>();
+	async function pickShot(e: Event) {
+		const f = (e.currentTarget as HTMLInputElement).files?.[0];
+		if (!f) return;
+		try {
+			await readWithAi(await shrinkImage(f));
+		} catch (err) {
+			toast((err as Error).message, 'alert');
+		}
+		(e.currentTarget as HTMLInputElement).value = '';
+	}
 	$effect(() => {
 		if (parsed?.brand && !nameTouched) name = studio.brands.find((b) => b.name.toLowerCase() === parsed.brand.toLowerCase())?.name ?? parsed.brand;
 	});
@@ -93,6 +123,12 @@
 		<p>Paste the brand's DM or email and we'll fill in the details. Or just type the brand name. Adding many? <a class="lnk" href="/studio/import" onclick={() => (ui.newCollab = false)}>Import them at once</a>. Ambassador deal? <a class="lnk" href="/studio/brands" onclick={() => (ui.newCollab = false)}>Set up a monthly deal</a>.</p>
 		<div class="f">
 			<label for="nc-paste">Their message <span class="hint">(optional)</span>{#if canPaste}<button type="button" class="lnk paste-btn" onclick={pasteClip}>Paste</button>{/if}</label>
+			<div class="ai-row">
+				<button type="button" class="btn sm ai-btn" disabled={aiBusy} onclick={() => shotInput?.click()}>{#if aiBusy}<span class="spinner"></span>{:else}<Icon name="spark" />{/if}Add a screenshot</button>
+				{#if pasted.trim().length > 20}<button type="button" class="btn sm ghost" disabled={aiBusy} onclick={() => readWithAi()}><Icon name="spark" />Read with AI</button>{/if}
+				<input type="file" accept="image/*" hidden bind:this={shotInput} onchange={pickShot} />
+			</div>
+			{#if aiNote}<p class="hint ai-note">{aiNote}</p>{/if}
 			<textarea class="inp" id="nc-paste" rows="5" placeholder={'Hi! I’m Asha from Lumière Skin (@lumiere.skin). We’d love 1 reel + 3 stories for our Vitamin C launch, budget ₹30k, live by 25th Oct…'} bind:value={pasted} bind:this={box}></textarea>
 		</div>
 		{#if chips.length}

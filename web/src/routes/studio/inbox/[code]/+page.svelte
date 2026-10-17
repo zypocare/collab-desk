@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/state';
+	import { collabFacts } from '#lib/ai.ts';
 	import { byCode, studio } from '#lib/studio.svelte.ts';
 	import { stageLabel } from '#lib/util.ts';
 	import { savedFor } from '#lib/savedReplies.ts';
@@ -33,6 +34,7 @@
 				side="creator"
 				otherName={c.contact_name || c.brand.name}
 				quick={studio.settings ? [...savedFor(c, studio.settings), ...replySuggestions(c, studio.settings)] : []}
+				facts={collabFacts(c, studio.settings)}
 			/>
 		{/key}
 	</div>

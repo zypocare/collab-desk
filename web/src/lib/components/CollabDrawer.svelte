@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { ask } from '../confirm.svelte';
+	import { askAi } from '../ai';
+	import { collabFacts } from '../ai';
 	import CollabLink from './CollabLink.svelte';
 	import { money } from '../currency';
 	import { tick } from 'svelte';
@@ -98,6 +100,27 @@
 		declined: ['deal', 'activity']
 	};
 	let showAll = $state(false);
+	// Free AI: a caption (and shot list) in her voice, from the brief.
+	let capBusy = $state(false);
+	let shots = $state<string[]>([]);
+	async function writeCaption() {
+		if (!c) return;
+		capBusy = true;
+		try {
+			const r = await askAi<{ caption: string; hashtags: string[]; shots: string[] }>('caption', {
+				...collabFacts(c, studio.settings),
+				brief: c.brief,
+				brief_details: c.brief_details,
+				post: c.deliverables[0]?.kind ?? 'Reel'
+			});
+			const tags = r.hashtags.filter((t) => !r.caption.includes(t)).join(' ');
+			draftForm.caption = [r.caption, tags].filter(Boolean).join('\n\n');
+			shots = r.shots;
+		} catch (e) {
+			toast((e as Error).message, 'alert');
+		}
+		capBusy = false;
+	}
 	const sh = (k: string) => !page || showAll || (FOCUS[c?.stage ?? ''] ?? []).includes(k);
 	$effect(() => {
 		if (!page) return;
@@ -378,6 +401,7 @@
 						side="creator"
 						otherName={c.contact_name || c.brand.name}
 						quick={studio.settings ? [...savedFor(c, studio.settings), ...replySuggestions(c, studio.settings)] : []}
+						facts={collabFacts(c, studio.settings)}
 					/>
 				{/key}
 			</section>
@@ -547,7 +571,7 @@
 							{#if draftFile && draftFile.size > DRAFT_MAX_MB * 1024 * 1024}<p class="hint warn-text" style="margin-top:6px">{Math.round(draftFile.size / 1048576)} MB is too big. Add a Drive link below instead.</p>{/if}
 						</div>
 						<div class="f"><label for="dr-link">Or a link to it</label><input class="inp" id="dr-link" placeholder="Google Drive or WeTransfer link" bind:value={draftForm.link} /></div>
-						<div class="f"><label for="dr-cap">Caption <span class="cap-start">Start from the brief: <button type="button" class="lnk" onclick={() => c && (draftForm.caption = captionStarter(c, 'short'))}>Short</button> · <button type="button" class="lnk" onclick={() => c && (draftForm.caption = captionStarter(c, 'detailed'))}>Detailed</button></span></label><textarea class="inp" id="dr-cap" rows="3" placeholder="#ad The caption you plan to post, with @brand tag" bind:value={draftForm.caption}></textarea>
+						<div class="f"><label for="dr-cap">Caption <span class="cap-start">Start from the brief: <button type="button" class="lnk" onclick={() => c && (draftForm.caption = captionStarter(c, 'short'))}>Short</button> · <button type="button" class="lnk" onclick={() => c && (draftForm.caption = captionStarter(c, 'detailed'))}>Detailed</button> · <button type="button" class="lnk ai-lnk" disabled={capBusy} onclick={writeCaption}><Icon name="spark" />{capBusy ? 'Writing…' : 'Write with AI'}</button></span></label><textarea class="inp" id="dr-cap" rows="3" placeholder="#ad The caption you plan to post, with @brand tag" bind:value={draftForm.caption}></textarea>{#if shots.length}<div class="ai-shots"><span class="lbl-t">Shot list</span><ol>{#each shots as sh, i (i)}<li>{sh}</li>{/each}</ol></div>{/if}
 							{#if draftForm.caption.trim()}
 								{@const bc = briefCheck(draftForm.caption, c.brand.instagram, c.brief_details, c.type)}
 								<div class="cap-check" aria-live="polite">
