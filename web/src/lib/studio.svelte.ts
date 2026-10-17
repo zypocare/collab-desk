@@ -21,6 +21,8 @@ export const studio = $state<{
 	fits: Record<string, FitData>;
 	/** Requests the AI is reading right now. */
 	reading: string[];
+	/** Possible collabs spotted in her Instagram DMs, not on the board yet (shown on Today). */
+	leads: { igsid: string; username: string; name: string; picture: string; collab_flag: string; collab_hint: string; last_at: string | null }[];
 	settings: Settings | null;
 	alerts: BankAlert[];
 	ig: IgAccount | null;
@@ -29,7 +31,7 @@ export const studio = $state<{
 	packages: Package[];
 	retainers: Retainer[];
 	me: { role: 'creator'; email: string; team_role: 'owner' | 'manager'; name?: string } | null;
-}>({ me: null, loaded: false, error: '', collabs: [], brands: [], notes: {}, fits: {}, reading: [], settings: null, alerts: [], ig: null, media: [], followersHistory: [], packages: [], retainers: [] });
+}>({ me: null, loaded: false, error: '', collabs: [], brands: [], notes: {}, fits: {}, reading: [], leads: [], settings: null, alerts: [], ig: null, media: [], followersHistory: [], packages: [], retainers: [] });
 
 const COLLAB_SELECT = '*, brand:brands(*), deliverables(*), events:collab_events(*), quotes(*), drafts(*, comments:draft_comments(*)), expenses:collab_expenses(*), files:collab_files(*), invoices(*), posts:collab_posts(matched_by, media:ig_media(*)), reports:brand_reports(*), messages:collab_messages(id, sender, body, created_at), reads:collab_reads(side, read_at), links:collab_links(*)';
 
@@ -91,6 +93,7 @@ export async function loadStudio() {
 	loadPackages();
 	loadRetainers();
 	loadFits();
+	loadLeads();
 	supabase.rpc('studio_account').then(({ data }) => (studio.me = (data as typeof studio.me) ?? null));
 	const err = collabs.error || brands.error || notes.error || settings.error;
 	if (err) {
@@ -125,6 +128,7 @@ export function watchStudio() {
 			schedule();
 		})
 		.on('postgres_changes', { event: '*', schema: 'public', table: 'deliverables' }, schedule)
+		.on('postgres_changes', { event: '*', schema: 'public', table: 'ig_threads' }, () => loadLeads())
 		.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'collab_events' }, schedule)
 		.on('postgres_changes', { event: '*', schema: 'public', table: 'quotes' }, (p) => {
 			const q = p.new as Quote;
@@ -191,6 +195,18 @@ export const priorityOf = (c: Collab): Priority | null => {
 		counterFee: d.counterFee
 	};
 };
+
+/** Instagram chats that look like a collab and aren't on the board yet. */
+export async function loadLeads() {
+	const { data } = await supabase
+		.from('ig_threads')
+		.select('igsid, username, name, picture, collab_flag, collab_hint, last_at')
+		.is('collab_id', null)
+		.in('collab_flag', ['likely', 'maybe'])
+		.order('last_at', { ascending: false, nullsFirst: false })
+		.limit(12);
+	if (data) studio.leads = data as typeof studio.leads;
+}
 
 export async function loadFits() {
 	const { data } = await supabase.from('collab_fit').select('collab_id, data');

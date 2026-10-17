@@ -29,6 +29,7 @@
 		type Task
 	} from '../util';
 	import AiDesk from './AiDesk.svelte';
+	import CollabLeads from './CollabLeads.svelte';
 	import Icon from './Icon.svelte';
 	import Mono from './Mono.svelte';
 	import Stories from './Stories.svelte';
@@ -157,6 +158,8 @@
 		</div>
 	</div>
 </section>
+
+<CollabLeads phone />
 
 <section class="hs">
 	<header class="hs-h"><h2>Needs you</h2>{#if ts.length}<span class="hs-n">{ts.length}</span>{/if}</header>
