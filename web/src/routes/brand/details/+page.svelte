@@ -7,6 +7,21 @@
 	import { page } from '$app/state';
 	import { loadRequests } from '#lib/brand.svelte.ts';
 	import BrandTeam from '#lib/components/BrandTeam.svelte';
+	import { signOut, switchBrand } from '#lib/auth.svelte.ts';
+	import { phone } from '#lib/phone.svelte.ts';
+	import { theme, toggleTheme, toast } from '#lib/ui.svelte.ts';
+	import { errMessage } from '#lib/util.ts';
+
+	const acct = $derived(auth.account?.role === 'brand' ? auth.account : null);
+	async function useBrand(id: string) {
+		try {
+			await switchBrand(id);
+			await loadRequests();
+			toast(`Now working as ${acct?.brand?.name ?? 'that brand'}`, 'refresh');
+		} catch (e) {
+			toast(errMessage(e), 'alert');
+		}
+	}
 
 	const isNew = $derived(page.url.searchParams.get('new') === '1');
 </script>
@@ -37,4 +52,21 @@
 		<BrandBillingForm />
 	</section>
 	<BrandTeam />
+{/if}
+{#if phone.on && !isNew && acct}
+	<!-- Phone: account settings live here, like an app's settings screen. -->
+	<section class="b-acct rv" style="--i:3">
+		<h2>Account</h2>
+		<div class="b-rows">
+			<div class="b-row"><span class="b-ri"><Icon name="mail" /></span><span class="b-rt"><b>Signed in as</b><small>{acct.email}</small></span></div>
+			{#if (acct.brands?.length ?? 0) > 1}
+				{#each acct.brands ?? [] as b (b.id)}
+					<button class="b-row" onclick={() => useBrand(b.id)} disabled={b.id === acct.brand?.id}><span class="b-ri"><Icon name="users" /></span><span class="b-rt"><b>{b.name}</b><small>{b.id === acct.brand?.id ? 'Working as this brand' : 'Switch to this brand'}</small></span>{#if b.id === acct.brand?.id}<Icon name="check" class="b-ok" />{/if}</button>
+				{/each}
+			{/if}
+			<a class="b-row" href="/brand/details?new=1"><span class="b-ri"><Icon name="plus" /></span><span class="b-rt"><b>Add another brand</b><small>For agencies with several brands</small></span><Icon name="chevR" class="b-chev" /></a>
+			<button class="b-row" onclick={toggleTheme}><span class="b-ri"><Icon name={theme.value === 'dark' ? 'sun' : 'moon'} /></span><span class="b-rt"><b>{theme.value === 'dark' ? 'Light look' : 'Dark look'}</b><small>How the app looks on this phone</small></span></button>
+			<button class="b-row b-out" onclick={async () => (await signOut(), goto('/', { replaceState: true }))}><span class="b-ri"><Icon name="logout" /></span><span class="b-rt"><b>Sign out</b></span></button>
+		</div>
+	</section>
 {/if}

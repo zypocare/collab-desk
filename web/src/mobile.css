@@ -188,14 +188,14 @@
   [data-side="studio"] :is(.t-a,.t-b,.t-row){gap:0}
 
   /* ---------- sheets from the bottom ---------- */
-  [data-side="studio"] .dialog-scrim:not(.cmdk-scrim){place-items:end stretch;padding:0;padding-top:max(24px,env(safe-area-inset-top,0px));-webkit-backdrop-filter:none;backdrop-filter:none}
-  [data-side="studio"] .dialog-scrim:not(.cmdk-scrim) > .dialog{position:relative;width:100%;max-width:none;max-height:calc(100dvh - max(24px,env(safe-area-inset-top,0px)));overflow-y:auto;overscroll-behavior:contain;
+  [data-side] .dialog-scrim:not(.cmdk-scrim){place-items:end stretch;padding:0;padding-top:max(24px,env(safe-area-inset-top,0px));-webkit-backdrop-filter:none;backdrop-filter:none}
+  [data-side] .dialog-scrim:not(.cmdk-scrim) > .dialog{position:relative;width:100%;max-width:none;max-height:calc(100dvh - max(24px,env(safe-area-inset-top,0px)));overflow-y:auto;overscroll-behavior:contain;
     border-radius:16px 16px 0 0;border:0;box-shadow:none;padding:28px 16px calc(16px + env(safe-area-inset-bottom,0px));animation:m-sheet .38s cubic-bezier(.2,.9,.25,1) both}
-  [data-side="studio"] .dialog-scrim:not(.cmdk-scrim) > .dialog::before{content:"";position:absolute;top:8px;left:50%;width:36px;height:4px;margin-left:-18px;border-radius:99px;background:color-mix(in oklab,var(--ink) 25%,transparent)}
-  [data-side="studio"] .dialog h2{font-size:18px;font-weight:700}
-  [data-side="studio"] .dialog .row{position:sticky;bottom:calc(-16px - env(safe-area-inset-bottom,0px));margin:16px -16px calc(-16px - env(safe-area-inset-bottom,0px));padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));background:var(--surface);border-top:1px solid var(--ig-sep)}
-  [data-side="studio"] .dialog .row .btn{flex:1;height:44px;justify-content:center}
-  [data-side="studio"] .dialog .fields{grid-template-columns:minmax(0,1fr)}
+  [data-side] .dialog-scrim:not(.cmdk-scrim) > .dialog::before{content:"";position:absolute;top:8px;left:50%;width:36px;height:4px;margin-left:-18px;border-radius:99px;background:color-mix(in oklab,var(--ink) 25%,transparent)}
+  [data-side] .dialog h2{font-size:18px;font-weight:700}
+  [data-side] .dialog .row{position:sticky;bottom:calc(-16px - env(safe-area-inset-bottom,0px));margin:16px -16px calc(-16px - env(safe-area-inset-bottom,0px));padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));background:var(--surface);border-top:1px solid var(--ig-sep)}
+  [data-side] .dialog .row .btn{flex:1;height:44px;justify-content:center}
+  [data-side] .dialog .fields{grid-template-columns:minmax(0,1fr)}
   /* Search: a full screen of its own. */
   [data-side="studio"] .cmdk-scrim{padding:0;place-items:start stretch;background:var(--bg)}
   [data-side="studio"] .cmdk{width:100%;max-width:none;height:100dvh;max-height:none;border-radius:0;border:0;box-shadow:none;background:var(--bg);padding-top:env(safe-area-inset-top,0px)}
@@ -565,6 +565,85 @@
   /* Today */
   [data-side="studio"] .hc-in{padding:20px}
   [data-side="studio"] .hc{border-radius:16px}
+}
+
+
+/* ==========================================================================================
+   Brand side on a phone: the same app shell as the Studio (top bar, docked tab bar, slides,
+   sheets, pull to refresh), in the brand side's own look.
+   ========================================================================================== */
+@media (max-width:760px){
+  [data-side="brand"]{
+    --m-bar:56px;
+    --ig-sep:color-mix(in oklab,var(--ink) 10%,transparent);
+    --ig-fill:color-mix(in oklab,var(--ink) 8%,transparent);
+    --ig-fill-2:color-mix(in oklab,var(--ink) 5%,transparent);
+    --ig-bar:var(--bg);
+    --spring-ig:cubic-bezier(.2,.9,.3,1.15);
+    overscroll-behavior-y:contain;
+  }
+  [data-side="brand"] body{background:var(--bg);overscroll-behavior-y:contain}
+  [data-side="brand"] :is(button,a,label,summary,[role="button"]){touch-action:manipulation;-webkit-user-select:none;user-select:none}
+
+  /* Top bar */
+  [data-side="brand"] .m-bar{margin:0;padding-left:16px;padding-right:6px}
+  [data-side="brand"] .m-bar.sub{padding-left:4px}
+  .b-who{flex:1;min-width:0;display:flex;align-items:center;gap:10px;color:inherit;text-decoration:none}
+  .b-who .ring{flex:none}
+  .b-who span{min-width:0;display:flex;flex-direction:column;line-height:1.2}
+  .b-who b{font-family:var(--f-display);font-size:17px;font-weight:700;letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .b-who small{font-size:12.5px;color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .b-pill{margin-left:4px;height:34px;padding:0 16px;border-radius:99px;display:grid;place-items:center;background:var(--grad);color:var(--on-grad,#fff);font-size:14px;font-weight:600;text-decoration:none;box-shadow:0 8px 18px -8px color-mix(in oklab,var(--g2) 70%,transparent);transition:transform .25s var(--spring-ig)}
+  .b-pill:active{transform:scale(.94)}
+
+  /* Screens: the bar has Back and the title, so the in-page back links go. */
+  [data-side="brand"] .wrap{padding-top:12px;padding-bottom:calc(100px + env(safe-area-inset-bottom,0px))}
+  [data-side="brand"] .back{display:none}
+  [data-side="brand"] .ph .acts:has(> a[href="/brand/new"]:only-child){display:none}
+  [data-side="brand"] .ph{margin-bottom:16px}
+
+  /* Tab bar: docked, with a raised "+" in the middle for a new request. */
+  [data-side="brand"] .brand-tabs{grid-template-columns:repeat(4,minmax(0,1fr));padding:0 4px env(safe-area-inset-bottom,0px);border-top:1px solid var(--ig-sep);background:var(--ig-bar);-webkit-backdrop-filter:none;backdrop-filter:none;box-shadow:none;view-transition-name:m-tabs}
+  [data-side="brand"] .brand-tabs.hide-tabs{display:none}
+  [data-side="brand"] .brand-tabs a{position:relative;height:60px;justify-content:center;gap:3px;padding:0;border-radius:0;background:none!important;font-size:11px;font-weight:600;color:var(--ink-3)}
+  [data-side="brand"] .brand-tabs a[aria-current="page"]{color:var(--ink)}
+  .bt-ic{position:relative;display:grid;place-items:center;width:54px;height:30px;border-radius:99px;transition:background .3s,transform .3s var(--spring-ig)}
+  .bt-ic .ic{width:22px;height:22px}
+  .brand-tabs a[aria-current="page"] .bt-ic{background:color-mix(in oklab,var(--accent) 16%,transparent);color:var(--accent);animation:m-pop .45s var(--spring-ig)}
+  .bt-n{position:absolute;top:-3px;right:8px;min-width:17px;height:17px;padding:0 4px;border-radius:99px;display:grid;place-items:center;background:var(--bad);color:#fff;font-size:10.5px;font-style:normal;font-weight:700;border:2px solid var(--bg)}
+  .bt-plus{width:48px;height:32px;border-radius:12px;display:grid;place-items:center;background:var(--grad);color:#fff;box-shadow:0 8px 18px -8px color-mix(in oklab,var(--g2) 75%,transparent);transition:transform .3s var(--spring-ig)}
+  .bt-plus .ic{width:20px;height:20px;stroke-width:2.4}
+  .bt-av{display:grid;place-items:center;height:30px;transition:transform .3s var(--spring-ig)}
+  .bt-av .ring::before{animation:none;opacity:.35}
+  .brand-tabs a[aria-current="page"] .bt-av .ring::before{opacity:1}
+  .brand-tabs a:active :is(.bt-ic,.bt-plus,.bt-av){transform:scale(.86)}
+  [data-side="brand"] .bx-dock.tabs{bottom:calc(70px + env(safe-area-inset-bottom,0px))}
+  [data-side="brand"] .rq-bar{bottom:calc(72px + env(safe-area-inset-bottom,0px))}
+  [data-side="brand"] .toasts{bottom:calc(76px + env(safe-area-inset-bottom,0px))}
+
+  /* Motion: lists rise in, cards press in and spring back. */
+  [data-side="brand"] .req{animation:m-rise .5s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(min(var(--i,0), 8) * 50ms);transition:transform .25s var(--spring-ig)}
+  [data-side="brand"] :is(.req,.prod-row,.again-chip,.bx-pkg,.b-row):active{transform:scale(.97)}
+  [data-side="brand"] .btn{transition:transform .25s var(--spring-ig),opacity .2s,background .2s}
+  [data-side="brand"] .btn:active{transform:scale(.95)}
+
+  /* Company: account settings as a list */
+  .b-acct{margin-top:22px}
+  .b-acct h2{font-size:18px;margin:0 4px 10px}
+  .b-rows{border-radius:20px;overflow:hidden;background:var(--surface);border:1px solid var(--line)}
+  .b-row{display:flex;align-items:center;gap:14px;width:100%;min-height:58px;padding:10px 16px;border:0;background:none;font:inherit;color:inherit;text-align:left;text-decoration:none;transition:transform .25s var(--spring-ig),background .2s}
+  .b-row + .b-row{border-top:1px solid var(--ig-sep)}
+  .b-row:active{background:var(--ig-fill-2)}
+  .b-row:disabled{opacity:1}
+  .b-ri{flex:none;width:34px;height:34px;border-radius:11px;display:grid;place-items:center;background:var(--ig-fill);color:var(--ink-2)}
+  .b-ri .ic{width:18px;height:18px}
+  .b-rt{flex:1;min-width:0;display:flex;flex-direction:column}
+  .b-rt b{font-size:15px;font-weight:600}
+  .b-rt small{font-size:13px;color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .b-ok{width:18px;height:18px;color:var(--ok)}
+  .b-chev{width:18px;height:18px;color:var(--ink-3)}
+  .b-out{color:var(--bad)}
+  .b-out .b-ri{background:color-mix(in oklab,var(--bad) 14%,transparent);color:var(--bad)}
 }
 
 /* Pull to refresh */

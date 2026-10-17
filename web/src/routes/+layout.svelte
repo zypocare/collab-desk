@@ -31,8 +31,10 @@
 	onNavigate((nav) => {
 		const d = document as Document & { startViewTransition?: (cb: () => Promise<void>) => unknown };
 		if (!d.startViewTransition || !nav.from || !nav.to || nav.from.url.href === nav.to.url.href || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-		// On a phone in the Studio: screens opened from a tab slide in from the right and slide back out.
-		const app = matchMedia(PHONE_Q).matches && nav.to.url.pathname.startsWith('/studio') && nav.from.url.pathname.startsWith('/studio');
+		// On a phone (Studio or brand side): screens opened from a tab slide in from the right and slide back out.
+		const inApp = (u: URL) => u.pathname.startsWith('/studio') || u.pathname.startsWith('/brand') || u.pathname === '/' || u.pathname.startsWith('/insights');
+		const side = (u: URL) => u.pathname.startsWith('/studio');
+		const app = matchMedia(PHONE_Q).matches && inApp(nav.to.url) && inApp(nav.from.url) && side(nav.to.url) === side(nav.from.url);
 		if (nav.from.url.pathname === nav.to.url.pathname && !app) return;
 		const a = depth(nav.from.url), b = depth(nav.to.url);
 		document.documentElement.dataset.nav = !app ? '' : b > a ? 'push' : b < a ? 'pop' : 'tab';

@@ -141,9 +141,11 @@ function pullToRefresh(refresh: () => Promise<unknown>) {
 	};
 }
 
-/** How deep a Studio address is: 1 for the tab screens, more for screens opened from them. */
+/** How deep an address is (Studio and brand side): 1 for the tab screens, more for screens opened from them. */
 export function depth(u: URL) {
 	const p = u.pathname;
+	// Brand side: a request and the insights open on top of the tabs.
+	if (p.startsWith('/brand/r/') || p.startsWith('/insights') || (p === '/brand/details' && u.searchParams.get('new'))) return 2;
 	if (/^\/studio\/inbox\/./.test(p)) return 3;
 	if (p === '/studio/settings') return u.searchParams.get('s') ? 3 : 2;
 	if (/^\/studio\/(c|import|instagram|share|inbox)(\/|$)/.test(p) || /^\/studio\/brands\/./.test(p)) return 2;
