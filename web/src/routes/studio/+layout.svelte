@@ -164,6 +164,16 @@
 			await loadStudio();
 		})
 	);
+	// The phone's status bar takes the screen's background colour, like an installed app.
+	$effect(() => {
+		void theme.value;
+		void phone.on;
+		const meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
+		if (!meta) return;
+		const before = meta.content;
+		requestAnimationFrame(() => (meta.content = phone.on ? getComputedStyle(document.documentElement).getPropertyValue('--bg').trim() || before : before));
+		return () => (meta.content = before);
+	});
 
 	async function logout() {
 		await signOut();
@@ -228,7 +238,7 @@
 		</nav>
 		<main class="main">
 			{#if phone.on && !chat}
-				<header class="m-bar" class:scrolled={phone.scrolled} class:sub={!!back}>
+				<header class="m-bar" class:scrolled={phone.scrolled} class:sub={!!back} class:hide={phone.hide && !back}>
 					{#if back}
 						<button class="m-ib m-back" onclick={goBack} aria-label="Back"><Icon name="chevL" /></button>
 						<div class="m-title">{title}</div>
@@ -247,7 +257,7 @@
 					{/if}
 				</header>
 				{#if tabs}
-					<nav class="m-seg" aria-label="{group?.label} pages">
+					<nav class="m-seg" aria-label="{group?.label} pages" style="--n:{tabs.length};--i:{Math.max(0, tabs.findIndex((t) => t.href === path))}">
 						{#each tabs as t (t.href)}<a href={t.href} aria-current={path === t.href ? 'page' : undefined}>{t.label}</a>{/each}
 					</nav>
 				{/if}
@@ -273,6 +283,11 @@
 			{/if}
 			{#if studio.loaded}
 				{@render children()}
+			{:else if !studio.error && phone.on}
+				<div class="skel" aria-label="Loading">
+					<div class="skel-row">{#each [0, 1, 2, 3, 4] as i (i)}<span class="sk sk-c"></span>{/each}</div>
+					{#each [0, 1, 2, 3, 4, 5] as i (i)}<div class="skel-li"><span class="sk sk-av"></span><span class="skel-t"><span class="sk sk-l"></span><span class="sk sk-s"></span></span></div>{/each}
+				</div>
 			{:else if !studio.error}
 				<div class="loader" style="min-height:60vh"><span class="ring"><span></span></span></div>
 			{/if}

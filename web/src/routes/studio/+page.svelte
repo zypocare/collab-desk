@@ -6,6 +6,8 @@
 	import { flip, tilt } from '#lib/motion.ts';
 	import {
 		KIND_ICON,
+		delivText,
+		hueOf,
 		STAGES,
 		diff,
 		events,
@@ -30,6 +32,7 @@
 		type Task
 	} from '#lib/util.ts';
 	import Icon from '#lib/components/Icon.svelte';
+	import Mono from '#lib/components/Mono.svelte';
 	import PriorityBadge from '#lib/components/PriorityBadge.svelte';
 	import AlertsPrompt from '#lib/components/AlertsPrompt.svelte';
 	import BrandQuestions from '#lib/components/BrandQuestions.svelte';
@@ -112,9 +115,51 @@
 
 <AlertsPrompt />
 
+{#if phone.on}
+	<!-- Phone: what needs attention as a feed of posts, newest first. -->
+	<div class="feed">
+		{#each ts as t (t.c.id + t.kind)}
+			{@const w = when(t)}
+			{@const key = t.c.id + t.kind}
+			<article class="fp" class:leaving={leaving === key} style="--hue:var(--m{hueOf(t.c.brand.name)})">
+				<header class="fp-h">
+					<a class="fp-av" href="/studio/c/{t.c.code}" aria-hidden="true" tabindex="-1"><Mono name={t.c.brand.name} /></a>
+					<a class="fp-who" href="/studio/c/{t.c.code}"><b>{t.c.brand.name}</b><small>{t.c.contact_name || t.c.brand.category || t.c.code}</small></a>
+					<a class="m-ib" href="/studio/c/{t.c.code}" aria-label="Open {t.c.brand.name}"><Icon name="more" /></a>
+				</header>
+				<a class="fp-media k-{t.kind === 'pay' ? 'bad' : t.kind}" href="/studio/c/{t.c.code}">
+					<span class="pm-ic"><Icon name={KIND_ICON[t.kind]} /></span>
+					<b>{t.title}</b>
+					{#if t.kind === 'new' && priorityOf(t.c)}<span class="pm-tag"><PriorityBadge p={priorityOf(t.c)!} compact /></span>{/if}
+				</a>
+				<div class="fp-acts">
+					<a class="m-ib" href="/studio/inbox/{t.c.code}" aria-label="Message {t.c.brand.name}"><Icon name="send" /></a>
+					<a class="m-ib" href="/studio/c/{t.c.code}" aria-label="Open {t.c.brand.name}"><Icon name="eye" /></a>
+					<span class="pa-gap"></span>
+					{#if t.kind === 'follow'}
+						<button class="btn primary sm" onclick={() => leaveThen(key, () => completeFollow(t.c))}><Icon name="check" />Done</button>
+					{:else if t.kind === 'pay'}
+						<button class="btn primary sm" onclick={() => leaveThen(key, () => markPaid(t.c))}><Icon name="wallet" />Mark paid</button>
+					{:else if t.kind === 'product' && inTransit(t.c)}
+						<button class="btn primary sm" onclick={() => leaveThen(key, () => markReceived(t.c))}><Icon name="box" />Received</button>
+					{:else if t.kind === 'msg'}
+						<a class="btn primary sm" href="/studio/inbox/{t.c.code}"><Icon name="send" />Reply</a>
+					{:else}
+						<a class="btn primary sm" href="/studio/c/{t.c.code}">{t.kind === 'new' ? 'Review' : 'Open'}</a>
+					{/if}
+				</div>
+				<p class="fp-cap"><b>{t.c.brand.name}</b> {delivText(t.c.deliverables)}{t.c.fee ? ` · ${inr(t.c.fee)}` : t.c.type === 'barter' ? ' · barter' : ''}</p>
+				<p class="fp-time {w.cls}">{w.text}</p>
+			</article>
+		{:else}
+			<div class="m-empty"><Icon name="check" /><b>You're all caught up</b><span>New requests, payments and follow-ups show up here.</span></div>
+		{/each}
+	</div>
+{/if}
+
 <!-- What needs her first, with the month's money beside it. -->
 <div class="t-row t-a">
-	<section class="panel rv" style="--i:1">
+	<section class="panel needs-panel rv" style="--i:1">
 		<div class="panel-h"><h2>Needs you</h2><span class="count-chip tint {urgent ? 'k-bad' : 'k-pay'}">{ts.length} item{ts.length === 1 ? '' : 's'}</span></div>
 		<div class="task-list" use:flip>
 		{#each ts as t, i (t.c.id + t.kind)}

@@ -24,8 +24,15 @@
     --ig-fill:color-mix(in oklab,var(--ink) 8%,transparent);
     --ig-fill-2:color-mix(in oklab,var(--ink) 5%,transparent);
     --ig-bar:var(--bg);
+    /* Instagram uses the phone's own font: San Francisco on iPhone, Roboto on Android. */
+    --f-display:-apple-system,BlinkMacSystemFont,system-ui,"SF Pro Text","Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    --f-body:var(--f-display);
+    --f-mono:var(--f-display);
+    --spring-ig:cubic-bezier(.2,.9,.3,1.15);
     overscroll-behavior-y:contain;
   }
+  [data-side="studio"] body{font-size:15px;line-height:1.4;-webkit-text-size-adjust:100%}
+  [data-side="studio"] :is(h1,h2,h3,b,strong){letter-spacing:normal}
   [data-side="studio"] body{overscroll-behavior-y:contain;background:var(--bg)}
   [data-side="studio"] :is(button,a,label,summary,[role="button"],[role="tab"]){touch-action:manipulation;-webkit-user-select:none;user-select:none}
   [data-side="studio"] :is(.card,.kpi,.panel,.bq,.set-item,.goal-mini,.nav,.btn):hover{transform:none}
@@ -47,7 +54,9 @@
   /* Top bar */
   .m-bar{position:sticky;top:0;z-index:40;display:flex;align-items:center;gap:4px;margin:0 -16px 4px;padding:env(safe-area-inset-top,0px) 6px 0 16px;
     height:calc(var(--m-bar) + env(safe-area-inset-top,0px));background:var(--ig-bar);view-transition-name:m-bar}
+  .m-bar{transition:transform .3s cubic-bezier(.2,.8,.2,1),box-shadow .2s}
   .m-bar.scrolled{box-shadow:0 1px 0 var(--ig-sep)}
+  .m-bar.hide{transform:translateY(-100%);box-shadow:none}
   .m-brand{flex:1;min-width:0;font-family:var(--f-display);font-size:24px;font-weight:700;letter-spacing:-.035em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .m-brand.wordmark{font-family:var(--f-serif);font-style:italic;font-weight:400;font-size:29px;letter-spacing:-.02em}
   .m-bar.sub{display:grid;grid-template-columns:48px minmax(0,1fr) 48px;padding-left:4px}
@@ -60,10 +69,10 @@
   .m-badge{position:absolute;top:5px;right:3px;min-width:18px;height:18px;padding:0 5px;border-radius:99px;display:grid;place-items:center;background:var(--bad);color:#fff;font-size:11px;font-weight:700;border:2px solid var(--bg)}
 
   /* Paired screens: Instagram-style underlined tabs across the full width. */
-  .m-seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;margin:0 -16px 14px;border-bottom:1px solid var(--ig-sep)}
+  .m-seg{position:relative;display:grid;grid-auto-flow:column;grid-auto-columns:1fr;margin:0 -16px 14px;border-bottom:1px solid var(--ig-sep)}
+  :is(.m-seg,.pf-tabs)::after{content:"";position:absolute;left:0;bottom:-1px;width:calc(100% / var(--n,2));height:1.5px;background:var(--ink);transform:translateX(calc(var(--i,0) * 100%));transition:transform .32s cubic-bezier(.2,.8,.2,1)}
   .m-seg a{display:grid;place-items:center;height:44px;font-size:15px;font-weight:600;color:var(--ink-3);text-decoration:none;position:relative}
   .m-seg a[aria-current="page"]{color:var(--ink)}
-  .m-seg a[aria-current="page"]::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:1.5px;background:var(--ink)}
 
   /* Tab bar: icons only, the profile photo last. */
   [data-side="studio"] .rail{left:0;right:0;bottom:0;margin:0;padding:0 4px env(safe-area-inset-bottom,0px);border-radius:0;border:0;border-top:1px solid var(--ig-sep);
@@ -75,7 +84,9 @@
   [data-side="studio"] .nav-ic{width:auto;height:auto;border-radius:0;background:none!important;box-shadow:none!important;color:var(--ink)!important;transition:transform .2s}
   [data-side="studio"] .nav-ic .ic{width:27px;height:27px;stroke-width:1.6}
   [data-side="studio"] .nav .ic,[data-side="studio"] .nav[aria-current="page"] .ic{color:var(--ink)}
-  [data-side="studio"] .nav[aria-current="page"] .nav-ic .ic{stroke-width:2.6}
+  [data-side="studio"] .nav[aria-current="page"] .nav-ic .ic{stroke-width:2.2;fill:currentColor}
+  [data-side="studio"] .nav[aria-current="page"]:is([href="/studio/content"],[href="/studio/payments"]) .nav-ic .ic{fill:none;stroke-width:2.6}
+  [data-side="studio"] .nav[aria-current="page"] .nav-ic{animation:m-pop .45s var(--spring-ig)}
   [data-side="studio"] .nav:active .nav-ic{transform:scale(.88)}
   [data-side="studio"] .nav-ic .ring{padding:1.5px}
   [data-side="studio"] .nav-ic .ring::before{animation:none;background:transparent}
@@ -90,8 +101,8 @@
   html[data-nav="push"]::view-transition-new(root){animation:m-in-r .38s cubic-bezier(.2,.85,.25,1) both}
   html[data-nav="pop"]::view-transition-old(root){animation:m-out-r .32s cubic-bezier(.3,.7,.3,1) both;z-index:2}
   html[data-nav="pop"]::view-transition-new(root){animation:m-in-l .32s cubic-bezier(.3,.7,.3,1) both}
-  html[data-nav="tab"]::view-transition-old(root){animation:none}
-  html[data-nav="tab"]::view-transition-new(root){animation:m-fade-in .18s ease both}
+  html[data-nav="tab"]::view-transition-old(root){animation:m-fade-out .14s ease both}
+  html[data-nav="tab"]::view-transition-new(root){animation:m-tab-in .3s cubic-bezier(.2,.8,.2,1) both}
 
   /* ---------- buttons and fields, Instagram style ---------- */
   [data-side="studio"] .btn{height:36px;padding:0 14px;border-radius:9px;border:0;background:var(--ig-fill);box-shadow:none;color:var(--ink);font-size:15px;font-weight:600}
@@ -200,9 +211,12 @@
   .stories{display:flex;gap:14px;overflow-x:auto;scrollbar-width:none;margin:0 -16px 8px;padding:6px 16px 14px;border-bottom:1px solid var(--ig-sep)}
   .stories::-webkit-scrollbar{display:none}
   .story{flex:none;width:70px;display:flex;flex-direction:column;align-items:center;gap:5px;border:0;background:none;padding:0;color:var(--ink);text-decoration:none;font:inherit}
-  .st-ring{position:relative;width:70px;height:70px;border-radius:50%;padding:3px;display:grid;place-items:center;background:conic-gradient(from 210deg,var(--g3),var(--g2),var(--g1),var(--g3));transition:transform .15s}
-  .story.seen .st-ring{background:var(--ig-sep)}
-  .st-ring.plain{background:none;padding:2px}
+  .st-ring{position:relative;isolation:isolate;width:70px;height:70px;border-radius:50%;padding:3px;display:grid;place-items:center;transition:transform .2s var(--spring-ig)}
+  .st-ring::before{content:"";position:absolute;inset:0;z-index:-1;border-radius:50%;background:conic-gradient(from 210deg,var(--g3),var(--g2),var(--g1),var(--g3));animation:st-in .9s cubic-bezier(.2,.8,.2,1) both}
+  .story.seen .st-ring::before{background:var(--ig-sep)}
+  .story:nth-child(2) .st-ring::before{animation-delay:.05s} .story:nth-child(3) .st-ring::before{animation-delay:.1s} .story:nth-child(4) .st-ring::before{animation-delay:.15s} .story:nth-child(n+5) .st-ring::before{animation-delay:.2s}
+  .st-ring.plain{padding:2px}
+  .st-ring.plain::before{display:none}
   .st-ring .mono{width:100%;height:100%;border-radius:50%;font-size:20px;border:3px solid var(--bg)}
   .st-ring .ring::before{display:none}
   .st-plus{position:absolute;right:0;bottom:0;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;background:var(--accent);color:#fff;font-style:normal;font-size:17px;font-weight:600;line-height:1;border:2.5px solid var(--bg)}
@@ -370,11 +384,11 @@
   .hl-c .ic{width:24px;height:24px}
   .hl-l{font-size:12px;white-space:nowrap}
   .hl:active .hl-c{transform:scale(.94)}
-  .pf-tabs{display:grid;grid-template-columns:1fr 1fr;margin:12px -16px 2px;border-top:1px solid var(--ig-sep)}
+  .pf-tabs{position:relative;display:grid;grid-template-columns:1fr 1fr;margin:12px -16px 2px;border-top:1px solid var(--ig-sep)}
+  .pf-tabs::after{bottom:auto;top:-1px}
   .pf-tabs button{height:44px;display:grid;place-items:center;border:0;background:none;color:var(--ink-3);position:relative}
   .pf-tabs button .ic{width:24px;height:24px}
   .pf-tabs button.on{color:var(--ink)}
-  .pf-tabs button.on::after{content:"";position:absolute;left:0;right:0;top:-1px;height:1.5px;background:var(--ink)}
   .pf-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:2px;margin:0 -16px}
   .pf-tile{position:relative;aspect-ratio:4/5;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:8px;text-align:center;color:var(--ink);text-decoration:none;overflow:hidden;
     background:linear-gradient(160deg,color-mix(in oklab,var(--hue,var(--accent)) 26%,var(--surface)),color-mix(in oklab,var(--hue,var(--accent)) 8%,var(--surface)))}
@@ -388,6 +402,65 @@
   .pf-views{position:absolute;left:6px;bottom:6px;display:flex;align-items:center;gap:4px;font-size:12px;font-weight:600;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.6)}
   .pf-views .ic{width:14px;height:14px}
   .pf-empty{grid-column:1/-1}
+
+  /* ---------- Today: a feed of posts ---------- */
+  [data-side="studio"] .needs-panel{display:none}
+  [data-side="studio"] .t-a{display:block}
+  .feed{display:flex;flex-direction:column;margin:0 -16px 6px}
+  .fp{border-bottom:1px solid var(--ig-sep);padding-bottom:12px;animation:m-rise .5s cubic-bezier(.2,.8,.2,1) both;transition:opacity .3s,transform .3s}
+  .fp:nth-child(2){animation-delay:.06s} .fp:nth-child(3){animation-delay:.12s} .fp:nth-child(n+4){animation-delay:.18s}
+  .fp.leaving{opacity:0;transform:scale(.96)}
+  .fp-h{display:flex;align-items:center;gap:10px;padding:10px 4px 10px 16px}
+  .fp-av{flex:none;text-decoration:none;width:38px;height:38px;border-radius:50%;padding:2px;background:conic-gradient(from 210deg,var(--g3),var(--g2),var(--g1),var(--g3))}
+  .fp-av .mono{width:100%;height:100%;border-radius:50%;font-size:13px;border:2px solid var(--bg)}
+  .fp-who{flex:1;min-width:0;display:flex;flex-direction:column;color:inherit;text-decoration:none;line-height:1.25}
+  .fp-who b{font-size:14px;font-weight:600}
+  .fp-who small{font-size:12.5px;color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .fp-media{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;min-height:240px;padding:28px;text-align:center;color:#fff;text-decoration:none;overflow:hidden;
+    background:radial-gradient(120% 90% at 15% 10%,color-mix(in oklab,var(--hue) 85%,#fff 10%),transparent 60%),radial-gradient(100% 90% at 90% 100%,color-mix(in oklab,var(--g2) 75%,transparent),transparent 65%),linear-gradient(150deg,color-mix(in oklab,var(--hue) 70%,#1a0f1a),color-mix(in oklab,var(--g1) 60%,#120a12))}
+  .fp-media::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 55%,rgba(0,0,0,.18));pointer-events:none}
+  .fp-media b{position:relative;z-index:1;max-width:300px;font-size:22px;font-weight:700;line-height:1.25;text-shadow:0 1px 12px rgba(0,0,0,.25)}
+  .pm-ic{position:relative;z-index:1;width:58px;height:58px;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.18);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.3);animation:m-float 4s ease-in-out infinite}
+  .pm-ic .ic{width:28px;height:28px;color:#fff;stroke-width:1.8}
+  .pm-tag{position:relative;z-index:1}
+  .fp-media:active{filter:brightness(.92)}
+  .fp-acts{display:flex;align-items:center;padding:4px 12px 0 6px}
+  .fp-acts .pa-gap{flex:1}
+  .fp-acts .btn{height:32px;border-radius:8px}
+  .fp-cap{margin:4px 16px 0;font-size:14px;line-height:1.4}
+  .fp-cap b{font-weight:600;margin-right:4px}
+  .fp-time{margin:4px 16px 0;font-size:12px;color:var(--ink-3)}
+  .fp-time.late{color:var(--bad)} .fp-time.today{color:var(--warn)}
+
+  [data-side="studio"] .mono{border-radius:50%!important}
+  /* Rich avatars: each brand's colour as a soft gradient. */
+  [data-side="studio"] .mono.tint{background:linear-gradient(145deg,color-mix(in oklab,var(--hue) 55%,var(--surface)),color-mix(in oklab,var(--hue) 22%,var(--surface)));color:color-mix(in oklab,var(--hue) 35%,var(--ink));font-weight:700}
+
+  /* ---------- motion ---------- */
+  /* Lists come in one row after another. */
+  :is(.m-crow,.dm-row,.set-item,.pf-tile,.hl,.story,.m-group h3){animation:m-rise .45s cubic-bezier(.2,.8,.2,1) both}
+  :is(.m-crow,.dm-row,.set-item,.pf-tile,.hl,.story):nth-child(2){animation-delay:.03s}
+  :is(.m-crow,.dm-row,.set-item,.pf-tile,.hl,.story):nth-child(3){animation-delay:.06s}
+  :is(.m-crow,.dm-row,.set-item,.pf-tile,.hl,.story):nth-child(4){animation-delay:.09s}
+  :is(.m-crow,.dm-row,.set-item,.pf-tile,.hl,.story):nth-child(5){animation-delay:.12s}
+  :is(.m-crow,.dm-row,.set-item,.pf-tile,.hl,.story):nth-child(6){animation-delay:.15s}
+  :is(.m-crow,.dm-row,.set-item,.pf-tile,.hl,.story):nth-child(n+7){animation-delay:.18s}
+  /* Taps: things press in and spring back. */
+  [data-side="studio"] :is(.btn,.m-ib,.m-stages button,.story,.hl,.pf-tile,.fp-media,.dm-row,.m-crow){transition:transform .25s var(--spring-ig),opacity .2s,background .2s}
+  [data-side="studio"] :is(.btn,.m-stages button):active{transform:scale(.95);opacity:.85}
+  [data-side="studio"] .m-ib:active{transform:scale(.86);opacity:.6}
+  [data-side="studio"] :is(.pf-tile,.fp-media):active{transform:scale(.98)}
+  .m-stages button.on{animation:m-pop .35s var(--spring-ig)}
+  .pf-av:active,.st-me:active .st-ring{transform:scale(.94)}
+  /* Loading: grey placeholders that shimmer, like Instagram. */
+  .skel{padding-top:4px}
+  .skel-row{display:flex;gap:14px;margin:0 -16px 14px;padding:4px 16px 14px;border-bottom:1px solid var(--ig-sep);overflow:hidden}
+  .skel-li{display:flex;align-items:center;gap:12px;padding:10px 0}
+  .skel-t{flex:1;display:flex;flex-direction:column;gap:8px}
+  .sk{display:block;border-radius:8px;background:linear-gradient(90deg,var(--ig-fill-2) 25%,var(--ig-fill) 50%,var(--ig-fill-2) 75%);background-size:300% 100%;animation:sk 1.3s ease-in-out infinite}
+  .sk-c{flex:none;width:66px;height:66px;border-radius:50%}
+  .sk-av{flex:none;width:52px;height:52px;border-radius:50%}
+  .sk-l{height:12px;width:55%} .sk-s{height:10px;width:35%}
 
   /* Today */
   [data-side="studio"] .hc-in{padding:20px}
@@ -408,7 +481,15 @@
 @keyframes m-in-l{from{transform:translateX(-25%);opacity:.6}}
 @keyframes m-out-r{to{transform:translateX(100%)}}
 @keyframes m-fade-in{from{opacity:.4}}
+@keyframes m-fade-out{to{opacity:0}}
+@keyframes m-tab-in{from{opacity:0;transform:translateY(10px)}}
+@keyframes m-rise{from{opacity:0;transform:translateY(12px)}}
+@keyframes m-pop{0%{transform:scale(.8)}60%{transform:scale(1.12)}100%{transform:scale(1)}}
+@keyframes m-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+@keyframes st-in{from{transform:rotate(-140deg);opacity:0}}
+@keyframes sk{from{background-position:100% 0}to{background-position:-100% 0}}
 @keyframes m-sheet{from{transform:translateY(100%)}}
 @media (prefers-reduced-motion: reduce){
   html[data-nav]::view-transition-old(root),html[data-nav]::view-transition-new(root){animation:none}
+  .fp,.st-ring::before,.pm-ic,.m-crow,.dm-row,.set-item,.pf-tile,.hl,.story,.m-group h3{animation:none!important}
 }

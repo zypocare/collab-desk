@@ -2,7 +2,7 @@
 // big one scrolls away, sheets that slide down to close, and pull down to refresh.
 export const PHONE_Q = '(max-width: 760px)';
 
-export const phone = $state({ on: false, scrolled: false, titled: false });
+export const phone = $state({ on: false, scrolled: false, titled: false, hide: false });
 
 /** Starts the phone behaviours for the Studio. Returns a clean-up function. */
 export function startPhone(refresh: () => Promise<unknown>) {
@@ -11,9 +11,16 @@ export function startPhone(refresh: () => Promise<unknown>) {
 	onMq();
 	mq.addEventListener('change', onMq);
 
+	// Like Instagram: the top bar slides away while scrolling down and comes back on the way up.
+	let last = scrollY;
 	const onScroll = () => {
-		phone.scrolled = scrollY > 4;
-		phone.titled = scrollY > 64;
+		const y = scrollY;
+		phone.scrolled = y > 4;
+		phone.titled = y > 64;
+		if (y < 80) phone.hide = false;
+		else if (y > last + 6) phone.hide = true;
+		else if (y < last - 6) phone.hide = false;
+		if (Math.abs(y - last) > 6) last = y;
 	};
 	onScroll();
 	addEventListener('scroll', onScroll, { passive: true });

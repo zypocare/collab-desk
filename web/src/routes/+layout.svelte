@@ -2,6 +2,7 @@
 	import '../app.css';
 	import '../brand.css';
 	import '../studio.css';
+	import '../mobile-type.css';
 	import '../mobile.css';
 	import type { LayoutProps } from './$types';
 	import { onMount } from 'svelte';
