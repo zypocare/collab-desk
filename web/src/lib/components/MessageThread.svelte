@@ -2,18 +2,20 @@
 	import { onMount, tick } from 'svelte';
 	import { askAi } from '../ai';
 	import { supabase } from '../supabase';
-	import type { Message } from '../types';
+	import type { Collab, Message } from '../types';
 	import { toast } from '../ui.svelte';
 	import { errMessage, firstName } from '../util';
 	import AiThinking from './AiThinking.svelte';
 	import Icon from './Icon.svelte';
+	import NegotiateSheet from './NegotiateSheet.svelte';
 
 	let {
 		collabId,
 		side,
 		otherName,
 		quick = [],
-		facts
+		facts,
+		collab
 	}: {
 		collabId: string;
 		side: 'creator' | 'brand';
@@ -22,7 +24,10 @@
 		quick?: (string | { label: string; text: string; saved?: boolean })[];
 		/** Creator side: facts the AI may use to draft replies. */
 		facts?: Record<string, unknown>;
+		/** Creator side: the collab, for the negotiation helper. */
+		collab?: Collab;
 	} = $props();
+	let negotiating = $state(false);
 
 	// Free AI: three reply drafts from the conversation so far.
 	let drafts = $state<string[]>([]);
@@ -141,6 +146,8 @@
 	const time = (iso: string) => new Date(iso).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' });
 </script>
 
+{#if negotiating && collab}<NegotiateSheet c={collab} thread={messages.map((m) => ({ from: m.sender, text: m.body }))} onuse={useReply} onclose={() => (negotiating = false)} />{/if}
+
 <div class="thread">
 	<div class="th-list" bind:this={list} aria-live="polite">
 		{#if !loaded}
@@ -165,7 +172,7 @@
 	</div>
 	{#if facts && !text}
 		<div class="th-ai">
-			{#if drafting}<AiThinking label="Writing replies" />{:else}<button type="button" class="btn sm ai-btn" onclick={suggestReplies}><Icon name="spark" />{drafts.length ? 'More replies' : 'Suggest replies'}</button>{/if}
+			{#if drafting}<AiThinking label="Writing replies" />{:else}<span class="th-ai-btns"><button type="button" class="btn sm ai-btn" onclick={suggestReplies}><Icon name="spark" />{drafts.length ? 'More replies' : 'Suggest replies'}</button>{#if collab && collab.stage !== 'declined' && collab.stage !== 'wrapped'}<button type="button" class="btn sm" onclick={() => (negotiating = true)} title="Brand asking for a lower price? Get three replies that protect your rate"><Icon name="scale" />Negotiate</button>{/if}</span>{/if}
 			{#each drafts as d, i (i)}<button type="button" class="ai-draft" onclick={() => ((drafts = []), useReply(d))}>{d}</button>{/each}
 		</div>
 	{/if}

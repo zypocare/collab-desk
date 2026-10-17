@@ -50,6 +50,7 @@
 	import { captionStarter, nextStep, replySuggestions, suggestDates } from '../suggest';
 	import { savedFor } from '../savedReplies';
 	import BriefEditor from './BriefEditor.svelte';
+	import ScriptSheet from './ScriptSheet.svelte';
 	import BrandRating from './BrandRating.svelte';
 	import UsageRights from './UsageRights.svelte';
 	import ProductShipping from './ProductShipping.svelte';
@@ -102,6 +103,7 @@
 		declined: ['deal', 'activity']
 	};
 	let showAll = $state(false);
+	let scriptOpen = $state(false);
 	// Free AI: a caption (and shot list) in her voice, from the brief.
 	let capBusy = $state(false);
 	let shots = $state<string[]>([]);
@@ -404,6 +406,7 @@
 						otherName={c.contact_name || c.brand.name}
 						quick={studio.settings ? [...savedFor(c, studio.settings), ...replySuggestions(c, studio.settings)] : []}
 						facts={collabFacts(c, studio.settings)}
+						collab={c}
 					/>
 				{/key}
 			</section>
@@ -718,6 +721,13 @@
 
 			<section class="sec" id="sec-brief" hidden={!sh('brief')}>
 				<h3>Brief</h3>
+				{#if !['declined', 'wrapped'].includes(c.stage)}
+					<div class="sc-cta">
+						<span class="sc-cta-ic"><Icon name="script" /></span>
+						<span><b>{c.script ? 'Your Reel script' : 'Turn this brief into a Reel script'}</b><small>{c.script ? `${c.script.scenes.length} scenes${c.script.hook ? ` · “${c.script.hook}”` : ''}` : 'Hooks, every scene with what to say, the must-says and a caption'}</small></span>
+						<button class="btn sm ai-btn" onclick={() => (scriptOpen = true)}><Icon name="spark" />{c.script ? 'Open' : 'Write script'}</button>
+					</div>
+				{/if}
 				{#if missingBrief.length && !['declined', 'wrapped'].includes(c.stage)}
 					<div class="date-sug brief-gap">
 						<Icon name="alert" />
@@ -768,6 +778,7 @@
 	{/if}
 </aside>
 
+{#if c && scriptOpen}<ScriptSheet {c} onclose={() => (scriptOpen = false)} />{/if}
 {#if c && quoteOpen}
 	<QuoteDialog {c} base={quoteOpen.base} editing={quoteOpen.editing} onclose={() => (quoteOpen = null)} />
 {/if}

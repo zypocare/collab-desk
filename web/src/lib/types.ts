@@ -80,6 +80,24 @@ export type Draft = {
 
 export type Checklist = Partial<Record<'paid_label' | 'ad_tag' | 'brand_tag' | 'link', boolean>>;
 
+/** The AI's ready-to-shoot script for a collab (Brief to Reel script). */
+export type ReelScript = {
+	hooks: string[];
+	hook?: string;
+	idea: string;
+	scenes: { time: string; shot: string; say: string; text: string }[];
+	must: string[];
+	avoid: string[];
+	caption: string;
+	hashtags: string[];
+	music: string;
+	props: string[];
+	style?: string;
+	language?: string;
+	length?: string;
+	made_at?: string;
+};
+
 export type BriefDetails = { message?: string; hashtags?: string[]; mentions?: string[]; link?: string; promo?: string; dos?: string; donts?: string; references?: string };
 
 export type PackageItem = { kind: string; qty: number };
@@ -175,6 +193,7 @@ export type Collab = {
 	live_time: string | null;
 	post_alert_at: string | null;
 	shot_list: { t: string; done: boolean }[];
+	script: ReelScript | null;
 	files?: { id: string; label: string; url: string; file_path: string | null; file_type: string; size_bytes: number; created_at: string; downloaded_at: string | null }[];
 	files_sent_at: string | null;
 	expenses?: { id: string; collab_id: string; label: string; category: 'props' | 'travel' | 'editor' | 'shoot' | 'other'; amount: number; spent_on: string }[];

@@ -1277,3 +1277,106 @@
 /* Voice alert setting */
 .voice-row{padding:12px 0 0;border-top:1px solid var(--line)}
 .voice-row .btn{flex:none}
+
+/* Chat: the AI buttons side by side */
+.th-ai-btns{display:flex;flex-wrap:wrap;gap:8px}
+
+/* Negotiation helper and Reel script (dialogs; bottom sheets on phones) */
+.dialog.ng,.dialog.sc{width:min(640px,100%);max-height:calc(100dvh - 32px);overflow-y:auto;padding:22px 24px 20px}
+.dialog.sc{width:min(760px,100%)}
+.ng-h{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px}
+.ng-h .eb{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)}
+.ng-h h2{margin:4px 0 0;font-size:21px}
+.ng-h small{display:block;margin-top:2px;font-size:13.5px;color:var(--ink-3)}
+.ng-nums{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.ng-n{display:flex;flex-direction:column;gap:6px;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:color-mix(in oklab,var(--ink) 3%,transparent)}
+.ng-n small{font-size:12px;font-weight:600;color:var(--ink-3)}
+.ng-n.ask{border-color:color-mix(in oklab,var(--ok) 45%,var(--line))}
+.ng-n.floor{border-color:color-mix(in oklab,var(--warn,#e0a23a) 45%,var(--line))}
+.ng-in{display:flex;align-items:center;gap:4px}
+.ng-in i{font-style:normal;font-weight:700;color:var(--ink-3)}
+.ng-in input{width:100%;min-width:0;border:0;background:none;outline:none;padding:0;font:inherit;font-size:19px;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums}
+.ng-sub{margin:10px 0 0;font-size:13.5px;line-height:1.5;color:var(--ink-3)}
+.ng-sub b{color:var(--ink-2)}
+.ng-said{margin-top:14px}
+.ng-busy{padding:22px 0 8px}
+.ng-read{display:flex;gap:8px;align-items:flex-start;margin:16px 0 0;padding:10px 12px;border-radius:12px;background:color-mix(in oklab,var(--g2) 10%,transparent);font-size:14px;line-height:1.45;color:var(--ink-2)}
+.ng-read .ic{flex:none;width:16px;height:16px;margin-top:2px;color:var(--g2)}
+.ng-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:14px 0 10px}
+.ng-tabs button{display:flex;flex-direction:column;align-items:flex-start;gap:2px;min-width:0;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:none;color:var(--ink-2);font:inherit;text-align:left;cursor:pointer}
+.ng-tabs button .ic{width:16px;height:16px;color:var(--ink-3)}
+.ng-tabs button span{font-size:13.5px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.ng-tabs button b{font-size:15px;font-variant-numeric:tabular-nums;color:var(--ink)}
+.ng-tabs button.on{border-color:color-mix(in oklab,var(--accent) 60%,transparent);background:color-mix(in oklab,var(--accent) 10%,transparent)}
+.ng-tabs button.on .ic{color:var(--accent)}
+.ng-changes{display:flex;gap:8px;align-items:flex-start;margin:0 0 8px;font-size:13.5px;color:var(--ink-2)}
+.ng-changes .ic{flex:none;width:15px;height:15px;margin-top:2px;color:var(--accent)}
+textarea.inp.ng-text{min-height:132px;line-height:1.55}
+.ng-acts{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:14px}
+.ng-acts .hint{flex:1 1 220px;font-size:13px}
+.ng-tip{margin:14px 0 0;padding-top:12px;border-top:1px solid var(--line);font-size:13.5px;color:var(--ink-2)}
+.ng-tip b{margin-right:4px;color:var(--ink)}
+.sc-opts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.sc-opts .lbl-t{display:block;margin-bottom:5px}
+.sc-note{display:flex;gap:6px;align-items:flex-start;margin:10px 0 0;font-size:13px}
+.sc-note .ic{flex:none;width:15px;height:15px;margin-top:2px}
+.sc-hooks{margin:14px 0 0;padding:0;border:0;display:flex;flex-direction:column;gap:6px}
+.sc-hooks legend{margin-bottom:6px;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+.sc-hooks label{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:12px;border:1px solid var(--line);cursor:pointer;font-size:14.5px;font-weight:600;line-height:1.4}
+.sc-hooks label.on{border-color:color-mix(in oklab,var(--accent) 60%,transparent);background:color-mix(in oklab,var(--accent) 9%,transparent)}
+.sc-hooks input{margin-top:3px;accent-color:var(--accent)}
+.sc-scenes{list-style:none;margin:14px 0 0;padding:0;border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.sc-scenes li{display:flex;gap:12px;padding:12px 14px}
+.sc-scenes li + li{border-top:1px solid var(--line)}
+.sc-t{flex:none;min-width:58px;font-size:12.5px;font-weight:700;color:var(--accent);font-variant-numeric:tabular-nums;padding-top:1px}
+.sc-scenes b{display:block;font-size:14.5px;font-weight:600;line-height:1.4}
+.sc-say,.sc-txt{display:flex;gap:6px;align-items:flex-start;margin:5px 0 0;font-size:13.5px;line-height:1.45;color:var(--ink-2)}
+.sc-say .ic,.sc-txt .ic{flex:none;width:13px;height:13px;margin-top:3px;color:var(--ink-3)}
+.sc-txt{color:var(--ink-3)}
+.sc-cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px;margin-top:10px}
+.sc-box{padding:12px 14px;border-radius:14px;background:color-mix(in oklab,var(--ok) 8%,transparent)}
+.sc-box.avoid{background:color-mix(in oklab,var(--bad) 7%,transparent)}
+.sc-box h3,.sc-cap h3{margin:0 0 6px;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+.sc-box ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:5px}
+.sc-box li{display:flex;gap:6px;align-items:flex-start;font-size:13.5px;line-height:1.4}
+.sc-box li .ic{flex:none;width:14px;height:14px;margin-top:2px;color:var(--ok)}
+.sc-box.avoid li .ic{color:var(--bad)}
+.sc-meta{display:flex;flex-wrap:wrap;gap:6px 16px;margin:10px 0 0;font-size:13px;color:var(--ink-2)}
+.sc-meta span{display:flex;gap:6px;align-items:center}
+.sc-meta .ic{width:14px;height:14px;color:var(--ink-3)}
+.sc-cap{margin-top:10px;padding:12px 14px;border-radius:14px;border:1px solid var(--line)}
+.sc-cap-h{display:flex;align-items:center;justify-content:space-between}
+.sc-cap-h h3{margin:0}
+.sc-cap p{margin:6px 0 0;font-size:14px;line-height:1.55;white-space:pre-wrap}
+.sc-tags{color:var(--accent)}
+.sc-cta{display:flex;align-items:center;gap:12px;margin:0 0 14px;padding:12px 14px;border-radius:14px;border:1px solid color-mix(in oklab,var(--g2) 30%,var(--line));background:color-mix(in oklab,var(--g2) 6%,transparent)}
+.sc-cta > span:nth-child(2){flex:1;min-width:0}
+.sc-cta b{display:block;font-size:14.5px}
+.sc-cta small{display:block;font-size:13px;color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sc-cta-ic{flex:none;width:36px;height:36px;border-radius:10px;display:grid;place-items:center;color:#fff;background:var(--grad)}
+.sc-cta-ic .ic{width:19px;height:19px}
+.ct-script{flex:none}
+@media (max-width:760px){
+  .dialog.ng,.dialog.sc{padding:22px 16px calc(16px + env(safe-area-inset-bottom,0px))}
+  .ng-nums{gap:6px}
+  .ng-n{padding:8px 10px}
+  .ng-in input{font-size:17px}
+  .ng-tabs button{padding:8px 10px}
+  .ng-tabs button span{white-space:normal;line-height:1.25;font-size:13px}
+  .sc-opts{grid-template-columns:1fr 1fr}
+  .sc-opts .f:first-child{grid-column:1 / -1}
+  .sc-t{min-width:46px}
+  .ng-acts .btn{flex:1 1 auto;justify-content:center}
+  .ct-script{padding:0 10px}
+}
+/* The general dialog text style (16px, 16px gap) doesn't apply inside these two */
+[data-side] .dialog .ng-sub{margin-bottom:0;font-size:13.5px;color:var(--ink-3)}
+[data-side] .dialog .ng-read{margin-bottom:0;font-size:14px;color:var(--ink-2)}
+[data-side] .dialog .ng-changes{margin-bottom:8px;font-size:13.5px;color:var(--ink-2)}
+[data-side] .dialog .ng-tip{margin-bottom:0;font-size:13.5px;color:var(--ink-2)}
+[data-side] .dialog .sc-note{margin-bottom:0;font-size:13px}
+[data-side] .dialog .sc-say,[data-side] .dialog .sc-txt{margin-bottom:0;font-size:13.5px;color:var(--ink-2)}
+[data-side] .dialog .sc-txt{color:var(--ink-3)}
+[data-side] .dialog .sc-meta{margin-bottom:0;font-size:13px}
+[data-side] .dialog .sc-cap p{margin-bottom:0;font-size:14px;color:var(--ink)}
+[data-side] .dialog .sc-cap p.sc-tags{color:var(--accent)}

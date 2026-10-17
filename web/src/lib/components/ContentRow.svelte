@@ -8,11 +8,13 @@
 	import DatePicker from './DatePicker.svelte';
 	import Icon from './Icon.svelte';
 	import Mono from './Mono.svelte';
+	import ScriptSheet from './ScriptSheet.svelte';
 
 	// One collab in her content plan: what's left to make, when she shoots it, and its shot list.
 	let { c, plan = false }: { c: Collab; plan?: boolean } = $props();
 
 	let open = $state(false);
+	let scriptOpen = $state(false);
 	let adding = $state('');
 	const owed = $derived(c.deliverables.filter((d) => !d.done));
 	const hours = $derived(hoursLeft(c, studio.settings));
@@ -29,6 +31,8 @@
 	}
 </script>
 
+{#if scriptOpen}<ScriptSheet {c} onclose={() => (scriptOpen = false)} />{/if}
+
 <div class="ct-row" class:open>
 	<div class="ct-main">
 		<Mono name={c.brand.name} size="sm" />
@@ -41,6 +45,7 @@
 				{#if c.product_received_at}<span class="ok"><Icon name="box" />Product here</span>{/if}
 			</div>
 		</div>
+		<button class="btn sm ai-btn ct-script" onclick={() => (scriptOpen = true)} title="A ready-to-shoot script from the brief"><Icon name="spark" />{c.script ? 'Script' : 'Write script'}</button>
 		<button class="btn sm ct-shots" aria-expanded={open} onclick={() => (open = !open)}>
 			<Icon name="layers" />{shots.length ? `${doneShots}/${shots.length}` : 'Shot list'}
 		</button>

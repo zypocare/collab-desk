@@ -35,6 +35,7 @@
 				otherName={c.contact_name || c.brand.name}
 				quick={studio.settings ? [...savedFor(c, studio.settings), ...replySuggestions(c, studio.settings)] : []}
 				facts={collabFacts(c, studio.settings)}
+				collab={c}
 			/>
 		{/key}
 	</div>

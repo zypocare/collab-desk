@@ -15,7 +15,7 @@ type Env = {
 type Run = { env: Env; gemini: boolean; neurons: number };
 
 // Expected size of each job in Cloudflare neurons (reserved before, corrected after).
-const COST: Record<string, number> = { dm: 160, reply: 110, caption: 110, pitch: 140, fit: 230, classify: 40, summary: 220 };
+const COST: Record<string, number> = { dm: 160, reply: 110, caption: 110, pitch: 140, fit: 230, classify: 40, summary: 220, negotiate: 210, script: 330 };
 // Cloudflare's price list in neurons per token (Llama 3.3 70B fast; Llama 3.2 11B vision).
 const PER_TOKEN = { text: [0.0267, 0.2048], vision: [0.0045, 0.0615] };
 const USED_UP = "Today's free AI is used up. It's back at 5:30 am.";
@@ -32,10 +32,10 @@ export default {
 		try {
 			const kind = url.pathname.slice('/api/ai/'.length);
 			if (kind === 'status') return json(await status(req, env));
-			if (!['dm', 'reply', 'caption', 'pitch', 'classify', 'fit', 'summary'].includes(kind)) return json({ error: 'Unknown.' }, 404);
+			if (!['dm', 'reply', 'caption', 'pitch', 'classify', 'fit', 'summary', 'negotiate', 'script'].includes(kind)) return json({ error: 'Unknown.' }, 404);
 			const body = (await req.json()) as Record<string, unknown>;
 			const job = (x: Run) =>
-				kind === 'dm' ? readDm(x, body) : kind === 'reply' ? replies(x, body) : kind === 'pitch' ? pitch(x, body) : kind === 'classify' ? classify(x, body) : kind === 'fit' ? fit(x, body) : kind === 'summary' ? summary(x, body) : caption(x, body);
+				kind === 'dm' ? readDm(x, body) : kind === 'reply' ? replies(x, body) : kind === 'pitch' ? pitch(x, body) : kind === 'classify' ? classify(x, body) : kind === 'fit' ? fit(x, body) : kind === 'summary' ? summary(x, body) : kind === 'negotiate' ? negotiate(x, body) : kind === 'script' ? script(x, body) : caption(x, body);
 
 			// Checking an incoming Instagram DM comes from the DM webhook with a single-use pass
 			// (Cloudflare only: DMs are never sent to the backup automatically).
@@ -286,6 +286,74 @@ Return ONLY JSON: {"collab": "likely" | "maybe" | "no", "kind": "...", "brand": 
 	const c = String(j.collab ?? '');
 	if (!['likely', 'maybe', 'no'].includes(c)) throw new Error('No clear answer from the AI.');
 	return { collab: c, kind: String(j.kind ?? '').toLowerCase(), brand: String(j.brand ?? ''), summary: String(j.summary ?? '').slice(0, 120), ...(b.debug ? { raw: reply.slice(0, 400) } : {}) };
+}
+
+// ---------- 5b. Negotiation: three replies when a brand pushes back on price ----------
+// The numbers (their offer, her ask, her walk-away point) are worked out in the app; the AI writes the
+// words and may only use those numbers. Any option below her walk-away point is dropped here.
+async function negotiate(x: Run, b: Record<string, unknown>) {
+	const num = (v: unknown) => Math.max(0, Math.round(Number(v) || 0));
+	const offer = num(b.offer), ask = num(b.ask), floor = num(b.floor);
+	const thread = (Array.isArray(b.thread) ? b.thread : []).slice(-10) as { from: string; text: string }[];
+	const reply = await chat(
+		x,
+		`You are a seasoned talent manager negotiating brand deals for an Indian Instagram creator. Write replies in her voice (first person), warm and confident, never apologetic or desperate, 2 to 4 short sentences, no more than one emoji. Reply in the language the brand used (English, Hinglish, Hindi or Kannada), keeping amounts as ₹ figures.
+Numbers you may use, and no others: their offer ₹${offer || 'not stated'}, her ask ₹${ask}, her walk-away point ₹${floor} (never go below it, and never mention it). Facts: ${JSON.stringify(b.facts ?? {})}. Her audience: ${JSON.stringify(b.stats ?? {})}. History with this brand: ${JSON.stringify(b.history ?? {})}.
+Good tactics: anchor on value (audience, engagement, what the deliverables include, usage rights), keep the door open, trade instead of discounting (fewer deliverables, a Story instead of a second Reel, shorter usage rights, no exclusivity, no paid-ads/whitelisting rights, 50% advance, a longer timeline, a long-term package), and ask a question that moves the deal forward.
+Give exactly three options:
+1. "hold": keep her ask (₹${ask}) and justify it.
+2. "middle": one fair number between their offer and her ask, never below ₹${floor}.
+3. "trade": accept a price at or near their offer ONLY by changing what they get, and say exactly what changes; never below ₹${floor}.
+Return ONLY JSON: {"read": "one line on where the brand stands", "options": [{"key": "hold" | "middle" | "trade", "label": "2-4 words", "amount": number, "changes": "what changes, or ''", "text": "the reply"}], "tip": "one short negotiating tip for her"}`,
+		thread.map((m) => `${m.from === 'creator' ? 'Her' : 'Brand'}: ${String(m.text).slice(0, 700)}`).join('\n') || `Brand: ${String(b.said ?? 'Can you do it for less?')}`,
+		900
+	);
+	const j = firstJson(reply) ?? {};
+	const options = (Array.isArray(j.options) ? (j.options as Record<string, unknown>[]) : [])
+		.map((o) => ({ key: String(o.key ?? ''), label: String(o.label ?? '').slice(0, 40), amount: num(o.amount), changes: String(o.changes ?? '').slice(0, 200), text: String(o.text ?? '').trim() }))
+		.filter((o) => o.text && (!floor || !o.amount || o.amount >= floor))
+		.slice(0, 3);
+	if (!options.length) throw new Error('No clear answer from the AI.');
+	return { read: String(j.read ?? '').slice(0, 200), options, tip: String(j.tip ?? '').slice(0, 200) };
+}
+
+// ---------- 5c. Brief to Reel script: hooks, scenes, must-says, caption ----------
+async function script(x: Run, b: Record<string, unknown>) {
+	const reply = await chat(
+		x,
+		`You are a top Indian short-video strategist writing a ready-to-shoot script for a creator's brand collaboration. Use the brief and facts; never invent offers, prices or claims the brief doesn't make (no medical or "guaranteed" claims). The creator speaks in first person, natural and not salesy.
+Style: ${String(b.style ?? 'whatever suits the brief best')}. Spoken language: ${String(b.language ?? 'English')}. Target length: ${String(b.length ?? '30-45 seconds')}.
+Write:
+- "hooks": 3 different scroll-stopping first lines (under 12 words each) for the first 3 seconds.
+- "idea": the concept in one sentence.
+- "scenes": 5 to 9 beats in order; each has "time" (like "0-3s"), "shot" (what the camera sees, specific and filmable at home or on location), "say" (her voiceover or lines, or '' if none), "text" (on-screen text, or '').
+- "must": every must-say / must-show point from the brief (product name, key message, offer or promo code, mentions, link), as short checklist items.
+- "avoid": the brief's don'ts and Indian ASCI basics (disclose the partnership, no false claims), as short items.
+- "caption": an Instagram caption in her voice, hook first, including the key message, mentions and promo code from the brief, and "#ad" as Indian ASCI rules require; under 120 words.
+- "hashtags": up to 10, the brief's first.
+- "music": one line on the music/audio vibe. "props": short list of things to keep ready.
+Return ONLY JSON with exactly these keys: {"hooks": [], "idea": "", "scenes": [{"time": "", "shot": "", "say": "", "text": ""}], "must": [], "avoid": [], "caption": "", "hashtags": [], "music": "", "props": []}`,
+		JSON.stringify(b).slice(0, 4500),
+		1600
+	);
+	const j = firstJson(reply) ?? {};
+	const list = (v: unknown, n: number, len = 160) => (Array.isArray(v) ? v.map((s) => String(s ?? '').trim().slice(0, len)).filter(Boolean).slice(0, n) : []);
+	const scenes = (Array.isArray(j.scenes) ? (j.scenes as Record<string, unknown>[]) : [])
+		.map((s) => ({ time: String(s.time ?? '').slice(0, 20), shot: String(s.shot ?? '').trim().slice(0, 240), say: String(s.say ?? '').trim().slice(0, 300), text: String(s.text ?? '').trim().slice(0, 120) }))
+		.filter((s) => s.shot || s.say)
+		.slice(0, 12);
+	if (!scenes.length) throw new Error('No clear answer from the AI.');
+	return {
+		hooks: list(j.hooks, 3, 120),
+		idea: String(j.idea ?? '').slice(0, 240),
+		scenes,
+		must: list(j.must, 10),
+		avoid: list(j.avoid, 8),
+		caption: String(j.caption ?? '').trim().slice(0, 1500),
+		hashtags: list(j.hashtags, 12, 40),
+		music: String(j.music ?? '').slice(0, 160),
+		props: list(j.props, 10, 80)
+	};
 }
 
 // ---------- 6. "Should I take it?": what a request really involves ----------
