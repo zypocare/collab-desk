@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { afterNavigate, goto } from '$app/navigation';
+	import { edgeSwipeBack, goBackOr } from '#lib/back.ts';
 	import { page } from '$app/state';
 	import { onMount, tick, untrack } from 'svelte';
 	import { watchVoiceUnlock } from '#lib/voice.ts';
@@ -162,7 +163,8 @@
 	afterNavigate((n) => {
 		if (n.from) inApp = true;
 	});
-	const goBack = () => (inApp && history.length > 1 ? history.back() : goto(back));
+	const goBack = () => goBackOr(back || '/studio', inApp);
+	onMount(() => edgeSwipeBack(goBack, () => phone.on && !!back));
 	onMount(() =>
 		startPhone(async () => {
 			await loadStudio();

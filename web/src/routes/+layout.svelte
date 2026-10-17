@@ -10,6 +10,7 @@
 	import type { LayoutProps } from './$types';
 	import { onMount } from 'svelte';
 	import { onNavigate } from '$app/navigation';
+	import { isIOS } from '#lib/back.ts';
 	import { page } from '$app/state';
 	import { startReveal } from '#lib/reveal.ts';
 	import { auth, initAuth } from '#lib/auth.svelte.ts';
@@ -34,7 +35,8 @@
 	// A soft cross-fade between pages where the browser supports it.
 	onNavigate((nav) => {
 		const d = document as Document & { startViewTransition?: (cb: () => Promise<void>) => unknown };
-		if (!d.startViewTransition || !nav.from || !nav.to || nav.from.url.href === nav.to.url.href || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+		// Not on iPhone/iPad: Safari's page transitions can freeze half-way there (things stuck mid-screen, taps ignored).
+		if (!d.startViewTransition || isIOS() || !nav.from || !nav.to || nav.from.url.href === nav.to.url.href || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 		// On a phone (Studio or brand side): screens opened from a tab slide in from the right and slide back out.
 		const inApp = (u: URL) => u.pathname.startsWith('/studio') || u.pathname.startsWith('/brand') || u.pathname === '/' || u.pathname.startsWith('/insights');
 		const side = (u: URL) => u.pathname.startsWith('/studio');

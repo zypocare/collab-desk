@@ -7,6 +7,7 @@
 	import { money } from '../currency';
 	import { tick } from 'svelte';
 	import { goto } from '$app/navigation';
+	import { goBackOr } from '../back';
 	import {
 		addDeliverable,
 		byId,
@@ -202,10 +203,7 @@
 
 	function close() {
 		ui.openCollab = null;
-		if (page) {
-			if (history.length > 1) history.back();
-			else goto('/studio/collabs');
-		}
+		if (page) goBackOr('/studio/collabs', true);
 	}
 
 	type Field = Exclude<keyof Collab, 'id' | 'brand' | 'deliverables' | 'events'>;

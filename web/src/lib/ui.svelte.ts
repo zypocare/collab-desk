@@ -100,7 +100,8 @@ export function toggleTheme() {
 		try { localStorage.setItem(TKEY, next); } catch { /* storage blocked */ }
 	};
 	const d = document as Document & { startViewTransition?: (cb: () => void) => { ready: Promise<void>; finished: Promise<void> } };
-	if (!d.startViewTransition || REDUCED) return apply();
+	const ios = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+	if (!d.startViewTransition || REDUCED || ios) return apply();
 	const { x, y } = pointer;
 	const r = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y));
 	document.documentElement.classList.add('vt-theme');

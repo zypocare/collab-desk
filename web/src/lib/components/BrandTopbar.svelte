@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
+	import { edgeSwipeBack, goBackOr } from '../back';
 	import { page } from '$app/state';
 	import { onMount } from 'svelte';
 	import { auth, signOut, switchBrand } from '../auth.svelte';
@@ -69,7 +70,8 @@
 			if (signedIn) await loadRequests();
 		});
 	});
-	const goBack = () => (inApp ? history.back() : goto(back));
+	const goBack = () => goBackOr(back || '/brand', inApp);
+	onMount(() => edgeSwipeBack(goBack, () => phone.on && !!back));
 </script>
 
 {#if phone.on}

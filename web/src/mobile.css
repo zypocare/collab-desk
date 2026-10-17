@@ -444,7 +444,10 @@
   [data-side="studio"] .drawer.as-page .dr-h .mono{border-radius:50%}
   [data-side="studio"] .drawer.as-page .dr-h .title-inp{font-size:22px;font-weight:700}
   [data-side="studio"] .drawer.as-page .dr-h::before,[data-side="studio"] .drawer.as-page .dr-h::after{display:none}
-  [data-side="studio"] .cx-nav{position:sticky;top:calc(var(--m-bar) + env(safe-area-inset-top,0px));width:auto;max-width:none;margin:0 -16px 0;padding:6px 16px 8px;border-radius:0;border:0;border-bottom:1px solid var(--ig-sep);box-shadow:none;background:var(--ig-bar);-webkit-backdrop-filter:none;backdrop-filter:none}
+  [data-side="studio"] .cx-nav{position:relative;top:auto;width:auto;max-width:none;margin:0 -16px 0;padding:6px 16px 8px;border-radius:0;border:0;border-bottom:1px solid var(--ig-sep);box-shadow:none;background:var(--ig-bar);-webkit-backdrop-filter:none;backdrop-filter:none}
+  /* Phones: the jump row sits at the top of the collab (not stuck, so it never floats over the page);
+     a jump lands the section just under the header. */
+  [data-side="studio"] .drawer.as-page [id^="sec-"]{scroll-margin-top:calc(var(--m-bar) + env(safe-area-inset-top,0px) + 8px)}
   [data-side="studio"] .cx-nav a{padding:6px 14px;border-radius:9px;background:var(--ig-fill);font-size:14px;margin-right:6px;color:var(--ink)}
   [data-side="studio"] .drawer.as-page .sec{margin:0 -16px;padding:18px 16px;border:0;border-bottom:1px solid var(--ig-sep);border-radius:0;background:none;box-shadow:none}
   [data-side="studio"] .drawer.as-page .sec:focus-within{border-color:var(--ig-sep);box-shadow:none}
