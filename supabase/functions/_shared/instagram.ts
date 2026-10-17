@@ -214,3 +214,24 @@ const mock = {
 };
 
 export const ig = MOCK ? mock : real;
+
+/**
+ * Ask Instagram to send this account's DMs to the app's webhook. Meta only delivers messages for
+ * accounts subscribed like this, once they've allowed messages; it's safe to repeat.
+ */
+export async function subscribeMessages(token: string) {
+  const u = new URL(GRAPH + '/me/subscribed_apps');
+  u.searchParams.set('subscribed_fields', 'messages');
+  u.searchParams.set('access_token', token);
+  const res = await fetch(u, { method: 'POST' });
+  const json = await res.json().catch(() => ({}));
+  if (json.error) throw new IgError(json.error.message ?? 'Instagram error', json.error.code);
+  return json as { success?: boolean };
+}
+
+/** Subscribe the connected account to DMs if it allowed messages (used after connecting and daily). */
+export async function ensureMessages(db: any) {
+  const { data: t } = await db.from('ig_token').select('access_token, permissions').eq('id', 1).maybeSingle();
+  if (!t?.access_token || !String(t.permissions ?? '').includes('instagram_business_manage_messages')) return { skipped: 'DMs not allowed yet' };
+  return await subscribeMessages(t.access_token);
+}

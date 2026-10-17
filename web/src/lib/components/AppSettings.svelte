@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { disablePush, enablePush, install, isIos, pushState, pwa } from '../pwa.svelte';
+	import { disablePush, enablePush, install, isIos, logAlerts, pushState, pwa } from '../pwa.svelte';
 	import { supabase } from '../supabase';
 	import { toast } from '../ui.svelte';
 	import { errMessage } from '../util';
@@ -12,6 +12,8 @@
 	onMount(async () => {
 		ios = isIos();
 		status = await pushState().catch(() => 'unsupported' as const);
+		// An iPhone that can't get alerts: note why (old iOS, or opened in Safari instead of from the home screen).
+		if (status === 'unsupported' && ios) logAlerts('alerts_unsupported');
 	});
 
 	async function toggle() {
@@ -23,10 +25,12 @@
 				toast('Notifications off on this device', 'bell');
 			} else {
 				await enablePush();
+				logAlerts('alerts_on');
 				status = 'on';
 				toast('Notifications on', 'bell');
 			}
 		} catch (e) {
+			if (status !== 'on') logAlerts('alerts_failed', errMessage(e));
 			toast(errMessage(e), 'alert');
 			status = await pushState();
 		}

@@ -3,6 +3,7 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { admin, cronAllowed } from '../_shared/admin.ts';
 import { runSync } from '../_shared/igsync.ts';
+import { ensureMessages } from '../_shared/instagram.ts';
 
 const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-cron-secret' };
 const reply = (body: unknown, status = 200) => Response.json(body, { status, headers: cors });
@@ -21,7 +22,10 @@ Deno.serve(async (req) => {
 
   const body = await req.json().catch(() => ({}));
   try {
-    return reply(await runSync(admin(), { reportFor: typeof body.report_for === 'string' ? body.report_for : undefined }));
+    const db = admin();
+    // Keep her DMs coming to the app (repairs it if Instagram ever drops the subscription).
+    const messages = await ensureMessages(db).catch((e) => ({ error: e instanceof Error ? e.message : String(e) }));
+    return reply({ ...(await runSync(db, { reportFor: typeof body.report_for === 'string' ? body.report_for : undefined })), messages });
   } catch (e) {
     return reply({ error: e instanceof Error ? e.message : String(e) }, 500);
   }

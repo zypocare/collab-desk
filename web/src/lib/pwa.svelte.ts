@@ -79,6 +79,13 @@ export async function enablePush() {
 	if (e2) throw new Error(e2.message);
 }
 
+/** Note what happened when turning alerts on (so a problem on her phone can be seen remotely). */
+export function logAlerts(kind: 'alerts_on' | 'alerts_failed' | 'alerts_unsupported', detail = '') {
+	const standalone = matchMedia('(display-mode: standalone)').matches || (navigator as unknown as { standalone?: boolean }).standalone === true;
+	const device = `${standalone ? 'home screen app' : 'browser tab'} · permission ${'Notification' in window ? Notification.permission : 'n/a'} · push ${'PushManager' in window ? 'yes' : 'no'} · ${navigator.userAgent}`.slice(0, 300);
+	supabase.from('app_events').insert({ kind, detail: detail.slice(0, 500), device }).then(() => {});
+}
+
 export async function disablePush() {
 	const reg = await navigator.serviceWorker.getRegistration();
 	const sub = await reg?.pushManager.getSubscription();

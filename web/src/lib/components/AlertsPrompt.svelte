@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { enablePush, isIos, pushState, pwa } from '../pwa.svelte';
+	import { enablePush, isIos, logAlerts, pushState, pwa } from '../pwa.svelte';
 	import { supabase } from '../supabase';
 	import { toast } from '../ui.svelte';
 	import { errMessage } from '../util';
@@ -27,10 +27,12 @@
 		busy = true;
 		try {
 			await enablePush();
+			logAlerts('alerts_on');
 			status = 'on';
 			const { data } = await supabase.functions.invoke('push-test', { body: {} });
 			toast((data as { sent?: number })?.sent ? 'Alerts are on. A test is on its way.' : 'Alerts are on.', 'bell');
 		} catch (e) {
+			logAlerts('alerts_failed', errMessage(e));
 			toast(errMessage(e), 'alert');
 			status = await pushState().catch(() => 'unsupported' as const);
 		}

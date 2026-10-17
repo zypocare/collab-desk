@@ -2,7 +2,7 @@
 // then runs the first sync. Also handles "Disconnect". Only the signed-in creator may call it.
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { admin } from '../_shared/admin.ts';
-import { ig } from '../_shared/instagram.ts';
+import { ensureMessages, ig } from '../_shared/instagram.ts';
 import { runSync } from '../_shared/igsync.ts';
 
 const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type' };
@@ -33,6 +33,8 @@ Deno.serve(async (req) => {
   try {
     const t = await ig.exchangeCode(String(code), String(redirect_uri));
     await db.from('ig_token').upsert({ id: 1, access_token: t.token, obtained_at: new Date().toISOString(), expires_at: new Date(Date.now() + t.expiresIn * 1000).toISOString(), permissions: (t as { permissions?: string }).permissions ?? '' });
+    // Start receiving her DMs (Meta sends them only after this).
+    await ensureMessages(db).catch((e) => console.error('[subscribe messages]', e));
     const summary = await runSync(db);
     return reply({ ok: true, summary });
   } catch (e) {
