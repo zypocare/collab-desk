@@ -725,6 +725,50 @@
   [data-side="brand"] .btn{transition:transform .25s var(--spring-ig),opacity .2s,background .2s}
   [data-side="brand"] .btn:active{transform:scale(.95)}
 
+  /* ---------- Brand side, screen by screen: an app, not a squeezed web page ---------- */
+  [data-side="brand"]{--bx-gut:16px;--top-h:calc(var(--m-bar) + env(safe-area-inset-top,0px) - 8px)}
+  [data-side="brand"] .bx{padding:0 16px calc(96px + env(safe-area-inset-bottom,0px))}
+  [data-side="brand"] .wrap{padding-inline:16px}
+
+  /* Sticky strips sit right under the top bar, edge to edge, solid. */
+  [data-side="brand"] :is(.bx-secnav,.rq-steps){top:calc(var(--m-bar) + env(safe-area-inset-top,0px));z-index:30;width:auto;max-width:none;margin-inline:-16px;padding:0 8px;border:0;border-radius:0;border-bottom:1px solid var(--ig-sep);background:var(--bg);box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none}
+  [data-side="brand"] .bx-secnav{margin-top:0;gap:0}
+  [data-side="brand"] .bx-secnav a{position:relative;padding:14px 14px 12px;border-radius:0;background:none!important;box-shadow:none!important;color:var(--ink-3);font-size:14.5px}
+  [data-side="brand"] .bx-secnav a.on{color:var(--ink)}
+  [data-side="brand"] .bx-secnav a.on::after{content:"";position:absolute;left:12px;right:12px;bottom:-1px;height:2.5px;border-radius:2px;background:var(--grad)}
+  [data-side="brand"] .rq-steps{padding:6px 8px}
+  [data-side="brand"] .bx-anchor{scroll-margin-top:calc(var(--m-bar) + env(safe-area-inset-top,0px) + 56px)}
+  [data-side="brand"] .rq-card{scroll-margin-top:calc(var(--m-bar) + env(safe-area-inset-top,0px) + 60px)}
+
+  /* Bottom bars are docked to the screen edge, never floating over the content. */
+  [data-side="brand"] .bx-dock.tabs{display:none}
+  [data-side="brand"] .bx-dock{left:0;right:0;bottom:0;padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));border:0;border-top:1px solid var(--ig-sep);border-radius:0;background:var(--bg);box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none}
+  [data-side="brand"] .bx-dock .btn{height:48px;border-radius:14px}
+  [data-side="brand"] .rq-bar{position:fixed;left:0;right:0;bottom:0;z-index:35;margin:0;padding:10px 16px calc(10px + env(safe-area-inset-bottom,0px));border:0;border-top:1px solid var(--ig-sep);border-radius:0;background:var(--bg);box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none}
+  [data-side="brand"] .rq-main{padding-bottom:90px}
+
+  /* Flat sections split by hairlines; only the small tiles inside stay as cards. */
+  [data-side="brand"] :is(.bx-hero,.bx-marquee,.bx-avail,.again,.panel,.rq-card,.ins-hero,.bx-book){margin-inline:-16px;border:0;border-radius:0;box-shadow:none;border-bottom:1px solid var(--ig-sep)}
+  [data-side="brand"] :is(.bx-avail,.again,.panel,.rq-card,.bx-book){background:transparent;-webkit-backdrop-filter:none;backdrop-filter:none;padding-inline:16px}
+  [data-side="brand"] .panel{padding-inline:0}
+  [data-side="brand"] .panel > :not(.mesh){padding-left:16px;padding-right:16px}
+  [data-side="brand"] .panel [style*="padding:0 20px"],[data-side="brand"] .panel [style*="padding:20px"]{padding-left:16px!important;padding-right:16px!important}
+  [data-side="brand"] .ins-hero{padding-left:16px;padding-right:16px}
+  [data-side="brand"] :is(.panel,.rq-card){margin-top:0;margin-bottom:0}
+  [data-side="brand"] .bx-hero{margin-top:0}
+  [data-side="brand"] .bx-hero .bx-hero-main{padding-inline:16px}
+  [data-side="brand"] .bx-marquee{margin-top:0;background:transparent}
+  [data-side="brand"] .ins-hero{margin-top:0}
+  [data-side="brand"] .bx-final{margin-inline:-16px;border-radius:0}
+  [data-side="brand"] .req-list{gap:10px}
+  [data-side="brand"] .req{border-radius:18px}
+
+  /* Your requests: the numbers as a compact three-column strip. */
+  [data-side="brand"] .again-stats{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+  [data-side="brand"] .again-stats > div{padding:10px 10px;border-radius:14px}
+  [data-side="brand"] .again-stats b{font-size:18px}
+  [data-side="brand"] .again-stats small{font-size:11.5px;line-height:1.25}
+
   /* Company: account settings as a list */
   .b-acct{margin-top:22px}
   .b-acct h2{font-size:18px;margin:0 4px 10px}

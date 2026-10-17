@@ -57,7 +57,7 @@
 		path.startsWith('/brand/r/') ? '/brand'
 		: isNew ? '/brand/details'
 		: path.startsWith('/insights') ? '/'
-		: path === '/brand/new' && !signedIn ? '/'
+		: path === '/brand/new' ? (signedIn ? '/brand' : '/')
 		: ''
 	);
 	const unread = $derived(Object.values(brandData.unread ?? {}).reduce((a, n) => a + n, 0));
@@ -73,7 +73,7 @@
 </script>
 
 {#if phone.on}
-	<header class="m-bar b-bar" class:scrolled={phone.scrolled} class:sub={!!back} class:hide={phone.hide && !back}>
+	<header class="m-bar b-bar" class:scrolled={phone.scrolled} class:sub={!!back}>
 		{#if back}
 			<button class="m-ib m-back" onclick={goBack} aria-label="Back"><Icon name="chevL" /></button>
 			<div class="m-title">{title}</div>
@@ -127,7 +127,7 @@
 
 {#if signedIn}
 	<!-- Phones and tablets: the brand menu moves to a tab bar at the bottom. -->
-	<nav class="brand-tabs" class:hide-tabs={phone.on && path.startsWith('/brand/r/')} aria-label="Brand">
+	<nav class="brand-tabs" class:hide-tabs={phone.on && (path.startsWith('/brand/r/') || path === '/brand/new')} aria-label="Brand">
 		{#if phone.on}<a href="/" aria-current={path === '/' ? 'page' : undefined}><span class="bt-av"><Avatar {name} src={pub.data?.instagram?.profile_picture_url} size="26px" /></span><span>{first}</span></a>{/if}
 		<a href="/brand" aria-current={path === '/brand' || path.startsWith('/brand/r/') ? 'page' : undefined}><span class="bt-ic"><Icon name="inbox" />{#if unread}<i class="bt-n">{unread}</i>{/if}</span><span>Requests</span></a>
 		<a class="bt-new" href="/brand/new" aria-current={path === '/brand/new' ? 'page' : undefined}><span class="bt-plus"><Icon name="plus" /></span><span>New</span></a>
