@@ -22,7 +22,7 @@ Deno.serve(async (req) => {
 
   const { data: settings, error: settingsError } = await supabase
     .from('creator_settings')
-    .select('app_name, display_name, site_url, reply_time, creator_email')
+    .select('app_name, display_name, site_url, reply_time, creator_email, handle, city')
     .eq('id', 1)
     .single<Settings>();
   if (settingsError) return Response.json({ error: settingsError.message }, { status: 500 });
