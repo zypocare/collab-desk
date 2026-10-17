@@ -11,24 +11,8 @@ const GRAPH = 'https://graph.instagram.com';
 const SECRET = Deno.env.get('INSTAGRAM_APP_SECRET') ?? '';
 const VERIFY = Deno.env.get('IG_VERIFY_TOKEN') ?? '';
 
-// Business words: only DMs with one of these go to the AI check (fan messages don't use the allowance).
-const BUSINESS = /\b(collab\w*|partner\w*|paid|budget|barter|campaign|promot\w*|sponsor\w*|brand|rates?|charges?|commercials?|ugc|reels?|deliverables?|launch|pr package|gift\w*|product|influencer|marketing|agency|quote|price|pricing|fee|inr|rs\.?)\b|₹|\d+\s?k\b/i;
+import { decide, ruleCheck, transcript, worthChecking, type Ai } from '../_shared/collabCheck.ts';
 
-// An offer: money or a product for content, or asking her rates.
-const OFFER = /\b(paid|budget|barter|collab\w*|sponsor\w*|partner\w*|rates?|charges?|commercials?|promot\w*|gift\w*|pr package|campaign|send (?:you|over)|in exchange|complimentary)\b/i;
-const CONTENT = /\b(reels?|stor(?:y|ies)|posts?|videos?|ugc|carousels?|shoot|content)\b/i;
-const MONEY = /₹|\brs\.?\s?\d|\binr\b/i;
-const AMOUNT = /\b\d+(?:\.\d+)?\s?(?:k|l|lakhs?)\b|\b\d{4,}\b/i;
-
-/** A plain-words reading of the chat: 'likely' for a clear offer, 'maybe' for business talk. */
-function ruleCheck(text: string): '' | 'likely' | 'maybe' {
-  const offers = new Set((text.match(new RegExp(OFFER.source, 'gi')) ?? []).map((w) => w.toLowerCase())).size;
-  const content = CONTENT.test(text), money = MONEY.test(text), amount = AMOUNT.test(text);
-  // "paid Reel", "budget 30k", "paid collab", "₹15,000 for 2 stories". Not "your reel got 10k views".
-  if ((offers && (content || money || amount)) || offers >= 2 || (content && money)) return 'likely';
-  if (offers || /\b(rate card|media kit|your rates|how much do you charge)\b/i.test(text)) return 'maybe';
-  return '';
-}
 /** A one-line summary from the message itself (used when the AI doesn't give one). */
 function ruleHint(text: string, username: string) {
   const p = parseDm(text, '');
@@ -36,21 +20,34 @@ function ruleHint(text: string, username: string) {
   return `${p.brand || '@' + username}: ${parts.join(', ') || 'asking about a collab'}`.slice(0, 120);
 }
 
-/** Is this message a possible collab? Rules first, then the free AI (Cloudflare only). */
-async function verdict(db: ReturnType<typeof admin>, text: string): Promise<{ flag: '' | 'likely' | 'maybe'; hint: string; brand: string }> {
-  const rule = ruleCheck(text);
-  if (!rule && !BUSINESS.test(text)) return { flag: '', hint: '', brand: '' };
+/** The last few messages of the chat, from Instagram (read for the check only, never saved). */
+async function recent(token: string, igsid: string, me: string): Promise<{ fromMe: boolean; text: string }[]> {
+  if (!token) return [];
+  const r = await fetch(`${GRAPH}/me/conversations?platform=instagram&user_id=${igsid}&fields=messages.limit(8){message,from}&access_token=${token}`).catch(() => null);
+  const j = (await r?.json().catch(() => null)) as { data?: { messages?: { data?: { message?: string; from?: { id?: string } }[] } }[] } | null;
+  return (j?.data?.[0]?.messages?.data ?? []).reverse().map((m) => ({ fromMe: String(m.from?.id ?? '') === me, text: String(m.message ?? '') }));
+}
+
+/** Is this chat a possible collab? A quick look first; then the free AI (Cloudflare only) reads the
+ *  last few messages and decides, with the plain-words rules as a safety net (see collabCheck.ts). */
+async function verdict(db: ReturnType<typeof admin>, text: string, ctx: { token: string; igsid: string; me: string }): Promise<{ flag: '' | 'likely' | 'maybe'; hint: string; brand: string }> {
+  const none = { flag: '' as const, hint: '', brand: '' };
+  const first = ruleCheck(text);
+  if (first === 'scam' || (!first && !worthChecking(text))) return none;
+  const chat = transcript(await recent(ctx.token, ctx.igsid, ctx.me), text);
+  // Their side of the chat only: her own words ("my rates are…") don't make it an offer.
+  const rule = ruleCheck(chat.split('\n').filter((l) => l.startsWith('Them:')).join('\n'));
+  if (rule === 'scam') return none;
   const { data: s } = await db.from('creator_settings').select('site_url').eq('id', 1).single();
   const site = String(s?.site_url || 'https://collab-desk.zypocare.workers.dev').replace(/\/$/, '');
   const ticket = crypto.randomUUID() + crypto.randomUUID();
   await db.from('ai_tickets').insert({ token: ticket });
   const anon = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
-  const r = await fetch(`${site}/api/ai/classify`, { method: 'POST', headers: { 'content-type': 'application/json', 'x-ai-ticket': ticket, apikey: anon }, body: JSON.stringify({ text: `Them: ${text}` }) }).catch(() => null);
-  const j = (await r?.json().catch(() => null)) as { collab?: string; brand?: string; summary?: string } | null;
-  const ai = j?.collab === 'likely' || j?.collab === 'maybe' ? j.collab : '';
-  // The stronger of the two readings: the AI can raise a label, but not drop a clear offer.
-  const flag = rule === 'likely' || ai === 'likely' ? 'likely' : rule || ai;
-  return { flag, hint: (ai && j?.summary) || '', brand: j?.brand ?? '' };
+  const r = await fetch(`${site}/api/ai/classify`, { method: 'POST', headers: { 'content-type': 'application/json', 'x-ai-ticket': ticket, apikey: anon }, body: JSON.stringify({ text: chat }) }).catch(() => null);
+  const j = (await r?.json().catch(() => null)) as { collab?: string; kind?: string; brand?: string; summary?: string } | null;
+  const ai: Ai = j && (j.collab === 'likely' || j.collab === 'maybe' || j.collab === 'no') ? { collab: j.collab, kind: j.kind } : null;
+  const flag = decide(rule, ai);
+  return { flag, hint: (flag && ai && ai.collab !== 'no' && j?.summary) || '', brand: j?.brand ?? '' };
 }
 
 async function validSignature(raw: string, header: string | null) {
@@ -103,7 +100,7 @@ Deno.serve(async (req) => {
 
       // A new message in a chat that isn't a collab yet: check it before keeping anything.
       const job = (async () => {
-        const v = await verdict(db, text);
+        const v = await verdict(db, text, { token: String(tok?.access_token ?? ''), igsid, me });
         if (!v.flag) return; // not a collab: dropped, nothing saved
         let profile: { username?: string; name?: string; profile_pic?: string } = {};
         if (tok?.access_token) {

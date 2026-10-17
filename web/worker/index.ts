@@ -273,14 +273,19 @@ Return ONLY JSON: {"subject": "...", "body": "..."} (body is plain text with bla
 async function classify(x: Run, b: Record<string, unknown>) {
 	const reply = await chat(
 		x,
-		`You sort Instagram DMs for an Indian lifestyle creator. Decide whether someone is offering or asking about a collaboration: paid, barter or gifted content (a Reel, Story, post or video), a budget, her rates, or a campaign. This counts even if no brand is named yet: "would you do a paid Reel? Budget 30k" is "likely". Use "maybe" for vague business interest. Only these are "no": fans, friends and personal chat, giveaways she didn't run, "promote your page" or follower-selling spam, crypto, job scams, and anyone asking HER to pay or for logins.
-Return ONLY JSON: {"collab": "likely" | "maybe" | "no", "brand": "brand name or ''", "summary": "under 12 words, e.g. 'Sunveda: paid Reel for SPF launch, ~₹40k'"}`,
-		String(b.text ?? '').slice(0, 3000),
-		200
+		`You screen Instagram DMs for an Indian lifestyle creator (yoga, travel, fashion, food; Bengaluru). You get the chat so far ("Them:" is the sender, "Her:" is the creator); judge what THEM wants. Messages may be in English, Hinglish, Hindi, Kannada or other Indian languages.
+"likely": a business wants her to make content for them, in any form: paid Reel/Story/post/video, UGC, barter or gifted product for a review, a free stay/meal/evening/event invite in exchange for content, an event appearance, ambassador or affiliate deal, or asking her rates/charges/commercials/media kit for content. No brand name is needed: "would you do a paid Reel? budget 30k" and "aapka 1 reel ka rate kya hai" are likely.
+"maybe": business interest without an offer yet: "do you do collabs?", "who manages your collaborations?", "can I get your email for a business inquiry", "we're a new label, would love to connect", "we might have something for you".
+"no": fans and compliments (even about her past collabs or asking what brands pay her), friends and family, people asking HER to promote THEM or to buy/pay for anything, people selling her services (photography, editing, followers, verification), customers asking about her classes or sessions, giveaways, follow-for-follow, crypto/job/investment scams, phishing.
+Set "kind" to one of: paid, barter, experience, event, ugc, affiliate, inquiry, scam, spam, fan, personal, service, other. Scam = she must pay a fee/shipping/registration, buy first, or share logins/bank details, even if it says "collab" or "ambassador".
+Return ONLY JSON: {"collab": "likely" | "maybe" | "no", "kind": "...", "brand": "brand or business name, or ''", "summary": "under 12 English words, e.g. 'Sunveda: paid Reel + 2 stories for SPF launch, ~₹40k'"}`,
+		String(b.text ?? '').slice(-3000),
+		160
 	);
 	const j = firstJson(reply) ?? {};
-	const c = String(j.collab ?? 'no');
-	return { collab: ['likely', 'maybe', 'no'].includes(c) ? c : 'no', brand: String(j.brand ?? ''), summary: String(j.summary ?? '').slice(0, 120), ...(b.debug ? { raw: reply.slice(0, 400) } : {}) };
+	const c = String(j.collab ?? '');
+	if (!['likely', 'maybe', 'no'].includes(c)) throw new Error('No clear answer from the AI.');
+	return { collab: c, kind: String(j.kind ?? '').toLowerCase(), brand: String(j.brand ?? ''), summary: String(j.summary ?? '').slice(0, 120), ...(b.debug ? { raw: reply.slice(0, 400) } : {}) };
 }
 
 // ---------- 6. "Should I take it?": what a request really involves ----------
