@@ -1130,12 +1130,18 @@
 .ai-desk-acts{display:flex;flex-wrap:wrap;gap:8px;padding:12px 20px 18px}
 @media (prefers-reduced-motion:reduce){.btn.ai-btn,.ai-lnk,.ai-tag,.ai-orb,.ai-shine,.ai-dots i,.ai-desk-ic,.ai-desk-ic .ic,.btn.ai-btn .ic,.ai-desk-fx::before,.ai-desk-fx::after{animation:none}}
 @media (max-width:760px){
-  .ai-desk.hs{margin:0 16px 22px;padding:16px 14px 6px;border-radius:20px;border:1.5px solid transparent;background:linear-gradient(var(--surface),var(--surface)) padding-box,linear-gradient(100deg,color-mix(in oklab,var(--g1) 55%,var(--line)),color-mix(in oklab,var(--g2) 55%,var(--line)),color-mix(in oklab,var(--g3) 55%,var(--line))) border-box}
-  .ai-desk-h h2{font-size:18px}
-  .ai-desk-h small{font-size:13.5px}
-  .ai-desk-list{padding:0;margin-top:10px}
-  .ai-desk-list button{padding:10px 4px;gap:10px}
+  .hs:has(> .ai-desk-m){margin-bottom:24px}
+  .ai-desk-m .ai-desk-fx::before,.ai-desk-m .ai-desk-fx::after{opacity:.1}
+  .ai-left-chip{margin-left:auto;display:inline-flex;align-items:center;gap:4px;font-size:13.5px;font-weight:600;color:var(--ink-3)}
+  .ai-left-chip .ic{width:14px;height:14px;color:var(--g2)}
+  .ai-desk-m{padding:16px 16px 4px;border-radius:24px;border:1px solid transparent;background:linear-gradient(var(--ig-fill-2),var(--ig-fill-2)) padding-box,linear-gradient(var(--bg),var(--bg)) padding-box,linear-gradient(100deg,color-mix(in oklab,var(--g1) 50%,var(--ig-sep)),color-mix(in oklab,var(--g2) 50%,var(--ig-sep)),color-mix(in oklab,var(--g3) 50%,var(--ig-sep))) border-box}
+  .ai-desk-m .ai-desk-h{align-items:center;gap:12px}
+  .ai-desk-m .ai-desk-h p{margin:0;font-size:14.5px;line-height:1.4;color:var(--ink-2)}
+  .ai-desk-m .ai-desk-ic{width:40px;height:40px;border-radius:13px}
+  .ai-desk-list{padding:0;margin-top:8px}
+  .ai-desk-list button{padding:10px 0;gap:10px;border-radius:0}
+  .ai-desk-list li + li button{border-top:1px solid var(--ig-sep)}
   .ai-desk-v small{display:none}
-  .ai-desk-acts{padding:10px 0 12px}
-  .ai-desk-acts .btn{flex:1 1 auto;justify-content:center}
+  .ai-desk-acts{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:12px 0 12px}
+  .ai-desk-acts .btn{justify-content:center}
 }

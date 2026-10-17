@@ -24,18 +24,12 @@
 	onMount(() => {
 		supabase.rpc('ai_left').then(({ data }) => (left = typeof data === 'number' ? data : null));
 	});
+	const sub = $derived(
+		open.length ? `Read ${open.length === 1 ? 'your new request' : `your ${open.length} open requests`} and scored ${open.length === 1 ? 'it' : 'them'}.` : "When a brand writes, I'll read it and tell you if it's worth it."
+	);
 </script>
 
-<section class="ai-desk {phone ? 'hs' : 'panel rv'}" style={phone ? '' : '--i:3'}>
-	<span class="ai-desk-fx" aria-hidden="true"></span>
-	<header class="ai-desk-h">
-		<span class="ai-desk-ic"><Icon name="spark" /></span>
-		<div>
-			<h2>Your AI assistant</h2>
-			<small>{open.length ? `Read ${open.length === 1 ? 'your new request' : `your ${open.length} open requests`} and scored ${open.length === 1 ? 'it' : 'them'}` : "When a brand writes, I'll read it and tell you if it's worth it"}</small>
-		</div>
-		{#if left !== null}<span class="ai-left" title="Free AI uses left today">{left}<small>left today</small></span>{/if}
-	</header>
+{#snippet body()}
 	{#if open.length}
 		<ul class="ai-desk-list">
 			{#each open as { c, d } (c.id)}
@@ -53,7 +47,31 @@
 		</ul>
 	{/if}
 	<div class="ai-desk-acts">
-		<button class="btn sm ai-btn" onclick={() => (ui.newCollab = true)}><Icon name="spark" />Read a DM or screenshot</button>
-		<a class="btn sm ghost" href="/studio/inbox">Check messages</a>
+		<button class="btn sm ai-btn" onclick={() => (ui.newCollab = true)}><Icon name="spark" />Read a DM</button>
+		<a class="btn sm ghost" href="/studio/inbox"><Icon name="send" />Messages</a>
 	</div>
-</section>
+{/snippet}
+
+{#if phone}
+	<section class="hs">
+		<header class="hs-h"><h2>AI assistant</h2>{#if left !== null}<span class="ai-left-chip"><Icon name="spark" />{left} left today</span>{/if}</header>
+		<div class="ai-desk ai-desk-m">
+			<span class="ai-desk-fx" aria-hidden="true"></span>
+			<div class="ai-desk-h">
+				<span class="ai-desk-ic"><Icon name="spark" /></span>
+				<p>{sub}</p>
+			</div>
+			{@render body()}
+		</div>
+	</section>
+{:else}
+	<section class="ai-desk panel rv" style="--i:3">
+		<span class="ai-desk-fx" aria-hidden="true"></span>
+		<header class="ai-desk-h">
+			<span class="ai-desk-ic"><Icon name="spark" /></span>
+			<div><h2>Your AI assistant</h2><small>{sub}</small></div>
+			{#if left !== null}<span class="ai-left" title="Free AI uses left today">{left}<small>left today</small></span>{/if}
+		</header>
+		{@render body()}
+	</section>
+{/if}
