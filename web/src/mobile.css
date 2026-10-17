@@ -28,6 +28,24 @@
 .tds-row > div:nth-child(2){flex:1;min-width:180px}
 .tds-acts{display:flex;gap:8px;margin-left:auto}
 
+/* Monthly deals */
+.md-panel{margin-bottom:18px}
+.md-panel .panel-h{align-items:center}
+.md-panel .panel-h .btn{margin-left:auto}
+.md-row{display:flex;align-items:center;gap:12px;padding:12px 20px;border-top:1px solid var(--line)}
+.md-row.off{opacity:.6}
+.md-b{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.md-b b{font-size:15px}
+.md-b small{color:var(--ink-3);font-size:13.5px}
+.md-st{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:4px;font-size:13.5px}
+.md-acts{display:flex;gap:2px}
+.md-empty{margin:0;padding:0 20px 18px}
+.rt-kinds{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-top:8px}
+.rt-kind{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 8px 8px 12px;border:1px solid var(--line);border-radius:14px;font-size:14px;font-weight:600;color:var(--ink-3)}
+.rt-kind.on{color:var(--ink);border-color:color-mix(in oklab,var(--accent) 35%,var(--line));background:color-mix(in oklab,var(--accent) 6%,transparent)}
+.rt-kind .stepper button{width:30px;height:30px}
+.rt-kind .stepper b{min-width:18px;text-align:center}
+
 /* Desktop never shows the phone-only bits. */
 .m-next,.m-open-chat{display:none}
 /* A chat opened on a laptop: the same screen as a normal page. */

@@ -15,7 +15,7 @@
 	<Mono name={c.brand.name} />
 	<span class="m-cr-b">
 		<span class="m-cr-t"><b>{c.brand.name}</b><span class="m-cr-amt" class:muted={!c.fee && c.type !== 'barter'}>{money}</span></span>
-		<span class="m-cr-s">{delivText(c.deliverables)}{c.type === 'hybrid' ? ' · + product' : ''}</span>
+		<span class="m-cr-s">{c.retainer_id ? 'Monthly · ' : ''}{delivText(c.deliverables)}{c.type === 'hybrid' ? ' · + product' : ''}</span>
 		<span class="m-cr-n {n.tone}"><Icon name={n.icon} />{n.text}</span>
 	</span>
 	{#if unread}<span class="m-dot" aria-label="{unread} unread">{unread}</span>{:else if c.stage === 'request'}<span class="new-badge">NEW</span>{/if}

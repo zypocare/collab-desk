@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { brandStats } from '#lib/brandStats.ts';
+	import MonthlyDeals from '#lib/components/MonthlyDeals.svelte';
 	import { studio } from '#lib/studio.svelte.ts';
 	import { fmt, inr } from '#lib/util.ts';
 	import Icon from '#lib/components/Icon.svelte';
@@ -31,6 +32,8 @@
 		<p>{stats.length} brands · {repeat} came back for more · {inr(totalPaid)} earned in total.</p>
 	</div>
 </header>
+
+<MonthlyDeals />
 
 <div class="toolbar rv" style="--i:1">
 	<label class="search"><Icon name="search" /><span class="sr">Search brands</span><input type="search" placeholder="Search brands" bind:value={q} autocomplete="off" /></label>

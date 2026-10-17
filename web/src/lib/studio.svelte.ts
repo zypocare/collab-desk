@@ -3,7 +3,7 @@ import type { RealtimeChannel } from '@supabase/supabase-js';
 import { scoreCollab } from './priority';
 import { supabase } from './supabase';
 import type { Package } from './types';
-import type { BankAlert, Brand, BrandPrivate, BrandReport, Checklist, Collab, Deliverable, IgAccount, IgMedia, Quote, Settings, Stage } from './types';
+import type { BankAlert, Brand, BrandPrivate, BrandReport, Checklist, Collab, Deliverable, IgAccount, IgMedia, Quote, Retainer, Settings, Stage } from './types';
 import { balanceDue, normaliseInvoice, type Invoice, type InvoiceItem } from './invoice';
 import { confetti, toast, ui } from './ui.svelte';
 import { errMessage, inr, stageLabel, todayIso } from './util';
@@ -21,8 +21,9 @@ export const studio = $state<{
 	media: IgMedia[];
 	followersHistory: { day: string; followers: number }[];
 	packages: Package[];
+	retainers: Retainer[];
 	me: { role: 'creator'; email: string; team_role: 'owner' | 'manager'; name?: string } | null;
-}>({ me: null, loaded: false, error: '', collabs: [], brands: [], notes: {}, settings: null, alerts: [], ig: null, media: [], followersHistory: [], packages: [] });
+}>({ me: null, loaded: false, error: '', collabs: [], brands: [], notes: {}, settings: null, alerts: [], ig: null, media: [], followersHistory: [], packages: [], retainers: [] });
 
 const COLLAB_SELECT = '*, brand:brands(*), deliverables(*), events:collab_events(*), quotes(*), drafts(*, comments:draft_comments(*)), expenses:collab_expenses(*), files:collab_files(*), invoices(*), posts:collab_posts(matched_by, media:ig_media(*)), reports:brand_reports(*), messages:collab_messages(id, sender, body, created_at), reads:collab_reads(side, read_at)';
 
@@ -49,7 +50,7 @@ function normalise(c: Collab): Collab {
 
 // ---------- Offline: the last loaded data is kept on this device and shown while offline ----------
 const savedKey = async () => `studio:${(await supabase.auth.getSession()).data.session?.user.id ?? ''}`;
-type Saved = Pick<typeof studio, 'collabs' | 'brands' | 'notes' | 'settings' | 'alerts' | 'ig' | 'media' | 'followersHistory' | 'packages' | 'me'> & { at: string };
+type Saved = Pick<typeof studio, 'collabs' | 'brands' | 'notes' | 'settings' | 'alerts' | 'ig' | 'media' | 'followersHistory' | 'packages' | 'retainers' | 'me'> & { at: string };
 let saveTimer: ReturnType<typeof setTimeout> | undefined;
 /** Keep a copy of what's loaded (a second after the last change). */
 export function keepCopy() {
@@ -57,8 +58,8 @@ export function keepCopy() {
 	clearTimeout(saveTimer);
 	saveTimer = setTimeout(async () => {
 		const at = new Date().toISOString();
-		const { collabs, brands, notes, settings, alerts, ig, media, followersHistory, packages, me } = studio;
-		await saveLocal(await savedKey(), { collabs, brands, notes, settings, alerts, ig, media, followersHistory, packages, me, at });
+		const { collabs, brands, notes, settings, alerts, ig, media, followersHistory, packages, retainers, me } = studio;
+		await saveLocal(await savedKey(), { collabs, brands, notes, settings, alerts, ig, media, followersHistory, packages, retainers, me, at });
 		net.savedAt = at;
 	}, 1000);
 }
@@ -82,6 +83,7 @@ export async function loadStudio() {
 	loadAlerts();
 	loadInstagram();
 	loadPackages();
+	loadRetainers();
 	supabase.rpc('studio_account').then(({ data }) => (studio.me = (data as typeof studio.me) ?? null));
 	const err = collabs.error || brands.error || notes.error || settings.error;
 	if (err) {
@@ -284,13 +286,14 @@ export async function removeDeliverable(d: Deliverable) {
 /** Creates a collab the creator got by DM, email or phone. */
 export type NewCollabExtra = { collab: Partial<Collab>; deliverables: { kind: string; qty: number }[]; instagram: string };
 
-export async function createCollab(brandName: string, extra?: NewCollabExtra): Promise<Collab | null> {
+/** The brand with this name, added if it's new. */
+export async function ensureBrand(brandName: string, instagram = ''): Promise<Brand | null> {
 	const name = brandName.trim();
 	if (!name) return null;
 	let brand = studio.brands.find((b) => b.name.toLowerCase() === name.toLowerCase());
-	if (brand && extra?.instagram && !brand.instagram) await saveBrand(brand.id, { instagram: extra.instagram });
+	if (brand && instagram && !brand.instagram) await saveBrand(brand.id, { instagram });
 	if (!brand) {
-		const { data, error } = await supabase.from('brands').insert({ name, instagram: extra?.instagram ?? '' }).select('*').single();
+		const { data, error } = await supabase.from('brands').insert({ name, instagram }).select('*').single();
 		if (error) {
 			toast(`Couldn't add brand: ${errMessage(error)}`, 'alert');
 			return null;
@@ -298,6 +301,39 @@ export async function createCollab(brandName: string, extra?: NewCollabExtra): P
 		brand = data as Brand;
 		studio.brands.push(brand);
 	}
+	return brand;
+}
+
+// ---------- Monthly deals ----------
+export async function loadRetainers() {
+	const { data, error } = await supabase.from('retainers').select('*').order('created_at', { ascending: false });
+	if (error && isNetworkError(error)) return;
+	studio.retainers = ((data as Retainer[]) ?? []).map((r) => ({ ...r, fee: Number(r.fee) || 0 }));
+	keepCopy();
+}
+export async function saveRetainer(r: Partial<Retainer> & { brand_id: string }) {
+	const { id, ...rest } = r;
+	const { data, error } = id
+		? await supabase.from('retainers').update(rest).eq('id', id).select('*').single()
+		: await supabase.from('retainers').insert(rest).select('*').single();
+	if (error) {
+		toast(`Couldn't save the monthly deal: ${errMessage(error)}`, 'alert');
+		return null;
+	}
+	// A new deal (or one switched back on) starts its current month straight away.
+	if (!id || rest.active) await supabase.rpc('start_retainer', { p_id: (data as Retainer).id });
+	await Promise.all([loadRetainers(), reloadCollabs()]);
+	return data as Retainer;
+}
+export async function deleteRetainer(id: string) {
+	const { error } = await supabase.from('retainers').delete().eq('id', id);
+	if (error) return toast(`Couldn't remove it: ${errMessage(error)}`, 'alert');
+	await loadRetainers();
+}
+
+export async function createCollab(brandName: string, extra?: NewCollabExtra): Promise<Collab | null> {
+	const brand = await ensureBrand(brandName, extra?.instagram ?? '');
+	if (!brand) return null;
 	const { data, error } = await supabase
 		.from('collabs')
 		.insert({ ...(extra?.collab ?? {}), brand_id: brand.id, source: 'manual', code: '' })

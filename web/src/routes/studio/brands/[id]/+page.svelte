@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/state';
+	import MonthlyDeals from '#lib/components/MonthlyDeals.svelte';
 	import { COUNTRIES, CURRENCIES, currencyFor } from '#lib/currency.ts';
 	import { brandStats } from '#lib/brandStats.ts';
 	import { saveBrand, saveBrandNotes, studio } from '#lib/studio.svelte.ts';
@@ -55,6 +56,7 @@
 
 	<div class="page-grid">
 		<div class="stack">
+			<MonthlyDeals brandId={brand.id} brandName={brand.name} />
 			<section class="panel rv" style="--i:5">
 				<div class="panel-h"><h2>Collabs</h2><small>newest first</small></div>
 				{#each s.collabs as c, i (c.id)}

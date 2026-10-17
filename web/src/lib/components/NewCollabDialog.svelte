@@ -90,7 +90,7 @@
 <div class="dialog-scrim" role="presentation" use:portal onclick={(e) => e.target === e.currentTarget && (ui.newCollab = false)}>
 	<div class="dialog" role="dialog" aria-modal="true" aria-labelledby="nc-title"><form onsubmit={submit}>
 		<h2 id="nc-title">Add a collab</h2>
-		<p>Paste the brand's DM or email and we'll fill in the details. Or just type the brand name. Adding many? <a class="lnk" href="/studio/import" onclick={() => (ui.newCollab = false)}>Import them at once</a>.</p>
+		<p>Paste the brand's DM or email and we'll fill in the details. Or just type the brand name. Adding many? <a class="lnk" href="/studio/import" onclick={() => (ui.newCollab = false)}>Import them at once</a>. Ambassador deal? <a class="lnk" href="/studio/brands" onclick={() => (ui.newCollab = false)}>Set up a monthly deal</a>.</p>
 		<div class="f">
 			<label for="nc-paste">Their message <span class="hint">(optional)</span>{#if canPaste}<button type="button" class="lnk paste-btn" onclick={pasteClip}>Paste</button>{/if}</label>
 			<textarea class="inp" id="nc-paste" rows="5" placeholder={'Hi! I’m Asha from Lumière Skin (@lumiere.skin). We’d love 1 reel + 3 stories for our Vitamin C launch, budget ₹30k, live by 25th Oct…'} bind:value={pasted} bind:this={box}></textarea>
