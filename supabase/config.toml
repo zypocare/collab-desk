@@ -480,7 +480,3 @@ verify_jwt = false
 # Called by the database every 5 minutes (shared secret) and by the creator.
 [functions.instagram-publish]
 verify_jwt = false
-
-# Called by the database daily (shared secret) and by the creator.
-[functions.youtube-sync]
-verify_jwt = false

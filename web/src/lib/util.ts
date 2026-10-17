@@ -22,7 +22,7 @@ export function waLink(phone: string | null | undefined, text: string) {
 	return n.length >= 11 ? `https://wa.me/${n}?text=${encodeURIComponent(text)}` : '';
 }
 
-export const KINDS = ['Reel', 'Story', 'Static post', 'Carousel', 'YouTube Short', 'UGC video'];
+export const KINDS = ['Reel', 'Story', 'Static post', 'Carousel', 'UGC video'];
 /** The content types she has switched on (all of them if the list is missing). */
 export const offeredKinds = (list?: string[] | null) => (list?.length ? KINDS.filter((k) => list.includes(k)) : KINDS);
 /** A package can be booked only if everything in it is still offered. */

@@ -252,12 +252,6 @@ In the Meta app that Instagram is connected through (developers.facebook.com > y
    Then subscribe to the **messages** field.
 3. In the app: **My page > Profile & Instagram > Allow DMs and posting**, and accept on Instagram.
 
-### YouTube subscriber count
-Videos and Shorts sync without a key. For the subscriber count, create a free key
-(console.cloud.google.com > APIs & Services > enable **YouTube Data API v3** > Credentials >
-API key) and save it as a Supabase secret:
-`npx supabase secrets set YOUTUBE_API_KEY=your-key --project-ref qzsfuvcxpqaavmwkxutt`
-
 ## Restoring a backup
 
 1. Download the newest backup from GitHub → **Actions → Weekly backup → latest run → Artifacts**.

@@ -21,8 +21,7 @@ function perPiece(kind: string, page: PublicPage | null, ins: PublicInsights | n
 	};
 	switch (kind) {
 		case 'Reel':
-		case 'YouTube Short':
-			return kind === 'Reel' ? pick(f?.reels, ig?.avg_views, ig?.avg_reach) : null;
+			return pick(f?.reels, ig?.avg_views, ig?.avg_reach);
 		case 'Story':
 			return pick(f?.stories, null, null);
 		case 'Carousel':

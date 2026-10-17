@@ -283,12 +283,6 @@ export type Settings = {
 	address: string;
 	upi_id: string;
 	lut_arn: string;
-	youtube_channel: string;
-	youtube_channel_id: string;
-	youtube_title: string;
-	youtube_subscribers: number | null;
-	youtube_synced_at: string | null;
-	youtube_error: string;
 	intl_bank_details: string;
 	bank_details: string;
 	invoice_prefix: string;

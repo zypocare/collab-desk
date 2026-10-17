@@ -23,7 +23,6 @@ const KIND_PATTERNS: [RegExp, string][] = [
 	[/reels?\b/i, 'Reel'],
 	[/stor(?:y|ies)\b/i, 'Story'],
 	[/carousels?\b/i, 'Carousel'],
-	[/(?:youtube\s*)?shorts?\b/i, 'YouTube Short'],
 	[/ugc(?:\s*videos?)?\b/i, 'UGC video'],
 	[/(?:static\s*)?(?:feed\s*)?posts?\b/i, 'Static post']
 ];
@@ -69,7 +68,7 @@ export function parseDm(text: string, ownHandle = ''): Parsed {
 
 	// Deliverables: "2 reels", "one story", "a carousel", "3x stories".
 	const found = new Map<string, number>();
-	for (const m of t.matchAll(/\b(\d{1,2}|a|an|one|two|three|four|five|six|couple)\s*(?:x\s*)?(?:of\s+)?(?:instagram\s+|ig\s+|insta\s+)?(reels?|stor(?:y|ies)|carousels?|(?:youtube\s*)?shorts?|ugc(?:\s*videos?)?|(?:static\s*)?(?:feed\s*)?posts?)\b/gi)) {
+	for (const m of t.matchAll(/\b(\d{1,2}|a|an|one|two|three|four|five|six|couple)\s*(?:x\s*)?(?:of\s+)?(?:instagram\s+|ig\s+|insta\s+)?(reels?|stor(?:y|ies)|carousels?|ugc(?:\s*videos?)?|(?:static\s*)?(?:feed\s*)?posts?)\b/gi)) {
 		const n = /^\d+$/.test(m[1]) ? Number(m[1]) : (WORDS[m[1].toLowerCase()] ?? 1);
 		const kind = KIND_PATTERNS.find(([re]) => re.test(m[2]))?.[1];
 		if (kind && n > 0) found.set(kind, (found.get(kind) ?? 0) + Math.min(n, 20));

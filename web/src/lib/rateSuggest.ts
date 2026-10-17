@@ -4,7 +4,7 @@
 import type { IgAccount } from './types';
 
 // Price of each deliverable relative to one Reel (typical Indian ratios).
-const SHARE: Record<string, number> = { Reel: 1, Story: 0.15, 'Static post': 0.4, Carousel: 0.5, 'YouTube Short': 0.6, 'UGC video': 0.5 };
+const SHARE: Record<string, number> = { Reel: 1, Story: 0.15, 'Static post': 0.4, Carousel: 0.5, 'UGC video': 0.5 };
 const round = (n: number) => (n < 2000 ? Math.round(n / 100) * 100 : Math.round(n / 500) * 500);
 
 export function engagementFactor(er: number | null) {

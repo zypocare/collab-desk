@@ -115,7 +115,7 @@ async function readDm(env: Env, b: Record<string, unknown>) {
 {"brand": "brand name", "instagram": "brand handle without @", "contact": "person's name", "email": "", "phone": "",
  "type": "paid" | "hybrid" | "barter" | null, "fee": number in rupees (0 if not said),
  "product": "what they send, if anything", "product_value": number in rupees,
- "deliverables": [{"kind": "Reel" | "Story" | "Static post" | "Carousel" | "YouTube Short" | "UGC video", "qty": number}],
+ "deliverables": [{"kind": "Reel" | "Story" | "Static post" | "Carousel" | "UGC video", "qty": number}],
  "preferred_live": "YYYY-MM-DD" or "", "usage": "Organic only" | "Paid usage 30 days" | "Paid usage 90 days" | "",
  "summary": "one sentence: what the brand wants"}
 Rules: "hybrid" = money plus product; "barter" = product only. "30k" = 30000, "1.5L" = 150000. The creator's own handle is ${String(b.handle ?? '')}; never use it as the brand. Leave fields empty when not mentioned. Use only facts in the text.`,

@@ -33,6 +33,6 @@ export function roiOf(r: ReportFull) {
 
 /** "2 Story" -> "2 Stories" (reports made before this was fixed). */
 export const deliv = (s: string) =>
-	s.replace(/(\d+) (Story|Reel|Carousel|Static post|YouTube Short|UGC video)(?!s)/g, (_, n: string, k: string) => `${n} ${Number(n) > 1 ? (k === 'Story' ? 'Stories' : `${k}s`) : k}`);
+	s.replace(/(\d+) (Story|Reel|Carousel|Static post|UGC video)(?!s)/g, (_, n: string, k: string) => `${n} ${Number(n) > 1 ? (k === 'Story' ? 'Stories' : `${k}s`) : k}`);
 
 export const money = (n: number | null) => (n === null ? '—' : n < 10 ? `₹${n.toFixed(2)}` : '₹' + Math.round(n).toLocaleString('en-IN'));

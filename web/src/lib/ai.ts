@@ -45,7 +45,7 @@ type DmFields = {
 	brand?: string; instagram?: string; contact?: string; email?: string; phone?: string; type?: string | null; fee?: number;
 	product?: string; product_value?: number; deliverables?: { kind: string; qty: number }[]; preferred_live?: string; usage?: string; summary?: string;
 };
-const KINDS = ['Reel', 'Story', 'Static post', 'Carousel', 'YouTube Short', 'UGC video'];
+const KINDS = ['Reel', 'Story', 'Static post', 'Carousel', 'UGC video'];
 
 /** What the AI read, in the same shape as the pattern-based reader (AI wins where it found something). */
 export function mergeDm(base: Parsed | null, f: DmFields | null): Parsed | null {
