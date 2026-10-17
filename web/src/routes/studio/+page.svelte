@@ -117,23 +117,23 @@
 	<AlertsPrompt />
 
 	<section class="td-kpis rv" style="--i:1" aria-label="This month">
-		<div class="td-kpi">
+		<div class="td-kpi" class:zero={!received}>
 			<small>Received in {monthName}</small>
 			<b use:countUp={{ value: received, money: true }}>{inr(received)}</b>
 			<span class="td-goal"><i style="--p:{pct}"></i></span>
 			<em>{pctN}% of {inrS(goal)} goal</em>
 		</div>
-		<div class="td-kpi">
+		<div class="td-kpi" class:zero={!outs}>
 			<small>Still to come</small>
 			<b use:countUp={{ value: outs, money: true }}>{inr(outs)}</b>
 			<em>{nextPayout ? `Next: ${nextPayout.brand.name} · ${fmt(nextPayout.pay_due)}` : 'No payment due yet'}</em>
 		</div>
-		<div class="td-kpi" class:bad={od > 0}>
+		<div class="td-kpi" class:bad={od > 0} class:zero={!od}>
 			<small>Overdue</small>
 			<b use:countUp={{ value: od, money: true }}>{inr(od)}</b>
 			<em>{od > 0 ? `${list.filter(overdue).length} invoice${list.filter(overdue).length === 1 ? '' : 's'} late` : 'All payments on time'}</em>
 		</div>
-		<a class="td-kpi" href="/studio/collabs">
+		<a class="td-kpi" class:zero={!active.length} href="/studio/collabs">
 			<small>Active collabs</small>
 			<b use:countUp={{ value: active.length }}>{active.length}</b>
 			<span class="segbar td-seg" role="img" aria-label={pipe.map((p) => `${p.n} ${p.st.label}`).join(', ')}>
@@ -141,7 +141,7 @@
 			</span>
 			<em>{pipe[0].n} new · {pipe[1].n} talking · {pipe[2].n + pipe[3].n} in work</em>
 		</a>
-		<div class="td-kpi">
+		<div class="td-kpi" class:zero={!barter}>
 			<small>Barter received</small>
 			<b use:countUp={{ value: barter, money: true }}>{inr(barter)}</b>
 			<em>{prodGot.length} product{prodGot.length === 1 ? '' : 's'}</em>

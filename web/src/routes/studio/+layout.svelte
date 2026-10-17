@@ -247,7 +247,7 @@
 			<div class="rail-foot">
 				<div class="me">
 					<Avatar name={studio.settings?.display_name ?? ''} src={studio.ig?.connected ? studio.ig.profile_picture_url : ''} />
-					<div><b>{studio.settings?.display_name ?? ''}</b><small>{studio.me?.team_role === 'manager' ? `You: ${studio.me.name || studio.me.email} · manager` : `@${studio.settings?.handle ?? ''}`}</small></div>
+					<div><b>{studio.settings?.display_name ?? ''}</b><small>@{studio.settings?.handle ?? ''}{studio.me?.team_role === 'manager' ? ' · manager access' : ''}</small></div>
 					<div class="rail-tools">
 						<button class="theme-btn" onclick={toggleTheme} aria-label="Switch light or dark mode" title="Light / dark"><Icon name={theme.value === 'dark' ? 'sun' : 'moon'} />{theme.value === 'dark' ? 'Light' : 'Dark'}</button>
 						<button class="theme-btn" onclick={logout} aria-label="Sign out" title="Sign out"><Icon name="logout" />Sign out</button>

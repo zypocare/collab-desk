@@ -4,6 +4,7 @@
 	import '../brand.css';
 	import '../studio.css';
 	import '../desk.css';
+	import '../pro.css';
 	import '../mobile-type.css';
 	import '../mobile.css';
 	import type { LayoutProps } from './$types';
