@@ -232,6 +232,32 @@ Then open the **Actions** tab, and run **Keep database awake** and **Weekly back
 
 ---
 
+## Optional extras (all free)
+
+### Free AI (screenshots, reply drafts, captions, pitches)
+Nothing to set up. It runs on the website's own Cloudflare server with Cloudflare's free AI
+models (`web/worker/index.ts`, the `AI` binding in `web/wrangler.jsonc`). Only the creator can use
+it, at most 50 times a day, so it stays inside Cloudflare's free daily allowance.
+
+### Instagram DMs and posting from the app
+In the Meta app that Instagram is connected through (developers.facebook.com > your app):
+1. **Instagram > API setup with Instagram login > Permissions**: make sure
+   `instagram_business_manage_messages` and `instagram_business_content_publish` are added.
+   While the app is in development mode they work for accounts that have a role on the app
+   (add her Instagram account as an Instagram tester under **App roles** if it isn't already).
+2. **Instagram > Webhooks**: set
+   - Callback URL: `https://qzsfuvcxpqaavmwkxutt.supabase.co/functions/v1/instagram-webhook`
+   - Verify token: the `IG_VERIFY_TOKEN` value in `supabase/functions/.env` (private, not in git;
+     it is already saved in the Supabase secrets).
+   Then subscribe to the **messages** field.
+3. In the app: **My page > Profile & Instagram > Allow DMs and posting**, and accept on Instagram.
+
+### YouTube subscriber count
+Videos and Shorts sync without a key. For the subscriber count, create a free key
+(console.cloud.google.com > APIs & Services > enable **YouTube Data API v3** > Credentials >
+API key) and save it as a Supabase secret:
+`npx supabase secrets set YOUTUBE_API_KEY=your-key --project-ref qzsfuvcxpqaavmwkxutt`
+
 ## Restoring a backup
 
 1. Download the newest backup from GitHub → **Actions → Weekly backup → latest run → Artifacts**.
