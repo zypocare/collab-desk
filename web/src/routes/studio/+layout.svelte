@@ -192,7 +192,11 @@
 		await signOut();
 		goto('/login', { replace: true });
 	}
+	// The top bar turns solid once the page scrolls under it.
+	let winY = $state(0);
 </script>
+
+<svelte:window bind:scrollY={winY} />
 
 {#if allowed}
 	<div class="app" class:m-detail={detail || chat || path === '/studio/inbox' || path === '/studio/import'}>
@@ -275,7 +279,7 @@
 					</nav>
 				{/if}
 			{/if}
-			<div class="sx-top">
+			<div class="sx-top" class:stuck={winY > 6}>
 				{#if tabs}
 					<nav class="subtabs" aria-label="{group?.label} pages" bind:this={subs}>
 						<span class="sub-ind" bind:this={subInd}></span>

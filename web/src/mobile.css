@@ -27,6 +27,7 @@
 .tds-row{flex-wrap:wrap}
 .tds-row > div:nth-child(2){flex:1;min-width:180px}
 .tds-acts{display:flex;gap:8px;margin-left:auto}
+.prod-row .tds-acts{flex:0 0 auto;min-width:auto;flex-wrap:wrap;justify-content:flex-end}
 
 /* Monthly deals */
 .md-panel{margin-bottom:18px}

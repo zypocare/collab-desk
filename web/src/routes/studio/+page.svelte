@@ -143,36 +143,37 @@
 		{/each}
 		</div>
 	</section>
-	<section class="hero-card glow rv" style="--i:2" use:tilt={{ max: 3.5 }}>
-		<div class="mesh" aria-hidden="true"></div>
-		<div class="hc-in">
-			<div class="hc-top"><span class="hc-eb">Received in {monthName}</span><span class="glass-chip"><Icon name="spark" />Goal {inrS(goal)}</span></div>
-			<div class="hc-main">
-				<div>
-					<div class="hc-val" use:countUp={{ value: received, money: true }}>{inr(received)}</div>
-					<div class="hc-sub">from {paidThisMonth.length} brand{paidThisMonth.length === 1 ? '' : 's'} · <b>{pctN}%</b> of this month's goal</div>
+	<div class="t-side">
+		<section class="hero-card glow rv" style="--i:2" use:tilt={{ max: 3.5 }}>
+			<div class="mesh" aria-hidden="true"></div>
+			<div class="hc-in">
+				<div class="hc-top"><span class="hc-eb">Received in {monthName}</span><span class="glass-chip"><Icon name="spark" />Goal {inrS(goal)}</span></div>
+				<div class="hc-main">
+					<div>
+						<div class="hc-val" use:countUp={{ value: received, money: true }}>{inr(received)}</div>
+						<div class="hc-sub">from {paidThisMonth.length} brand{paidThisMonth.length === 1 ? '' : 's'} · <b>{pctN}%</b> of this month's goal</div>
+					</div>
+					<div class="goal" style="--p:{pct}">
+						<svg viewBox="0 0 120 120" aria-hidden="true"
+							><defs
+								><linearGradient id="goalGrad" x1="0" y1="0" x2="1" y2="1"
+									><stop offset="0" style="stop-color:var(--g3)" /><stop offset=".5" style="stop-color:var(--g2)" /><stop offset="1" style="stop-color:var(--g1)" /></linearGradient
+								></defs
+							><circle class="g-track" cx="60" cy="60" r="50" /><circle class="g-prog" cx="60" cy="60" r="50" pathLength="100" /></svg
+						>
+						<div class="g-txt"><b use:countUp={{ value: pctN, suffix: '%' }}>{pctN}%</b><small>of goal</small></div>
+					</div>
 				</div>
-				<div class="goal" style="--p:{pct}">
-					<svg viewBox="0 0 120 120" aria-hidden="true"
-						><defs
-							><linearGradient id="goalGrad" x1="0" y1="0" x2="1" y2="1"
-								><stop offset="0" style="stop-color:var(--g3)" /><stop offset=".5" style="stop-color:var(--g2)" /><stop offset="1" style="stop-color:var(--g1)" /></linearGradient
-							></defs
-						><circle class="g-track" cx="60" cy="60" r="50" /><circle class="g-prog" cx="60" cy="60" r="50" pathLength="100" /></svg
-					>
-					<div class="g-txt"><b use:countUp={{ value: pctN, suffix: '%' }}>{pctN}%</b><small>of goal</small></div>
+				<div class="hc-foot">
+					<div><small>Still to come</small><b use:countUp={{ value: outs, money: true }}>{inr(outs)}</b></div>
+					<div><small>Overdue</small><b class:od={od > 0} use:countUp={{ value: od, money: true }}>{inr(od)}</b></div>
+					<div><small>Next payout</small><b>{nextPayout ? `${nextPayout.brand.name} · ${fmt(nextPayout.pay_due)}` : 'None scheduled'}</b></div>
 				</div>
 			</div>
-			<div class="hc-foot">
-				<div><small>Still to come</small><b use:countUp={{ value: outs, money: true }}>{inr(outs)}</b></div>
-				<div><small>Overdue</small><b class:od={od > 0} use:countUp={{ value: od, money: true }}>{inr(od)}</b></div>
-				<div><small>Next payout</small><b>{nextPayout ? `${nextPayout.brand.name} · ${fmt(nextPayout.pay_due)}` : 'None scheduled'}</b></div>
-			</div>
-		</div>
-	</section>
+		</section>
+		<AiDesk />
+	</div>
 </div>
-
-<AiDesk />
 
 <BrandQuestions />
 
