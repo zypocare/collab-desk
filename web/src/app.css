@@ -1149,28 +1149,68 @@ input[type="number"]::-webkit-inner-spin-button,input[type="number"]::-webkit-ou
 .btn.blocked[disabled]{opacity:.38;cursor:not-allowed;box-shadow:none;filter:saturate(.4)}
 
 /* ---------- messages ---------- */
-.thread{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:18px;background:var(--surface-2);overflow:hidden}
-.th-list{max-height:360px;min-height:120px;overflow-y:auto;padding:14px 14px 6px;display:flex;flex-direction:column;gap:4px;scrollbar-width:thin}
-.th-empty{margin:auto;text-align:center;color:var(--ink-3);font-size:15.5px;max-width:280px;display:grid;justify-items:center;gap:8px;padding:12px 0}
-.th-empty svg{width:22px;height:22px;opacity:.6}
-.th-day{display:flex;justify-content:center;margin:8px 0 6px}
-.th-day span{font-size:13.5px;font-weight:600;color:var(--ink-3);background:var(--surface);padding:3px 10px;border-radius:999px}
-.bub-row{display:flex}
+.thread{--th-them:color-mix(in oklab,var(--ink) 9%,var(--surface));--th-sep:color-mix(in oklab,var(--ink) 12%,transparent);display:flex;flex-direction:column;border:1px solid var(--line);border-radius:18px;background:var(--surface);overflow:hidden}
+.th-list{max-height:min(520px,62vh);min-height:160px;overflow-y:auto;overscroll-behavior:contain;padding:14px 14px 6px;display:flex;flex-direction:column;scrollbar-width:thin}
+.th-list>:first-child{margin-top:auto}
+.th-empty{margin:auto;text-align:center;color:var(--ink-3);font-size:14.5px;max-width:300px;display:grid;justify-items:center;gap:6px;padding:20px 0}
+.th-empty b{color:var(--ink);font-size:17px;margin-top:6px}
+.th-empty p{margin:0;line-height:1.45}
+.th-empty .mono.lg{width:76px;height:76px;border-radius:50%;font-size:26px}
+/* Instagram-style chat: grouped bubbles, their avatar beside the last one, times between groups. */
+.th-day{text-align:center;margin:16px 0 6px;font-size:12px;font-weight:600;color:var(--ink-3)}
+.th-list>.th-day:first-child{margin-top:auto;padding-top:4px}
+.bub-row{display:flex;align-items:flex-end;gap:8px;margin-top:2px}
+.bub-row.first{margin-top:10px}
+.th-day+.bub-row{margin-top:2px}
 .bub-row.mine{justify-content:flex-end}
-.bub{max-width:82%;padding:9px 12px 6px;border-radius:16px 16px 16px 6px;background:var(--surface);border:1px solid var(--line);animation:bub-in .35s var(--spring);transform-origin:bottom left}
-.bub-row.mine .bub{border-radius:16px 16px 6px 16px;background:var(--grad);color:#fff;border-color:transparent;transform-origin:bottom right}
-.bub.pending{opacity:.6}
+.bub-av{flex:none;width:28px}
+.bub-av .mono.sm{width:28px;height:28px;border-radius:50%;font-size:11.5px}
+.bub{max-width:min(72%,520px);min-width:0;padding:8px 13px;border-radius:22px;background:var(--th-them);color:var(--ink);animation:bub-in .3s var(--spring);transform-origin:bottom left}
+.bub-row.mine .bub{background:linear-gradient(180deg,var(--g2),var(--g1)) fixed;color:#fff;transform-origin:bottom right}
+.bub-row:not(.mine).first:not(.last) .bub{border-bottom-left-radius:6px}
+.bub-row:not(.mine):not(.first):not(.last) .bub{border-top-left-radius:6px;border-bottom-left-radius:6px}
+.bub-row:not(.mine).last:not(.first) .bub{border-top-left-radius:6px}
+.bub-row.mine.first:not(.last) .bub{border-bottom-right-radius:6px}
+.bub-row.mine:not(.first):not(.last) .bub{border-top-right-radius:6px;border-bottom-right-radius:6px}
+.bub-row.mine.last:not(.first) .bub{border-top-right-radius:6px}
+.bub.pending{opacity:.55}
 @keyframes bub-in{from{opacity:0;transform:translateY(6px) scale(.94)}to{opacity:1;transform:none}}
-.bub p{margin:0;font-size:16px;line-height:1.45;white-space:pre-wrap;overflow-wrap:anywhere}
-.bub time{display:block;text-align:right;font-size:13px;opacity:.6;margin-top:2px}
-.th-seen{align-self:flex-end;display:flex;align-items:center;gap:4px;font-size:13.5px;color:var(--ink-3);margin:2px 2px 4px}
-.th-seen svg{width:12px;height:12px;color:var(--ok)}
-.th-quick{display:flex;gap:6px;overflow-x:auto;padding:4px 12px 2px;scrollbar-width:none}
-.th-quick .cat-chip{flex:none;height:28px;font-size:14.5px;display:inline-flex;align-items:center;gap:5px}
-.th-quick .cat-chip svg{width:12px;height:12px;color:var(--accent)}
-.th-box{display:flex;gap:8px;align-items:flex-end;padding:10px;border-top:1px solid var(--line);background:var(--surface)}
-.th-box textarea.inp{min-height:46px;height:46px;max-height:160px;resize:none;padding:11px 13px;line-height:1.4;overflow-y:auto;scrollbar-width:none}
-.send-btn{width:42px;height:42px;padding:0;flex:none;border-radius:12px;display:grid;place-items:center}
+.bub p{margin:0;font-size:15px;line-height:1.4;white-space:pre-wrap;overflow-wrap:anywhere}
+.bub-auto{display:block;font-size:11.5px;font-weight:600;opacity:.75;margin-bottom:2px}
+.bub.photos{padding:0;background:none!important;border-radius:18px}
+.bub.photos .att-img{margin:0;border-radius:18px}
+.bub.photos .att-img+.att-img{margin-top:4px}
+.bub.emoji{padding:0 2px;background:none!important}
+.bub.emoji p,[data-side] .bub.emoji p{font-size:40px;line-height:1.15}
+.bub-t{flex:none;align-self:center;font-size:11.5px;color:var(--ink-3);opacity:0;transition:opacity .15s;white-space:nowrap;pointer-events:none}
+.bub-row.mine .bub-t{order:-1}
+.bub-row:hover .bub-t{opacity:1}
+@media (hover:none){.bub-t{display:none}}
+.th-seen{align-self:flex-end;font-size:12px;font-weight:500;color:var(--ink-3);margin:4px 4px 2px}
+/* Above the box: AI help and saved replies, one row that scrolls sideways. */
+.th-drafts{display:flex;flex-direction:column;align-items:flex-end;gap:6px;padding:8px 12px 0}
+.th-drafts .ai-draft{max-width:88%;border-radius:18px;text-align:left;cursor:pointer}
+.th-tools{display:flex;align-items:center;gap:6px;overflow-x:auto;padding:8px 12px 0;scrollbar-width:none;-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 32px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 32px),transparent)}
+.th-tools::-webkit-scrollbar{display:none}
+.th-tools>:last-child{margin-right:28px}
+.th-chip{flex:none;display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 13px;border-radius:999px;border:1px solid var(--th-sep);background:none;color:var(--ink);font:inherit;font-size:13.5px;font-weight:600;white-space:nowrap;cursor:pointer;transition:background .15s,border-color .15s}
+.th-chip:hover{background:var(--th-them)}
+.th-chip:disabled{opacity:.5;cursor:default}
+.th-chip .ic{width:15px;height:15px}
+.th-chip.ai{border:1.5px solid transparent;background:linear-gradient(var(--surface),var(--surface)) padding-box,var(--grad) border-box}
+.th-chip.ai:hover{background:linear-gradient(var(--th-them),var(--th-them)) padding-box,var(--grad) border-box}
+.th-chip.ai .ic{color:var(--g2)}
+.th-chip.saved{border-style:dashed}
+.th-sep{flex:none;width:1px;height:20px;background:var(--th-sep);margin:0 2px}
+/* The box: a pill with the photo button, the text, then mic and file (or Send while typing). */
+.th-box{display:flex;align-items:flex-end;gap:2px;margin:8px 12px 12px;padding:5px 6px 5px 5px;border:1px solid var(--th-sep);border-radius:26px;background:var(--surface);transition:border-color .15s}
+.th-box:focus-within{border-color:color-mix(in oklab,var(--ink) 30%,transparent)}
+.th-cam{flex:none;width:36px;height:36px;border:0;border-radius:50%;display:grid;place-items:center;background:linear-gradient(135deg,var(--g1),var(--g2) 60%,var(--g3));color:#fff;cursor:pointer}
+.th-cam .ic{width:19px;height:19px}
+.th-in{flex:1;min-width:0;min-height:36px;height:36px;max-height:140px;resize:none;border:0;outline:0;background:none;color:var(--ink);font:inherit;font-size:15px;line-height:1.4;padding:8px 8px;overflow-y:auto;scrollbar-width:none}
+.th-in::placeholder{color:var(--ink-3)}
+.send-btn{flex:none;height:36px;padding:0 12px;border:0;border-radius:18px;background:none;color:var(--g1);font:inherit;font-size:15px;font-weight:700;cursor:pointer}
+.send-btn:hover{background:var(--th-them)}
 .send-btn[disabled]{opacity:.45;cursor:default}
 .msg-dot{display:inline-flex;align-items:center;gap:4px;height:22px;padding:0 8px;border-radius:999px;background:var(--accent);color:var(--accent-ink);font-size:14px;font-weight:700;animation:pop-in .4s var(--spring)}
 .msg-dot svg{width:12px;height:12px}

@@ -427,18 +427,9 @@
   .chat .collab-banner .btn{flex:1}
   .chat .thread{flex:1;min-height:0;border:0;border-radius:0;background:none}
   .chat .th-list{flex:1;max-height:none;padding:12px 12px 6px;gap:3px}
-  .chat .th-day span{background:none;font-size:12px}
-  .chat .bub{max-width:76%;padding:9px 14px;border-radius:22px;border:0;background:var(--ig-fill)}
-  .chat .bub-row.mine .bub{border-radius:22px;background:linear-gradient(160deg,var(--g1),var(--g2))}
-  .chat .bub-row.mine + .bub-row.mine .bub{border-top-right-radius:6px}
-  .chat .bub-row:not(.mine) + .bub-row:not(.mine) .bub{border-top-left-radius:6px}
-  .chat .bub time{font-size:11px}
-  .chat .th-quick{padding:6px 12px}
-  .chat .th-quick .cat-chip{height:32px;border-radius:99px;border:1px solid var(--ig-sep);background:none}
-  .chat .th-box{align-items:center;margin:6px 12px calc(8px + env(safe-area-inset-bottom,0px));padding:4px 4px 4px 16px;border:1px solid var(--ig-sep);border-radius:24px;background:var(--ig-fill-2)}
-  .chat .th-box textarea.inp{min-height:38px;height:38px;padding:8px 0;border:0;background:none;font-size:16px}
-  .chat .th-box .send-btn{height:36px;min-width:0;padding:0 14px;border-radius:99px;background:none;color:var(--accent)}
-  .chat .th-box .send-btn:disabled{opacity:.35}
+  .chat .th-box{margin-bottom:calc(8px + env(safe-area-inset-bottom,0px))}
+  .th-in{font-size:16px}
+  .bub{max-width:78%}
 
   /* ---------- One collab: header, jump chips, actions docked at the bottom ---------- */
   [data-side="studio"] .drawer.as-page{border:0;background:none;box-shadow:none}
@@ -1669,7 +1660,7 @@ textarea.inp.ng-text{min-height:132px;line-height:1.55}
 @media (max-width:760px){.qc-wrap{padding:0}.qc{grid-template-columns:1fr}}
 
 /* Chat attachments: photos, PDFs and voice notes */
-.th-att{flex:none;width:40px;height:40px;border-radius:50%;border:0;display:grid;place-items:center;background:none;color:var(--ink-2);cursor:pointer;align-self:center}
+.th-att{flex:none;width:36px;height:36px;border-radius:50%;border:0;display:grid;place-items:center;background:none;color:var(--ink);cursor:pointer}
 .th-att:hover{background:color-mix(in oklab,var(--ink) 6%,transparent);color:var(--ink)}
 .th-att.on{background:var(--bad);color:#fff;animation:pulse 1.4s ease-in-out infinite}
 .th-att .ic{width:20px;height:20px}

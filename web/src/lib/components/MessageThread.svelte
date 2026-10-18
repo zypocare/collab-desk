@@ -7,6 +7,7 @@
 	import { errMessage, firstName } from '../util';
 	import AiThinking from './AiThinking.svelte';
 	import Icon from './Icon.svelte';
+	import Mono from './Mono.svelte';
 	import NegotiateSheet from './NegotiateSheet.svelte';
 
 	let {
@@ -15,7 +16,8 @@
 		otherName,
 		quick = [],
 		facts,
-		collab
+		collab,
+		avatar
 	}: {
 		collabId: string;
 		side: 'creator' | 'brand';
@@ -26,7 +28,10 @@
 		facts?: Record<string, unknown>;
 		/** Creator side: the collab, for the negotiation helper. */
 		collab?: Collab;
+		/** Whose letters go in the little circle beside their messages (default: otherName). */
+		avatar?: string;
 	} = $props();
+	const avName = $derived(avatar || otherName);
 	let negotiating = $state(false);
 
 	// Free AI: three reply drafts from the conversation so far.
@@ -56,7 +61,12 @@
 	const lastMine = $derived([...messages].reverse().find((m) => m.sender === side));
 	const seen = $derived(!!lastMine && !!otherRead && otherRead >= lastMine.created_at);
 
+	// Stays pinned to the newest message unless she has scrolled up to read.
+	let atEnd = true;
+	const onScroll = () => list && (atEnd = list.scrollHeight - list.scrollTop - list.clientHeight < 120);
+	const settle = () => atEnd && list?.scrollTo({ top: list.scrollHeight });
 	async function scrollEnd(smooth = true) {
+		atEnd = true;
 		await tick();
 		list?.scrollTo({ top: list.scrollHeight, behavior: smooth ? 'smooth' : 'auto' });
 	}
@@ -210,54 +220,105 @@
 		}
 	}
 
-	const day = (iso: string) => new Date(iso).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' });
+	const day = (iso: string) => new Date(iso).toDateString();
 	const time = (iso: string) => new Date(iso).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' });
+	// "Today 12:35 pm", "Yesterday …", "Sunday …", then "18 Oct, …".
+	function stampOf(iso: string) {
+		const d = new Date(iso);
+		const now = new Date();
+		const days = Math.round((new Date(now.toDateString()).getTime() - new Date(d.toDateString()).getTime()) / 864e5);
+		const t = time(iso);
+		if (days === 0) return `Today ${t}`;
+		if (days === 1) return `Yesterday ${t}`;
+		if (days < 7) return `${d.toLocaleDateString('en-IN', { weekday: 'long' })} ${t}`;
+		return `${d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', ...(d.getFullYear() !== now.getFullYear() ? { year: 'numeric' } : {}) })}, ${t}`;
+	}
+	// Like Instagram: messages from one side within 5 minutes sit together as one group,
+	// and a time stamp shows when the chat picks up again after half an hour.
+	const at = (i: number) => new Date(messages[i].created_at).getTime();
+	function place(i: number) {
+		const m = messages[i];
+		const p = messages[i - 1];
+		const n = messages[i + 1];
+		const stamp = !p || at(i) - at(i - 1) > 30 * 60e3 || day(p.created_at) !== day(m.created_at);
+		const first = stamp || p.sender !== m.sender || at(i) - at(i - 1) > 5 * 60e3;
+		const last = !n || n.sender !== m.sender || at(i + 1) - at(i) > 5 * 60e3 || day(n.created_at) !== day(m.created_at);
+		return { stamp, first, last };
+	}
+	const placeholder = (m: Message) => !!m.attachments?.length && /^(🎤|📷|📎)/.test(m.body);
+	const photosOnly = (m: Message) => placeholder(m) && m.attachments!.every((a) => a.type.startsWith('image/'));
+	const emojiOnly = (s: string) => s.length <= 16 && /\p{Extended_Pictographic}/u.test(s) && /^[\p{Extended_Pictographic}\p{Emoji_Modifier}‍️\s]+$/u.test(s);
+	const lastIsMine = $derived(messages.at(-1)?.sender === side);
+
+	// On a laptop the mouse wheel scrolls the suggestion row sideways.
+	let tools = $state<HTMLElement>();
+	$effect(() => {
+		const el = tools;
+		if (!el) return;
+		const f = (e: WheelEvent) => {
+			if (Math.abs(e.deltaY) > Math.abs(e.deltaX) && el.scrollWidth > el.clientWidth) {
+				el.scrollLeft += e.deltaY;
+				e.preventDefault();
+			}
+		};
+		el.addEventListener('wheel', f, { passive: false });
+		return () => el.removeEventListener('wheel', f);
+	});
 </script>
 
 {#if negotiating && collab}<NegotiateSheet c={collab} thread={messages.map((m) => ({ from: m.sender, text: m.body }))} onuse={useReply} onclose={() => (negotiating = false)} />{/if}
 
 <div class="thread">
-	<div class="th-list" bind:this={list} aria-live="polite">
+	<div class="th-list" bind:this={list} aria-live="polite" onscroll={onScroll}>
 		{#if !loaded}
 			<div class="th-empty"><span class="spinner"></span></div>
 		{:else if !messages.length}
 			<div class="th-empty">
-				<Icon name="mail" />
-				<p>{side === 'brand' ? `Questions about this request? Message ${firstName(otherName)} here.` : `Message ${otherName} here. They get an email and reply from their request page.`}</p>
+				<Mono name={avName} size="lg" />
+				<b>{otherName}</b>
+				<p>{side === 'brand' ? `Questions about this request? Message ${firstName(otherName)} here.` : `Say hello. ${firstName(otherName)} gets an email and replies from their request page.`}</p>
 			</div>
 		{:else}
 			{#each messages as m, i (m.id)}
-				{#if i === 0 || day(messages[i - 1].created_at) !== day(m.created_at)}<div class="th-day"><span>{day(m.created_at)}</span></div>{/if}
-				<div class="bub-row" class:mine={m.sender === side}>
-					<div class="bub" class:pending={m.id.startsWith('tmp-')}>
-						{#if !(m.attachments?.length && /^(🎤|📷|📎)/.test(m.body))}<p>{m.body}</p>{/if}
+				{@const mine = m.sender === side}
+				{@const g = place(i)}
+				{#if g.stamp}<div class="th-day"><span>{stampOf(m.created_at)}</span></div>{/if}
+				<div class="bub-row" class:mine class:first={g.first} class:last={g.last}>
+					{#if !mine}<span class="bub-av">{#if g.last}<Mono name={avName} size="sm" />{/if}</span>{/if}
+					<div class="bub" class:pending={m.id.startsWith('tmp-')} class:photos={photosOnly(m)} class:emoji={emojiOnly(m.body) && !m.attachments?.length} title={time(m.created_at)}>
+						{#if m.auto}<small class="bub-auto">Automatic reply</small>{/if}
+						{#if !placeholder(m)}<p>{m.body}</p>{/if}
 						{#each m.attachments ?? [] as a (a.path)}
 							{#if a.type.startsWith('image/')}
-								<a class="att-img" href={urls[a.path]} target="_blank" rel="noopener">{#if urls[a.path]}<img src={urls[a.path]} alt={a.name} loading="lazy" />{/if}</a>
+								<a class="att-img" href={urls[a.path]} target="_blank" rel="noopener">{#if urls[a.path]}<img src={urls[a.path]} alt={a.name} onload={settle} />{/if}</a>
 							{:else if a.type.startsWith('audio/')}
-								<audio class="att-audio" controls preload="metadata" src={urls[a.path]}></audio>
+								<audio class="att-audio" controls preload="metadata" src={urls[a.path]} onloadedmetadata={settle}></audio>
 							{:else}
 								<a class="att-file" href={urls[a.path]} target="_blank" rel="noopener"><Icon name="doc" /><span>{a.name}</span></a>
 							{/if}
 						{/each}
-						<time datetime={m.created_at}>{time(m.created_at)}</time>
 					</div>
+					<time class="bub-t" datetime={m.created_at}>{time(m.created_at)}</time>
 				</div>
 			{/each}
-			{#if seen}<div class="th-seen"><Icon name="check" />Seen</div>{/if}
+			{#if lastIsMine}<div class="th-seen">{seen ? 'Seen' : 'Sent'}</div>{/if}
 		{/if}
 	</div>
-	{#if facts && !text}
-		<div class="th-ai">
-			{#if drafting}<AiThinking label="Writing replies" />{:else}<span class="th-ai-btns"><button type="button" class="btn sm ai-btn" onclick={suggestReplies}><Icon name="spark" />{drafts.length ? 'More replies' : 'Suggest replies'}</button>{#if collab && collab.stage !== 'declined' && collab.stage !== 'wrapped'}<button type="button" class="btn sm" onclick={() => (negotiating = true)} title="Brand asking for a lower price? Get three replies that protect your rate"><Icon name="scale" />Negotiate</button>{/if}</span>{/if}
+	{#if facts && !text && drafts.length}
+		<div class="th-drafts">
 			{#each drafts as d, i (i)}<button type="button" class="ai-draft" onclick={() => ((drafts = []), useReply(d))}>{d}</button>{/each}
 		</div>
 	{/if}
-	{#if quick.length && !text}
-		<div class="th-quick">
+	{#if !text && (facts || quick.length)}
+		<div class="th-tools" bind:this={tools}>
+			{#if facts}
+				{#if drafting}<AiThinking label="Writing replies" />{:else}<button type="button" class="th-chip ai" onclick={suggestReplies}><Icon name="spark" />{drafts.length ? 'More replies' : 'Suggest replies'}</button>{/if}
+				{#if collab && collab.stage !== 'declined' && collab.stage !== 'wrapped'}<button type="button" class="th-chip ai" onclick={() => (negotiating = true)} title="Brand asking for a lower price? Get three replies that protect your rate"><Icon name="scale" />Negotiate</button>{/if}
+				{#if quick.length}<i class="th-sep"></i>{/if}
+			{/if}
 			{#each quick as q, i (i)}
 				{@const r = typeof q === 'string' ? { label: q, text: q, saved: false } : q}
-				<button type="button" class="cat-chip" class:saved-chip={r.saved} title={r.text} onclick={() => useReply(r.text)} disabled={sending}><Icon name={r.saved ? 'edit' : 'spark'} />{r.label}</button>
+				<button type="button" class="th-chip" class:saved={r.saved} title={r.text} onclick={() => useReply(r.text)} disabled={sending}>{r.label}</button>
 			{/each}
 		</div>
 	{/if}
@@ -271,12 +332,11 @@
 	{/if}
 	<form class="th-box" onsubmit={(e) => (e.preventDefault(), send())}>
 		<input type="file" bind:this={fileInput} accept="image/*,application/pdf,audio/*,.doc,.docx,.ppt,.pptx,.xls,.xlsx" multiple hidden onchange={(e) => addFiles(e.currentTarget.files)} />
-		<button type="button" class="th-att" aria-label="Attach a photo or file" onclick={() => fileInput?.click()}><Icon name="clip" /></button>
-		<button type="button" class="th-att" class:on={recording} aria-label={recording ? 'Stop recording' : 'Record a voice note'} onclick={toggleRecord}><Icon name="mic" /></button>
+		<button type="button" class="th-cam" aria-label="Attach a photo or file" title="Photo or file" onclick={() => fileInput?.click()}><Icon name="image" /></button>
 		<textarea
-			class="inp"
+			class="th-in"
 			rows="1"
-			placeholder="Write a message…"
+			placeholder="Message…"
 			aria-label="Message to {otherName}"
 			maxlength="4000"
 			bind:value={text}
@@ -288,6 +348,11 @@
 				t.style.height = Math.min(140, t.scrollHeight) + 'px';
 			}}
 		></textarea>
-		<button class="btn grad send-btn" type="submit" disabled={(!text.trim() && !pending.length) || sending || recording} aria-label="Send message"><Icon name="send" /></button>
+		{#if (text.trim() || pending.length) && !recording}
+			<button class="send-btn" type="submit" disabled={sending} aria-label="Send message">Send</button>
+		{:else}
+			<button type="button" class="th-att" class:on={recording} aria-label={recording ? 'Stop recording' : 'Record a voice note'} title="Voice note" onclick={toggleRecord}><Icon name="mic" /></button>
+			<button type="button" class="th-att" aria-label="Attach a file" title="File" onclick={() => fileInput?.click()}><Icon name="clip" /></button>
+		{/if}
 	</form>
 </div>

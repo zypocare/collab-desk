@@ -425,7 +425,7 @@
 					<MessageThread
 						collabId={c.id}
 						side="creator"
-						otherName={c.contact_name || c.brand.name}
+						otherName={c.contact_name || c.brand.name} avatar={c.brand.name}
 						quick={studio.settings ? [...savedFor(c, studio.settings), ...replySuggestions(c, studio.settings)] : []}
 						facts={collabFacts(c, studio.settings)}
 						collab={c}
