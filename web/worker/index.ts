@@ -5,10 +5,13 @@
 // amount (checked by the database); after that, Google Gemini's free key is the backup (a key with
 // no billing attached, set as the GEMINI_API_KEY secret), with emails and phone numbers removed.
 
+import { brandPage, qrScan } from './page';
+
 type Env = {
 	ASSETS: { fetch: (req: Request) => Promise<Response> };
 	AI: { run: (model: string, input: Record<string, unknown>) => Promise<unknown> };
 	SUPABASE_URL: string;
+	SUPABASE_ANON_KEY?: string;
 	GEMINI_API_KEY?: string;
 };
 /** One AI job: which service runs it, and how much Cloudflare AI it used (in neurons). */
@@ -25,8 +28,10 @@ const VISION = '@cf/meta/llama-3.2-11b-vision-instruct';
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json', 'cache-control': 'no-store' } });
 
 export default {
-	async fetch(req: Request, env: Env): Promise<Response> {
+	async fetch(req: Request, env: Env, ctx: { waitUntil: (p: Promise<unknown>) => void }): Promise<Response> {
 		const url = new URL(req.url);
+		if (url.pathname.startsWith('/q/')) return qrScan(req, env, url);
+		if (url.pathname === '/' && req.method === 'GET') return brandPage(req, env, url, ctx);
 		if (!url.pathname.startsWith('/api/ai/')) return env.ASSETS.fetch(req);
 		if (req.method !== 'POST') return json({ error: 'Use POST.' }, 405);
 		try {

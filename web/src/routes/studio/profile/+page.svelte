@@ -31,6 +31,7 @@
 	const followers = $derived(ig?.followers ? compact(ig.followers) : s.followers || '—');
 
 	const HIGHLIGHTS = [
+		{ label: 'QR codes', icon: 'qr', href: '/studio/qr' },
 		{ label: 'Rates', icon: 'rupee', href: '/studio/settings?s=rates' },
 		{ label: 'Bookings', icon: 'cal', href: '/studio/settings?s=bookings' },
 		{ label: 'Insights', icon: 'chart', href: '/insights' },

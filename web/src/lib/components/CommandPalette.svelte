@@ -58,6 +58,7 @@
 			['Brands', '/studio/brands', 'users'],
 			['Reports', '/studio/reports', 'chart'],
 			['Brand page', '/studio/page', 'link'],
+			['QR codes', '/studio/qr', 'qr'],
 			['Settings', '/studio/settings', 'gear']
 		];
 		for (const [label, href, icon] of pages) out.push({ id: `p-${href}`, group: 'Pages', label, icon, hay: `${label} page go`, run: () => goto(href) });

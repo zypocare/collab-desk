@@ -2,7 +2,7 @@
 	import LanguagePicker from '#lib/components/LanguagePicker.svelte';
 	import { langText } from '#lib/languages.ts';
 	import { page } from '$app/state';
-	import { useReferral } from '#lib/referral.ts';
+	import { useQr, useReferral } from '#lib/referral.ts';
 	import { untrack } from 'svelte';
 	import { auth, refreshAccount } from '#lib/auth.svelte.ts';
 	import { CATS, phoneOk } from '#lib/util.ts';
@@ -361,6 +361,7 @@
 		sentReply = replyIn ?? null;
 		sent = (data as { code: string }).code;
 		useReferral(sent);
+		useQr(sent);
 		if (loyalty && againCode) await supabase.rpc('claim_rebook', { p_new: sent, p_old: againCode });
 		await loadRequests();
 		const mine = brandData.requests.find((r) => r.code === sent);

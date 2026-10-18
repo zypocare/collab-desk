@@ -59,6 +59,7 @@
 		<div class="bp-acts">
 			<button class="btn grad lg" onclick={() => copyText(link, 'Link copied')}><Icon name="copy" />Copy link</button>
 			<a class="btn" href="/?preview=1" target="_blank" rel="noopener"><Icon name="eye" />Open your page</a>
+			<a class="btn" href="/studio/qr"><Icon name="qr" />QR codes</a>
 			<button class="btn" onclick={kit} disabled={kitBusy}>{#if kitBusy}<span class="spinner"></span>{:else}<Icon name="film" />{/if}Media kit PDF</button>
 			{#if s.show_insights && studio.ig?.connected}<button class="btn" onclick={() => copyText(`${link}/insights`, 'Insights link copied. Send it when brands ask for insights')}><Icon name="chart" />Insights link</button>{/if}
 		</div>

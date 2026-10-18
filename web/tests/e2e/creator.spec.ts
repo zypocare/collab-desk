@@ -64,3 +64,19 @@ test('settings pages open', async ({ page }) => {
 	await expect(page.getByText('Deciding on a collab')).toBeVisible();
 	noErrors();
 });
+
+test('QR codes: make one, style it, download it, and a scan opens the page', async ({ page }) => {
+	const noErrors = watchErrors(page);
+	await page.goto('/studio/qr');
+	await page.getByRole('button', { name: /New QR code|Make a QR code/ }).first().click();
+	await expect(page.locator('.qr-stage canvas')).toBeVisible();
+	await page.getByRole('button', { name: 'Soft squares', exact: true }).click();
+	await page.getByRole('button', { name: 'Cerise', exact: true }).click();
+	const [svg] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: 'SVG for print' }).click()]);
+	expect(readFileSync((await svg.path())!).toString()).toContain('<svg');
+	const link = (await page.locator('.qr-url').textContent())!.trim();
+	const slug = link.split('/q/')[1];
+	await page.goto(`/q/${slug}`);
+	await page.waitForURL((u) => u.searchParams.get('qr') === slug);
+	noErrors();
+});

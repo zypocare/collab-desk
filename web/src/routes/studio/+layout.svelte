@@ -7,6 +7,7 @@
 	import type { LayoutProps } from './$types';
 	import { auth, signOut } from '#lib/auth.svelte.ts';
 	import { byId, catchUp, loadStudio, studio, stopWatching, watchStudio } from '#lib/studio.svelte.ts';
+	import { ensurePageCard } from '#lib/pageCard.ts';
 	import { theme, toggleTheme, ui } from '#lib/ui.svelte.ts';
 	import { firstName, hueOf, initials, inrS, iso, today, unreadFor } from '#lib/util.ts';
 	import { cascade } from '#lib/motion.ts';
@@ -75,7 +76,8 @@
 	$effect(() => {
 		if (auth.account?.role === 'creator')
 			untrack(() => {
-				loadStudio();
+				// The link-preview picture is redrawn a little later, only if her numbers changed.
+				loadStudio().then(() => setTimeout(ensurePageCard, 4000));
 				watchStudio();
 			});
 	});
@@ -133,6 +135,7 @@
 		'/studio/calendar': 'Calendar',
 		'/studio/money': 'Money',
 		'/studio/page': 'Brand page',
+		'/studio/qr': 'QR codes',
 		'/studio/payments': 'Payments',
 		'/studio/reports': 'Reports',
 		'/studio/settings': 'Settings and activity',
@@ -219,7 +222,7 @@
 		{ href: '/studio/calendar', label: 'Calendar', icon: 'cal', on: ['/studio/calendar'] },
 		{ href: '/studio/content', label: 'Content', icon: 'film', on: ['/studio/content', '/studio/instagram'] },
 		{ href: '/studio/money', label: 'Money', icon: 'wallet', on: ['/studio/money', '/studio/payments', '/studio/reports'] },
-		{ href: '/studio/page', label: 'Brand page', icon: 'link', on: ['/studio/page', '/studio/profile'] },
+		{ href: '/studio/page', label: 'Brand page', icon: 'link', on: ['/studio/page', '/studio/profile', '/studio/qr'] },
 		{ href: '/studio/settings', label: 'Settings', icon: 'gear', on: ['/studio/settings'] }
 	];
 	const deskCurrent = $derived(DESK.find((n) => (n.href === '/studio' ? path === '/studio' : n.on.some((h) => path.startsWith(h))))?.href);

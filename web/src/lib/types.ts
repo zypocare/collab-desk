@@ -143,6 +143,7 @@ export type Collab = {
 	retainer_id?: string | null;
 	links?: CollabLink[];
 	referred_by?: string | null;
+	qr_id?: string | null;
 	retainer_month?: string | null;
 	contact_name: string;
 	contact_email: string;
@@ -295,6 +296,8 @@ export type Settings = {
 	followers: string;
 	engagement: string;
 	reply_time: string;
+	page_card_v?: number;
+	page_card_sig?: string;
 	accepting: boolean;
 	show_rates: boolean;
 	monthly_goal: number;
@@ -483,4 +486,16 @@ export type Agreement = {
 	brand: { name: string; instagram: string; website: string; gstin?: string; address?: string; country?: string };
 	contact: { name: string; email: string };
 	creator: { name: string; handle: string; city: string; app_name: string; legal_name: string; email: string; pan?: string };
+};
+
+/** A branded QR code: its own short link, with a scan count. */
+export type QrCode = {
+	id: string;
+	slug: string;
+	name: string;
+	dest: 'page' | 'request';
+	style: Record<string, unknown>;
+	scans: number;
+	last_scan_at: string | null;
+	created_at: string;
 };

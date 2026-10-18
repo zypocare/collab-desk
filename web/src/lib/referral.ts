@@ -22,3 +22,25 @@ export async function useReferral(code: string) {
 		/* nothing saved */
 	}
 }
+
+// QR codes: a scan lands on /?qr=slug. The code is kept for 30 days and tied to the first request.
+const QR_KEY = 'cd-qr';
+export function keepQr(url: URL) {
+	const qr = url.searchParams.get('qr');
+	if (!qr || !/^[a-z0-9]{4,12}$/i.test(qr)) return;
+	try {
+		localStorage.setItem(QR_KEY, JSON.stringify({ qr: qr.toLowerCase(), at: Date.now() }));
+	} catch {
+		/* storage blocked */
+	}
+}
+export async function useQr(code: string) {
+	try {
+		const saved = JSON.parse(localStorage.getItem(QR_KEY) ?? 'null') as { qr: string; at: number } | null;
+		if (!saved || Date.now() - saved.at > 30 * 864e5) return;
+		const { data } = await supabase.rpc('qr_attach', { p_code: code, p_slug: saved.qr });
+		if (data === true) localStorage.removeItem(QR_KEY);
+	} catch {
+		/* nothing saved */
+	}
+}
