@@ -34,10 +34,28 @@ sw.addEventListener('activate', (e) =>
 	)
 );
 
+// Android "Share → Collab Desk" with a screenshot: keep it for a moment and open the share screen,
+// which hands it to Add collab.
+async function shared(req: Request) {
+	try {
+		const form = await req.formData();
+		const text = ['title', 'text', 'url'].map((k) => form.get(k)).filter((v): v is string => typeof v === 'string' && !!v.trim()).join('\n');
+		const shot = form.getAll('shot').find((f): f is File => f instanceof File && f.size > 0);
+		const c = await caches.open('shared');
+		await c.put('/__shared/text', new Response(text));
+		if (shot) await c.put('/__shared/shot', new Response(shot, { headers: { 'content-type': shot.type || 'image/jpeg' } }));
+		else await c.delete('/__shared/shot');
+	} catch {
+		/* the share screen opens empty */
+	}
+	return Response.redirect('/studio/share?shared=1', 303);
+}
+
 sw.addEventListener('fetch', (e) => {
 	const req = e.request;
-	if (req.method !== 'GET') return;
 	const url = new URL(req.url);
+	if (req.method === 'POST' && url.origin === sw.location.origin && url.pathname === '/studio/share') return e.respondWith(shared(req));
+	if (req.method !== 'GET') return;
 	if (url.origin !== sw.location.origin) return; // Supabase, Instagram images… go straight to the network.
 	// Opening any screen: the network first, the saved app when offline.
 	if (req.mode === 'navigate') {

@@ -20,6 +20,10 @@ export type Parsed = {
 };
 
 const WORDS: Record<string, number> = { a: 1, an: 1, one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, couple: 2 };
+// Hinglish counts ("ek reel aur teen stories"). Used only when the message reads as Hinglish, so
+// the English "do reels" isn't read as 2.
+const HI_WORDS: Record<string, number> = { ek: 1, do: 2, teen: 3, tin: 3, char: 4, chaar: 4, paanch: 5, panch: 5, chhe: 6, chhah: 6 };
+const HINGLISH = /\b(hai|hain|chahiye|chahte|karna|karni|karo|karenge|karein|mein|aur|tak|wala|wale|wali|bhai|didi|kitna|kitne|paisa|paise|rupaye|hazaa?r|hajaa?r|dedh|dhai|bhejenge|denge|milega|milenge|sakte|sakti|abhi|hoga|hogi)\b/i;
 const KIND_PATTERNS: [RegExp, string][] = [
 	[/reels?\b/i, 'Reel'],
 	[/stor(?:y|ies)\b/i, 'Story'],
@@ -39,13 +43,16 @@ function money(num: string, unit?: string) {
 	const n = Number(num.replace(/,/g, ''));
 	if (!isFinite(n)) return 0;
 	const u = (unit ?? '').toLowerCase();
-	return Math.round(u === 'k' ? n * 1e3 : u.startsWith('l') ? n * 1e5 : n);
+	return Math.round(u === 'k' || u.startsWith('h') ? n * 1e3 : u.startsWith('l') ? n * 1e5 : n);
 }
 
 const titleCase = (s: string) => s.replace(/[._]+/g, ' ').replace(/\b(official|india|in|store|shop|co)\b/gi, '').trim().replace(/\s+/g, ' ').replace(/\b\w/g, (m) => m.toUpperCase());
 const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
 export function parseDm(text: string, ownHandle = ''): Parsed {
+	const hi = HINGLISH.test(text);
+	// Hinglish amounts in words: "dedh lakh" = 1.5 lakh, "dhai" = 2.5, "sava" = 1.25.
+	if (hi) text = text.replace(/\bdedh\s+(lakh|lac|hazaa?r)/gi, '1.5 $1').replace(/\bdhai\s+(lakh|lac|hazaa?r)/gi, '2.5 $1').replace(/\bsava\s+(lakh|lac)/gi, '1.25 $1');
 	const t = text.replace(/ /g, ' ');
 	const lower = t.toLowerCase();
 	const own = ownHandle.toLowerCase().replace(/^@/, '');
@@ -84,8 +91,10 @@ export function parseDm(text: string, ownHandle = ''): Parsed {
 
 	// Deliverables: "2 reels", "one story", "a carousel", "3x stories".
 	const found = new Map<string, number>();
-	for (const m of t.matchAll(/\b(\d{1,2}|a|an|one|two|three|four|five|six|couple)\s*(?:x\s*)?(?:of\s+)?(?:instagram\s+|ig\s+|insta\s+)?(reels?|stor(?:y|ies)|carousels?|ugc(?:\s*videos?)?|(?:photo\s*|product\s*|video\s*)?shoots?|videos?(?!\s*(?:call|-?\s*shoot))|(?:static\s*)?(?:feed\s*)?posts?)\b/gi)) {
-		const n = /^\d+$/.test(m[1]) ? Number(m[1]) : (WORDS[m[1].toLowerCase()] ?? 1);
+	const COUNT = hi ? 'a|an|one|two|three|four|five|six|couple|ek|do|teen|tin|char|chaar|paanch|panch|chhe|chhah' : 'a|an|one|two|three|four|five|six|couple';
+	const DELIV = new RegExp(String.raw`\b(\d{1,2}|${COUNT})\s*(?:x\s*)?(?:of\s+)?(?:instagram\s+|ig\s+|insta\s+)?(reels?|stor(?:y|ies)|carousels?|ugc(?:\s*videos?)?|(?:photo\s*|product\s*|video\s*)?shoots?|videos?(?!\s*(?:call|-?\s*shoot))|(?:static\s*)?(?:feed\s*)?posts?)\b`, 'gi');
+	for (const m of t.matchAll(DELIV)) {
+		const n = /^\d+$/.test(m[1]) ? Number(m[1]) : (WORDS[m[1].toLowerCase()] ?? HI_WORDS[m[1].toLowerCase()] ?? 1);
 		const kind = KIND_PATTERNS.find(([re]) => re.test(m[2]))?.[1];
 		if (kind && n > 0) found.set(kind, (found.get(kind) ?? 0) + Math.min(n, 20));
 	}
@@ -104,12 +113,18 @@ export function parseDm(text: string, ownHandle = ''): Parsed {
 			const v = money(m[1] ?? m[3] ?? m[5], m[2] ?? m[4] ?? m[6]);
 			if (v >= 500 && v !== productValue) return v;
 		}
+		// Hinglish: "30 hazaar", "25000 rupaye", "1.5 lac".
+		if (hi)
+			for (const m of t.matchAll(/\b([\d,.]+)\s*(hazaa?r|hajaa?r|lac|lakh)\b|\b([\d,.]+)\s*(?:rupaye|rupees|rupay)\b/gi)) {
+				const v = money(m[1] ?? m[3], m[2] ?? '');
+				if (v >= 500 && v !== productValue) return v;
+			}
 		return 0;
 	})();
 
 	// Barter or paid.
 	// "Gift" only when they're gifting it to her, not a product name like "Diwali gift box".
-	const barterish = /\b(barter|gifted|gifting|gift (?:you|it)|as a gift|pr (?:package|box|kit)|in (?:exchange|return)|complimentary|free (?:product|stay|meal)|send you (?:our|the|a|some)|vouchers?|gift cards?|store credit|hampers?)\b/i.test(t);
+	const barterish = /\b(barter|gifted|gifting|gift (?:you|it)|as a gift|pr (?:package|box|kit)|in (?:exchange|return)|complimentary|free (?:product|stay|meal)|send you (?:our|the|a|some)|vouchers?|gift cards?|store credit|hampers?)\b/i.test(t) || (hi && /\b(free mein|gift (?:karenge|denge|bhejenge|milega)|product (?:bhejenge|denge|milega)|badle mein)\b/i.test(t));
 	const type: CollabType | null = barterish ? (fee ? 'hybrid' : 'barter') : fee ? 'paid' : null;
 	// What she gets: "in return we will be gifting you shopping vouchers", "send you our new serum".
 	// Not what they ask her for ("share the screenshot of your insights", "your contact number").
@@ -147,6 +162,17 @@ export function parseDm(text: string, ownHandle = ''): Parsed {
 			const d = new Date(yr, mon, day);
 			if (!nd[4] && d < new Date(now.getFullYear(), now.getMonth(), now.getDate())) d.setFullYear(d.getFullYear() + 1);
 			if (day >= 1 && day <= 31 && mon >= 0 && mon <= 11 && d.getDate() === day) preferredLive = iso(d);
+		}
+	}
+	// Hinglish "25 tak" / "25 ko live" (this month, or next month when that day has passed).
+	if (!preferredLive && hi) {
+		const hd = t.match(/(?<![\d₹.,])(\d{1,2})(?:st|nd|rd|th)?\s*(?:tak|ko|tarikh)\b/i);
+		if (hd) {
+			const day = Number(hd[1]);
+			const now = new Date();
+			const d = new Date(now.getFullYear(), now.getMonth(), day);
+			if (d < new Date(now.getFullYear(), now.getMonth(), now.getDate())) d.setMonth(d.getMonth() + 1);
+			if (day >= 1 && day <= 31 && d.getDate() === day) preferredLive = iso(d);
 		}
 	}
 

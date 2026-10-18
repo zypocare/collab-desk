@@ -12,6 +12,7 @@
 	import AiThinking from './AiThinking.svelte';
 	import Icon from './Icon.svelte';
 	import NudgeSheet from './NudgeSheet.svelte';
+	import { canSpeak, listen as hear, type Listening } from '../speak';
 
 	// "Ask your desk": she asks about her own collabs and money (typed or spoken), the free AI answers
 	// from her data and can offer a few actions as buttons. Nothing happens without her tap, and money
@@ -131,25 +132,25 @@
 		if (a.type === 'nudge') nudging = nudgesFor([c])[0] ?? { c, kind: 'quiet', days: 0, tries: 0, why: 'Checking in' };
 	}
 
-	// Speak instead of typing (the browser's own speech recognition; free).
-	type Rec = { lang: string; interimResults: boolean; onresult: (e: { results: { 0: { transcript: string } }[] }) => void; onend: () => void; onerror: () => void; start: () => void; stop: () => void };
-	const SR = typeof window !== 'undefined' ? ((window as unknown as { SpeechRecognition?: new () => Rec; webkitSpeechRecognition?: new () => Rec }).SpeechRecognition ?? (window as unknown as { webkitSpeechRecognition?: new () => Rec }).webkitSpeechRecognition) : undefined;
+	// Speak instead of typing (the browser's own speech recognition, or the free AI where there is none).
 	let listening = $state(false);
-	let rec: Rec | null = null;
+	let rec: Listening | null = null;
 	function listen() {
-		if (!SR) return toast('Speaking works in Chrome and Safari.', 'alert');
 		if (listening) return rec?.stop();
-		rec = new SR();
-		rec.lang = 'en-IN';
-		rec.interimResults = true;
-		rec.onresult = (e) => (q = Array.from(e.results).map((r) => r[0].transcript).join(' '));
-		rec.onend = () => {
-			listening = false;
-			if (q.trim()) send();
-		};
-		rec.onerror = () => (listening = false);
+		if (!canSpeak()) return toast('This browser has no microphone access.', 'alert');
 		listening = true;
-		rec.start();
+		rec = hear({
+			onText: (t) => (q = t),
+			onDone: (t) => {
+				listening = false;
+				if (t) q = t;
+				if (q.trim()) send();
+			},
+			onError: (m) => {
+				listening = false;
+				toast(m, 'alert');
+			}
+		});
 	}
 	function keydown(e: KeyboardEvent) {
 		if (e.key === 'Enter' && !e.shiftKey && !e.isComposing && !matchMedia('(pointer: coarse)').matches) {

@@ -179,6 +179,21 @@
 		: ''
 	);
 	const unread = $derived(studio.collabs.reduce((a, c) => a + unreadFor(c), 0));
+	// The number on the app icon (installed app): unread messages, like the Messages badge.
+	$effect(() => {
+		const n = unread;
+		const nav = navigator as Navigator & { setAppBadge?: (n?: number) => Promise<void>; clearAppBadge?: () => Promise<void> };
+		if (!studio.loaded) return;
+		(n ? nav.setAppBadge?.(n) : nav.clearAppBadge?.())?.catch(() => {});
+	});
+	// Home-screen shortcuts (long-press the app icon): /studio?new=1 and /studio?ask=1.
+	onMount(() => {
+		const q = new URLSearchParams(location.search);
+		if (!q.has('new') && !q.has('ask')) return;
+		if (q.has('new')) ui.newCollab = true;
+		if (q.has('ask')) ui.askOpen = true;
+		history.replaceState(history.state, '', location.pathname);
+	});
 	// Back returns to wherever she came from inside the app; from a link, to the screen above it.
 	let inApp = false;
 	afterNavigate((n) => {

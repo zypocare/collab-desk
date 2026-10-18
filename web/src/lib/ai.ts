@@ -2,7 +2,7 @@
 import { supabase } from './supabase';
 import type { Parsed } from './parseDm';
 
-export async function askAi<T>(kind: 'dm' | 'reply' | 'caption' | 'pitch' | 'fit' | 'status' | 'summary' | 'negotiate' | 'script' | 'nudge' | 'ask', body: Record<string, unknown>): Promise<T> {
+export async function askAi<T>(kind: 'dm' | 'reply' | 'caption' | 'pitch' | 'fit' | 'status' | 'summary' | 'negotiate' | 'script' | 'nudge' | 'ask' | 'voice', body: Record<string, unknown>): Promise<T> {
 	const { data } = await supabase.auth.getSession();
 	const token = data.session?.access_token;
 	if (!token) throw new Error('Sign in again to use AI.');
@@ -41,7 +41,7 @@ export function shrinkImage(file: File, max = 1280): Promise<string> {
 	});
 }
 
-type DmFields = {
+export type DmFields = {
 	brand?: string; instagram?: string; contact?: string; email?: string; phone?: string; type?: string | null; fee?: number;
 	product?: string; product_value?: number; deliverables?: { kind: string; qty: number }[]; preferred_live?: string; usage?: string; summary?: string;
 };

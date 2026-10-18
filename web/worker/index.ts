@@ -18,7 +18,7 @@ type Env = {
 type Run = { env: Env; gemini: boolean; neurons: number };
 
 // Expected size of each job in Cloudflare neurons (reserved before, corrected after).
-const COST: Record<string, number> = { dm: 160, reply: 110, caption: 110, pitch: 140, fit: 230, classify: 40, summary: 220, negotiate: 210, script: 330, nudge: 120, ask: 260 };
+const COST: Record<string, number> = { dm: 160, reply: 110, caption: 110, pitch: 140, fit: 230, classify: 40, summary: 220, negotiate: 210, script: 330, nudge: 120, ask: 260, voice: 60 };
 // Cloudflare's price list in neurons per token (Llama 3.3 70B fast; Llama 3.2 11B vision).
 const PER_TOKEN = { text: [0.0267, 0.2048], vision: [0.0045, 0.0615] };
 const USED_UP = "Today's free AI is used up. It's back at 5:30 am.";
@@ -37,10 +37,10 @@ export default {
 		try {
 			const kind = url.pathname.slice('/api/ai/'.length);
 			if (kind === 'status') return json(await status(req, env));
-			if (!['dm', 'reply', 'caption', 'pitch', 'classify', 'fit', 'summary', 'negotiate', 'script', 'nudge', 'ask'].includes(kind)) return json({ error: 'Unknown.' }, 404);
+			if (!['dm', 'reply', 'caption', 'pitch', 'classify', 'fit', 'summary', 'negotiate', 'script', 'nudge', 'ask', 'voice'].includes(kind)) return json({ error: 'Unknown.' }, 404);
 			const body = (await req.json()) as Record<string, unknown>;
 			const job = (x: Run) =>
-				kind === 'dm' ? readDm(x, body) : kind === 'reply' ? replies(x, body) : kind === 'pitch' ? pitch(x, body) : kind === 'classify' ? classify(x, body) : kind === 'fit' ? fit(x, body) : kind === 'summary' ? summary(x, body) : kind === 'negotiate' ? negotiate(x, body) : kind === 'script' ? script(x, body) : kind === 'nudge' ? nudge(x, body) : kind === 'ask' ? ask(x, body) : caption(x, body);
+				kind === 'dm' ? readDm(x, body) : kind === 'reply' ? replies(x, body) : kind === 'pitch' ? pitch(x, body) : kind === 'classify' ? classify(x, body) : kind === 'fit' ? fit(x, body) : kind === 'summary' ? summary(x, body) : kind === 'negotiate' ? negotiate(x, body) : kind === 'script' ? script(x, body) : kind === 'nudge' ? nudge(x, body) : kind === 'ask' ? ask(x, body) : kind === 'voice' ? voice(x, body) : caption(x, body);
 
 			// Checking an incoming Instagram DM comes from the DM webhook with a single-use pass
 			// (Cloudflare only: DMs are never sent to the backup automatically).
@@ -179,6 +179,18 @@ async function gemini(env: Env, system: string, user: string, max: number) {
 }
 
 // ---------- 1. A DM (text or screenshot) into collab details ----------
+/** Speech to text for browsers without their own (Whisper on Cloudflare; English, Hindi, Hinglish, Kannada). */
+async function voice(x: Run, b: Record<string, unknown>) {
+	if (x.gemini) throw new Error('!Voice typing is used up for today. Type it instead.');
+	const audio = String(b.audio ?? '');
+	if (!audio) throw new Error('!Nothing was recorded.');
+	if (audio.length > 2_400_000) throw new Error('!That recording is too long. Keep it under a minute.');
+	const r = (await x.env.AI.run('@cf/openai/whisper-large-v3-turbo', { audio, task: 'transcribe', vad_filter: true })) as { text?: string; transcription_info?: { duration?: number } };
+	// About 47 neurons per minute of audio.
+	x.neurons += Math.max(5, ((r.transcription_info?.duration ?? 30) / 60) * 47);
+	return { text: String(r.text ?? '').trim() };
+}
+
 async function readDm(x: Run, b: Record<string, unknown>) {
 	let text = String(b.text ?? '').slice(0, 6000);
 	const image = String(b.image ?? '');

@@ -1,0 +1,22 @@
+[
+	{ "id": "en-basic", "text": "Hi! I'm Asha from Lumière Skin. We'd love 1 reel + 3 stories for our Vitamin C launch, budget ₹30k, live by 25th Oct.", "brand": "Lumière Skin", "contact": "Asha", "fee": 30000, "type": "paid", "deliverables": { "Reel": 1, "Story": 3 }, "live": "10-25" },
+	{ "id": "en-lakh", "text": "Team Plum here! Budget is 1.5 lakh for 2 reels and a carousel. Can you go live on 3 November?", "brand": "Plum", "fee": 150000, "deliverables": { "Reel": 2, "Carousel": 1 }, "live": "11-03" },
+	{ "id": "en-barter", "text": "Hey, we at Brew Bros would love to send you our new cold brew range in exchange for a reel. Product worth Rs 2,500.", "brand": "Brew Bros", "type": "barter", "fee": 0, "productValue": 2500, "deliverables": { "Reel": 1 } },
+	{ "id": "en-hybrid", "text": "Hi from Sunveda! We are offering ₹15,000 plus our skincare hamper as a gift for 1 reel and 2 stories.", "brand": "Sunveda", "type": "hybrid", "fee": 15000, "deliverables": { "Reel": 1, "Story": 2 } },
+	{ "id": "en-do-reels", "text": "We'd love you to do reels for us. Budget ₹20,000. - Team Mokobara", "fee": 20000, "deliverables": { "Reel": 1 } },
+	{ "id": "en-email", "text": "Hello, this is Riya from Bewakoof. Please share your rates for 2 static posts. Write to riya@bewakoof.com", "brand": "Bewakoof", "contact": "Riya", "email": "riya@bewakoof.com", "deliverables": { "Static post": 2 } },
+	{ "id": "en-usage", "text": "Team Nykaa here. 1 reel with 60 days paid usage, budget 45k. Live by 12/12.", "brand": "Nykaa", "fee": 45000, "usage": "60 days paid ads", "deliverables": { "Reel": 1 }, "live": "12-12" },
+	{ "id": "en-shoot", "text": "Hi, we're Zouk. Need a product shoot (photos only, not posted) on 20 Nov. Paying ₹12k.", "brand": "Zouk", "fee": 12000, "deliverables": { "Shoot": 1 }, "live": "11-20" },
+	{ "id": "en-ugc", "text": "We at Mamaearth want 3 UGC videos for ads. Budget ₹18,000 per video? Total 54k.", "brand": "Mamaearth", "deliverables": { "UGC video": 3 } },
+	{ "id": "en-phone", "text": "Hi Niveditha, Karan here from Snitch. Call me on +91 98765 43210 to discuss a reel collab, ₹25k.", "brand": "Snitch", "phone": "+919876543210", "fee": 25000, "deliverables": { "Reel": 1 } },
+	{ "id": "hi-basic", "text": "Lumière wale ne bola 30k mein ek reel aur teen stories chahiye, 25 tak live karna hai", "fee": 30000, "deliverables": { "Reel": 1, "Story": 3 }, "liveDay": 25 },
+	{ "id": "hi-hazaar", "text": "Hi didi, hum Brew Bros se hai. 2 reels ke liye 20 hazaar de sakte hai. 10 tarikh tak post karna hoga.", "fee": 20000, "deliverables": { "Reel": 2 }, "liveDay": 10 },
+	{ "id": "hi-dedh", "text": "Bhai dedh lakh budget hai, do reels aur paanch stories chahiye", "fee": 150000, "deliverables": { "Reel": 2, "Story": 5 } },
+	{ "id": "hi-rupaye", "text": "Ek reel ke liye 15000 rupaye milenge, aur 2 stories bhi karni hai", "fee": 15000, "deliverables": { "Reel": 1, "Story": 2 } },
+	{ "id": "hi-barter", "text": "Hum aapko apna naya serum free mein bhejenge, badle mein ek reel karna hai", "type": "barter", "fee": 0, "deliverables": { "Reel": 1 } },
+	{ "id": "hi-gift", "text": "Product bhejenge aur 10k bhi denge, teen stories aur ek reel chahiye", "type": "hybrid", "fee": 10000, "deliverables": { "Reel": 1, "Story": 3 } },
+	{ "id": "hi-dhai", "text": "Hamara budget dhai lakh hai 4 reels ke liye, kal tak batao", "fee": 250000, "deliverables": { "Reel": 4 } },
+	{ "id": "hi-ko", "text": "Plum ki taraf se: 18 ko launch hai, ek reel aur do stories chahiye, 35k", "fee": 35000, "deliverables": { "Reel": 1, "Story": 2 }, "liveDay": 18 },
+	{ "id": "hi-mixed-email", "text": "Hi, main Priya hoon Sugar Cosmetics se. 2 reels chahiye, budget 40k hai. Mail karo priya@sugarcosmetics.com pe", "email": "priya@sugarcosmetics.com", "fee": 40000, "deliverables": { "Reel": 2 } },
+	{ "id": "hi-carousel", "text": "Ek carousel aur ek reel karni hai, 22 hazaar milenge", "fee": 22000, "deliverables": { "Carousel": 1, "Reel": 1 } }
+]

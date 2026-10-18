@@ -9,6 +9,8 @@
 	import { delivText, emailOk, fmt, inr, TYPE_LABEL } from '../util';
 	import AiThinking from './AiThinking.svelte';
 	import Icon from './Icon.svelte';
+	import { canSpeak, listen as hear, type Listening } from '../speak';
+	import { readDmOnDevice } from '../onDevice';
 
 	let name = $state('');
 	// Text shared into the app arrives here once.
@@ -25,7 +27,13 @@
 	let busy = $state(false);
 	let box = $state<HTMLTextAreaElement>();
 
-	onMount(() => box?.focus());
+	onMount(() => {
+		box?.focus();
+		// A screenshot shared into the app (Android Share): read it straight away.
+		const shot = ui.pasteImage;
+		ui.pasteImage = null;
+		if (shot) shrinkImage(shot).then((img) => readWithAi(img), (err) => toast((err as Error).message, 'alert'));
+	});
 
 	// One-tap paste from the clipboard (copied from WhatsApp, Instagram or email).
 	const canPaste = typeof navigator !== 'undefined' && !!navigator.clipboard?.readText;
@@ -47,6 +55,16 @@
 	async function readWithAi(image?: string) {
 		aiBusy = true;
 		aiNote = image ? 'Reading the screenshot…' : 'Reading the message…';
+		// Text: the AI built into this device first (free, private, works offline), then the cloud.
+		if (!image) {
+			const f = await readDmOnDevice(pasted, studio.settings?.handle ?? '');
+			if (f) {
+				aiFields = f;
+				aiNote = 'Read on this device: free and private. Check the details before adding.';
+				aiBusy = false;
+				return;
+			}
+		}
 		try {
 			const r = await askAi<{ transcript: string; fields: Parameters<typeof mergeDm>[1] }>('dm', { text: image ? '' : pasted, image: image ?? '', handle: studio.settings?.handle ?? '' });
 			if (r.transcript) pasted = r.transcript;
@@ -57,6 +75,31 @@
 			toast((e as Error).message, 'alert');
 		}
 		aiBusy = false;
+	}
+	// Speak the details instead of typing ("Lumière, 30k, ek reel aur teen stories, 25 tak").
+	let speaking = $state(false);
+	let rec: Listening | null = null;
+	const speakable = canSpeak();
+	function speak() {
+		if (speaking) return rec?.stop();
+		const before = pasted.trim();
+		const join = (t: string) => (before ? `${before}\n${t}` : t);
+		speaking = true;
+		rec = hear({
+			onText: (t) => (pasted = join(t)),
+			onWorking: () => (aiNote = 'Writing out what you said…'),
+			onDone: (t) => {
+				speaking = false;
+				aiNote = '';
+				if (t) pasted = join(t);
+				if (t && pasted.trim().length > 20) readWithAi();
+			},
+			onError: (m) => {
+				speaking = false;
+				aiNote = '';
+				toast(m, 'alert');
+			}
+		});
 	}
 	let shotInput = $state<HTMLInputElement>();
 	async function pickShot(e: Event) {
@@ -139,6 +182,7 @@
 			<textarea id="nc-paste" rows="6" placeholder={'Hi! I’m Asha from Lumière Skin. We’d love 1 reel + 3 stories for our Vitamin C launch, budget ₹30k, live by 25th Oct…'} bind:value={pasted} bind:this={box}></textarea>
 			<div class="nc-tools">
 				<button type="button" class="nc-pill ai" disabled={aiBusy} onclick={() => shotInput?.click()}><Icon name="image" />Screenshot</button>
+				{#if speakable}<button type="button" class="nc-pill ai" class:rec={speaking} disabled={aiBusy && !speaking} onclick={speak} aria-label={speaking ? 'Stop listening' : 'Speak the details'}><Icon name="mic" />{speaking ? 'Listening… tap to stop' : 'Speak'}</button>{/if}
 				{#if canPaste}<button type="button" class="nc-pill" onclick={pasteClip}><Icon name="copy" />Paste</button>{/if}
 				{#if pasted.trim().length > 20}<button type="button" class="nc-pill ai" disabled={aiBusy} onclick={() => readWithAi()}><Icon name="spark" />Read with AI</button>{/if}
 				<input type="file" accept="image/*" hidden bind:this={shotInput} onchange={pickShot} />
@@ -188,6 +232,9 @@
 	.nc-pill:disabled { opacity: .5; cursor: default; }
 	.nc-pill :global(.ic) { width: 17px; height: 17px; }
 	.nc-pill.ai :global(.ic) { color: var(--g2); }
+	.nc-pill.rec { background: color-mix(in oklab, var(--g2) 16%, var(--surface)); color: var(--g2); animation: nc-pulse 1.4s ease-in-out infinite; }
+	@keyframes nc-pulse { 50% { box-shadow: 0 0 0 6px color-mix(in oklab, var(--g2) 14%, transparent); } }
+	@media (prefers-reduced-motion: reduce) { .nc-pill.rec { animation: none; } }
 	.nc-note { display: flex; align-items: center; gap: 8px; margin: 12px 4px 0; font-size: 14px; color: var(--ink-2); }
 	.nc-note :global(.ic) { width: 16px; height: 16px; color: var(--g2); flex: none; }
 	:global([data-side]) .nc .nc-found { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 14px; padding: 0 4px; border: 0; background: none; }

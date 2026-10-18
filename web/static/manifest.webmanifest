@@ -13,9 +13,19 @@
 		{ "src": "/icon-maskable-512.png?v=2", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
 		{ "src": "/icon.svg?v=2", "sizes": "any", "type": "image/svg+xml" }
 	],
+	"shortcuts": [
+		{ "name": "New collab", "short_name": "New collab", "url": "/studio?new=1", "icons": [{ "src": "/icon-192.png?v=2", "sizes": "192x192", "type": "image/png" }] },
+		{ "name": "Ask your desk", "short_name": "Ask desk", "url": "/studio?ask=1", "icons": [{ "src": "/icon-192.png?v=2", "sizes": "192x192", "type": "image/png" }] }
+	],
 	"share_target": {
 		"action": "/studio/share",
-		"method": "GET",
-		"params": { "title": "title", "text": "text", "url": "url" }
+		"method": "POST",
+		"enctype": "multipart/form-data",
+		"params": {
+			"title": "title",
+			"text": "text",
+			"url": "url",
+			"files": [{ "name": "shot", "accept": ["image/png", "image/jpeg", "image/webp", "image/*"] }]
+		}
 	}
 }
