@@ -8,8 +8,8 @@
 	import { auth, signOut } from '#lib/auth.svelte.ts';
 	import { byId, loadStudio, studio, stopWatching, watchStudio } from '#lib/studio.svelte.ts';
 	import { theme, toggleTheme, ui } from '#lib/ui.svelte.ts';
-	import { inrS, iso, stageLabel, today, unreadFor } from '#lib/util.ts';
-	import { cascade, magnetic } from '#lib/motion.ts';
+	import { firstName, hueOf, initials, inrS, iso, today, unreadFor } from '#lib/util.ts';
+	import { cascade } from '#lib/motion.ts';
 	import Icon from '#lib/components/Icon.svelte';
 	import Avatar from '#lib/components/Avatar.svelte';
 	import NewCollabDialog from '#lib/components/NewCollabDialog.svelte';
@@ -196,94 +196,101 @@
 	});
 	const savedWhen = $derived(net.savedAt ? new Date(net.savedAt).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }) : '');
 
-	// ---------- Laptop: Mission Control frame ----------
-	const SUBS: Record<string, string> = {
-		'/studio': 'What needs you, this month\'s money and the week ahead',
-		'/studio/collabs': 'Every deal, from the first message to the payment',
-		'/studio/brands': 'Every brand you have worked with or talked to',
-		'/studio/pitches': 'Brands you are reaching out to',
-		'/studio/inbox': 'Your chats with brands',
-		'/studio/content': 'What to make, and when it goes live',
-		'/studio/calendar': 'Shoots, go-live dates and payments by day',
-		'/studio/payments': 'Invoices, money received and money still to come',
-		'/studio/reports': 'Earnings, brands and tax for any period',
-		'/studio/settings': 'Your page, your rates and how the desk works for you',
-		'/studio/profile': 'How brands see you',
-		'/studio/import': 'Bring in collabs from a spreadsheet or your DMs',
-		'/studio/instagram': 'Your posts and how they did'
-	};
-	const deskTitle = $derived(
-		path === '/studio' ? 'Today'
-		: path === '/studio/settings' && !sec ? 'My page'
-		: path === '/studio/profile' ? 'My page'
-		: title || group?.label || ''
-	);
-	const deskSub = $derived(
-		openC ? `${stageLabel(openC.stage)} · ${openC.code}${openC.contact_name ? ` · with ${openC.contact_name}` : ''}`
-		: sec ? 'My page'
-		: brandId ? 'Brand'
-		: (SUBS[path] ?? '')
-	);
-	let now = $state(new Date());
-	onMount(() => {
-		const t = setInterval(() => (now = new Date()), 1000);
-		return () => clearInterval(t);
-	});
-	const clock = $derived(now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'Asia/Kolkata' }));
-	const liveState = $derived(!net.online ? 'OFFLINE' : studio.error ? 'ERROR' : !studio.loaded ? 'CONNECTING' : 'LIVE');
-	let compact = $state(false);
-	onMount(() => {
-		try {
-			compact = localStorage.getItem('cd.rail') === 'compact';
-		} catch {
-			/* private window */
+	// ---------- Laptop: the Atelier sidebar ----------
+	// Seven places on a laptop; Board/Brands/Pitches and Payments/Reports stay as tabs at the top of their page.
+	const DESK: { href: string; label: string; icon: string; on: string[] }[] = [
+		{ href: '/studio', label: 'Today', icon: 'home', on: [] },
+		{ href: '/studio/inbox', label: 'Inbox', icon: 'inbox', on: ['/studio/inbox'] },
+		{ href: '/studio/collabs', label: 'Collabs', icon: 'board', on: ['/studio/collabs', '/studio/brands', '/studio/pitches', '/studio/c/', '/studio/import', '/studio/share'] },
+		{ href: '/studio/calendar', label: 'Calendar', icon: 'cal', on: ['/studio/calendar'] },
+		{ href: '/studio/content', label: 'Content', icon: 'film', on: ['/studio/content', '/studio/instagram'] },
+		{ href: '/studio/payments', label: 'Money', icon: 'wallet', on: ['/studio/payments', '/studio/reports'] },
+		{ href: '/studio/settings', label: 'Brand page', icon: 'link', on: ['/studio/settings', '/studio/profile'] }
+	];
+	const deskCurrent = $derived(DESK.find((n) => (n.href === '/studio' ? path === '/studio' : n.on.some((h) => path.startsWith(h))))?.href);
+	const deskTabs = $derived(tabs && group?.href !== '/studio/content' ? tabs : null);
+	// Brands that came back more than once, most loyal first.
+	const repeatBrands = $derived.by(() => {
+		const n = new Map<string, { id: string; name: string; count: number }>();
+		for (const c of studio.collabs) {
+			if (c.stage === 'declined') continue;
+			const b = n.get(c.brand.id) ?? { id: c.brand.id, name: c.brand.name, count: 0 };
+			b.count++;
+			n.set(c.brand.id, b);
 		}
+		return [...n.values()].filter((b) => b.count > 1).sort((a, b) => b.count - a.count).slice(0, 3);
 	});
-	function toggleRail() {
-		compact = !compact;
-		try {
-			localStorage.setItem('cd.rail', compact ? 'compact' : '');
-		} catch {
-			/* private window */
-		}
-		setTimeout(moveInd, 320);
-	}
-	const deskNav = $derived(NAV.filter((n) => !n.desk || !phone.on));
+	const daysLeft = $derived.by(() => {
+		const t = today();
+		return new Date(t.getFullYear(), t.getMonth() + 1, 0).getDate() - t.getDate();
+	});
 	function shortcuts(e: KeyboardEvent) {
 		if (e.key === 'j' && (e.ctrlKey || e.metaKey)) {
 			e.preventDefault();
 			ui.askOpen = true;
 			return;
 		}
-		if (phone.on || e.ctrlKey || e.metaKey || e.altKey || e.defaultPrevented) return;
+		if (phone.on || e.ctrlKey || e.metaKey || e.altKey || e.defaultPrevented || e.key !== '/') return;
 		const t = e.target as HTMLElement | null;
 		if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
-		if (document.querySelector('.dialog-scrim, .sheet-scrim, [role="dialog"]')) return;
-		const n = Number(e.key);
-		if (n >= 1 && n <= deskNav.length) {
-			e.preventDefault();
-			goto(deskNav[n - 1].href);
-		} else if (e.key === 't' || e.key === 'T') toggleTheme();
-		else if (e.key === '[') toggleRail();
-		else if (e.key === '/') {
-			e.preventDefault();
-			palette?.show();
-		}
+		e.preventDefault();
+		palette?.show();
 	}
 
 	async function logout() {
 		await signOut();
 		goto('/login', { replaceState: true });
 	}
-	// The top bar turns solid once the page scrolls under it.
-	let winY = $state(0);
 </script>
 
-<svelte:window bind:scrollY={winY} onkeydown={shortcuts} />
+<svelte:window onkeydown={shortcuts} />
 
 {#if allowed}
-	<div class="app" class:compact={compact && !phone.on} class:m-detail={detail || chat || path === '/studio/inbox' || path === '/studio/import'}>
-		{#if !phone.on}<div class="mc-backdrop" aria-hidden="true"><div class="mc-grid"></div></div>{/if}
+	<div class="app" class:at={!phone.on} class:m-detail={detail || chat || path === '/studio/inbox' || path === '/studio/import'}>
+		{#if !phone.on}
+			<nav class="side" aria-label="Main">
+				<a class="side-logo" href="/studio">
+					<svg viewBox="0 0 32 32" aria-hidden="true"
+						><defs
+							><linearGradient id="sideGrad" x1="0" y1="0" x2="1" y2="1"
+								><stop offset="0" style="stop-color:var(--g1)" /><stop offset=".55" style="stop-color:var(--g2)" /><stop offset="1" style="stop-color:var(--g3)" /></linearGradient
+							></defs
+						><circle cx="12" cy="16" r="8.5" fill="none" stroke="var(--ink)" stroke-width="2.6" /><circle cx="20" cy="16" r="8.5" fill="none" stroke="url(#sideGrad)" stroke-width="2.6" /></svg
+					>
+					<span>{studio.settings?.app_name ?? 'Collab Desk'}</span>
+				</a>
+				<a class="side-me" href="/studio/profile" title="How brands see you">
+					<Avatar name={studio.settings?.display_name ?? ''} src={studio.ig?.connected ? studio.ig.profile_picture_url : ''} size="36px" />
+					<span><b>{firstName(studio.settings?.display_name ?? '')}</b><small>@{studio.settings?.handle ?? ''}{studio.me?.team_role === 'manager' ? ' · manager' : ''}</small></span>
+				</a>
+				<button class="side-search" onclick={() => palette?.show()} aria-label="Search and actions"><Icon name="search" /><span>Search</span><kbd>Ctrl K</kbd></button>
+				<div class="side-nav">
+					{#each DESK as n (n.href)}
+						<a class="side-it" href={n.href} aria-current={deskCurrent === n.href ? 'page' : undefined}
+							><Icon name={n.icon} /><span class="side-t">{n.label}</span>{#if n.href === '/studio/inbox' && unread}<span class="side-badge" aria-label="{unread} unread">{unread}</span>{/if}{#if n.href === '/studio/collabs' && newCount}<span class="side-new">{newCount} new</span>{/if}</a
+						>
+					{/each}
+				</div>
+				{#if repeatBrands.length}
+					<div class="side-lbl">Repeat brands</div>
+					{#each repeatBrands as b (b.id)}
+						<a class="side-it" href="/studio/brands/{b.id}" aria-current={path === `/studio/brands/${b.id}` ? 'page' : undefined}><span class="side-b tint" style="--hue:var(--m{hueOf(b.name)})">{initials(b.name)}</span><span class="side-t">{b.name}</span></a>
+					{/each}
+				{/if}
+				<div class="side-sp"></div>
+				{#if goal}
+					<a class="side-goal" href="/studio/payments" aria-label="{monthName} goal: {Math.round(pct * 100)} percent">
+						<span class="sg-top"><span>{monthName} goal</span><b class="num">{Math.round(pct * 100)}%</b></span>
+						<span class="sg-bar"><i style="width:{Math.round(pct * 100)}%"></i></span>
+						<small><b class="num">{inrS(received)}</b> of {inrS(goal)} · {daysLeft} day{daysLeft === 1 ? '' : 's'} left</small>
+					</a>
+				{/if}
+				<div class="side-foot">
+					<button class="side-tool" onclick={toggleTheme} title="Light / dark"><Icon name={theme.value === 'dark' ? 'sun' : 'moon'} />{theme.value === 'dark' ? 'Light mode' : 'Dark mode'}</button>
+					<button class="side-tool" onclick={logout} aria-label="Sign out" title="Sign out"><Icon name="logout" /></button>
+				</div>
+			</nav>
+		{:else}
 		<nav class="rail" aria-label="Main">
 			<div class="logo">
 				<span class="logo-mark"
@@ -310,9 +317,9 @@
 			<div class="rail-lbl">Workspace</div>
 			<div class="navs" bind:this={navs} use:cascade={{ selector: '.nav', delay: 0.1, gap: 0.06 }}>
 				<span class="nav-ind" bind:this={ind}></span>
-				{#each deskNav as n, i (n.href)}
+				{#each NAV.filter((n) => !n.desk) as n (n.href)}
 					<a class="nav" href={phone.on && n.href === '/studio/settings' ? '/studio/profile' : n.href} aria-current={current === n.href ? 'page' : undefined} aria-label={phone.on && n.href === '/studio/settings' ? 'Profile' : undefined}
-						><span class="nav-ic">{#if phone.on && n.href === '/studio/settings'}<Avatar name={studio.settings?.display_name ?? ''} src={studio.ig?.connected ? studio.ig.profile_picture_url : ''} size="28px" />{:else}<Icon name={n.icon} />{/if}</span><span class="nav-t" class:nav-long={!!n.short}>{n.label}</span>{#if n.short}<span class="nav-short" aria-hidden="true">{n.short}</span>{/if}{#if !phone.on && !(n.href === '/studio/inbox' && unread) && !(n.href === '/studio/collabs' && newCount)}<kbd class="nav-k" aria-hidden="true">{i + 1}</kbd>{/if}{#if n.href === '/studio/inbox' && unread}<span class="badge" aria-label="{unread} unread">{unread}</span>{/if}{#if n.href === '/studio/collabs' && newCount}<span class="badge" aria-label="{newCount} new"
+						><span class="nav-ic">{#if phone.on && n.href === '/studio/settings'}<Avatar name={studio.settings?.display_name ?? ''} src={studio.ig?.connected ? studio.ig.profile_picture_url : ''} size="28px" />{:else}<Icon name={n.icon} />{/if}</span><span class="nav-t" class:nav-long={!!n.short}>{n.label}</span>{#if n.short}<span class="nav-short" aria-hidden="true">{n.short}</span>{/if}{#if n.href === '/studio/inbox' && unread}<span class="badge" aria-label="{unread} unread">{unread}</span>{/if}{#if n.href === '/studio/collabs' && newCount}<span class="badge" aria-label="{newCount} new"
 								>{newCount}</span
 							>{/if}</a
 					>
@@ -327,7 +334,6 @@
 				</a>
 			{/if}
 			<div class="rail-foot">
-				{#if !phone.on}<button class="icon-btn rail-fold" onclick={toggleRail} aria-label={compact ? 'Open the sidebar' : 'Fold the sidebar'} title="{compact ? 'Open' : 'Fold'} the sidebar ( [ )"><Icon name="sidebar" /></button>{/if}
 				<div class="me">
 					<Avatar name={studio.settings?.display_name ?? ''} src={studio.ig?.connected ? studio.ig.profile_picture_url : ''} />
 					<div><b>{studio.settings?.display_name ?? ''}</b><small>@{studio.settings?.handle ?? ''}{studio.me?.team_role === 'manager' ? ' · manager access' : ''}</small></div>
@@ -338,6 +344,7 @@
 				</div>
 			</div>
 		</nav>
+		{/if}
 		<main class="main">
 			{#if phone.on && !chat}
 				<header class="m-bar" class:scrolled={phone.scrolled} class:sub={!!back} class:hide={phone.hide && !back}>
@@ -365,24 +372,6 @@
 					</nav>
 				{/if}
 			{/if}
-			<div class="sx-top" class:stuck={winY > 6}>
-				{#if path.startsWith('/studio/c/')}<a class="crumb crumb-back" href="/studio/collabs" aria-label="Back to collabs" title="Collabs"><Icon name="back" /></a>{/if}
-				<div class="mc-crumb"><div class="mc-title">{deskTitle}</div>{#if deskSub}<p>{deskSub}</p>{/if}</div>
-				{#if tabs}
-					<nav class="subtabs" aria-label="{group?.label} pages" bind:this={subs}>
-						<span class="sub-ind" bind:this={subInd}></span>
-						{#each tabs as t (t.href)}<a href={t.href} aria-current={path === t.href ? 'page' : undefined}>{t.label}</a>{/each}
-					</nav>
-				{/if}
-				<div class="tb-r">
-					<button class="tb-search" onclick={() => palette?.show()} aria-label="Search and actions"><Icon name="search" /><span>Search or jump to…</span><kbd>Ctrl K</kbd></button>
-					<span class="mc-clock" title="India time">{clock}<small>IST</small></span>
-					<span class="mc-pill" data-s={liveState} role="status" title={liveState === 'LIVE' ? 'Connected: changes show up as they happen' : liveState === 'OFFLINE' ? 'Offline: showing what was saved' : ''}><i></i>{liveState === 'CONNECTING' ? 'SYNCING' : liveState}</span>
-					<button class="btn ai-btn tb-ask" onclick={() => (ui.askOpen = true)} title="Ask your desk (Ctrl J)"><Icon name="spark" />Ask</button>
-					<button class="btn grad tb-new" use:magnetic onclick={() => (ui.newCollab = true)}><Icon name="plus" />New collab</button>
-					<button class="icon-btn mc-theme" onclick={toggleTheme} aria-label="Switch light or dark mode" title="Light / dark ( T )"><Icon name={theme.value === 'dark' ? 'sun' : 'moon'} /></button>
-				</div>
-			</div>
 			{#if !net.online}
 				<div class="offline-bar" role="status"><span class="ob-dot"></span><span><b>You're offline.</b> Showing what was saved{savedWhen ? ` at ${savedWhen}` : ''}. Changes need a connection.</span></div>
 			{/if}
@@ -394,7 +383,22 @@
 					{@render children()}
 				{:else}
 					<!-- Laptop: pages sit at a readable width; the board uses all of it. -->
-					<div class="pg" class:pg-wide={path === '/studio/collabs'}>{@render children()}</div>
+					<div class="pg">
+						<div class="at-bar" class:at-flow={detail}>
+							{#if detail}<a class="at-back" href="/studio/collabs"><Icon name="chevL" />Collabs</a>{/if}
+							{#if deskTabs}
+								<nav class="subtabs at-tabs" aria-label="{group?.label} pages" bind:this={subs}>
+									<span class="sub-ind" bind:this={subInd}></span>
+									{#each deskTabs as t (t.href)}<a href={t.href} aria-current={path === t.href ? 'page' : undefined}>{t.label}</a>{/each}
+								</nav>
+							{/if}
+							{#if !detail}
+								<button class="btn at-ask" onclick={() => (ui.askOpen = true)} title="Ask your desk (Ctrl J)"><Icon name="spark" />Ask Desk</button>
+								<button class="btn grad at-new" onclick={() => (ui.newCollab = true)}><Icon name="plus" />New collab</button>
+							{/if}
+						</div>
+						{@render children()}
+					</div>
 				{/if}
 			{:else if !studio.error && phone.on}
 				<div class="skel" aria-label="Loading">

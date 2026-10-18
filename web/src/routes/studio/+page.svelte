@@ -80,6 +80,32 @@
 		})
 	);
 	const pipe = $derived(STAGES.slice(0, 5).map((st) => ({ st, n: list.filter((c) => c.stage === st.id).length })));
+	// Atelier cards: last month for comparison, the month's curve, the week's money, the pipeline's value.
+	const prev = new Date(T.getFullYear(), T.getMonth() - 1, 1);
+	const prevName = prev.toLocaleDateString('en-IN', { month: 'long' });
+	const prevYm = iso(prev).slice(0, 7);
+	const lastMonth = $derived(list.reduce((a, c) => a + receivedIn(c, prevYm), 0));
+	const vs = $derived(lastMonth > 0 ? Math.round(((received - lastMonth) / lastMonth) * 100) : null);
+	const curve = $derived.by(() => {
+		const days = T.getDate();
+		const per = Array(days + 1).fill(0);
+		for (const c of list) {
+			const live = (c.invoices ?? []).filter((i) => i.status === 'paid' && (i.paid_on ?? '').startsWith(ym));
+			if ((c.invoices ?? []).some((i) => i.status !== 'draft' && i.status !== 'cancelled')) {
+				for (const i of live) per[Math.min(days, Number(i.paid_on!.slice(8, 10)))] += (Number(i.subtotal) || 0) * (Number(i.inr_rate) || 1);
+			} else if (c.pay_status === 'paid' && (c.paid_on ?? '').startsWith(ym)) per[Math.min(days, Number(c.paid_on!.slice(8, 10)))] += Number(c.pay_received) || 0;
+		}
+		let run = 0;
+		const pts = per.map((v) => (run += v));
+		const max = Math.max(1, run);
+		const xy = pts.map((v, i) => [Math.round((i / Math.max(1, days)) * 520), Math.round(84 - (v / max) * 74)]);
+		const line = xy.map(([x, y], i) => `${i ? 'L' : 'M'}${x} ${y}`).join(' ');
+		return { line, area: `${line} L520 90 L0 90 Z`, end: xy[xy.length - 1] };
+	});
+	const weekIn = $derived(list.filter((c) => c.pay_due && diff(c.pay_due) >= 0 && diff(c.pay_due) <= 6).reduce((a, c) => a + outstanding(c), 0));
+	const HUE: Record<string, string> = { request: 'var(--h-request)', negotiating: 'var(--h-nego)', confirmed: 'var(--h-confirmed)', creating: 'var(--h-creating)', live: 'var(--h-live)' };
+	const pipeV = $derived(pipe.map((p) => ({ ...p, v: list.filter((c) => c.stage === p.st.id).reduce((a, c) => a + (Number(c.fee) || 0), 0) })));
+	const pipeTotal = $derived(pipeV.reduce((a, p) => a + p.v, 0));
 
 	let leaving = $state<string | null>(null);
 	function leaveThen(key: string, fn: () => void) {
@@ -104,14 +130,14 @@
 {#if phone.on}
 	<PhoneToday />
 {:else}
-<!-- Laptop: the day's numbers in one row, what needs her on the left, AI and the week on the right. -->
-<div class="td">
+<!-- Laptop (Atelier): money and pipeline up top, what needs her beside the AI desk, then the week. -->
+<div class="td at-td">
 	<header class="ph rv">
 		<div>
 			<div class="eb">{T.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}</div>
-			<h1>{greet}, {firstName(s.display_name)}</h1>
+			<h1>{greet}, <em>{firstName(s.display_name)}</em></h1>
 			<p>
-				{#if urgent}<span class="dt pulse k-bad"></span>{urgent} due today{ts.length > urgent ? `, ${ts.length} on your list` : ''}.{:else}Nothing urgent today. Enjoy creating.{/if}
+				{#if urgent}<span class="dt pulse k-bad"></span>{urgent} due today{ts.length > urgent ? `, ${ts.length} on your list` : ''}{:else}Nothing urgent today{/if}{#if weekIn}, and <b class="num">{inr(weekIn)}</b> is due to you this week{/if}.
 			</p>
 		</div>
 	</header>
@@ -119,40 +145,43 @@
 	<AwayMode banner />
 	<AlertsPrompt />
 
-	<section class="td-kpis rv" style="--i:1" aria-label="This month">
-		<div class="td-kpi" class:zero={!received}>
-			<small>Received in {monthName}</small>
-			<b use:countUp={{ value: received, money: true }}>{inr(received)}</b>
-			{#if goal}<span class="td-goal"><i style="--p:{pct}"></i></span>
-			<em>{pctN}% of {inrS(goal)} goal</em>{:else}<em><a href="/studio/settings?s=payments">Set a monthly goal</a></em>{/if}
-		</div>
-		<div class="td-kpi" class:zero={!outs}>
-			<small>Still to come</small>
-			<b use:countUp={{ value: outs, money: true }}>{inr(outs)}</b>
-			<em>{nextPayout ? `Next: ${nextPayout.brand.name} · ${fmt(nextPayout.pay_due)}` : 'No payment due yet'}</em>
-		</div>
-		<div class="td-kpi" class:bad={od > 0} class:zero={!od}>
-			<small>Overdue</small>
-			<b use:countUp={{ value: od, money: true }}>{inr(od)}</b>
-			<em>{od > 0 ? `${list.filter(overdue).length} invoice${list.filter(overdue).length === 1 ? '' : 's'} late` : 'All payments on time'}</em>
-		</div>
-		<a class="td-kpi" class:zero={!active.length} href="/studio/collabs">
-			<small>Active collabs</small>
-			<b use:countUp={{ value: active.length }}>{active.length}</b>
-			<span class="segbar td-seg" role="img" aria-label={pipe.map((p) => `${p.n} ${p.st.label}`).join(', ')}>
-				{#each pipe as p, i (p.st.id)}{#if p.n}<i class="st-{p.st.id}" style="flex:{p.n};--d:{i}"></i>{/if}{/each}
-			</span>
-			<em>{pipe[0].n} new · {pipe[1].n} talking · {pipe[2].n + pipe[3].n} in work{pipe[4]?.n ? ` · ${pipe[4].n} live` : ''}</em>
-		</a>
-		<div class="td-kpi" class:zero={!barter}>
-			<small>Barter received</small>
-			<b use:countUp={{ value: barter, money: true }}>{inr(barter)}</b>
-			<em>{prodGot.length} product{prodGot.length === 1 ? '' : 's'}</em>
-		</div>
-	</section>
+	<div class="at-top rv" style="--i:1">
+		<section class="at-card at-money" aria-label="Money this month">
+			<div class="at-h"><span class="lbl">Earned in {monthName}</span>{#if vs !== null}<span class="chip" class:up={vs >= 0} class:down={vs < 0}>{vs >= 0 ? '+' : ''}{vs}% vs {prevName}</span>{/if}</div>
+			<b class="at-big num" use:countUp={{ value: received, money: true }}>{inr(received)}</b>
+			<svg class="at-spark" viewBox="0 0 520 90" preserveAspectRatio="none" aria-hidden="true"
+				><defs
+					><linearGradient id="tdArea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--g2);stop-opacity:.3" /><stop offset="1" style="stop-color:var(--g2);stop-opacity:0" /></linearGradient
+					><linearGradient id="tdLine" x1="0" y1="0" x2="1" y2="0"><stop offset="0" style="stop-color:var(--g1)" /><stop offset=".6" style="stop-color:var(--g2)" /><stop offset="1" style="stop-color:var(--g3)" /></linearGradient
+				></defs
+				><path d={curve.area} fill="url(#tdArea)" /><path d={curve.line} fill="none" stroke="url(#tdLine)" stroke-width="2.5" stroke-linejoin="round" vector-effect="non-scaling-stroke" /></svg
+			>
+			{#if goal}
+				<div class="at-goal"><span class="at-goal-bar"><i style="width:{Math.round(pct * 100)}%"></i></span><small><b class="num">{pctN}%</b> of your {inrS(goal)} goal</small></div>
+			{/if}
+			<div class="at-mini">
+				<div><span class="lbl">Still to come</span><b class="num">{inr(outs)}</b><small>{nextPayout ? `Next: ${nextPayout.brand.name} · ${fmt(nextPayout.pay_due)}` : 'Nothing due yet'}</small></div>
+				<div class:bad={od > 0}><span class="lbl">Overdue</span><b class="num">{inr(od)}</b><small class:ok={!od}>{od > 0 ? `${list.filter(overdue).length} late` : 'All on time'}</small></div>
+				<div><span class="lbl">Barter value</span><b class="num">{inr(barter)}</b><small>{prodGot.length} product{prodGot.length === 1 ? '' : 's'}</small></div>
+			</div>
+		</section>
 
-	<div class="td-grid">
-		<div class="td-main">
+		<section class="at-card at-pipe" aria-label="Pipeline">
+			<div class="at-h"><span class="lbl">Pipeline</span><a href="/studio/collabs">Open board</a></div>
+			<div class="at-pv"><b class="num">{inrS(pipeTotal)}</b><span>across {active.length} open collab{active.length === 1 ? '' : 's'}</span></div>
+			<span class="at-seg" role="img" aria-label={pipeV.map((p) => `${p.n} ${p.st.label}`).join(', ')}>
+				{#each pipeV as p (p.st.id)}{#if p.n}<i style="flex:{p.n};background:{HUE[p.st.id]}"></i>{/if}{/each}
+			</span>
+			<div class="at-stages">
+				{#each pipeV as p (p.st.id)}
+					<a href="/studio/collabs" class="at-st"><i style="background:{HUE[p.st.id]}"></i><span>{p.st.label}</span><span class="num at-n">{p.n}</span><b class="num">{inrS(p.v)}</b></a>
+				{/each}
+			</div>
+		</section>
+	</div>
+
+	<div class="at-grid">
+		<div class="at-main">
 			<section class="panel needs-panel rv" style="--i:2">
 				<div class="panel-h"><h2>Needs you</h2><span class="count-chip tint {urgent ? 'k-bad' : 'k-pay'}">{ts.length} item{ts.length === 1 ? '' : 's'}</span></div>
 				<div class="task-list" use:flip>
@@ -182,26 +211,25 @@
 			<NudgeList />
 			<BrandQuestions />
 		</div>
-
-		<aside class="td-side">
+		<aside class="at-aside">
 			<AiDesk />
-			<section class="panel td-week rv" style="--i:4">
-				<div class="panel-h"><h2>This week</h2><a class="td-link" href="/studio/calendar">Calendar</a></div>
-				{#each week.filter((d) => d.list.length) as d (d.ds)}
-					<div class="td-day">
-						<div class="td-day-h"><b>{d.i === 0 ? 'Today' : d.i === 1 ? 'Tomorrow' : d.dt.toLocaleDateString('en-IN', { weekday: 'long' })}</b><small>{d.dt.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</small></div>
-						{#each d.list as e (e.c.id + e.kind)}
-							<button class="td-ev k-{e.kind}" onclick={() => (ui.openCollab = e.c.id)}><span class="dt"></span><span class="td-ev-t">{evLabel(e)}</span><small>{e.c.brand.name}</small></button>
-						{/each}
-					</div>
-				{:else}
-					<p class="td-free">Nothing scheduled this week. A good time to plan content.</p>
-				{/each}
-				{#if week.some((d) => d.list.length) && week.some((d) => !d.list.length)}
-					<p class="td-free">Free: {week.filter((d) => !d.list.length).map((d) => (d.i === 0 ? 'today' : d.dt.toLocaleDateString('en-IN', { weekday: 'short' }))).join(', ')}</p>
-				{/if}
-			</section>
 		</aside>
 	</div>
+
+	<section class="at-card at-week rv" style="--i:4" aria-label="This week">
+		<div class="at-h"><h2>This week</h2><a href="/studio/calendar">Calendar</a></div>
+		<div class="at-days">
+			{#each week as d (d.ds)}
+				<div class="at-day" class:now={d.i === 0}>
+					<div class="at-dh"><b>{d.i === 0 ? 'Today' : d.dt.toLocaleDateString('en-IN', { weekday: 'short' })}</b><span class="num">{d.dt.getDate()}</span></div>
+					{#each d.list as e (e.c.id + e.kind)}
+						<button class="at-ev k-{e.kind}" onclick={() => (ui.openCollab = e.c.id)}><span>{evLabel(e)}</span><small>{e.c.brand.name}</small></button>
+					{:else}
+						<span class="at-free">Free</span>
+					{/each}
+				</div>
+			{/each}
+		</div>
+	</section>
 </div>
 {/if}
