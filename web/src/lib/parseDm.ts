@@ -24,8 +24,11 @@ const KIND_PATTERNS: [RegExp, string][] = [
 	[/stor(?:y|ies)\b/i, 'Story'],
 	[/carousels?\b/i, 'Carousel'],
 	[/ugc(?:\s*videos?)?\b/i, 'UGC video'],
+	// A shoot (photos or video for the brand, not posted): "photoshoot", "product shoot", "2 shoots"; not "shoot a reel".
+	[/(?:photo|product|brand|video|ad|fashion|campaign)\s*-?\s*shoots?\b/i, 'Shoot'],
+	[/^shoots?$/i, 'Shoot'],
 	// "Create a video" for an Instagram creator means a Reel (not a video call).
-	[/(?<!ugc\s{0,3})videos?\b(?!\s*call)/i, 'Reel'],
+	[/(?<!ugc\s{0,3})videos?\b(?!\s*(?:call|-?\s*shoot))/i, 'Reel'],
 	[/(?:static\s*)?(?:feed\s*)?posts?\b/i, 'Static post']
 ];
 const MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
@@ -80,7 +83,7 @@ export function parseDm(text: string, ownHandle = ''): Parsed {
 
 	// Deliverables: "2 reels", "one story", "a carousel", "3x stories".
 	const found = new Map<string, number>();
-	for (const m of t.matchAll(/\b(\d{1,2}|a|an|one|two|three|four|five|six|couple)\s*(?:x\s*)?(?:of\s+)?(?:instagram\s+|ig\s+|insta\s+)?(reels?|stor(?:y|ies)|carousels?|ugc(?:\s*videos?)?|videos?(?!\s*call)|(?:static\s*)?(?:feed\s*)?posts?)\b/gi)) {
+	for (const m of t.matchAll(/\b(\d{1,2}|a|an|one|two|three|four|five|six|couple)\s*(?:x\s*)?(?:of\s+)?(?:instagram\s+|ig\s+|insta\s+)?(reels?|stor(?:y|ies)|carousels?|ugc(?:\s*videos?)?|(?:photo\s*|product\s*|video\s*)?shoots?|videos?(?!\s*(?:call|-?\s*shoot))|(?:static\s*)?(?:feed\s*)?posts?)\b/gi)) {
 		const n = /^\d+$/.test(m[1]) ? Number(m[1]) : (WORDS[m[1].toLowerCase()] ?? 1);
 		const kind = KIND_PATTERNS.find(([re]) => re.test(m[2]))?.[1];
 		if (kind && n > 0) found.set(kind, (found.get(kind) ?? 0) + Math.min(n, 20));

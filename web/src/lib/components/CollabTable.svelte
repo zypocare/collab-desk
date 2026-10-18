@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { Collab, Stage } from '../types';
 	import { ui } from '../ui.svelte';
-	import { delivText, diff, fmt, inr, inrS, nextLine, stageIndex, stageLabel, unreadFor } from '../util';
+	import { delivText, diff, fmt, inr, inrS, nextLine, stageIndex, stageName, unreadFor } from '../util';
 	import { priorityOf } from '../studio.svelte';
 	import Icon from './Icon.svelte';
 	import Mono from './Mono.svelte';
@@ -80,7 +80,7 @@
 							</span>
 						</div>
 					</td>
-					<td><span class="ct-stage"><span class="dt" class:pulse={c.stage === 'request'}></span>{stageLabel(c.stage)}</span></td>
+					<td><span class="ct-stage"><span class="dt" class:pulse={c.stage === 'request'}></span>{stageName(c, c.stage)}</span></td>
 					<td class="ct-del">{delivText(c.deliverables) || '—'}</td>
 					<td class="num-col">
 						{#if c.type === 'barter'}<span class="ct-v">{c.product_value ? inrS(c.product_value) : '—'}</span><small>barter</small>

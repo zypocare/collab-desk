@@ -4,7 +4,7 @@ import type { Collab, Settings } from './types';
 import { allDone, diff, latestDraft, ships, todayIso } from './util';
 
 export type Shot = { t: string; done: boolean };
-export const DEFAULT_HOURS: Record<string, number> = { Reel: 6, Story: 1, 'Static post': 3, Carousel: 4, 'UGC video': 4 };
+export const DEFAULT_HOURS: Record<string, number> = { Reel: 6, Story: 1, 'Static post': 3, Carousel: 4, 'UGC video': 4, Shoot: 6 };
 
 /** Hours still needed for a collab: pieces not done × her time per piece. */
 export function hoursLeft(c: Collab, s: Pick<Settings, 'piece_hours'> | null) {
@@ -42,7 +42,8 @@ const SHOTS: Record<string, string[]> = {
 	Story: ['First look or unboxing', 'Using it, talking to camera', 'Link or tag sticker slide'],
 	'Static post': ['Styled product shot (2–3 angles)', 'You with the product, natural setting'],
 	Carousel: ['Cover slide that stops the scroll', '3–4 detail or step slides', 'Final slide: verdict or call to action'],
-	'UGC video': ['Hook: the problem in one line', 'Product demo, close-up', 'Result / before-after', 'Call to action (no on-screen branding unless asked)']
+	'UGC video': ['Hook: the problem in one line', 'Product demo, close-up', 'Result / before-after', 'Call to action (no on-screen branding unless asked)'],
+	Shoot: ['Shot list and looks agreed with the brand', 'Hero shots in every format they need', 'Detail and lifestyle angles', 'Final edits delivered in the agreed sizes']
 };
 
 /** A shot list for the whole collab, from its deliverables and brief. */

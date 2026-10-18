@@ -28,6 +28,8 @@
 	import {
 		CATS,
 		KINDS,
+		noPost,
+		stageName,
 		PAY_LABEL,
 		STAGES,
 		TYPE_LABEL,
@@ -390,7 +392,7 @@
 						<div class="sh-track"><i></i></div>
 						{#each STAGES as s, i (s.id)}
 							<button class="sh-step st-{s.id}" class:past={i < si} class:on={i === si} aria-pressed={i === si} onclick={() => changeStage(s.id)}>
-								<span class="sh-dot">{#if i < si}<Icon name="check" />{/if}</span><span class="sh-l"><span class="sh-full">{s.label}</span><span class="sh-short" aria-hidden="true">{SHORT_STAGE[s.id]}</span></span>
+								<span class="sh-dot">{#if i < si}<Icon name="check" />{/if}</span><span class="sh-l"><span class="sh-full">{stageName(c, s.id)}</span><span class="sh-short" aria-hidden="true">{SHORT_STAGE[s.id]}</span></span>
 							</button>
 						{/each}
 					</div>
@@ -573,12 +575,12 @@
 						<div class="f"><label for="d-shoot">Shoot day</label><DatePicker id="d-shoot" value={c.shoot_date} onchange={(v) => save('shoot_date', v || null)} /></div>
 					{/if}
 					<div class="f"><label for="d-draft">Draft due to brand</label><DatePicker id="d-draft" value={c.draft_date} onchange={(v) => save('draft_date', v || null)} /></div>
-					<div class="f"><label for="d-live">Go-live date</label><DatePicker id="d-live" value={c.live_date} onchange={(v) => save('live_date', v || null)} /></div>
+					<div class="f"><label for="d-live">{noPost(c) ? 'Delivery date' : 'Go-live date'}</label><DatePicker id="d-live" value={c.live_date} onchange={(v) => save('live_date', v || null)} /></div>
 					{#if c.live_date && !['live', 'wrapped', 'declined'].includes(c.stage)}
 						<div class="f"><label for="d-time">Post at <span class="hint">(alert 30 min before)</span></label><Select id="d-time" value={c.live_time?.slice(0, 5) ?? undefined} placeholder="Pick a time" options={timeOptions(c.live_time)} onchange={(v) => save('live_time', v)} /></div>
 					{/if}
 				</div>
-				{#if best && c.live_date && !['live', 'wrapped', 'declined'].includes(c.stage) && c.live_time?.slice(0, 5) !== best.value}
+				{#if best && !noPost(c) && c.live_date && !['live', 'wrapped', 'declined'].includes(c.stage) && c.live_time?.slice(0, 5) !== best.value}
 					<div class="date-sug">
 						<Icon name="spark" />
 						<span><b>Your best time:</b> {best.label}. Your posts then get {best.lift}% more interactions.</span>
@@ -633,7 +635,7 @@
 				{/if}
 			</section>
 
-			{#if ['confirmed', 'creating', 'live', 'wrapped'].includes(c.stage)}
+			{#if ['confirmed', 'creating', 'live', 'wrapped'].includes(c.stage) && !noPost(c)}
 				<section class="sec" hidden={!sh('check')}>
 					<h3>Posting checklist <span>{CHECKLIST.length - checklistMissing(c).length} of {CHECKLIST.length}</span></h3>
 					{#each CHECKLIST as item (item.key)}

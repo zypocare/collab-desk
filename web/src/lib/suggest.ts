@@ -1,7 +1,7 @@
 // Suggestions: ready-made answers the studio puts in front of her so she mostly picks instead of typing.
 // Everything here is plain rules on her own data (rate card, packages, history). No paid AI.
 import type { Collab, Package, PublicPackage, QuoteItem, Settings } from './types';
-import { diff, fmt, inTransit, iso, latestDraft, latestQuote, offeredKinds, overdue, parse, plural, unreadFor, usageDaysOf } from './util';
+import { diff, fmt, inTransit, iso, latestDraft, latestQuote, noPost, offeredKinds, overdue, parse, plural, unreadFor, usageDaysOf } from './util';
 import { balanceDue } from './invoice';
 import { fairFee, rateValue } from './priority';
 import { delivText, inr } from './util';
@@ -233,11 +233,11 @@ export function nextStep(c: Collab): NextStep | null {
 		case 'confirmed':
 			if (c.type !== 'paid' && !c.shipped_at && !c.product_received_at) return { key: 'ask-product', label: 'Ask for the product', hint: 'Remind them to ship it', icon: 'box' };
 			if (inTransit(c)) return { key: 'received', label: 'Mark received', hint: `On its way via ${c.ship_carrier}`, icon: 'box' };
-			if (!c.draft_date || !c.live_date) return { key: 'dates', label: 'Set dates', hint: 'Suggested draft and go-live dates are ready', icon: 'cal' };
+			if (!c.draft_date || !c.live_date) return { key: 'dates', label: 'Set dates', hint: noPost(c) ? 'Suggested draft and delivery dates are ready' : 'Suggested draft and go-live dates are ready', icon: 'cal' };
 			return { key: 'start', label: 'Start creating', hint: `Draft due ${fmt(c.draft_date)}`, icon: 'film' };
 		case 'creating':
 			if (!dr || dr.status === 'changes') return { key: 'share-draft', label: dr ? 'Share revised draft' : 'Share draft', hint: dr ? 'They asked for changes' : 'Send it for approval', icon: 'send' };
-			if (dr.status === 'approved') return { key: 'go-live', label: 'Mark live', hint: 'Draft approved: post it', icon: 'spark' };
+			if (dr.status === 'approved') return noPost(c) ? { key: 'go-live', label: 'Mark delivered', hint: 'Draft approved: send the final files', icon: 'send' } : { key: 'go-live', label: 'Mark live', hint: 'Draft approved: post it', icon: 'spark' };
 			return null; // waiting for the brand's review
 		case 'live':
 			if (readyReport) return { key: 'report', label: 'Send results', hint: '7-day report is ready', icon: 'chart' };

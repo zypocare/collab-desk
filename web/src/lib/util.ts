@@ -31,7 +31,13 @@ export function waLink(phone: string | null | undefined, text: string) {
 	return n.length >= 11 ? `https://wa.me/${n}?text=${encodeURIComponent(text)}` : '';
 }
 
-export const KINDS = ['Reel', 'Story', 'Static post', 'Carousel', 'UGC video'];
+export const KINDS = ['Reel', 'Story', 'Static post', 'Carousel', 'UGC video', 'Shoot'];
+/** Work she makes for the brand but doesn't post on her own Instagram (a shoot, UGC for their channels). */
+export const NO_POST = ['Shoot', 'UGC video'];
+/** A collab with nothing to post: no go-live, no posting checklist; "Live" means delivered. */
+export const noPost = (c: Pick<Collab, 'deliverables'>) => (c.deliverables?.length ?? 0) > 0 && c.deliverables.every((d) => NO_POST.includes(d.kind));
+/** The stage's name for this collab ("Delivered" instead of "Live" when nothing is posted). */
+export const stageName = (c: Pick<Collab, 'deliverables'>, s: Stage) => (s === 'live' && noPost(c) ? 'Delivered' : stageLabel(s));
 /** The content types she has switched on (all of them if the list is missing). */
 export const offeredKinds = (list?: string[] | null) => (list?.length ? KINDS.filter((k) => list.includes(k)) : KINDS);
 /** A package can be booked only if everything in it is still offered. */
@@ -175,6 +181,7 @@ export function nextLine(c: Collab): NextLine {
 				const d = diff(c.draft_date);
 				return r(d < 0 ? `Draft overdue by ${-d} day${-d > 1 ? 's' : ''}` : `Draft due ${relWord(d)}`, d, 'film');
 			}
+			if (noPost(c)) return c.live_date ? r(`Deliver ${relWord(diff(c.live_date))}`, diff(c.live_date), 'send') : r('Deliver the content', null, 'send');
 			return c.live_date ? r(`Goes live ${relWord(diff(c.live_date))}`, diff(c.live_date), 'spark') : r('Set a go-live date', null);
 		case 'live':
 			if (overdue(c)) {
@@ -182,11 +189,11 @@ export function nextLine(c: Collab): NextLine {
 				return r(`Payment overdue by ${-d} day${-d > 1 ? 's' : ''}`, d, 'alert');
 			}
 			if (c.follow_date) return r(`Follow up ${relWord(diff(c.follow_date))}`, diff(c.follow_date), 'bell');
-			return r(`Live since ${fmt(c.live_date)}`, null, 'spark');
+			return noPost(c) ? r(`Delivered ${fmt(c.live_date)}`, null, 'check') : r(`Live since ${fmt(c.live_date)}`, null, 'spark');
 		case 'declined':
 			return r('Declined', null, 'x');
 		default:
-			return r(`Wrapped · live ${fmt(c.live_date)}`, null, 'check');
+			return r(`Wrapped · ${noPost(c) ? 'delivered' : 'live'} ${fmt(c.live_date)}`, null, 'check');
 	}
 }
 
