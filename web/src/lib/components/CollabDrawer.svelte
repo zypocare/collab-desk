@@ -84,7 +84,7 @@
 		payTerms,
 		waLink
 	} from '../util';
-	import { DRAFT_MAX_MB, cancelInvoice, recordPayment, reloadCollabs, setChecklist, setInvoiceFlags, shareDraft, withdrawQuote } from '../studio.svelte';
+	import { DRAFT_MAX_MB, cancelInvoice, recordPayment, reloadCollabs, setChecklist, setInvoiceFlags, shareDraft, releaseDraft, withdrawQuote, type DraftProgress } from '../studio.svelte';
 	import { emailOk, errMessage, todayIso } from '../util';
 	import type { Quote } from '../types';
 	import { INVOICE_STATUS, KIND_LABEL, balanceDue, type Invoice } from '../invoice';
@@ -180,12 +180,16 @@
 		draftForm = { link: '', caption: '', note: '' };
 	});
 
+	let draftProg = $state<DraftProgress | null>(null);
+	let draftStop: AbortController | null = null;
 	async function sendDraft(e: SubmitEvent) {
 		e.preventDefault();
 		if (!c) return;
 		draftBusy = true;
-		const ok = await shareDraft(c, draftForm, draftFile);
+		draftStop = new AbortController();
+		const ok = await shareDraft(c, draftForm, draftFile, (p) => (draftProg = p), draftStop.signal);
 		draftBusy = false;
+		draftProg = null;
 		if (ok) {
 			draftForm = { link: '', caption: '', note: '' };
 			draftFile = null;
@@ -602,6 +606,7 @@
 							<span class="hint">{fmt(d.submitted_at)}</span>
 						</div>
 						{#if d.file_path}<DraftPlayer path={d.file_path} type={d.file_type} comments={(d.comments ?? []).map((x) => ({ id: x.id, at: x.at_seconds === null ? null : Number(x.at_seconds), body: x.body, name: x.name })).sort((a, b) => (a.at ?? 1e9) - (b.at ?? 1e9))} />{/if}
+						{#if d.preview_path}<p class="hint draft-wm"><Icon name="shield" />{d.released_at ? 'The brand can open the clean file.' : 'The brand sees a watermarked preview until this collab is paid.'}{#if !d.released_at}<button type="button" class="lnk" onclick={() => releaseDraft(d.id, c.id)}>Send the clean file now</button>{/if}</p>{/if}
 						{#if d.link}<a class="lnk draft-link" href={d.link} target="_blank" rel="noopener">{d.link}</a>{/if}
 						{#if d.caption}<p class="draft-cap">{d.caption}</p>{/if}
 						{#if d.feedback}<blockquote class="note" style="margin:8px 0 0"><span>{d.status === 'approved' ? 'Brand note' : 'Changes asked'} · {d.responded_by}</span><p>{d.feedback}</p></blockquote>{/if}
@@ -628,7 +633,15 @@
 							{/if}
 						</div>
 						<div class="f"><label for="dr-note">Note for the brand <span class="hint">(optional)</span></label><input class="inp" id="dr-note" bind:value={draftForm.note} /></div>
-						<button class="btn sm primary" type="submit" disabled={draftBusy || (!draftFile && !draftForm.link.trim() && !draftForm.caption.trim())}><Icon name="send" />Send draft {c.drafts.length + 1} for approval</button>
+						{#if draftProg}
+							<div class="draft-prog" role="status">
+								<div class="draft-prog-t"><span>{draftProg.label}</span><button type="button" class="lnk" onclick={() => draftStop?.abort()}>Cancel</button></div>
+								<div class="draft-bar"><i style="width:{draftProg.pct}%"></i></div>
+								<small>Keep this screen open. If the signal drops, the upload carries on from where it stopped.</small>
+							</div>
+						{:else}
+							<button class="btn sm primary" type="submit" disabled={draftBusy || (!draftFile && !draftForm.link.trim() && !draftForm.caption.trim())}><Icon name="send" />Send draft {c.drafts.length + 1} for approval</button>
+						{/if}
 					</form>
 				{:else}
 					<p class="hint">Waiting for the brand to review round {lastDraft.round}.</p>

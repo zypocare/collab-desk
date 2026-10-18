@@ -594,3 +594,12 @@ a.btn{text-decoration:none}
 .pay-fix>.ic{width:18px;height:18px;color:var(--warn);flex:none}
 .pay-fix>span{flex:1 1 260px;display:flex;flex-direction:column;gap:2px}
 .pay-fix small{color:var(--ink-3);font-size:13px}
+
+/* Sharing a draft: making the watermarked preview, then the resumable upload. */
+.draft-prog{display:grid;gap:6px;width:100%}
+.draft-prog-t{display:flex;justify-content:space-between;gap:10px;font-size:14px;font-weight:500}
+.draft-bar{height:8px;border-radius:5px;background:color-mix(in oklab,var(--ink) 8%,transparent);overflow:hidden}
+.draft-bar i{display:block;height:100%;background:var(--grad);transition:width .3s ease}
+.draft-prog small{font-size:12.5px;color:var(--ink-3)}
+.draft-wm{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:8px 0 0}
+.draft-wm .ic{width:14px;height:14px;color:var(--ok)}

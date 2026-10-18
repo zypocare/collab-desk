@@ -78,6 +78,10 @@ export type Draft = {
 	responded_by: string | null;
 	file_path: string | null;
 	file_type: string;
+	/** The brand's watermarked copy (made on her device), and when the clean file was opened to them. */
+	preview_path?: string | null;
+	preview_type?: string;
+	released_at?: string | null;
 	comments?: { id: number; at_seconds: number | null; body: string; name: string; author: 'brand' | 'creator' }[];
 };
 

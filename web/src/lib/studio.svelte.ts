@@ -12,6 +12,8 @@ import { confetti, toast, ui } from './ui.svelte';
 import { ask } from './confirm.svelte';
 import { diff, errMessage, inr, stageLabel, todayIso, unreadFor } from './util';
 import { isNetworkError, load as loadSaved, net, save as saveLocal } from './offline.svelte';
+import { makePreview } from './draftPreview';
+import { uploadResumable } from './resumable';
 
 export const studio = $state<{
 	loaded: boolean;
@@ -597,29 +599,63 @@ export async function withdrawQuote(q: Quote) {
 }
 
 export const DRAFT_MAX_MB = 50;
-export async function shareDraft(c: Collab, d: { link: string; caption: string; note: string }, file?: File | null) {
+export type DraftProgress = { pct: number; label: string };
+const mmss = (t: number) => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, '0')}`;
+
+/**
+ * Send a draft to the brand. A video or photo also gets a light preview with "DRAFT · for <brand>"
+ * across it (made on this device); the brand sees only that until the collab is paid. Files go up
+ * in resumable pieces, so a dropped signal doesn't start them over.
+ */
+export async function shareDraft(c: Collab, d: { link: string; caption: string; note: string }, file?: File | null, onProgress?: (p: DraftProgress) => void, signal?: AbortSignal) {
 	let file_path: string | null = null;
+	let preview_path: string | null = null;
+	let preview_type = '';
 	if (file) {
 		if (file.size > DRAFT_MAX_MB * 1024 * 1024) {
 			toast(`That file is over ${DRAFT_MAX_MB} MB. Share a Google Drive link instead.`, 'alert');
 			return false;
 		}
+		const id = crypto.randomUUID();
 		const ext = (file.name.split('.').pop() || 'mp4').toLowerCase().replace(/[^a-z0-9]/g, '');
-		file_path = `${c.id}/${crypto.randomUUID()}.${ext}`;
-		const up = await supabase.storage.from('drafts').upload(file_path, file, { contentType: file.type || undefined, upsert: false });
-		if (up.error) {
-			toast(`Couldn't upload the file: ${errMessage(up.error)}`, 'alert');
+		file_path = `${c.id}/${id}.${ext}`;
+		let preview: File | null = null;
+		try {
+			preview = await makePreview(file, c.brand.name, (done, total) => onProgress?.({ pct: Math.round((done / total) * 100), label: `Making ${c.brand.name}'s watermarked preview · ${mmss(done)} of ${mmss(total)}` }), signal);
+		} catch (e) {
+			if ((e as Error)?.name === 'AbortError') return false;
+			preview = null;
+		}
+		try {
+			const share = preview ? 0.75 : 1;
+			onProgress?.({ pct: 0, label: 'Uploading…' });
+			await uploadResumable('drafts', file_path, file, { type: file.type, signal, onProgress: (pct) => onProgress?.({ pct: Math.round(pct * share), label: `Uploading · ${Math.round(pct * share)}%` }) });
+			if (preview) {
+				preview_path = `${c.id}/${id}-preview.${preview.type === 'image/jpeg' ? 'jpg' : preview.type === 'video/mp4' ? 'mp4' : 'webm'}`;
+				preview_type = preview.type;
+				await uploadResumable('drafts', preview_path, preview, { type: preview.type, signal, onProgress: (pct) => onProgress?.({ pct: 75 + Math.round(pct / 4), label: `Uploading · ${75 + Math.round(pct / 4)}%` }) });
+			}
+		} catch (e) {
+			if ((e as Error)?.name !== 'AbortError') toast((e as Error).message, 'alert');
 			return false;
 		}
 	}
-	const { error } = await supabase.from('drafts').insert({ collab_id: c.id, ...d, file_path, file_type: file?.type ?? '' });
+	const { error } = await supabase.from('drafts').insert({ collab_id: c.id, ...d, file_path, file_type: file?.type ?? '', preview_path, preview_type });
 	if (error) {
 		toast(`Couldn't share the draft: ${errMessage(error)}`, 'alert');
 		return false;
 	}
 	await reloadOne(c.id);
-	toast(`Draft sent to ${c.brand.name} for approval`, 'send');
+	toast(preview_path ? `Draft sent to ${c.brand.name}, with their watermarked preview` : `Draft sent to ${c.brand.name} for approval`, 'send');
 	return true;
+}
+
+/** Let the brand open the clean draft file before payment (it opens by itself once paid). */
+export async function releaseDraft(id: string, collabId: string) {
+	const { error } = await supabase.from('drafts').update({ released_at: new Date().toISOString() }).eq('id', id);
+	if (error) return toast(`Couldn't send it: ${errMessage(error)}`, 'alert');
+	await reloadOne(collabId);
+	toast('The brand can now open the clean file', 'send');
 }
 
 export async function setChecklist(c: Collab, patch: Checklist) {

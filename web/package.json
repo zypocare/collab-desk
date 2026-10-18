@@ -36,7 +36,8 @@
 		"bits-ui": "^2.19.5",
 		"motion": "^14.3.0",
 		"pdf-lib": "^1.17.1",
-		"qrcode-generator": "^2.0.4"
+		"qrcode-generator": "^2.0.4",
+		"tus-js-client": "^4.3.1"
 	},
 	"overrides": {
 		"runed": {

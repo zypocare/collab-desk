@@ -271,7 +271,7 @@
 			<div class="panel-h"><h2>Draft {pendingDraft.round} for your review</h2><span class="pill tint k-new">Needs your answer</span></div>
 			<div style="padding:0 20px 8px">
 				{#if pendingDraft.file_path}
-					<DraftPlayer path={pendingDraft.file_path} type={pendingDraft.file_type} {comments} canComment onadd={addComment} ondelete={removeComment} />
+					<DraftPlayer path={pendingDraft.preview_path && !pendingDraft.released_at ? pendingDraft.preview_path : pendingDraft.file_path} type={pendingDraft.preview_path && !pendingDraft.released_at ? (pendingDraft.preview_type ?? pendingDraft.file_type) : pendingDraft.file_type} {comments} canComment onadd={addComment} ondelete={removeComment} />
 				{/if}
 				{#if pendingDraft.link}<a class="btn" href={pendingDraft.link} target="_blank" rel="noopener"><Icon name="eye" />Open the draft</a>{/if}
 				{#if pendingDraft.caption}<div class="f" style="margin-top:14px"><span class="lbl-t">Caption</span><p class="draft-cap">{pendingDraft.caption}</p></div>{/if}
