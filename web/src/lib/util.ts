@@ -36,8 +36,8 @@ export const KINDS = ['Reel', 'Story', 'Static post', 'Carousel', 'UGC video', '
 export const NO_POST = ['Shoot', 'UGC video'];
 /** A collab with nothing to post: no go-live, no posting checklist; "Live" means delivered. */
 export const noPost = (c: Pick<Collab, 'deliverables'>) => (c.deliverables?.length ?? 0) > 0 && c.deliverables.every((d) => NO_POST.includes(d.kind));
-/** The stage's name for this collab ("Delivered" instead of "Live" when nothing is posted). */
-export const stageName = (c: Pick<Collab, 'deliverables'>, s: Stage) => (s === 'live' && noPost(c) ? 'Delivered' : stageLabel(s));
+/** The stage's name for this collab: the same everywhere (board, list, profile, collab page). */
+export const stageName = (_c: Pick<Collab, 'deliverables'>, s: Stage) => stageLabel(s);
 /** The content types she has switched on (all of them if the list is missing). */
 export const offeredKinds = (list?: string[] | null) => (list?.length ? KINDS.filter((k) => list.includes(k)) : KINDS);
 /** A package can be booked only if everything in it is still offered. */

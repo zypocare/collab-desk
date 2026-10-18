@@ -6,7 +6,7 @@
 	import { downloadMediaKit } from '#lib/mediaKitPdf.ts';
 	import type { PublicPage } from '#lib/types.ts';
 	import { copyText, toast } from '#lib/ui.svelte.ts';
-	import { compact, delivText, hueOf, initials, inrS, stageName } from '#lib/util.ts';
+	import { compact, delivText, hueOf, initials, inrS, stageLabel } from '#lib/util.ts';
 	import { PHONE_Q } from '#lib/phone.svelte.ts';
 	import Icon from '#lib/components/Icon.svelte';
 	import Avatar from '#lib/components/Avatar.svelte';
@@ -20,7 +20,8 @@
 	const s = $derived(studio.settings!);
 	const ig = $derived(studio.ig?.connected ? studio.ig : null);
 	const link = $derived((s.site_url || location.origin).replace(/\/$/, ''));
-	const collabs = $derived(studio.collabs.filter((c) => c.stage !== 'declined'));
+	// Only work that is out there: live or wrapped. Requests and deals still being made don't show (or count) here.
+	const collabs = $derived(studio.collabs.filter((c) => c.stage === 'live' || c.stage === 'wrapped'));
 	// The work wall: what's going on first (newest stage work at the top), then everything wrapped, newest first.
 	const ORDER: Record<string, number> = { live: 0, creating: 1, confirmed: 2, negotiating: 3, request: 4, wrapped: 5 };
 	const wall = $derived([...collabs].sort((a, b) => (ORDER[a.stage] ?? 9) - (ORDER[b.stage] ?? 9) || (b.live_date || b.received_on).localeCompare(a.live_date || a.received_on)));
@@ -110,7 +111,7 @@
 			{@const v = views(c)}
 			<a class="wt st-{c.stage}" class:img={!!img} href="/studio/c/{c.code}" style="--h:var(--m{hueOf(c.brand.name)});--i:{Math.min(i, 8)}">
 				{#if img}<img src={img} alt="" loading="lazy" referrerpolicy="no-referrer" />{:else}<span class="wt-glow" aria-hidden="true"></span><span class="wt-mark" aria-hidden="true">{initials(c.brand.name)}</span>{/if}
-				<span class="wt-stage"><i></i>{stageName(c, c.stage)}</span>
+				<span class="wt-stage"><i></i>{stageLabel(c.stage)}</span>
 				<span class="wt-b">
 					<b>{c.brand.name}</b>
 					<small>{delivText(c.deliverables) || c.brand.category || 'Collab'}</small>
@@ -121,7 +122,7 @@
 				</span>
 			</a>
 		{:else}
-			<div class="m-empty pf-empty"><Icon name="board" /><b>No collabs yet</b><span>Share your link and they show up here.</span></div>
+			<div class="m-empty pf-empty"><Icon name="board" /><b>No live collabs yet</b><span>Collabs show up here once they go live.</span></div>
 		{/each}
 	</div>
 {:else}
