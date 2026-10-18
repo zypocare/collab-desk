@@ -437,3 +437,98 @@
   [data-side="studio"] .kpis .kpi .big, [data-side="studio"] .ct-weeks .ct-week b { color: var(--hero-ink); font-size: 32px; }
   [data-side="studio"] .kpis .kpi .big.late { color: var(--bad); }
 }
+
+/* ==========================================================================================
+   BIGGER TYPE (laptop studio): easier to read at a glance. Everything one to two steps up.
+   ========================================================================================== */
+@media (min-width: 761px) {
+  html[data-side="studio"] body, [data-side="studio"] .main { font-size: 15.5px; }
+
+  /* sidebar */
+  .side-logo { font-size: 16.5px; }
+  .side-me b { font-size: 15px; }
+  .side-me small { font-size: 13px; }
+  .side-search { height: 40px; font-size: 14.5px; }
+  .side-it { height: 42px; font-size: 15.5px; }
+  .side-it .ic { width: 19px; height: 19px; }
+  .side-new { font-size: 12px; }
+  .side-badge { font-size: 12px; }
+  .side-lbl { font-size: 12px; }
+  .sg-top, .side-goal small { font-size: 13px; }
+  .side-tool { font-size: 13.5px; }
+
+  /* page headers and section titles */
+  [data-side="studio"] .ph .eb { font-size: 13px; }
+  [data-side="studio"] .ph h1 { font-size: clamp(34px, 3.2vw, 44px); }
+  [data-side="studio"] .ph p { font-size: 17px; }
+  [data-side="studio"] .panel-h h2, [data-side="studio"] .drawer.as-page .sec h3, [data-side="studio"] .drawer .sec h3 { font-size: 20px; }
+  [data-side="studio"] .panel-h small, [data-side="studio"] .drawer .sec h3 :is(small, .sec-sub) { font-size: 14px; }
+  .at-h h2 { font-size: 21px; }
+  .at-h a { font-size: 14px; }
+
+  /* controls */
+  [data-side="studio"] .btn { height: 42px; font-size: 15px; }
+  [data-side="studio"] .btn.sm { height: 34px; font-size: 14px; }
+  [data-side="studio"] .btn.lg { height: 50px; font-size: 16.5px; }
+  [data-side="studio"] :is(.pills button, .subtabs a) { height: 36px; font-size: 15px; }
+  [data-side="studio"] .drawer .cx-nav a { height: 36px; font-size: 15px; }
+  [data-side="studio"] .chip { height: 24px; font-size: 13px; }
+  [data-side="studio"] .count-chip { height: 24px; font-size: 13px; }
+  [data-side="studio"] :is(.inp, .sel):not(.it-in):not(.it-row *) { height: 44px; font-size: 15.5px; }
+  [data-side="studio"] .sel-v { font-size: 15.5px; }
+  [data-side="studio"] :is(.f label, .lbl-t) { font-size: 14px; }
+  [data-side="studio"] .lbl { font-size: 13px; }
+  [data-side="studio"] .side-search kbd, [data-side="studio"] .tb-search kbd { font-size: 12px; }
+
+  /* lists, tables and cards */
+  [data-side="studio"] .pg table th { font-size: 13.5px; }
+  [data-side="studio"] .pg table td { font-size: 15px; }
+  [data-side="studio"] .pg :is(.brand-row, .pay-row, .q-row).head, [data-side="studio"] .pg :is(.brand-row, .pay-row, .q-row).head span { font-size: 13.5px; }
+  .at-td .task .tt, [data-side="studio"] .task .tt { font-size: 16px; }
+  .at-td .task .tm, [data-side="studio"] .task .tm { font-size: 14px; }
+  [data-side="studio"] .card-h b { font-size: 16px; }
+  [data-side="studio"] .card-h small { font-size: 13px; }
+  [data-side="studio"] .card .deliv { font-size: 14.5px; }
+  [data-side="studio"] .card .next { font-size: 14px; }
+  [data-side="studio"] .card-f { font-size: 13.5px; }
+  [data-side="studio"] .card-next { height: 34px; font-size: 14px; }
+  [data-side="studio"] .card .new-badge { font-size: 11.5px; }
+  [data-side="studio"] .col-h b { font-size: 15px; }
+  [data-side="studio"] .col-h .cnt { font-size: 12.5px; }
+  [data-side="studio"] .col-h .sum { font-size: 13.5px; }
+  [data-side="studio"] .kpis .kpi .lbl, [data-side="studio"] .ct-weeks .ct-week small { font-size: 14px; }
+  [data-side="studio"] .kpis .kpi .sub { font-size: 14px; }
+  [data-side="studio"] .kpis .kpi .big, [data-side="studio"] .ct-weeks .ct-week b { font-size: 34px; }
+  [data-side="studio"] .drawer.as-page .dr-h .dr-sub { font-size: 15px; }
+  [data-side="studio"] .drawer .next-bar small { font-size: 13.5px; }
+  [data-side="studio"] .drawer .next-bar b { font-size: 17px; }
+  [data-side="studio"] .bub p { font-size: 15.5px; }
+
+  /* Today */
+  .at-hero .bx-handle { font-size: 17.5px; }
+  .ah-earn > small { font-size: 15px; }
+  .ah-goal small { font-size: 14.5px; }
+  .at-hero .bx-stat small { font-size: 15px; }
+  .at-mini small { font-size: 13.5px; }
+  .at-mini b { font-size: 19px; }
+  .at-pv span { font-size: 14.5px; }
+  .at-st { font-size: 15.5px; }
+  .at-dh { font-size: 14px; }
+  .at-dh span { font-size: 13px; }
+  .at-ev { font-size: 13.5px; }
+  .at-ev small { font-size: 12.5px; }
+  .at-free { font-size: 13.5px; }
+}
+
+@media (min-width: 761px) {
+  [data-side="studio"] .board .card-h b { font-size: 16px; }
+}
+@media (min-width: 761px) {
+  [data-side="studio"] .set-t b { font-size: 15.5px; }
+  [data-side="studio"] .set-t small { font-size: 13.5px; }
+  [data-side="studio"] .alert-prompt b { font-size: 15.5px; }
+  [data-side="studio"] .alert-prompt small { font-size: 14px; }
+  [data-side="studio"] .linkcard p { font-size: 15px; }
+  [data-side="studio"] .linkcard .url { font-size: 18px; }
+  [data-side="studio"] .ai-desk :is(p, small) { font-size: 14px; }
+}
