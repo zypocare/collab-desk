@@ -1,0 +1,54 @@
+/* Dashboard pages (Money overview, Content): the brand page's dark hero with glass tiles, then charts and lists as roomy cards. */
+.md-fy { display: flex; justify-content: center; margin: 16px 0 14px; }
+.md-hero { position: relative; overflow: hidden; isolation: isolate; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 26px; align-items: center; padding: 28px 32px; margin-bottom: 20px; border-radius: 28px; background: var(--hero); color: var(--hero-ink); box-shadow: var(--shadow-lg); border: 1px solid color-mix(in oklab, var(--hero-ink) 8%, transparent); }
+.md-hero > .mesh { opacity: .55; filter: blur(36px); z-index: -1; }
+.md-main { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.md-big { font-size: clamp(40px, 4.4vw, 62px); font-weight: 600; letter-spacing: -.05em; line-height: 1.02; color: var(--hero-ink); }
+.md-sub { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; font-size: 14.5px; font-weight: 500; color: color-mix(in oklab, var(--hero-ink) 70%, transparent); }
+.md-chip { display: inline-flex; align-items: center; height: 28px; padding: 0 12px; border-radius: 999px; font-weight: 700; background: color-mix(in oklab, var(--ok) 18%, transparent); color: color-mix(in oklab, var(--ok) 60%, var(--hero-ink)); border: 1px solid color-mix(in oklab, var(--ok) 35%, transparent); }
+.md-chip.down { background: color-mix(in oklab, var(--bad) 18%, transparent); color: color-mix(in oklab, var(--bad) 60%, var(--hero-ink)); border-color: color-mix(in oklab, var(--bad) 35%, transparent); }
+.md-tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.md-tile { display: flex; flex-direction: column; gap: 3px; min-width: 0; padding: 16px 18px; border-radius: 18px; text-decoration: none; color: var(--hero-ink); background: color-mix(in oklab, var(--hero-ink) 7%, transparent); border: 1px solid color-mix(in oklab, var(--hero-ink) 12%, transparent); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); transition: background .25s, transform .4s var(--spring); }
+.md-tile:hover { background: color-mix(in oklab, var(--hero-ink) 12%, transparent); transform: translateY(-3px); }
+.md-tile small { font-size: 13.5px; font-weight: 600; color: color-mix(in oklab, var(--hero-ink) 70%, transparent); }
+.md-tile b { font-size: 28px; font-weight: 600; letter-spacing: -.04em; line-height: 1.15; }
+.md-tile span { font-size: 13px; color: color-mix(in oklab, var(--hero-ink) 66%, transparent); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.md-tile.bad b { color: var(--bad); }
+
+.md-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.md-card { display: flex; flex-direction: column; gap: 18px; min-width: 0; padding: 22px 24px; border-radius: 24px; background: color-mix(in oklab, var(--surface) 94%, transparent); border: 1px solid color-mix(in oklab, var(--line) 85%, transparent); box-shadow: var(--shadow-sm); }
+.md-wide { grid-column: 1 / -1; }
+.md-h { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.md-h .bx-eb { display: block; margin-bottom: 2px; }
+.md-h h2 { margin: 0; font-size: 20px; letter-spacing: -.03em; }
+.md-h a { display: inline-flex; align-items: center; gap: 4px; font-size: 14px; font-weight: 600; color: var(--accent); text-decoration: none; white-space: nowrap; }
+.md-h a .ic { width: 15px; height: 15px; }
+.md-sum { font-size: 22px; font-weight: 600; letter-spacing: -.03em; }
+.md-note { margin: 0; font-size: 13.5px; color: var(--ink-3); }
+.md-note .bad { color: var(--bad); font-weight: 600; }
+.md-gauges { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; justify-items: center; }
+.md-gauges > div { display: flex; flex-direction: column; align-items: center; gap: 10px; text-align: center; }
+.md-gauges span { font-size: 13.5px; color: var(--ink-2); font-weight: 500; }
+
+@media (max-width: 1180px) {
+	.md-hero { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 900px) {
+	.md-grid { grid-template-columns: minmax(0, 1fr); }
+}
+/* Phone: the same dashboard, one column, edge to edge like the rest of the app. */
+@media (max-width: 760px) {
+	.md-hero { margin: 0 0 14px; padding: 22px 18px; border-radius: 24px; gap: 18px; }
+	.md-big { font-size: 40px; }
+	.md-tile { padding: 12px 14px; border-radius: 16px; }
+	.md-tile b { font-size: 21px; }
+	.md-tile small { font-size: 12.5px; }
+	.md-tile span { font-size: 12px; }
+	.md-grid { gap: 12px; margin: 0 0 24px; }
+	.md-card { padding: 18px 16px; border-radius: 20px; gap: 14px; }
+	.md-h h2 { font-size: 18px; }
+	.md-gauges { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+	.md-gauges .ga { width: 96px !important; height: 96px !important; }
+	.md-gauges .ga-c b { font-size: 18px; }
+	.md-gauges span { font-size: 12px; }
+}
