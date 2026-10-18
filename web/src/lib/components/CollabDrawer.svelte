@@ -225,8 +225,16 @@
 	type Field = Exclude<keyof Collab, 'id' | 'brand' | 'deliverables' | 'events'>;
 	function save(field: Field, value: unknown) {
 		if (!c) return;
-		updateCollab(c.id, { [field]: value } as Partial<Collab>);
+		const patch = { [field]: value } as Partial<Collab>;
+		if (field === 'fee' && c.pay_status === 'paid' && !issuedInvoices.length && Number(c.pay_received) === Number(c.fee)) {
+			patch.pay_received = Number(value) || 0;
+			toast(`Received updated to ${inr(Number(value) || 0)} too`, 'check');
+		}
+		updateCollab(c.id, patch);
 	}
+	// Paid by hand, but what was received doesn't match the fee (e.g. a typo while importing).
+	const payMismatch = $derived(!!c && c.type !== 'barter' && c.pay_status === 'paid' && !issuedInvoices.length && Number(c.pay_received) !== Number(c.fee));
+	let editPay = $state(false);
 	// Brief edits come in bursts (one field after another): save the whole brief once, a moment later.
 	let briefTimer: ReturnType<typeof setTimeout> | undefined;
 	function saveBrief(v: Collab['brief_details']) {
@@ -688,8 +696,8 @@
 					<button class="btn sm {issuedInvoices.length ? '' : 'primary'}" style="margin-bottom:14px" onclick={() => (invoiceOpen = {})}><Icon name="plus" />Create invoice</button>
 					{#if !issuedInvoices.length}
 					<p class="hint" style="margin:0 0 10px">{c.stage === 'live' || c.stage === 'wrapped' ? 'Not invoiced yet. Tap Create invoice: it fills in from the agreed quote.' : studio.settings?.autopilot_invoice && c.type !== 'barter' ? (c.contact_email ? 'Auto-pilot sends the invoice when the post goes live (and any advance when the quote is accepted).' : 'Add the brand email under Brand contact and auto-pilot sends the invoice when the post goes live.') : 'No invoice from the app yet.'}</p>
-					<details class="by-hand">
-					<summary>Track a payment by hand instead</summary>
+					<details class="by-hand" open={editPay || c.pay_status === 'paid' || undefined}>
+					<summary>{c.pay_status === 'paid' ? 'Payment details' : 'Track a payment by hand instead'}</summary>
 					<div class="fields">
 						<div class="f">
 							<label for="p-st">Status</label>
@@ -699,14 +707,24 @@
 							<label for="p-rec">Received so far</label>
 							<div class="pre"><span>₹</span><input class="inp num" type="number" inputmode="numeric" min="0" id="p-rec" value={c.pay_received || ''} onchange={(e) => save('pay_received', num(e))} /></div>
 						</div>
+						{#if c.pay_status === 'paid'}<div class="f"><label for="p-on">Paid on</label><DatePicker id="p-on" value={c.paid_on} onchange={(v) => save('paid_on', v || null)} /></div>{/if}
 						<div class="f"><label for="p-inv">Invoice no.</label><input class="inp" id="p-inv" value={c.invoice_no} placeholder="INV-1048" onchange={(e) => save('invoice_no', val(e))} /></div>
 						<div class="f"><label for="p-due">Payment due</label><DatePicker id="p-due" value={c.pay_due} onchange={(v) => save('pay_due', v || null)} /></div>
 					</div>
 					</details>
 					{/if}
+					{#if payMismatch && c}
+						<div class="pay-fix">
+							<Icon name="alert" />
+							<span><b>Received {inr(c.pay_received)}, but the fee is {inr(c.fee)}.</b><small>If one of them is a typo, fix it here. Earnings and reports use the amount received.</small></span>
+							<button class="btn sm" onclick={() => c && save('pay_received', Number(c.fee) || 0)}>Received was {inr(c.fee)}</button>
+							<button class="btn sm ghost" onclick={() => c && save('fee', Number(c.pay_received) || 0)}>Fee was {inr(c.pay_received)}</button>
+						</div>
+					{/if}
 					<div class="balance">
 						{#if c.pay_status === 'paid'}
-							<span class="pill tint k-pay"><Icon name="check" />Paid in full</span><b>{inr(c.fee)}</b><span class="hint">on {fmt(c.paid_on)}</span>
+							<span class="pill tint k-pay"><Icon name="check" />Paid</span><b>{inr(issuedInvoices.length ? c.fee : c.pay_received)}</b><span class="hint">on {fmt(c.paid_on)}</span>
+							{#if !issuedInvoices.length}<button class="btn sm ghost" onclick={() => { editPay = true; document.getElementById('p-rec')?.focus(); }}><Icon name="edit" />Edit</button>{/if}
 						{:else}
 							<span title="Your fee not yet received (before GST and TDS)">Fee still to come</span><b>{inr(balance)}</b>
 							{#if overdue(c)}<span class="pill tint k-bad">Overdue</span>{/if}

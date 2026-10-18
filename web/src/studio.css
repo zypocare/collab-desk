@@ -588,3 +588,9 @@ a.btn{text-decoration:none}
 [data-side="studio"] .tm,[data-side="studio"] .card-h small,[data-side="studio"] .set-t small,[data-side="studio"] .hint,[data-side="studio"] .panel-h small{font-weight:400}
 /* No hard line down the side of the sidebar: the rail and top bar are soft glass with a shadow, no edge. */
 [data-side="studio"] .rail,[data-side="studio"] .sx-top{border-color:transparent;background:color-mix(in oklab,var(--surface) 55%,transparent)}
+
+/* A paid collab whose received amount doesn't match the fee. */
+.pay-fix{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:6px 0 4px;padding:12px 14px;border-radius:14px;background:color-mix(in oklab,var(--warn) 12%,transparent);border:1px solid color-mix(in oklab,var(--warn) 30%,transparent);font-size:14px}
+.pay-fix>.ic{width:18px;height:18px;color:var(--warn);flex:none}
+.pay-fix>span{flex:1 1 260px;display:flex;flex-direction:column;gap:2px}
+.pay-fix small{color:var(--ink-3);font-size:13px}
