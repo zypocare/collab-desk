@@ -1,6 +1,9 @@
 <script lang="ts">
 	import { ask } from '../confirm.svelte';
 	import { igSync, linkPost, sendReport, studio, unlinkPost } from '../studio.svelte';
+	import { supabase } from '../supabase';
+	import { toast } from '../ui.svelte';
+	import type { IgMedia } from '../types';
 	import type { Collab } from '../types';
 	import { compact, fmt, fmtTime, mediaLabel } from '../util';
 	import Icon from './Icon.svelte';
@@ -15,6 +18,31 @@
 	let pick = $state('');
 
 	const label = mediaLabel;
+
+	// Or paste the post's link (instagram.com/p/…, /reel/…, /tv/…): found among her synced posts.
+	let url = $state('');
+	let finding = $state(false);
+	const codeOf = (u: string) => u.match(/instagram\.com\/(?:[\w.]+\/)?(?:p|reel|reels|tv)\/([\w-]+)/i)?.[1] ?? '';
+	async function find(code: string) {
+		const { data } = await supabase.from('ig_media').select('*').ilike('permalink', `%/${code}/%`).limit(1);
+		return (data?.[0] as IgMedia | undefined) ?? null;
+	}
+	async function linkUrl() {
+		const code = codeOf(url.trim());
+		if (!code) return toast('Paste the post link from Instagram (Share → Copy link).', 'alert');
+		finding = true;
+		let m = await find(code);
+		// Posted just now: fetch her latest posts once, then look again.
+		if (!m) {
+			await igSync();
+			m = await find(code);
+		}
+		finding = false;
+		if (!m) return toast("That post isn't on your connected Instagram account (or it's older than your last 60 posts). A collab post made by the brand's account can't be read.", 'alert');
+		if (c.posts.some((p) => p.media.id === m!.id)) return toast('That post is already linked.', 'check');
+		await linkPost(c, m);
+		url = '';
+	}
 	async function freshReport() {
 		busy = true;
 		await igSync(c.id);
@@ -47,6 +75,10 @@
 		{:else}
 			<p class="hint" style="margin:0 0 10px">No post linked yet. When you post and @mention @{c.brand.instagram || 'the brand'}, it's linked automatically at the next sync.</p>
 		{/each}
+		<form class="link-url" onsubmit={(e) => (e.preventDefault(), linkUrl())}>
+			<input class="inp" type="url" inputmode="url" placeholder="Paste the post link (instagram.com/reel/…)" aria-label="Instagram post link" bind:value={url} />
+			<button class="btn sm" type="submit" disabled={!url.trim() || finding}>{#if finding}<span class="spinner"></span>{:else}<Icon name="link" />{/if}Link</button>
+		</form>
 		{#if choices.length}
 			<div class="link-post">
 				<Select size="sm" ariaLabel="Link a post by hand" placeholder="Link a post by hand…" bind:value={pick} options={choices.map((m) => ({ value: m.id, label: (m.caption || 'No caption').slice(0, 60), hint: `${fmt(m.posted_at.slice(0, 10))} · ${label(m.media_type, m.product_type)}` }))} />
@@ -71,3 +103,9 @@
 		{/if}
 	</section>
 {/if}
+
+<style>
+	.link-url { display: flex; gap: 8px; align-items: center; margin: 0 0 8px; }
+	.link-url .inp { flex: 1; min-width: 0; }
+	.link-url .btn { flex: none; }
+</style>
