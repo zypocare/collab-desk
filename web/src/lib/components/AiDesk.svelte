@@ -70,8 +70,7 @@
 		<a class="ai-desk-review" href="/studio/reports?m={prevMonth()}"><Icon name="chart" /><span><b>Your {monthLabel(prevMonth()).split(' ')[0]} in review</b><small>What you earned, what worked, what to charge next</small></span><Icon name="chevR" /></a>
 	{/if}
 	<div class="ai-desk-acts">
-		<button class="btn sm ai-btn" onclick={() => (ui.newCollab = true)}><Icon name="spark" />Read a DM</button>
-		<button class="btn sm" onclick={() => (ui.askOpen = true)}><Icon name="spark" />Ask</button>
+		<button class="btn sm ai-btn" onclick={() => (ui.askOpen = true)}><Icon name="spark" />Ask your desk</button>
 		<a class="btn sm ghost" href="/studio/inbox"><Icon name="send" />Messages{#if unread}<span class="ai-acts-n" aria-label="{unread} unread">{unread}</span>{/if}</a>
 	</div>
 {/snippet}
