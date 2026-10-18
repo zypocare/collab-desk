@@ -30,7 +30,7 @@
 		{ href: '/studio/collabs', label: 'Collabs', icon: 'board', tabs: [{ href: '/studio/collabs', label: 'Board' }, { href: '/studio/brands', label: 'Brands' }, { href: '/studio/pitches', label: 'Pitches' }], also: ['/studio/c/', '/studio/import'] },
 		{ href: '/studio/inbox', label: 'Messages', icon: 'inbox', desk: true },
 		{ href: '/studio/content', label: 'Plan', icon: 'cal', tabs: [{ href: '/studio/content', label: 'Content' }, { href: '/studio/calendar', label: 'Calendar' }] },
-		{ href: '/studio/payments', label: 'Money', icon: 'wallet', tabs: [{ href: '/studio/payments', label: 'Payments' }, { href: '/studio/reports', label: 'Reports' }] },
+		{ href: '/studio/money', label: 'Money', icon: 'wallet', tabs: [{ href: '/studio/money', label: 'Overview' }, { href: '/studio/payments', label: 'Payments' }, { href: '/studio/reports', label: 'Reports' }] },
 		{ href: '/studio/settings', label: 'My page', short: 'Page', icon: 'link', also: ['/studio/profile'] }
 	];
 	const path = $derived(page.url.pathname);
@@ -131,6 +131,7 @@
 		'/studio/pitches': 'Pitches',
 		'/studio/content': 'Content',
 		'/studio/calendar': 'Calendar',
+		'/studio/money': 'Money',
 		'/studio/payments': 'Payments',
 		'/studio/reports': 'Reports',
 		'/studio/settings': 'Settings and activity',
@@ -216,7 +217,7 @@
 		{ href: '/studio/collabs', label: 'Collabs', icon: 'board', on: ['/studio/collabs', '/studio/brands', '/studio/pitches', '/studio/c/', '/studio/import', '/studio/share'] },
 		{ href: '/studio/calendar', label: 'Calendar', icon: 'cal', on: ['/studio/calendar'] },
 		{ href: '/studio/content', label: 'Content', icon: 'film', on: ['/studio/content', '/studio/instagram'] },
-		{ href: '/studio/payments', label: 'Money', icon: 'wallet', on: ['/studio/payments', '/studio/reports'] },
+		{ href: '/studio/money', label: 'Money', icon: 'wallet', on: ['/studio/money', '/studio/payments', '/studio/reports'] },
 		{ href: '/studio/settings', label: 'Brand page', icon: 'link', on: ['/studio/settings', '/studio/profile'] }
 	];
 	const deskCurrent = $derived(DESK.find((n) => (n.href === '/studio' ? path === '/studio' : n.on.some((h) => path.startsWith(h))))?.href);

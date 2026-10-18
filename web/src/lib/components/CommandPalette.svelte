@@ -53,6 +53,7 @@
 			['Today', '/studio', 'home'],
 			['Collabs', '/studio/collabs', 'board'],
 			['Calendar', '/studio/calendar', 'cal'],
+			['Money dashboard', '/studio/money', 'chart'],
 			['Payments', '/studio/payments', 'wallet'],
 			['Brands', '/studio/brands', 'users'],
 			['Reports', '/studio/reports', 'chart'],
