@@ -3,7 +3,11 @@
 	import MonthlyDeals from '#lib/components/MonthlyDeals.svelte';
 	import { COUNTRIES, CURRENCIES, currencyFor } from '#lib/currency.ts';
 	import { brandStats } from '#lib/brandStats.ts';
-	import { saveBrand, saveBrandNotes, studio } from '#lib/studio.svelte.ts';
+	import { reloadCollabs, saveBrand, saveBrandNotes, studio } from '#lib/studio.svelte.ts';
+	import { goto } from '$app/navigation';
+	import { ask } from '#lib/confirm.svelte.ts';
+	import { supabase } from '#lib/supabase.ts';
+	import { errMessage } from '#lib/util.ts';
 	import { countUp, toast, ui } from '#lib/ui.svelte.ts';
 	import { CATS, delivText, fmt, inr, stageLabel } from '#lib/util.ts';
 	import Icon from '#lib/components/Icon.svelte';
@@ -30,6 +34,24 @@
 	const val = (e: Event) => (e.currentTarget as HTMLInputElement).value;
 	// Brands that came through this brand's recommendation link.
 	const referred = $derived(brand ? studio.collabs.filter((x) => x.referred_by === brand.id) : []);
+
+	// Delete the brand and its collabs (not possible while an invoice to them was sent or paid).
+	const issued = $derived(s ? s.collabs.reduce((a, c) => a + c.invoices.filter((i) => i.status !== 'draft' && i.status !== 'cancelled').length, 0) : 0);
+	let deleting = $state(false);
+	async function del() {
+		if (!brand || !s) return;
+		if (issued) return toast(`${brand.name} has ${issued} sent or paid invoice${issued === 1 ? '' : 's'}, kept for your tax records. Cancel ${issued === 1 ? 'it' : 'them'} first to delete the brand.`, 'alert');
+		const n = s.collabs.length;
+		if (!(await ask({ title: `Delete ${brand.name}?`, body: n ? `Its ${n} collab${n === 1 ? '' : 's'} go too, with their messages, quotes, drafts and notes. This can't be undone.` : "This can't be undone.", ok: 'Delete brand', danger: true }))) return;
+		deleting = true;
+		const { error } = await supabase.rpc('delete_brand', { p_brand: brand.id });
+		deleting = false;
+		if (error) return toast(`Couldn't delete: ${errMessage(error).replace(/^invoices_issued:\d+$/, 'it has sent or paid invoices.')}`, 'alert');
+		const name = brand.name;
+		await goto('/studio/brands');
+		await reloadCollabs();
+		toast(`${name} deleted`, 'check');
+	}
 </script>
 
 <svelte:head><title>{brand?.name ?? 'Brand'} · {studio.settings?.app_name}</title></svelte:head>
@@ -132,6 +154,16 @@
 					{/each}
 				</section>
 			{/if}
+			<section class="panel danger-zone rv" style="--i:9">
+				<div class="panel-h"><h2>Delete brand</h2></div>
+				<p class="hint dz-text">{issued ? `Has ${issued} sent or paid invoice${issued === 1 ? '' : 's'}, kept for your tax records. Cancel ${issued === 1 ? 'it' : 'them'} first to delete this brand.` : s.collabs.length ? `Removes ${brand.name} and its ${s.collabs.length} collab${s.collabs.length === 1 ? '' : 's'} for good.` : `Removes ${brand.name} for good.`}</p>
+				<div class="dz-act"><button class="btn danger" onclick={del} disabled={deleting || issued > 0}>{#if deleting}<span class="spinner"></span>{:else}<Icon name="x" />{/if}Delete brand</button></div>
+			</section>
 		</div>
 	</div>
 {/if}
+
+<style>
+	.dz-text { margin: 0; padding: 0 20px; }
+	.dz-act { padding: 14px 20px 20px; }
+</style>
