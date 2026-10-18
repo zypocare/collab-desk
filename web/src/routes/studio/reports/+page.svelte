@@ -153,7 +153,7 @@
 		<table class="doc-table rep-table">
 			<thead><tr><th>Brand</th><th>Invoiced</th><th>Received</th><th>TDS</th><th>Barter</th></tr></thead>
 			<tbody>
-				{#each r.brands as b (b.name)}
+				{#each r.brands as b, bi (b.name + bi)}
 					<tr><td>{b.name}{#if b.tdsCertsMissing}<span class="pill tint k-follow" style="margin-left:8px">Form 16A missing</span>{/if}</td><td>{inr(b.taxable)}</td><td>{inr(b.received)}</td><td>{inr(b.tds)}</td><td>{b.barter ? inr(b.barter) : '—'}</td></tr>
 				{:else}
 					<tr><td colspan="5" class="hint">Nothing in this year yet.</td></tr>
