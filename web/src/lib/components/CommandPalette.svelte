@@ -57,7 +57,8 @@
 			['Payments', '/studio/payments', 'wallet'],
 			['Brands', '/studio/brands', 'users'],
 			['Reports', '/studio/reports', 'chart'],
-			['My page', '/studio/settings', 'link']
+			['Brand page', '/studio/page', 'link'],
+			['Settings', '/studio/settings', 'gear']
 		];
 		for (const [label, href, icon] of pages) out.push({ id: `p-${href}`, group: 'Pages', label, icon, hay: `${label} page go`, run: () => goto(href) });
 		return out;

@@ -132,6 +132,7 @@
 		'/studio/content': 'Content',
 		'/studio/calendar': 'Calendar',
 		'/studio/money': 'Money',
+		'/studio/page': 'Brand page',
 		'/studio/payments': 'Payments',
 		'/studio/reports': 'Reports',
 		'/studio/settings': 'Settings and activity',
@@ -218,7 +219,8 @@
 		{ href: '/studio/calendar', label: 'Calendar', icon: 'cal', on: ['/studio/calendar'] },
 		{ href: '/studio/content', label: 'Content', icon: 'film', on: ['/studio/content', '/studio/instagram'] },
 		{ href: '/studio/money', label: 'Money', icon: 'wallet', on: ['/studio/money', '/studio/payments', '/studio/reports'] },
-		{ href: '/studio/settings', label: 'Brand page', icon: 'link', on: ['/studio/settings', '/studio/profile'] }
+		{ href: '/studio/page', label: 'Brand page', icon: 'link', on: ['/studio/page', '/studio/profile'] },
+		{ href: '/studio/settings', label: 'Settings', icon: 'gear', on: ['/studio/settings'] }
 	];
 	const deskCurrent = $derived(DESK.find((n) => (n.href === '/studio' ? path === '/studio' : n.on.some((h) => path.startsWith(h))))?.href);
 	const deskTabs = $derived(tabs && group?.href !== '/studio/content' ? tabs : null);

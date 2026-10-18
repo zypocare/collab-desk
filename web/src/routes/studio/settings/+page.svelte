@@ -213,18 +213,24 @@
 	}
 </script>
 
-<svelte:head><title>My page · {s.app_name}</title></svelte:head>
+<svelte:head><title>{phone.on ? 'My page' : 'Settings'} · {s.app_name}</title></svelte:head>
 
 <div class="set-intro" class:sec-open={!!active}>
 	<header class="ph rv">
 		<div>
-			<div class="eb">Share with brands</div>
-			<h1>My <em>page</em></h1>
-			<p>Your link for brands, and how you like to work. Pick a section to change it.</p>
+			{#if phone.on}
+				<div class="eb">Share with brands</div>
+				<h1>My <em>page</em></h1>
+				<p>Your link for brands, and how you like to work. Pick a section to change it.</p>
+			{:else}
+				<div class="eb">Your desk</div>
+				<h1>Settings</h1>
+				<p>Your profile, prices, bookings and how the desk works for you.</p>
+			{/if}
 		</div>
 	</header>
 
-	<div class="set-top">
+	<div class="set-top" hidden={!phone.on}>
 		<section class="linkcard glow rv" style="--i:1">
 			<div class="mesh" aria-hidden="true"></div>
 			<div class="hc-in">
