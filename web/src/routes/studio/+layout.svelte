@@ -14,6 +14,7 @@
 	import Avatar from '#lib/components/Avatar.svelte';
 	import NewCollabDialog from '#lib/components/NewCollabDialog.svelte';
 	import CommandPalette from '#lib/components/CommandPalette.svelte';
+	import AskDesk from '#lib/components/AskDesk.svelte';
 	import { phone, startPhone } from '#lib/phone.svelte.ts';
 	import { net } from '#lib/offline.svelte.ts';
 
@@ -202,7 +203,7 @@
 	let winY = $state(0);
 </script>
 
-<svelte:window bind:scrollY={winY} />
+<svelte:window bind:scrollY={winY} onkeydown={(e) => e.key === 'j' && (e.ctrlKey || e.metaKey) && (e.preventDefault(), (ui.askOpen = true))} />
 
 {#if allowed}
 	<div class="app" class:m-detail={detail || chat || path === '/studio/inbox' || path === '/studio/import'}>
@@ -270,6 +271,7 @@
 						<div class="m-brand" class:wordmark={path === '/studio'}>{path === '/studio' ? (studio.settings?.app_name ?? 'Collab Desk') : title}</div>
 						<div class="m-r">
 							{#if path === '/studio' || path === '/studio/collabs' || path === '/studio/profile'}<button class="m-ib" onclick={() => (ui.newCollab = true)} aria-label="New collab"><Icon name="plus" /></button>{/if}
+							{#if path === '/studio'}<button class="m-ib m-ask" onclick={() => (ui.askOpen = true)} aria-label="Ask your desk"><Icon name="spark" /></button>{/if}
 							{#if path === '/studio/profile'}
 								<a class="m-ib" href="/studio/settings" aria-label="Settings and activity"><Icon name="menu" /></a>
 							{:else}
@@ -298,6 +300,7 @@
 				{/if}
 				<div class="tb-r">
 					<button class="tb-search" onclick={() => palette?.show()} aria-label="Search and actions"><Icon name="search" /><span>Search brands, collabs, actions</span><kbd>Ctrl K</kbd></button>
+					<button class="btn ai-btn tb-ask" onclick={() => (ui.askOpen = true)} title="Ask your desk (Ctrl J)"><Icon name="spark" />Ask</button>
 					<button class="btn grad tb-new" use:magnetic onclick={() => (ui.newCollab = true)}><Icon name="plus" />New collab</button>
 				</div>
 			</div>
@@ -326,5 +329,6 @@
 		<button class="fab" onclick={() => (ui.newCollab = true)} aria-label="Add collab"><Icon name="plus" /></button>
 	</div>
 	<CommandPalette bind:this={palette} />
+	{#if ui.askOpen}<AskDesk onclose={() => (ui.askOpen = false)} />{/if}
 	{#if ui.newCollab}<NewCollabDialog />{/if}
 {/if}

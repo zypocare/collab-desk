@@ -14,6 +14,8 @@
 	import { downloadMediaKit } from '#lib/mediaKitPdf.ts';
 	import { copyText, toast } from '#lib/ui.svelte.ts';
 	import { KINDS, compact, inr, offeredKinds, phoneOk } from '#lib/util.ts';
+	import { LANGUAGES } from '#lib/languages.ts';
+	import LanguagePicker from '#lib/components/LanguagePicker.svelte';
 	import { rateCheck, suggestRates } from '#lib/rateSuggest.ts';
 	import Icon from '#lib/components/Icon.svelte';
 	import ShippingSettings from '#lib/components/ShippingSettings.svelte';
@@ -276,6 +278,11 @@
 								{#each fields as f (f.k)}
 									<div class="f"><label for="me-{f.k}">{f.label}</label><input class="inp" id="me-{f.k}" value={s[f.k]} placeholder={f.ph ?? ''} onchange={(e) => saveText(f.k, val(e), e.currentTarget)} /></div>
 								{/each}
+								<div class="f span2">
+									<span class="lbl-t">Languages you create content in</span>
+									<LanguagePicker label="Languages you create content in" options={LANGUAGES} value={s.content_languages ?? []} onchange={(v) => (v.length ? saveSettings({ content_languages: v }) : toast('Keep at least one language.', 'alert'))} />
+									<small class="hint">Shown on your brand page. Brands pick one, or several for mixed-language content.</small>
+								</div>
 							</div>
 						</section>
 						<InstagramSettings />

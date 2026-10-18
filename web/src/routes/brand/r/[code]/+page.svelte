@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { langText } from '#lib/languages.ts';
 	import { page } from '$app/state';
 	import BrandLink from '#lib/components/BrandLink.svelte';
 	import { money } from '#lib/currency.ts';
@@ -332,6 +333,7 @@
 		<dl class="facts">
 			<div><dt>{accepted ? 'Agreed' : 'Offer'}</dt><dd>{r.type === 'barter' ? r.product : `${accepted?.total ? money(accepted.total, accepted.currency) : r.fee ? inr(r.fee) : 'Quote requested'}${r.type === 'hybrid' ? ` + ${r.product}` : ''}`}</dd></div>
 			<div><dt>Go-live date</dt><dd>{r.live_date ? fmtLong(r.live_date) : r.preferred_live ? `You asked for ${fmt(r.preferred_live)}` : 'To be agreed'}</dd></div>
+			{#if r.content_language}<div><dt>Language</dt><dd>{langText(r.content_language)}</dd></div>{/if}
 			<div><dt>Invoice</dt><dd>{payText}</dd></div>
 		</dl>
 		{#if accepted}

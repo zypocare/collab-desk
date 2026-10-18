@@ -175,7 +175,7 @@ export async function reloadCollabs() {
 	autoFit();
 }
 
-async function reloadOne(id: string) {
+export async function reloadOne(id: string) {
 	const { data, error } = await supabase.from('collabs').select(COLLAB_SELECT).eq('id', id).single();
 	if (error || !data) return;
 	const fresh = normalise(data as Collab);

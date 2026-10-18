@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { scriptLanguage } from '../languages';
 	import { untrack } from 'svelte';
 	import { askAi, collabFacts } from '../ai';
 	import { portal } from '../portal';
@@ -20,7 +21,8 @@
 
 	const saved = untrack(() => c.script);
 	let style = $state(saved?.style ?? STYLES[0]);
-	let language = $state(saved?.language ?? LANGS[0]);
+	// The collab's content language decides the spoken language (Kannada → Kannada + English, Hindi + English → Hinglish).
+	let language = $state(saved?.language ?? untrack(() => scriptLanguage(c.content_language)));
 	let length = $state(saved?.length ?? LENGTHS[1]);
 	let s = $state<ReelScript | null>(saved ? structuredClone($state.snapshot(saved) as ReelScript) : null);
 	let hook = $state(saved?.hook ?? saved?.hooks?.[0] ?? '');

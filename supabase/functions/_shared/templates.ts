@@ -131,7 +131,7 @@ export function render(kind: string, p: Payload, s: Settings): Omit<Mail, 'to'> 
         s,
         `${brand} sent you a collaboration request`,
         `${P(`A new request has come in through your page. Here's what ${esc(brand)} is asking for:`)}
-         ${table(row('Reference', code), row('Contact', p.contact), row('Email', p.email), row('Phone', p.phone), row('Package', p.package), row('Content', p.deliverables), row('Offer', money), row('Usage', p.usage), row('Preferred go-live', p.preferred_live), row('Referred by', p.referred_by))}
+         ${table(row('Reference', code), row('Contact', p.contact), row('Email', p.email), row('Phone', p.phone), row('Package', p.package), row('Content', p.deliverables), row('Language', p.language ? (String(p.language).includes('+') ? `${p.language} (mixed)` : p.language) : ''), row('Offer', money), row('Usage', p.usage), row('Preferred go-live', p.preferred_live), row('Referred by', p.referred_by))}
          ${quoteBox('Their brief', p.brief)}`,
         { label: 'Open the request', href: studio() },
         { to: 'creator', preheader: `${p.deliverables} · ${money}`, next: [`Check the "Should you take it?" score and the brief.`, `Reply, send a quote, or decline politely from the request.`, `The brand sees your answer by email straight away.`] },

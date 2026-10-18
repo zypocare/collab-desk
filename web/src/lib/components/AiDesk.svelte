@@ -68,6 +68,7 @@
 	{/if}
 	<div class="ai-desk-acts">
 		<button class="btn sm ai-btn" onclick={() => (ui.newCollab = true)}><Icon name="spark" />Read a DM</button>
+		<button class="btn sm" onclick={() => (ui.askOpen = true)}><Icon name="spark" />Ask</button>
 		<a class="btn sm ghost" href="/studio/inbox"><Icon name="send" />Messages{#if leads}<span class="ai-acts-n">{leads}</span>{/if}</a>
 	</div>
 {/snippet}

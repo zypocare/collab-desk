@@ -6,9 +6,9 @@ export const pub = $state<{ data: PublicPage | null; ins: PublicInsights | null;
 
 export async function loadPublicPage() {
 	// Insights (null when she has the page off) feed the "what you can expect" numbers.
-	const [page, ins] = await Promise.all([supabase.rpc('public_page'), supabase.rpc('public_insights')]);
+	const [page, ins, extra] = await Promise.all([supabase.rpc('public_page'), supabase.rpc('public_insights'), supabase.rpc('page_extras')]);
 	if (page.error) pub.error = page.error.message;
-	else pub.data = page.data as PublicPage;
+	else pub.data = { ...(page.data as PublicPage), ...((extra.data as Partial<PublicPage> | null) ?? {}) };
 	pub.ins = (ins.data as PublicInsights | null) ?? null;
 	return pub.data;
 }

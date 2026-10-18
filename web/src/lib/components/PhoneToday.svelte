@@ -30,6 +30,7 @@
 		type Task
 	} from '../util';
 	import AiDesk from './AiDesk.svelte';
+	import NudgeList from './NudgeList.svelte';
 	import Icon from './Icon.svelte';
 	import Mono from './Mono.svelte';
 	import Stories from './Stories.svelte';
@@ -207,6 +208,8 @@
 		</div>
 	{/if}
 </section>
+
+<NudgeList phone />
 
 {#if !studio.leads.length}<AiDesk phone />{/if}
 

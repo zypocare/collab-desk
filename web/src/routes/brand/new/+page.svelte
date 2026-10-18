@@ -1,4 +1,6 @@
 <script lang="ts">
+	import LanguagePicker from '#lib/components/LanguagePicker.svelte';
+	import { langText } from '#lib/languages.ts';
 	import { page } from '$app/state';
 	import { useReferral } from '#lib/referral.ts';
 	import { untrack } from 'svelte';
@@ -51,6 +53,7 @@
 					preferred = f.preferred ?? '';
 					usage = f.usage ?? usage;
 					brief = f.brief ?? '';
+					langs = Array.isArray(f.langs) ? f.langs : [];
 				}
 			});
 		} catch {
@@ -59,7 +62,7 @@
 	});
 	$effect(() => {
 		if (!guest) return;
-		const snapshot = JSON.stringify({ g, form: { type, qty, fee, product, productValue, barterKind, preferred, usage, brief } });
+		const snapshot = JSON.stringify({ g, form: { type, qty, fee, product, productValue, barterKind, preferred, usage, brief, langs } });
 		try {
 			localStorage.setItem(DRAFT, snapshot);
 		} catch {
@@ -147,6 +150,10 @@
 	let barterKind = $state<'product' | 'experience'>('product');
 	const exp = $derived(barterKind === 'experience');
 	let preferred = $state('');
+	// The language(s) for the content (several = mixed); none = no preference.
+	let langs = $state<string[]>([]);
+	const myLangs = $derived(pub.data?.content_languages ?? []);
+	let booked = $state('');
 	let usage = $state('Organic only');
 	let brief = $state('');
 	let briefDetails = $state<BriefDetails>({});
@@ -160,6 +167,8 @@
 	// Booking one of her packages (/brand/new?package=ID): fill the form from it.
 	let packageId = $state('');
 	const pkg = $derived(pub.data?.packages?.find((k) => k.id === packageId) ?? null);
+	// Instant booking: one of her packages, confirmed at once for an open week.
+	const instant = $derived(!!pkg && !!pub.data?.instant_booking);
 	$effect(() => {
 		const id = page.url.searchParams.get('package');
 		const k = id ? pub.data?.packages?.find((x) => x.id === id) : null;
@@ -240,10 +249,10 @@
 		return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 	};
 	const unavailable = (isoDate: string) => {
-		const w = pub.data?.availability?.find((x) => x.start === weekOf(isoDate));
+		const w = (pub.data?.availability ?? pub.data?.weeks)?.find((x) => x.start === weekOf(isoDate));
 		return w?.status === 'full' || w?.status === 'away';
 	};
-	const busyWeek = $derived(pub.data?.availability?.some((w) => w.status === 'full' || w.status === 'away') ? `Greyed-out dates are weeks ${creator || 'the creator'} is fully booked or away.` : '');
+	const busyWeek = $derived((pub.data?.availability ?? pub.data?.weeks)?.some((w) => w.status === 'full' || w.status === 'away') ? `Greyed-out dates are weeks ${creator || 'the creator'} is fully booked or away.` : '');
 	// What their budget gets (her public rates and packages).
 	const combos = $derived(type !== 'barter' && Number(fee) >= 500 && pub.data ? budgetCombos(Number(fee), pub.data.rates, shown, (pub.data.packages ?? []).filter((x) => packageOffered(x.items, pub.data?.offered))) : []);
 	const comboOn = (cb: Combo) => KINDS.every((k) => (qty[k] ?? 0) === (cb.items.find((i) => i.kind === k)?.qty ?? 0));
@@ -330,6 +339,7 @@
 				product,
 				product_value: Number(productValue) || 0,
 				barter_kind: type === 'paid' ? 'product' : barterKind,
+				content_language: langs,
 				preferred_live: preferred || null,
 				usage,
 				brief,
@@ -344,7 +354,9 @@
 		sentReply = replyIn ?? null;
 		sent = (data as { code: string }).code;
 		useReferral(sent);
-		loadRequests();
+		await loadRequests();
+		const mine = brandData.requests.find((r) => r.code === sent);
+		booked = mine && mine.stage === 'confirmed' ? (mine.live_date ?? preferred) : '';
 		scrollTo({ top: 0, behavior: 'smooth' });
 		setTimeout(() => {
 			const r = panel?.getBoundingClientRect();
@@ -383,8 +395,13 @@
 				<div class="big-check">
 					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>
 				</div>
-				<h2>Request sent to <em>{creator}</em></h2>
-				<p>{creator} usually replies within {sentReply ?? '2 days'}. We've also emailed you a copy. Follow it any time from My requests.</p>
+				{#if booked}
+					<h2>Booked with <em>{creator}</em></h2>
+					<p>Confirmed for {fmtLong(booked)}. We've emailed you the agreement. Add the brief and anything {creator} needs from your request page.</p>
+				{:else}
+					<h2>Request sent to <em>{creator}</em></h2>
+					<p>{creator} usually replies within {sentReply ?? '2 days'}. We've also emailed you a copy. Follow it any time from My requests.</p>
+				{/if}
 				<div class="codebox"><b>{sent}</b><button class="btn sm" onclick={() => copyText(sent!, 'Code copied')}><Icon name="copy" />Copy</button></div>
 				<div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center">
 					<a class="btn primary" href="/brand/r/{sent}">See its status</a>
@@ -423,7 +440,7 @@
 				{#if pkg}
 					<div class="pkg-banner">
 						<Icon name="gift" />
-						<div><b>{pkg.name}</b><small>{delivText(pkg.items)} · {inr(pkg.price)}</small></div>
+						<div><b>{pkg.name}</b><small>{delivText(pkg.items)} · {inr(pkg.price)}</small>{#if instant}<small class="instant-note"><Icon name="check" />Instant booking: pick an open go-live date and it's confirmed straight away.</small>{/if}</div>
 						<button type="button" class="lnk" onclick={() => (packageId = '')}>Customise instead</button>
 					</div>
 				{/if}
@@ -462,6 +479,13 @@
 						{/each}
 					</div>
 					{#if errDel}<div class="err" style="margin-top:10px">{errDel}</div>{/if}
+					{#if myLangs.length}
+						<div class="rq-lang">
+							<span class="lbl-t">Language of the content</span>
+							<LanguagePicker label="Language of the content" options={myLangs} value={langs} onchange={(v) => (langs = v)} />
+							<small class="hint">{langs.length > 1 ? `Mixed: ${creator || 'the creator'} will use ${langs.join(' and ')} together.` : langs.length ? `All in ${langs[0]}.` : `Pick one, or more than one for mixed-language content. Leave it empty for no preference.`}</small>
+						</div>
+					{/if}
 				</div>
 				<div class="bsec rq-card" id="rq-budget">
 					<div class="bsec-h"><i>{guest ? '04' : '03'}</i><h2>Budget, product and timing</h2></div>
@@ -535,7 +559,7 @@
 							<span class="lt-note">{pkg ? 'package price' : type === 'barter' ? `worth ${inr(estimate)} at ${creator}'s rates, for your ${exp ? 'experience' : 'product'}` : `at ${creator}'s rates`}{#if !pkg && type !== 'barter' && Number(fee) > 0}{' · '}your budget {inr(Number(fee))}{Number(fee) < estimate ? ` (${Math.round((Number(fee) / estimate) * 100)}%)` : ''}{/if}</span>
 						{:else}<span class="rq-default">You'll get a request code and an email copy.</span>{/if}
 					</p>
-					<button class="btn grad lg" class:blocked={advice?.tone === 'block'} type="submit" disabled={busy || advice?.tone === 'block'} title={advice?.tone === 'block' ? advice.title : undefined}>{#if busy}<span class="spinner"></span>Sending…{:else}<Icon name="send" />Send request{/if}</button>
+					<button class="btn grad lg" class:blocked={advice?.tone === 'block'} type="submit" disabled={busy || advice?.tone === 'block'} title={advice?.tone === 'block' ? advice.title : undefined}>{#if busy}<span class="spinner"></span>Sending…{:else}<Icon name="send" />{instant && preferred ? 'Book now' : 'Send request'}{/if}</button>
 				</div>
 			</div>
 			<!-- Wide screens: what they're asking for, always in view, with the Send button. -->
@@ -551,10 +575,11 @@
 						{#if type !== 'paid' && product.trim()}<div><dt>Product</dt><dd>{product}</dd></div>{/if}
 						<div><dt>Go-live</dt><dd>{preferred ? fmtLong(preferred) : 'No preference'}</dd></div>
 						<div><dt>Usage</dt><dd>{usageLabel(usage)}</dd></div>
+						{#if langs.length}<div><dt>Language</dt><dd>{langText(langs.join(' + '))}</dd></div>{/if}
 					</dl>
 					{#if lines.length}<ExpectedResults {lines} cost={pkg ? pkg.price : type === 'barter' ? 0 : Number(fee) || estimate} />{/if}
 					{#if error}<div class="err">{error}</div>{/if}
-					<button class="btn grad lg" class:blocked={advice?.tone === 'block'} type="submit" disabled={busy || advice?.tone === 'block'} title={advice?.tone === 'block' ? advice.title : undefined}>{#if busy}<span class="spinner"></span>Sending…{:else}<Icon name="send" />Send request{/if}</button>
+					<button class="btn grad lg" class:blocked={advice?.tone === 'block'} type="submit" disabled={busy || advice?.tone === 'block'} title={advice?.tone === 'block' ? advice.title : undefined}>{#if busy}<span class="spinner"></span>Sending…{:else}<Icon name="send" />{instant && preferred ? 'Book now' : 'Send request'}{/if}</button>
 					<small class="rq-note">{guest ? "We'll email you a 6-digit code to confirm. " : ''}{creator} usually replies within {replyIn ?? '2 days'}.</small>
 				</div>
 			</aside>

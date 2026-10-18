@@ -193,6 +193,8 @@ export type Collab = {
 	live_time: string | null;
 	post_alert_at: string | null;
 	shot_list: { t: string; done: boolean }[];
+	/** The language(s) the content is in: "Kannada", "English + Kannada", or '' for no preference. */
+	content_language: string;
 	script: ReelScript | null;
 	files?: { id: string; label: string; url: string; file_path: string | null; file_type: string; size_bytes: number; created_at: string; downloaded_at: string | null }[];
 	files_sent_at: string | null;
@@ -337,6 +339,8 @@ export type Settings = {
 	/** Chime and spoken line in the app for new possible collabs and requests. */
 	voice_alerts: boolean;
 	away_weeks: string[];
+	content_languages: string[];
+	instant_booking: boolean;
 	show_availability: boolean;
 	offered_kinds: string[];
 	show_results: boolean;
@@ -377,6 +381,10 @@ export type PublicPage = {
 	/** Content types she offers; brands only see these. */
 	offered: string[];
 	availability: { start: string; status: 'open' | 'limited' | 'full' | 'away' }[] | null;
+	/** From page_extras(): the languages she creates in, instant booking, and its open weeks. */
+	content_languages?: string[];
+	instant_booking?: boolean;
+	weeks?: { start: string; status: 'open' | 'limited' | 'full' | 'away' }[] | null;
 	barter: { mode: 'open' | 'selective' | 'closed'; min_value: number; reply_time: string; slots_left: number | null } | null;
 	worked_with: string[];
 	instagram: {
@@ -404,6 +412,7 @@ export type Account =
 	  };
 
 export type BrandRequest = {
+	content_language?: string;
 	/** An experience (stay, meal, event) is never shipped. */
 	barter_kind?: 'product' | 'experience';
 	id: string;

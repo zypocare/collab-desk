@@ -58,6 +58,10 @@
 		{/each}
 	</div>
 	<div class="switch-row">
+		<div><b>Instant booking for packages</b><small>A brand booking one of your packages for an open week, at least 3 days ahead and with no competitor that week, is confirmed straight away. Both of you get an email.</small></div>
+		<input type="checkbox" class="tgl" checked={s.instant_booking} aria-label="Instant booking for packages" onchange={(e) => saveSettings({ instant_booking: (e.currentTarget as HTMLInputElement).checked })} />
+	</div>
+	<div class="switch-row">
 		<div><b>Show on my page</b><small>Brands see which weeks are open, limited, full or away.</small></div>
 		<input type="checkbox" class="tgl" checked={s.show_availability} aria-label="Show open weeks on my page" onchange={(e) => saveSettings({ show_availability: (e.currentTarget as HTMLInputElement).checked })} />
 	</div>

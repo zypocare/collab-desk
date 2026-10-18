@@ -1,4 +1,5 @@
 <script lang="ts">
+	import LanguagePicker from './LanguagePicker.svelte';
 	import { ask, askNote } from '../confirm.svelte';
 	import SchedulePost from './SchedulePost.svelte';
 	import { askAi } from '../ai';
@@ -443,6 +444,12 @@
 						<label for="f-usage">Usage rights</label>
 						<Select id="f-usage" value={c.usage} options={[...USAGE, ...(USAGE.includes(c.usage) ? [] : [c.usage])].map((u) => ({ value: u, label: usageOption(u) }))} onchange={(v) => save('usage', v)} />
 					</div>
+					{#if (studio.settings?.content_languages ?? []).length}
+						<div class="f span2">
+							<span class="lbl-t">Content language</span>
+							<LanguagePicker label="Content language" options={studio.settings?.content_languages ?? []} value={c.content_language ? c.content_language.split('+').map((x) => x.trim()) : []} onchange={(v) => save('content_language', v.join(' + '))} />
+						</div>
+					{/if}
 					{#if isPaid(c)}
 						<div class="f">
 							<label for="f-fee">Fee agreed</label>

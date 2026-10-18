@@ -2055,3 +2055,14 @@ body{font-feature-settings:'cv11','ss01';letter-spacing:-.005em}
 .pkg-chips .cat-chip:hover{border-color:var(--accent);color:var(--accent)}
 @media (max-width:640px){.pkg-custom .btn{width:100%}}
 @media (max-width:640px){.sel:not(.sm){height:auto;min-height:48px;padding-top:8px;padding-bottom:8px}.sel:not(.sm) .sel-v{white-space:normal;text-align:left;line-height:1.3}}
+
+/* Language chips (her settings, the brand form, the collab page) */
+.lang-pick{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+.lang-chip{display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 14px;border-radius:99px;border:1px solid var(--line-strong);background:var(--surface);color:var(--ink);font:inherit;font-size:14px;font-weight:600;cursor:pointer;transition:background .2s,border-color .2s,transform .15s}
+.lang-chip .ic{width:14px;height:14px}
+.lang-chip:active{transform:scale(.96)}
+.lang-chip.on{border-color:transparent;background:var(--accent);color:var(--accent-ink)}
+.rq-lang{margin-top:18px}
+.rq-lang .hint{display:block;margin-top:8px}
+.instant-note{display:flex!important;align-items:center;gap:5px;margin-top:4px;color:var(--ok)!important;font-weight:600}
+.instant-note .ic{width:13px;height:13px}

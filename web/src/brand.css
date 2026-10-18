@@ -484,3 +484,8 @@ html:has([data-side="brand"]),[data-side="brand"]{scroll-behavior:smooth}
   [data-side="brand"] .topbar .signout span{display:none}
   [data-side="brand"] .topbar .brandmark b{font-size:16px}
 }
+/* Her page: the languages she creates in */
+.bx-langs{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;margin:14px 0 0;font-size:14px;color:color-mix(in oklab,var(--hero-ink) 75%,transparent)}
+.bx-langs .ic{width:16px;height:16px}
+.bx-langs b{padding:4px 10px;border-radius:99px;font-weight:600;color:var(--hero-ink);background:color-mix(in oklab,var(--hero-ink) 12%,transparent)}
+.bx-langs small{font-size:13px}

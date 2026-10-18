@@ -15,7 +15,7 @@ type Env = {
 type Run = { env: Env; gemini: boolean; neurons: number };
 
 // Expected size of each job in Cloudflare neurons (reserved before, corrected after).
-const COST: Record<string, number> = { dm: 160, reply: 110, caption: 110, pitch: 140, fit: 230, classify: 40, summary: 220, negotiate: 210, script: 330 };
+const COST: Record<string, number> = { dm: 160, reply: 110, caption: 110, pitch: 140, fit: 230, classify: 40, summary: 220, negotiate: 210, script: 330, nudge: 120, ask: 260 };
 // Cloudflare's price list in neurons per token (Llama 3.3 70B fast; Llama 3.2 11B vision).
 const PER_TOKEN = { text: [0.0267, 0.2048], vision: [0.0045, 0.0615] };
 const USED_UP = "Today's free AI is used up. It's back at 5:30 am.";
@@ -32,10 +32,10 @@ export default {
 		try {
 			const kind = url.pathname.slice('/api/ai/'.length);
 			if (kind === 'status') return json(await status(req, env));
-			if (!['dm', 'reply', 'caption', 'pitch', 'classify', 'fit', 'summary', 'negotiate', 'script'].includes(kind)) return json({ error: 'Unknown.' }, 404);
+			if (!['dm', 'reply', 'caption', 'pitch', 'classify', 'fit', 'summary', 'negotiate', 'script', 'nudge', 'ask'].includes(kind)) return json({ error: 'Unknown.' }, 404);
 			const body = (await req.json()) as Record<string, unknown>;
 			const job = (x: Run) =>
-				kind === 'dm' ? readDm(x, body) : kind === 'reply' ? replies(x, body) : kind === 'pitch' ? pitch(x, body) : kind === 'classify' ? classify(x, body) : kind === 'fit' ? fit(x, body) : kind === 'summary' ? summary(x, body) : kind === 'negotiate' ? negotiate(x, body) : kind === 'script' ? script(x, body) : caption(x, body);
+				kind === 'dm' ? readDm(x, body) : kind === 'reply' ? replies(x, body) : kind === 'pitch' ? pitch(x, body) : kind === 'classify' ? classify(x, body) : kind === 'fit' ? fit(x, body) : kind === 'summary' ? summary(x, body) : kind === 'negotiate' ? negotiate(x, body) : kind === 'script' ? script(x, body) : kind === 'nudge' ? nudge(x, body) : kind === 'ask' ? ask(x, body) : caption(x, body);
 
 			// Checking an incoming Instagram DM comes from the DM webhook with a single-use pass
 			// (Cloudflare only: DMs are never sent to the backup automatically).
@@ -315,6 +315,54 @@ Return ONLY JSON: {"read": "one line on where the brand stands", "options": [{"k
 		.slice(0, 3);
 	if (!options.length) throw new Error('No clear answer from the AI.');
 	return { read: String(j.read ?? '').slice(0, 200), options, tip: String(j.tip ?? '').slice(0, 200) };
+}
+
+// ---------- 5b2. A gentle nudge when a brand has gone quiet ----------
+async function nudge(x: Run, b: Record<string, unknown>) {
+	const tries = Math.max(0, Math.round(Number(b.tries) || 0));
+	const tone =
+		tries === 0
+			? 'friendly and light, like checking in with someone you like working with'
+			: tries === 1
+				? 'polite and clear, a little more direct than a first check-in'
+				: 'firm and direct but still professional and warm, stating plainly what is needed and by when';
+	const thread = (Array.isArray(b.thread) ? b.thread : []).slice(-6) as { from: string; text: string }[];
+	const reply = await chat(
+		x,
+		`You write short follow-up messages from an Indian Instagram creator to a brand she is working with. Situation: ${String(b.why ?? '')} (kind: ${String(b.kind ?? '')}; ${tries} earlier nudge${tries === 1 ? '' : 's'}). Tone: ${tone}. Write in her voice (first person), 2 to 4 sentences, at most one emoji (none if firm). Mention the specifics from the facts (the content, the quote, the draft round, the invoice number and amount, the link if given) and end with one clear next step or question. Never invent amounts, dates or promises not in the facts. Use the language the brand last wrote in (default English). Facts: ${JSON.stringify(b.facts ?? {})}.
+Return ONLY JSON: {"text": "the message"}`,
+		thread.map((m) => `${m.from === 'creator' ? 'Her' : 'Brand'}: ${String(m.text).slice(0, 500)}`).join('\n') || 'No messages yet.',
+		400
+	);
+	const text = String(firstJson(reply)?.text ?? '').trim();
+	if (!text) throw new Error('No clear answer from the AI.');
+	return { text };
+}
+
+// ---------- 5b3. "Ask your desk": questions about her own collabs, money and plans ----------
+// The app sends a compact summary of her data (no contact details); the AI answers only from it and
+// may suggest up to three actions from a fixed list, which the app shows as buttons she confirms.
+const ASK_ACTIONS = ['open_collab', 'mark_paid', 'new_invoice', 'nudge', 'go', 'new_collab'];
+const ASK_PATHS = ['/studio', '/studio/collabs', '/studio/payments', '/studio/reports', '/studio/content', '/studio/calendar', '/studio/inbox', '/studio/settings', '/studio/pitches', '/studio/brands'];
+async function ask(x: Run, b: Record<string, unknown>) {
+	const history = (Array.isArray(b.history) ? b.history : []).slice(-6) as { q: string; a: string }[];
+	const reply = await chat(
+		x,
+		`You are the assistant inside an Indian Instagram creator's collab studio. Answer her question using ONLY the data below (her collabs, money and plans). Today is ${String(b.today ?? '')}. If the answer isn't in the data, say so plainly. Be brief: 1 to 4 sentences, or a short list of up to 6 lines. Amounts in rupees in Indian format (₹1,50,000), dates like "18 Oct". Reply in the language she asked in (English, Hinglish, Hindi or Kannada).
+When useful, suggest up to 3 actions, each one of: open_collab {code}, mark_paid {code} (only for a collab with money still owed), new_invoice {code} (agreed or later, not invoiced yet), nudge {code} (brand gone quiet), go {path: one of ${ASK_PATHS.join(', ')}}, new_collab {text: the details she gave}. Give each a short button label.
+Data (stage: request=new, negotiating=in talks, confirmed=agreed, creating, live, wrapped=done; money in rupees): ${JSON.stringify(b.data ?? {}).slice(0, 14000)}
+Return ONLY JSON: {"answer": "...", "actions": [{"type": "...", "code": "", "path": "", "text": "", "label": "..."}]}`,
+		[...history.map((h) => `Earlier question: ${h.q}\nEarlier answer: ${h.a}`), `Question: ${String(b.question ?? '').slice(0, 600)}`].join('\n\n'),
+		700
+	);
+	const j = firstJson(reply) ?? {};
+	const answer = String(j.answer ?? '').trim();
+	if (!answer) throw new Error('No clear answer from the AI.');
+	const actions = (Array.isArray(j.actions) ? (j.actions as Record<string, unknown>[]) : [])
+		.map((a) => ({ type: String(a.type ?? ''), code: String(a.code ?? '').toUpperCase().trim(), path: String(a.path ?? ''), text: String(a.text ?? '').slice(0, 1000), label: String(a.label ?? '').slice(0, 40) }))
+		.filter((a) => ASK_ACTIONS.includes(a.type) && (a.type !== 'go' || ASK_PATHS.includes(a.path)) && (!['open_collab', 'mark_paid', 'new_invoice', 'nudge'].includes(a.type) || /^CD-[A-Z0-9]{4,8}$/.test(a.code)))
+		.slice(0, 3);
+	return { answer: answer.slice(0, 2000), actions };
 }
 
 // ---------- 5c. Brief to Reel script: hooks, scenes, must-says, caption ----------

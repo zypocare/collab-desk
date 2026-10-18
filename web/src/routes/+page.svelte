@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { langLabel } from '#lib/languages.ts';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { onMount } from 'svelte';
@@ -123,6 +124,9 @@
 						</div>
 					</div>
 					{#if p.niche}<p class="bx-niche serif"><em>{p.niche}</em></p>{/if}
+					{#if p.content_languages?.length}
+						<p class="bx-langs"><Icon name="globe" /><span>Creates content in</span>{#each p.content_languages as l (l)}<b>{langLabel(l)}</b>{/each}{#if p.content_languages.length > 1}<small>or a mix</small>{/if}</p>
+					{/if}
 					<div class="bx-status">
 						<span class="bx-pill" class:off={!p.accepting}><span class="dt pulse"></span>{p.accepting ? `Open for collaborations · replies in about ${p.reply_time}` : 'Fully booked right now'}</span>
 						{#if avgRating}<span class="bx-pill soft">★ {avgRating} from {p.reviews.length} brand{p.reviews.length === 1 ? '' : 's'}</span>{/if}
