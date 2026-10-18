@@ -6,6 +6,7 @@
 	import { supabase } from '../supabase';
 	import { decisionOf, studio } from '../studio.svelte';
 	import { ui } from '../ui.svelte';
+	import { unreadFor } from '../util';
 	import AiThinking from './AiThinking.svelte';
 	import CollabLeads from './CollabLeads.svelte';
 	import Icon from './Icon.svelte';
@@ -35,6 +36,8 @@
 		left ? `Free AI left today: ${left.pct}%. Resets at 5:30 am.${left.gemini ? ` Then the free Gemini backup (${left.gemini_left ?? 0} uses left).` : ''} Never charged.` : ''
 	);
 	const leads = $derived(studio.leads.length);
+	// The badge on Messages: messages she hasn't read yet (brands in the app, and Instagram DMs that may be collabs).
+	const unread = $derived(studio.collabs.reduce((a, c) => a + unreadFor(c), 0) + studio.leads.reduce((a, l) => a + (Number(l.unread) || 0), 0));
 	const sub = $derived(
 		leads
 			? open.length
@@ -69,7 +72,7 @@
 	<div class="ai-desk-acts">
 		<button class="btn sm ai-btn" onclick={() => (ui.newCollab = true)}><Icon name="spark" />Read a DM</button>
 		<button class="btn sm" onclick={() => (ui.askOpen = true)}><Icon name="spark" />Ask</button>
-		<a class="btn sm ghost" href="/studio/inbox"><Icon name="send" />Messages{#if leads}<span class="ai-acts-n">{leads}</span>{/if}</a>
+		<a class="btn sm ghost" href="/studio/inbox"><Icon name="send" />Messages{#if unread}<span class="ai-acts-n" aria-label="{unread} unread">{unread}</span>{/if}</a>
 	</div>
 {/snippet}
 

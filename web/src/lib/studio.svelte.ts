@@ -24,7 +24,7 @@ export const studio = $state<{
 	/** Requests the AI is reading right now. */
 	reading: string[];
 	/** Possible collabs spotted in her Instagram DMs, not on the board yet (shown on Today). */
-	leads: { igsid: string; username: string; name: string; picture: string; collab_flag: string; collab_hint: string; last_at: string | null }[];
+	leads: { igsid: string; username: string; name: string; picture: string; collab_flag: string; collab_hint: string; last_at: string | null; unread: number }[];
 	settings: Settings | null;
 	alerts: BankAlert[];
 	ig: IgAccount | null;
@@ -247,7 +247,7 @@ export const priorityOf = (c: Collab): Priority | null => {
 export async function loadLeads() {
 	let { data } = await supabase
 		.from('ig_threads')
-		.select('igsid, username, name, picture, collab_flag, collab_hint, last_at')
+		.select('igsid, username, name, picture, collab_flag, collab_hint, last_at, unread')
 		.is('collab_id', null)
 		.in('collab_flag', ['likely', 'maybe'])
 		.order('last_at', { ascending: false, nullsFirst: false })
