@@ -7,6 +7,7 @@
 	import '../pro.css';
 	import '../mobile-type.css';
 	import '../mobile.css';
+	import '../mc.css';
 	import type { LayoutProps } from './$types';
 	import { onMount } from 'svelte';
 	import { onNavigate } from '$app/navigation';
