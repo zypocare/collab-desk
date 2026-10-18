@@ -207,3 +207,13 @@
   [data-side="studio"] .cal-grid .cell { overflow: hidden; align-items: stretch; }
   [data-side="studio"] .cal-grid .cell .ev { display: block; max-width: 100%; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 }
+
+/* "Time each piece takes": the "h" has its own room again, and each content type is a tidy tile. */
+@media (min-width: 761px) {
+  [data-side="studio"] .hrs-grid { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 8px; padding: 6px 20px 18px; }
+  [data-side="studio"] .hrs-grid > .lbl-t { margin: 0 0 2px; }
+  [data-side="studio"] .hrs { padding: 6px 6px 6px 14px; border: 1px solid var(--pro-line); border-radius: 10px; background: color-mix(in oklab, var(--ink) 3%, transparent); font-size: 14px; font-weight: 500; }
+  [data-side="studio"] .hrs-in { width: 72px; }
+  [data-side="studio"] .hrs-in :is(.inp, .sel):not(.it-in):not(.it-row *) { height: 34px; padding: 0 24px 0 8px; text-align: right; }
+  [data-side="studio"] .hrs-in i { right: 10px; font-size: 13px; }
+}

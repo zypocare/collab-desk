@@ -131,6 +131,7 @@
 		profile: 'Edit profile',
 		rates: 'Rates & packages',
 		bookings: 'Bookings & barter',
+		offers: 'Pricing & offers',
 		autopilot: 'Auto-pilot',
 		payments: 'Invoices & payments',
 		reviews: 'Results & reviews',

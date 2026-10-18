@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { supabase } from '../supabase';
 	import { saveSettings, studio } from '../studio.svelte';
 	import { iso, parse } from '../util';
 	import Select from './Select.svelte';
@@ -36,13 +35,6 @@
 		const cur = s.away_weeks ?? [];
 		saveSettings({ away_weeks: cur.includes(ws) ? cur.filter((x) => x !== ws) : [...cur, ws].sort() });
 	}
-	// Is demand pricing raising prices right now?
-	let demandNow = $state(1);
-	const checkDemand = () => supabase.rpc('demand_factor').then(({ data }) => (demandNow = Number(data) || 1));
-	$effect(() => {
-		void s.demand_pricing;
-		checkDemand();
-	});
 </script>
 
 <section class="panel rv" style="--i:3">
@@ -64,17 +56,6 @@
 		{#each Object.keys(DEFAULT_HOURS) as k (k)}
 			<label class="hrs"><span>{k}</span><span class="hrs-in"><input class="inp num" type="number" inputmode="decimal" min="0.5" max="40" step="0.5" value={s.piece_hours?.[k] ?? DEFAULT_HOURS[k]} onchange={(e) => saveSettings({ piece_hours: { ...DEFAULT_HOURS, ...s.piece_hours, [k]: Math.max(0.5, Number((e.currentTarget as HTMLInputElement).value) || DEFAULT_HOURS[k]) } })} /><i>h</i></span></label>
 		{/each}
-	</div>
-	<div class="switch-row">
-		<div><b>Prices follow demand</b><small>When your next 4 weeks are at least 75% booked, your package prices on your page go up by {s.demand_pct}%, and come back down when you have space.{#if s.demand_pricing && demandNow > 1} <b>Active now.</b>{/if}</small></div>
-		<input type="checkbox" class="tgl" checked={s.demand_pricing} aria-label="Prices follow demand" onchange={(e) => saveSettings({ demand_pricing: (e.currentTarget as HTMLInputElement).checked }).then(checkDemand)} />
-	</div>
-	{#if s.demand_pricing}
-		<div class="form-b"><div class="f span2"><label for="av-dem">Raise package prices by</label><Select id="av-dem" value={s.demand_pct} options={[10, 15, 20, 25, 30].map((n) => ({ value: n, label: `${n}%` }))} onchange={(v) => saveSettings({ demand_pct: v })} /></div></div>
-	{/if}
-	<div class="switch-row">
-		<div><b>Instant booking for packages</b><small>A brand booking one of your packages for an open week, at least 3 days ahead and with no competitor that week, is confirmed straight away. Both of you get an email.</small></div>
-		<input type="checkbox" class="tgl" checked={s.instant_booking} aria-label="Instant booking for packages" onchange={(e) => saveSettings({ instant_booking: (e.currentTarget as HTMLInputElement).checked })} />
 	</div>
 	<div class="switch-row">
 		<div><b>Show on my page</b><small>Brands see which weeks are open, limited, full or away.</small></div>

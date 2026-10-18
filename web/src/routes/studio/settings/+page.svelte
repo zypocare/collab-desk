@@ -26,6 +26,7 @@
 	import PackagesSettings from '#lib/components/PackagesSettings.svelte';
 	import AvailabilitySettings from '#lib/components/AvailabilitySettings.svelte';
 	import AwayMode from '#lib/components/AwayMode.svelte';
+	import OffersSettings from '#lib/components/OffersSettings.svelte';
 	import DecisionSettings from '#lib/components/DecisionSettings.svelte';
 	import RateLearn from '#lib/components/RateLearn.svelte';
 	import ReviewsSettings from '#lib/components/ReviewsSettings.svelte';
@@ -149,7 +150,7 @@
 
 	// Settings are split into a few sections and only the one she picks is shown.
 	// On phones the menu is its own screen: tap a section, and "All settings" (or Back) returns.
-	type Sec = 'profile' | 'rates' | 'bookings' | 'autopilot' | 'payments' | 'reviews' | 'alerts' | 'team' | 'account';
+	type Sec = 'profile' | 'rates' | 'bookings' | 'offers' | 'autopilot' | 'payments' | 'reviews' | 'alerts' | 'team' | 'account';
 	const autoOn = $derived([s.autopilot_packages, s.autopilot_counter, s.autopilot_nudge, s.autopilot_brief, s.autopilot_review].filter(Boolean).length);
 	const hasPay = $derived(!!(s.upi_id || s.bank_details));
 	const sections = $derived<{ id: Sec; label: string; icon: string; sub: string; warn?: string }[]>([
@@ -167,6 +168,12 @@
 			icon: 'cal',
 			sub: s.accepting ? `Open · ${s.weekly_capacity} a week · barter ${s.barter_mode}` : 'Paused: not taking requests',
 			warn: s.accepting ? undefined : 'New requests are paused'
+		},
+		{
+			id: 'offers',
+			label: 'Pricing & offers',
+			icon: 'gift',
+			sub: [s.rebook_offer ? 'Book again on' : 'Book again off', s.demand_pricing ? 'demand pricing on' : 'demand pricing off', s.instant_booking ? 'instant booking on' : 'instant booking off'].join(' · ')
 		},
 		{ id: 'autopilot', label: 'Auto-pilot', icon: 'spark', sub: autoOn ? `${autoOn} of 5 rules on` : 'All rules off' },
 		{
@@ -360,6 +367,8 @@
 						<AvailabilitySettings />
 						<PriorityRules />
 						<DecisionSettings />
+					{:else if active === 'offers'}
+						<OffersSettings />
 					{:else if active === 'autopilot'}
 						<AutopilotSettings />
 					{:else if active === 'payments'}

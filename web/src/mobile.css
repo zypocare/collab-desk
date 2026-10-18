@@ -245,6 +245,7 @@
   [data-side="studio"] .btn::before,[data-side="studio"] .btn::after{display:none}
   [data-side="studio"] :is(.inp,.sel){height:46px;padding:0 14px;border-radius:12px;font-size:16px;border:1px solid var(--ig-sep);background:var(--ig-fill-2);box-shadow:none}
   [data-side="studio"] textarea.inp{min-height:96px;padding:12px 14px}
+  [data-side="studio"] .hrs-in .inp{padding:0 28px 0 10px;text-align:right}
   [data-side="studio"] :is(.inp,.sel):focus{border-color:color-mix(in oklab,var(--ink) 35%,transparent);box-shadow:none;outline:none}
   [data-side="studio"] .f label,[data-side="studio"] .lbl-t{font-size:14px;font-weight:600;color:var(--ink-2);margin-bottom:6px}
   [data-side="studio"] :is(.search,.ig-search){display:flex;align-items:center;gap:8px;height:38px;padding:0 12px;border-radius:10px;border:0;background:var(--ig-fill);box-shadow:none;color:var(--ink-3)}
