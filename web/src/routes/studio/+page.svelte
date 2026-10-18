@@ -31,6 +31,7 @@
 		type Task
 	} from '#lib/util.ts';
 	import Icon from '#lib/components/Icon.svelte';
+	import Avatar from '#lib/components/Avatar.svelte';
 	import PriorityBadge from '#lib/components/PriorityBadge.svelte';
 	import AiDesk from '#lib/components/AiDesk.svelte';
 	import NudgeList from '#lib/components/NudgeList.svelte';
@@ -130,44 +131,62 @@
 {#if phone.on}
 	<PhoneToday />
 {:else}
-<!-- Laptop (Atelier): money and pipeline up top, what needs her beside the AI desk, then the week. -->
+<!-- Laptop: the brand page's hero, for her: who, the day, this month's money and the numbers that matter. -->
 <div class="td at-td">
-	<header class="ph rv">
-		<div>
-			<div class="eb">{T.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}</div>
-			<h1>{greet}, <em>{firstName(s.display_name)}</em></h1>
-			<p>
-				{#if urgent}<span class="dt pulse k-bad"></span>{urgent} due today{ts.length > urgent ? `, ${ts.length} on your list` : ''}{:else}Nothing urgent today{/if}{#if weekIn}, and <b class="num">{inr(weekIn)}</b> is due to you this week{/if}.
-			</p>
+	<section class="bx-hero at-hero rv">
+		<div class="mesh" aria-hidden="true"></div>
+		<div class="bx-hero-main">
+			<div class="bx-id">
+				<Avatar name={s.display_name} src={studio.ig?.connected ? studio.ig.profile_picture_url : ''} size="clamp(78px, 8vw, 104px)" />
+				<div class="bx-id-t">
+					<span class="bx-eb">{T.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}</span>
+					<h1>{greet}, <em>{firstName(s.display_name)}</em></h1>
+					<div class="bx-handle">{#if urgent}{urgent} due today{ts.length > urgent ? ` · ${ts.length} on your list` : ''}{:else}Nothing urgent today{/if}{#if weekIn} · {inr(weekIn)} due to you this week{/if}</div>
+				</div>
+			</div>
+			<div class="ah-earn">
+				<small>Earned in {monthName}</small>
+				<div class="ah-row"><b class="num" use:countUp={{ value: received, money: true }}>{inr(received)}</b>{#if vs !== null}<span class="bx-pill" class:off={vs < 0}><span class="dt"></span>{vs >= 0 ? '+' : ''}{vs}% vs {prevName}</span>{/if}</div>
+				{#if goal}<div class="ah-goal"><span><i style="width:{Math.round(pct * 100)}%"></i></span><small><b>{pctN}%</b> of your {inrS(goal)} goal</small></div>{/if}
+			</div>
+			<div class="bx-cta">
+				<button class="btn grad lg" onclick={() => (ui.newCollab = true)}><Icon name="plus" />New collab</button>
+				<button class="btn" onclick={() => (ui.askOpen = true)}><Icon name="spark" />Ask your desk</button>
+				<a class="btn" href="/studio/collabs"><Icon name="board" />Open board</a>
+			</div>
 		</div>
-	</header>
+		<div class="bx-stats">
+			<a class="bx-stat" href="/studio/payments" style="--i:0"><b class="num">{inrS(outs)}</b><small>Still to come</small></a>
+			<a class="bx-stat" class:bad={od > 0} href="/studio/payments" style="--i:1"><b class="num">{inrS(od)}</b><small>{od > 0 ? `Overdue · ${list.filter(overdue).length} late` : 'Overdue · all on time'}</small></a>
+			<a class="bx-stat" href="/studio/collabs" style="--i:2"><b class="num">{active.length}</b><small>Active collabs</small></a>
+			<a class="bx-stat" href="/studio/content" style="--i:3"><b class="num">{inrS(barter)}</b><small>Barter · {prodGot.length} product{prodGot.length === 1 ? '' : 's'}</small></a>
+			<div class="bx-live"><span class="dt"></span>{nextPayout ? `Next payment: ${nextPayout.brand.name} · ${fmt(nextPayout.pay_due)}` : 'No payment due yet'}</div>
+			<a class="bx-ins" href="/studio/reports">See this month's report<Icon name="arrow" /></a>
+		</div>
+	</section>
 
 	<AwayMode banner />
 	<AlertsPrompt />
 
 	<div class="at-top rv" style="--i:1">
 		<section class="at-card at-money" aria-label="Money this month">
-			<div class="at-h"><span class="lbl">Earned in {monthName}</span>{#if vs !== null}<span class="chip" class:up={vs >= 0} class:down={vs < 0}>{vs >= 0 ? '+' : ''}{vs}% vs {prevName}</span>{/if}</div>
-			<b class="at-big num" use:countUp={{ value: received, money: true }}>{inr(received)}</b>
+			<div class="at-h"><div><span class="bx-eb">Money in</span><h2>{monthName}, day by day</h2></div>{#if vs !== null}<span class="chip" class:up={vs >= 0} class:down={vs < 0}>{vs >= 0 ? '+' : ''}{vs}% vs {prevName}</span>{/if}</div>
 			<svg class="at-spark" viewBox="0 0 520 90" preserveAspectRatio="none" aria-hidden="true"
 				><defs
-					><linearGradient id="tdArea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--g2);stop-opacity:.3" /><stop offset="1" style="stop-color:var(--g2);stop-opacity:0" /></linearGradient
+					><linearGradient id="tdArea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--g2);stop-opacity:.34" /><stop offset="1" style="stop-color:var(--g2);stop-opacity:0" /></linearGradient
 					><linearGradient id="tdLine" x1="0" y1="0" x2="1" y2="0"><stop offset="0" style="stop-color:var(--g1)" /><stop offset=".6" style="stop-color:var(--g2)" /><stop offset="1" style="stop-color:var(--g3)" /></linearGradient
 				></defs
-				><path d={curve.area} fill="url(#tdArea)" /><path d={curve.line} fill="none" stroke="url(#tdLine)" stroke-width="2.5" stroke-linejoin="round" vector-effect="non-scaling-stroke" /></svg
+				><path d={curve.area} fill="url(#tdArea)" /><path d={curve.line} fill="none" stroke="url(#tdLine)" stroke-width="3" stroke-linejoin="round" vector-effect="non-scaling-stroke" /></svg
 			>
-			{#if goal}
-				<div class="at-goal"><span class="at-goal-bar"><i style="width:{Math.round(pct * 100)}%"></i></span><small><b class="num">{pctN}%</b> of your {inrS(goal)} goal</small></div>
-			{/if}
 			<div class="at-mini">
-				<div><span class="lbl">Still to come</span><b class="num">{inr(outs)}</b><small>{nextPayout ? `Next: ${nextPayout.brand.name} · ${fmt(nextPayout.pay_due)}` : 'Nothing due yet'}</small></div>
+				<div><span class="lbl">Received</span><b class="num">{inr(received)}</b><small>this month</small></div>
+				<div><span class="lbl">Still to come</span><b class="num">{inr(outs)}</b><small>{nextPayout ? `Next: ${nextPayout.brand.name}` : 'Nothing due yet'}</small></div>
 				<div class:bad={od > 0}><span class="lbl">Overdue</span><b class="num">{inr(od)}</b><small class:ok={!od}>{od > 0 ? `${list.filter(overdue).length} late` : 'All on time'}</small></div>
-				<div><span class="lbl">Barter value</span><b class="num">{inr(barter)}</b><small>{prodGot.length} product{prodGot.length === 1 ? '' : 's'}</small></div>
 			</div>
 		</section>
 
 		<section class="at-card at-pipe" aria-label="Pipeline">
-			<div class="at-h"><span class="lbl">Pipeline</span><a href="/studio/collabs">Open board</a></div>
+			<div class="at-h"><div><span class="bx-eb">Pipeline</span><h2>Deals in play</h2></div><a href="/studio/collabs">Open board</a></div>
 			<div class="at-pv"><b class="num">{inrS(pipeTotal)}</b><span>across {active.length} open collab{active.length === 1 ? '' : 's'}</span></div>
 			<span class="at-seg" role="img" aria-label={pipeV.map((p) => `${p.n} ${p.st.label}`).join(', ')}>
 				{#each pipeV as p (p.st.id)}{#if p.n}<i style="flex:{p.n};background:{HUE[p.st.id]}"></i>{/if}{/each}
@@ -217,7 +236,7 @@
 	</div>
 
 	<section class="at-card at-week rv" style="--i:4" aria-label="This week">
-		<div class="at-h"><h2>This week</h2><a href="/studio/calendar">Calendar</a></div>
+		<div class="at-h"><div><span class="bx-eb">Coming up</span><h2>This week</h2></div><a href="/studio/calendar">Calendar</a></div>
 		<div class="at-days">
 			{#each week as d (d.ds)}
 				<div class="at-day" class:now={d.i === 0}>

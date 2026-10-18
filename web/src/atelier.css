@@ -328,3 +328,112 @@
   [data-side="brand"] .bx-stat b, [data-side="brand"] .bx-price b { font-family: var(--f-mono); font-weight: 600; letter-spacing: -.04em; }
   [data-side="brand"] .bx-res-b b { font-family: var(--f-mono); letter-spacing: -.03em; }
 }
+
+/* ==========================================================================================
+   BRAND LOOK FOR THE STUDIO (laptop): the creator side now wears the brand page's colour:
+   the soft plum/cerise/peach wash, a dark hero with a glowing mesh, gradient labels, rounded
+   lifted cards, gradient pill tabs and the brand page's buttons.
+   ========================================================================================== */
+@media (min-width: 761px) {
+  [data-side="studio"] .aurora { display: block; opacity: 1; }
+  [data-side="studio"] .app.at, [data-side="studio"] .main { position: relative; z-index: 1; }
+
+  /* sidebar: glass over the wash; the current page is a gradient pill */
+  .side { background: color-mix(in oklab, var(--surface) 70%, transparent); -webkit-backdrop-filter: blur(18px) saturate(1.3); backdrop-filter: blur(18px) saturate(1.3); border-right: 1px solid color-mix(in oklab, var(--line) 80%, transparent); }
+  .side-me, .side-search, .side-goal { background: color-mix(in oklab, var(--surface) 88%, transparent); border-radius: 16px; }
+  .side-search { border-radius: 12px; }
+  .side-it { height: 40px; border-radius: 12px; font-weight: 600; }
+  .side-it[aria-current="page"] { background: var(--grad); color: #fff; box-shadow: 0 8px 20px -8px color-mix(in oklab, var(--g2) 65%, transparent); }
+  .side-it[aria-current="page"] .side-new { color: #fff; opacity: .85; }
+  .side-it[aria-current="page"] .side-badge { background: #fff; color: var(--g2); }
+  .side-lbl { font-size: 11.5px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; width: max-content; }
+
+  /* page headers: the brand page's gradient label and big title */
+  [data-side="studio"] .ph .eb { display: inline-block; font-size: 12.5px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  [data-side="studio"] .ph h1 { font-size: clamp(30px, 3vw, 40px); letter-spacing: -.045em; }
+  [data-side="studio"] .ph p { color: var(--ink-3); font-size: 16px; }
+
+  /* cards: one rounded, lifted surface */
+  [data-side="studio"] :is(.panel:not(.ai-desk), .at-card, .kpis > .kpi, .ct-weeks > .ct-week, .drawer.as-page .sec) { border-radius: 24px; background: color-mix(in oklab, var(--surface) 94%, transparent); border: 1px solid color-mix(in oklab, var(--line) 85%, transparent) !important; box-shadow: var(--shadow-sm); }
+  [data-side="studio"] .panel.ai-desk { border-radius: 24px; box-shadow: var(--shadow-sm); }
+  [data-side="studio"] :is(.kpis > .kpi, .ct-weeks > .ct-week) { transition: transform .45s var(--spring), box-shadow .35s; }
+  [data-side="studio"] :is(.kpis > .kpi, .ct-weeks > .ct-week):hover { transform: translateY(-4px) !important; box-shadow: 0 18px 40px -18px rgba(40, 22, 32, .35); }
+  [data-side="studio"] .panel-h h2 { font-size: 18px; letter-spacing: -.03em; }
+  [data-side="studio"] .drawer.as-page .sec h3, [data-side="studio"] .drawer .sec h3 { font-size: 18px; letter-spacing: -.03em; }
+  [data-side="studio"] .card { border-radius: 20px; background: color-mix(in oklab, var(--surface) 94%, transparent); box-shadow: var(--shadow-sm); transition: box-shadow .35s, border-color .3s; }
+  [data-side="studio"] .card:hover { box-shadow: 0 18px 40px -18px rgba(40, 22, 32, .35); border-color: color-mix(in oklab, var(--accent) 30%, var(--line)); }
+  [data-side="studio"] .drawer .next-bar { border-radius: 24px; }
+
+  /* tabs: pills, the current one in the gradient (as on the brand page) */
+  [data-side="studio"] :is(.pills, .subtabs) { padding: 5px; gap: 4px; border-radius: 999px; background: color-mix(in oklab, var(--surface) 82%, transparent); -webkit-backdrop-filter: blur(16px) saturate(1.4); backdrop-filter: blur(16px) saturate(1.4); border: 1px solid color-mix(in oklab, var(--line) 85%, transparent); box-shadow: var(--shadow-sm); }
+  [data-side="studio"] :is(.pills button, .subtabs a) { height: 34px; padding: 0 16px; border-radius: 999px; font: 600 14px var(--f-body); color: var(--ink-2); }
+  [data-side="studio"] :is(.pills .thumb, .subtabs .sub-ind) { border-radius: 999px; background: var(--grad); box-shadow: 0 6px 18px -6px color-mix(in oklab, var(--g2) 60%, transparent); }
+  [data-side="studio"] :is(.pills button[aria-pressed="true"], .subtabs a[aria-current="page"]) { color: #fff; }
+  [data-side="studio"] .cx-nav { border-radius: 999px; padding: 5px; }
+  [data-side="studio"] .drawer .cx-nav a { border-radius: 999px; height: 34px; padding: 0 16px; font-weight: 600; font-size: 14px; color: var(--ink-2); }
+  [data-side="studio"] .drawer .cx-nav a:hover { background: var(--grad); color: #fff; }
+
+  /* buttons: the brand page's */
+  [data-side="studio"] .btn { height: 40px; padding: 0 16px; border-radius: 12px; font-weight: 600; font-size: 14px; transition: transform .25s var(--spring), background .25s, border-color .25s, box-shadow .3s, color .2s; }
+  [data-side="studio"] .btn:active:not(:disabled) { transform: scale(.97); }
+  [data-side="studio"] .btn.sm { height: 32px; padding: 0 12px; border-radius: 10px; font-size: 13px; }
+  [data-side="studio"] .btn.lg { height: 48px; padding: 0 22px; border-radius: 14px; font-size: 15.5px; }
+  [data-side="studio"] .btn.grad { position: relative; overflow: hidden; box-shadow: 0 10px 26px -10px color-mix(in oklab, var(--g2) 75%, transparent); }
+  [data-side="studio"] .btn.grad::after { content: ""; position: absolute; inset: 0; background: linear-gradient(105deg, transparent 30%, rgba(255, 255, 255, .28) 50%, transparent 70%); transform: translateX(-120%); transition: transform .7s var(--ease); pointer-events: none; }
+  [data-side="studio"] .btn.grad:hover::after { transform: translateX(120%); }
+  [data-side="studio"] .chip { border-radius: 999px; font-weight: 600; }
+  [data-side="studio"] :is(.inp, .sel):not(.it-in):not(.it-row *) { height: 42px; border-radius: 12px; background: color-mix(in oklab, var(--surface) 92%, transparent); }
+
+  /* Today: the hero */
+  .at-hero { margin-bottom: 18px; }
+  .at-hero .bx-id h1 { font-size: clamp(34px, 3.6vw, 52px); margin: 6px 0 8px; }
+  .at-hero .bx-id h1 em { font-family: 'Instrument Serif', Georgia, serif; font-style: italic; font-weight: 400; letter-spacing: 0; font-size: 1.12em; background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; padding-right: .08em; }
+  .at-hero .bx-handle { white-space: normal; font-size: 16px; }
+  .ah-earn { margin-top: 26px; display: flex; flex-direction: column; gap: 6px; }
+  .ah-earn > small { font-size: 14px; font-weight: 600; color: color-mix(in oklab, var(--hero-ink) 68%, transparent); }
+  .ah-row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .ah-row b { font-size: clamp(42px, 4.6vw, 64px); font-weight: 600; letter-spacing: -.05em; line-height: 1; color: var(--hero-ink); }
+  .ah-goal { display: flex; align-items: center; gap: 12px; max-width: 520px; margin-top: 8px; }
+  .ah-goal > span { flex: 1; height: 8px; border-radius: 99px; background: color-mix(in oklab, var(--hero-ink) 12%, transparent); overflow: hidden; }
+  .ah-goal i { display: block; height: 100%; max-width: 100%; border-radius: 99px; background: var(--grad); box-shadow: 0 0 18px color-mix(in oklab, var(--g2) 70%, transparent); }
+  .ah-goal small { font-size: 13.5px; color: color-mix(in oklab, var(--hero-ink) 72%, transparent); white-space: nowrap; }
+  .ah-goal small b { color: var(--hero-ink); }
+  .at-hero .bx-stat { color: var(--hero-ink); text-decoration: none; transition: background .25s, transform .4s var(--spring); }
+  .at-hero .bx-stat:hover { background: color-mix(in oklab, var(--hero-ink) 12%, transparent); transform: translateY(-3px); }
+  .at-hero .bx-stat.bad b { color: var(--bad); }
+  [data-side="studio"] .at-hero .bx-cta .btn:not(.grad):hover { background: color-mix(in oklab, var(--hero-ink) 15%, transparent); border-color: color-mix(in oklab, var(--hero-ink) 22%, transparent); color: var(--hero-ink); }
+  .at-hero .bx-cta .btn .ic { width: 17px; height: 17px; }
+  .at-hero .bx-ins .ic { width: 16px; height: 16px; }
+
+  /* Today: cards with the brand page's section labels */
+  .at-h .bx-eb { display: block; margin-bottom: 2px; }
+  .at-h h2 { font-size: 19px; letter-spacing: -.03em; }
+  .at-money .at-spark { height: 120px; }
+  .at-week .at-day { border-radius: 16px; background: color-mix(in oklab, var(--surface-2) 80%, transparent); }
+  .at-week .at-day.now { background: linear-gradient(color-mix(in oklab, var(--surface) 92%, transparent), color-mix(in oklab, var(--surface) 92%, transparent)) padding-box, var(--grad) border-box; border: 1.5px solid transparent; box-shadow: none; }
+}
+
+/* Money and Content summaries: the brand hero's dark glowing panel with glass tiles. */
+@media (min-width: 761px) {
+  [data-side="studio"] :is(.kpis, .ct-weeks) {
+    padding: 16px; gap: 10px; border-radius: 28px; overflow: hidden;
+    background:
+      radial-gradient(55% 140% at 0% 0%, color-mix(in oklab, var(--g1) 42%, transparent), transparent 62%),
+      radial-gradient(45% 140% at 100% 0%, color-mix(in oklab, var(--g2) 38%, transparent), transparent 62%),
+      radial-gradient(60% 140% at 55% 130%, color-mix(in oklab, var(--g3) 28%, transparent), transparent 62%),
+      var(--hero);
+    border: 1px solid color-mix(in oklab, var(--hero-ink) 8%, transparent);
+    box-shadow: var(--shadow-lg);
+  }
+  [data-side="studio"] .pg :is(.kpis > .kpi, .ct-weeks > .ct-week) {
+    border-radius: 20px; color: var(--hero-ink); box-shadow: none;
+    background: color-mix(in oklab, var(--hero-ink) 7%, transparent);
+    border: 1px solid color-mix(in oklab, var(--hero-ink) 12%, transparent) !important;
+    -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+  }
+  [data-side="studio"] .pg :is(.kpis > .kpi, .ct-weeks > .ct-week):hover { background: color-mix(in oklab, var(--hero-ink) 12%, transparent); box-shadow: none; }
+  [data-side="studio"] .kpis .kpi :is(.lbl, .sub), [data-side="studio"] .ct-weeks .ct-week small, [data-side="studio"] .ct-weeks .ct-week b span { color: color-mix(in oklab, var(--hero-ink) 68%, transparent); }
+  [data-side="studio"] .kpis .kpi .lbl, [data-side="studio"] .ct-weeks .ct-week small { font-size: 13px; font-weight: 600; }
+  [data-side="studio"] .kpis .kpi .big, [data-side="studio"] .ct-weeks .ct-week b { color: var(--hero-ink); font-size: 32px; }
+  [data-side="studio"] .kpis .kpi .big.late { color: var(--bad); }
+}

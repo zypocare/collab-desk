@@ -404,7 +404,7 @@
 									{#each deskTabs as t (t.href)}<a href={t.href} aria-current={path === t.href ? 'page' : undefined}>{t.label}</a>{/each}
 								</nav>
 							{/if}
-							{#if !detail}
+							{#if !detail && path !== '/studio'}
 								<button class="btn at-ask" onclick={() => (ui.askOpen = true)} title="Ask your desk (Ctrl J)"><Icon name="spark" />Ask Desk</button>
 								<button class="btn grad at-new" onclick={() => (ui.newCollab = true)}><Icon name="plus" />New collab</button>
 							{/if}
