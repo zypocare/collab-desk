@@ -14,6 +14,7 @@
 	import Icon from '#lib/components/Icon.svelte';
 	import Segmented from '#lib/components/Segmented.svelte';
 	import CollabRow from '#lib/components/CollabRow.svelte';
+	import CollabTable from '#lib/components/CollabTable.svelte';
 	import { phone } from '#lib/phone.svelte.ts';
 
 	let filter = $state<'all' | 'paid' | 'barter'>('all');
@@ -146,6 +147,31 @@
 	const pipeStages = $derived(ACTIVE.map((id) => ({ id, n: activeList.filter((c) => c.stage === id).length })));
 	const declinedCount = $derived(studio.collabs.filter((c) => c.stage === 'declined').length);
 
+	// Laptop: Board or List, remembered on this computer. The pipeline tiles open the list at one stage.
+	const savedView = () => {
+		try {
+			return localStorage.getItem('cd.collabsView') === 'list' ? 'list' : 'board';
+		} catch {
+			return 'board';
+		}
+	};
+	let view = $state<'board' | 'list'>(savedView());
+	let lstage = $state<'all' | Stage>('all');
+	$effect(() => {
+		const v = view;
+		try {
+			localStorage.setItem('cd.collabsView', v);
+		} catch {
+			/* private window */
+		}
+	});
+	const listRows = $derived(visible.filter((c) => (lstage === 'all' ? showDeclined || c.stage !== 'declined' : c.stage === lstage)));
+	const stageValue = (id: Stage) => activeList.filter((c) => c.stage === id).reduce((a, c) => a + (Number(c.fee) || 0) + (Number(c.product_value) || 0), 0);
+	function showStage(id: Stage) {
+		lstage = view === 'list' && lstage === id ? 'all' : id;
+		view = 'list';
+	}
+
 	async function drop(e: DragEvent, stage: Stage) {
 		e.preventDefault();
 		over = null;
@@ -170,8 +196,41 @@
 	</div>
 </header>
 
+{#if studio.collabs.some((c) => c.stage !== 'declined') && !phone.on}
+<section class="cb-hero rv" aria-label="Your pipeline">
+	<div class="mesh" aria-hidden="true"></div>
+	<div class="cb-main">
+		<span class="bx-eb">Your pipeline</span>
+		<b class="cb-val num" use:countUp={{ value: pipeValue, money: true }}>{inr(pipeValue)}</b>
+		<span class="cb-sub">in {activeN} active collab{activeN === 1 ? '' : 's'}{pipeProducts ? ` · + ${inrS(pipeProducts)} in products` : ''}{waiting ? ` · ${waiting} waiting for your reply` : ''}</span>
+		{#if activeN}
+			<div class="cb-bar" aria-hidden="true">
+				{#each pipeStages as st (st.id)}{#if st.n}<i class="st-{st.id}" style="flex:{st.n}"></i>{/if}{/each}
+			</div>
+		{/if}
+	</div>
+	<div class="cb-tiles">
+		{#each pipeStages as st (st.id)}
+			<button class="cb-tile st-{st.id}" class:on={view === 'list' && lstage === st.id} onclick={() => showStage(st.id)} title="See {stageLabel(st.id)} as a list">
+				<small><span class="dt"></span>{stageLabel(st.id)}</small>
+				<b class="num">{st.n}</b>
+				<span class="num">{stageValue(st.id) ? inrS(stageValue(st.id)) : '—'}</span>
+			</button>
+		{/each}
+	</div>
+</section>
+{/if}
+
 {#if studio.collabs.length && !phone.on}
 <div class="toolbar rv" style="--i:1">
+	<Segmented
+		label="View"
+		bind:value={view}
+		options={[
+			{ value: 'board', label: 'Board' },
+			{ value: 'list', label: 'List' }
+		]}
+	/>
 	<label class="search"><Icon name="search" /><span class="sr">Search collabs</span><input type="search" placeholder="Search brand, code or category" bind:value={q} autocomplete="off" /></label>
 	<Segmented
 		label="Filter"
@@ -280,6 +339,11 @@
 			</div>
 		</div>
 	{/each}
+{:else if view === 'list'}
+	{#if lstage !== 'all'}
+		<div class="cb-filter"><span class="st-{lstage}"><span class="dt"></span>{stageLabel(lstage)}</span><span>{listRows.length} collab{listRows.length === 1 ? '' : 's'}</span><button class="btn sm ghost" onclick={() => (lstage = 'all')}><Icon name="x" />Show all stages</button></div>
+	{/if}
+	<CollabTable list={listRows} {selecting} {picked} onpick={toggle} />
 {:else}
 <div class="board-wrap">
 	<div class="board">

@@ -37,6 +37,8 @@ export const ICONS: Record<string, string> = {
 	back: '<path d="M19 12H5M11 6l-6 6 6 6"/>',
 	chevL: '<path d="m15 6-6 6 6 6"/>',
 	chevR: '<path d="m9 6 6 6-6 6"/>',
+	chevU: '<path d="m6 15 6-6 6 6"/>',
+	chevD: '<path d="m6 9 6 6 6-6"/>',
 	inbox: '<path d="M3.5 13.5 6 5.5h12l2.5 8V19a1 1 0 0 1-1 1h-15a1 1 0 0 1-1-1z"/><path d="M3.5 13.5H9l1 2h4l1-2h5.5"/>',
 	film: '<rect x="3.5" y="3.5" width="17" height="17" rx="4"/><path d="m10 8.8 5 3.2-5 3.2z"/>',
 	box: '<path d="M3.5 7.5 12 3l8.5 4.5v9L12 21l-8.5-4.5z"/><path d="M3.5 7.5 12 12l8.5-4.5M12 12v9"/>',
