@@ -9,6 +9,7 @@
 	import Icon from './Icon.svelte';
 	import Mono from './Mono.svelte';
 	import NegotiateSheet from './NegotiateSheet.svelte';
+	import { styleSamples } from '../desk';
 
 	let {
 		collabId,
@@ -37,10 +38,13 @@
 	// Free AI: three reply drafts from the conversation so far.
 	let drafts = $state<string[]>([]);
 	let drafting = $state(false);
-	async function suggestReplies() {
+	// In her own voice (a few of her sent messages as style examples); "More formal" for big brands.
+	let formal = $state(false);
+	async function suggestReplies(asFormal = formal) {
 		drafting = true;
+		formal = asFormal;
 		try {
-			const r = await askAi<{ replies: string[] }>('reply', { thread: messages.map((m) => ({ from: m.sender, text: m.body })), context: facts ?? {} });
+			const r = await askAi<{ replies: string[] }>('reply', { thread: messages.map((m) => ({ from: m.sender, text: m.body })), context: facts ?? {}, style: side === 'creator' ? styleSamples() : [], formal: asFormal });
 			drafts = r.replies;
 			if (!drafts.length) toast("The AI didn't have a suggestion this time. Try again.", 'alert');
 		} catch (e) {
@@ -307,12 +311,13 @@
 	{#if facts && !text && drafts.length}
 		<div class="th-drafts">
 			{#each drafts as d, i (i)}<button type="button" class="ai-draft" onclick={() => ((drafts = []), useReply(d))}>{d}</button>{/each}
+			{#if !drafting}<button type="button" class="th-chip" onclick={() => suggestReplies(!formal)}>{formal ? 'In my usual voice' : 'More formal'}</button>{/if}
 		</div>
 	{/if}
 	{#if !text && (facts || quick.length)}
 		<div class="th-tools" bind:this={tools}>
 			{#if facts}
-				{#if drafting}<AiThinking label="Writing replies" />{:else}<button type="button" class="th-chip ai" onclick={suggestReplies}><Icon name="spark" />{drafts.length ? 'More replies' : 'Suggest replies'}</button>{/if}
+				{#if drafting}<AiThinking label="Writing replies" />{:else}<button type="button" class="th-chip ai" onclick={() => suggestReplies()}><Icon name="spark" />{drafts.length ? 'More replies' : 'Suggest replies'}</button>{/if}
 				{#if collab && collab.stage !== 'declined' && collab.stage !== 'wrapped'}<button type="button" class="th-chip ai" onclick={() => (negotiating = true)} title="Brand asking for a lower price? Get three replies that protect your rate"><Icon name="scale" />Negotiate</button>{/if}
 				{#if quick.length}<i class="th-sep"></i>{/if}
 			{/if}

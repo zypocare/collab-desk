@@ -8,10 +8,34 @@ on:
   schedule:
     - cron: '30 22 * * *' # 4 am in India
   pull_request:
+  push:
+    branches: [main]
   workflow_dispatch:
 
 jobs:
+  # Every push: the type check and the DM reading suite (200 messages, English and Hinglish).
+  # About two minutes, no database needed.
+  quick:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+        working-directory: web
+      - name: Type check
+        run: npm run check
+        working-directory: web
+      - name: DM reading accuracy
+        run: npm run test:dm
+        working-directory: web
+
   e2e:
+    if: github.event_name != 'push'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:

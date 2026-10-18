@@ -6,9 +6,12 @@
 	import { nudgesFor, type Nudge } from '../nudges';
 	import { phone } from '../phone.svelte';
 	import { portal } from '../portal';
-	import { byCode, markPaid, studio } from '../studio.svelte';
+	import { byCode, markPaid, reloadCollabs, setStage, studio, updateCollab } from '../studio.svelte';
+	import { indexDesk, searchDesk, type Source } from '../desk';
+	import { supabase } from '../supabase';
+	import type { Collab, Stage } from '../types';
 	import { toast, ui } from '../ui.svelte';
-	import { firstName, todayIso } from '../util';
+	import { errMessage, firstName, fmt, stageLabel, todayIso } from '../util';
 	import AiThinking from './AiThinking.svelte';
 	import Icon from './Icon.svelte';
 	import NudgeSheet from './NudgeSheet.svelte';
@@ -19,8 +22,8 @@
 	// actions still ask first. Past chats are kept on this device only.
 	let { onclose }: { onclose: () => void } = $props();
 
-	type Action = { type: string; code: string; path: string; text: string; label: string };
-	type Turn = { q: string; a: string; actions: Action[] };
+	type Action = { type: string; code: string; codes?: string[]; stage?: string; date?: string; path: string; text: string; label: string };
+	type Turn = { q: string; a: string; actions: Action[]; sources?: Source[] };
 	type Chat = { id: string; title: string; at: number; turns: Turn[] };
 	const KEY = 'ask-desk-chats';
 	let chats = $state<Chat[]>([]);
@@ -52,6 +55,8 @@
 			/* storage blocked */
 		}
 		if (!phone.on) tick().then(() => box?.focus());
+		// New messages and notes get their search fingerprints while she reads.
+		indexDesk();
 	});
 	function save() {
 		try {
@@ -96,13 +101,17 @@
 		c.at = Date.now();
 		await scrollEnd();
 		try {
-			const r = await askAi<{ answer: string; actions: Action[] }>('ask', {
+			// The messages, emails, briefs and notes closest to the question go along, to quote from.
+			const sources = await searchDesk(question);
+			const r = await askAi<{ answer: string; cites?: number[]; actions: Action[] }>('ask', {
 				question,
 				today: todayIso(),
 				data: askData(studio.collabs, studio.settings),
-				history: c.turns.slice(-4, -1).map((t) => ({ q: t.q, a: t.a }))
+				history: c.turns.slice(-4, -1).map((t) => ({ q: t.q, a: t.a })),
+				sources: sources.map((x) => ({ kind: x.kind, brand: x.brand, code: x.code, date: x.date, text: x.text }))
 			});
-			c.turns[c.turns.length - 1] = { q: question, a: r.answer, actions: r.actions.filter((a) => !a.code || byCode(a.code)) };
+			const used = (r.cites ?? []).map((n) => sources[n - 1]).filter(Boolean);
+			c.turns[c.turns.length - 1] = { q: question, a: r.answer, actions: r.actions.filter((a) => !a.code || byCode(a.code)), sources: used };
 			chats = [c, ...chats.filter((x) => x.id !== c.id)];
 			save();
 		} catch (e) {
@@ -126,7 +135,13 @@
 			ui.newCollab = true;
 			return onclose();
 		}
+		if (a.type === 'remind') {
+			const items = (a.codes ?? []).map((k) => byCode(k)).filter((x): x is Collab => !!x);
+			if (!items.length) return toast('Those collabs aren’t here any more.', 'alert');
+			return (confirming = { a, items });
+		}
 		if (!c) return toast('That collab isn’t here any more.', 'alert');
+		if (a.type === 'move_stage' || a.type === 'shoot_day') return (confirming = { a, items: [c] });
 		if (a.type === 'open_collab' || a.type === 'new_invoice') return (onclose(), goto(`/studio/c/${c.code}`));
 		if (a.type === 'mark_paid') return void markPaid(c);
 		if (a.type === 'nudge') nudging = nudgesFor([c])[0] ?? { c, kind: 'quiet', days: 0, tries: 0, why: 'Checking in' };
@@ -152,6 +167,40 @@
 			}
 		});
 	}
+	// Actions that change things wait for her yes on a card first.
+	let confirming = $state<{ a: Action; items: Collab[] } | null>(null);
+	let doing = $state(false);
+	const confirmTitle = (x: { a: Action; items: Collab[] }) =>
+		x.a.type === 'remind'
+			? `Send ${x.items.length} reminder${x.items.length > 1 ? 's' : ''}?`
+			: x.a.type === 'move_stage'
+				? `Move ${x.items[0].brand.name} to ${stageLabel(x.a.stage as Stage)}?`
+				: `Plan the ${x.items[0].brand.name} shoot for ${fmt(x.a.date ?? '')}?`;
+	const why = (c: Collab) =>
+		c.invoices.some((i) => i.status === 'sent' || i.status === 'partly_paid') ? 'unpaid invoice' : c.quotes?.some((q) => q.status === 'sent') ? 'quote waiting' : c.stage === 'creating' ? 'draft waiting' : stageLabel(c.stage);
+	async function doConfirmed() {
+		if (!confirming) return;
+		const { a, items } = confirming;
+		doing = true;
+		if (a.type === 'remind') {
+			const { data, error } = await supabase.rpc('send_reminders', { p_ids: items.map((c) => c.id) });
+			if (error) toast(`Couldn't send: ${errMessage(error)}`, 'alert');
+			else {
+				const r = data as { payment: number; quote: number; draft: number; skipped: number };
+				const sent = r.payment + r.quote + r.draft;
+				toast(sent ? `${sent} reminder${sent > 1 ? 's' : ''} sent${r.skipped ? `. ${r.skipped} had nothing to remind about` : ''}` : 'Nothing to remind about (or reminded in the last day).', sent ? 'send' : 'alert');
+				await reloadCollabs();
+			}
+		} else if (a.type === 'move_stage') await setStage(items[0], a.stage as Stage);
+		else if (a.type === 'shoot_day') {
+			await updateCollab(items[0].id, { shoot_date: a.date });
+			toast(`Shoot planned for ${fmt(a.date ?? '')}`, 'cal');
+		}
+		doing = false;
+		confirming = null;
+	}
+	const clean = (t: string) => t.replace(/\s?\[\d+\](?:\s?\[\d+\])*/g, '');
+
 	function keydown(e: KeyboardEvent) {
 		if (e.key === 'Enter' && !e.shiftKey && !e.isComposing && !matchMedia('(pointer: coarse)').matches) {
 			e.preventDefault();
@@ -163,7 +212,8 @@
 		t.style.height = 'auto';
 		t.style.height = Math.min(160, t.scrollHeight) + 'px';
 	}
-	const ICON: Record<string, string> = { open_collab: 'arrow', mark_paid: 'wallet', new_invoice: 'doc', nudge: 'spark', go: 'arrow', new_collab: 'plus' };
+	const ICON: Record<string, string> = { open_collab: 'arrow', mark_paid: 'wallet', new_invoice: 'doc', nudge: 'spark', go: 'arrow', new_collab: 'plus', remind: 'bell', move_stage: 'layers', shoot_day: 'cal' };
+	const SRC_ICON: Record<string, string> = { Message: 'send', Instagram: 'send', Email: 'mail', Brief: 'doc', 'Your note': 'edit' };
 	const when = (t: number) => {
 		const d = Math.floor((Date.now() - t) / 864e5);
 		return d <= 0 ? 'Today' : d === 1 ? 'Yesterday' : new Date(t).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
@@ -180,7 +230,16 @@
 			<span class="gm-spark" class:busy={!t.a} aria-hidden="true"><Icon name="spark" /></span>
 			<div class="gm-a-b">
 				{#if t.a}
-					<p>{t.a}</p>
+					<p>{clean(t.a)}</p>
+					{#if t.sources?.length}
+						<div class="gm-srcs" aria-label="Where this comes from">
+							{#each t.sources as s, k (k)}
+								<button class="gm-src" title={s.text} disabled={!s.code} onclick={() => s.code && (onclose(), goto(`/studio/c/${s.code}`))}>
+									<Icon name={SRC_ICON[s.kind] ?? 'doc'} /><span>{s.kind} · {s.date}{s.brand ? ` · ${s.brand}` : ''}</span>
+								</button>
+							{/each}
+						</div>
+					{/if}
 					{#if t.actions.length}
 						<div class="gm-acts">{#each t.actions as a, k (k)}<button class="gm-chip" onclick={() => act(a)}><Icon name={ICON[a.type] ?? 'arrow'} />{a.label || a.type}</button>{/each}</div>
 					{/if}
@@ -238,6 +297,19 @@
 			{/if}
 		</div>
 
+		{#if confirming}
+			<div class="gm-confirm" role="group" aria-label={confirmTitle(confirming)}>
+				<b>{confirmTitle(confirming)}</b>
+				{#if confirming.a.type === 'remind'}
+					<ul>{#each confirming.items as c (c.id)}<li><span>{c.brand.name}</span><small>{why(c)}</small></li>{/each}</ul>
+					<p>Each gets the reminder that fits. Nobody gets two in a day.</p>
+				{/if}
+				<div class="gm-confirm-b">
+					<button class="gm-yes" disabled={doing} onclick={doConfirmed}>{#if doing}<span class="spinner"></span>{/if}{confirming.a.type === 'remind' ? 'Send' : confirming.a.type === 'move_stage' ? 'Move it' : 'Plan it'}</button>
+					<button class="gm-no" disabled={doing} onclick={() => (confirming = null)}>Cancel</button>
+				</div>
+			</div>
+		{/if}
 		<form class="gm-box" onsubmit={(e) => (e.preventDefault(), send())}>
 			<textarea rows="1" placeholder={listening ? 'Listening…' : 'Ask your desk'} aria-label="Your question" bind:value={q} bind:this={box} onkeydown={keydown} oninput={grow}></textarea>
 			<div class="gm-box-r">
@@ -325,6 +397,21 @@
 	.gm-think i:nth-child(3) { width: 58%; }
 	@keyframes gmsh { to { background-position: -200% 0; } }
 
+	.gm-srcs { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+	.gm-src { display: inline-flex; align-items: center; gap: 6px; max-width: 100%; height: 30px; padding: 0 12px; border: 0; border-radius: 999px; background: var(--s1); color: var(--ink); font: 500 12.5px var(--f-body, inherit); cursor: pointer; }
+	.gm-src:disabled { cursor: default; }
+	.gm-src span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+	.gm-src :global(.ic) { width: 14px; height: 14px; flex: none; color: var(--g2); }
+	.gm-confirm { width: calc(100% - 32px); max-width: 780px; margin: 0 auto 10px; box-sizing: border-box; display: grid; gap: 10px; padding: 18px 20px; border-radius: 24px; background: var(--s1); }
+	.gm-confirm b { font-size: 16px; }
+	.gm-confirm ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+	.gm-confirm li { display: flex; justify-content: space-between; gap: 12px; padding: 7px 0; border-top: 1px solid var(--s2); font-size: 14.5px; }
+	.gm-confirm li:first-child { border-top: 0; }
+	.gm-confirm small { color: var(--mut); font-size: 13px; }
+	.gm-confirm p { margin: 0; font-size: 13px; color: var(--mut); }
+	.gm-confirm-b { display: flex; gap: 8px; }
+	.gm-yes { display: inline-flex; align-items: center; gap: 8px; height: 42px; padding: 0 22px; border: 0; border-radius: 999px; background: linear-gradient(135deg, var(--g1), var(--g2)); color: #fff; font: 600 14.5px var(--f-body, inherit); cursor: pointer; }
+	.gm-no { height: 42px; padding: 0 18px; border: 0; border-radius: 999px; background: var(--bg); color: var(--ink); font: 600 14.5px var(--f-body, inherit); cursor: pointer; }
 	.gm-box { width: calc(100% - 32px); max-width: 780px; margin: 6px auto 0; box-sizing: border-box; display: flex; flex-direction: column; gap: 6px; padding: 14px 10px 8px 22px; border-radius: 28px; background: var(--s1); transition: background .15s; }
 	.gm-box:focus-within { background: var(--s2); }
 	.gm-box textarea { width: 100%; min-height: 26px; max-height: 160px; border: 0; outline: 0; resize: none; background: none; color: var(--ink); font: 400 16.5px/1.5 var(--f-body, inherit); padding: 0; }

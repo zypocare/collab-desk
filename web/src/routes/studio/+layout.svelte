@@ -8,6 +8,7 @@
 	import { auth, signOut } from '#lib/auth.svelte.ts';
 	import { byId, catchUp, loadStudio, studio, stopWatching, watchStudio } from '#lib/studio.svelte.ts';
 	import { ensurePageCard } from '#lib/pageCard.ts';
+	import { indexDesk } from '#lib/desk.ts';
 	import { theme, toggleTheme, ui } from '#lib/ui.svelte.ts';
 	import { firstName, hueOf, initials, inrS, iso, today, unreadFor } from '#lib/util.ts';
 	import { cascade } from '#lib/motion.ts';
@@ -76,8 +77,8 @@
 	$effect(() => {
 		if (auth.account?.role === 'creator')
 			untrack(() => {
-				// The link-preview picture is redrawn a little later, only if her numbers changed.
-				loadStudio().then(() => setTimeout(ensurePageCard, 4000));
+				// A little later: the link-preview picture (only if her numbers changed) and search fingerprints for new messages.
+				loadStudio().then(() => setTimeout(() => (ensurePageCard(), indexDesk()), 4000));
 				watchStudio();
 			});
 	});

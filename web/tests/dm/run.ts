@@ -22,7 +22,9 @@ type Case = {
 	liveDay?: number;
 };
 
-const cases = JSON.parse(readFileSync(new URL('./cases.json', import.meta.url), 'utf8')) as Case[];
+// Hand-written cases plus 180 made from templates (node tests/dm/generate.mjs).
+const load = (f: string) => JSON.parse(readFileSync(new URL(f, import.meta.url), 'utf8')) as Case[];
+const cases = [...load('./cases.json'), ...load('./cases-gen.json')];
 // Pass marks per field (share of cases that state the field and get it right).
 const MARK: Record<string, number> = { brand: 0.8, contact: 0.8, email: 1, phone: 1, fee: 0.95, productValue: 0.9, type: 0.9, usage: 0.9, deliverables: 0.9, live: 0.9 };
 
@@ -34,8 +36,25 @@ const check = (field: string, id: string, good: boolean, got: unknown) => {
 	else s.miss.push(`${id} (got ${JSON.stringify(got)})`);
 };
 
+// AI mode: DM_AI_URL=https://…/api/ai/dm DM_AI_TOKEN=<signed-in token> DM_AI_KEY=<public key>
+// scores the AI reader instead (same cases, same pass marks). Each case uses a little of the
+// day's free AI, so run it before releases, not on every push.
+const AI = process.env.DM_AI_URL;
+async function readWithAi(text: string): Promise<Parsed> {
+	const r = await fetch(AI!, { method: 'POST', headers: { authorization: `Bearer ${process.env.DM_AI_TOKEN}`, apikey: process.env.DM_AI_KEY ?? '', 'content-type': 'application/json' }, body: JSON.stringify({ text, image: '', handle: 'nicks_universe_it_is' }) });
+	const f = ((await r.json()) as { fields?: Record<string, unknown> }).fields ?? {};
+	const s = (k: string) => String(f[k] ?? '').trim();
+	return {
+		brand: s('brand'), instagram: s('instagram').replace(/^@/, ''), email: s('email'), phone: s('phone'), contact: s('contact'),
+		type: (['paid', 'barter', 'hybrid'].includes(s('type')) ? s('type') : null) as Parsed['type'],
+		fee: Number(f.fee) || 0, product: s('product'), productValue: Number(f.product_value) || 0,
+		deliverables: (Array.isArray(f.deliverables) ? f.deliverables : []) as Parsed['deliverables'],
+		preferredLive: s('preferred_live'), usage: s('usage'), brief: ''
+	};
+}
+
 for (const c of cases) {
-	const p: Parsed = parseDm(c.text, 'nicks_universe_it_is');
+	const p: Parsed = AI ? await readWithAi(c.text) : parseDm(c.text, 'nicks_universe_it_is');
 	if (c.brand !== undefined) check('brand', c.id, p.brand === c.brand, p.brand);
 	if (c.contact !== undefined) check('contact', c.id, p.contact === c.contact, p.contact);
 	if (c.email !== undefined) check('email', c.id, p.email === c.email, p.email);
@@ -55,7 +74,7 @@ for (const c of cases) {
 }
 
 let failed = false;
-console.log(`DM reader: ${cases.length} cases\n`);
+console.log(`DM ${AI ? 'AI' : 'rule'} reader: ${cases.length} cases\n`);
 for (const [f, s] of Object.entries(score)) {
 	const pct = s.ok / s.n;
 	const pass = pct >= (MARK[f] ?? 0.9);

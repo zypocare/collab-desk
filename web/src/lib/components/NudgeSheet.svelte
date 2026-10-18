@@ -9,6 +9,7 @@
 	import { errMessage, inr } from '../util';
 	import AiThinking from './AiThinking.svelte';
 	import Icon from './Icon.svelte';
+	import { styleSamples } from '../desk';
 
 	// A nudge for a brand that went quiet: the free AI writes it (firmer each time), she edits it and
 	// sends it into the collab's chat (the brand gets it by email), or copies it for WhatsApp/Instagram.
@@ -31,7 +32,8 @@
 					...(n.invoice ? { invoice: n.invoice.number, amount_due: inr(n.invoice.payable), invoice_link: link } : {}),
 					days_waiting: n.days
 				},
-				thread: (n.c.messages ?? []).slice(-6).map((m) => ({ from: m.sender, text: m.body }))
+				thread: (n.c.messages ?? []).slice(-6).map((m) => ({ from: m.sender, text: m.body })),
+				style: styleSamples()
 			});
 			text = r.text;
 		} catch (e) {

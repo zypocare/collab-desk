@@ -18,7 +18,7 @@ type Env = {
 type Run = { env: Env; gemini: boolean; neurons: number };
 
 // Expected size of each job in Cloudflare neurons (reserved before, corrected after).
-const COST: Record<string, number> = { dm: 160, reply: 110, caption: 110, pitch: 140, fit: 230, classify: 40, summary: 220, negotiate: 210, script: 330, nudge: 120, ask: 260, voice: 60 };
+const COST: Record<string, number> = { dm: 160, reply: 110, caption: 110, pitch: 140, fit: 230, classify: 40, summary: 220, negotiate: 210, script: 330, nudge: 120, ask: 260, voice: 60, embed: 8 };
 // Cloudflare's price list in neurons per token (Llama 3.3 70B fast; Llama 3.2 11B vision).
 const PER_TOKEN = { text: [0.0267, 0.2048], vision: [0.0045, 0.0615] };
 const USED_UP = "Today's free AI is used up. It's back at 5:30 am.";
@@ -37,10 +37,10 @@ export default {
 		try {
 			const kind = url.pathname.slice('/api/ai/'.length);
 			if (kind === 'status') return json(await status(req, env));
-			if (!['dm', 'reply', 'caption', 'pitch', 'classify', 'fit', 'summary', 'negotiate', 'script', 'nudge', 'ask', 'voice'].includes(kind)) return json({ error: 'Unknown.' }, 404);
+			if (!['dm', 'reply', 'caption', 'pitch', 'classify', 'fit', 'summary', 'negotiate', 'script', 'nudge', 'ask', 'voice', 'embed'].includes(kind)) return json({ error: 'Unknown.' }, 404);
 			const body = (await req.json()) as Record<string, unknown>;
 			const job = (x: Run) =>
-				kind === 'dm' ? readDm(x, body) : kind === 'reply' ? replies(x, body) : kind === 'pitch' ? pitch(x, body) : kind === 'classify' ? classify(x, body) : kind === 'fit' ? fit(x, body) : kind === 'summary' ? summary(x, body) : kind === 'negotiate' ? negotiate(x, body) : kind === 'script' ? script(x, body) : kind === 'nudge' ? nudge(x, body) : kind === 'ask' ? ask(x, body) : kind === 'voice' ? voice(x, body) : caption(x, body);
+				kind === 'dm' ? readDm(x, body) : kind === 'reply' ? replies(x, body) : kind === 'pitch' ? pitch(x, body) : kind === 'classify' ? classify(x, body) : kind === 'fit' ? fit(x, body) : kind === 'summary' ? summary(x, body) : kind === 'negotiate' ? negotiate(x, body) : kind === 'script' ? script(x, body) : kind === 'nudge' ? nudge(x, body) : kind === 'ask' ? ask(x, body) : kind === 'voice' ? voice(x, body) : kind === 'embed' ? embed(x, body) : caption(x, body);
 
 			// Checking an incoming Instagram DM comes from the DM webhook with a single-use pass
 			// (Cloudflare only: DMs are never sent to the backup automatically).
@@ -50,6 +50,18 @@ export default {
 				return json(await job({ env, gemini: false, neurons: 0 }));
 			}
 
+			// The same reading asked again is answered from the cache (two weeks), at no cost.
+			const cacheable = CACHED.includes(kind) && !(kind === 'embed' && (body.texts as unknown[] | undefined)?.length !== 1);
+			const key = cacheable ? await sha(kind + JSON.stringify(body)) : '';
+			if (key) {
+				const hit = await rpc(req, env, 'ai_cache_get', { p_key: key });
+				if (hit && typeof hit === 'object' && Object.keys(hit).length) return json(hit);
+			}
+			const done = async (res: unknown) => {
+				if (key) await rpc(req, env, 'ai_cache_put', { p_key: key, p_kind: kind, p_result: res });
+				return json(res);
+			};
+
 			const est = (COST[kind] ?? 150) + (kind === 'dm' && String(body.image ?? '') ? 100 : 0);
 			const t = await take(req, env, kind, est);
 			if (t === 'auth') return json({ error: 'Sign in again to use AI.' }, 403);
@@ -58,7 +70,7 @@ export default {
 				try {
 					const res = await job(x);
 					await settle(req, env, kind, Math.round(x.neurons) - est);
-					return json(res);
+					return done(res);
 				} catch (e) {
 					// Cloudflare says its free amount is gone (counted differently from ours): use the backup.
 					if (!/neuron|allocation|4006|quota|limit/i.test(String((e as Error)?.message))) throw e;
@@ -67,7 +79,7 @@ export default {
 			}
 			// Cloudflare's free amount is used up today: the free Gemini backup, if it's set up.
 			if (!env.GEMINI_API_KEY || !(await takeGemini(req, env, kind))) return json({ error: USED_UP }, 429);
-			return json(await job({ env, gemini: true, neurons: 0 }));
+			return done(await job({ env, gemini: true, neurons: 0 }));
 		} catch (e) {
 			const m = String((e as Error)?.message ?? e);
 			if (m === 'USED_UP') return json({ error: USED_UP }, 429);
@@ -75,6 +87,13 @@ export default {
 		}
 	}
 };
+
+// Readings that give the same answer for the same input (kept two weeks).
+const CACHED = ['dm', 'summary', 'fit', 'embed'];
+async function sha(text: string) {
+	const d = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+	return [...new Uint8Array(d)].map((b) => b.toString(16).padStart(2, '0')).join('');
+}
 
 /** Ask the database (as the signed-in creator). */
 async function rpc(req: Request, env: Env, fn: string, args: Record<string, unknown>) {
@@ -151,6 +170,15 @@ async function chat(x: Run, system: string, user: string, max = 700) {
 	meter(x, r, 'text', system + user);
 	return out(r);
 }
+/** How she writes (a few of her own sent messages, names and amounts removed) and the tone asked for. */
+function voiceOf(b: Record<string, unknown>) {
+	const ex = (Array.isArray(b.style) ? b.style : []).map((t) => String(t ?? '').slice(0, 300)).filter(Boolean).slice(0, 12);
+	const formal = b.formal === true;
+	return (
+		(ex.length ? ` Write the way she writes: match her greetings, warmth, length and emoji habits from these messages she sent before (copy the style, not the content):\n${ex.map((t) => `- ${t}`).join('\n')}\n` : '') +
+		(formal ? ' This one is for a big brand or agency: keep her voice but make it polished and formal, no emojis.' : '')
+	);
+}
 /** Emails and phone numbers stay out of what goes to Google (the app reads those itself). */
 const private_ = (t: string) => t.replace(/[\w.+-]+@[\w-]+\.[\w.]{2,}/g, '[email]').replace(/(?:\+?91[\s-]?)?[6-9]\d{4}[\s-]?\d{5}\b/g, '[phone]').replace(/\+?\d[\d\s-]{8,}\d/g, (m) => (m.replace(/\D/g, '').length >= 10 ? '[phone]' : m));
 
@@ -179,6 +207,17 @@ async function gemini(env: Env, system: string, user: string, max: number) {
 }
 
 // ---------- 1. A DM (text or screenshot) into collab details ----------
+/** Meaning fingerprints (bge-m3, 1024 numbers; English, Hindi, Hinglish) for "search by meaning". */
+async function embed(x: Run, b: Record<string, unknown>) {
+	if (x.gemini) throw new Error("!Search by meaning rests until 5:30 am: today's free AI is used up.");
+	const texts = (Array.isArray(b.texts) ? b.texts : []).map((t) => String(t ?? '').slice(0, 2000)).filter(Boolean).slice(0, 32);
+	if (!texts.length) return { vectors: [] };
+	const r = (await x.env.AI.run('@cf/baai/bge-m3', { text: texts })) as { data?: number[][] };
+	// About 1,075 neurons per million tokens (a token is about 4 characters).
+	x.neurons += 1 + (texts.join(' ').length / 4) * 0.001075;
+	return { vectors: (r.data ?? []).map((v) => v.map((n) => Math.round(n * 1e5) / 1e5)) };
+}
+
 /** Speech to text for browsers without their own (Whisper on Cloudflare; English, Hindi, Hinglish, Kannada). */
 async function voice(x: Run, b: Record<string, unknown>) {
 	if (x.gemini) throw new Error('!Voice typing is used up for today. Type it instead.');
@@ -246,7 +285,7 @@ async function replies(x: Run, b: Record<string, unknown>) {
 	if (ig && x.gemini) throw new Error("!Today's free AI is used up. It's back at 5:30 am.");
 	const reply = await chat(
 		x,
-		`${ig ? 'You draft short Instagram DM replies for an Indian Instagram creator. The other person may be a brand, an agency or a follower: answer what they actually asked, in her voice. For brands, be warm and professional and move towards the details (deliverables, budget, dates); never quote a price unless it is in the facts.' : 'You draft short replies for an Indian Instagram creator answering a brand about a paid collaboration.'} Warm, professional, plain English, no emojis overload (one at most), 1 to 3 sentences each. Never invent prices, dates or promises that aren't in the facts. Facts: ${JSON.stringify(ctx ?? {})}.
+		`${ig ? 'You draft short Instagram DM replies for an Indian Instagram creator. The other person may be a brand, an agency or a follower: answer what they actually asked, in her voice. For brands, be warm and professional and move towards the details (deliverables, budget, dates); never quote a price unless it is in the facts.' : 'You draft short replies for an Indian Instagram creator answering a brand about a paid collaboration.'} Warm, professional, plain English, no emojis overload (one at most), 1 to 3 sentences each. Never invent prices, dates or promises that aren't in the facts.${voiceOf(b)} Facts: ${JSON.stringify(ctx ?? {})}.
 Return ONLY JSON: {"replies": ["...", "...", "..."]} with three different options (e.g. agree, ask a question, propose next step).`,
 		thread.map((m) => `${m.from === 'creator' ? 'Creator' : 'Brand'}: ${String(m.text).slice(0, 800)}`).join('\n') || 'No messages yet. Write a friendly first message.',
 		500
@@ -346,7 +385,7 @@ async function nudge(x: Run, b: Record<string, unknown>) {
 	const thread = (Array.isArray(b.thread) ? b.thread : []).slice(-6) as { from: string; text: string }[];
 	const reply = await chat(
 		x,
-		`You write short follow-up messages from an Indian Instagram creator to a brand she is working with. Situation: ${String(b.why ?? '')} (kind: ${String(b.kind ?? '')}; ${tries} earlier nudge${tries === 1 ? '' : 's'}). Tone: ${tone}. Write in her voice (first person), 2 to 4 sentences, at most one emoji (none if firm). Mention the specifics from the facts (the content, the quote, the draft round, the invoice number and amount, the link if given) and end with one clear next step or question. Never invent amounts, dates or promises not in the facts. Use the language the brand last wrote in (default English). Facts: ${JSON.stringify(b.facts ?? {})}.
+		`You write short follow-up messages from an Indian Instagram creator to a brand she is working with. Situation: ${String(b.why ?? '')} (kind: ${String(b.kind ?? '')}; ${tries} earlier nudge${tries === 1 ? '' : 's'}). Tone: ${tone}. Write in her voice (first person), 2 to 4 sentences, at most one emoji (none if firm). Mention the specifics from the facts (the content, the quote, the draft round, the invoice number and amount, the link if given) and end with one clear next step or question. Never invent amounts, dates or promises not in the facts. Use the language the brand last wrote in (default English).${voiceOf(b)} Facts: ${JSON.stringify(b.facts ?? {})}.
 Return ONLY JSON: {"text": "the message"}`,
 		thread.map((m) => `${m.from === 'creator' ? 'Her' : 'Brand'}: ${String(m.text).slice(0, 500)}`).join('\n') || 'No messages yet.',
 		400
@@ -359,27 +398,55 @@ Return ONLY JSON: {"text": "the message"}`,
 // ---------- 5b3. "Ask your desk": questions about her own collabs, money and plans ----------
 // The app sends a compact summary of her data (no contact details); the AI answers only from it and
 // may suggest up to three actions from a fixed list, which the app shows as buttons she confirms.
-const ASK_ACTIONS = ['open_collab', 'mark_paid', 'new_invoice', 'nudge', 'go', 'new_collab'];
+const ASK_ACTIONS = ['open_collab', 'mark_paid', 'new_invoice', 'nudge', 'go', 'new_collab', 'remind', 'move_stage', 'shoot_day'];
+const ASK_STAGES = ['negotiating', 'confirmed', 'creating', 'live', 'wrapped', 'declined'];
 const ASK_PATHS = ['/studio', '/studio/collabs', '/studio/payments', '/studio/reports', '/studio/content', '/studio/calendar', '/studio/inbox', '/studio/settings', '/studio/pitches', '/studio/brands'];
 async function ask(x: Run, b: Record<string, unknown>) {
 	const history = (Array.isArray(b.history) ? b.history : []).slice(-6) as { q: string; a: string }[];
+	const sources = (Array.isArray(b.sources) ? b.sources : []).slice(0, 8).map((s: Record<string, unknown>, i: number) => ({
+		n: i + 1,
+		kind: String(s.kind ?? 'note').slice(0, 20),
+		brand: String(s.brand ?? '').slice(0, 60),
+		code: String(s.code ?? '').slice(0, 12),
+		date: String(s.date ?? '').slice(0, 12),
+		text: String(s.text ?? '').slice(0, 500)
+	}));
 	const reply = await chat(
 		x,
 		`You are the assistant inside an Indian Instagram creator's collab studio. Answer her question using ONLY the data below (her collabs, money and plans). Today is ${String(b.today ?? '')}. If the answer isn't in the data, say so plainly. Be brief: 1 to 4 sentences, or a short list of up to 6 lines. Amounts in rupees in Indian format (₹1,50,000), dates like "18 Oct". Reply in the language she asked in (English, Hinglish, Hindi or Kannada).
-When useful, suggest up to 3 actions, each one of: open_collab {code}, mark_paid {code} (only for a collab with money still owed), new_invoice {code} (agreed or later, not invoiced yet), nudge {code} (brand gone quiet), go {path: one of ${ASK_PATHS.join(', ')}}, new_collab {text: the details she gave}. Give each a short button label.
-Data (stage: request=new, negotiating=in talks, confirmed=agreed, creating, live, wrapped=done; money in rupees): ${JSON.stringify(b.data ?? {}).slice(0, 14000)}
-Return ONLY JSON: {"answer": "...", "actions": [{"type": "...", "code": "", "path": "", "text": "", "label": "..."}]}`,
+When useful, suggest up to 3 actions, each one of: open_collab {code}, mark_paid {code} (only for a collab with money still owed), new_invoice {code} (agreed or later, not invoiced yet), nudge {code} (brand gone quiet), go {path: one of ${ASK_PATHS.join(', ')}}, new_collab {text: the details she gave}, remind {codes: [codes]} (when she asks to remind or chase several brands: those with an unpaid invoice, an open quote or a draft waiting), move_stage {code, stage: one of ${ASK_STAGES.join(', ')}} (when she asks to move or mark a collab), shoot_day {code, date: YYYY-MM-DD} (when she asks to plan a shoot). Give each a short button label. She confirms every action in the app before anything happens.
+Data (stage: request=new, negotiating=in talks, confirmed=agreed, creating, live, wrapped=done; money in rupees): ${JSON.stringify(b.data ?? {}).slice(0, 12000)}
+${sources.length ? `Messages, emails, briefs and notes that may answer the question (numbered). When you use one, cite it like [2]; quote the brand's own words when it helps:\n${sources.map((s) => `[${s.n}] ${s.kind} · ${s.brand}${s.code ? ` (${s.code})` : ''} · ${s.date}: ${s.text}`).join('\n')}\n` : ''}Return ONLY JSON: {"answer": "...", "cites": [numbers of the sources you used], "actions": [{"type": "...", "code": "", "codes": [], "stage": "", "date": "", "path": "", "text": "", "label": "..."}]}`,
 		[...history.map((h) => `Earlier question: ${h.q}\nEarlier answer: ${h.a}`), `Question: ${String(b.question ?? '').slice(0, 600)}`].join('\n\n'),
 		700
 	);
 	const j = firstJson(reply) ?? {};
 	const answer = String(j.answer ?? '').trim();
 	if (!answer) throw new Error('No clear answer from the AI.');
+	const CODE = /^CD-[A-Z0-9]{4,8}$/;
 	const actions = (Array.isArray(j.actions) ? (j.actions as Record<string, unknown>[]) : [])
-		.map((a) => ({ type: String(a.type ?? ''), code: String(a.code ?? '').toUpperCase().trim(), path: String(a.path ?? ''), text: String(a.text ?? '').slice(0, 1000), label: String(a.label ?? '').slice(0, 40) }))
-		.filter((a) => ASK_ACTIONS.includes(a.type) && (a.type !== 'go' || ASK_PATHS.includes(a.path)) && (!['open_collab', 'mark_paid', 'new_invoice', 'nudge'].includes(a.type) || /^CD-[A-Z0-9]{4,8}$/.test(a.code)))
+		.map((a) => ({
+			type: String(a.type ?? ''),
+			code: String(a.code ?? '').toUpperCase().trim(),
+			codes: (Array.isArray(a.codes) ? a.codes : []).map((c) => String(c ?? '').toUpperCase().trim()).filter((c) => CODE.test(c)).slice(0, 20),
+			stage: String(a.stage ?? ''),
+			date: String(a.date ?? ''),
+			path: String(a.path ?? ''),
+			text: String(a.text ?? '').slice(0, 1000),
+			label: String(a.label ?? '').slice(0, 40)
+		}))
+		.filter(
+			(a) =>
+				ASK_ACTIONS.includes(a.type) &&
+				(a.type !== 'go' || ASK_PATHS.includes(a.path)) &&
+				(!['open_collab', 'mark_paid', 'new_invoice', 'nudge', 'move_stage', 'shoot_day'].includes(a.type) || CODE.test(a.code)) &&
+				(a.type !== 'remind' || a.codes.length > 0) &&
+				(a.type !== 'move_stage' || ASK_STAGES.includes(a.stage)) &&
+				(a.type !== 'shoot_day' || /^\d{4}-\d{2}-\d{2}$/.test(a.date))
+		)
 		.slice(0, 3);
-	return { answer: answer.slice(0, 2000), actions };
+	const cites = (Array.isArray(j.cites) ? j.cites : []).map(Number).filter((n) => Number.isInteger(n) && n >= 1 && n <= sources.length);
+	return { answer: answer.slice(0, 2000), cites: [...new Set(cites)], actions };
 }
 
 // ---------- 5c. Brief to Reel script: hooks, scenes, must-says, caption ----------

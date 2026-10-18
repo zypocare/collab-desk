@@ -1,0 +1,2001 @@
+[
+	{
+		"id": "gen-en-0",
+		"text": "Hey Niveditha, Rahul here from Lassi Labs 😊 Would you do 1 reel and 3 static posts? Our budget: ₹25,000. Ideally live on 25/3.",
+		"brand": "Lassi Labs",
+		"contact": "Rahul",
+		"fee": 25000,
+		"deliverables": {
+			"Reel": 1,
+			"Static post": 3
+		},
+		"live": "03-25"
+	},
+	{
+		"id": "gen-en-1",
+		"text": "We at Chandni Jewels want 3 stories for our festive sale. Paying 12k. Live by 4th Nov. Thanks!",
+		"brand": "Chandni Jewels",
+		"fee": 12000,
+		"deliverables": {
+			"Story": 3
+		},
+		"live": "11-04"
+	},
+	{
+		"id": "gen-hi-2",
+		"text": "Bhai 18k budget hai, paanch stories, ek carousel aur 1 static post chahiye, 13 tarikh tak ho jayega?",
+		"fee": 18000,
+		"deliverables": {
+			"Story": 5,
+			"Carousel": 1,
+			"Static post": 1
+		},
+		"liveDay": 13
+	},
+	{
+		"id": "gen-en-3",
+		"text": "Team Tealeaf Co here! Budget is INR 12000 for a story, three carousels and two static posts. Can you go live on 20/3?",
+		"brand": "Tealeaf Co",
+		"fee": 12000,
+		"deliverables": {
+			"Story": 1,
+			"Carousel": 3,
+			"Static post": 2
+		},
+		"live": "03-20"
+	},
+	{
+		"id": "gen-en-4",
+		"text": "We at Indigo Trails want 1 reel, 2 stories + a carousel for our festive sale. Paying ₹30k. Live by 25 April. Thanks!",
+		"brand": "Indigo Trails",
+		"fee": 30000,
+		"deliverables": {
+			"Reel": 1,
+			"Story": 2,
+			"Carousel": 1
+		},
+		"live": "04-25"
+	},
+	{
+		"id": "gen-hi-5",
+		"text": "Hi didi, hum Neel Organics se hai. char stories ke liye 40 hazaar de sakte hai. 4 tak post karna hoga.",
+		"fee": 40000,
+		"deliverables": {
+			"Story": 4
+		},
+		"liveDay": 4
+	},
+	{
+		"id": "gen-en-6",
+		"text": "Hey Niveditha, Asha here from Urban Ghar 😊 Would you do 2 reels and two static posts? Our budget: 1.5L. Ideally live on Dec 4.",
+		"brand": "Urban Ghar",
+		"contact": "Asha",
+		"fee": 150000,
+		"deliverables": {
+			"Reel": 2,
+			"Static post": 2
+		},
+		"live": "12-04"
+	},
+	{
+		"id": "gen-en-7",
+		"text": "Hi! I'm Arjun from Tealeaf Co. We'd love five stories for our launch, budget INR 20000, live by Jun 20.",
+		"brand": "Tealeaf Co",
+		"contact": "Arjun",
+		"fee": 20000,
+		"deliverables": {
+			"Story": 5
+		},
+		"live": "06-20"
+	},
+	{
+		"id": "gen-hi-8",
+		"text": "Saffron Lane ki taraf se: teen reels, do carousels aur teen static posts chahiye, 18 hazaar denge, 12 tak live karna hai",
+		"fee": 18000,
+		"deliverables": {
+			"Reel": 3,
+			"Carousel": 2,
+			"Static post": 3
+		},
+		"liveDay": 12
+	},
+	{
+		"id": "gen-en-9",
+		"text": "Team Indigo Trails here! Budget is Rs 15,000 for 2 reels. Can you go live on 14/10?",
+		"brand": "Indigo Trails",
+		"fee": 15000,
+		"deliverables": {
+			"Reel": 2
+		},
+		"live": "10-14"
+	},
+	{
+		"id": "gen-en-10",
+		"text": "Team Mitti Studio here! Budget is INR 60000 for five stories and two carousels. Can you go live on 14 June?",
+		"brand": "Mitti Studio",
+		"fee": 60000,
+		"deliverables": {
+			"Story": 5,
+			"Carousel": 2
+		},
+		"live": "06-14"
+	},
+	{
+		"id": "gen-hi-11",
+		"text": "Namaste! Saffron Lane wale bol rahe hai. do static posts karni hai, 40k milenge. 11 ko launch hai.",
+		"fee": 40000,
+		"deliverables": {
+			"Static post": 2
+		},
+		"liveDay": 11
+	},
+	{
+		"id": "gen-en-12",
+		"text": "Hi! I'm Sana from Indigo Trails. We'd love two carousels for our launch, budget 18k, live by Nov 20.",
+		"brand": "Indigo Trails",
+		"contact": "Sana",
+		"fee": 18000,
+		"deliverables": {
+			"Carousel": 2
+		},
+		"live": "11-20"
+	},
+	{
+		"id": "gen-en-13",
+		"text": "Team Monsoon Bakes here! Budget is INR 35000 for 1 carousel. Can you go live on 9/10?",
+		"brand": "Monsoon Bakes",
+		"fee": 35000,
+		"deliverables": {
+			"Carousel": 1
+		},
+		"live": "10-09"
+	},
+	{
+		"id": "gen-hi-14",
+		"text": "Hi didi, hum Saffron Lane se hai. do reels, 3 stories aur 2 carousels ke liye 15k de sakte hai. 17 tak post karna hoga.",
+		"fee": 15000,
+		"deliverables": {
+			"Reel": 2,
+			"Story": 3,
+			"Carousel": 2
+		},
+		"liveDay": 17
+	},
+	{
+		"id": "gen-en-15",
+		"text": "Hi! I'm Meera from Saffron Lane. We'd love 2 reels, 5 stories and two carousels for our launch, budget Rs 20,000, live by 3 September.",
+		"brand": "Saffron Lane",
+		"contact": "Meera",
+		"fee": 20000,
+		"deliverables": {
+			"Reel": 2,
+			"Story": 5,
+			"Carousel": 2
+		},
+		"live": "09-03"
+	},
+	{
+		"id": "gen-en-16",
+		"text": "Hey Niveditha, Neha here from Kesar Craft 😊 Would you do three reels, four stories + 1 carousel? Our budget: INR 18000. Ideally live on 5 March.",
+		"brand": "Kesar Craft",
+		"contact": "Neha",
+		"fee": 18000,
+		"deliverables": {
+			"Reel": 3,
+			"Story": 4,
+			"Carousel": 1
+		},
+		"live": "03-05"
+	},
+	{
+		"id": "gen-hi-17",
+		"text": "Hi didi, hum Monsoon Bakes se hai. 2 reels, ek carousel aur do static posts ke liye 12k de sakte hai. 3 tak post karna hoga.",
+		"fee": 12000,
+		"deliverables": {
+			"Reel": 2,
+			"Carousel": 1,
+			"Static post": 2
+		},
+		"liveDay": 3
+	},
+	{
+		"id": "gen-en-18",
+		"text": "Hey Niveditha, Asha here from Vayu Fitness 😊 Would you do a story + two carousels? Our budget: ₹15k. Ideally live on 23rd May.",
+		"brand": "Vayu Fitness",
+		"contact": "Asha",
+		"fee": 15000,
+		"deliverables": {
+			"Story": 1,
+			"Carousel": 2
+		},
+		"live": "05-23"
+	},
+	{
+		"id": "gen-en-19",
+		"text": "Team Saffron Lane here! Budget is Rs 75,000 for two reels. Can you go live on 2nd Aug?",
+		"brand": "Saffron Lane",
+		"fee": 75000,
+		"deliverables": {
+			"Reel": 2
+		},
+		"live": "08-02"
+	},
+	{
+		"id": "gen-hi-20",
+		"text": "Hi didi, hum Tealeaf Co se hai. teen reels, char stories aur 2 static posts ke liye 8 hazaar de sakte hai. 3 tak post karna hoga.",
+		"fee": 8000,
+		"deliverables": {
+			"Reel": 3,
+			"Story": 4,
+			"Static post": 2
+		},
+		"liveDay": 3
+	},
+	{
+		"id": "gen-en-21",
+		"text": "Hello, this is Sana from Urban Ghar. We can offer Rs 20,000 for 2 reels, five stories and two static posts, posting before Jan 11.",
+		"brand": "Urban Ghar",
+		"contact": "Sana",
+		"fee": 20000,
+		"deliverables": {
+			"Reel": 2,
+			"Story": 5,
+			"Static post": 2
+		},
+		"live": "01-11"
+	},
+	{
+		"id": "gen-en-22",
+		"text": "Hi! I'm Sana from Rangrez Home. We'd love 4 stories, a carousel + one static post for our launch, budget INR 75000, live by 1/3.",
+		"brand": "Rangrez Home",
+		"contact": "Sana",
+		"fee": 75000,
+		"deliverables": {
+			"Story": 4,
+			"Carousel": 1,
+			"Static post": 1
+		},
+		"live": "03-01"
+	},
+	{
+		"id": "gen-hi-23",
+		"text": "Tealeaf Co ki taraf se: teen reels, 2 carousels aur 1 static post chahiye, 15k denge, 6 tak live karna hai",
+		"fee": 15000,
+		"deliverables": {
+			"Reel": 3,
+			"Carousel": 2,
+			"Static post": 1
+		},
+		"liveDay": 6
+	},
+	{
+		"id": "gen-en-24",
+		"text": "Hello, this is Riya from Saffron Lane. We can offer ₹35,000 for one carousel, posting before 12 August.",
+		"brand": "Saffron Lane",
+		"contact": "Riya",
+		"fee": 35000,
+		"deliverables": {
+			"Carousel": 1
+		},
+		"live": "08-12"
+	},
+	{
+		"id": "gen-en-25",
+		"text": "Hello, this is Neha from Koyal Beauty. We can offer Rs 60,000 for 2 reels, posting before Feb 5.",
+		"brand": "Koyal Beauty",
+		"contact": "Neha",
+		"fee": 60000,
+		"deliverables": {
+			"Reel": 2
+		},
+		"live": "02-05"
+	},
+	{
+		"id": "gen-hi-26",
+		"text": "Bhai 18000 rupaye budget hai, 2 carousels aur teen static posts chahiye, 3 tarikh tak ho jayega?",
+		"fee": 18000,
+		"deliverables": {
+			"Carousel": 2,
+			"Static post": 3
+		},
+		"liveDay": 3
+	},
+	{
+		"id": "gen-en-27",
+		"text": "Team Saffron Lane here! Budget is Rs 12,000 for two static posts. Can you go live on 8th Aug?",
+		"brand": "Saffron Lane",
+		"fee": 12000,
+		"deliverables": {
+			"Static post": 2
+		},
+		"live": "08-08"
+	},
+	{
+		"id": "gen-en-28",
+		"text": "We at Lassi Labs want 1 reel + three carousels for our festive sale. Paying Rs 8,000. Live by 2nd Dec. Thanks!",
+		"brand": "Lassi Labs",
+		"fee": 8000,
+		"deliverables": {
+			"Reel": 1,
+			"Carousel": 3
+		},
+		"live": "12-02"
+	},
+	{
+		"id": "gen-hi-29",
+		"text": "Bhai 40 hazaar budget hai, 3 static posts chahiye, 25 tarikh tak ho jayega?",
+		"fee": 40000,
+		"deliverables": {
+			"Static post": 3
+		},
+		"liveDay": 25
+	},
+	{
+		"id": "gen-en-30",
+		"text": "Hi! I'm Arjun from Monsoon Bakes. We'd love three reels and a story for our launch, budget INR 20000, live by Nov 20.",
+		"brand": "Monsoon Bakes",
+		"contact": "Arjun",
+		"fee": 20000,
+		"deliverables": {
+			"Reel": 3,
+			"Story": 1
+		},
+		"live": "11-20"
+	},
+	{
+		"id": "gen-en-31",
+		"text": "Team Kesar Craft here! Budget is INR 35000 for three reels, 3 stories, one carousel and 2 static posts. Can you go live on 25 January?",
+		"brand": "Kesar Craft",
+		"fee": 35000,
+		"deliverables": {
+			"Reel": 3,
+			"Story": 3,
+			"Carousel": 1,
+			"Static post": 2
+		},
+		"live": "01-25"
+	},
+	{
+		"id": "gen-hi-32",
+		"text": "Hi didi, hum Koyal Beauty se hai. 4 stories, do carousels aur 1 static post ke liye 18 hazaar de sakte hai. 2 tak post karna hoga.",
+		"fee": 18000,
+		"deliverables": {
+			"Story": 4,
+			"Carousel": 2,
+			"Static post": 1
+		},
+		"liveDay": 2
+	},
+	{
+		"id": "gen-en-33",
+		"text": "Hey Niveditha, Meera here from Tealeaf Co 😊 Would you do one carousel? Our budget: ₹25,000. Ideally live on 20/12.",
+		"brand": "Tealeaf Co",
+		"contact": "Meera",
+		"fee": 25000,
+		"deliverables": {
+			"Carousel": 1
+		},
+		"live": "12-20"
+	},
+	{
+		"id": "gen-en-34",
+		"text": "Hello, this is Rahul from Saffron Lane. We can offer ₹1.5 lakh for three carousels and 3 static posts, posting before 18 March.",
+		"brand": "Saffron Lane",
+		"contact": "Rahul",
+		"fee": 150000,
+		"deliverables": {
+			"Carousel": 3,
+			"Static post": 3
+		},
+		"live": "03-18"
+	},
+	{
+		"id": "gen-hi-35",
+		"text": "Bhai 75000 rupaye budget hai, char stories aur 1 carousel chahiye, 16 tarikh tak ho jayega?",
+		"fee": 75000,
+		"deliverables": {
+			"Story": 4,
+			"Carousel": 1
+		},
+		"liveDay": 16
+	},
+	{
+		"id": "gen-en-36",
+		"text": "Hey Niveditha, Pooja here from Lassi Labs 😊 Would you do three static posts? Our budget: Rs 12,000. Ideally live on 25/3.",
+		"brand": "Lassi Labs",
+		"contact": "Pooja",
+		"fee": 12000,
+		"deliverables": {
+			"Static post": 3
+		},
+		"live": "03-25"
+	},
+	{
+		"id": "gen-en-37",
+		"text": "Hello, this is Rahul from Urban Ghar. We can offer ₹40k for one carousel and one static post, posting before 22nd Dec.",
+		"brand": "Urban Ghar",
+		"contact": "Rahul",
+		"fee": 40000,
+		"deliverables": {
+			"Carousel": 1,
+			"Static post": 1
+		},
+		"live": "12-22"
+	},
+	{
+		"id": "gen-hi-38",
+		"text": "Bhai 75000 rupaye budget hai, 2 static posts chahiye, 7 tarikh tak ho jayega?",
+		"fee": 75000,
+		"deliverables": {
+			"Static post": 2
+		},
+		"liveDay": 7
+	},
+	{
+		"id": "gen-en-39",
+		"text": "Team Indigo Trails here! Budget is Rs 60,000 for two static posts. Can you go live on 5 February?",
+		"brand": "Indigo Trails",
+		"fee": 60000,
+		"deliverables": {
+			"Static post": 2
+		},
+		"live": "02-05"
+	},
+	{
+		"id": "gen-en-40",
+		"text": "Team Bodhi Wear here! Budget is Rs 60,000 for one story, 2 carousels and three static posts. Can you go live on 27 July?",
+		"brand": "Bodhi Wear",
+		"fee": 60000,
+		"deliverables": {
+			"Story": 1,
+			"Carousel": 2,
+			"Static post": 3
+		},
+		"live": "07-27"
+	},
+	{
+		"id": "gen-hi-41",
+		"text": "Namaste! Chandni Jewels wale bol rahe hai. 3 reels, 4 stories aur 2 carousels karni hai, 35k milenge. 6 ko launch hai.",
+		"fee": 35000,
+		"deliverables": {
+			"Reel": 3,
+			"Story": 4,
+			"Carousel": 2
+		},
+		"liveDay": 6
+	},
+	{
+		"id": "gen-en-42",
+		"text": "We at Kesar Craft want one reel and 3 stories for our festive sale. Paying 20k. Live by 5th Jan. Thanks!",
+		"brand": "Kesar Craft",
+		"fee": 20000,
+		"deliverables": {
+			"Reel": 1,
+			"Story": 3
+		},
+		"live": "01-05"
+	},
+	{
+		"id": "gen-en-43",
+		"text": "Hello, this is Karan from Indigo Trails. We can offer INR 18000 for 2 reels, posting before 1/9.",
+		"brand": "Indigo Trails",
+		"contact": "Karan",
+		"fee": 18000,
+		"deliverables": {
+			"Reel": 2
+		},
+		"live": "09-01"
+	},
+	{
+		"id": "gen-hi-44",
+		"text": "Namaste! Mitti Studio wale bol rahe hai. 2 reels aur 3 static posts karni hai, 2.5 lakh milenge. 6 ko launch hai.",
+		"fee": 250000,
+		"deliverables": {
+			"Reel": 2,
+			"Static post": 3
+		},
+		"liveDay": 6
+	},
+	{
+		"id": "gen-en-45",
+		"text": "Team Rangrez Home here! Budget is INR 40000 for two reels, 5 stories and 1 carousel. Can you go live on 5th Apr?",
+		"brand": "Rangrez Home",
+		"fee": 40000,
+		"deliverables": {
+			"Reel": 2,
+			"Story": 5,
+			"Carousel": 1
+		},
+		"live": "04-05"
+	},
+	{
+		"id": "gen-en-46",
+		"text": "Team Koyal Beauty here! Budget is ₹2.5 lakh for 4 stories + two carousels. Can you go live on 19th Sep?",
+		"brand": "Koyal Beauty",
+		"fee": 250000,
+		"deliverables": {
+			"Story": 4,
+			"Carousel": 2
+		},
+		"live": "09-19"
+	},
+	{
+		"id": "gen-hi-47",
+		"text": "Bhai 60000 rupaye budget hai, do stories, 3 carousels aur 2 static posts chahiye, 22 tarikh tak ho jayega?",
+		"fee": 60000,
+		"deliverables": {
+			"Story": 2,
+			"Carousel": 3,
+			"Static post": 2
+		},
+		"liveDay": 22
+	},
+	{
+		"id": "gen-en-48",
+		"text": "Hello, this is Neha from Tealeaf Co. We can offer INR 20000 for 2 reels, one carousel + 3 static posts, posting before 13/11.",
+		"brand": "Tealeaf Co",
+		"contact": "Neha",
+		"fee": 20000,
+		"deliverables": {
+			"Reel": 2,
+			"Carousel": 1,
+			"Static post": 3
+		},
+		"live": "11-13"
+	},
+	{
+		"id": "gen-en-49",
+		"text": "Hello, this is Pooja from Rangrez Home. We can offer Rs 30,000 for three reels and one static post, posting before 25th Feb.",
+		"brand": "Rangrez Home",
+		"contact": "Pooja",
+		"fee": 30000,
+		"deliverables": {
+			"Reel": 3,
+			"Static post": 1
+		},
+		"live": "02-25"
+	},
+	{
+		"id": "gen-hi-50",
+		"text": "Namaste! Lassi Labs wale bol rahe hai. 4 stories karni hai, 20 hazaar milenge. 17 ko launch hai.",
+		"fee": 20000,
+		"deliverables": {
+			"Story": 4
+		},
+		"liveDay": 17
+	},
+	{
+		"id": "gen-en-51",
+		"text": "Team Monsoon Bakes here! Budget is Rs 45,000 for two reels + two static posts. Can you go live on 7th Jun?",
+		"brand": "Monsoon Bakes",
+		"fee": 45000,
+		"deliverables": {
+			"Reel": 2,
+			"Static post": 2
+		},
+		"live": "06-07"
+	},
+	{
+		"id": "gen-en-52",
+		"text": "Hello, this is Arjun from Mitti Studio. We can offer 2.5L for 1 story, 1 carousel + a static post, posting before 16 July.",
+		"brand": "Mitti Studio",
+		"contact": "Arjun",
+		"fee": 250000,
+		"deliverables": {
+			"Story": 1,
+			"Carousel": 1,
+			"Static post": 1
+		},
+		"live": "07-16"
+	},
+	{
+		"id": "gen-hi-53",
+		"text": "Lassi Labs ki taraf se: 1 reel chahiye, 12 hazaar denge, 27 tak live karna hai",
+		"fee": 12000,
+		"deliverables": {
+			"Reel": 1
+		},
+		"liveDay": 27
+	},
+	{
+		"id": "gen-en-54",
+		"text": "Hi! I'm Riya from Rangrez Home. We'd love one carousel + a static post for our launch, budget ₹35k, live by 5th Jun.",
+		"brand": "Rangrez Home",
+		"contact": "Riya",
+		"fee": 35000,
+		"deliverables": {
+			"Carousel": 1,
+			"Static post": 1
+		},
+		"live": "06-05"
+	},
+	{
+		"id": "gen-en-55",
+		"text": "Hey Niveditha, Neha here from Kesar Craft 😊 Would you do one reel, 3 stories and 2 static posts? Our budget: ₹60,000. Ideally live on 27 February.",
+		"brand": "Kesar Craft",
+		"contact": "Neha",
+		"fee": 60000,
+		"deliverables": {
+			"Reel": 1,
+			"Story": 3,
+			"Static post": 2
+		},
+		"live": "02-27"
+	},
+	{
+		"id": "gen-hi-56",
+		"text": "Tealeaf Co ki taraf se: do reels, do stories aur do carousels chahiye, 12000 rupaye denge, 16 tak live karna hai",
+		"fee": 12000,
+		"deliverables": {
+			"Reel": 2,
+			"Story": 2,
+			"Carousel": 2
+		},
+		"liveDay": 16
+	},
+	{
+		"id": "gen-en-57",
+		"text": "Hey Niveditha, Arjun here from Lassi Labs 😊 Would you do one reel and one story? Our budget: Rs 1.5 lakhs. Ideally live on Mar 27.",
+		"brand": "Lassi Labs",
+		"contact": "Arjun",
+		"fee": 150000,
+		"deliverables": {
+			"Reel": 1,
+			"Story": 1
+		},
+		"live": "03-27"
+	},
+	{
+		"id": "gen-en-58",
+		"text": "Hi! I'm Arjun from Chandni Jewels. We'd love two reels, two stories, three carousels and three static posts for our launch, budget ₹60k, live by 14 February.",
+		"brand": "Chandni Jewels",
+		"contact": "Arjun",
+		"fee": 60000,
+		"deliverables": {
+			"Reel": 2,
+			"Story": 2,
+			"Carousel": 3,
+			"Static post": 3
+		},
+		"live": "02-14"
+	},
+	{
+		"id": "gen-hi-59",
+		"text": "Kesar Craft ki taraf se: 1 reel aur 1 static post chahiye, 20 hazaar denge, 16 tak live karna hai",
+		"fee": 20000,
+		"deliverables": {
+			"Reel": 1,
+			"Static post": 1
+		},
+		"liveDay": 16
+	},
+	{
+		"id": "gen-en-60",
+		"text": "Hey Niveditha, Arjun here from Saffron Lane 😊 Would you do three reels, 4 stories, 2 carousels and 2 static posts? Our budget: Rs 40,000. Ideally live on 17th Apr.",
+		"brand": "Saffron Lane",
+		"contact": "Arjun",
+		"fee": 40000,
+		"deliverables": {
+			"Reel": 3,
+			"Story": 4,
+			"Carousel": 2,
+			"Static post": 2
+		},
+		"live": "04-17"
+	},
+	{
+		"id": "gen-en-61",
+		"text": "Hello, this is Neha from Mitti Studio. We can offer 15k for 2 reels and five stories, posting before 27/9.",
+		"brand": "Mitti Studio",
+		"contact": "Neha",
+		"fee": 15000,
+		"deliverables": {
+			"Reel": 2,
+			"Story": 5
+		},
+		"live": "09-27"
+	},
+	{
+		"id": "gen-hi-62",
+		"text": "Rangrez Home ki taraf se: teen stories, do carousels aur do static posts chahiye, 60 hazaar denge, 1 tak live karna hai",
+		"fee": 60000,
+		"deliverables": {
+			"Story": 3,
+			"Carousel": 2,
+			"Static post": 2
+		},
+		"liveDay": 1
+	},
+	{
+		"id": "gen-en-63",
+		"text": "Team Saffron Lane here! Budget is ₹25,000 for four stories, 3 carousels and two static posts. Can you go live on 23rd Aug?",
+		"brand": "Saffron Lane",
+		"fee": 25000,
+		"deliverables": {
+			"Story": 4,
+			"Carousel": 3,
+			"Static post": 2
+		},
+		"live": "08-23"
+	},
+	{
+		"id": "gen-en-64",
+		"text": "Team Pahadi Pantry here! Budget is INR 15000 for one story and three static posts. Can you go live on 16 April?",
+		"brand": "Pahadi Pantry",
+		"fee": 15000,
+		"deliverables": {
+			"Story": 1,
+			"Static post": 3
+		},
+		"live": "04-16"
+	},
+	{
+		"id": "gen-hi-65",
+		"text": "Hi didi, hum Monsoon Bakes se hai. do reels, ek carousel aur ek static post ke liye 35k de sakte hai. 8 tak post karna hoga.",
+		"fee": 35000,
+		"deliverables": {
+			"Reel": 2,
+			"Carousel": 1,
+			"Static post": 1
+		},
+		"liveDay": 8
+	},
+	{
+		"id": "gen-en-66",
+		"text": "Hi! I'm Vikram from Lassi Labs. We'd love 2 reels for our launch, budget ₹60k, live by 27/2.",
+		"brand": "Lassi Labs",
+		"contact": "Vikram",
+		"fee": 60000,
+		"deliverables": {
+			"Reel": 2
+		},
+		"live": "02-27"
+	},
+	{
+		"id": "gen-en-67",
+		"text": "Hello, this is Pooja from Vayu Fitness. We can offer 20k for three reels, a story, 2 carousels + 3 static posts, posting before 16 January.",
+		"brand": "Vayu Fitness",
+		"contact": "Pooja",
+		"fee": 20000,
+		"deliverables": {
+			"Reel": 3,
+			"Story": 1,
+			"Carousel": 2,
+			"Static post": 3
+		},
+		"live": "01-16"
+	},
+	{
+		"id": "gen-hi-68",
+		"text": "Namaste! Kesar Craft wale bol rahe hai. ek story, teen carousels aur 2 static posts karni hai, 2.5 lakh milenge. 12 ko launch hai.",
+		"fee": 250000,
+		"deliverables": {
+			"Story": 1,
+			"Carousel": 3,
+			"Static post": 2
+		},
+		"liveDay": 12
+	},
+	{
+		"id": "gen-en-69",
+		"text": "Hey Niveditha, Vikram here from Indigo Trails 😊 Would you do two stories? Our budget: ₹30k. Ideally live on Sep 27.",
+		"brand": "Indigo Trails",
+		"contact": "Vikram",
+		"fee": 30000,
+		"deliverables": {
+			"Story": 2
+		},
+		"live": "09-27"
+	},
+	{
+		"id": "gen-en-70",
+		"text": "Team Bodhi Wear here! Budget is ₹30k for two stories + 2 static posts. Can you go live on 4th Nov?",
+		"brand": "Bodhi Wear",
+		"fee": 30000,
+		"deliverables": {
+			"Story": 2,
+			"Static post": 2
+		},
+		"live": "11-04"
+	},
+	{
+		"id": "gen-hi-71",
+		"text": "Bhai 45000 rupaye budget hai, teen reels aur do static posts chahiye, 4 tarikh tak ho jayega?",
+		"fee": 45000,
+		"deliverables": {
+			"Reel": 3,
+			"Static post": 2
+		},
+		"liveDay": 4
+	},
+	{
+		"id": "gen-en-72",
+		"text": "Hi! I'm Rahul from Mitti Studio. We'd love two stories and 3 carousels for our launch, budget ₹20k, live by 1 February.",
+		"brand": "Mitti Studio",
+		"contact": "Rahul",
+		"fee": 20000,
+		"deliverables": {
+			"Story": 2,
+			"Carousel": 3
+		},
+		"live": "02-01"
+	},
+	{
+		"id": "gen-en-73",
+		"text": "Hi! I'm Riya from Mitti Studio. We'd love one reel for our launch, budget 18k, live by 23rd Apr.",
+		"brand": "Mitti Studio",
+		"contact": "Riya",
+		"fee": 18000,
+		"deliverables": {
+			"Reel": 1
+		},
+		"live": "04-23"
+	},
+	{
+		"id": "gen-hi-74",
+		"text": "Hi didi, hum Urban Ghar se hai. 2 reels ke liye 45 hazaar de sakte hai. 19 tak post karna hoga.",
+		"fee": 45000,
+		"deliverables": {
+			"Reel": 2
+		},
+		"liveDay": 19
+	},
+	{
+		"id": "gen-en-75",
+		"text": "Hey Niveditha, Meera here from Indigo Trails 😊 Would you do one reel, three stories, one carousel and 3 static posts? Our budget: 45k. Ideally live on 2/9.",
+		"brand": "Indigo Trails",
+		"contact": "Meera",
+		"fee": 45000,
+		"deliverables": {
+			"Reel": 1,
+			"Story": 3,
+			"Carousel": 1,
+			"Static post": 3
+		},
+		"live": "09-02"
+	},
+	{
+		"id": "gen-en-76",
+		"text": "Team Koyal Beauty here! Budget is Rs 12,000 for two reels and three static posts. Can you go live on 22 October?",
+		"brand": "Koyal Beauty",
+		"fee": 12000,
+		"deliverables": {
+			"Reel": 2,
+			"Static post": 3
+		},
+		"live": "10-22"
+	},
+	{
+		"id": "gen-hi-77",
+		"text": "Bhai 30k budget hai, teen static posts chahiye, 17 tarikh tak ho jayega?",
+		"fee": 30000,
+		"deliverables": {
+			"Static post": 3
+		},
+		"liveDay": 17
+	},
+	{
+		"id": "gen-en-78",
+		"text": "Hi! I'm Neha from Tealeaf Co. We'd love 3 stories and 2 static posts for our launch, budget INR 8000, live by 26 October.",
+		"brand": "Tealeaf Co",
+		"contact": "Neha",
+		"fee": 8000,
+		"deliverables": {
+			"Story": 3,
+			"Static post": 2
+		},
+		"live": "10-26"
+	},
+	{
+		"id": "gen-en-79",
+		"text": "Team Saffron Lane here! Budget is Rs 40,000 for a reel and 3 stories. Can you go live on Sep 10?",
+		"brand": "Saffron Lane",
+		"fee": 40000,
+		"deliverables": {
+			"Reel": 1,
+			"Story": 3
+		},
+		"live": "09-10"
+	},
+	{
+		"id": "gen-hi-80",
+		"text": "Hi didi, hum Saffron Lane se hai. 3 reels, 3 stories aur 3 static posts ke liye 30000 rupaye de sakte hai. 25 tak post karna hoga.",
+		"fee": 30000,
+		"deliverables": {
+			"Reel": 3,
+			"Story": 3,
+			"Static post": 3
+		},
+		"liveDay": 25
+	},
+	{
+		"id": "gen-en-81",
+		"text": "Hi! I'm Rahul from Urban Ghar. We'd love five stories + a static post for our launch, budget ₹25k, live by 11/12.",
+		"brand": "Urban Ghar",
+		"contact": "Rahul",
+		"fee": 25000,
+		"deliverables": {
+			"Story": 5,
+			"Static post": 1
+		},
+		"live": "12-11"
+	},
+	{
+		"id": "gen-en-82",
+		"text": "Hey Niveditha, Neha here from Bodhi Wear 😊 Would you do 3 reels, 2 stories and 2 carousels? Our budget: Rs 30,000. Ideally live on Mar 21.",
+		"brand": "Bodhi Wear",
+		"contact": "Neha",
+		"fee": 30000,
+		"deliverables": {
+			"Reel": 3,
+			"Story": 2,
+			"Carousel": 2
+		},
+		"live": "03-21"
+	},
+	{
+		"id": "gen-hi-83",
+		"text": "Tealeaf Co ki taraf se: 3 reels, 1 carousel aur 1 static post chahiye, 15000 rupaye denge, 3 tak live karna hai",
+		"fee": 15000,
+		"deliverables": {
+			"Reel": 3,
+			"Carousel": 1,
+			"Static post": 1
+		},
+		"liveDay": 3
+	},
+	{
+		"id": "gen-en-84",
+		"text": "Hey Niveditha, Sana here from Tealeaf Co 😊 Would you do 2 stories? Our budget: ₹40k. Ideally live on Apr 21.",
+		"brand": "Tealeaf Co",
+		"contact": "Sana",
+		"fee": 40000,
+		"deliverables": {
+			"Story": 2
+		},
+		"live": "04-21"
+	},
+	{
+		"id": "gen-en-85",
+		"text": "Team Saffron Lane here! Budget is ₹35,000 for 3 stories + 3 static posts. Can you go live on 10/2?",
+		"brand": "Saffron Lane",
+		"fee": 35000,
+		"deliverables": {
+			"Story": 3,
+			"Static post": 3
+		},
+		"live": "02-10"
+	},
+	{
+		"id": "gen-hi-86",
+		"text": "Hi didi, hum Urban Ghar se hai. 3 stories aur 1 static post ke liye 25 hazaar de sakte hai. 22 tak post karna hoga.",
+		"fee": 25000,
+		"deliverables": {
+			"Story": 3,
+			"Static post": 1
+		},
+		"liveDay": 22
+	},
+	{
+		"id": "gen-en-87",
+		"text": "Hey Niveditha, Neha here from Tealeaf Co 😊 Would you do a reel, 3 stories and 3 static posts? Our budget: ₹1.5 lakh. Ideally live on Feb 21.",
+		"brand": "Tealeaf Co",
+		"contact": "Neha",
+		"fee": 150000,
+		"deliverables": {
+			"Reel": 1,
+			"Story": 3,
+			"Static post": 3
+		},
+		"live": "02-21"
+	},
+	{
+		"id": "gen-en-88",
+		"text": "Hello, this is Rahul from Vayu Fitness. We can offer INR 8000 for two carousels, posting before 18th Jun.",
+		"brand": "Vayu Fitness",
+		"contact": "Rahul",
+		"fee": 8000,
+		"deliverables": {
+			"Carousel": 2
+		},
+		"live": "06-18"
+	},
+	{
+		"id": "gen-hi-89",
+		"text": "Bhai 45 hazaar budget hai, 3 carousels aur 1 static post chahiye, 2 tarikh tak ho jayega?",
+		"fee": 45000,
+		"deliverables": {
+			"Carousel": 3,
+			"Static post": 1
+		},
+		"liveDay": 2
+	},
+	{
+		"id": "gen-en-90",
+		"text": "We at Neel Organics want four stories + 2 carousels for our festive sale. Paying ₹30,000. Live by 27th Aug. Thanks!",
+		"brand": "Neel Organics",
+		"fee": 30000,
+		"deliverables": {
+			"Story": 4,
+			"Carousel": 2
+		},
+		"live": "08-27"
+	},
+	{
+		"id": "gen-en-91",
+		"text": "Hello, this is Asha from Saffron Lane. We can offer ₹2.5 lakh for 3 reels, posting before 26th Feb.",
+		"brand": "Saffron Lane",
+		"contact": "Asha",
+		"fee": 250000,
+		"deliverables": {
+			"Reel": 3
+		},
+		"live": "02-26"
+	},
+	{
+		"id": "gen-hi-92",
+		"text": "Saffron Lane ki taraf se: 3 reels chahiye, 45 hazaar denge, 17 tak live karna hai",
+		"fee": 45000,
+		"deliverables": {
+			"Reel": 3
+		},
+		"liveDay": 17
+	},
+	{
+		"id": "gen-en-93",
+		"text": "Hello, this is Karan from Saffron Lane. We can offer 8k for two stories + a static post, posting before Oct 12.",
+		"brand": "Saffron Lane",
+		"contact": "Karan",
+		"fee": 8000,
+		"deliverables": {
+			"Story": 2,
+			"Static post": 1
+		},
+		"live": "10-12"
+	},
+	{
+		"id": "gen-en-94",
+		"text": "Team Koyal Beauty here! Budget is Rs 40,000 for 2 static posts. Can you go live on 23 August?",
+		"brand": "Koyal Beauty",
+		"fee": 40000,
+		"deliverables": {
+			"Static post": 2
+		},
+		"live": "08-23"
+	},
+	{
+		"id": "gen-hi-95",
+		"text": "Namaste! Koyal Beauty wale bol rahe hai. 2 stories aur 1 static post karni hai, 20k milenge. 3 ko launch hai.",
+		"fee": 20000,
+		"deliverables": {
+			"Story": 2,
+			"Static post": 1
+		},
+		"liveDay": 3
+	},
+	{
+		"id": "gen-en-96",
+		"text": "Team Urban Ghar here! Budget is Rs 40,000 for a static post. Can you go live on 11/11?",
+		"brand": "Urban Ghar",
+		"fee": 40000,
+		"deliverables": {
+			"Static post": 1
+		},
+		"live": "11-11"
+	},
+	{
+		"id": "gen-en-97",
+		"text": "Hi! I'm Neha from Urban Ghar. We'd love 2 reels, 1 story, two carousels and 3 static posts for our launch, budget 8k, live by 27 April.",
+		"brand": "Urban Ghar",
+		"contact": "Neha",
+		"fee": 8000,
+		"deliverables": {
+			"Reel": 2,
+			"Story": 1,
+			"Carousel": 2,
+			"Static post": 3
+		},
+		"live": "04-27"
+	},
+	{
+		"id": "gen-hi-98",
+		"text": "Bhai 75 hazaar budget hai, teen reels chahiye, 13 tarikh tak ho jayega?",
+		"fee": 75000,
+		"deliverables": {
+			"Reel": 3
+		},
+		"liveDay": 13
+	},
+	{
+		"id": "gen-en-99",
+		"text": "Hey Niveditha, Neha here from Rangrez Home 😊 Would you do 5 stories? Our budget: INR 30000. Ideally live on 15/6.",
+		"brand": "Rangrez Home",
+		"contact": "Neha",
+		"fee": 30000,
+		"deliverables": {
+			"Story": 5
+		},
+		"live": "06-15"
+	},
+	{
+		"id": "gen-en-100",
+		"text": "Hi! I'm Meera from Chandni Jewels. We'd love 2 stories, 3 carousels and two static posts for our launch, budget ₹8k, live by Jul 4.",
+		"brand": "Chandni Jewels",
+		"contact": "Meera",
+		"fee": 8000,
+		"deliverables": {
+			"Story": 2,
+			"Carousel": 3,
+			"Static post": 2
+		},
+		"live": "07-04"
+	},
+	{
+		"id": "gen-hi-101",
+		"text": "Namaste! Indigo Trails wale bol rahe hai. 3 reels aur 3 static posts karni hai, 20k milenge. 5 ko launch hai.",
+		"fee": 20000,
+		"deliverables": {
+			"Reel": 3,
+			"Static post": 3
+		},
+		"liveDay": 5
+	},
+	{
+		"id": "gen-en-102",
+		"text": "Team Vayu Fitness here! Budget is ₹75k for two reels + a static post. Can you go live on 10/6?",
+		"brand": "Vayu Fitness",
+		"fee": 75000,
+		"deliverables": {
+			"Reel": 2,
+			"Static post": 1
+		},
+		"live": "06-10"
+	},
+	{
+		"id": "gen-en-103",
+		"text": "Hi! I'm Sana from Bodhi Wear. We'd love a reel and three stories for our launch, budget ₹75k, live by 5 November.",
+		"brand": "Bodhi Wear",
+		"contact": "Sana",
+		"fee": 75000,
+		"deliverables": {
+			"Reel": 1,
+			"Story": 3
+		},
+		"live": "11-05"
+	},
+	{
+		"id": "gen-hi-104",
+		"text": "Bhai 15000 rupaye budget hai, 2 reels, do carousels aur 2 static posts chahiye, 15 tarikh tak ho jayega?",
+		"fee": 15000,
+		"deliverables": {
+			"Reel": 2,
+			"Carousel": 2,
+			"Static post": 2
+		},
+		"liveDay": 15
+	},
+	{
+		"id": "gen-en-105",
+		"text": "Hi! I'm Meera from Rangrez Home. We'd love one static post for our launch, budget ₹1.5 lakh, live by 19/8.",
+		"brand": "Rangrez Home",
+		"contact": "Meera",
+		"fee": 150000,
+		"deliverables": {
+			"Static post": 1
+		},
+		"live": "08-19"
+	},
+	{
+		"id": "gen-en-106",
+		"text": "Team Mitti Studio here! Budget is Rs 25,000 for two reels, four stories, three carousels and two static posts. Can you go live on Jun 13?",
+		"brand": "Mitti Studio",
+		"fee": 25000,
+		"deliverables": {
+			"Reel": 2,
+			"Story": 4,
+			"Carousel": 3,
+			"Static post": 2
+		},
+		"live": "06-13"
+	},
+	{
+		"id": "gen-hi-107",
+		"text": "Namaste! Bodhi Wear wale bol rahe hai. ek reel aur ek static post karni hai, 75000 rupaye milenge. 2 ko launch hai.",
+		"fee": 75000,
+		"deliverables": {
+			"Reel": 1,
+			"Static post": 1
+		},
+		"liveDay": 2
+	},
+	{
+		"id": "gen-en-108",
+		"text": "Hi! I'm Rahul from Saffron Lane. We'd love five stories for our launch, budget ₹12k, live by Aug 20.",
+		"brand": "Saffron Lane",
+		"contact": "Rahul",
+		"fee": 12000,
+		"deliverables": {
+			"Story": 5
+		},
+		"live": "08-20"
+	},
+	{
+		"id": "gen-en-109",
+		"text": "Team Saffron Lane here! Budget is ₹75,000 for 2 reels, one carousel and 2 static posts. Can you go live on 24th May?",
+		"brand": "Saffron Lane",
+		"fee": 75000,
+		"deliverables": {
+			"Reel": 2,
+			"Carousel": 1,
+			"Static post": 2
+		},
+		"live": "05-24"
+	},
+	{
+		"id": "gen-hi-110",
+		"text": "Saffron Lane ki taraf se: 2 carousels chahiye, 8000 rupaye denge, 24 tak live karna hai",
+		"fee": 8000,
+		"deliverables": {
+			"Carousel": 2
+		},
+		"liveDay": 24
+	},
+	{
+		"id": "gen-en-111",
+		"text": "We at Pahadi Pantry want two reels and a story for our festive sale. Paying ₹25k. Live by 18/4. Thanks!",
+		"brand": "Pahadi Pantry",
+		"fee": 25000,
+		"deliverables": {
+			"Reel": 2,
+			"Story": 1
+		},
+		"live": "04-18"
+	},
+	{
+		"id": "gen-en-112",
+		"text": "Hey Niveditha, Vikram here from Tealeaf Co 😊 Would you do a reel? Our budget: 1.5L. Ideally live on Feb 23.",
+		"brand": "Tealeaf Co",
+		"contact": "Vikram",
+		"fee": 150000,
+		"deliverables": {
+			"Reel": 1
+		},
+		"live": "02-23"
+	},
+	{
+		"id": "gen-hi-113",
+		"text": "Hi didi, hum Urban Ghar se hai. do stories, 3 carousels aur 2 static posts ke liye 75k de sakte hai. 23 tak post karna hoga.",
+		"fee": 75000,
+		"deliverables": {
+			"Story": 2,
+			"Carousel": 3,
+			"Static post": 2
+		},
+		"liveDay": 23
+	},
+	{
+		"id": "gen-en-114",
+		"text": "Hey Niveditha, Karan here from Kesar Craft 😊 Would you do five stories + a carousel? Our budget: ₹25k. Ideally live on 11 November.",
+		"brand": "Kesar Craft",
+		"contact": "Karan",
+		"fee": 25000,
+		"deliverables": {
+			"Story": 5,
+			"Carousel": 1
+		},
+		"live": "11-11"
+	},
+	{
+		"id": "gen-en-115",
+		"text": "Hey Niveditha, Riya here from Rangrez Home 😊 Would you do three stories and three static posts? Our budget: INR 35000. Ideally live on 20 January.",
+		"brand": "Rangrez Home",
+		"contact": "Riya",
+		"fee": 35000,
+		"deliverables": {
+			"Story": 3,
+			"Static post": 3
+		},
+		"live": "01-20"
+	},
+	{
+		"id": "gen-hi-116",
+		"text": "Namaste! Koyal Beauty wale bol rahe hai. 3 carousels karni hai, 60 hazaar milenge. 23 ko launch hai.",
+		"fee": 60000,
+		"deliverables": {
+			"Carousel": 3
+		},
+		"liveDay": 23
+	},
+	{
+		"id": "gen-en-117",
+		"text": "Hey Niveditha, Arjun here from Kesar Craft 😊 Would you do 2 carousels? Our budget: ₹1.5 lakh. Ideally live on 7/2.",
+		"brand": "Kesar Craft",
+		"contact": "Arjun",
+		"fee": 150000,
+		"deliverables": {
+			"Carousel": 2
+		},
+		"live": "02-07"
+	},
+	{
+		"id": "gen-en-118",
+		"text": "Hi! I'm Pooja from Indigo Trails. We'd love three reels + five stories for our launch, budget INR 20000, live by 21 August.",
+		"brand": "Indigo Trails",
+		"contact": "Pooja",
+		"fee": 20000,
+		"deliverables": {
+			"Reel": 3,
+			"Story": 5
+		},
+		"live": "08-21"
+	},
+	{
+		"id": "gen-hi-119",
+		"text": "Hi didi, hum Chandni Jewels se hai. do reels aur 5 stories ke liye 18k de sakte hai. 26 tak post karna hoga.",
+		"fee": 18000,
+		"deliverables": {
+			"Reel": 2,
+			"Story": 5
+		},
+		"liveDay": 26
+	},
+	{
+		"id": "gen-en-120",
+		"text": "Team Rangrez Home here! Budget is ₹1.5 lakh for four stories. Can you go live on 5 July?",
+		"brand": "Rangrez Home",
+		"fee": 150000,
+		"deliverables": {
+			"Story": 4
+		},
+		"live": "07-05"
+	},
+	{
+		"id": "gen-en-121",
+		"text": "Hello, this is Arjun from Kesar Craft. We can offer Rs 75,000 for 1 carousel and 2 static posts, posting before Mar 1.",
+		"brand": "Kesar Craft",
+		"contact": "Arjun",
+		"fee": 75000,
+		"deliverables": {
+			"Carousel": 1,
+			"Static post": 2
+		},
+		"live": "03-01"
+	},
+	{
+		"id": "gen-hi-122",
+		"text": "Bhai 60k budget hai, ek reel, 5 stories, do carousels aur do static posts chahiye, 16 tarikh tak ho jayega?",
+		"fee": 60000,
+		"deliverables": {
+			"Reel": 1,
+			"Story": 5,
+			"Carousel": 2,
+			"Static post": 2
+		},
+		"liveDay": 16
+	},
+	{
+		"id": "gen-en-123",
+		"text": "Team Mitti Studio here! Budget is ₹12,000 for 2 reels, 3 carousels + one static post. Can you go live on 1 March?",
+		"brand": "Mitti Studio",
+		"fee": 12000,
+		"deliverables": {
+			"Reel": 2,
+			"Carousel": 3,
+			"Static post": 1
+		},
+		"live": "03-01"
+	},
+	{
+		"id": "gen-en-124",
+		"text": "Hey Niveditha, Neha here from Rangrez Home 😊 Would you do three carousels + two static posts? Our budget: Rs 1.5 lakhs. Ideally live on 3/8.",
+		"brand": "Rangrez Home",
+		"contact": "Neha",
+		"fee": 150000,
+		"deliverables": {
+			"Carousel": 3,
+			"Static post": 2
+		},
+		"live": "08-03"
+	},
+	{
+		"id": "gen-hi-125",
+		"text": "Namaste! Pahadi Pantry wale bol rahe hai. 3 reels, 1 story aur 1 static post karni hai, dedh lakh milenge. 16 ko launch hai.",
+		"fee": 150000,
+		"deliverables": {
+			"Reel": 3,
+			"Story": 1,
+			"Static post": 1
+		},
+		"liveDay": 16
+	},
+	{
+		"id": "gen-en-126",
+		"text": "Hi! I'm Sana from Pahadi Pantry. We'd love three reels + 2 static posts for our launch, budget ₹45,000, live by 6/1.",
+		"brand": "Pahadi Pantry",
+		"contact": "Sana",
+		"fee": 45000,
+		"deliverables": {
+			"Reel": 3,
+			"Static post": 2
+		},
+		"live": "01-06"
+	},
+	{
+		"id": "gen-en-127",
+		"text": "Team Indigo Trails here! Budget is Rs 12,000 for one carousel. Can you go live on 3rd Jan?",
+		"brand": "Indigo Trails",
+		"fee": 12000,
+		"deliverables": {
+			"Carousel": 1
+		},
+		"live": "01-03"
+	},
+	{
+		"id": "gen-hi-128",
+		"text": "Bhai 12000 rupaye budget hai, do carousels aur do static posts chahiye, 22 tarikh tak ho jayega?",
+		"fee": 12000,
+		"deliverables": {
+			"Carousel": 2,
+			"Static post": 2
+		},
+		"liveDay": 22
+	},
+	{
+		"id": "gen-en-129",
+		"text": "Hey Niveditha, Pooja here from Rangrez Home 😊 Would you do two reels, 1 carousel + two static posts? Our budget: Rs 1.5 lakhs. Ideally live on May 27.",
+		"brand": "Rangrez Home",
+		"contact": "Pooja",
+		"fee": 150000,
+		"deliverables": {
+			"Reel": 2,
+			"Carousel": 1,
+			"Static post": 2
+		},
+		"live": "05-27"
+	},
+	{
+		"id": "gen-en-130",
+		"text": "Hey Niveditha, Meera here from Rangrez Home 😊 Would you do 4 stories and 2 carousels? Our budget: INR 20000. Ideally live on 10/5.",
+		"brand": "Rangrez Home",
+		"contact": "Meera",
+		"fee": 20000,
+		"deliverables": {
+			"Story": 4,
+			"Carousel": 2
+		},
+		"live": "05-10"
+	},
+	{
+		"id": "gen-hi-131",
+		"text": "Namaste! Tealeaf Co wale bol rahe hai. teen stories karni hai, 8k milenge. 6 ko launch hai.",
+		"fee": 8000,
+		"deliverables": {
+			"Story": 3
+		},
+		"liveDay": 6
+	},
+	{
+		"id": "gen-en-132",
+		"text": "Team Neel Organics here! Budget is Rs 25,000 for one static post. Can you go live on 12 October?",
+		"brand": "Neel Organics",
+		"fee": 25000,
+		"deliverables": {
+			"Static post": 1
+		},
+		"live": "10-12"
+	},
+	{
+		"id": "gen-en-133",
+		"text": "Hi! I'm Asha from Koyal Beauty. We'd love two reels and three stories for our launch, budget Rs 1.5 lakhs, live by 25 January.",
+		"brand": "Koyal Beauty",
+		"contact": "Asha",
+		"fee": 150000,
+		"deliverables": {
+			"Reel": 2,
+			"Story": 3
+		},
+		"live": "01-25"
+	},
+	{
+		"id": "gen-hi-134",
+		"text": "Namaste! Indigo Trails wale bol rahe hai. teen stories, 3 carousels aur ek static post karni hai, 8 hazaar milenge. 11 ko launch hai.",
+		"fee": 8000,
+		"deliverables": {
+			"Story": 3,
+			"Carousel": 3,
+			"Static post": 1
+		},
+		"liveDay": 11
+	},
+	{
+		"id": "gen-en-135",
+		"text": "We at Koyal Beauty want a reel, 2 stories + two carousels for our festive sale. Paying ₹35,000. Live by 23 June. Thanks!",
+		"brand": "Koyal Beauty",
+		"fee": 35000,
+		"deliverables": {
+			"Reel": 1,
+			"Story": 2,
+			"Carousel": 2
+		},
+		"live": "06-23"
+	},
+	{
+		"id": "gen-en-136",
+		"text": "Hello, this is Karan from Lassi Labs. We can offer INR 15000 for three static posts, posting before Oct 6.",
+		"brand": "Lassi Labs",
+		"contact": "Karan",
+		"fee": 15000,
+		"deliverables": {
+			"Static post": 3
+		},
+		"live": "10-06"
+	},
+	{
+		"id": "gen-hi-137",
+		"text": "Namaste! Pahadi Pantry wale bol rahe hai. ek reel aur ek static post karni hai, 75 hazaar milenge. 19 ko launch hai.",
+		"fee": 75000,
+		"deliverables": {
+			"Reel": 1,
+			"Static post": 1
+		},
+		"liveDay": 19
+	},
+	{
+		"id": "gen-en-138",
+		"text": "We at Neel Organics want one reel, three carousels + two static posts for our festive sale. Paying 8k. Live by 7th Mar. Thanks!",
+		"brand": "Neel Organics",
+		"fee": 8000,
+		"deliverables": {
+			"Reel": 1,
+			"Carousel": 3,
+			"Static post": 2
+		},
+		"live": "03-07"
+	},
+	{
+		"id": "gen-en-139",
+		"text": "Hey Niveditha, Riya here from Urban Ghar 😊 Would you do one reel? Our budget: ₹15k. Ideally live on 5/4.",
+		"brand": "Urban Ghar",
+		"contact": "Riya",
+		"fee": 15000,
+		"deliverables": {
+			"Reel": 1
+		},
+		"live": "04-05"
+	},
+	{
+		"id": "gen-hi-140",
+		"text": "Hi didi, hum Chandni Jewels se hai. do reels, do stories aur teen carousels ke liye 1.5 lakh de sakte hai. 23 tak post karna hoga.",
+		"fee": 150000,
+		"deliverables": {
+			"Reel": 2,
+			"Story": 2,
+			"Carousel": 3
+		},
+		"liveDay": 23
+	},
+	{
+		"id": "gen-en-141",
+		"text": "Hi! I'm Asha from Vayu Fitness. We'd love three reels, 2 stories, three carousels and a static post for our launch, budget 15k, live by 10 January.",
+		"brand": "Vayu Fitness",
+		"contact": "Asha",
+		"fee": 15000,
+		"deliverables": {
+			"Reel": 3,
+			"Story": 2,
+			"Carousel": 3,
+			"Static post": 1
+		},
+		"live": "01-10"
+	},
+	{
+		"id": "gen-en-142",
+		"text": "Team Neel Organics here! Budget is ₹8k for 2 carousels. Can you go live on 26/9?",
+		"brand": "Neel Organics",
+		"fee": 8000,
+		"deliverables": {
+			"Carousel": 2
+		},
+		"live": "09-26"
+	},
+	{
+		"id": "gen-hi-143",
+		"text": "Bhai 20k budget hai, 3 reels chahiye, 24 tarikh tak ho jayega?",
+		"fee": 20000,
+		"deliverables": {
+			"Reel": 3
+		},
+		"liveDay": 24
+	},
+	{
+		"id": "gen-en-144",
+		"text": "Hello, this is Karan from Vayu Fitness. We can offer ₹1.5 lakh for 1 story, posting before 5/10.",
+		"brand": "Vayu Fitness",
+		"contact": "Karan",
+		"fee": 150000,
+		"deliverables": {
+			"Story": 1
+		},
+		"live": "10-05"
+	},
+	{
+		"id": "gen-en-145",
+		"text": "Hi! I'm Riya from Vayu Fitness. We'd love 3 reels, 3 carousels + a static post for our launch, budget 12k, live by 15 February.",
+		"brand": "Vayu Fitness",
+		"contact": "Riya",
+		"fee": 12000,
+		"deliverables": {
+			"Reel": 3,
+			"Carousel": 3,
+			"Static post": 1
+		},
+		"live": "02-15"
+	},
+	{
+		"id": "gen-hi-146",
+		"text": "Namaste! Neel Organics wale bol rahe hai. teen reels, 2 stories, 2 carousels aur do static posts karni hai, 45k milenge. 20 ko launch hai.",
+		"fee": 45000,
+		"deliverables": {
+			"Reel": 3,
+			"Story": 2,
+			"Carousel": 2,
+			"Static post": 2
+		},
+		"liveDay": 20
+	},
+	{
+		"id": "gen-en-147",
+		"text": "Team Rangrez Home here! Budget is Rs 45,000 for two carousels + one static post. Can you go live on Oct 22?",
+		"brand": "Rangrez Home",
+		"fee": 45000,
+		"deliverables": {
+			"Carousel": 2,
+			"Static post": 1
+		},
+		"live": "10-22"
+	},
+	{
+		"id": "gen-en-148",
+		"text": "We at Indigo Trails want 2 reels and one static post for our festive sale. Paying 60k. Live by 23 January. Thanks!",
+		"brand": "Indigo Trails",
+		"fee": 60000,
+		"deliverables": {
+			"Reel": 2,
+			"Static post": 1
+		},
+		"live": "01-23"
+	},
+	{
+		"id": "gen-hi-149",
+		"text": "Chandni Jewels ki taraf se: ek reel aur 2 carousels chahiye, 75k denge, 26 tak live karna hai",
+		"fee": 75000,
+		"deliverables": {
+			"Reel": 1,
+			"Carousel": 2
+		},
+		"liveDay": 26
+	},
+	{
+		"id": "gen-en-150",
+		"text": "Hi! I'm Riya from Kesar Craft. We'd love a reel and three stories for our launch, budget Rs 18,000, live by Jun 10.",
+		"brand": "Kesar Craft",
+		"contact": "Riya",
+		"fee": 18000,
+		"deliverables": {
+			"Reel": 1,
+			"Story": 3
+		},
+		"live": "06-10"
+	},
+	{
+		"id": "gen-en-151",
+		"text": "Hello, this is Vikram from Indigo Trails. We can offer ₹45k for two reels, posting before 4th Jul.",
+		"brand": "Indigo Trails",
+		"contact": "Vikram",
+		"fee": 45000,
+		"deliverables": {
+			"Reel": 2
+		},
+		"live": "07-04"
+	},
+	{
+		"id": "gen-hi-152",
+		"text": "Hi didi, hum Urban Ghar se hai. 3 reels, do stories aur 1 static post ke liye 40000 rupaye de sakte hai. 25 tak post karna hoga.",
+		"fee": 40000,
+		"deliverables": {
+			"Reel": 3,
+			"Story": 2,
+			"Static post": 1
+		},
+		"liveDay": 25
+	},
+	{
+		"id": "gen-en-153",
+		"text": "Hello, this is Sana from Koyal Beauty. We can offer ₹40k for 3 reels and three static posts, posting before 9th Nov.",
+		"brand": "Koyal Beauty",
+		"contact": "Sana",
+		"fee": 40000,
+		"deliverables": {
+			"Reel": 3,
+			"Static post": 3
+		},
+		"live": "11-09"
+	},
+	{
+		"id": "gen-en-154",
+		"text": "Hi! I'm Vikram from Tealeaf Co. We'd love three carousels + a static post for our launch, budget INR 20000, live by 17/2.",
+		"brand": "Tealeaf Co",
+		"contact": "Vikram",
+		"fee": 20000,
+		"deliverables": {
+			"Carousel": 3,
+			"Static post": 1
+		},
+		"live": "02-17"
+	},
+	{
+		"id": "gen-hi-155",
+		"text": "Hi didi, hum Monsoon Bakes se hai. 3 reels aur do stories ke liye dhai lakh de sakte hai. 20 tak post karna hoga.",
+		"fee": 250000,
+		"deliverables": {
+			"Reel": 3,
+			"Story": 2
+		},
+		"liveDay": 20
+	},
+	{
+		"id": "gen-en-156",
+		"text": "Team Urban Ghar here! Budget is Rs 25,000 for one carousel. Can you go live on Feb 13?",
+		"brand": "Urban Ghar",
+		"fee": 25000,
+		"deliverables": {
+			"Carousel": 1
+		},
+		"live": "02-13"
+	},
+	{
+		"id": "gen-en-157",
+		"text": "We at Lassi Labs want three carousels for our festive sale. Paying 1.5L. Live by Sep 15. Thanks!",
+		"brand": "Lassi Labs",
+		"fee": 150000,
+		"deliverables": {
+			"Carousel": 3
+		},
+		"live": "09-15"
+	},
+	{
+		"id": "gen-hi-158",
+		"text": "Bhai 60k budget hai, do stories chahiye, 5 tarikh tak ho jayega?",
+		"fee": 60000,
+		"deliverables": {
+			"Story": 2
+		},
+		"liveDay": 5
+	},
+	{
+		"id": "gen-en-159",
+		"text": "We at Rangrez Home want one story for our festive sale. Paying INR 40000. Live by Sep 14. Thanks!",
+		"brand": "Rangrez Home",
+		"fee": 40000,
+		"deliverables": {
+			"Story": 1
+		},
+		"live": "09-14"
+	},
+	{
+		"id": "gen-en-160",
+		"text": "Hello, this is Karan from Bodhi Wear. We can offer 40k for three reels + three carousels, posting before 19/9.",
+		"brand": "Bodhi Wear",
+		"contact": "Karan",
+		"fee": 40000,
+		"deliverables": {
+			"Reel": 3,
+			"Carousel": 3
+		},
+		"live": "09-19"
+	},
+	{
+		"id": "gen-hi-161",
+		"text": "Bhai 35 hazaar budget hai, paanch stories aur 3 carousels chahiye, 12 tarikh tak ho jayega?",
+		"fee": 35000,
+		"deliverables": {
+			"Story": 5,
+			"Carousel": 3
+		},
+		"liveDay": 12
+	},
+	{
+		"id": "gen-en-162",
+		"text": "Team Vayu Fitness here! Budget is ₹20,000 for one reel, two stories and 3 carousels. Can you go live on Aug 4?",
+		"brand": "Vayu Fitness",
+		"fee": 20000,
+		"deliverables": {
+			"Reel": 1,
+			"Story": 2,
+			"Carousel": 3
+		},
+		"live": "08-04"
+	},
+	{
+		"id": "gen-en-163",
+		"text": "Hey Niveditha, Arjun here from Mitti Studio 😊 Would you do 2 reels, four stories and 2 carousels? Our budget: Rs 18,000. Ideally live on 27 November.",
+		"brand": "Mitti Studio",
+		"contact": "Arjun",
+		"fee": 18000,
+		"deliverables": {
+			"Reel": 2,
+			"Story": 4,
+			"Carousel": 2
+		},
+		"live": "11-27"
+	},
+	{
+		"id": "gen-hi-164",
+		"text": "Tealeaf Co ki taraf se: teen stories aur 1 static post chahiye, 15000 rupaye denge, 2 tak live karna hai",
+		"fee": 15000,
+		"deliverables": {
+			"Story": 3,
+			"Static post": 1
+		},
+		"liveDay": 2
+	},
+	{
+		"id": "gen-en-165",
+		"text": "Team Mitti Studio here! Budget is ₹12k for four stories + two static posts. Can you go live on 10 August?",
+		"brand": "Mitti Studio",
+		"fee": 12000,
+		"deliverables": {
+			"Story": 4,
+			"Static post": 2
+		},
+		"live": "08-10"
+	},
+	{
+		"id": "gen-en-166",
+		"text": "We at Kesar Craft want three carousels + two static posts for our festive sale. Paying Rs 12,000. Live by 5th Feb. Thanks!",
+		"brand": "Kesar Craft",
+		"fee": 12000,
+		"deliverables": {
+			"Carousel": 3,
+			"Static post": 2
+		},
+		"live": "02-05"
+	},
+	{
+		"id": "gen-hi-167",
+		"text": "Hi didi, hum Vayu Fitness se hai. ek story ke liye 40000 rupaye de sakte hai. 17 tak post karna hoga.",
+		"fee": 40000,
+		"deliverables": {
+			"Story": 1
+		},
+		"liveDay": 17
+	},
+	{
+		"id": "gen-en-168",
+		"text": "Hello, this is Vikram from Urban Ghar. We can offer 15k for 3 reels, posting before 18 September.",
+		"brand": "Urban Ghar",
+		"contact": "Vikram",
+		"fee": 15000,
+		"deliverables": {
+			"Reel": 3
+		},
+		"live": "09-18"
+	},
+	{
+		"id": "gen-en-169",
+		"text": "Hello, this is Sana from Rangrez Home. We can offer INR 12000 for 3 stories + two static posts, posting before 23 September.",
+		"brand": "Rangrez Home",
+		"contact": "Sana",
+		"fee": 12000,
+		"deliverables": {
+			"Story": 3,
+			"Static post": 2
+		},
+		"live": "09-23"
+	},
+	{
+		"id": "gen-hi-170",
+		"text": "Namaste! Koyal Beauty wale bol rahe hai. 1 story aur do static posts karni hai, 40000 rupaye milenge. 7 ko launch hai.",
+		"fee": 40000,
+		"deliverables": {
+			"Story": 1,
+			"Static post": 2
+		},
+		"liveDay": 7
+	},
+	{
+		"id": "gen-en-171",
+		"text": "We at Lassi Labs want three stories + one carousel for our festive sale. Paying ₹25k. Live by Jan 17. Thanks!",
+		"brand": "Lassi Labs",
+		"fee": 25000,
+		"deliverables": {
+			"Story": 3,
+			"Carousel": 1
+		},
+		"live": "01-17"
+	},
+	{
+		"id": "gen-en-172",
+		"text": "Hey Niveditha, Riya here from Chandni Jewels 😊 Would you do 2 reels? Our budget: 25k. Ideally live on 16 February.",
+		"brand": "Chandni Jewels",
+		"contact": "Riya",
+		"fee": 25000,
+		"deliverables": {
+			"Reel": 2
+		},
+		"live": "02-16"
+	},
+	{
+		"id": "gen-hi-173",
+		"text": "Bhai 15k budget hai, 2 reels aur 3 static posts chahiye, 24 tarikh tak ho jayega?",
+		"fee": 15000,
+		"deliverables": {
+			"Reel": 2,
+			"Static post": 3
+		},
+		"liveDay": 24
+	},
+	{
+		"id": "gen-en-174",
+		"text": "Team Indigo Trails here! Budget is Rs 40,000 for a carousel. Can you go live on 22 October?",
+		"brand": "Indigo Trails",
+		"fee": 40000,
+		"deliverables": {
+			"Carousel": 1
+		},
+		"live": "10-22"
+	},
+	{
+		"id": "gen-en-175",
+		"text": "Hey Niveditha, Riya here from Lassi Labs 😊 Would you do one story and three static posts? Our budget: INR 75000. Ideally live on Jun 6.",
+		"brand": "Lassi Labs",
+		"contact": "Riya",
+		"fee": 75000,
+		"deliverables": {
+			"Story": 1,
+			"Static post": 3
+		},
+		"live": "06-06"
+	},
+	{
+		"id": "gen-hi-176",
+		"text": "Bhai 45000 rupaye budget hai, 3 reels chahiye, 16 tarikh tak ho jayega?",
+		"fee": 45000,
+		"deliverables": {
+			"Reel": 3
+		},
+		"liveDay": 16
+	},
+	{
+		"id": "gen-en-177",
+		"text": "Hi! I'm Neha from Indigo Trails. We'd love a reel + 2 static posts for our launch, budget ₹35k, live by 10th Oct.",
+		"brand": "Indigo Trails",
+		"contact": "Neha",
+		"fee": 35000,
+		"deliverables": {
+			"Reel": 1,
+			"Static post": 2
+		},
+		"live": "10-10"
+	},
+	{
+		"id": "gen-en-178",
+		"text": "Team Tealeaf Co here! Budget is ₹12,000 for three reels. Can you go live on 10/10?",
+		"brand": "Tealeaf Co",
+		"fee": 12000,
+		"deliverables": {
+			"Reel": 3
+		},
+		"live": "10-10"
+	},
+	{
+		"id": "gen-hi-179",
+		"text": "Namaste! Koyal Beauty wale bol rahe hai. paanch stories aur ek carousel karni hai, 45000 rupaye milenge. 2 ko launch hai.",
+		"fee": 45000,
+		"deliverables": {
+			"Story": 5,
+			"Carousel": 1
+		},
+		"liveDay": 2
+	}
+]
