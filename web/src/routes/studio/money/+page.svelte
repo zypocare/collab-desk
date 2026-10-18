@@ -120,7 +120,7 @@
 </div>
 
 <style>
-	.md-fy { display: flex; justify-content: center; margin: 4px 16px 14px; }
+	.md-fy { display: flex; justify-content: center; margin: 16px 0 14px; }
 	.md-hero { position: relative; overflow: hidden; isolation: isolate; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 26px; align-items: center; padding: 28px 32px; margin-bottom: 20px; border-radius: 28px; background: var(--hero); color: var(--hero-ink); box-shadow: var(--shadow-lg); border: 1px solid color-mix(in oklab, var(--hero-ink) 8%, transparent); }
 	.md-hero > :global(.mesh) { opacity: .55; filter: blur(36px); z-index: -1; }
 	.md-main { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
@@ -159,13 +159,13 @@
 	}
 	/* Phone: the same dashboard, one column, edge to edge like the rest of the app. */
 	@media (max-width: 760px) {
-		.md-hero { margin: 0 12px 14px; padding: 22px 18px; border-radius: 24px; gap: 18px; }
+		.md-hero { margin: 0 0 14px; padding: 22px 18px; border-radius: 24px; gap: 18px; }
 		.md-big { font-size: 40px; }
 		.md-tile { padding: 12px 14px; border-radius: 16px; }
 		.md-tile b { font-size: 21px; }
 		.md-tile small { font-size: 12.5px; }
 		.md-tile span { font-size: 12px; }
-		.md-grid { gap: 12px; margin: 0 12px 24px; }
+		.md-grid { gap: 12px; margin: 0 0 24px; }
 		.md-card { padding: 18px 16px; border-radius: 20px; gap: 14px; }
 		.md-h h2 { font-size: 18px; }
 		.md-gauges { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
