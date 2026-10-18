@@ -31,6 +31,7 @@
 	} from '../util';
 	import AiDesk from './AiDesk.svelte';
 	import NudgeList from './NudgeList.svelte';
+	import AwayMode from './AwayMode.svelte';
 	import Icon from './Icon.svelte';
 	import Mono from './Mono.svelte';
 	import Stories from './Stories.svelte';
@@ -208,6 +209,8 @@
 		</div>
 	{/if}
 </section>
+
+<AwayMode banner />
 
 <NudgeList phone />
 

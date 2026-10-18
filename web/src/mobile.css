@@ -1620,3 +1620,70 @@ textarea.inp.ng-text{min-height:132px;line-height:1.55}
 [data-side] .dialog .tpl-msg{margin:0 0 4px;font-size:15px;font-weight:600;color:var(--ink)}
 [data-side] .dialog .tpl-tags{margin:10px 0 0;font-size:13.5px;color:var(--accent)}
 .tpl-use{width:100%;justify-content:center;margin-top:12px}
+
+/* Away mode */
+.away-banner{display:flex;align-items:center;gap:12px;margin:14px 0 0;padding:12px 14px;border-radius:16px;border:1px solid color-mix(in oklab,var(--accent) 35%,var(--line));background:color-mix(in oklab,var(--accent) 8%,transparent)}
+.away-banner > span:nth-child(2){flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.away-banner b{font-size:15px}
+.away-banner small{font-size:13px;color:var(--ink-2)}
+.away-ic{flex:none;width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:var(--accent);color:var(--accent-ink)}
+.away-ic .ic{width:18px;height:18px}
+.away-on{display:flex;align-items:center;gap:10px;font-size:14px;color:var(--ink-2)}
+.away-on > .ic{flex:none;width:18px;height:18px;color:var(--accent)}
+.away-on span{flex:1}
+.away-go{display:flex;align-items:flex-end}
+
+/* Barter tax (194R) */
+.b194-row{display:flex;align-items:center;gap:12px;padding:12px 20px;border-top:1px solid var(--line)}
+.b194-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.b194-t b{font-size:15px}
+.b194-t small{font-size:13px;color:var(--ink-3)}
+.b194-bar{display:block;height:5px;max-width:260px;border-radius:99px;background:color-mix(in oklab,var(--ink) 8%,transparent);overflow:hidden}
+.b194-bar i{display:block;height:100%;width:calc(var(--p) * 100%);border-radius:99px;background:var(--warn,#e0a23a)}
+.b194-bar.over i{background:var(--bad)}
+.b194-acts{flex:none;display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;gap:6px}
+.b194-none{padding:16px 20px;margin:0}
+@media (max-width:760px){
+  .b194-row{flex-wrap:wrap;padding:12px 0}
+  .b194-acts{width:100%;justify-content:flex-start}
+}
+
+/* Quote options the brand picks from */
+.qc-wrap{padding:0 20px 4px}
+.qc-wrap .hint{margin:0 0 10px}
+.qc{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin-bottom:14px}
+.qc-opt{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:14px;border-radius:16px;border:1.5px solid var(--line-strong);background:var(--surface);color:var(--ink);font:inherit;text-align:left;cursor:pointer;transition:border-color .2s,transform .15s}
+.qc-opt:active{transform:scale(.98)}
+.qc-opt.on{border-color:var(--accent);background:color-mix(in oklab,var(--accent) 7%,var(--surface))}
+.qc-opt.pop{padding-top:24px}
+.qc-pop{position:absolute;top:-10px;left:12px;padding:3px 9px;border-radius:99px;font-size:11px;font-weight:700;letter-spacing:.04em;color:#fff;background:var(--grad)}
+.qc-t{font-size:13px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-3)}
+.qc-opt b{font-size:22px;letter-spacing:-.02em}
+.qc-opt small{font-size:13px;color:var(--ink-2);line-height:1.35}
+.qc-opt .qc-sub{color:var(--ink-3)}
+.qc-tick{position:absolute;top:12px;right:12px;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;border:1.5px solid var(--line-strong);color:transparent}
+.qc-opt.on .qc-tick{border-color:var(--accent);background:var(--accent);color:#fff}
+.qc-tick .ic{width:13px;height:13px}
+.q-choose{margin-top:10px}
+@media (max-width:760px){.qc-wrap{padding:0}.qc{grid-template-columns:1fr}}
+
+/* Chat attachments: photos, PDFs and voice notes */
+.th-att{flex:none;width:40px;height:40px;border-radius:50%;border:0;display:grid;place-items:center;background:none;color:var(--ink-2);cursor:pointer;align-self:center}
+.th-att:hover{background:color-mix(in oklab,var(--ink) 6%,transparent);color:var(--ink)}
+.th-att.on{background:var(--bad);color:#fff;animation:pulse 1.4s ease-in-out infinite}
+.th-att .ic{width:20px;height:20px}
+.att-pending{display:flex;flex-wrap:wrap;gap:6px;padding:8px 12px 0}
+.att-chip{display:inline-flex;align-items:center;gap:6px;max-width:220px;height:36px;padding:0 6px 0 8px;border-radius:10px;border:1px solid var(--line);background:var(--surface);font-size:13px}
+.att-chip img{width:26px;height:26px;border-radius:6px;object-fit:cover}
+.att-chip .ic{width:16px;height:16px;color:var(--ink-3)}
+.att-chip span{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.att-chip button{flex:none;width:24px;height:24px;border:0;border-radius:50%;display:grid;place-items:center;background:none;color:var(--ink-3);cursor:pointer}
+.att-chip button .ic{width:13px;height:13px}
+.att-rec{display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 10px;font-size:13px;color:var(--bad);font-weight:600}
+.att-rec i{width:8px;height:8px;border-radius:50%;background:var(--bad);animation:pulse 1.2s infinite}
+.att-img{display:block;margin-top:6px;max-width:240px;border-radius:12px;overflow:hidden;background:color-mix(in oklab,var(--ink) 6%,transparent);min-height:60px}
+.att-img img{display:block;width:100%;height:auto}
+.att-audio{display:block;width:240px;max-width:100%;height:40px;margin-top:6px}
+.att-file{display:inline-flex;align-items:center;gap:8px;max-width:240px;margin-top:6px;padding:8px 10px;border-radius:10px;background:color-mix(in oklab,var(--ink) 7%,transparent);color:inherit;text-decoration:none;font-size:13.5px;font-weight:600}
+.att-file .ic{flex:none;width:16px;height:16px}
+.att-file span{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}

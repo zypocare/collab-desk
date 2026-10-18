@@ -114,6 +114,7 @@ export function render(kind: string, p: Payload, s: Settings): Omit<Mail, 'to'> 
         s,
         `Thank you, ${firstOf(p.contact)}. Your request is with ${me}.`,
         `${hi(p.contact)}${P(`Thank you for reaching out to collaborate with ${esc(s.display_name)}. Your request has been received and saved under the reference <b>${esc(code)}</b>. ${esc(me)} reviews every request personally and usually replies within <b>${esc(reply)}</b>.`)}
+         ${p.away ? quoteBox(`${me} is away right now`, p.away) : ''}
          ${table(row('Reference', code), row('Brand', brand), row('Content requested', p.deliverables))}
          ${P(`You can follow your request at any time by signing in with this email address. There's no password: we'll send you a 6-digit code.`)}`,
         { label: 'Track your request', href: url(s, '/brand') },
@@ -178,12 +179,12 @@ export function render(kind: string, p: Payload, s: Settings): Omit<Mail, 'to'> 
   if (kind === 'quote_sent') {
     const href = p.action ? url(s, `/a/${p.action}`) : request();
     return {
-      subject: `Quote for ${code} from ${s.display_name} (${inr(p.total)})`,
+      subject: p.choices ? `Quote for ${code} from ${s.display_name}: ${p.choices} options from ${inr(p.from)}` : `Quote for ${code} from ${s.display_name} (${inr(p.total)})`,
       html: layout(
         s,
         `Your quote is ready`,
         `${hi(p.contact)}${P(`Thank you for your interest in working together. Based on your request, ${esc(me)} has prepared a quote for <b>${esc(code)}</b>.`)}
-         ${table(row('Reference', code), row('Total', inr(p.total)))}
+         ${p.choices ? P(`There are <b>${p.choices} options</b> to choose from, starting at <b>${inr(p.from)}</b>. Pick the one that suits your campaign when you accept.`) : table(row('Reference', code), row('Total', inr(p.total)))}
          ${P(`The quote page shows the full breakdown: the content, usage rights, payment terms and revision rounds. You can accept it online in one tap, or ask for changes if something doesn't quite fit. No sign-in needed.`)}
          ${p.action ? small(`Prefer to see the whole request first? <a href="${esc(request())}" style="color:${MUTED}">Open your request page</a>.`) : ''}`,
         { label: p.action ? 'Review and accept the quote' : 'Review the quote', href },
@@ -440,6 +441,38 @@ export function render(kind: string, p: Payload, s: Settings): Omit<Mail, 'to'> 
         { code, preheader: `Invoice ${p.number} (${inr(p.due_amount)}) ${when}.` },
       ),
       text: `Hi ${firstOf(p.contact)},\n\nA reminder that invoice ${p.number} (${inr(p.due_amount)}) for ${code} ${when}. View and pay: ${p.link}\n\nIf it's already paid, thank you, and please ignore this email.${sign}`,
+    };
+  }
+
+  if (kind === 'rebook_offer') {
+    const pct = Number(p.pct) || 0;
+    return {
+      subject: `Thank you from ${s.display_name}${pct ? `, and ${pct}% off your next collab` : ''}`,
+      html: layout(
+        s,
+        `Thank you for collaborating with ${me}`,
+        `${hi(p.contact)}${P(`It was a pleasure creating for <b>${esc(brand)}</b> on ${esc(code)}. Thank you for the smooth collaboration.`)}
+         ${pct ? P(`As a returning brand, your next collaboration with ${esc(me)} comes with <b>${pct}% off</b> the quote if you book by <b>${esc(p.until)}</b>. Your earlier details are filled in for you, so it only takes a minute.`) : P(`Whenever you're planning your next campaign, booking again takes a minute: your earlier details are filled in for you.`)}`,
+        { label: 'Book again', href: String(p.link) },
+        { code, preheader: pct ? `${pct}% off your next collab with ${me}, until ${p.until}.` : `Book your next collab with ${me} in a minute.` },
+      ),
+      text: `Hi ${firstOf(p.contact)},\n\nThank you for collaborating with ${s.display_name} on ${code}.${pct ? ` Your next collab comes with ${pct}% off if you book by ${p.until}.` : ''} Book again: ${p.link}${sign}`,
+    };
+  }
+
+  if (kind === 'tds_194r') {
+    return {
+      subject: `TDS under Section 194R for ${s.display_name} (FY ${p.fy})`,
+      html: layout(
+        s,
+        `A note on Section 194R`,
+        `${hi(p.contact)}${P(`Thank you for the products and experiences shared with ${esc(s.display_name)} this year. In FY ${esc(p.fy)}, what ${esc(brand)} has provided adds up to about <b>${inr(p.total)}</b>.`)}
+         ${P(`Under Section 194R of the Income Tax Act, a business giving benefits worth more than ₹20,000 in a financial year deducts TDS (10%) on them. Could your accounts team please deduct and deposit it, and share Form 16A? It helps ${esc(me)} claim the credit when she files her return.`)}
+         ${small(`If your team has already taken care of this, thank you, and please ignore this email.`)}`,
+        undefined,
+        { code, preheader: `FY ${p.fy}: benefits of about ${inr(p.total)}, above the ₹20,000 limit.` },
+      ),
+      text: `Hi ${firstOf(p.contact)},\n\nIn FY ${p.fy}, what ${brand} has provided to ${s.display_name} adds up to about ${inr(p.total)}. Under Section 194R, TDS (10%) applies above ₹20,000 a year. Could your accounts team please deduct and deposit it, and share Form 16A?${sign}`,
     };
   }
 

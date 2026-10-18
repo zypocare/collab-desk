@@ -1,4 +1,6 @@
 <script lang="ts">
+	import QuoteChoices from '#lib/components/QuoteChoices.svelte';
+	import type { QuoteChoice } from '#lib/types.ts';
 	import { page } from '$app/state';
 	import { money } from '#lib/currency.ts';
 	import { supabase } from '#lib/supabase.ts';
@@ -21,6 +23,7 @@
 		creator: string;
 		quote: {
 			version: number;
+			options?: QuoteChoice[] | null;
 			items: QuoteItem[];
 			usage: string;
 			usage_fee: number;
@@ -89,12 +92,20 @@
 		if (!yes && info?.kind !== 'counter' && !note.trim()) return (error = 'Tell us what you would like changed.');
 		if (yes && info?.kind === 'quote' && !name.trim()) return (error = 'Type your full name to accept.');
 		busy = true;
+		// Several options: the chosen one becomes the quote first.
+		if (yes && opts) await supabase.rpc('action_pick', { p_token: page.params.token, p_option: choice });
 		const { error: err } = await supabase.rpc('action_run', { p_token: page.params.token, p_yes: yes, p_name: name, p_note: note });
 		busy = false;
 		if (err) return (error = errMessage(err));
 		done = yes ? 'yes' : 'changes';
 		if (yes) confetti();
 	}
+	// Several options (Good / Better / Best): the brand picks one.
+	const opts = $derived(info?.quote?.options?.length ? info.quote.options : null);
+	let choice = $state(-1);
+	$effect(() => {
+		if (opts && choice < 0) choice = Math.max(0, opts.findIndex((o) => o.popular));
+	});
 </script>
 
 <svelte:head><title>{info?.kind === 'draft' ? 'Review draft' : info?.kind === 'counter' ? 'Your request' : 'Your quote'}</title></svelte:head>
@@ -148,7 +159,8 @@
 
 		<section class="panel rv" style="--i:1;padding:22px">
 			{#if info.quote}
-				{@const q = info.quote}
+				{#if opts}<div class="qc-wrap"><p class="hint">{creator} has given you {opts.length} options. Pick the one that suits you:</p><QuoteChoices options={opts} bind:value={choice} currency={info.quote.currency} /></div>{/if}
+				{@const q = opts && opts[choice] ? { ...info.quote, ...opts[choice] } : info.quote}
 				<table class="doc-table">
 					<thead><tr><th>Deliverable</th><th>Qty</th><th>Rate</th><th>Amount</th></tr></thead>
 					<tbody>

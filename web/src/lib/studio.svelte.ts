@@ -531,7 +531,7 @@ export async function saveBrandNotes(brandId: string, patch: Partial<Omit<BrandP
 export type QuoteInput = Pick<
 	Quote,
 	'items' | 'usage' | 'usage_fee' | 'discount' | 'advance_pct' | 'pay_days' | 'revision_rounds' | 'exclusivity_days' | 'valid_until' | 'notes' | 'currency' | 'inr_rate'
->;
+> & { options?: Quote['options'] };
 
 /** Saves a quote. Editing a draft updates it; anything else becomes a new version. */
 export async function saveQuote(c: Collab, input: QuoteInput, send: boolean, editId?: string) {

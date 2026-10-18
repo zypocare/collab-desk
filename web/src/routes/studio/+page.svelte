@@ -34,6 +34,7 @@
 	import PriorityBadge from '#lib/components/PriorityBadge.svelte';
 	import AiDesk from '#lib/components/AiDesk.svelte';
 	import NudgeList from '#lib/components/NudgeList.svelte';
+	import AwayMode from '#lib/components/AwayMode.svelte';
 	import AlertsPrompt from '#lib/components/AlertsPrompt.svelte';
 	import BrandQuestions from '#lib/components/BrandQuestions.svelte';
 
@@ -115,6 +116,7 @@
 		</div>
 	</header>
 
+	<AwayMode banner />
 	<AlertsPrompt />
 
 	<section class="td-kpis rv" style="--i:1" aria-label="This month">

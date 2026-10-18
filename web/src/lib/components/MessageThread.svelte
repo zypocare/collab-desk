@@ -2,7 +2,7 @@
 	import { onMount, tick } from 'svelte';
 	import { askAi } from '../ai';
 	import { supabase } from '../supabase';
-	import type { Collab, Message } from '../types';
+	import type { Attachment, Collab, Message } from '../types';
 	import { toast } from '../ui.svelte';
 	import { errMessage, firstName } from '../util';
 	import AiThinking from './AiThinking.svelte';
@@ -68,7 +68,7 @@
 
 	async function load() {
 		const [m, r] = await Promise.all([
-			supabase.from('collab_messages').select('id, collab_id, sender, body, created_at').eq('collab_id', collabId).order('created_at'),
+			supabase.from('collab_messages').select('id, collab_id, sender, body, created_at, attachments, auto').eq('collab_id', collabId).order('created_at'),
 			supabase.from('collab_reads').select('side, read_at').eq('collab_id', collabId)
 		]);
 		messages = (m.data as Message[]) ?? [];
@@ -104,15 +104,82 @@
 		};
 	});
 
+	// Photos, PDFs and voice notes: picked (or recorded) first, uploaded when she sends.
+	const MAX_MB = 25;
+	let pending = $state<{ file: File; name: string; kind: 'image' | 'audio' | 'file'; url: string }[]>([]);
+	let fileInput = $state<HTMLInputElement>();
+	const kindOf = (t: string) => (t.startsWith('image/') ? 'image' : t.startsWith('audio/') ? 'audio' : 'file') as 'image' | 'audio' | 'file';
+	function addFiles(list: FileList | File[] | null) {
+		for (const f of Array.from(list ?? [])) {
+			if (f.size > MAX_MB * 1048576) {
+				toast(`${f.name} is over ${MAX_MB} MB.`, 'alert');
+				continue;
+			}
+			pending = [...pending, { file: f, name: f.name, kind: kindOf(f.type), url: URL.createObjectURL(f) }].slice(0, 6);
+		}
+		if (fileInput) fileInput.value = '';
+	}
+	// Voice notes (the phone's own recorder).
+	let recorder: MediaRecorder | null = null;
+	let recording = $state(false);
+	let recSecs = $state(0);
+	let recTimer: ReturnType<typeof setInterval> | undefined;
+	async function toggleRecord() {
+		if (recording) return recorder?.stop();
+		try {
+			const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+			const type = ['audio/webm', 'audio/mp4', 'audio/ogg'].find((t) => MediaRecorder.isTypeSupported?.(t)) ?? '';
+			recorder = new MediaRecorder(stream, type ? { mimeType: type } : undefined);
+			const chunks: Blob[] = [];
+			recorder.ondataavailable = (e) => e.data.size && chunks.push(e.data);
+			recorder.onstop = () => {
+				stream.getTracks().forEach((t) => t.stop());
+				clearInterval(recTimer);
+				recording = false;
+				const mime = recorder?.mimeType || type || 'audio/webm';
+				const ext = mime.includes('mp4') ? 'm4a' : mime.includes('ogg') ? 'ogg' : 'webm';
+				if (chunks.length) addFiles([new File(chunks, `Voice note ${Math.floor(recSecs / 60)}-${String(recSecs % 60).padStart(2, '0')}.${ext}`, { type: mime })]);
+			};
+			recorder.start();
+			recording = true;
+			recSecs = 0;
+			recTimer = setInterval(() => (++recSecs >= 180 ? recorder?.stop() : null), 1000);
+		} catch {
+			toast('Allow the microphone to record a voice note.', 'alert');
+		}
+	}
+	// Signed links for attachments (private files), fetched once each.
+	let urls = $state<Record<string, string>>({});
+	async function urlFor(path: string) {
+		if (urls[path]) return;
+		const { data } = await supabase.storage.from('chat').createSignedUrl(path, 3600);
+		if (data?.signedUrl) urls = { ...urls, [path]: data.signedUrl };
+	}
+	$effect(() => {
+		for (const m of messages) for (const a of m.attachments ?? []) urlFor(a.path);
+	});
+
 	async function send(body = text) {
-		const clean = body.trim();
+		const files = body === text ? pending : [];
+		const clean = body.trim() || (files.length ? files.map((f) => (f.kind === 'audio' ? '🎤 Voice note' : f.kind === 'image' ? '📷 Photo' : `📎 ${f.name}`)).join(', ') : '');
 		if (!clean || sending) return;
 		sending = true;
 		const tmp: Message = { id: `tmp-${Date.now()}`, collab_id: collabId, sender: side, body: clean, created_at: new Date().toISOString() };
 		messages = [...messages, tmp];
 		if (body === text) text = '';
+		pending = [];
 		scrollEnd();
-		const { data, error } = await supabase.from('collab_messages').insert({ collab_id: collabId, sender: side, body: clean }).select('id, collab_id, sender, body, created_at').single();
+		const attachments: Attachment[] = [];
+		for (const f of files) {
+			const path = `${collabId}/${crypto.randomUUID()}-${f.name.replace(/[^\w.\- ]+/g, '').slice(-80) || 'file'}`;
+			const up = await supabase.storage.from('chat').upload(path, f.file, { contentType: f.file.type || undefined });
+			if (up.error) {
+				toast(`Couldn't attach ${f.name}: ${errMessage(up.error)}`, 'alert');
+				continue;
+			}
+			attachments.push({ name: f.name, path, type: f.file.type, size: f.file.size });
+		}
+		const { data, error } = await supabase.from('collab_messages').insert({ collab_id: collabId, sender: side, body: clean, attachments }).select('id, collab_id, sender, body, created_at, attachments, auto').single();
 		sending = false;
 		if (error) {
 			messages = messages.filter((m) => m.id !== tmp.id);
@@ -163,7 +230,16 @@
 				{#if i === 0 || day(messages[i - 1].created_at) !== day(m.created_at)}<div class="th-day"><span>{day(m.created_at)}</span></div>{/if}
 				<div class="bub-row" class:mine={m.sender === side}>
 					<div class="bub" class:pending={m.id.startsWith('tmp-')}>
-						<p>{m.body}</p>
+						{#if !(m.attachments?.length && /^(🎤|📷|📎)/.test(m.body))}<p>{m.body}</p>{/if}
+						{#each m.attachments ?? [] as a (a.path)}
+							{#if a.type.startsWith('image/')}
+								<a class="att-img" href={urls[a.path]} target="_blank" rel="noopener">{#if urls[a.path]}<img src={urls[a.path]} alt={a.name} loading="lazy" />{/if}</a>
+							{:else if a.type.startsWith('audio/')}
+								<audio class="att-audio" controls preload="metadata" src={urls[a.path]}></audio>
+							{:else}
+								<a class="att-file" href={urls[a.path]} target="_blank" rel="noopener"><Icon name="doc" /><span>{a.name}</span></a>
+							{/if}
+						{/each}
 						<time datetime={m.created_at}>{time(m.created_at)}</time>
 					</div>
 				</div>
@@ -185,7 +261,18 @@
 			{/each}
 		</div>
 	{/if}
+	{#if pending.length || recording}
+		<div class="att-pending">
+			{#if recording}<span class="att-rec"><i></i>Recording {Math.floor(recSecs / 60)}:{String(recSecs % 60).padStart(2, '0')} · tap the mic to stop</span>{/if}
+			{#each pending as f, i (f.url)}
+				<span class="att-chip">{#if f.kind === 'image'}<img src={f.url} alt="" />{:else}<Icon name={f.kind === 'audio' ? 'mic' : 'doc'} />{/if}<span>{f.name}</span><button type="button" aria-label="Remove {f.name}" onclick={() => (pending = pending.filter((_, j) => j !== i))}><Icon name="x" /></button></span>
+			{/each}
+		</div>
+	{/if}
 	<form class="th-box" onsubmit={(e) => (e.preventDefault(), send())}>
+		<input type="file" bind:this={fileInput} accept="image/*,application/pdf,audio/*,.doc,.docx,.ppt,.pptx,.xls,.xlsx" multiple hidden onchange={(e) => addFiles(e.currentTarget.files)} />
+		<button type="button" class="th-att" aria-label="Attach a photo or file" onclick={() => fileInput?.click()}><Icon name="clip" /></button>
+		<button type="button" class="th-att" class:on={recording} aria-label={recording ? 'Stop recording' : 'Record a voice note'} onclick={toggleRecord}><Icon name="mic" /></button>
 		<textarea
 			class="inp"
 			rows="1"
@@ -201,6 +288,6 @@
 				t.style.height = Math.min(140, t.scrollHeight) + 'px';
 			}}
 		></textarea>
-		<button class="btn grad send-btn" type="submit" disabled={!text.trim() || sending} aria-label="Send message"><Icon name="send" /></button>
+		<button class="btn grad send-btn" type="submit" disabled={(!text.trim() && !pending.length) || sending || recording} aria-label="Send message"><Icon name="send" /></button>
 	</form>
 </div>

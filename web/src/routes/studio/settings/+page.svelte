@@ -25,6 +25,7 @@
 	import PriorityRules from '#lib/components/PriorityRules.svelte';
 	import PackagesSettings from '#lib/components/PackagesSettings.svelte';
 	import AvailabilitySettings from '#lib/components/AvailabilitySettings.svelte';
+	import AwayMode from '#lib/components/AwayMode.svelte';
 	import DecisionSettings from '#lib/components/DecisionSettings.svelte';
 	import RateLearn from '#lib/components/RateLearn.svelte';
 	import ReviewsSettings from '#lib/components/ReviewsSettings.svelte';
@@ -355,6 +356,7 @@
 								<input type="checkbox" class="tgl" checked={s.accepting} aria-label="Accepting collaborations" onchange={(e) => toggle('accepting', (e.currentTarget as HTMLInputElement).checked)} />
 							</div>
 						</section>
+						<AwayMode />
 						<AvailabilitySettings />
 						<PriorityRules />
 						<DecisionSettings />

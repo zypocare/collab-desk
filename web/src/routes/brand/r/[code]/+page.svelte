@@ -1,4 +1,5 @@
 <script lang="ts">
+	import QuoteChoices from '#lib/components/QuoteChoices.svelte';
 	import { langText } from '#lib/languages.ts';
 	import { page } from '$app/state';
 	import BrandLink from '#lib/components/BrandLink.svelte';
@@ -57,7 +58,14 @@
 	const si = $derived(r ? (r.stage === 'declined' ? -1 : stageIndex(r.stage)) : 0);
 	const creator = $derived(firstName(pub.data?.display_name ?? ''));
 	const quote = $derived(r?.quotes?.[0]);
-	const openQuote = $derived(quote?.status === 'sent' ? quote : undefined);
+	const openQuote0 = $derived(quote?.status === 'sent' ? quote : undefined);
+	// Several options (Good / Better / Best): the brand picks one; the details below show that one.
+	const opts = $derived(openQuote0?.options?.length ? openQuote0.options : null);
+	let choice = $state(-1);
+	$effect(() => {
+		if (opts && choice < 0) choice = Math.max(0, opts.findIndex((o) => o.popular));
+	});
+	const openQuote = $derived(openQuote0 && opts && opts[choice] ? { ...openQuote0, ...opts[choice], options: opts } : openQuote0);
 	const accepted = $derived(r?.quotes?.find((q) => q.status === 'accepted'));
 	const expired = $derived(!!openQuote?.valid_until && openQuote.valid_until < todayIso());
 	const pendingDraft = $derived(r?.drafts?.find((d) => d.status === 'pending'));
@@ -113,7 +121,7 @@
 		if (!openQuote) return;
 		error = '';
 		busy = true;
-		const { error: err } = await supabase.rpc('respond_quote', { p_quote: openQuote.id, p_accept: accept, p_name: signName, p_note: note });
+		const { error: err } = await supabase.rpc('respond_quote', { p_quote: openQuote.id, p_accept: accept, p_name: signName, p_note: note, p_option: opts && accept ? choice : null });
 		busy = false;
 		if (err) return (error = errMessage(err));
 		mode = '';
@@ -204,6 +212,7 @@
 	{#if openQuote}
 		<section class="panel rv action-panel" style="--i:1">
 			<div class="panel-h"><h2>Quote from {creator}</h2><span class="pill tint k-new">Needs your answer</span></div>
+			{#if opts}<div class="qc-wrap"><p class="hint">{creator} has given you {opts.length} options. Pick the one that suits you:</p><QuoteChoices options={opts} bind:value={choice} currency={openQuote0?.currency} /></div>{/if}
 			<div class="quote-view">
 				<div class="qv-lines">
 					{#each openQuote.items as it, i (i)}

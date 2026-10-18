@@ -200,6 +200,13 @@
 
 	// Booking again (/brand/new?again=CODE): start from that collab.
 	let againCode = $state('');
+	// Returning brand: the offer from the "Book again" email (shown here, applied to the quote).
+	let loyalty = $state<{ pct: number; until: string } | null>(null);
+	$effect(() => {
+		const code = page.url.searchParams.get('again');
+		if (!code || !acc) return;
+		supabase.rpc('rebook_offer', { p_code: code }).then(({ data }) => (loyalty = (data as typeof loyalty) ?? null));
+	});
 	$effect(() => {
 		const code = page.url.searchParams.get('again');
 		const r = code ? brandData.requests.find((x) => x.code.toUpperCase() === code.toUpperCase()) : null;
@@ -354,6 +361,7 @@
 		sentReply = replyIn ?? null;
 		sent = (data as { code: string }).code;
 		useReferral(sent);
+		if (loyalty && againCode) await supabase.rpc('claim_rebook', { p_new: sent, p_old: againCode });
 		await loadRequests();
 		const mine = brandData.requests.find((r) => r.code === sent);
 		booked = mine && mine.stage === 'confirmed' ? (mine.live_date ?? preferred) : '';
@@ -436,6 +444,9 @@
 						<Icon name="refresh" />
 						<div><b>Booking again</b><small>Filled in from {againCode}. Change anything you like.</small></div>
 					</div>
+				{/if}
+				{#if loyalty}
+					<div class="pkg-banner loyal"><Icon name="gift" /><div><b>Welcome back! {loyalty.pct}% off this collab</b><small>Your returning-brand discount comes off the quote. Valid until {fmtLong(loyalty.until)}.</small></div></div>
 				{/if}
 				{#if pkg}
 					<div class="pkg-banner">

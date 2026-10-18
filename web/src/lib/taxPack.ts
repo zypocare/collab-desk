@@ -5,6 +5,7 @@ import { zip } from './exportAll';
 import { dmy, n2, toCsv, type FY } from './reports';
 import type { Collab, Settings } from './types';
 import { saveBlob } from './download';
+import { barter194r } from './tds194r';
 
 export type Quarter = { q: 1 | 2 | 3 | 4; label: string; from: string; to: string; due: string };
 
@@ -119,6 +120,13 @@ export function quarterPack(collabs: Collab[], s: Settings, q: Quarter, fy: FY) 
 			['Invoice number', 'Brand', 'Brand GSTIN', 'Paid on', 'Received (₹)', 'TDS rate %', 'TDS deducted (₹)', 'Form 16A received', 'Payment ref'],
 			...paid.map((x) => [x.inv.number, x.c.brand.name, gstin(x), dmy(x.inv.paid_on), n2(x.inv.amount_received * x.r), x.inv.tds_rate, n2(x.inv.tds_deducted * x.r), x.inv.tds_deducted ? (x.inv.tds_certificate ? 'Yes' : 'No') : '', x.inv.payment_ref])
 		])
+	});
+	// Barter benefits that arrived this quarter, with each brand's total for the year (Section 194R).
+	const yearly = barter194r(collabs, fy);
+	const barter = yearly.flatMap((b) => b.items.filter((x) => x.date >= q.from && x.date <= q.to).map((x) => ({ ...x, brand: b.brand, total: b.total, over: b.over })));
+	files.push({
+		name: '7 Barter benefits (194R).csv',
+		text: toCsv([['Date', 'Collab', 'Brand', 'What', 'Value (₹)', 'Brand total this FY (₹)', '194R applies (over ₹20,000)'], ...barter.map((x) => [dmy(x.date), x.code, x.brand, x.what, n2(x.value), n2(x.total), x.over ? 'Yes' : 'No'])])
 	});
 	files.push({
 		name: '6 Expenses.csv',

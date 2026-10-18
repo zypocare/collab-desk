@@ -80,6 +80,19 @@
 		</div>
 		<input type="checkbox" class="tgl" checked={s.autopilot_review} aria-label="Thank and ask for a review" onchange={on('autopilot_review')} />
 	</div>
+	<div class="switch-row">
+		<div>
+			<b>Invite them to book again</b>
+			<small>A week after a wrap, the brand gets a thank-you with a one-tap "Book again" link{s.rebook_pct ? ` and ${s.rebook_pct}% off their next collab, valid for ${s.rebook_days} days` : ''}.</small>
+		</div>
+		<input type="checkbox" class="tgl" checked={s.rebook_offer} aria-label="Invite them to book again" onchange={on('rebook_offer')} />
+	</div>
+	{#if s.rebook_offer}
+		<div class="form-b">
+			<div class="f"><label for="ap-rb-pct">Returning-brand discount</label><Select id="ap-rb-pct" value={s.rebook_pct} options={[0, 5, 10, 15, 20].map((n) => ({ value: n, label: n ? `${n}% off` : 'No discount' }))} onchange={(v) => saveSettings({ rebook_pct: v })} /></div>
+			<div class="f"><label for="ap-rb-days">Offer valid for</label><Select id="ap-rb-days" value={s.rebook_days} options={[14, 30, 60, 90].map((n) => ({ value: n, label: `${n} days` }))} onchange={(v) => saveSettings({ rebook_days: v })} /></div>
+		</div>
+	{/if}
 	{#if recent.length}
 		<div class="rv-list ap-log">
 			<span class="lbl-t">Lately</span>

@@ -32,6 +32,7 @@ export type BrandPrivate = {
 export type Deliverable = { id: string; collab_id: string; kind: string; qty: number; done: boolean; position: number };
 
 export type QuoteItem = { kind: string; qty: number; rate: number };
+export type QuoteChoice = { title: string; sub: string; items: QuoteItem[]; usage: string; usage_fee: number; discount: number; total: number; popular?: boolean };
 export type QuoteStatus = 'draft' | 'sent' | 'accepted' | 'changes' | 'withdrawn';
 export type Quote = {
 	id: string;
@@ -51,6 +52,8 @@ export type Quote = {
 	valid_until: string | null;
 	notes: string;
 	status: QuoteStatus;
+	/** Up to three options the brand picks from (Good / Better / Best). */
+	options?: QuoteChoice[] | null;
 	sent_at: string | null;
 	responded_at: string | null;
 	response_note: string;
@@ -106,7 +109,8 @@ export type PublicPackage = Pick<Package, 'id' | 'name' | 'description' | 'items
 
 export type DraftComment = { id: number; at: number | null; body: string; name?: string };
 
-export type Message = { id: string; collab_id: string; sender: 'creator' | 'brand'; body: string; created_at: string };
+export type Attachment = { name: string; path: string; type: string; size: number };
+export type Message = { id: string; collab_id: string; sender: 'creator' | 'brand'; body: string; created_at: string; attachments?: Attachment[]; auto?: boolean };
 export type ReadMark = { collab_id: string; side: 'creator' | 'brand'; read_at: string };
 export type CollabEvent = { id: number; collab_id: string; at: string; kind: string; text: string; visible_to_brand: boolean };
 
@@ -195,6 +199,10 @@ export type Collab = {
 	shot_list: { t: string; done: boolean }[];
 	/** The language(s) the content is in: "Kannada", "English + Kannada", or '' for no preference. */
 	content_language: string;
+	/** Returning-brand discount (%) on this collab. */
+	loyalty_pct: number;
+	wrapped_at: string | null;
+	rebook_sent_at: string | null;
 	script: ReelScript | null;
 	files?: { id: string; label: string; url: string; file_path: string | null; file_type: string; size_bytes: number; created_at: string; downloaded_at: string | null }[];
 	files_sent_at: string | null;
@@ -341,6 +349,14 @@ export type Settings = {
 	away_weeks: string[];
 	content_languages: string[];
 	instant_booking: boolean;
+	away_until: string | null;
+	away_note: string;
+	away_contact: string;
+	rebook_offer: boolean;
+	rebook_pct: number;
+	rebook_days: number;
+	demand_pricing: boolean;
+	demand_pct: number;
 	show_availability: boolean;
 	offered_kinds: string[];
 	show_results: boolean;
@@ -385,6 +401,9 @@ export type PublicPage = {
 	content_languages?: string[];
 	instant_booking?: boolean;
 	weeks?: { start: string; status: 'open' | 'limited' | 'full' | 'away' }[] | null;
+	away_until?: string | null;
+	/** Package prices are multiplied by this when her coming weeks are nearly full. */
+	demand_factor?: number;
 	barter: { mode: 'open' | 'selective' | 'closed'; min_value: number; reply_time: string; slots_left: number | null } | null;
 	worked_with: string[];
 	instagram: {

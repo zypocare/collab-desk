@@ -8,6 +8,7 @@
 	import Segmented from '#lib/components/Segmented.svelte';
 	import MonthReview from '#lib/components/MonthReview.svelte';
 	import TaxPack from '#lib/components/TaxPack.svelte';
+	import Barter194R from '#lib/components/Barter194R.svelte';
 
 	const current = fyOf(today());
 	let fyStart = $state(String(current.start));
@@ -163,6 +164,8 @@
 </section>
 
 <TaxPack {fy} />
+
+<Barter194R {fy} />
 
 <section class="panel rv" style="--i:9">
 	<div class="panel-h"><h2>For your accountant</h2><small>CSV files open in Excel and Google Sheets</small></div>

@@ -9,7 +9,7 @@
 	import { delivText, firstName, fmtUpdated, initials, inr, offeredKinds, packageOffered, waLink } from '#lib/util.ts';
 	import BrandTopbar from '#lib/components/BrandTopbar.svelte';
 	import Audience from '#lib/components/Audience.svelte';
-	import { compact, mediaLabel } from '#lib/util.ts';
+	import { compact, fmt, mediaLabel } from '#lib/util.ts';
 	import Icon from '#lib/components/Icon.svelte';
 	import ExpectedResults from '#lib/components/ExpectedResults.svelte';
 	import { downloadMediaKit } from '#lib/mediaKitPdf.ts';
@@ -128,7 +128,7 @@
 						<p class="bx-langs"><Icon name="globe" /><span>Creates content in</span>{#each p.content_languages as l (l)}<b>{langLabel(l)}</b>{/each}{#if p.content_languages.length > 1}<small>or a mix</small>{/if}</p>
 					{/if}
 					<div class="bx-status">
-						<span class="bx-pill" class:off={!p.accepting}><span class="dt pulse"></span>{p.accepting ? `Open for collaborations · replies in about ${p.reply_time}` : 'Fully booked right now'}</span>
+						{#if p.away_until}<span class="bx-pill off"><span class="dt"></span>Away until {fmt(p.away_until)} · replies when back</span>{:else}<span class="bx-pill" class:off={!p.accepting}><span class="dt pulse"></span>{p.accepting ? `Open for collaborations · replies in about ${p.reply_time}` : 'Fully booked right now'}</span>{/if}
 						{#if avgRating}<span class="bx-pill soft">★ {avgRating} from {p.reviews.length} brand{p.reviews.length === 1 ? '' : 's'}</span>{/if}
 					</div>
 					<div class="bx-cta" bind:this={heroCta}>

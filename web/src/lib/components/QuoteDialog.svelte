@@ -33,6 +33,9 @@
 	let rounds = $state(start.base?.revision_rounds ?? terms.revision_rounds);
 	let exclusivity = $state(start.base?.exclusivity_days ?? terms.exclusivity_days);
 
+	// A returning brand (from her "Book again" offer): their % comes off every option.
+	const loyaltyPct = untrack(() => start.c.loyalty_pct ?? 0);
+	const loyaltyOff = (list: QuoteItem[]) => (loyaltyPct ? Math.round(list.reduce((a, i) => a + i.qty * i.rate, 0) * loyaltyPct / 100) : 0);
 	function pick(o: QuoteOption) {
 		// Options are priced in rupees: convert when quoting in another currency.
 		const k = (v: number) => (fx === 1 ? v : fromInr(v, fx));
@@ -40,12 +43,31 @@
 		items = o.items.map((i) => ({ ...i, rate: k(i.rate) }));
 		usage = o.usage;
 		usageFee = k(o.usage_fee);
-		discount = k(o.discount);
+		discount = k(o.discount + loyaltyOff(o.items));
 	}
 	// Start from the option that fits best: the brand's budget if they gave one, else the rate card.
 	const first0 = options.find((o) => o.key === 'budget') ?? options.find((o) => o.key === 'rate');
 	if (first0) untrack(() => pick(first0));
 	let validDays = $state(14);
+	// Let the brand choose: they see the ready options side by side (the middle one marked most
+	// popular) and pick one; the quote becomes that option when they accept.
+	let letChoose = $state(options.length >= 2);
+	const choices = $derived(
+		options.map((o, i) => {
+			const off = loyaltyOff(o.items);
+			const k = (v: number) => (fx === 1 ? v : fromInr(v, fx));
+			return {
+				title: o.key === 'budget' ? 'Fits your budget' : o.key === 'rate' ? 'Recommended' : 'Premium',
+				sub: o.sub,
+				items: o.items.map((x) => ({ ...x, rate: k(x.rate) })),
+				usage: o.usage,
+				usage_fee: k(o.usage_fee),
+				discount: k(o.discount + off),
+				total: k(Math.max(0, o.total - off)),
+				popular: options.length >= 3 ? i === 1 : o.key === 'rate'
+			};
+		})
+	);
 	let notes = $state(start.base?.notes ?? '');
 	let busy = $state(false);
 	let first = $state<HTMLElement>();
@@ -111,7 +133,8 @@
 				valid_until: validDays > 0 ? rel(validDays) : null,
 				notes,
 				currency: cur,
-				inr_rate: foreign ? Number(fx) || 1 : 1
+				inr_rate: foreign ? Number(fx) || 1 : 1,
+				options: letChoose && choices.length >= 2 && !editing ? choices : null
 			},
 			send,
 			editing ? base?.id : undefined
@@ -126,7 +149,7 @@
 <div class="dialog-scrim" role="presentation" use:portal onclick={(e) => e.target === e.currentTarget && onclose()}>
 	<div class="dialog quote-dialog" role="dialog" aria-modal="true" aria-labelledby="q-title">
 		<h2 id="q-title">{editing ? 'Edit quote' : base ? `Quote version ${(c.quotes[0]?.version ?? 0) + 1}` : 'Build a quote'} · {c.brand.name}</h2>
-		<p>Prices start from your rate card. {#if brandBudget}The fee on this collab is {inr(brandBudget)}.{/if}</p>
+		<p>Prices start from your rate card. {#if brandBudget}The fee on this collab is {inr(brandBudget)}.{/if}{#if loyaltyPct} <b>Returning brand: {loyaltyPct}% off is included in the discount.</b>{/if}</p>
 		<div class="fields cur-row">
 			<div class="f"><label for="q-cur">Currency</label><Select id="q-cur" value={cur} options={CURRENCIES} onchange={(v) => useCurrency(v as Currency)} /></div>
 			{#if foreign}<div class="f"><label for="q-fx">1 {cur} in rupees</label><div class="pre"><span>₹</span><input class="inp num" id="q-fx" type="number" min="0" step="0.01" value={fx} onchange={(e) => setFx(Number((e.currentTarget as HTMLInputElement).value))} /></div></div>{/if}
@@ -143,6 +166,9 @@
 					</button>
 				{/each}
 			</div>
+			{#if options.length >= 2 && !editing}
+				<label class="check-row q-choose"><input type="checkbox" class="cbx" bind:checked={letChoose} /><span><b>Let the brand choose</b> from these {options.length} options (the middle one is shown as most popular). Most brands pick the middle one.</span></label>
+			{/if}
 		{/if}
 
 		<div class="q-items" bind:this={first}>

@@ -22,7 +22,7 @@ Deno.serve(async (req) => {
 
   const { data: settings, error: settingsError } = await supabase
     .from('creator_settings')
-    .select('app_name, display_name, site_url, reply_time, barter_reply_time, creator_email, handle, city')
+    .select('app_name, display_name, site_url, reply_time, barter_reply_time, creator_email, handle, city, away_until, away_note, away_contact')
     .eq('id', 1)
     .single<Settings>();
   if (settingsError) return Response.json({ error: settingsError.message }, { status: 500 });
@@ -67,6 +67,22 @@ Deno.serve(async (req) => {
         const { data: rb } = await supabase.from('brands').select('name').eq('id', cc.referred_by).maybeSingle();
         p.referred_by = (rb as { name?: string } | null)?.name ?? '';
       }
+      row.payload = p;
+    }
+    // She's away: the brand's confirmation says so (with her note and who to contact).
+    const st = settings as Settings & { away_until?: string | null; away_note?: string; away_contact?: string };
+    if (row.kind === 'request_received_brand' && st.away_until && st.away_until >= new Date().toISOString().slice(0, 10) && !p.away) {
+      const back = new Date(st.away_until + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+      p.away = `Away until ${back}. ${String(st.away_note ?? '').trim()} ${st.away_contact ? `For anything urgent: ${st.away_contact}.` : ''}`.replace(/\s+/g, ' ').trim();
+      row.payload = p;
+    }
+    // A quote with options: the email says how many, from the lowest.
+    if (row.kind === 'quote_sent' && p.code && p.choices === undefined) {
+      const { data: c } = await supabase.from('collabs').select('id').eq('code', String(p.code)).maybeSingle();
+      const { data: q } = c ? await supabase.from('quotes').select('options').eq('collab_id', (c as { id: string }).id).eq('status', 'sent').order('version', { ascending: false }).limit(1).maybeSingle() : { data: null };
+      const opts = ((q as { options?: { total: number }[] | null } | null)?.options ?? []) as { total: number }[];
+      p.choices = opts.length > 1 ? opts.length : 0;
+      if (opts.length > 1) p.from = Math.min(...opts.map((o) => Number(o.total) || 0));
       row.payload = p;
     }
     // A payment receipt: an advance isn't the end of the collab, so it mustn't read like a goodbye.
