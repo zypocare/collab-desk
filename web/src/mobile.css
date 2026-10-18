@@ -1599,3 +1599,24 @@ textarea.inp.ng-text{min-height:132px;line-height:1.55}
   .dialog.ask{height:calc(100dvh - max(24px,env(safe-area-inset-top,0px)))}
   .m-ask .ic{color:var(--g2)}
 }
+
+/* Brief: "Start from a template" opens its own sheet. */
+.tpl-open{display:flex;align-items:center;gap:12px;width:100%;margin:0 0 14px;padding:12px 14px;border-radius:16px;border:1px solid var(--line);background:color-mix(in oklab,var(--ink) 4%,transparent);color:var(--ink);font:inherit;text-align:left;cursor:pointer;transition:background .2s,transform .15s}
+.tpl-open:active{transform:scale(.99)}
+.tpl-open:hover{background:color-mix(in oklab,var(--ink) 7%,transparent)}
+.tpl-ic{flex:none;width:38px;height:38px;border-radius:11px;display:grid;place-items:center;background:color-mix(in oklab,var(--accent) 14%,transparent);color:var(--accent)}
+.tpl-ic .ic{width:19px;height:19px}
+.tpl-name{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.tpl-name b{font-size:15px;font-weight:600}
+.tpl-name small{font-size:13px;color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tpl-chev{flex:none;width:18px;height:18px;color:var(--ink-3);transition:transform .2s}
+.dialog.tpl-sheet{width:min(640px,100%)}
+.tpl-list{display:flex;flex-direction:column;gap:8px;margin-top:4px}
+.tpl-card{border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.tpl-card.open{border-color:color-mix(in oklab,var(--accent) 45%,var(--line))}
+.tpl-head{display:flex;align-items:center;gap:12px;width:100%;padding:12px 14px;border:0;background:none;color:inherit;font:inherit;text-align:left;cursor:pointer}
+.tpl-card.open .tpl-chev{transform:rotate(90deg)}
+.tpl-body{padding:0 14px 14px}
+[data-side] .dialog .tpl-msg{margin:0 0 4px;font-size:15px;font-weight:600;color:var(--ink)}
+[data-side] .dialog .tpl-tags{margin:10px 0 0;font-size:13.5px;color:var(--accent)}
+.tpl-use{width:100%;justify-content:center;margin-top:12px}
