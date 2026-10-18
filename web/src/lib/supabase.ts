@@ -8,7 +8,9 @@ if (!url || !anonKey) {
 }
 
 export const supabase = createClient(url ?? 'http://localhost', anonKey ?? 'missing', {
-	auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false }
+	auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false },
+	// The live connection's heartbeat runs in a worker, so a background tab doesn't silently lose it.
+	realtime: { worker: true }
 });
 
 export const turnstileSiteKey = (import.meta.env.VITE_TURNSTILE_SITE_KEY as string) || '';

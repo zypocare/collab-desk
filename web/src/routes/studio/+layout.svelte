@@ -6,7 +6,7 @@
 	import { watchVoiceUnlock } from '#lib/voice.ts';
 	import type { LayoutProps } from './$types';
 	import { auth, signOut } from '#lib/auth.svelte.ts';
-	import { byId, loadStudio, studio, stopWatching, watchStudio } from '#lib/studio.svelte.ts';
+	import { byId, catchUp, loadStudio, studio, stopWatching, watchStudio } from '#lib/studio.svelte.ts';
 	import { theme, toggleTheme, ui } from '#lib/ui.svelte.ts';
 	import { firstName, hueOf, initials, inrS, iso, today, unreadFor } from '#lib/util.ts';
 	import { cascade } from '#lib/motion.ts';
@@ -61,11 +61,23 @@
 
 	onMount(() => {
 		watchVoiceUnlock();
-		if (auth.account?.role === 'creator') {
-			loadStudio();
-			watchStudio();
-		}
-		return stopWatching;
+		// Back to the tab or window after a while: make sure the screen shows the latest.
+		const back = () => document.visibilityState === 'visible' && catchUp();
+		document.addEventListener('visibilitychange', back);
+		addEventListener('focus', back);
+		return () => {
+			document.removeEventListener('visibilitychange', back);
+			removeEventListener('focus', back);
+			stopWatching();
+		};
+	});
+	// Load and listen once she is signed in (also when the session is restored a moment after this screen opens).
+	$effect(() => {
+		if (auth.account?.role === 'creator')
+			untrack(() => {
+				loadStudio();
+				watchStudio();
+			});
 	});
 
 	// This month's money against her goal, shown at the bottom of the sidebar.

@@ -10,7 +10,7 @@ import type { BankAlert, Brand, BrandPrivate, BrandReport, Checklist, Collab, De
 import { balanceDue, normaliseInvoice, type Invoice, type InvoiceItem } from './invoice';
 import { confetti, toast, ui } from './ui.svelte';
 import { ask } from './confirm.svelte';
-import { diff, errMessage, inr, stageLabel, todayIso } from './util';
+import { diff, errMessage, inr, stageLabel, todayIso, unreadFor } from './util';
 import { isNetworkError, load as loadSaved, net, save as saveLocal } from './offline.svelte';
 
 export const studio = $state<{
@@ -112,18 +112,25 @@ export async function loadStudio() {
 	studio.settings = settings.data as Settings;
 	studio.loaded = true;
 	studio.error = '';
+	lastSync = Date.now();
 	keepCopy();
 }
 
 let channel: RealtimeChannel | null = null;
 let reloadTimer: ReturnType<typeof setTimeout> | undefined;
+let retryTimer: ReturnType<typeof setTimeout> | undefined;
+let lastSync = 0;
+// The live connection dropped (sleep, a background tab, a network blip): anything that happened meanwhile was missed.
+let missed = false;
 export function watchStudio() {
 	if (channel) return;
+	clearTimeout(retryTimer);
 	const schedule = () => {
 		clearTimeout(reloadTimer);
 		reloadTimer = setTimeout(reloadCollabs, 500);
 	};
-	channel = supabase
+	let me: RealtimeChannel;
+	channel = me = supabase
 		.channel('studio')
 		.on('postgres_changes', { event: '*', schema: 'public', table: 'collabs' }, (p) => {
 			if (p.eventType === 'INSERT' && (p.new as Collab).code && !byId((p.new as Collab).id)) {
@@ -159,11 +166,45 @@ export function watchStudio() {
 			loadAlerts();
 			schedule();
 		})
-		.subscribe();
+		.subscribe((status) => {
+			if (channel !== me) return;
+			if (status === 'SUBSCRIBED') {
+				// Back after a drop: catch up on what was missed.
+				if (missed) {
+					missed = false;
+					catchUp(0);
+				}
+			} else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+				// Start a fresh connection in a moment and catch up once it is back.
+				missed = true;
+				channel = null;
+				supabase.removeChannel(me);
+				clearTimeout(retryTimer);
+				retryTimer = setTimeout(watchStudio, 3000);
+			}
+		});
 }
 export function stopWatching() {
-	if (channel) supabase.removeChannel(channel);
+	clearTimeout(retryTimer);
+	const c = channel;
 	channel = null;
+	if (c) supabase.removeChannel(c);
+}
+
+/** Coming back to the app (tab shown again, window focused, back online): fetch the latest if it may be stale,
+ *  and say what arrived meanwhile. */
+export async function catchUp(minAgeMs = 30_000) {
+	if (!studio.loaded || Date.now() - lastSync < minAgeMs) return;
+	lastSync = Date.now();
+	const known = new Set(studio.collabs.map((c) => c.id));
+	const unreadBefore = studio.collabs.reduce((a, c) => a + unreadFor(c), 0);
+	await reloadCollabs();
+	loadLeads();
+	loadAlerts();
+	const fresh = studio.collabs.filter((c) => !known.has(c.id) && c.stage === 'request').length;
+	const unreadNow = studio.collabs.reduce((a, c) => a + unreadFor(c), 0);
+	if (fresh) toast(fresh === 1 ? 'A new request came in' : `${fresh} new requests came in`, 'inbox');
+	else if (unreadNow > unreadBefore) toast(unreadNow - unreadBefore === 1 ? 'A new message from a brand' : `${unreadNow - unreadBefore} new messages from brands`, 'mail');
 }
 
 export async function reloadCollabs() {
@@ -171,6 +212,7 @@ export async function reloadCollabs() {
 	if (!error && data) studio.collabs = (data as Collab[]).map(normalise);
 	const b = await supabase.from('brands').select('*').order('name');
 	if (!b.error && b.data) studio.brands = b.data as Brand[];
+	lastSync = Date.now();
 	keepCopy();
 	autoFit();
 }
