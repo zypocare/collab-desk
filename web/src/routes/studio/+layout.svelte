@@ -9,7 +9,7 @@
 	import { byId, catchUp, loadStudio, studio, stopWatching, watchStudio } from '#lib/studio.svelte.ts';
 	import { ensurePageCard } from '#lib/pageCard.ts';
 	import { indexDesk } from '#lib/desk.ts';
-	import { theme, toggleTheme, ui } from '#lib/ui.svelte.ts';
+	import { theme, toast, toggleTheme, ui } from '#lib/ui.svelte.ts';
 	import { firstName, hueOf, initials, inrS, iso, today, unreadFor } from '#lib/util.ts';
 	import { cascade } from '#lib/motion.ts';
 	import Icon from '#lib/components/Icon.svelte';
@@ -17,6 +17,7 @@
 	import NewCollabDialog from '#lib/components/NewCollabDialog.svelte';
 	import CommandPalette from '#lib/components/CommandPalette.svelte';
 	import AskDesk from '#lib/components/AskDesk.svelte';
+	import PasskeyNudge from '#lib/components/PasskeyNudge.svelte';
 	import { phone, startPhone } from '#lib/phone.svelte.ts';
 	import { net } from '#lib/offline.svelte.ts';
 
@@ -44,6 +45,16 @@
 	const tabs = $derived(group?.tabs && group.tabs.some((t) => path === t.href) ? group.tabs : null);
 	const newCount = $derived(studio.collabs.filter((c) => c.stage === 'request').length);
 	const allowed = $derived(auth.account?.role === 'creator');
+	// Team roles: an assistant doesn't see money screens; an accountant doesn't talk to brands.
+	const role = $derived(studio.me?.team_role ?? 'owner');
+	const MONEY = ['/studio/money', '/studio/payments', '/studio/reports'];
+	const blocked = (href: string) => (role === 'assistant' && MONEY.some((m) => href.startsWith(m))) || (role === 'accountant' && href.startsWith('/studio/inbox'));
+	$effect(() => {
+		if (studio.me && blocked(path)) {
+			toast(role === 'assistant' ? 'Money screens are for the owner, managers and the accountant.' : 'Messages are for the owner, managers and assistants.', 'alert');
+			goto('/studio', { replaceState: true });
+		}
+	});
 
 	// Opening a collab from anywhere (cards, Today, calendar, search, email links) goes to its own page.
 	$effect(() => {
@@ -299,7 +310,7 @@
 				</a>
 				<button class="side-search" onclick={() => palette?.show()} aria-label="Search and actions"><Icon name="search" /><span>Search</span><kbd>Ctrl K</kbd></button>
 				<div class="side-nav">
-					{#each DESK as n (n.href)}
+					{#each DESK.filter((n) => !blocked(n.href)) as n (n.href)}
 						<a class="side-it" href={n.href} aria-current={deskCurrent === n.href ? 'page' : undefined}
 							><Icon name={n.icon} /><span class="side-t">{n.label}</span>{#if n.href === '/studio/inbox' && unread}<span class="side-badge" aria-label="{unread} unread">{unread}</span>{/if}{#if n.href === '/studio/collabs' && newCount}<span class="side-new">{newCount} new</span>{/if}</a
 						>
@@ -351,7 +362,7 @@
 			<div class="rail-lbl">Workspace</div>
 			<div class="navs" bind:this={navs} use:cascade={{ selector: '.nav', delay: 0.1, gap: 0.06 }}>
 				<span class="nav-ind" bind:this={ind}></span>
-				{#each NAV.filter((n) => !n.desk) as n (n.href)}
+				{#each NAV.filter((n) => !n.desk && !blocked(n.href)) as n (n.href)}
 					<a class="nav" href={phone.on && n.href === '/studio/settings' ? '/studio/profile' : n.href} aria-current={current === n.href ? 'page' : undefined} aria-label={phone.on && n.href === '/studio/settings' ? 'Profile' : undefined}
 						><span class="nav-ic">{#if phone.on && n.href === '/studio/settings'}<Avatar name={studio.settings?.display_name ?? ''} src={studio.ig?.connected ? studio.ig.profile_picture_url : ''} size="28px" />{:else}<Icon name={n.icon} />{/if}</span><span class="nav-t" class:nav-long={!!n.short}>{n.label}</span>{#if n.short}<span class="nav-short" aria-hidden="true">{n.short}</span>{/if}{#if n.href === '/studio/inbox' && unread}<span class="badge" aria-label="{unread} unread">{unread}</span>{/if}{#if n.href === '/studio/collabs' && newCount}<span class="badge" aria-label="{newCount} new"
 								>{newCount}</span
@@ -447,5 +458,6 @@
 	</div>
 	<CommandPalette bind:this={palette} />
 	{#if ui.askOpen}<AskDesk onclose={() => (ui.askOpen = false)} />{/if}
+	{#if studio.loaded}<PasskeyNudge />{/if}
 	{#if ui.newCollab}<NewCollabDialog />{/if}
 {/if}

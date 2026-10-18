@@ -6,6 +6,7 @@
 	import type { Account } from '#lib/types.ts';
 	import { errMessage } from '#lib/util.ts';
 	import Icon from '#lib/components/Icon.svelte';
+	import { passkeysHere } from '#lib/passkeys.ts';
 
 	type Turnstile = {
 		render: (el: HTMLElement, opts: Record<string, unknown>) => string;
@@ -127,6 +128,26 @@
 		location.replace(targetFor(account));
 	}
 
+	// Fingerprint / face sign-in (a passkey made earlier on this device), no email code.
+	const canPasskey = passkeysHere();
+	async function withPasskey() {
+		error = '';
+		busy = true;
+		signingIn = true;
+		const { data, error: err } = await supabase.auth.signInWithPasskey().catch((x) => ({ data: { session: null, user: null }, error: x as Error }));
+		if (err || !data?.session) {
+			busy = false;
+			signingIn = false;
+			const m = String(err?.message ?? '');
+			if (/cancel|abort|not allowed|timed out/i.test(m)) return;
+			error = /disabled|not enabled|not found|404/i.test(m) ? "Fingerprint sign-in isn't switched on yet. Use the email code." : 'That didn’t work. Use the email code, then turn on fingerprint sign-in in Settings.';
+			return;
+		}
+		auth.session = data.session;
+		const account = await Promise.race([refreshAccount().catch(() => null), new Promise<null>((r) => setTimeout(() => r(null), 8000))]);
+		location.replace(targetFor(account));
+	}
+
 	// Where to land. A link to the other side's area (creator → /brand…) goes home instead.
 	function targetFor(account: Account | null) {
 		const home = homeFor(account);
@@ -169,6 +190,9 @@
 				<button class="btn grad lg" type="submit" disabled={busy}>
 					{#if busy}<span class="spinner"></span>Sending code…{:else}<Icon name="send" />Send code{/if}
 				</button>
+				{#if canPasskey}
+					<button class="btn lg pk-btn" type="button" disabled={busy} onclick={withPasskey}><Icon name="shield" />Sign in with fingerprint or face</button>
+				{/if}
 			</form>
 		{:else}
 			<h1>Check your <em>email</em></h1>
@@ -203,3 +227,7 @@
 		{/if}
 	</div>
 </div>
+
+<style>
+	.pk-btn { width: 100%; margin-top: 10px; justify-content: center; }
+</style>

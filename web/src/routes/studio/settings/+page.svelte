@@ -36,6 +36,7 @@
 	import EmailInbox from '#lib/components/EmailInbox.svelte';
 	import SavedReplies from '#lib/components/SavedReplies.svelte';
 	import ResetData from '#lib/components/ResetData.svelte';
+	import SecuritySettings from '#lib/components/SecuritySettings.svelte';
 	import InsightLinks from '#lib/components/InsightLinks.svelte';
 
 	const s = $derived(studio.settings!);
@@ -185,10 +186,10 @@
 		},
 		{ id: 'reviews', label: 'Results & reviews', icon: 'chart', sub: s.show_results ? 'Shown on your page' : 'Hidden from your page' },
 		{ id: 'alerts', label: 'Inbox, replies & alerts', icon: 'bell', sub: `${(s.saved_replies ?? []).length} saved replies · ${s.digest_enabled ? '9 AM summary on' : '9 AM summary off'}` },
-		{ id: 'team', label: 'Team', icon: 'users', sub: studio.me?.team_role === 'manager' ? 'You are a manager' : 'Give a manager their own login' },
+		{ id: 'team', label: 'Team', icon: 'users', sub: studio.me?.team_role && studio.me.team_role !== 'owner' ? `You are ${studio.me.team_role === 'accountant' ? 'the accountant' : studio.me.team_role === 'assistant' ? 'an assistant' : 'a manager'}` : 'Managers, assistants and an accountant' },
 		{
 			id: 'account',
-			label: 'Shipping & account',
+			label: 'Sign-in, devices & account',
 			icon: 'gear',
 			sub: s.ship_address ? 'Shipping address added' : 'Add your shipping address',
 			warn: s.ship_address ? undefined : 'No shipping address yet'
@@ -395,6 +396,7 @@
 					{:else if active === 'team'}
 						<TeamSettings />
 					{:else if active === 'account'}
+						<SecuritySettings />
 						<ShippingSettings />
 						<section class="panel rv" style="--i:3">
 							<div class="panel-h"><h2>Export everything</h2><small>a backup for your records or your CA</small></div>

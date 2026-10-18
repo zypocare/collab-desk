@@ -185,15 +185,15 @@ minimum_password_length = 6
 # are: `letters_digits`, `lower_upper_letters_digits`, `lower_upper_letters_digits_symbols`
 password_requirements = ""
 
-# Configure passkey sign-ins.
-# [auth.passkey]
-# enabled = false
+# Fingerprint / face sign-in (passkeys). On the live project it's switched on in the dashboard
+# (Authentication > Sign In / Providers > Passkeys) with the live address as the relying party.
+[auth.passkey]
+enabled = true
 
-# Configure WebAuthn relying party settings (required when passkey is enabled).
-# [auth.webauthn]
-# rp_display_name = "Supabase"
-# rp_id = "localhost"
-# rp_origins = ["http://127.0.0.1:3000"]
+[auth.webauthn]
+rp_display_name = "Collab Desk"
+rp_id = "localhost"
+rp_origins = ["http://localhost:5173", "http://localhost:8788"]
 
 [auth.rate_limit]
 # Number of emails that can be sent per hour. Requires auth.email.smtp to be enabled.
@@ -463,6 +463,13 @@ additional_redirect_urls = ["https://collab-desk.zypocare.workers.dev"]
 
 [remotes.production.auth.rate_limit]
 email_sent = 30
+
+# Passkeys belong to the address: after moving to a new domain, change these and people add their
+# fingerprint again (the email code keeps working meanwhile).
+[remotes.production.auth.webauthn]
+rp_display_name = "Collab Desk"
+rp_id = "collab-desk.zypocare.workers.dev"
+rp_origins = ["https://collab-desk.zypocare.workers.dev"]
 
 [remotes.production.auth.email.smtp]
 enabled = true

@@ -477,17 +477,43 @@ export function render(kind: string, p: Payload, s: Settings): Omit<Mail, 'to'> 
   }
 
   if (kind === 'team_added') {
+    const role = p.role === 'assistant' ? 'an assistant' : p.role === 'accountant' ? 'the accountant' : 'a manager';
+    const sees =
+      p.role === 'assistant'
+        ? `You'll see her collabs, content and brand messages. Invoices and payments stay with her.`
+        : p.role === 'accountant'
+          ? `You'll see her invoices, payments and reports, and can record payments.`
+          : `You'll see her collabs, messages and money, just as she does.`;
     return {
       subject: `${s.display_name} added you to ${s.app_name}`,
       html: layout(
         s,
         `You're on ${esc(me)}'s team`,
-        `${hi(p.name || 'there')}${P(`${esc(s.display_name)} has added you as a manager in ${esc(s.app_name)}, where her brand collaborations, content plan and payments are run.`)}
+        `${hi(p.name || 'there')}${P(`${esc(s.display_name)} has added you as ${role} in ${esc(s.app_name)}, where her brand collaborations, content plan and payments are run.`)}
          ${P(`Sign in with this email address. There's no password: you'll get a 6-digit code each time.`)}`,
         { label: `Sign in to ${s.app_name}`, href: String(p.link) },
-        { to: 'creator', preheader: `${me} added you as a manager.`, next: [`Sign in with this email and the code we send.`, `You'll see her collabs, messages and money, just as she does.`] },
+        { to: 'creator', preheader: `${me} added you as ${role}.`, next: [`Sign in with this email and the code we send.`, sees] },
       ),
-      text: `Hi ${firstOf(p.name || 'there')},\n\n${s.display_name} has added you as a manager in ${s.app_name}. Sign in with this email (you'll get a 6-digit code): ${p.link}${sign}`,
+      text: `Hi ${firstOf(p.name || 'there')},\n\n${s.display_name} has added you as ${role} in ${s.app_name}. Sign in with this email (you'll get a 6-digit code): ${p.link}${sign}`,
+    };
+  }
+
+  if (kind === 'new_device') {
+    const ua = String(p.agent || '');
+    const browser = /Edg\//.test(ua) ? 'Edge' : /SamsungBrowser/.test(ua) ? 'Samsung Internet' : /Chrome\//.test(ua) ? 'Chrome' : /Firefox\//.test(ua) ? 'Firefox' : /Safari\//.test(ua) ? 'Safari' : 'a browser';
+    const os = /iPhone/.test(ua) ? 'an iPhone' : /iPad/.test(ua) ? 'an iPad' : /Android/.test(ua) ? 'an Android phone' : /Mac OS X/.test(ua) ? 'a Mac' : /Windows/.test(ua) ? 'a Windows computer' : /Linux/.test(ua) ? 'a Linux computer' : 'a device';
+    const when = new Date(String(p.at || Date.now())).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
+    return {
+      subject: `New sign-in to ${s.app_name}: ${browser} on ${os}`,
+      html: layout(
+        s,
+        `A new device signed in`,
+        `${P(`Your ${esc(s.app_name)} account was just opened in <b>${esc(browser)} on ${esc(os)}</b>, ${esc(when)} (India time)${p.ip ? `, from the internet address ${esc(String(p.ip))}` : ''}.`)}
+         ${P(`If that was you, there's nothing to do. If it wasn't, open your signed-in devices and sign it out.`)}`,
+        { label: 'See signed-in devices', href: String(p.link) },
+        { to: 'creator', preheader: `${browser} on ${os}, ${when}.` },
+      ),
+      text: `Your ${s.app_name} account was just opened in ${browser} on ${os}, ${when} (India time)${p.ip ? `, from ${p.ip}` : ''}. If that was you, there's nothing to do. If not, sign it out here: ${p.link}`,
     };
   }
 

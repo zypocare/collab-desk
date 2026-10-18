@@ -32,7 +32,7 @@ export const studio = $state<{
 	followersHistory: { day: string; followers: number }[];
 	packages: Package[];
 	retainers: Retainer[];
-	me: { role: 'creator'; email: string; team_role: 'owner' | 'manager'; name?: string } | null;
+	me: { role: 'creator'; email: string; team_role: 'owner' | 'manager' | 'assistant' | 'accountant'; name?: string } | null;
 }>({ me: null, loaded: false, error: '', collabs: [], brands: [], notes: {}, fits: {}, reading: [], leads: [], settings: null, alerts: [], ig: null, media: [], followersHistory: [], packages: [], retainers: [] });
 
 const COLLAB_SELECT = '*, brand:brands(*), deliverables(*), events:collab_events(*), quotes(*), drafts(*, comments:draft_comments(*)), expenses:collab_expenses(*), files:collab_files(*), invoices(*), posts:collab_posts(matched_by, media:ig_media(*)), reports:brand_reports(*), messages:collab_messages(id, sender, body, created_at), reads:collab_reads(side, read_at), links:collab_links(*)';

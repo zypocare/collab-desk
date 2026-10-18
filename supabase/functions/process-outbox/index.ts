@@ -108,7 +108,7 @@ Deno.serve(async (req) => {
         skipped++;
         continue;
       }
-      await sendMail({ to: row.to_email, cc: String(row.to_email).toLowerCase() === ownerEmail ? teamCc : undefined, ...mail });
+      await sendMail({ to: row.to_email, cc: String(row.to_email).toLowerCase() === ownerEmail && row.kind !== 'new_device' ? teamCc : undefined, ...mail });
       await supabase.from('outbox').update({ status: 'sent', sent_at: new Date().toISOString(), last_error: null }).eq('id', row.id);
       sent++;
     } catch (e) {
