@@ -630,3 +630,37 @@
   [data-side="studio"] .ibx-pane .th-tools, [data-side="studio"] .ibx-pane .th-drafts { padding-left: 20px; padding-right: 20px; }
   .ibx-pane .empty-card { margin: auto; }
 }
+
+/* ==========================================================================================
+   REPORTS (laptop): the month review and the deal numbers as roomy cards with rounded tiles,
+   the same language as the Money and Content dashboards.
+   ========================================================================================== */
+@media (min-width: 761px) {
+  [data-side="studio"] .mr { padding: 24px; margin-bottom: 18px; border-radius: 24px; border: 1px solid color-mix(in oklab, var(--line) 85%, transparent); background: color-mix(in oklab, var(--surface) 94%, transparent); box-shadow: var(--shadow-sm); }
+  [data-side="studio"] .mr-fx { display: block; }
+  [data-side="studio"] .mr-h { padding: 0; border: 0; align-items: flex-start; }
+  [data-side="studio"] .mr-h .eb { font-size: 12.5px; font-weight: 700; letter-spacing: .14em; background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; display: inline-flex; }
+  [data-side="studio"] .mr-h .eb .ai-tag { -webkit-text-fill-color: initial; }
+  [data-side="studio"] .mr-h h2 { font-size: 22px; letter-spacing: -.03em; margin-top: 4px; }
+  [data-side="studio"] .mr-head { padding: 0; margin: 16px 0 0; font-family: 'Instrument Serif', Georgia, serif; font-style: italic; font-weight: 400; font-size: 30px; line-height: 1.15; }
+  [data-side="studio"] :is(.mr-kpis, .dl-kpis) { display: grid; grid-auto-flow: row; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-top: 16px; padding: 0; border: 0; }
+  [data-side="studio"] .dl-kpis { padding: 0 20px; }
+  [data-side="studio"] .pg :is(.mr-kpis > div, .dl-kpis > div) { padding: 16px 18px; border: 0 !important; border-radius: 18px; background: color-mix(in oklab, var(--ink) 5%, transparent); }
+  [data-side="studio"] .mr-kpis small, [data-side="studio"] .dl-kpis small { font-size: 13px; color: var(--ink-3); }
+  [data-side="studio"] .mr-kpis b, [data-side="studio"] .dl-kpis b { font: 600 26px/1.2 var(--f-mono); letter-spacing: -.04em; }
+  [data-side="studio"] .mr-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-top: 12px; }
+  [data-side="studio"] .mr-col, [data-side="studio"] .mr-col:first-child { padding: 18px 20px; border: 0; border-radius: 18px; }
+  [data-side="studio"] .mr-col.good { background: color-mix(in oklab, var(--ok) 9%, transparent); }
+  [data-side="studio"] .mr-col.bad { background: color-mix(in oklab, var(--warn) 10%, transparent); }
+  [data-side="studio"] .mr-col.act { background: color-mix(in oklab, var(--g2) 9%, transparent); }
+  [data-side="studio"] .mr-col h3 { font-size: 15px; margin: 0 0 8px; }
+  [data-side="studio"] .mr-col :is(ul, ol) { font-size: 14.5px; line-height: 1.6; }
+  [data-side="studio"] .mr-foot { padding: 14px 0 0; margin-top: 14px; border-top: 0; display: flex; align-items: center; justify-content: space-between; gap: 12px; color: var(--ink-3); font-size: 13.5px; }
+  [data-side="studio"] .deals .dl-tip { margin: 14px 20px 0; padding: 12px 16px; border-radius: 16px; background: color-mix(in oklab, var(--g2) 8%, transparent); }
+  [data-side="studio"] .rep-grid { margin-bottom: 18px; align-items: start; }
+  [data-side="studio"] .pg .dl-tables { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; padding: 16px 20px 20px; margin: 0; border: 0; background: none; }
+  [data-side="studio"] .pg .dl-tables > div { padding: 16px 18px; border-radius: 18px; background: color-mix(in oklab, var(--ink) 4%, transparent); overflow-x: auto; }
+  [data-side="studio"] .pg .dl-tables h3 { font-size: 12.5px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; width: max-content; margin-bottom: 8px; }
+  @media (max-width: 1280px) { [data-side="studio"] .pg .dl-tables { grid-template-columns: minmax(0, 1fr); } }
+  [data-side="studio"] .pg .warn-box { border-radius: 20px; }
+}

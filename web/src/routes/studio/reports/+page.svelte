@@ -8,6 +8,7 @@
 	import Segmented from '#lib/components/Segmented.svelte';
 	import MonthReview from '#lib/components/MonthReview.svelte';
 	import TaxPack from '#lib/components/TaxPack.svelte';
+	import Columns from '#lib/components/charts/Columns.svelte';
 	import Barter194R from '#lib/components/Barter194R.svelte';
 
 	const current = fyOf(today());
@@ -27,7 +28,6 @@
 		return '';
 	});
 	const s = $derived(studio.settings!);
-	const max = $derived(Math.max(50000, Math.ceil(Math.max(...r.months.map((m) => m.received)) / 50000) * 50000));
 	const barterFlags = $derived(r.brands.filter((b) => b.barter > 20000));
 	const certsMissing = $derived(r.brands.reduce((a, b) => a + b.tdsCertsMissing, 0));
 
@@ -72,14 +72,25 @@
 	</div>
 </header>
 
-<MonthReview />
-
-<section class="kpis k4" aria-label="Year summary">
-	<div class="kpi glow rv" style="--i:1"><div><div class="lbl">Money received</div><div class="big" use:countUp={{ value: r.total.received, money: true }}>{inr(r.total.received)}</div><div class="sub">+ {inr(r.total.tds)} TDS deducted</div></div></div>
-	<div class="kpi glow rv" style="--i:2"><div><div class="lbl">Invoiced</div><div class="big" use:countUp={{ value: r.total.taxable, money: true }}>{inr(r.total.taxable)}</div><div class="sub">{r.total.invoices} invoice{r.total.invoices === 1 ? '' : 's'}, before GST</div></div></div>
-	<div class="kpi glow rv" style="--i:3"><div><div class="lbl">GST charged</div><div class="big" use:countUp={{ value: r.total.gst, money: true }}>{inr(r.total.gst)}</div><div class="sub">{s.gst_registered ? 'to pay with your GST returns' : 'not registered for GST'}</div></div></div>
-	<div class="kpi glow rv" style="--i:4"><div><div class="lbl">Barter value</div><div class="big" use:countUp={{ value: r.total.barter, money: true }}>{inr(r.total.barter)}</div><div class="sub">products received</div></div></div>
+<section class="md-hero rv" aria-label="Year summary">
+	<div class="mesh" aria-hidden="true"></div>
+	<div class="md-main">
+		<span class="bx-eb">Money received · {fy.label}</span>
+		<b class="md-big num" use:countUp={{ value: r.total.received, money: true }}>{inr(r.total.received)}</b>
+		<div class="md-sub">
+			{#if r.total.tds}<span>+ {inr(r.total.tds)} TDS deducted</span>{/if}
+			{#if r.total.costs}<span>{inr(r.total.costs)} costs · you kept {inr(r.total.received - r.total.costs)}</span>{/if}
+		</div>
+	</div>
+	<div class="md-tiles">
+		<div class="md-tile"><small>Invoiced</small><b class="num">{inrS(r.total.taxable)}</b><span>{r.total.invoices} invoice{r.total.invoices === 1 ? '' : 's'}, before GST</span></div>
+		<div class="md-tile"><small>GST charged</small><b class="num">{inrS(r.total.gst)}</b><span>{s.gst_registered ? 'to pay with your GST returns' : 'not registered for GST'}</span></div>
+		<div class="md-tile"><small>TDS deducted</small><b class="num">{inrS(r.total.tds)}</b><span>{certsMissing ? `${certsMissing} Form 16A missing` : 'claim it back in your return'}</span></div>
+		<div class="md-tile"><small>Barter value</small><b class="num">{inrS(r.total.barter)}</b><span>products received</span></div>
+	</div>
 </section>
+
+<MonthReview />
 
 {#if barterFlags.length || certsMissing}
 	<section class="warn-box rv" style="--i:5;margin:0 0 18px">
@@ -88,7 +99,7 @@
 	</section>
 {/if}
 
-<div class="today-grid">
+<div class="md-grid rep-grid">
 	<section class="panel rv" style="--i:6">
 		<div class="panel-h"><h2>Month by month</h2><button class="btn sm" onclick={exportMonthly}><Icon name="arrow" />CSV</button></div>
 		<div style="overflow-x:auto;padding:0 20px 16px">
@@ -105,19 +116,9 @@
 			</table>
 		</div>
 	</section>
-	<section class="panel glow rv" style="--i:7">
-		<div class="panel-h"><h2>Money received</h2><small>{fy.label}</small></div>
-		<div class="chart">
-			<div class="plot" role="img" aria-label="Money received each month">
-				{#each [1, 0.5, 0] as f (f)}<div class="gl" class:base={f === 0} style="bottom:{f * 100}%"><span>{f === 0 ? '0' : inrS(max * f)}</span></div>{/each}
-				<div class="bars" style="gap:4%">
-					{#each r.months as m, i (m.key)}
-						<div class="bcol" style="--i:{i}"><div class="bar" class:cur={m.key === new Date().toISOString().slice(0, 7)} style="height:{(m.received / max) * 100}%" title="{m.label}: {inr(m.received)}"></div></div>
-					{/each}
-				</div>
-			</div>
-			<div class="months" style="gap:4%">{#each r.months as m (m.key)}<span title={m.label}><span class="m3">{m.label.slice(0, 3)}</span><span class="m1">{m.label.slice(0, 1)}</span></span>{/each}</div>
-		</div>
+	<section class="md-card rv" style="--i:7">
+		<header class="md-h"><div><span class="bx-eb">Month by month</span><h2>Money received</h2></div><a href="/studio/money">Dashboard<Icon name="arrow" /></a></header>
+		<Columns items={r.months.map((m) => ({ label: m.label.slice(0, 3), values: [m.taxable, m.received], now: m.key === new Date().toISOString().slice(0, 7) }))} names={['Invoiced', 'Received']} colors={['color-mix(in oklab, var(--g1) 30%, transparent)', 'linear-gradient(180deg, var(--g2), var(--g1))']} fmt={inrS} height={240} />
 	</section>
 </div>
 
