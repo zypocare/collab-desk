@@ -158,7 +158,7 @@
 	const openC = $derived(detail ? studio.collabs.find((c) => c.code === path.split('/')[3]) : undefined);
 	const brandId = $derived(/^\/studio\/brands\/./.test(path) ? path.split('/')[3] : '');
 	const title = $derived(
-		path === '/studio/profile' ? (studio.settings?.handle ?? '')
+		path === '/studio/profile' || path === '/studio/inbox' ? (studio.settings?.handle ?? '')
 		: openC ? openC.brand.name
 		: sec ? (SECTIONS[sec] ?? '')
 		: brandId ? (studio.brands.find((b) => b.id === brandId)?.name ?? 'Brand')
@@ -397,7 +397,7 @@
 				{:else}
 					<!-- Laptop: pages sit at a readable width; the board uses all of it. -->
 					<div class="pg">
-						<div class="at-bar" class:at-flow={detail}>
+						<div class="at-bar" class:at-flow={detail} hidden={path.startsWith('/studio/inbox')}>
 							{#if detail}<a class="at-back" href="/studio/collabs"><Icon name="chevL" />Collabs</a>{/if}
 							{#if deskTabs}
 								<nav class="subtabs at-tabs" aria-label="{group?.label} pages" bind:this={subs}>

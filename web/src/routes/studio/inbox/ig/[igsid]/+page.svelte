@@ -136,7 +136,7 @@
 	<div class="thread">
 		<div class="th-list" bind:this={list}>
 			{#each msgs as m (m.mid)}
-				<div class="bub-row" class:mine={m.from_me}><div class="bub"><p>{m.text}</p><time datetime={m.created_at}>{time(m.created_at)}</time></div></div>
+				<div class="bub-row first last" class:mine={m.from_me}><div class="bub" title={time(m.created_at)}><p>{m.text}</p></div><time class="bub-t" datetime={m.created_at}>{time(m.created_at)}</time></div>
 			{:else}
 				<div class="th-empty"><Icon name="send" /><p>No messages yet.</p></div>
 			{/each}
@@ -149,8 +149,8 @@
 				</div>
 			{/if}
 			<form class="th-box" onsubmit={send}>
-				<textarea class="inp" rows="1" placeholder="Message…" bind:value={text}></textarea>
-				<button class="btn grad send-btn" type="submit" disabled={busy || !text.trim()} aria-label="Send">{#if busy}<span class="spinner"></span>{:else}<Icon name="send" />{/if}</button>
+				<textarea class="th-in" rows="1" placeholder="Message…" aria-label="Message" bind:value={text} onkeydown={(e) => e.key === 'Enter' && !e.shiftKey && !e.isComposing && !matchMedia('(pointer: coarse)').matches && (e.preventDefault(), (e.currentTarget as HTMLTextAreaElement).form?.requestSubmit())}></textarea>
+				{#if text.trim()}<button class="send-btn" type="submit" disabled={busy}>{busy ? 'Sending…' : 'Send'}</button>{/if}
 			</form>
 		{:else}
 			<p class="hint ig-closed">Instagram only lets apps reply within 24 hours of their last message. <a class="lnk" href="https://ig.me/m/{t?.username ?? ''}" target="_blank" rel="noopener">Reply in Instagram</a></p>

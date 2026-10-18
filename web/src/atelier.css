@@ -608,3 +608,25 @@
 @media (min-width: 761px) and (max-width: 1280px) {
   .cb-hero { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* ==========================================================================================
+   INBOX (laptop): Instagram on the web. The chat fills the right side.
+   ========================================================================================== */
+@media (min-width: 761px) {
+  [data-side="studio"] .pg:has(.ibx) { padding-top: 0; }
+  .ibx-pane .chat { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+  .ibx-pane .chat-h { flex: none; display: flex; align-items: center; gap: 12px; height: 76px; margin: 0; padding: 0 22px; border-bottom: 1px solid color-mix(in oklab, var(--ink) 12%, transparent); }
+  .ibx-pane .chat-h > .m-ib:first-child { display: none; }
+  .ibx-pane .chat-who { gap: 12px; }
+  .ibx-pane .chat-who .mono, .ibx-pane .chat-who .ig-pic { width: 46px; height: 46px; border-radius: 50%; font-size: 16px; }
+  .ibx-pane .chat-who b { font-size: 16.5px; font-weight: 600; }
+  .ibx-pane .chat-who small { font-size: 13px; }
+  .ibx-pane .chat-h .m-ib { width: 40px; height: 40px; border-radius: 50%; }
+  .ibx-pane .chat-h .m-ib .ic { width: 24px; height: 24px; }
+  .ibx-pane .collab-banner { margin: 12px 20px 0; }
+  [data-side="studio"] .ibx-pane .thread { flex: 1; min-height: 0; border: 0; border-radius: 0; background: none; box-shadow: none; }
+  [data-side="studio"] .ibx-pane .th-list { flex: 1; max-height: none; padding: 20px 24px 8px; }
+  [data-side="studio"] .ibx-pane .th-box { margin: 10px 20px 18px; }
+  [data-side="studio"] .ibx-pane .th-tools, [data-side="studio"] .ibx-pane .th-drafts { padding-left: 20px; padding-right: 20px; }
+  .ibx-pane .empty-card { margin: auto; }
+}
