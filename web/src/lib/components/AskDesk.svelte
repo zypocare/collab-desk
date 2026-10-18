@@ -10,7 +10,6 @@
 	import { toast, ui } from '../ui.svelte';
 	import { firstName, todayIso } from '../util';
 	import AiThinking from './AiThinking.svelte';
-	import Avatar from './Avatar.svelte';
 	import Icon from './Icon.svelte';
 	import NudgeSheet from './NudgeSheet.svelte';
 
@@ -31,6 +30,7 @@
 	let box = $state<HTMLTextAreaElement>();
 	let nudging = $state<Nudge | null>(null);
 	let allHistory = $state(false);
+	let menuOpen = $state(false);
 
 	const active = $derived(chats.find((c) => c.id === activeId) ?? null);
 	const turns = $derived(active?.turns ?? []);
@@ -170,257 +170,185 @@
 	const back = () => (activeId ? (activeId = null) : allHistory ? (allHistory = false) : onclose());
 </script>
 
-<svelte:window onkeydown={(e) => e.key === 'Escape' && !nudging && onclose()} />
+<svelte:window onkeydown={(e) => e.key === 'Escape' && !nudging && (menuOpen ? (menuOpen = false) : onclose())} />
 
 {#snippet conversation()}
 	{#each turns as t, i (i)}
-		<div class="ad-q"><p>{t.q}</p></div>
-		{#if t.a}
-			<div class="ad-a">
-				<span class="ad-a-ic" aria-hidden="true"><Icon name="spark" /></span>
-				<div>
+		<div class="gm-q"><p>{t.q}</p></div>
+		<div class="gm-a">
+			<span class="gm-spark" class:busy={!t.a} aria-hidden="true"><Icon name="spark" /></span>
+			<div class="gm-a-b">
+				{#if t.a}
 					<p>{t.a}</p>
 					{#if t.actions.length}
-						<div class="ad-acts">{#each t.actions as a, k (k)}<button class="ad-act" onclick={() => act(a)}><Icon name={ICON[a.type] ?? 'arrow'} />{a.label || a.type}</button>{/each}</div>
+						<div class="gm-acts">{#each t.actions as a, k (k)}<button class="gm-chip" onclick={() => act(a)}><Icon name={ICON[a.type] ?? 'arrow'} />{a.label || a.type}</button>{/each}</div>
 					{/if}
-				</div>
+				{:else if busy && i === turns.length - 1}
+					<div class="gm-think"><i></i><i></i><i></i></div>
+				{/if}
 			</div>
-		{:else if busy && i === turns.length - 1}
-			<div class="ad-a"><span class="ad-a-ic" aria-hidden="true"><Icon name="spark" /></span><div><AiThinking label="Looking through your desk" /></div></div>
-		{/if}
+		</div>
 	{/each}
 {/snippet}
 
-{#snippet composer(big: boolean)}
-	<form class="ad-box" class:big onsubmit={(e) => (e.preventDefault(), send())}>
-		{#if big}<span class="ad-box-ic" aria-hidden="true"><Icon name="spark" /></span>{/if}
-		<textarea rows="1" placeholder={listening ? 'Listening…' : big ? 'Ask your desk anything about your collabs, money or plans…' : 'Your message…'} aria-label="Your question" bind:value={q} bind:this={box} onkeydown={keydown} oninput={grow}></textarea>
-		<div class="ad-box-r">
-			{#if big}<span class="ad-lang">English · Hinglish · ಕನ್ನಡ</span>{/if}
-			<button type="button" class="ad-mic" class:on={listening} onclick={listen} aria-label={listening ? 'Stop listening' : 'Speak your question'}><Icon name="mic" /></button>
-			{#if big}<button class="ad-send" type="submit" disabled={!q.trim() || busy} aria-label="Ask"><Icon name="send" /></button>{/if}
-		</div>
-	</form>
+{#snippet recent()}
+	<button class="gm-new" onclick={() => (newChat(), (menuOpen = false))}><Icon name="edit" />New chat</button>
+	<div class="gm-rlbl">Recent</div>
+	<div class="gm-recent">
+		{#each chats as c (c.id)}
+			<div class="gm-ri" class:on={c.id === activeId}>
+				<button class="gm-rb" onclick={() => (openChat(c.id), (menuOpen = false))}>{c.title}</button>
+				<button class="gm-rx" onclick={() => removeChat(c.id)} aria-label="Delete chat"><Icon name="x" /></button>
+			</div>
+		{:else}
+			<p class="gm-none">Your chats show up here.</p>
+		{/each}
+	</div>
 {/snippet}
 
-<div class="ad-scrim" role="presentation" use:portal onclick={(e) => e.target === e.currentTarget && onclose()}>
-	{#if phone.on}
-		<!-- Phone: a soft lilac assistant, like a chat app of its own. -->
-		<div class="ad-ph" role="dialog" aria-modal="true" aria-label="Ask your desk">
-			<span class="ad-blob b1" aria-hidden="true"></span><span class="ad-blob b2" aria-hidden="true"></span>
+<div class="gm" class:gm-phone={phone.on} role="dialog" aria-modal="true" aria-label="Ask your desk" use:portal>
+	{#if !phone.on}
+		<aside class="gm-side">
+			<div class="gm-brand"><span class="gm-spark lg" aria-hidden="true"><Icon name="spark" /></span><b>Ask your desk</b></div>
+			{@render recent()}
+			<p class="gm-priv"><Icon name="shield" />Answers come from your own data. Chats stay on this device.</p>
+		</aside>
+	{/if}
+	<main class="gm-main">
+		<header class="gm-top">
+			{#if phone.on}<button class="gm-ib" onclick={() => (menuOpen = true)} aria-label="Recent chats"><Icon name="menu" /></button>{/if}
+			<b class="gm-title">{active ? active.title : 'Ask your desk'}</b>
+			{#if active}<button class="gm-ib" onclick={newChat} aria-label="New chat" title="New chat"><Icon name="edit" /></button>{/if}
+			<button class="gm-ib" onclick={onclose} aria-label="Close"><Icon name="x" /></button>
+		</header>
+
+		<div class="gm-body" bind:this={list} aria-live="polite">
 			{#if active}
-				<header class="ad-ph-h">
-					<button class="ad-round" onclick={back} aria-label="Back"><Icon name="chevL" /></button>
-					<b>{active.title}</b>
-					<button class="ad-round" onclick={newChat} aria-label="New chat"><Icon name="edit" /></button>
-				</header>
-				<div class="ad-ph-list" bind:this={list} aria-live="polite">{@render conversation()}</div>
-				<div class="ad-ph-foot">{@render composer(false)}{#if q.trim()}<button class="ad-mic-big send" onclick={() => send()} disabled={busy} aria-label="Ask"><Icon name="send" /></button>{:else}<button class="ad-mic-big" class:on={listening} onclick={listen} aria-label="Speak your question"><Icon name="mic" /></button>{/if}</div>
+				<div class="gm-conv">{@render conversation()}</div>
 			{:else}
-				<header class="ad-ph-top">
-					<Avatar name={studio.settings?.display_name ?? ''} src={studio.ig?.connected ? studio.ig.profile_picture_url : ''} size="44px" />
-					<span><b>Hi {name}</b><small>How can I help you today?</small></span>
-					<button class="ad-round" onclick={onclose} aria-label="Close"><Icon name="x" /></button>
-				</header>
-				<div class="ad-ph-list">
-					{#if !allHistory}
-						<section class="ad-pro">
-							<div><b>Ask your desk</b><p>Money, deadlines and brands, answered from your own collabs.</p></div>
-							<span class="ad-gem g1" aria-hidden="true"></span><span class="ad-gem g2" aria-hidden="true"></span><span class="ad-gem g3" aria-hidden="true"></span>
-						</section>
-						<div class="ad-tiles">
-							{#each TOOLS as t (t.label)}
-								<button class="ad-tile" onclick={() => send(t.q)}><span class="ad-tile-ic"><Icon name={t.icon} /></span><b>{t.label}</b></button>
-							{/each}
-						</div>
-					{/if}
-					{#if chats.length}
-						<div class="ad-hist-h"><b>History</b>{#if chats.length > 3}<button onclick={() => (allHistory = !allHistory)}>{allHistory ? 'Less' : 'View all'}</button>{/if}</div>
-						{#each allHistory ? chats : chats.slice(0, 3) as c (c.id)}
-							<button class="ad-hist" onclick={() => openChat(c.id)}><b>{c.title}</b><small>{c.turns[c.turns.length - 1]?.a || c.turns[0]?.q}</small></button>
+				<div class="gm-hello">
+					<h2><span class="gm-grad">Hello, {name}</span><span class="gm-sub">How can I help today?</span></h2>
+					<div class="gm-sugg">
+						{#each TOOLS as t (t.label)}
+							<button class="gm-pill" onclick={() => send(t.q)}><Icon name={t.icon} /><span>{t.q}</span></button>
 						{/each}
-					{/if}
+					</div>
 				</div>
-				<div class="ad-ph-foot">{@render composer(false)}{#if q.trim()}<button class="ad-mic-big send" onclick={() => send()} disabled={busy} aria-label="Ask"><Icon name="send" /></button>{:else}<button class="ad-mic-big" class:on={listening} onclick={listen} aria-label="Speak your question"><Icon name="mic" /></button>{/if}</div>
 			{/if}
 		</div>
-	{:else}
-		<!-- Laptop: a full-screen assistant with its own menu. -->
-		<div class="ad-lp" role="dialog" aria-modal="true" aria-label="Ask your desk">
-			<span class="ad-beam" aria-hidden="true"></span>
-			<aside class="ad-menu">
-				<div class="ad-brand"><span class="ad-orb sm" aria-hidden="true"><Icon name="spark" /></span><b>Ask your desk</b></div>
-				<button class="ad-newchat" onclick={newChat}><Icon name="plus" />New chat</button>
-				<div class="ad-mlbl">Quick asks</div>
-				{#each TOOLS as t (t.label)}
-					<button class="ad-mi" onclick={() => send(t.q)}><Icon name={t.icon} /><span>{t.label}</span></button>
-				{/each}
-				<div class="ad-mlbl">Recent</div>
-				<div class="ad-recent">
-					{#each chats as c (c.id)}
-						<div class="ad-ri" class:on={c.id === activeId}>
-							<button class="ad-rb" onclick={() => openChat(c.id)}><b>{c.title}</b><small>{when(c.at)}</small></button>
-							<button class="ad-rx" onclick={() => removeChat(c.id)} aria-label="Delete chat"><Icon name="x" /></button>
-						</div>
-					{:else}
-						<p class="ad-none">Your questions show up here.</p>
-					{/each}
-				</div>
-				<p class="ad-priv"><Icon name="shield" />Answers come from your own data. Chats stay on this device.</p>
-			</aside>
-			<main class="ad-main">
-				<button class="ad-close" onclick={onclose} aria-label="Close"><Icon name="x" /></button>
-				{#if active}
-					<header class="ad-th"><b>{active.title}</b></header>
-					<div class="ad-list" bind:this={list} aria-live="polite">{@render conversation()}</div>
-				{:else}
-					<div class="ad-hello">
-						<span class="ad-orb" aria-hidden="true"><Icon name="spark" /></span>
-						<span class="ad-welcome">Welcome to your desk, {name}</span>
-						<h2>How can I help you today?</h2>
-						<div class="ad-cards">
-							{#each TOOLS.slice(0, 3) as t (t.label)}
-								<button class="ad-card" onclick={() => send(t.q)}><span>{t.q}</span><small>{t.hint}</small><Icon name={t.icon} /></button>
-							{/each}
-						</div>
-					</div>
-				{/if}
-				<div class="ad-foot">{@render composer(true)}</div>
-			</main>
-		</div>
+
+		<form class="gm-box" onsubmit={(e) => (e.preventDefault(), send())}>
+			<textarea rows="1" placeholder={listening ? 'Listening…' : 'Ask your desk'} aria-label="Your question" bind:value={q} bind:this={box} onkeydown={keydown} oninput={grow}></textarea>
+			<div class="gm-box-r">
+				<span class="gm-hint">English · Hinglish · ಕನ್ನಡ · हिंदी</span>
+				<button type="button" class="gm-ib" class:rec={listening} onclick={listen} aria-label={listening ? 'Stop listening' : 'Speak your question'}><Icon name="mic" /></button>
+				<button class="gm-send" type="submit" disabled={!q.trim() || busy} aria-label="Ask"><Icon name="send" /></button>
+			</div>
+		</form>
+		<p class="gm-foot">Answers come from your own collabs and money. Check anything important.</p>
+	</main>
+
+	{#if phone.on && menuOpen}
+		<div class="gm-scrim" role="presentation" onclick={() => (menuOpen = false)}></div>
+		<aside class="gm-drawer">
+			<div class="gm-brand"><span class="gm-spark lg" aria-hidden="true"><Icon name="spark" /></span><b>Ask your desk</b></div>
+			{@render recent()}
+		</aside>
 	{/if}
 </div>
 {#if nudging}<NudgeSheet n={nudging} onclose={() => (nudging = null)} />{/if}
 
 <style>
-	.ad-scrim { position: fixed; inset: 0; z-index: 70; display: grid; background: rgba(8, 4, 8, .55); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); animation: adf .25s ease; }
-	@keyframes adf { from { opacity: 0; } }
+	/* Gemini-like: flat, airy, no boxes. Tonal surfaces, pills, a gradient greeting, answers as plain text. */
+	.gm { --bg: #ffffff; --s1: #f0f4f9; --s2: #e4e9f2; --ink: #1f1f1f; --mut: #5f6368; --line: #e3e3e3; position: fixed; inset: 0; z-index: 70; display: grid; grid-template-columns: 280px minmax(0, 1fr); background: var(--bg); color: var(--ink); font-family: var(--f-body, system-ui); animation: gmf .25s ease; }
+	:global(:root[data-theme='dark']) .gm { --bg: #131314; --s1: #1e1f20; --s2: #282a2c; --ink: #e3e3e3; --mut: #9aa0a6; --line: #2d2f31; }
+	@media (prefers-color-scheme: dark) { :global(:root:not([data-theme='light'])) .gm { --bg: #131314; --s1: #1e1f20; --s2: #282a2c; --ink: #e3e3e3; --mut: #9aa0a6; --line: #2d2f31; } }
+	.gm.gm-phone { grid-template-columns: minmax(0, 1fr); height: var(--vv-h, 100dvh); top: var(--vv-top, 0); bottom: auto; }
+	@keyframes gmf { from { opacity: 0; } }
 
-	/* ---------- shared conversation ---------- */
-	.ad-q { display: flex; justify-content: flex-end; }
-	.ad-q p { margin: 0; max-width: 78%; padding: 12px 16px; border-radius: 20px 20px 6px 20px; font-size: 15px; line-height: 1.45; white-space: pre-wrap; }
-	.ad-a { display: flex; gap: 10px; align-items: flex-start; }
-	.ad-a > div { min-width: 0; max-width: 86%; }
-	.ad-a p { margin: 0; padding: 12px 16px; border-radius: 20px 20px 20px 6px; font-size: 15px; line-height: 1.55; white-space: pre-wrap; }
-	.ad-a-ic { flex: none; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; color: #fff; background: conic-gradient(from 200deg, var(--g1), var(--g2), var(--g3), var(--g1)); }
-	.ad-a-ic :global(.ic) { width: 15px; height: 15px; }
-	.ad-acts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
-	.ad-act { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px; border-radius: 999px; font: 600 13px var(--f-body, inherit); cursor: pointer; }
-	.ad-act :global(.ic) { width: 14px; height: 14px; }
+	.gm-side { display: flex; flex-direction: column; gap: 4px; min-height: 0; padding: 16px 12px; background: var(--s1); }
+	.gm-brand { display: flex; align-items: center; gap: 10px; padding: 6px 10px 18px; font-size: 17px; }
+	.gm-brand b { font-weight: 500; }
+	.gm-new { display: inline-flex; align-items: center; gap: 12px; align-self: flex-start; height: 44px; padding: 0 18px; border: 0; border-radius: 999px; background: var(--s2); color: var(--ink); font: 500 14.5px var(--f-body, inherit); cursor: pointer; margin-bottom: 18px; }
+	.gm-new:hover { filter: brightness(.97); }
+	.gm-new :global(.ic) { width: 18px; height: 18px; }
+	.gm-rlbl { padding: 6px 14px 8px; font-size: 14px; font-weight: 500; color: var(--ink); }
+	.gm-recent { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; scrollbar-width: thin; }
+	.gm-ri { display: flex; align-items: center; border-radius: 999px; }
+	.gm-ri:hover { background: var(--s2); }
+	.gm-ri.on { background: color-mix(in oklab, var(--g2) 18%, var(--s2)); }
+	.gm-rb { flex: 1; min-width: 0; height: 40px; padding: 0 14px; border: 0; background: none; color: var(--ink); font: 400 14px var(--f-body, inherit); text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
+	.gm-rx { width: 32px; height: 32px; margin-right: 4px; border: 0; border-radius: 50%; background: none; color: var(--mut); display: grid; place-items: center; cursor: pointer; opacity: 0; }
+	.gm-ri:hover .gm-rx, .gm.gm-phone .gm-rx { opacity: 1; }
+	.gm-rx :global(.ic) { width: 15px; height: 15px; }
+	.gm-none { margin: 2px 14px; font-size: 13.5px; color: var(--mut); }
+	.gm-priv { display: flex; gap: 8px; margin: 10px 10px 0; font-size: 12px; line-height: 1.45; color: var(--mut); }
+	.gm-priv :global(.ic) { width: 14px; height: 14px; flex: none; margin-top: 1px; }
 
-	/* ---------- laptop ---------- */
-	.ad-lp { position: relative; overflow: hidden; display: grid; grid-template-columns: 280px minmax(0, 1fr); width: 100%; height: 100%; background: radial-gradient(1200px 500px at 80% -10%, color-mix(in oklab, var(--g1) 22%, transparent), transparent 60%), #0e0b10; color: #f1ecf2; }
-	.ad-beam { position: absolute; top: -20%; right: 4%; width: 46%; height: 70%; background: conic-gradient(from 200deg at 70% 0%, transparent 0deg, color-mix(in oklab, #b9a3ff 40%, transparent) 18deg, transparent 40deg); filter: blur(40px); opacity: .7; pointer-events: none; }
-	.ad-menu { position: relative; z-index: 1; display: flex; flex-direction: column; gap: 2px; min-height: 0; padding: 20px 14px; border-right: 1px solid rgba(255, 255, 255, .07); background: rgba(255, 255, 255, .02); }
-	.ad-brand { display: flex; align-items: center; gap: 10px; padding: 4px 8px 18px; font-size: 16px; }
-	.ad-newchat { display: flex; align-items: center; gap: 10px; height: 42px; margin-bottom: 14px; padding: 0 14px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, .12); background: rgba(255, 255, 255, .04); color: inherit; font: 600 14.5px var(--f-body, inherit); cursor: pointer; }
-	.ad-newchat:hover { background: rgba(255, 255, 255, .08); }
-	.ad-newchat :global(.ic) { width: 17px; height: 17px; }
-	.ad-mlbl { padding: 14px 10px 6px; font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: rgba(241, 236, 242, .45); }
-	.ad-mi { display: flex; align-items: center; gap: 12px; height: 38px; padding: 0 10px; border: 0; border-radius: 10px; background: none; color: rgba(241, 236, 242, .82); font: 500 14.5px var(--f-body, inherit); cursor: pointer; text-align: left; }
-	.ad-mi:hover { background: rgba(255, 255, 255, .06); color: #fff; }
-	.ad-mi :global(.ic) { width: 17px; height: 17px; color: #c9b6ff; }
-	.ad-recent { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 2px; scrollbar-width: thin; }
-	.ad-ri { display: flex; align-items: center; border-radius: 10px; }
-	.ad-ri:hover, .ad-ri.on { background: rgba(255, 255, 255, .07); }
-	.ad-rb { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; padding: 8px 10px; border: 0; background: none; color: inherit; text-align: left; cursor: pointer; font: inherit; }
-	.ad-rb b { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-	.ad-rb small { font-size: 12px; color: rgba(241, 236, 242, .45); }
-	.ad-rx { width: 28px; height: 28px; margin-right: 4px; border: 0; border-radius: 8px; background: none; color: rgba(241, 236, 242, .4); display: grid; place-items: center; cursor: pointer; opacity: 0; }
-	.ad-ri:hover .ad-rx { opacity: 1; }
-	.ad-rx:hover { color: #fff; background: rgba(255, 255, 255, .08); }
-	.ad-rx :global(.ic) { width: 14px; height: 14px; }
-	.ad-none { margin: 4px 10px; font-size: 13px; color: rgba(241, 236, 242, .4); }
-	.ad-priv { display: flex; gap: 8px; align-items: flex-start; margin: 10px 6px 0; font-size: 12px; line-height: 1.45; color: rgba(241, 236, 242, .45); }
-	.ad-priv :global(.ic) { width: 14px; height: 14px; flex: none; margin-top: 1px; }
-	.ad-main { position: relative; z-index: 1; display: flex; flex-direction: column; min-height: 0; min-width: 0; }
-	.ad-close { position: absolute; top: 18px; right: 20px; z-index: 2; width: 40px; height: 40px; border-radius: 50%; border: 1px solid rgba(255, 255, 255, .12); background: rgba(255, 255, 255, .04); color: inherit; display: grid; place-items: center; cursor: pointer; }
-	.ad-close:hover { background: rgba(255, 255, 255, .1); }
-	.ad-close :global(.ic) { width: 18px; height: 18px; }
-	.ad-orb { position: relative; width: 64px; height: 64px; border-radius: 50%; display: grid; place-items: center; color: #fff; background: radial-gradient(circle at 30% 25%, #fff6 0, transparent 40%), conic-gradient(from 210deg, var(--g1), var(--g2), var(--g3), var(--g1)); box-shadow: 0 0 40px color-mix(in oklab, var(--g1) 70%, transparent), 0 0 80px color-mix(in oklab, var(--g2) 35%, transparent); }
-	.ad-orb :global(.ic) { width: 28px; height: 28px; }
-	.ad-orb.sm { width: 32px; height: 32px; box-shadow: 0 0 18px color-mix(in oklab, var(--g1) 60%, transparent); }
-	.ad-orb.sm :global(.ic) { width: 16px; height: 16px; }
-	.ad-hello { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 40px 32px 10px; text-align: center; }
-	.ad-welcome { margin-top: 18px; font-size: 16px; color: rgba(241, 236, 242, .6); }
-	.ad-hello h2 { margin: 0 0 26px; font-size: clamp(32px, 3.4vw, 46px); font-weight: 500; letter-spacing: -.03em; color: #fff; }
-	.ad-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 220px)); gap: 12px; }
-	.ad-card { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; min-height: 120px; padding: 16px; border-radius: 16px; border: 1px solid rgba(255, 255, 255, .09); background: rgba(255, 255, 255, .035); color: rgba(241, 236, 242, .88); font: 500 14.5px/1.4 var(--f-body, inherit); text-align: left; cursor: pointer; transition: border-color .2s, background .2s, transform .3s; }
-	.ad-card:hover { border-color: color-mix(in oklab, #b9a3ff 55%, transparent); background: rgba(255, 255, 255, .06); transform: translateY(-2px); }
-	.ad-card small { font-size: 12.5px; color: rgba(241, 236, 242, .45); }
-	.ad-card :global(.ic) { margin-top: auto; width: 20px; height: 20px; color: #c9b6ff; }
-	.ad-th { padding: 24px 80px 14px 36px; border-bottom: 1px solid rgba(255, 255, 255, .06); }
-	.ad-th b { font-size: 17px; font-weight: 600; }
-	.ad-list { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; padding: 26px max(36px, calc((100% - 820px) / 2)); scrollbar-width: thin; }
-	.ad-lp .ad-q p { background: linear-gradient(135deg, var(--g1), var(--g2)); color: #fff; }
-	.ad-lp .ad-a p { background: rgba(255, 255, 255, .06); border: 1px solid rgba(255, 255, 255, .08); color: #f1ecf2; }
-	.ad-lp .ad-act { border: 1px solid rgba(255, 255, 255, .16); background: rgba(255, 255, 255, .05); color: #fff; }
-	.ad-lp .ad-act:hover { background: rgba(255, 255, 255, .12); }
-	.ad-lp :global(.ai-think) { color: rgba(241, 236, 242, .7); }
-	.ad-foot { padding: 12px max(32px, calc((100% - 840px) / 2)) 26px; }
-	.ad-box.big { position: relative; display: flex; flex-direction: column; gap: 10px; padding: 14px 14px 12px 46px; border-radius: 20px; background: rgba(20, 16, 24, .85); border: 1px solid color-mix(in oklab, #b9a3ff 45%, transparent); box-shadow: 0 0 0 1px rgba(255, 255, 255, .03), 0 0 40px -6px color-mix(in oklab, var(--g1) 55%, transparent); }
-	.ad-box.big:focus-within { border-color: color-mix(in oklab, #c9b6ff 80%, transparent); }
-	.ad-box-ic { position: absolute; left: 16px; top: 16px; color: #c9b6ff; }
-	.ad-box-ic :global(.ic) { width: 18px; height: 18px; }
-	.ad-box.big textarea { min-height: 26px; max-height: 160px; border: 0; outline: 0; resize: none; background: none; color: #fff; font: 400 16px/1.5 var(--f-body, inherit); }
-	.ad-box.big textarea::placeholder { color: rgba(241, 236, 242, .4); }
-	.ad-box-r { display: flex; align-items: center; gap: 8px; }
-	.ad-lang { margin-right: auto; font-size: 12.5px; color: rgba(241, 236, 242, .4); }
-	.ad-mic, .ad-send { width: 36px; height: 36px; border-radius: 10px; border: 0; display: grid; place-items: center; cursor: pointer; }
-	.ad-mic { background: none; color: rgba(241, 236, 242, .7); }
-	.ad-mic:hover { background: rgba(255, 255, 255, .08); color: #fff; }
-	.ad-mic.on { background: var(--bad); color: #fff; }
-	.ad-send { border: 1px solid color-mix(in oklab, #b9a3ff 60%, transparent); background: color-mix(in oklab, var(--g1) 30%, transparent); color: #fff; }
-	.ad-send:disabled { opacity: .4; cursor: default; }
-	.ad-mic :global(.ic), .ad-send :global(.ic) { width: 18px; height: 18px; }
+	.gm-main { position: relative; display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+	.gm-top { display: flex; align-items: center; gap: 6px; min-height: 64px; padding: calc(8px + env(safe-area-inset-top, 0px)) 12px 8px 16px; }
+	.gm-title { flex: 1; min-width: 0; font-size: 18px; font-weight: 400; text-transform: none; letter-spacing: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+	.gm-ib { flex: none; width: 44px; height: 44px; border: 0; border-radius: 50%; background: none; color: var(--ink); display: grid; place-items: center; cursor: pointer; }
+	.gm-ib:hover { background: var(--s1); }
+	.gm-ib :global(.ic) { width: 22px; height: 22px; }
+	.gm-ib.rec { background: var(--bad); color: #fff; animation: pulse 1.4s ease-in-out infinite; }
 
-	/* ---------- phone ---------- */
-	.ad-ph { position: relative; overflow: hidden; display: flex; flex-direction: column; width: 100%; height: var(--vv-h, 100dvh); margin-top: var(--vv-top, 0); --lil: #f3e8f6; --card: rgba(255, 255, 255, .62); --ink-ph: #241a2a; --mut: #7a6b80; background: linear-gradient(170deg, #f7eef8 0%, #ecdff4 45%, #f6dbe8 100%); color: var(--ink-ph); animation: adup .35s cubic-bezier(.2, .8, .2, 1); }
-	:global(:root[data-theme='dark']) .ad-ph { --card: rgba(255, 255, 255, .07); --ink-ph: #f4eef2; --mut: #b4a6b8; background: linear-gradient(170deg, #1d1220 0%, #170f1c 50%, #24111c 100%); }
-	@media (prefers-color-scheme: dark) { :global(:root:not([data-theme='light'])) .ad-ph { --card: rgba(255, 255, 255, .07); --ink-ph: #f4eef2; --mut: #b4a6b8; background: linear-gradient(170deg, #1d1220 0%, #170f1c 50%, #24111c 100%); } }
-	@keyframes adup { from { transform: translateY(30px); opacity: 0; } }
-	.ad-blob { position: absolute; border-radius: 50%; filter: blur(30px); pointer-events: none; opacity: .75; }
-	.ad-blob.b1 { width: 260px; height: 260px; right: -90px; top: -60px; background: radial-gradient(circle, color-mix(in oklab, var(--g2) 55%, transparent), transparent 70%); }
-	.ad-blob.b2 { width: 300px; height: 300px; left: -120px; bottom: 60px; background: radial-gradient(circle, color-mix(in oklab, var(--g1) 45%, transparent), transparent 70%); }
-	.ad-ph-top, .ad-ph-h { position: relative; z-index: 1; display: flex; align-items: center; gap: 12px; padding: calc(14px + env(safe-area-inset-top, 0px)) 18px 10px; }
-	.ad-ph-top > span { flex: 1; display: flex; flex-direction: column; }
-	.ad-ph-top b { font-size: 16px; }
-	.ad-ph-top small { font-size: 13px; color: var(--mut); }
-	.ad-ph-h b { flex: 1; text-align: center; font-size: 15.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-	.ad-round { flex: none; width: 42px; height: 42px; border-radius: 50%; border: 0; background: var(--card); color: var(--ink-ph); display: grid; place-items: center; box-shadow: 0 4px 14px -6px rgba(60, 20, 60, .25); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
-	.ad-round :global(.ic) { width: 20px; height: 20px; }
-	.ad-ph-list { position: relative; z-index: 1; flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; padding: 8px 18px 16px; }
-	.ad-pro { position: relative; overflow: hidden; min-height: 150px; padding: 20px; border-radius: 26px; background: var(--card); border: 1px solid rgba(255, 255, 255, .55); box-shadow: 0 10px 30px -18px rgba(80, 30, 90, .35); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); }
-	.ad-pro > div { position: relative; z-index: 1; max-width: 62%; }
-	.ad-pro b { display: block; font-size: 26px; font-weight: 500; line-height: 1.12; letter-spacing: -.02em; }
-	.ad-pro p { margin: 8px 0 0; font-size: 13.5px; line-height: 1.4; color: var(--mut); }
-	.ad-gem { position: absolute; display: block; background: linear-gradient(135deg, #ffd6f0, var(--g2) 45%, var(--g1)); clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%); filter: drop-shadow(0 6px 10px rgba(180, 60, 140, .4)); animation: gem 6s ease-in-out infinite; }
-	.ad-gem.g1 { width: 92px; height: 108px; right: 18px; top: 26px; }
-	.ad-gem.g2 { width: 48px; height: 56px; right: 104px; top: 14px; animation-delay: -2s; opacity: .85; }
-	.ad-gem.g3 { width: 40px; height: 46px; right: 92px; bottom: 16px; animation-delay: -4s; opacity: .8; }
-	@keyframes gem { 50% { transform: translateY(-6px) rotate(6deg); } }
-	.ad-tiles { display: flex; gap: 10px; overflow-x: auto; scrollbar-width: none; margin: 0 -18px; padding: 2px 18px; }
-	.ad-tiles::-webkit-scrollbar { display: none; }
-	.ad-tile { flex: none; width: 112px; height: 112px; display: flex; flex-direction: column; justify-content: space-between; align-items: flex-start; padding: 14px; border-radius: 22px; border: 1px solid rgba(255, 255, 255, .55); background: var(--card); color: var(--ink-ph); font: 600 13.5px/1.25 var(--f-body, inherit); text-align: left; -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); box-shadow: 0 8px 22px -16px rgba(80, 30, 90, .4); }
-	.ad-tile-ic { width: 40px; height: 40px; border-radius: 13px; display: grid; place-items: center; color: #fff; background: linear-gradient(135deg, #f7a8d8, var(--g2) 55%, var(--g1)); box-shadow: 0 6px 14px -6px color-mix(in oklab, var(--g2) 70%, transparent); }
-	.ad-tile-ic :global(.ic) { width: 20px; height: 20px; }
-	.ad-hist-h { display: flex; align-items: baseline; justify-content: space-between; margin-top: 6px; }
-	.ad-hist-h b { font-size: 24px; font-weight: 500; letter-spacing: -.02em; }
-	.ad-hist-h button { border: 0; background: none; color: var(--mut); font: 500 13.5px var(--f-body, inherit); }
-	.ad-hist { display: flex; flex-direction: column; gap: 4px; padding: 14px 16px; border-radius: 20px; border: 1px solid rgba(255, 255, 255, .55); background: var(--card); color: var(--ink-ph); text-align: left; font: inherit; -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); }
-	.ad-hist b { font-size: 16px; font-weight: 600; }
-	.ad-hist small { font-size: 13.5px; color: var(--mut); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-	.ad-ph .ad-q p { background: var(--card); color: var(--ink-ph); border: 1px solid rgba(255, 255, 255, .6); box-shadow: 0 6px 16px -12px rgba(80, 30, 90, .4); }
-	.ad-ph .ad-a p { background: rgba(255, 255, 255, .9); color: #241a2a; box-shadow: 0 6px 16px -12px rgba(80, 30, 90, .4); }
-	:global(:root[data-theme='dark']) .ad-ph .ad-a p { background: rgba(255, 255, 255, .1); color: #f4eef2; }
-	.ad-ph .ad-act { border: 0; background: linear-gradient(135deg, var(--g1), var(--g2)); color: #fff; }
-	.ad-ph-foot { position: relative; z-index: 1; display: flex; align-items: center; gap: 10px; padding: 10px 16px calc(14px + env(safe-area-inset-bottom, 0px)); }
-	.ad-ph-foot .ad-box { flex: 1; display: flex; align-items: center; min-height: 52px; padding: 4px 6px 4px 18px; border-radius: 999px; background: var(--card); border: 1px solid rgba(255, 255, 255, .6); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); box-shadow: 0 8px 22px -16px rgba(80, 30, 90, .45); }
-	.ad-ph-foot textarea { flex: 1; min-width: 0; max-height: 120px; border: 0; outline: 0; resize: none; background: none; color: var(--ink-ph); font: 400 16px/1.4 var(--f-body, inherit); padding: 10px 0; }
-	.ad-ph-foot textarea::placeholder { color: var(--mut); }
-	.ad-ph-foot .ad-box-r .ad-mic { display: none; }
-	.ad-mic-big { flex: none; width: 56px; height: 56px; border-radius: 50%; border: 0; display: grid; place-items: center; background: #fff; color: #241a2a; box-shadow: 0 10px 24px -10px rgba(80, 30, 90, .5); }
-	.ad-mic-big.send { background: linear-gradient(135deg, var(--g1), var(--g2)); color: #fff; }
-	.ad-mic-big.on { background: var(--bad); color: #fff; animation: pulse 1.4s ease-in-out infinite; }
-	.ad-mic-big :global(.ic) { width: 22px; height: 22px; }
+	.gm-spark { flex: none; width: 28px; height: 28px; display: grid; place-items: center; color: var(--g2); }
+	.gm-spark :global(.ic) { width: 24px; height: 24px; }
+	.gm-spark.lg :global(.ic) { width: 26px; height: 26px; }
+	.gm-spark.busy { animation: spin 1.6s linear infinite; }
+
+	.gm-body { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: thin; }
+	.gm-hello { display: flex; flex-direction: column; justify-content: center; min-height: 100%; max-width: 820px; margin: 0 auto; padding: 24px 28px; box-sizing: border-box; }
+	.gm-hello h2 { margin: 0 0 30px; display: flex; flex-direction: column; font-size: clamp(32px, 4.2vw, 52px); font-weight: 500; line-height: 1.15; letter-spacing: -.02em; }
+	.gm-grad { background: linear-gradient(90deg, var(--g1), var(--g2) 55%, var(--g3)); -webkit-background-clip: text; background-clip: text; color: transparent; width: max-content; max-width: 100%; }
+	.gm-sub { color: color-mix(in oklab, var(--mut) 80%, var(--bg)); }
+	.gm-sugg { display: flex; flex-wrap: wrap; gap: 10px; }
+	.gm-pill { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; padding: 10px 18px; border: 0; border-radius: 999px; background: var(--s1); color: var(--ink); font: 400 14.5px var(--f-body, inherit); text-align: left; cursor: pointer; transition: background .15s; }
+	.gm-pill:hover { background: var(--s2); }
+	.gm-pill :global(.ic) { width: 18px; height: 18px; flex: none; color: var(--g2); }
+
+	.gm-conv { display: flex; flex-direction: column; gap: 26px; max-width: 780px; margin: 0 auto; padding: 18px 24px 30px; }
+	.gm-q { display: flex; justify-content: flex-end; }
+	.gm-q p { margin: 0; max-width: 80%; padding: 12px 18px; border-radius: 24px 6px 24px 24px; background: var(--s1); font-size: 16px; line-height: 1.5; white-space: pre-wrap; }
+	.gm-a { display: flex; gap: 14px; align-items: flex-start; }
+	.gm-a-b { flex: 1; min-width: 0; padding-top: 2px; }
+	.gm-a-b p { margin: 0; font-size: 16px; line-height: 1.65; white-space: pre-wrap; }
+	.gm-acts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+	.gm-chip { display: inline-flex; align-items: center; gap: 8px; height: 38px; padding: 0 16px; border: 1px solid var(--line); border-radius: 999px; background: none; color: var(--ink); font: 500 14px var(--f-body, inherit); cursor: pointer; }
+	.gm-chip:hover { background: var(--s1); }
+	.gm-chip :global(.ic) { width: 16px; height: 16px; color: var(--g2); }
+	.gm-think { display: flex; flex-direction: column; gap: 9px; padding-top: 6px; }
+	.gm-think i { display: block; height: 14px; border-radius: 99px; background: linear-gradient(90deg, color-mix(in oklab, var(--g1) 30%, var(--s1)), color-mix(in oklab, var(--g2) 25%, var(--s1)), var(--s1)); background-size: 200% 100%; animation: gmsh 1.4s linear infinite; }
+	.gm-think i:nth-child(2) { width: 82%; }
+	.gm-think i:nth-child(3) { width: 58%; }
+	@keyframes gmsh { to { background-position: -200% 0; } }
+
+	.gm-box { width: calc(100% - 32px); max-width: 780px; margin: 6px auto 0; box-sizing: border-box; display: flex; flex-direction: column; gap: 6px; padding: 14px 10px 8px 22px; border-radius: 28px; background: var(--s1); transition: background .15s; }
+	.gm-box:focus-within { background: var(--s2); }
+	.gm-box textarea { width: 100%; min-height: 26px; max-height: 160px; border: 0; outline: 0; resize: none; background: none; color: var(--ink); font: 400 16.5px/1.5 var(--f-body, inherit); padding: 0; }
+	.gm-box textarea::placeholder { color: var(--mut); }
+	.gm-box-r { display: flex; align-items: center; justify-content: flex-end; gap: 4px; }
+	.gm-hint { flex: 1; font-size: 12.5px; color: var(--mut); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+	.gm-send { width: 44px; height: 44px; border: 0; border-radius: 50%; display: grid; place-items: center; background: linear-gradient(135deg, var(--g1), var(--g2)); color: #fff; cursor: pointer; transition: opacity .15s, transform .15s; }
+	.gm-send:disabled { opacity: 0; transform: scale(.6); pointer-events: none; }
+	.gm-send :global(.ic) { width: 19px; height: 19px; }
+	.gm-foot { margin: 8px 0 calc(12px + env(safe-area-inset-bottom, 0px)); text-align: center; font-size: 12px; color: var(--mut); }
+
+	.gm-scrim { position: fixed; inset: 0; z-index: 1; background: rgba(0, 0, 0, .4); animation: gmf .2s; }
+	.gm-drawer { position: fixed; top: 0; bottom: 0; left: 0; z-index: 2; width: min(84vw, 320px); display: flex; flex-direction: column; gap: 4px; padding: calc(16px + env(safe-area-inset-top, 0px)) 12px 16px; background: var(--s1); border-radius: 0 24px 24px 0; animation: gmin .25s cubic-bezier(.2, .8, .2, 1); }
+	@keyframes gmin { from { transform: translateX(-100%); } }
+
+	@media (max-width: 760px) {
+		.gm-hello { justify-content: flex-end; padding: 20px 20px 18px; }
+		.gm-hello h2 { font-size: 34px; margin-bottom: 22px; }
+		.gm-sugg { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin: 0 -20px; padding: 0 20px; }
+		.gm-sugg::-webkit-scrollbar { display: none; }
+		.gm-pill { flex: none; flex-direction: column; align-items: flex-start; width: 156px; min-height: 104px; padding: 14px 16px; border-radius: 20px; white-space: normal; }
+		.gm-conv { padding: 12px 18px 24px; gap: 22px; }
+		.gm-hint { display: none; }
+		.gm-box { width: calc(100% - 24px); border-radius: 30px; padding: 12px 8px 6px 20px; }
+		.gm-foot { display: none; }
+		.gm-box { margin-bottom: calc(10px + env(safe-area-inset-bottom, 0px)); }
+	}
 </style>
