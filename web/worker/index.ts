@@ -200,7 +200,9 @@ const private_ = (t: string) => t.replace(/[\w.+-]+@[\w-]+\.[\w.]{2,}/g, '[email
 
 /** Google Gemini's free tier (a key with no billing attached, so it can't charge). */
 async function gemini(env: Env, system: string, user: string, max: number, temperature = 0.3, search = false) {
-	for (const model of ['gemini-flash-latest', 'gemini-2.5-flash']) {
+	// Web search on the free tier works on some models only: try those, and on "too many" try the next.
+	let lastErr = '';
+	for (const model of search ? ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.5-flash-lite', 'gemini-flash-latest'] : ['gemini-flash-latest', 'gemini-2.5-flash']) {
 		for (const thinking of [true, false]) {
 			const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
 				method: 'POST',
@@ -215,15 +217,19 @@ async function gemini(env: Env, system: string, user: string, max: number, tempe
 					generationConfig: { temperature, maxOutputTokens: max, ...(!search && /Return ONLY JSON/.test(system) ? { responseMimeType: 'application/json' } : {}), ...(thinking ? { thinkingConfig: { thinkingBudget: 0 } } : {}) }
 				})
 			});
-			if (r.status === 429) throw new Error('USED_UP');
 			const j = (await r.json().catch(() => ({}))) as { candidates?: { content?: { parts?: { text?: string }[] } }[]; error?: { message?: string } };
+			if (r.status === 429) {
+				if (!search) throw new Error('USED_UP');
+				lastErr = `${model}: ${(j.error?.message ?? 'too many requests').slice(0, 160)}`;
+				break;
+			}
 			if (r.status === 404) break; // try the next model name
 			if (r.status === 400 && thinking && /think/i.test(j.error?.message ?? '')) continue; // a model without that setting
 			if (!r.ok) throw new Error(j.error?.message ?? `Gemini ${r.status}`);
 			return (j.candidates?.[0]?.content?.parts ?? []).map((p) => p.text ?? '').join('').trim();
 		}
 	}
-	throw new Error('Gemini model not found');
+	throw new Error(lastErr || 'Gemini model not found');
 }
 
 // ---------- 1. A DM (text or screenshot) into collab details ----------
