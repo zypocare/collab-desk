@@ -17,6 +17,8 @@
 		onopen,
 		i = 0,
 		leaving = false,
+		hue = '',
+		mark = '',
 		children
 	}: {
 		/** The brand: picks the colour and the initials. */
@@ -32,17 +34,21 @@
 		onopen?: () => void;
 		i?: number;
 		leaving?: boolean;
+		/** The band's colour when it shouldn't come from the name (a CSS colour, e.g. a stage's). */
+		hue?: string;
+		/** What the tile shows instead of the initials. */
+		mark?: string;
 		children?: Snippet;
 	} = $props();
 </script>
 
 {#snippet band()}
-	<span class="tk-tile">{initials(name)}</span>
+	<span class="tk-tile">{mark || initials(name)}</span>
 	<span class="tk-who"><b>{title}</b>{#if sub}<small>{sub}</small>{/if}</span>
 	{#if money}<span class="tk-money"><b>{money}</b>{#if moneySub}<small>{moneySub}</small>{/if}</span>{/if}
 {/snippet}
 
-<article class="tk" class:leaving style="--h:var(--m{hueOf(name)});--i:{Math.min(i, 8)}">
+<article class="tk" class:leaving style="--h:{hue || `var(--m${hueOf(name)})`};--i:{Math.min(i, 8)}">
 	{#if href}<a class="tk-band" {href}>{@render band()}</a>{:else}<button type="button" class="tk-band" onclick={onopen}>{@render band()}</button>{/if}
 	<div class="tk-cut" aria-hidden="true"></div>
 	<div class="tk-foot">

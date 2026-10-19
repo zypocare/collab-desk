@@ -2,7 +2,7 @@
 	import { auth } from '#lib/auth.svelte.ts';
 	import { brandData } from '#lib/brand.svelte.ts';
 	import { pub } from '#lib/publicPage.svelte.ts';
-	import { STAGES, compact, delivText, firstName, fmt, inr, stageIndex } from '#lib/util.ts';
+	import { STAGES, compact, delivText, firstName, fmt, inr, inrS, stageIndex } from '#lib/util.ts';
 	import { milestones } from '#lib/campaign.ts';
 	import { money } from '#lib/roi.ts';
 	import BrandDetailsForm from '#lib/components/BrandDetailsForm.svelte';
@@ -13,6 +13,7 @@
 	import { phone } from '#lib/phone.svelte.ts';
 	import BrandRequestCard from '#lib/components/BrandRequestCard.svelte';
 	import Mono from '#lib/components/Mono.svelte';
+	import Ticket from '#lib/components/Ticket.svelte';
 
 	const acc = $derived(auth.account?.role === 'brand' ? auth.account : null);
 	// Their own link for recommending her to other brands.
@@ -48,6 +49,9 @@
 	const toPay = $derived(
 		brandData.requests.reduce((a, r) => a + (r.invoices ?? []).filter((i) => (i.status === 'sent' || i.status === 'partly_paid') && !i.claimed).reduce((x, i) => x + Number(i.payable), 0), 0)
 	);
+	// Phone: each request a ticket, its band in the colour of where it stands.
+	const STAGE_HUE: Record<string, string> = { request: 'var(--h-request)', negotiating: 'var(--h-nego)', confirmed: 'var(--h-confirmed)', creating: 'var(--h-creating)', live: 'var(--h-live)', wrapped: 'var(--h-wrapped)', declined: 'var(--bad)' };
+	const needsAnswer = (r: (typeof brandData.requests)[number]) => r.quotes?.[0]?.status === 'sent' || !!r.drafts?.some((d) => d.status === 'pending');
 </script>
 
 <svelte:head><title>My requests</title></svelte:head>
@@ -112,9 +116,19 @@
 	{#if todo.length || toPay}
 		<section class="panel rv needs-you" style="--i:2">
 			<div class="panel-h"><h2>Needs you</h2>{#if toPay}<small>{inr(toPay)} to pay</small>{/if}</div>
+			{#if phone.on}
+				<div class="tks">
+					{#each todo as t, i (t.r.code + t.m.key)}
+						<Ticket name={t.r.code} title={delivText(t.r.deliverables)} sub={`${t.r.code} · ${t.r.stage_label}`} money={t.r.fee ? inrS(t.r.fee) : ''} moneySub={t.r.fee ? 'fee' : ''} hue={STAGE_HUE[t.r.stage] ?? ''} mark={String(stageIndex(t.r.stage) + 1)} task={t.m.title} status={t.m.note || 'Waiting on you'} tone="hot" href="/brand/r/{t.r.code}" {i}>
+							<a class="btn primary" href="/brand/r/{t.r.code}">Open</a>
+						</Ticket>
+					{/each}
+				</div>
+			{:else}
 			{#each todo as t (t.r.code + t.m.key)}
 				<a class="prod-row" href="/brand/r/{t.r.code}" style="text-decoration:none"><div><b>{t.m.title}</b><small>{t.r.code} · {delivText(t.r.deliverables)}{t.m.note ? ` · ${t.m.note}` : ''}</small></div><Icon name="chevR" /></a>
 			{/each}
+			{/if}
 		</section>
 	{/if}
 
@@ -142,25 +156,26 @@
 			{/each}
 		</div>
 	{:else}
-		<div class="req-list">
+		<div class="hs-h br-h"><h2>Your requests</h2><span class="hs-n">{brandData.requests.length}</span></div>
+		<div class="tks">
 			{#each brandData.requests as r, i (r.id)}
-				{@const si = r.stage === 'declined' ? -1 : stageIndex(r.stage)}
-				<a class="req" href="/brand/r/{r.code}" style="--i:{i}">
-					<div class="req-top">
-						<span class="id">{r.code}</span>
-						<span class="chip tint st-{r.stage === 'declined' ? 'request' : r.stage}" style={r.stage === 'declined' ? '--hue:var(--bad)' : ''}>{r.stage_label}</span>
-					</div>
-					<b class="req-t">{delivText(r.deliverables)}</b>
-					{#if brandData.unread[r.code] || r.quotes?.[0]?.status === 'sent' || r.drafts?.some((d) => d.status === 'pending')}
-						<div class="req-flags">
-							{#if r.quotes?.[0]?.status === 'sent' || r.drafts?.some((d) => d.status === 'pending')}<span class="pill tint k-new"><span class="dt pulse"></span>Needs your answer</span>{/if}
-							{#if brandData.unread[r.code]}<span class="msg-dot"><Icon name="mail" />{brandData.unread[r.code]} new</span>{/if}
-						</div>
-					{/if}
-					<div class="mini-steps" aria-hidden="true">{#each STAGES as _, k (k)}<i class:on={k <= si}></i>{/each}</div>
-					{#if r.note_for_brand}<p>{r.note_for_brand}</p>{/if}
-					<small>Sent {fmt(r.received_on)}{r.live_date ? ` · go-live ${fmt(r.live_date)}` : ''}</small>
-				</a>
+				{@const ask = needsAnswer(r)}
+				<Ticket
+					name={r.code}
+					title={delivText(r.deliverables)}
+					sub={r.code}
+					money={r.fee ? inrS(r.fee) : r.product_value ? inrS(r.product_value) : ''}
+					moneySub={r.stage_label}
+					hue={STAGE_HUE[r.stage] ?? ''}
+					mark={r.stage === 'declined' ? '×' : String(stageIndex(r.stage) + 1)}
+					task={ask ? 'Needs your answer' : brandData.unread[r.code] ? `${brandData.unread[r.code]} new message${brandData.unread[r.code] === 1 ? '' : 's'}` : r.note_for_brand || `Sent ${fmt(r.received_on)}`}
+					status={r.live_date ? `Go-live ${fmt(r.live_date)}` : r.stage_label}
+					tone={ask ? 'hot' : r.stage === 'declined' ? 'calm' : r.stage === 'wrapped' ? 'ok' : 'warn'}
+					href="/brand/r/{r.code}"
+					{i}
+				>
+					<a class={ask ? 'btn primary' : 'btn'} href="/brand/r/{r.code}">{ask ? 'Answer' : 'Open'}</a>
+				</Ticket>
 			{/each}
 		</div>
 	{/if}
