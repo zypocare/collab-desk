@@ -219,3 +219,88 @@
     [data-side="studio"] .btn::after, [data-side="studio"] .wc::after { animation: none !important; display: none; }
   }
 }
+
+/* ==========================================================================================
+   Round three: forms, settings, brands and chat in CRED's look.
+   Fields sit on a single underline with a label in small spaced capitals (CRED's loan screen);
+   switches are square NeoPOP blocks; picked chips fill solid; settings rows carry their icon
+   in a thin ring; chat bubbles are flat blocks and the message box has the NeoPOP edge.
+   ========================================================================================== */
+@media (max-width: 760px) {
+  /* ---------- section names in spaced capitals ---------- */
+  [data-side="studio"] .sec h3 { font-size: 11px !important; font-weight: 700; letter-spacing: .17em !important; text-transform: uppercase; color: var(--ink-3); }
+  [data-side="studio"] .panel-h h2 { font-size: 11px; font-weight: 700; letter-spacing: .17em; text-transform: uppercase; color: var(--ink-3); }
+  [data-side="studio"] .panel-h small { font-size: 12px; }
+
+  /* ---------- fields: one underline, the label above in small capitals ---------- */
+  [data-side="studio"] .f { padding: 12px 0 9px; border: 0; border-bottom: 1px solid var(--line-strong); border-radius: 0; background: none; }
+  [data-side="studio"] .f::after { content: ''; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; background: linear-gradient(90deg, var(--g1), var(--g2), var(--g3)); transform: scaleX(0); transform-origin: left; transition: transform .4s cubic-bezier(.2, .9, .25, 1); pointer-events: none; }
+  [data-side="studio"] .f:focus-within::after { transform: scaleX(1); }
+  [data-side="studio"] .f:has(> .pills, > .btabs, > .chips, > .cat-chips, > .row)::after { display: none; }
+  [data-side="studio"] .f > label, [data-side="studio"] .f > .lbl-t { margin: 0 0 5px; font-size: 10.5px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); transition: color .2s; }
+  [data-side="studio"] .f:focus-within > label { color: var(--accent); }
+  [data-side="studio"] .f :is(.inp, .sel) { height: 32px; font-size: 17px; }
+  [data-side="studio"] .f .pre > span { color: var(--ink-3); }
+  [data-side="studio"] .form-b { column-gap: 18px; }
+
+  /* Inputs on their own (rates, packages, links): square, with the NeoPOP edge when in use. */
+  [data-side="studio"] :is(.inp, .sel):not(.f .inp):not(.f .sel) { border-radius: 0; border: 1px solid var(--line-strong); background: transparent; box-shadow: none; transition: border-color .2s, box-shadow .2s; }
+  [data-side="studio"] :is(.inp, .sel):not(.f .inp):not(.f .sel):focus { border-color: var(--ink); box-shadow: 3px 3px 0 var(--accent); }
+  [data-side="studio"] .stepper { border-radius: 0; border-color: var(--line-strong); background: transparent; }
+  [data-side="studio"] .stepper button { border-radius: 0; }
+
+  /* ---------- switches: a square NeoPOP block that slides ---------- */
+  [data-side="studio"] .tgl { box-sizing: border-box; width: 50px; height: 28px; border-radius: 0; border: 1.5px solid var(--line-strong); background: transparent; transition: background .25s, border-color .25s, box-shadow .25s; }
+  [data-side="studio"] .tgl::after { top: 3px; left: 3px; width: 19px; height: 19px; border-radius: 0; background: var(--ink-3); box-shadow: none; transition: transform .45s cubic-bezier(.2, 1.6, .4, 1), background .25s; }
+  [data-side="studio"] .tgl:checked { border-color: transparent; background: linear-gradient(110deg, var(--g1), var(--g2)); box-shadow: 2.5px 2.5px 0 color-mix(in oklab, var(--g1) 55%, #000); }
+  [data-side="studio"] .tgl:checked::after { transform: translateX(22px); background: #fff; }
+  [data-side="studio"] .tgl.sm { width: 40px; height: 24px; }
+  [data-side="studio"] .tgl.sm::after { width: 15px; height: 15px; }
+  [data-side="studio"] .tgl.sm:checked::after { transform: translateX(16px); }
+  [data-side="studio"] .switch-row b { font-weight: 600; }
+
+  /* ---------- chips: outlined; picked ones fill solid ---------- */
+  [data-side="studio"] :is(.cat-chip, .lang-chip, .pay-hours .pay-h) { border-radius: 999px; border: 1px solid var(--line-strong); background: transparent; color: var(--ink); font-weight: 600; transition: background .2s, color .2s, border-color .2s, transform .35s cubic-bezier(.2, 1.6, .4, 1); }
+  [data-side="studio"] :is(.cat-chip.on, .lang-chip.on, .pay-hours .pay-h.on) { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+  [data-side="studio"] :is(.cat-chip, .lang-chip, .pay-h):active { transform: scale(.92); }
+  [data-side="studio"] .lang-chip.on .ic { color: var(--g2); }
+  /* Segmented pickers (Open · Selective · Paid only): a thin pill with a solid thumb. */
+  [data-side="studio"] .pills { padding: 3px; border: 1px solid var(--line-strong); border-radius: 999px; background: transparent; }
+  [data-side="studio"] .pills .thumb { border-radius: 999px; background: var(--ink); box-shadow: none; }
+  [data-side="studio"] .pills button { border-radius: 999px; font-size: 11.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); }
+  [data-side="studio"] .pills button[aria-pressed="true"] { color: var(--bg); }
+  /* Role cards (Team): square, the picked one with the NeoPOP edge. */
+  [data-side="studio"] .team-roles .team-r { border-radius: 0; border-color: var(--line-strong); transition: box-shadow .2s, border-color .2s, transform .1s; }
+  [data-side="studio"] .team-roles .team-r.on { border-color: var(--ink); background: transparent; box-shadow: 3px 3px 0 var(--accent); }
+  [data-side="studio"] .team-roles .team-r:active { transform: translate(2px, 2px); }
+
+  /* ---------- My page: settings rows like CRED's list (icon in a ring, title, line, arrow) ---------- */
+  [data-side="studio"] .set-item { min-height: 68px; gap: 14px; border-bottom: 1px solid var(--line); }
+  [data-side="studio"] .set-item .set-ic { display: grid; place-items: center; flex: none; width: 42px; height: 42px; border-radius: 50%; border: 1px solid var(--line-strong); }
+  [data-side="studio"] .set-item .set-ic .ic { width: 19px; height: 19px; }
+  [data-side="studio"] .set-item .set-t b { font-size: 15.5px; font-weight: 600; }
+  [data-side="studio"] .set-item .set-t small { font-size: 12.5px; color: var(--ink-3); }
+  [data-side="studio"] .set-item .set-chev { width: 18px; height: 18px; color: var(--ink); transition: transform .3s cubic-bezier(.2, 1.6, .4, 1); }
+  [data-side="studio"] .set-item:active .set-chev { transform: translateX(4px); }
+  [data-side="studio"] .set-item:active { background: var(--surface-2); }
+  [data-side="studio"] .set-more-h { margin: 18px -16px 0; padding: 16px 16px 6px; border-top: 0; font-size: 10.5px; font-weight: 700; letter-spacing: .17em; text-transform: uppercase; color: var(--ink-3); }
+  [data-side="studio"] .set-out b { color: var(--bad); }
+
+  /* ---------- Brands: the money in serif ---------- */
+  [data-side="studio"] .brand-row { border-bottom: 1px solid var(--line); }
+  [data-side="studio"] .brand-row:not(.head) .n { font-family: var(--f-serif, Georgia, serif); font-size: 22px; font-weight: 400; letter-spacing: -.01em; }
+  [data-side="studio"] .brand-row:not(.head) .n .m { font-family: var(--f-body, inherit); font-size: 10px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+  [data-side="studio"] .brand-row .who b { font-size: 16px; font-weight: 600; }
+  [data-side="studio"] .brand-row:active { background: var(--surface-2); }
+
+  /* ---------- chat: flat bubbles and a NeoPOP message box ---------- */
+  [data-side="studio"] .bub-row.mine .bub { background: var(--ink); color: var(--bg); }
+  [data-side="studio"] .bub-row:not(.mine) .bub:not(.photos):not(.emoji) { background: transparent; border: 1px solid var(--line-strong); }
+  [data-side="studio"] .bub-row.mine .bub .bub-auto { opacity: .6; }
+  [data-side="studio"] .th-box { border-radius: 0; border: 1px solid var(--line-strong); background: var(--surface); box-shadow: 4px 4px 0 var(--line-strong); transition: border-color .2s, box-shadow .2s; }
+  [data-side="studio"] .th-box:focus-within { border-color: var(--ink); box-shadow: 4px 4px 0 var(--accent); }
+  [data-side="studio"] .th-cam { border-radius: 0; box-shadow: 2px 2px 0 color-mix(in oklab, var(--g1) 55%, #000); }
+  [data-side="studio"] .send-btn { border-radius: 0; background: var(--ink); color: var(--bg); box-shadow: 2.5px 2.5px 0 var(--accent); transition: transform .07s, box-shadow .07s, opacity .2s; }
+  [data-side="studio"] .send-btn:active { transform: translate(2.5px, 2.5px); box-shadow: none; }
+  [data-side="studio"] .send-btn[disabled] { opacity: .35; box-shadow: none; }
+}
