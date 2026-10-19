@@ -401,7 +401,7 @@
    Today, round five: Desk AI (a living orb, one line in serif, the lead with the brand's own
    words, score cards), Needs you as tickets, and This week as day capsules with an agenda.
    ========================================================================================== */
-@media (max-width: 760px) {
+@media all { /* Today pieces: phone and laptop */
   /* ---------- Desk AI ---------- */
   .dk2 { display: flex; flex-direction: column; gap: 16px; }
   .dk2-h { display: flex; align-items: center; gap: 10px; }
@@ -871,3 +871,37 @@
   .cs-tk .tk-task b { text-transform: none; font-size: 14px; }
 }
 @media (max-width: 760px) { .rp-m .tp-rank li { grid-template-columns: 46px minmax(0, 1fr) auto; } .rp-m .tp-n small { display: block; font: 600 10px var(--f-body, inherit); letter-spacing: .1em; color: var(--ink-3); } }
+
+/* ==========================================================================================
+   Laptop: the side menu in the same language as the phone's bottom bar. Black in both looks,
+   the name in serif, labels in spaced capitals, the current place marked with the gradient edge,
+   search as an outlined pill and the goal as a slim gradient bar.
+   ========================================================================================== */
+@media (min-width: 761px) {
+  [data-side="studio"] .side { background: #09070A; border-right: 1px solid #1f191f; color: #F4EEF2; }
+  [data-side="studio"] .side-logo { color: #F4EEF2; padding-bottom: 20px; }
+  [data-side="studio"] .side-logo span { font: italic 400 25px var(--f-serif, Georgia, serif); letter-spacing: -.01em; }
+  [data-side="studio"] .side-logo circle[stroke="var(--ink)"] { stroke: #F4EEF2; }
+  [data-side="studio"] .side-me { background: transparent; border: 0; border-bottom: 1px solid #1f191f; border-radius: 0; padding: 4px 6px 16px; margin-bottom: 14px; color: #F4EEF2; }
+  [data-side="studio"] .side-me small { color: #A39AA1; }
+  [data-side="studio"] .side-search { height: 40px; border-radius: 999px; border-color: #3E343E; background: transparent; color: #A39AA1; }
+  [data-side="studio"] .side-search:hover { color: #F4EEF2; border-color: #F4EEF2; }
+  [data-side="studio"] .side-search kbd { border-radius: 0; border-color: #3E343E; color: #A39AA1; }
+  [data-side="studio"] .side-it { position: relative; height: 42px; border-radius: 0; color: rgba(255, 255, 255, .5); font-size: 11.5px; font-weight: 700; letter-spacing: .13em; text-transform: uppercase; box-shadow: none; }
+  [data-side="studio"] .side-it:hover { background: rgba(255, 255, 255, .04); color: #fff; }
+  [data-side="studio"] .side-it[aria-current="page"] { background: rgba(255, 255, 255, .06); color: #fff; box-shadow: none; }
+  [data-side="studio"] .side-it[aria-current="page"]::before { content: ''; position: absolute; left: -12px; top: 9px; bottom: 9px; width: 3px; border-radius: 0 3px 3px 0; background: linear-gradient(180deg, var(--g1), var(--g2), var(--g3)); }
+  [data-side="studio"] .side-badge { background: var(--bad); color: #1C0912; font-family: var(--f-body, inherit); font-weight: 800; letter-spacing: 0; }
+  [data-side="studio"] .side-new { color: #A39AA1; letter-spacing: 0; text-transform: none; }
+  [data-side="studio"] .side-lbl { font-size: 10.5px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; color: #6f656c; }
+  [data-side="studio"] .side-b { border-radius: 50%; }
+  [data-side="studio"] .side-goal { background: transparent; border: 1px solid #2E262E; border-radius: 18px; color: #F4EEF2; }
+  [data-side="studio"] .sg-top { color: #A39AA1; font-size: 10.5px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
+  [data-side="studio"] .sg-top b { color: #F4EEF2; font: 400 20px var(--f-serif, Georgia, serif); letter-spacing: 0; }
+  [data-side="studio"] .sg-bar { background: #2E262E; }
+  [data-side="studio"] .side-goal small, [data-side="studio"] .side-goal small b { color: #A39AA1; }
+  [data-side="studio"] .side-tool { color: #A39AA1; border-radius: 0; }
+  [data-side="studio"] .side-tool:hover { background: rgba(255, 255, 255, .05); color: #fff; }
+  /* Today's own header replaces the page's top bar there. */
+  [data-side="studio"] .pg:has(> .lt) { padding-top: 30px; }
+}

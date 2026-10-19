@@ -5,7 +5,7 @@ export const REDUCED = typeof matchMedia !== 'undefined' && matchMedia('(prefers
 
 type Toast = { id: number; msg: string; icon: string; out: boolean };
 /** holdRedirect: a guest's sign-in code is being checked; don't move them off the request form yet. */
-export const ui = $state<{ toasts: Toast[]; openCollab: string | null; newCollab: boolean; pendingNext: string | null; pasteText: string; /** A screenshot shared into the app (Android Share). */ pasteImage?: File | null; fromIg: string; holdRedirect?: boolean; /** The Instagram account it came from (username, name). */ fromIgUser?: string; fromIgName?: string; /** "Ask your desk" is open. */ askOpen?: boolean; /** The money-in moment (phone). */ moneyIn?: { amount: number; brand: string } | null }>({
+export const ui = $state<{ toasts: Toast[]; openCollab: string | null; newCollab: boolean; pendingNext: string | null; pasteText: string; /** A screenshot shared into the app (Android Share). */ pasteImage?: File | null; fromIg: string; holdRedirect?: boolean; /** The Instagram account it came from (username, name). */ fromIgUser?: string; fromIgName?: string; /** "Ask your desk" is open. */ askOpen?: boolean; /** Open the search and actions palette (set from anywhere; the studio layout opens it). */ searchOpen?: boolean; /** The money-in moment (phone). */ moneyIn?: { amount: number; brand: string } | null }>({
 	toasts: [],
 	openCollab: null,
 	newCollab: false,

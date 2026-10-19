@@ -288,6 +288,12 @@
 		const t = today();
 		return new Date(t.getFullYear(), t.getMonth() + 1, 0).getDate() - t.getDate();
 	});
+	// Search opened from a page (Today's search bar on a laptop).
+	$effect(() => {
+		if (!ui.searchOpen) return;
+		ui.searchOpen = false;
+		palette?.show();
+	});
 	function shortcuts(e: KeyboardEvent) {
 		if (e.key === 'j' && (e.ctrlKey || e.metaKey)) {
 			e.preventDefault();
