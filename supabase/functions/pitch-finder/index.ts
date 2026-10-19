@@ -77,21 +77,35 @@ Deno.serve(async (req) => {
     worked_with: pastBrands.slice(0, 12), categories_that_paid: pastCats.slice(0, 8),
   };
 
-  // 1. Brands (Gemini with Google Search).
-  const exclude = [...new Set([...pitches.map((p) => p.brand_name), ...(brands ?? []).map((b) => b.name)])].slice(0, 200);
-  const scouted = await ai<{ brands: Brand[] }>(db, site, 'scout', { count: Math.min(20, want + 8), creator, exclude });
-  if (!scouted?.brands?.length) return reply({ error: 'No brands came back from the search.', detail: scouted }, 502);
-  const fresh = scouted.brands.filter((b) => {
-    const d = domainOf(b.website);
-    return d && !seenName.has(norm(b.name)) && !(b.instagram && seenIg.has(norm(b.instagram))) && !seenDomain.has(d);
-  });
-
-  // 2. A public business email on each brand's own website (five at a time).
+  // 1 and 2. Brands (the AI), then a public business email on each brand's own website. When too
+  // few pass, ask again for fresh ones (up to three rounds, inside the time limit).
+  const started = Date.now();
+  const exclude = [...new Set([...pitches.map((p) => p.brand_name), ...(brands ?? []).map((b) => b.name)])];
   const found: Found[] = [];
-  for (let i = 0; i < fresh.length && found.length < want; i += 5) {
-    const batch = await Promise.all(fresh.slice(i, i + 5).map(async (b) => ({ ...b, domain: domainOf(b.website), email: await siteEmail(b.website) })));
-    for (const b of batch) if (b.email && found.length < want && !found.some((f) => f.domain === b.domain)) found.push(b);
+  let scoutedN = 0, freshN = 0, lastErr: unknown = null;
+  for (let round = 0; round < 3 && found.length < want && Date.now() - started < 70_000; round++) {
+    const scouted = await ai<{ brands?: Brand[]; error?: string }>(db, site, 'scout', { count: Math.min(20, want - found.length + 8), creator, exclude: exclude.slice(-200) });
+    if (!scouted?.brands?.length) {
+      lastErr = scouted;
+      break;
+    }
+    scoutedN += scouted.brands.length;
+    const fresh = scouted.brands.filter((b) => {
+      const d = domainOf(b.website);
+      const ok = d && !seenName.has(norm(b.name)) && !(b.instagram && seenIg.has(norm(b.instagram))) && !seenDomain.has(d);
+      // Whatever came up is not offered again in the next round.
+      exclude.push(b.name);
+      seenName.add(norm(b.name));
+      if (d) seenDomain.add(d);
+      return ok;
+    });
+    freshN += fresh.length;
+    for (let i = 0; i < fresh.length && found.length < want; i += 6) {
+      const batch = await Promise.all(fresh.slice(i, i + 6).map(async (b) => ({ ...b, domain: domainOf(b.website), email: await siteEmail(b.website) })));
+      for (const b of batch) if (b.email && found.length < want && !found.some((f) => f.domain === b.domain)) found.push(b);
+    }
   }
+  if (!found.length && !scoutedN) return reply({ error: 'No brands came back from the search.', detail: lastErr }, 502);
 
   // 3. A pitch for each (Gemini first), queued through the day.
   const slots = sendTimes(found.length);
@@ -117,7 +131,7 @@ Deno.serve(async (req) => {
       status: 'ready', source: 'autopilot', fit_note: b.why, found_on: today, approved: s.pitch_mode === 'auto', send_after: slots[k], auto_follow: true,
     });
   }
-  if (dry) return reply({ dry: true, want, scouted: scouted.brands.length, fresh: fresh.length, found: rows.length, rows });
+  if (dry) return reply({ dry: true, want, scouted: scoutedN, fresh: freshN, found: rows.length, seconds: Math.round((Date.now() - started) / 1000), rows });
   if (rows.length) {
     const { error } = await db.from('pitches').insert(rows);
     if (error) return reply({ error: error.message }, 500);
@@ -128,7 +142,7 @@ Deno.serve(async (req) => {
       tag: 'pitch-autopilot',
     });
   }
-  return reply({ added: rows.length, scouted: scouted.brands.length, fresh: fresh.length, brands: rows.map((r) => `${r.brand_name} <${r.email}>`) });
+  return reply({ added: rows.length, scouted: scoutedN, fresh: freshN, ...(rows.length ? {} : { skipped: 'none of the brands found today show a public email on their website' }), brands: rows.map((r) => `${r.brand_name} <${r.email}>`) });
 });
 
 /** The AI job through a single-use pass (no keys leave the server). */

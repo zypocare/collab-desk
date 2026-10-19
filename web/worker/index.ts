@@ -462,6 +462,8 @@ async function scout(x: Run, b: Record<string, unknown>) {
 - fit her content and audience (details below), and sell in India (D2C brands, Indian labels, and businesses in or near her city: cafes, restaurants, studios, stays, experiences);
 - already work with Instagram creators (influencer campaigns, ambassador or creator programmes, gifting, paid partnerships), ideally recently;
 - are a realistic fit for her size (skip global giants that only work through big agencies).
+- are a brand or business in their own right: no marketplaces or stores that sell other brands (Myntra, Amazon, Flipkart, Nykaa, Ajio, Tata Cliq), and nothing unrelated to her content (no B2B, real estate, senior living, finance);
+- ideally publish a contact or collaborations email on their own website.
 Never include any brand in the exclude list, and no duplicates. ${search ? 'Only brands you found in search results with an official website you saw' : 'Only brands whose official website domain you are sure of'}; never invent a brand, a website or a handle. Vary the picks: mix well-known names with smaller, newer Indian labels and local businesses.
 For each give: "name", "website" (the official site, https://...), "instagram" (handle without @, or ""), "category" (one of: Beauty, Fashion, Food & drink, Travel, Fitness, Wellness, Tech, Home, Lifestyle, Other), "why" (one specific line, under 20 words, why they suit her, e.g. "Bengaluru café chain that hosted creator tastings for its new menu in 2026").
 Return ONLY a JSON array of objects, nothing else.`;
