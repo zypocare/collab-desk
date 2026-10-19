@@ -79,7 +79,7 @@ Deno.serve(async (req) => {
 
   // 1. Brands (Gemini with Google Search).
   const exclude = [...new Set([...pitches.map((p) => p.brand_name), ...(brands ?? []).map((b) => b.name)])].slice(0, 200);
-  const scouted = await ai<{ brands: Brand[] }>(db, site, 'scout', { count: Math.min(20, want * 2 + 2), creator, exclude });
+  const scouted = await ai<{ brands: Brand[] }>(db, site, 'scout', { count: Math.min(20, want + 8), creator, exclude });
   if (!scouted?.brands?.length) return reply({ error: 'No brands came back from the search.', detail: scouted }, 502);
   const fresh = scouted.brands.filter((b) => {
     const d = domainOf(b.website);
@@ -95,13 +95,18 @@ Deno.serve(async (req) => {
 
   // 3. A pitch for each (Gemini first), queued through the day.
   const slots = sendTimes(found.length);
-  const rows = [];
-  for (const [k, b] of found.entries()) {
-    const w = await ai<{ subject: string; body: string }>(db, site, 'pitch', {
+  // Written five at a time, so a run from the app finishes well inside the time limit.
+  const written = await Promise.all(found.map((b, k) => new Promise<unknown>((r) => setTimeout(r, Math.floor(k / 5) * 1500)).then(() => write(b))));
+  async function write(b: Found) {
+    return await ai<{ subject: string; body: string }>(db, site, 'pitch', {
       brand: b.name, brand_instagram: b.instagram, category: b.category, contact: '', why_they_fit: b.why,
       creator: s.display_name, handle: s.handle, niche: s.niche, city: s.city, followers: creator.followers,
       engagement: s.engagement, page_link: page, past_brands: pastBrands.slice(0, 5),
     });
+  }
+  const rows = [];
+  for (const [k, b] of found.entries()) {
+    const w = written[k] as { subject: string; body: string } | null;
     const subject = w?.subject?.trim() || `Content idea for ${b.name}`;
     const body =
       (w?.body?.trim() ||

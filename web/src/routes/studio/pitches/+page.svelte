@@ -60,7 +60,11 @@
 		finding = true;
 		const { data, error } = await supabase.functions.invoke('pitch-finder', { body: {} });
 		finding = false;
-		if (error) return toast(`Couldn't find brands just now: ${errMessage(error)}`, 'alert');
+		if (error) {
+			// The finder says what went wrong in its reply; show that, not the generic status message.
+			const said = await (error as { context?: Response }).context?.json?.().catch(() => null);
+			return toast(`Couldn't find brands just now: ${said?.error ?? said?.skipped ?? errMessage(error)}`, 'alert');
+		}
 		const r = data as { added?: number; skipped?: string; error?: string };
 		if (r.error) return toast(r.error, 'alert');
 		toast(r.added ? `${r.added} new brand${r.added === 1 ? '' : 's'} ready` : r.skipped ? `Nothing new: ${r.skipped}` : 'No new brands with a public email today', r.added ? 'check' : 'alert');
