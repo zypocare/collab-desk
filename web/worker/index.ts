@@ -431,13 +431,14 @@ The level of wit to match (style only, never copy these): "Breakfast > brand DMs
 Avoid tired puns (reel in, fuel up, stay hydrated, self-care) and generic lines like "check it out". It must be clearly different from every earlier notification listed (new joke, new angle, new words); don't reuse their openings.
 Return ONLY JSON: {"title": "...", "body": "..."}`,
 		`Fact: ${String(b.fact ?? 'none').slice(0, 300)}\nTry: ${Math.round(Number(b.attempt) || 0) + 1}\nEarlier notifications (do not echo):\n${recent.map((t) => `- ${t}`).join('\n') || '- none yet'}`,
-		200,
+		// Room for newer Gemini models that think before answering (only what's used is counted).
+		900,
 		0.9
 	);
 	const j = firstJson(reply) ?? {};
 	const title = String(j.title ?? '').replace(/["“”]/g, '').trim().slice(0, 60);
 	const body = String(j.body ?? '').replace(/["“”]/g, '').trim().slice(0, 180);
-	if (!title || body.length < 40) throw new Error('No clear answer from the AI.');
+	if (!title || body.length < 30) throw new Error(`No clear answer from the AI: ${reply.replace(/\s+/g, ' ').slice(0, 120)}`);
 	return { title, body };
 }
 
