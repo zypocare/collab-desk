@@ -12,6 +12,7 @@
 	import Donut from '#lib/components/charts/Donut.svelte';
 	import HBars from '#lib/components/charts/HBars.svelte';
 	import Gauge from '#lib/components/charts/Gauge.svelte';
+	import LaptopMoney from '#lib/components/LaptopMoney.svelte';
 
 	// Money at a glance: the year's earnings, month by month, growth on last year, where it comes from,
 	// who pays most, cash or product, what is coming in and how fast brands pay.
@@ -45,17 +46,10 @@
 <svelte:head><title>Money · {studio.settings?.app_name}</title></svelte:head>
 
 {#if !phone.on}
-	<header class="ph rv">
-		<div>
-			<div class="eb">Money · {fy.label}</div>
-			<h1>Money <em>dashboard</em></h1>
-			<p>Everything you've earned, what's coming in, and who pays best.</p>
-		</div>
-		<div class="acts"><Segmented label="Financial year" bind:value={fyStart} options={fyOptions} /></div>
-	</header>
+	<LaptopMoney />
 {:else}
+
 	<div class="md-fy"><Segmented label="Financial year" bind:value={fyStart} options={fyOptions} /></div>
-{/if}
 
 <section class="md-hero rv" aria-label="This year">
 	<div class="mesh" aria-hidden="true"></div>
@@ -144,3 +138,4 @@
 		</div>
 	</section>
 </div>
+{/if}
