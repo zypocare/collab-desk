@@ -18,6 +18,7 @@
 	import LanguagePicker from '#lib/components/LanguagePicker.svelte';
 	import { rateCheck, suggestRates } from '#lib/rateSuggest.ts';
 	import Icon from '#lib/components/Icon.svelte';
+	import Avatar from '#lib/components/Avatar.svelte';
 	import ShippingSettings from '#lib/components/ShippingSettings.svelte';
 	import NotificationSettings from '#lib/components/NotificationSettings.svelte';
 	import BillingSettings from '#lib/components/BillingSettings.svelte';
@@ -208,6 +209,28 @@
 	const asked = $derived(page.url.searchParams.get('s'));
 	const active = $derived<Sec | null>(sections.find((x) => x.id === asked)?.id ?? (narrow ? null : 'profile'));
 	const current = $derived(sections.find((x) => x.id === active));
+	// Phone: My page settings in CRED's layout. Who she is, a few swipe cards, a quick card, then the
+	// sections in small groups and what she has earned at the bottom.
+	const GROUPS: { label: string; ids: Sec[] }[] = [
+		{ label: 'Your page', ids: ['profile', 'rates', 'reviews'] },
+		{ label: 'Bookings & money', ids: ['bookings', 'offers', 'payments'] },
+		{ label: 'How your desk works', ids: ['autopilot', 'alerts', 'team'] },
+		{ label: 'Account', ids: ['account'] }
+	];
+	const byId = (id: Sec) => sections.find((x) => x.id === id)!;
+	const since = $derived(studio.collabs.reduce((m, c) => (c.received_on && c.received_on < m ? c.received_on : m), '9999').slice(0, 4));
+	const earnedAll = $derived(studio.collabs.reduce((a, c) => a + (c.pay_received || 0), 0));
+	const doneN = $derived(studio.collabs.filter((c) => c.stage === 'wrapped').length);
+	let cardsEl = $state<HTMLElement>();
+	let cardI = $state(0);
+	const onCards = () => cardsEl && (cardI = Math.round(cardsEl.scrollLeft / Math.max(1, cardsEl.clientWidth * 0.86)));
+	const cards = $derived([
+		{ icon: 'link', text: 'Brands request collabs from your link', act: 'Copy link', run: () => copyText(link, 'Link copied. Put it in your Instagram bio.') },
+		{ icon: 'film', text: 'Your media kit, ready to send', act: 'Download', run: kit },
+		{ icon: 'qr', text: 'A QR code for events and prints', act: 'Open', run: () => goto('/studio/qr') },
+		...(s.show_insights && studio.ig?.connected ? [{ icon: 'chart', text: 'Send brands your live insights', act: 'Copy', run: () => copyText(`${link}/insights`, 'Insights link copied') }] : [])
+	]);
+
 	function open(id: Sec) {
 		// Phones: a new screen (Back returns to the menu). Desktop: swap the section in place.
 		goto(`?s=${id}`, narrow ? {} : { replace: true, reset: false });
@@ -250,7 +273,42 @@
 </div>
 
 <div class="set-shell" class:sec-open={!!active}>
-	<nav class="set-menu rv" style="--i:2" aria-label="Settings sections">
+	{#if phone.on && !active}
+		<div class="cs-hub">
+			<header class="cs-me">
+				<a class="cs-av" href="/studio/profile" aria-label="Your profile"><Avatar name={s.display_name} src={studio.ig?.connected ? studio.ig.profile_picture_url : ''} size="64px" /><span class="cs-qr"><Icon name="qr" /></span></a>
+				<div class="cs-who"><b>{s.display_name}</b><small><Icon name="shield" />@{s.handle}{since !== '9999' ? ` · since ${since}` : ''}</small></div>
+				<button class="cs-edit" onclick={() => open('profile')} aria-label="Edit profile"><Icon name="edit" /></button>
+			</header>
+			<div class="cs-cards" bind:this={cardsEl} onscroll={onCards}>
+				{#each cards as k (k.icon)}
+					<div class="cs-card"><span class="cs-ci"><Icon name={k.icon} /></span><p>{k.text}</p><button class="cs-cb" onclick={k.run} disabled={k.icon === 'film' && kitBusy}>{#if k.icon === 'film' && kitBusy}<span class="spinner"></span>{:else}{k.act}{/if}</button></div>
+				{/each}
+			</div>
+			<div class="cs-dots" aria-hidden="true">{#each cards as k, i (k.icon)}<i class:on={i === cardI}></i>{/each}</div>
+			<div class="cs-quick">
+				<a class="cs-row" href="?s=bookings" onclick={(e) => (e.preventDefault(), open('bookings'))}><Icon name="cal" /><span>{s.accepting ? 'taking requests' : 'requests paused'}</span><em>{s.accepting ? `${s.weekly_capacity} a week` : 'open up'}</em></a>
+				<button class="cs-row" onclick={() => copyText(link, 'Link copied')}><Icon name="link" /><span>your link</span><em>copy</em></button>
+			</div>
+			{#each GROUPS as g (g.label)}
+				<div class="cs-h">{g.label}</div>
+				{#each g.ids.map(byId) as x (x.id)}
+					<a class="cs-row" href="?s={x.id}" onclick={(e) => (e.preventDefault(), open(x.id))}><Icon name={x.icon} /><span>{x.label}</span>{#if x.warn}<i class="cs-dot" title={x.warn}></i>{/if}</a>
+				{/each}
+			{/each}
+			<a class="cs-row" href="/studio/import"><Icon name="layers" /><span>Import collabs</span></a>
+			<button class="cs-row" onclick={toggleTheme}><Icon name={theme.value === 'dark' ? 'sun' : 'moon'} /><span>{theme.value === 'dark' ? 'Light look' : 'Dark look'}</span></button>
+			{#if pwa.installEvent && !pwa.installed}<button class="cs-row" onclick={install}><Icon name="download" /><span>Install the app</span></button>{/if}
+			<button class="cs-row cs-out" onclick={async () => (await signOut(), goto('/login', { replaceState: true }))}><Icon name="logout" /><span>Log out @{s.handle}</span></button>
+			<div class="cs-quick cs-stats">
+				<a class="cs-row" href="/studio/payments"><Icon name="wallet" /><span>earned with your desk</span><b>{inr(earnedAll)}</b></a>
+				<a class="cs-row" href="/studio/collabs"><Icon name="check" /><span>collabs wrapped</span><b>{doneN}</b></a>
+			</div>
+			<p class="cs-foot">{s.app_name || 'Collab Desk'} · made for creators</p>
+		</div>
+	{/if}
+	{#if active && current && phone.on}<h1 class="cs-title">{current.label}</h1>{/if}
+	<nav class="set-menu rv" style="--i:2" aria-label="Settings sections" hidden={phone.on && !active}>
 		{#each sections as x (x.id)}
 			<a class="set-item" class:on={x.id === active} href="?s={x.id}" aria-current={x.id === active ? 'page' : undefined} onclick={(e) => (e.preventDefault(), open(x.id))}>
 				<span class="set-ic"><Icon name={x.icon} /></span>
@@ -260,24 +318,6 @@
 			</a>
 		{/each}
 	</nav>
-	{#if phone.on && !active}
-		<!-- Phone: the rest of "Settings and activity", after the sections. -->
-		<div class="set-more">
-			<div class="set-more-h">More</div>
-			<nav class="set-menu" aria-label="More">
-				<a class="set-item" href="/studio/import"><span class="set-ic"><Icon name="layers" /></span><span class="set-t"><b>Import collabs</b><small>Paste the DMs you already have</small></span><Icon name="chevR" class="set-chev" /></a>
-				<button class="set-item" onclick={toggleTheme}><span class="set-ic"><Icon name={theme.value === 'dark' ? 'sun' : 'moon'} /></span><span class="set-t"><b>{theme.value === 'dark' ? 'Light look' : 'Dark look'}</b><small>Switch how the app looks on this phone</small></span></button>
-				{#if pwa.installEvent && !pwa.installed}
-					<button class="set-item" onclick={install}><span class="set-ic"><Icon name="download" /></span><span class="set-t"><b>Install the app</b><small>Open it from your home screen like any app</small></span></button>
-				{/if}
-			</nav>
-			<div class="set-more-h">Login</div>
-			<nav class="set-menu" aria-label="Login">
-				<button class="set-item set-out" onclick={async () => (await signOut(), goto('/login', { replaceState: true }))}><span class="set-t"><b>Log out @{s.handle}</b></span></button>
-			</nav>
-		</div>
-	{/if}
-
 	{#if active && current}
 		<div class="set-body">
 			<div class="set-head">

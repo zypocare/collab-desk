@@ -152,7 +152,7 @@
 		'/studio/qr': 'QR codes',
 		'/studio/payments': 'Payments',
 		'/studio/reports': 'Reports',
-		'/studio/settings': 'Settings and activity',
+		'/studio/settings': 'Settings',
 		'/studio/inbox': 'Messages',
 		'/studio/import': 'Import collabs',
 		'/studio/instagram': 'Instagram',
@@ -411,11 +411,11 @@
 		{/if}
 		<main class="main">
 			{#if phone.on && !chat}
-				<header class="m-bar" class:scrolled={phone.scrolled} class:sub={!!back} class:hide={phone.hide && !back}>
+				<header class="m-bar" class:scrolled={phone.scrolled} class:sub={!!back} class:hide={phone.hide && !back} class:cs={path === '/studio/settings'} class:cs-sub={path === '/studio/settings' && !!sec}>
 					{#if back}
-						<button class="m-ib m-back" onclick={goBack} aria-label="Back"><Icon name="chevL" /></button>
+						<button class="m-ib m-back" onclick={goBack} aria-label="Back"><Icon name={path === '/studio/settings' && sec ? 'back' : 'chevL'} /></button>
 						<div class="m-title">{title}</div>
-						<div class="m-r"></div>
+						<div class="m-r">{#if path === '/studio/settings' && !sec}<a class="cs-pill" href="/?preview=1" target="_blank" rel="noopener"><Icon name="eye" />Preview</a>{/if}</div>
 					{:else}
 						<div class="m-brand" class:wordmark={path === '/studio'}>{path === '/studio' ? (studio.settings?.app_name ?? 'Collab Desk') : title}</div>
 						<div class="m-r">
