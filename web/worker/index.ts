@@ -57,9 +57,9 @@ export default {
 					} catch (e) {
 						// Which key Cloudflare holds, by its last four characters and length only (as AI Studio shows it).
 						const k = (env.GEMINI_API_KEY ?? '').trim().replace(/^["']+|["']+$/g, '');
-						why = `${String((e as Error)?.message ?? e).slice(0, 140)} (key …${k.slice(-4)}, ${k.length} characters)`;
+						why = `${String((e as Error)?.message ?? e).slice(0, kind === 'scout' ? 1200 : 140)} (key …${k.slice(-4)}, ${k.length} characters)`;
 						// Finding brands only works with Gemini (it searches Google): say what went wrong.
-						if (kind === 'scout') return json({ error: `Gemini couldn't search: ${why}` }, 502);
+						if (kind === 'scout') return json({ error: `Gemini couldn't search: ${why}`.slice(0, 1400) }, 502);
 					}
 				}
 				return json({ ...(await job({ env, gemini: false, neurons: 0 })), ...(kind === 'cheer' ? { by: 'cloudflare', why } : {}) });
@@ -220,10 +220,13 @@ async function gemini(env: Env, system: string, user: string, max: number, tempe
 			const j = (await r.json().catch(() => ({}))) as { candidates?: { content?: { parts?: { text?: string }[] } }[]; error?: { message?: string } };
 			if (r.status === 429) {
 				if (!search) throw new Error('USED_UP');
-				lastErr = `${model}: ${(j.error?.message ?? 'too many requests').slice(0, 160)}`;
+				lastErr += `${lastErr ? ' | ' : ''}${model}: ${(j.error?.message ?? 'too many requests').replace(/\s+/g, ' ').slice(0, 230)}`;
 				break;
 			}
-			if (r.status === 404) break; // try the next model name
+			if (r.status === 404) {
+				if (search) lastErr += `${lastErr ? ' | ' : ''}${model}: not available`;
+				break; // try the next model name
+			}
 			if (r.status === 400 && thinking && /think/i.test(j.error?.message ?? '')) continue; // a model without that setting
 			if (!r.ok) throw new Error(j.error?.message ?? `Gemini ${r.status}`);
 			return (j.candidates?.[0]?.content?.parts ?? []).map((p) => p.text ?? '').join('').trim();
