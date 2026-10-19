@@ -198,7 +198,8 @@ async function gemini(env: Env, system: string, user: string, max: number, tempe
 		for (const thinking of [true, false]) {
 			const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
 				method: 'POST',
-				headers: { 'content-type': 'application/json', 'x-goog-api-key': env.GEMINI_API_KEY ?? '' },
+				// Pasted keys often carry a space, a line break or quote marks: send the key alone.
+				headers: { 'content-type': 'application/json', 'x-goog-api-key': (env.GEMINI_API_KEY ?? '').trim().replace(/^["']+|["']+$/g, '') },
 				body: JSON.stringify({
 					systemInstruction: { parts: [{ text: system }] },
 					contents: [{ role: 'user', parts: [{ text: user }] }],
