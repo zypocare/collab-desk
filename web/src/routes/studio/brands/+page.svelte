@@ -2,7 +2,8 @@
 	import { brandStats } from '#lib/brandStats.ts';
 	import MonthlyDeals from '#lib/components/MonthlyDeals.svelte';
 	import { studio } from '#lib/studio.svelte.ts';
-	import { fmt, inr } from '#lib/util.ts';
+	import { fmt, hueOf, initials, inr, inrS } from '#lib/util.ts';
+	import { phone } from '#lib/phone.svelte.ts';
 	import Icon from '#lib/components/Icon.svelte';
 	import { rollHints } from '#lib/lively.ts';
 	import Mono from '#lib/components/Mono.svelte';
@@ -49,6 +50,36 @@
 	/>
 </div>
 
+{#if phone.on}
+	<!-- Phone: each brand a ticket, like Needs you on Today: its colour band, then how it's going. -->
+	<section class="tks bk-tks">
+		{#each stats as s, i (s.brand.id)}
+			<article class="tk" style="--h:var(--m{hueOf(s.brand.name)});--i:{Math.min(i, 8)}">
+				<a class="tk-band" href="/studio/brands/{s.brand.id}">
+					<span class="tk-tile">{initials(s.brand.name)}</span>
+					<span class="tk-who"><b>{s.brand.name}</b><small>{s.brand.category || 'Brand'}{#if s.brand.instagram}{' · '}<span class="tk-ig">@{s.brand.instagram.replace(/^@+/, '')}</span>{/if}</small></span>
+					<span class="tk-money"><b>{s.paid ? inrS(s.paid) : s.barter ? inrS(s.barter) : '—'}</b><small>{s.paid ? 'earned' : s.barter ? 'in products' : 'nothing yet'}</small></span>
+				</a>
+				<div class="tk-cut" aria-hidden="true"></div>
+				<div class="tk-foot">
+					<span class="tk-task">
+						<b>{s.count} collab{s.count === 1 ? '' : 's'} · {s.active ? `${s.active} active` : 'none active'}</b>
+						{#if s.outstanding > 0}
+							<small class="hot"><i></i>{inrS(s.outstanding)} still to come</small>
+						{:else if s.avgDaysToPay !== null}
+							<small class="ok"><i></i>{s.avgDaysToPay === 0 ? 'Pays the same day' : `Pays in ${s.avgDaysToPay} day${s.avgDaysToPay === 1 ? '' : 's'}`}{s.onTimeRate !== null ? ` · ${Math.round(s.onTimeRate * 100)}% on time` : ''}</small>
+						{:else}
+							<small class="calm"><i></i>Last collab {fmt(s.lastDate)}</small>
+						{/if}
+					</span>
+					<a class="btn primary" href="/studio/brands/{s.brand.id}">Open</a>
+				</div>
+			</article>
+		{:else}
+			<div class="empty">No brands yet.</div>
+		{/each}
+	</section>
+{:else}
 <section class="panel rv" style="--i:2">
 	<div class="brand-row head"><span>Brand</span><span>Collabs</span><span>Earned</span><span class="hide-sm">Pays in</span><span class="hide-sm">Last collab</span></div>
 	{#each stats as s, i (s.brand.id)}
@@ -63,3 +94,4 @@
 		<div class="empty">No brands yet.</div>
 	{/each}
 </section>
+{/if}

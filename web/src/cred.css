@@ -610,3 +610,11 @@
 
   @media (prefers-reduced-motion: reduce) { .tp-track i, .tp-bar i { animation: none; } }
 }
+
+/* Brands as tickets (phone): calm and good-payer states for the line under the count. */
+@media (max-width: 760px) {
+  .bk-tks { margin-top: 6px; }
+  .tk-task small.ok { color: var(--ok); }
+  .tk-task small.calm { color: var(--ink-3); }
+}
+@media (max-width: 760px) { .tk-who small .tk-ig { text-transform: none; letter-spacing: .02em; font-weight: 600; } }
