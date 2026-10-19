@@ -1504,3 +1504,70 @@
   /* Tickets get room to breathe on a wide screen. */
   .pg .tks { gap: 16px; }
 }
+
+/* ===== PHONE: square NeoPOP controls. Tabs, filters, chips and search are blocks with a hard
+   edge (like the NeoPOP buttons), never rounded pills. Bookings weeks and priority rules as CRED pieces. ===== */
+@media (max-width: 760px) {
+  /* Page tabs (Board · Brands · Pitches): one outlined bar, the current tab an ink block with a pink edge. */
+  [data-side] .m-seg { padding: 0; border: 1px solid var(--line-strong); border-radius: 0; background: transparent; overflow: visible; }
+  [data-side] .m-seg a { height: 44px; border-radius: 0; transition: background .2s, color .2s, transform .12s, box-shadow .12s; }
+  [data-side] .m-seg a + a { border-left: 1px solid var(--line); }
+  [data-side] .m-seg a[aria-current="page"] { background: var(--ink); color: var(--bg); box-shadow: 3px 3px 0 var(--accent); position: relative; z-index: 1; }
+  [data-side] .m-seg a:active { transform: translate(2px, 2px); box-shadow: none; }
+
+  /* Segmented choices inside pages (Open · Selective · Paid only, Own car · Scooter ...). */
+  [data-side] :is(.pills, .btabs) { padding: 0; gap: 0; border: 1px solid var(--line-strong); border-radius: 0; background: transparent; box-shadow: none; overflow: visible; }
+  [data-side] :is(.pills, .btabs) .thumb { border-radius: 0; background: var(--ink); box-shadow: 3px 3px 0 var(--accent); }
+  [data-side] :is(.pills, .btabs) button { height: 42px; padding: 0 12px; border-radius: 0; white-space: nowrap; letter-spacing: .07em; }
+  [data-side] :is(.pills, .btabs) button + button { border-left: 1px solid var(--line); }
+  [data-side] :is(.pills, .btabs) button[aria-pressed="true"] { color: var(--bg); }
+
+  /* Stage and status filters: square chips, ink with a pink edge when on. */
+  [data-side] .m-stages { padding-right: 20px; padding-bottom: 10px; }
+  [data-side] .m-stages button { height: 40px; padding: 0 14px; border-radius: 0; border: 1px solid var(--line-strong); background: transparent; color: var(--ink); font-size: 11.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; transition: transform .12s, box-shadow .12s, background .2s; }
+  [data-side] .m-stages button:not(.on) { background: transparent; border-color: var(--line-strong); }
+  [data-side] .m-stages button span { letter-spacing: 0; }
+  [data-side] .m-stages button.on { background: var(--ink); color: var(--bg); border-color: var(--ink); box-shadow: 3px 3px 0 var(--accent); animation: none; }
+  [data-side] .m-stages button:active { transform: translate(2px, 2px); box-shadow: none; }
+
+  /* Search: a plain outlined block. */
+  [data-side] :is(label.search, .ib-search) { border-radius: 0; }
+
+  /* Picks (categories, languages, hours): square tiles. Off is outlined, on is ink with a tick and a pink edge. */
+  [data-side] :is(.cat-chip, .lang-chip, .pay-hours .pay-h) { height: 40px; padding: 0 14px; border-radius: 0; border: 1px solid var(--line-strong); background: transparent; color: var(--ink-2); font-size: 14px; font-weight: 600; transition: transform .12s, box-shadow .12s, background .2s, color .2s; }
+  [data-side] :is(.cat-chip.on, .lang-chip.on, .pay-hours .pay-h.on) { background: var(--ink); color: var(--bg); border-color: var(--ink); box-shadow: 3px 3px 0 var(--accent); }
+  [data-side] .cat-chip.on::after { content: "✓"; margin-left: 8px; font-size: 12px; color: var(--accent); }
+  [data-side] .lang-chip.on .ic { color: var(--accent); }
+
+  /* "+N more" and the chips on glowing cards are buttons too: square, with the hard edge. */
+  [data-side] button.cr-more.cr-more { border-radius: 0; height: 42px; padding: 0 20px; border: 1px solid var(--line-strong); background: transparent; font-size: 11.5px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; box-shadow: 3px 3px 0 var(--line-strong); }
+  [data-side] .cr-more:active { transform: translate(3px, 3px); box-shadow: none; }
+  [data-side] .glass-chip { border-radius: 0; }
+  [data-side] :is(.cat-chip, .lang-chip, .pay-h):active { transform: translate(2px, 2px); box-shadow: none; }
+  [data-side] :is(.cat-chips, .lang-chips) { gap: 10px; padding-right: 4px; }
+
+  /* Open weeks: a calendar of tiles. Date in serif, the state in spaced capitals with its dot,
+     and the slots as a small bar. Away weeks are hatched. */
+  [data-side] .wk-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; padding: 4px 20px 16px; }
+  [data-side] .wk-grid .wk { position: relative; align-items: flex-start; gap: 6px; padding: 12px 12px 12px; border-radius: 0; border: 1px solid var(--line-strong); background: transparent; text-align: left; transition: transform .12s, box-shadow .12s; }
+  [data-side] .wk-grid .wk:active { transform: translate(2px, 2px); }
+  [data-side] .wk-grid .wk b { font: 400 22px/1 var(--f-serif, Georgia, serif); letter-spacing: -.01em; color: var(--ink); }
+  [data-side] .wk-grid .wk small { display: flex; align-items: center; gap: 6px; font-size: 10px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); }
+  [data-side] .wk-grid .wk small::before { content: ""; flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--wk, var(--ok)); }
+  [data-side] .wk-grid .wk::after { content: ""; position: absolute; left: 12px; right: 12px; bottom: 0; height: 3px; background: var(--wk, var(--ok)); opacity: .9; }
+  [data-side] .wk-grid .wk-open { --wk: var(--ok); }
+  [data-side] .wk-grid .wk-limited { --wk: var(--warn, #e0a23a); }
+  [data-side] .wk-grid .wk-full { --wk: var(--bad); }
+  [data-side] .wk-grid .wk[aria-pressed="true"] { --wk: var(--ink-3); background: repeating-linear-gradient(135deg, transparent 0 6px, color-mix(in oklab, var(--ink) 7%, transparent) 6px 7px); }
+  [data-side] .wk-grid .wk[aria-pressed="true"] b { color: var(--ink-3); }
+
+  /* Priority rules: a ranked list like the reports, the first one marked in the brand gradient. */
+  [data-side] .rules-order { display: grid; grid-template-columns: 1fr; gap: 0; counter-reset: r; border-top: 1px solid var(--line); }
+  [data-side] .rules-order li { display: grid; grid-template-columns: 56px 1fr; align-items: center; gap: 4px 12px; padding: 16px 0; border-radius: 0; background: none; color: var(--ink); border-bottom: 1px solid var(--line); }
+  [data-side] .rules-order li::before { content: "0" counter(r); position: static; grid-row: 1 / span 2; font: italic 400 34px/1 var(--f-serif, Georgia, serif); opacity: 1; color: var(--ink-3); }
+  [data-side] .rules-order li:first-child { background: none; color: var(--ink); }
+  [data-side] .rules-order li:first-child::before { background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; padding-right: 4px; }
+  [data-side] .rules-order li b { font-size: 17px; font-weight: 700; }
+  [data-side] .rules-order li span { font-size: 10.5px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); opacity: 1; }
+  [data-side] .rules-order li:first-child span { color: var(--accent); }
+}
