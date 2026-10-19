@@ -12,6 +12,7 @@ import { LINES, PARTS, WORK, type Line } from '../_shared/funLines.ts';
 
 type Kind = 'work' | 'water' | 'food' | 'yoga' | 'night';
 type Fact = { topic: string; text: string; url: string; prio: number; vars: Record<string, string> };
+type Written = Line & { by: string };
 
 // The day: work and wellbeing take turns; yoga at her yoga hour; wind down at 11 PM.
 const PLAN: Record<number, Kind> = { 11: 'work', 12: 'water', 13: 'food', 14: 'work', 15: 'water', 16: 'work', 17: 'food', 18: 'yoga', 19: 'work', 20: 'water', 21: 'food', 22: 'work', 23: 'night' };
@@ -91,7 +92,7 @@ Deno.serve(async (req) => {
   for (let attempt = 0; attempt < 3 && !line; attempt++) {
     const l = await aiLine(db, site, { kind, meal: kind === 'food' ? meal(hour) : '', name, when, fact: fact?.text ?? 'none', attempt, recent: past.slice(0, 40).map((p) => `${p.title} — ${p.body}`) });
     if (!l) break;
-    if (!tooClose(l, past)) line = l;
+    if (!tooClose(l, past)) ((line = l), (source = l.by));
   }
   // 2. A hand-written one that has never gone out.
   if (!line) {
@@ -108,7 +109,7 @@ Deno.serve(async (req) => {
 });
 
 /** The free AI, through a single-use pass the database checks (no keys leave the server). */
-async function aiLine(db: ReturnType<typeof admin>, site: string, payload: Record<string, unknown>): Promise<Line | null> {
+async function aiLine(db: ReturnType<typeof admin>, site: string, payload: Record<string, unknown>): Promise<Written | null> {
   const ticket = crypto.randomUUID() + crypto.randomUUID();
   const { error } = await db.from('ai_tickets').insert({ token: ticket, kind: 'cheer' });
   if (error) return null;
@@ -117,9 +118,9 @@ async function aiLine(db: ReturnType<typeof admin>, site: string, payload: Recor
     headers: { 'content-type': 'application/json', 'x-ai-ticket': ticket, apikey: Deno.env.get('SUPABASE_ANON_KEY') ?? '' },
     body: JSON.stringify(payload)
   }).catch(() => null);
-  const j = (await r?.json().catch(() => null)) as { title?: string; body?: string } | null;
+  const j = (await r?.json().catch(() => null)) as { title?: string; body?: string; by?: string } | null;
   const title = String(j?.title ?? '').trim(), body = String(j?.body ?? '').trim();
-  return title && body && title.length <= 60 && body.length <= 180 ? { title, body } : null;
+  return title && body && title.length <= 60 && body.length <= 180 ? { title, body, by: j?.by || 'ai' } : null;
 }
 
 /** A hand-written line never sent before; when the list runs out, a new pairing of opener and closer. */

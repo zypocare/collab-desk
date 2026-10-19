@@ -43,11 +43,19 @@ export default {
 				kind === 'cheer' ? cheer(x, body) : kind === 'dm' ? readDm(x, body) : kind === 'reply' ? replies(x, body) : kind === 'pitch' ? pitch(x, body) : kind === 'classify' ? classify(x, body) : kind === 'fit' ? fit(x, body) : kind === 'summary' ? summary(x, body) : kind === 'negotiate' ? negotiate(x, body) : kind === 'script' ? script(x, body) : kind === 'nudge' ? nudge(x, body) : kind === 'ask' ? ask(x, body) : kind === 'voice' ? voice(x, body) : kind === 'embed' ? embed(x, body) : caption(x, body);
 
 			// Checking an incoming Instagram DM comes from the DM webhook with a single-use pass, and the
-			// hourly fun nudge from its job the same way (Cloudflare only: never sent to the backup).
+			// hourly fun nudge from its job the same way. DMs stay on Cloudflare (never sent to Google);
+			// the fun nudges are written by Gemini first (wittier), Cloudflare if Gemini can't.
 			if (kind === 'classify' || kind === 'cheer') {
 				const allowed = await takeTicket(req, env, kind);
 				if (allowed !== true) return json({ error: allowed }, 403);
-				return json(await job({ env, gemini: false, neurons: 0 }));
+				if (kind === 'cheer' && env.GEMINI_API_KEY) {
+					try {
+						return json({ ...(await job({ env, gemini: true, neurons: 0 })), by: 'gemini' });
+					} catch {
+						/* Cloudflare below */
+					}
+				}
+				return json({ ...(await job({ env, gemini: false, neurons: 0 })), ...(kind === 'cheer' ? { by: 'cloudflare' } : {}) });
 			}
 
 			// The same reading asked again is answered from the cache (two weeks), at no cost.
@@ -166,7 +174,7 @@ function meter(x: Run, r: unknown, model: 'text' | 'vision', input: string, extr
 	x.neurons += tin * PER_TOKEN[model][0] + tout * PER_TOKEN[model][1];
 }
 async function chat(x: Run, system: string, user: string, max = 700, temperature = 0.3) {
-	if (x.gemini) return gemini(x.env, system, private_(user), max);
+	if (x.gemini) return gemini(x.env, system, private_(user), max, temperature);
 	const r = await x.env.AI.run(TEXT, { messages: [{ role: 'system', content: system }, { role: 'user', content: user }], max_tokens: max, temperature });
 	meter(x, r, 'text', system + user);
 	return out(r);
@@ -184,7 +192,7 @@ function voiceOf(b: Record<string, unknown>) {
 const private_ = (t: string) => t.replace(/[\w.+-]+@[\w-]+\.[\w.]{2,}/g, '[email]').replace(/(?:\+?91[\s-]?)?[6-9]\d{4}[\s-]?\d{5}\b/g, '[phone]').replace(/\+?\d[\d\s-]{8,}\d/g, (m) => (m.replace(/\D/g, '').length >= 10 ? '[phone]' : m));
 
 /** Google Gemini's free tier (a key with no billing attached, so it can't charge). */
-async function gemini(env: Env, system: string, user: string, max: number) {
+async function gemini(env: Env, system: string, user: string, max: number, temperature = 0.3) {
 	for (const model of ['gemini-flash-latest', 'gemini-2.5-flash']) {
 		for (const thinking of [true, false]) {
 			const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
@@ -193,7 +201,7 @@ async function gemini(env: Env, system: string, user: string, max: number) {
 				body: JSON.stringify({
 					systemInstruction: { parts: [{ text: system }] },
 					contents: [{ role: 'user', parts: [{ text: user }] }],
-					generationConfig: { temperature: 0.3, maxOutputTokens: max, ...(thinking ? { thinkingConfig: { thinkingBudget: 0 } } : {}) }
+					generationConfig: { temperature, maxOutputTokens: max, ...(thinking ? { thinkingConfig: { thinkingBudget: 0 } } : {}) }
 				})
 			});
 			if (r.status === 429) throw new Error('USED_UP');

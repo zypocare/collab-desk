@@ -24,7 +24,9 @@ export async function pushToCreator(db: SupabaseClient, msg: Push) {
   const failed: { device: string; code: number | null; error: string }[] = [];
   for (const s of subs ?? []) {
     try {
-      await webpush.sendNotification({ endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } }, JSON.stringify(msg), { TTL: 60 * 60 * 24 });
+      // High urgency: Android (Doze) and iPhone hold normal pushes while the phone is locked and idle,
+      // and show them only when it wakes. These are things she should see now.
+      await webpush.sendNotification({ endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } }, JSON.stringify(msg), { TTL: 60 * 60 * 24, urgency: 'high' });
       sent++;
     } catch (e) {
       const code = (e as { statusCode?: number }).statusCode;
