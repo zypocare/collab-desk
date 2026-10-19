@@ -121,3 +121,101 @@
 @media (max-width: 760px) {
   [data-side="studio"] .m-stages button.on { background: var(--ink); color: var(--bg); border-color: var(--ink); }
 }
+
+/* ==========================================================================================
+   Round two: one button language everywhere, CRED's pill chips and search, and motion.
+   Actions are NeoPOP blocks (a hard edge they press into); filters and suggestions are thin
+   outlined pills; cards lean toward the finger and spring back; things rise in as they arrive.
+   ========================================================================================== */
+@property --cr-a { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
+@media (max-width: 760px) {
+  /* ---------- NeoPOP, everywhere ---------- */
+  [data-side="studio"] .btn { border-radius: 0 !important; }
+  [data-side="studio"] :is(.btn.sm.ghost, .ai-desk-acts .btn.ghost) { --edge: var(--line-strong); background: var(--surface); border: 1px solid var(--line-strong); box-shadow: 2.5px 2.5px 0 var(--edge); color: var(--ink); }
+  /* The AI button: a plain NeoPOP block with the gradient spark (no glowing outline). */
+  [data-side="studio"] .btn.ai-btn { --edge: color-mix(in oklab, var(--g2) 55%, #000); background: var(--surface); border: 1px solid color-mix(in oklab, var(--g2) 45%, var(--line)); box-shadow: 3px 3px 0 var(--edge); animation: none; color: var(--ink); }
+  [data-side="studio"] .btn.ai-btn .ic { color: var(--g2); }
+  /* On Today's AI card: Ask your desk is the main block, Messages the plain one beside it. */
+  [data-side="studio"] .ai-desk-acts { gap: 12px; padding: 14px 3px 6px 0; }
+  [data-side="studio"] .ai-desk-acts .btn { height: 46px; font-size: 14px; font-weight: 700; letter-spacing: .01em; }
+  [data-side="studio"] .ai-desk-acts .btn.ai-btn { --edge: var(--accent); background: var(--ink); color: var(--bg); border-color: transparent; }
+  [data-side="studio"] .ai-desk-acts .btn.ai-btn .ic { color: var(--g3); }
+  [data-side="studio"] .ai-desk-acts .ai-acts-n { border-radius: 0; }
+  [data-side="studio"] .ail-add { height: 34px; padding: 0 13px; border-radius: 0; background: var(--ink); color: var(--bg); box-shadow: 2.5px 2.5px 0 var(--accent); transition: transform .08s, box-shadow .08s; }
+  [data-side="studio"] .ail-add:active { transform: translate(2.5px, 2.5px); box-shadow: 0 0 0 var(--accent); }
+  [data-side="studio"] :is(.btn, .ail-add):active { transition-duration: .05s; }
+
+  /* ---------- thin outlined pills: filters, jumps, suggestions ---------- */
+  [data-side="studio"] :is(.cx-nav a, .th-chip, .cr-more) { border-radius: 999px; border: 1px solid var(--line-strong); background: transparent; color: var(--ink); font-weight: 600; }
+  [data-side="studio"] .cx-nav a { height: 34px; padding: 0 14px; display: inline-flex; align-items: center; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; }
+  [data-side="studio"] .th-chip.ai { border-color: color-mix(in oklab, var(--g2) 50%, var(--line-strong)); }
+  [data-side="studio"] .m-stages button:not(.on) { background: transparent; border-color: var(--line-strong); }
+
+  /* ---------- search: CRED's rounded bar that rolls through things to look for ---------- */
+  [data-side="studio"] :is(label.search, .ib-search) { position: relative; height: 50px; padding: 0 18px; gap: 12px; border-radius: 999px; border: 1px solid var(--line-strong); background: transparent; box-shadow: none; max-width: none; color: var(--ink-2); transition: border-color .2s, box-shadow .2s, transform .2s; }
+  [data-side="studio"] :is(label.search, .ib-search):focus-within { border-color: var(--ink); box-shadow: 3px 3px 0 var(--accent); transform: translate(-1px, -1px); }
+  [data-side="studio"] :is(label.search, .ib-search) .ic { width: 19px; height: 19px; color: var(--ink); }
+  [data-side="studio"] :is(label.search, .ib-search) input { font-size: 15.5px; }
+  .sh-hint { position: absolute; top: 0; bottom: 0; right: 16px; display: flex; align-items: center; font-size: 15.5px; color: var(--ink-3); pointer-events: none; white-space: nowrap; overflow: hidden; }
+  .sh-hint[hidden] { display: none; }
+  .sh-roll { position: relative; flex: 1; height: 1.4em; overflow: hidden; }
+  .sh-roll i { position: absolute; left: 0; top: 0; font-style: normal; color: var(--ink-2); white-space: nowrap; animation: sh-in .5s cubic-bezier(.2, .9, .25, 1) both; }
+  .sh-roll i.out { animation: sh-out .38s ease both; }
+  @keyframes sh-in { from { transform: translateY(105%); opacity: 0; } }
+  @keyframes sh-out { to { transform: translateY(-105%); opacity: 0; } }
+
+  /* ---------- things rise in as they arrive (set by lively.ts) ---------- */
+  [data-rv] { opacity: 0; translate: 0 26px; scale: .965; transition: opacity .5s ease var(--rvd, 0s), translate .7s cubic-bezier(.2, .9, .25, 1) var(--rvd, 0s), scale .7s cubic-bezier(.2, .9, .25, 1) var(--rvd, 0s), transform .55s cubic-bezier(.2, 1.5, .35, 1); }
+  [data-rv="in"] { opacity: 1; translate: 0 0; scale: 1; }
+
+  /* ---------- press: cards lean toward the finger and spring back ---------- */
+  [data-side="studio"] :is(.wc, .hero-card, .md-hero, .m-ccard, .qr-item, .ct-mini) { transition: transform .6s cubic-bezier(.2, 1.5, .35, 1); }
+  [data-side="studio"] .cr-it { transition: transform .6s cubic-bezier(.2, 1.5, .35, 1), opacity .25s; }
+  [data-side="studio"] .cr-it.leaving { transition: transform .3s cubic-bezier(.2, .8, .2, 1), opacity .25s; }
+  [data-side="studio"] [data-press] { transform: perspective(800px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) scale(.975); transition-duration: .16s; transition-timing-function: ease-out; }
+  [data-side="studio"] .wc[data-press] { transform: perspective(700px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) translateY(-8px) scale(1.01); }
+  [data-side="studio"] .wc:active:not([data-press]) { transform: none; }
+
+  /* ---------- a light sweep across the main buttons and the wallet cards, now and then ---------- */
+  [data-side="studio"] :is(.btn.grad, .btn.primary, .ai-desk-acts .btn.ai-btn) { position: relative; overflow: hidden; isolation: isolate; }
+  [data-side="studio"] :is(.btn.grad, .btn.primary, .ai-desk-acts .btn.ai-btn)::after { content: ''; display: block; position: absolute; top: 0; bottom: 0; left: -60%; width: 45%; z-index: 1; pointer-events: none; background: linear-gradient(100deg, transparent, rgba(255, 255, 255, .38), transparent); transform: skewX(-18deg); animation: cr-sweep 5.5s ease-in-out infinite; animation-delay: var(--sw, 1.2s); }
+  [data-side="studio"] .wc::after { content: ''; position: absolute; top: -20%; bottom: -20%; left: -70%; width: 40%; z-index: -1; pointer-events: none; background: linear-gradient(100deg, transparent, rgba(255, 255, 255, .14), transparent); transform: skewX(-18deg); animation: cr-sweep 7s ease-in-out infinite; animation-delay: calc(var(--i, 0) * .35s + 1s); }
+  @keyframes cr-sweep { 0%, 70% { left: -60%; } 100% { left: 130%; } }
+
+  /* ---------- rings: the gradient keeps turning ---------- */
+  .story:not(.seen) .st-ring:not(.plain):not(.st-tip)::before { background: conic-gradient(from var(--cr-a), var(--g3), var(--g2), var(--g1), var(--g3)); animation: st-in .9s cubic-bezier(.2, .8, .2, 1) both, cr-turn 4s linear infinite; }
+  .cr-ring i { background: conic-gradient(from var(--cr-a), var(--g3), var(--g2), var(--g1), var(--g3)); animation: cr-turn 5s linear infinite; }
+  .cr-ring b { animation: cr-badge 2.4s ease-in-out infinite; }
+  @keyframes cr-turn { to { --cr-a: 360deg; } }
+  @keyframes cr-badge { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.12); } }
+  .st-plus { animation: cr-badge 2.6s ease-in-out infinite; }
+
+  /* ---------- the bottom bar: the icon you land on pops ---------- */
+  [data-side="studio"] .rail .nav[aria-current="page"] .nav-ic { animation: cr-pop .5s cubic-bezier(.2, 1.8, .4, 1); }
+  [data-side="studio"] .rail .nav[aria-current="page"]::after { animation: cr-bar .45s cubic-bezier(.2, .9, .25, 1); }
+  @keyframes cr-pop { 0% { transform: scale(.7); } 60% { transform: scale(1.15); } 100% { transform: none; } }
+  @keyframes cr-bar { from { transform: scaleX(0); } }
+
+  /* ---------- sheets spring up ---------- */
+  [data-side] .dialog-scrim:not(.cmdk-scrim) > .dialog { animation: cr-sheet .55s cubic-bezier(.2, 1.15, .3, 1) both; border-radius: 22px 22px 0 0; }
+  [data-side] .dialog-scrim:not(.cmdk-scrim) { animation: cr-dim .3s ease both; }
+  @keyframes cr-sheet { from { transform: translateY(100%); } }
+  @keyframes cr-dim { from { background-color: transparent; } }
+
+  /* ---------- a tapped wallet card grows into its collab ---------- */
+  html.cr-grow .dr-h { view-transition-name: cr-card; }
+  ::view-transition-group(cr-card) { animation-duration: .42s; animation-timing-function: cubic-bezier(.2, .9, .25, 1); z-index: 4; }
+  ::view-transition-old(cr-card), ::view-transition-new(cr-card) { height: 100%; object-fit: cover; }
+
+  /* ---------- Today: the moving line of numbers under the circles ---------- */
+  .cr-ticker.cr-tk { margin: 14px -16px 4px; border: 0; background: var(--chrome); }
+  .cr-ticker.cr-tk div { color: rgba(255, 255, 255, .72); font-size: 12px; letter-spacing: .02em; animation-duration: 32s; }
+  .cr-ticker.cr-tk b { color: var(--g3); }
+  .cr-ticker.cr-tk i { font-style: normal; color: var(--g2); }
+
+  @media (prefers-reduced-motion: reduce) {
+    [data-rv] { opacity: 1; translate: none; scale: none; }
+    .story .st-ring::before, .cr-ring i, .cr-ring b, .st-plus, .rail .nav-ic, .rail .nav::after, .sh-roll i, .cr-ticker div { animation: none !important; }
+    [data-side="studio"] .btn::after, [data-side="studio"] .wc::after { animation: none !important; display: none; }
+  }
+}

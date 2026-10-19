@@ -174,6 +174,7 @@
 
 <div class="dialog-scrim" role="presentation" use:portal onclick={(e) => e.target === e.currentTarget && (ui.newCollab = false)}>
 	<div class="dialog nc" role="dialog" aria-modal="true" aria-labelledby="nc-title"><form onsubmit={submit}>
+		<span class="nc-eb" aria-hidden="true">New collab · AI fills it in</span>
 		<h2 id="nc-title" class="nc-h">Add a <span class="nc-grad">collab</span></h2>
 		<p class="nc-sub">Paste their DM or email, or read a screenshot. I'll fill in the rest.</p>
 
@@ -208,7 +209,7 @@
 		<div class="nc-acts">
 			<button type="button" class="nc-cancel" onclick={() => (ui.newCollab = false)}>Cancel</button>
 			<button type="submit" class="nc-add" disabled={busy || !name.trim()}>
-				{#if busy}<span class="spinner"></span>{:else}<Icon name="plus" />{/if}Add collab
+				{#if busy}<span class="spinner"></span>{:else}<Icon name="plus" />{/if}Add collab<span class="nc-go" aria-hidden="true"><Icon name="arrow" /></span>
 			</button>
 		</div>
 	</form></div>
@@ -255,12 +256,63 @@
 	.nc-add { display: inline-flex; align-items: center; gap: 8px; height: 50px; padding: 0 26px; border: 0; border-radius: 999px; background: linear-gradient(135deg, var(--g1), var(--g2)); color: #fff; font: 600 15.5px var(--f-body, inherit); cursor: pointer; box-shadow: 0 10px 24px -12px var(--g2); transition: opacity .15s; }
 	.nc-add:disabled { opacity: .45; cursor: default; box-shadow: none; }
 	.nc-add :global(.ic) { width: 18px; height: 18px; }
+	.nc-eb, .nc-go { display: none; }
+	/* Phone: CRED's sheet. A spaced-capitals line, the title in serif, the message box as a NeoPOP
+	   card with its tools as tiles, the brand on a big underline, and two NeoPOP blocks to finish. */
 	@media (max-width: 760px) {
-		:global([data-side]) .dialog.nc { padding: 12px 18px calc(16px + env(safe-area-inset-bottom, 0px)); border-radius: 28px 28px 0 0; }
-		:global([data-side]) .nc .nc-h { font-size: 27px; margin-top: 10px; }
-		.nc-compose textarea { min-height: 150px; }
-		.nc-acts { display: grid; grid-template-columns: 1fr 2fr; }
-		.nc-cancel { background: var(--s1); }
-		.nc-add { justify-content: center; }
+		:global([data-side]) .dialog.nc { padding: 22px 18px calc(18px + env(safe-area-inset-bottom, 0px)); border-radius: 24px 24px 0 0;
+			background: radial-gradient(130% 34% at 50% 0%, color-mix(in oklab, var(--g2) 16%, transparent), transparent 72%), var(--surface); }
+		.nc form > * { animation: nc-up .55s cubic-bezier(.2, .9, .25, 1) both; }
+		.nc form > :nth-child(2) { animation-delay: .04s; } .nc form > :nth-child(3) { animation-delay: .08s; } .nc form > :nth-child(4) { animation-delay: .12s; }
+		.nc form > :nth-child(5) { animation-delay: .16s; } .nc form > :nth-child(n+6) { animation-delay: .2s; }
+		@keyframes nc-up { from { opacity: 0; transform: translateY(18px); } }
+		.nc-eb { display: block; margin-top: 10px; font-size: 10.5px; font-weight: 700; letter-spacing: .17em; text-transform: uppercase; color: var(--ink-3); }
+		:global([data-side]) .nc .nc-h { margin-top: 6px; font: 400 40px/1.02 var(--f-serif, Georgia, serif); letter-spacing: -.01em; }
+		.nc-grad { font-style: italic; padding-right: 4px; }
+		:global([data-side]) .nc .nc-sub { margin: 8px 0 18px; font-size: 14.5px; }
+
+		.nc-compose { gap: 0; padding: 0; border-radius: 0; background: var(--bg); border: 1px solid var(--line-strong); box-shadow: 4px 4px 0 var(--line-strong); transition: box-shadow .2s, border-color .2s; }
+		.nc-compose:focus-within { background: var(--bg); border-color: var(--ink); box-shadow: 4px 4px 0 var(--accent); }
+		.nc-compose.busy { box-shadow: 4px 4px 0 var(--g2); animation: nc-glow 1.6s ease-in-out infinite; }
+		@keyframes nc-glow { 50% { box-shadow: 4px 4px 0 var(--g1); } }
+		.nc-compose textarea { min-height: 128px; padding: 16px 16px 10px; font-size: 16px; }
+		.nc-tools { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 0; border-top: 1px dashed var(--line-strong); }
+		.nc-pill { flex-direction: column; justify-content: center; gap: 6px; height: 66px; padding: 0 4px; border-radius: 0; background: transparent; color: var(--ink-2); font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; text-align: center; line-height: 1.15; }
+		.nc-pill + .nc-pill { border-left: 1px dashed var(--line-strong); }
+		.nc-pill:hover { background: transparent; }
+		.nc-pill:active { background: var(--surface-2); }
+		.nc-pill :global(.ic) { width: 22px; height: 22px; color: var(--ink); transition: transform .3s cubic-bezier(.2, 1.6, .4, 1); }
+		.nc-pill:active :global(.ic) { transform: scale(.85); }
+		.nc-pill.ai :global(.ic) { color: var(--g2); }
+		.nc-pill.rec { background: color-mix(in oklab, var(--g2) 12%, transparent); box-shadow: none; animation: none; }
+		.nc-pill.rec :global(.ic) { animation: nc-beat 1s ease-in-out infinite; }
+		@keyframes nc-beat { 50% { transform: scale(1.25); } }
+
+		:global([data-side]) .nc .nc-found { margin-top: 16px; padding: 0; }
+		.nc-chip { padding: 6px 12px; border-radius: 999px; background: transparent; border: 1px solid var(--line-strong); font-size: 13.5px; animation: nc-pop .4s cubic-bezier(.2, 1.6, .4, 1) both; }
+		@keyframes nc-pop { from { opacity: 0; transform: scale(.7); } }
+
+		.nc-lbl { margin: 22px 0 2px; font-size: 10.5px; font-weight: 700; letter-spacing: .17em; text-transform: uppercase; color: var(--ink-3); }
+		.nc-brand { height: 58px; padding: 0 2px; border-radius: 0; background: transparent; border-bottom: 2px solid var(--line-strong); font: 400 30px var(--f-serif, Georgia, serif); }
+		.nc-brand:focus { background: transparent; box-shadow: none; border-bottom-color: var(--ink); }
+		.nc-more { margin: 14px 0 0; font-size: 13px; }
+
+		.nc-acts { display: grid; grid-template-columns: 1fr 2fr; gap: 14px; margin-top: 24px; padding-right: 4px; }
+		.nc-cancel, .nc-add { height: 52px; border-radius: 0; justify-content: center; font-weight: 700; letter-spacing: .02em; transition: transform .07s, box-shadow .07s, opacity .2s; }
+		.nc-cancel { background: var(--surface); border: 1px solid var(--line-strong); color: var(--ink); box-shadow: 3px 3px 0 var(--line-strong); }
+		.nc-cancel:hover { background: var(--surface); }
+		.nc-cancel:active { transform: translate(3px, 3px); box-shadow: 0 0 0 var(--line-strong); }
+		.nc-add { position: relative; overflow: hidden; isolation: isolate; background: var(--ink); color: var(--bg); box-shadow: 4px 4px 0 var(--accent); }
+		.nc-add:not(:disabled):active { transform: translate(4px, 4px); box-shadow: 0 0 0 var(--accent); }
+		.nc-add:disabled { opacity: .35; box-shadow: 4px 4px 0 var(--line-strong); }
+		.nc-add::after { content: ''; position: absolute; top: 0; bottom: 0; left: -60%; width: 45%; pointer-events: none; background: linear-gradient(100deg, transparent, rgba(255, 255, 255, .4), transparent); transform: skewX(-18deg); animation: nc-sweep 4.5s ease-in-out 1s infinite; }
+		.nc-add:disabled::after { display: none; }
+		@keyframes nc-sweep { 0%, 70% { left: -60%; } 100% { left: 130%; } }
+		.nc-go { display: inline-grid; margin-left: 2px; transition: transform .3s; }
+		.nc-add:not(:disabled) .nc-go { animation: nc-nudge 1.6s ease-in-out infinite; }
+		@keyframes nc-nudge { 50% { transform: translateX(4px); } }
+	}
+	@media (max-width: 760px) and (prefers-reduced-motion: reduce) {
+		.nc form > *, .nc-chip, .nc-add::after, .nc-go, .nc-pill.rec :global(.ic), .nc-compose.busy { animation: none !important; }
 	}
 </style>

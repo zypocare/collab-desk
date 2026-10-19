@@ -4,6 +4,7 @@
 	import { studio } from '#lib/studio.svelte.ts';
 	import { fmt, inr } from '#lib/util.ts';
 	import Icon from '#lib/components/Icon.svelte';
+	import { rollHints } from '#lib/lively.ts';
 	import Mono from '#lib/components/Mono.svelte';
 	import Segmented from '#lib/components/Segmented.svelte';
 
@@ -36,7 +37,7 @@
 <MonthlyDeals />
 
 <div class="toolbar rv" style="--i:1">
-	<label class="search"><Icon name="search" /><span class="sr">Search brands</span><input type="search" placeholder="Search brands" bind:value={q} autocomplete="off" /></label>
+	<label class="search" use:rollHints={studio.brands.slice(0, 8).map((b) => b.name)}><Icon name="search" /><span class="sr">Search brands</span><input type="search" placeholder="Search brands" bind:value={q} autocomplete="off" /></label>
 	<Segmented
 		label="Sort brands"
 		bind:value={sort}

@@ -16,6 +16,7 @@
 	import CollabRow from '#lib/components/CollabRow.svelte';
 	import CollabTable from '#lib/components/CollabTable.svelte';
 	import { phone } from '#lib/phone.svelte.ts';
+	import { rollHints } from '#lib/lively.ts';
 
 	let filter = $state<'all' | 'paid' | 'barter'>('all');
 	let q = $state('');
@@ -314,7 +315,7 @@
 		</div>
 	</section>
 
-	<label class="search m-search"><Icon name="search" /><span class="sr">Search collabs</span><input type="search" placeholder="Search brand, code or category" bind:value={q} autocomplete="off" /></label>
+	<label class="search m-search" use:rollHints={[...[...new Set(studio.collabs.filter((c) => !['wrapped', 'declined'].includes(c.stage)).map((c) => c.brand.name))].slice(0, 6), 'overdue', 'reels']}><Icon name="search" /><span class="sr">Search collabs</span><input type="search" placeholder="Search brand, code or category" bind:value={q} autocomplete="off" /></label>
 	<div class="m-stages" role="tablist" aria-label="Stage">
 		{#each mtabs as t (t.id)}
 			<button role="tab" aria-selected={mstage === t.id} class:on={mstage === t.id} class="st-{t.id}" onclick={() => (mstage = t.id)}><i class="dt"></i>{t.label}<span>{t.n}</span></button>

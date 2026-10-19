@@ -20,6 +20,7 @@
 	import PasskeyNudge from '#lib/components/PasskeyNudge.svelte';
 	import MoneyIn from '#lib/components/MoneyIn.svelte';
 	import { phone, startPhone } from '#lib/phone.svelte.ts';
+	import { lively } from '#lib/lively.ts';
 	import { net } from '#lib/offline.svelte.ts';
 
 	let palette = $state<CommandPalette>();
@@ -199,11 +200,13 @@
 		if (!studio.loaded) return;
 		(n ? nav.setAppBadge?.(n) : nav.clearAppBadge?.())?.catch(() => {});
 	});
+	// Phone: cards tilt under the finger, sheets swipe closed, a tapped card grows into its collab.
+	lively();
 	// Phone: a short vibration on every pressable button (CRED's feel). Android only; iPhone ignores it.
 	onMount(() => {
 		const press = (e: PointerEvent) => {
 			if (!phone.on) return;
-			if ((e.target as Element | null)?.closest?.('.btn, .rail .nav, .m-seg a, .cr-more, .wc')) {
+			if ((e.target as Element | null)?.closest?.('.btn, .rail .nav, .m-seg a, .cr-more, .wc, .nc-add, .nc-cancel, .nc-pill, .gm-send, .gm-pill, .gm-chip, .gm-yes, .gm-no, .ail-add, .m-stages button')) {
 				try {
 					navigator.vibrate?.(9);
 				} catch {

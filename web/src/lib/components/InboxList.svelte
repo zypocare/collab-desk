@@ -5,6 +5,7 @@
 	import { supabase } from '../supabase';
 	import { toast, ui } from '../ui.svelte';
 	import { firstName, stageLabel, unreadFor } from '../util';
+	import { rollHints } from '../lively';
 	import type { Collab } from '../types';
 	import Avatar from './Avatar.svelte';
 	import Icon from './Icon.svelte';
@@ -83,7 +84,7 @@
 		<button class:on={tab === 'ig'} onclick={() => (tab = 'ig')}>Instagram{#if igUnread}<span>{igUnread}</span>{/if}</button>
 	</nav>
 
-	<label class="ib-search"><Icon name="search" /><span class="sr">Search messages</span><input type="search" placeholder="Search" bind:value={q} autocomplete="off" /></label>
+	<label class="ib-search" use:rollHints={[...new Set(studio.collabs.filter((c) => c.contact_name).map((c) => firstName(c.contact_name)))].slice(0, 4).concat(studio.brands.slice(0, 4).map((b) => b.name))}><Icon name="search" /><span class="sr">Search messages</span><input type="search" placeholder="Search" bind:value={q} autocomplete="off" /></label>
 
 	<div class="ib-scroll">
 		{#if tab === 'app'}

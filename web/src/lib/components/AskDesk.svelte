@@ -287,10 +287,12 @@
 				<div class="gm-conv">{@render conversation()}</div>
 			{:else}
 				<div class="gm-hello">
+					<span class="gm-eb" aria-hidden="true">Ask your desk</span>
 					<h2><span class="gm-grad">Hello, {name}</span><span class="gm-sub">How can I help today?</span></h2>
+					<span class="gm-try" aria-hidden="true">Try asking</span>
 					<div class="gm-sugg">
-						{#each TOOLS as t (t.label)}
-							<button class="gm-pill" onclick={() => send(t.q)}><Icon name={t.icon} /><span>{t.q}</span></button>
+						{#each TOOLS as t, i (t.label)}
+							<button class="gm-pill" style="--i:{i}" onclick={() => send(t.q)}><Icon name={t.icon} /><span class="gm-pq">{t.q}</span><span class="gm-pl" aria-hidden="true"><b>{t.label}</b><small>{t.hint}</small></span></button>
 						{/each}
 					</div>
 				</div>
@@ -438,5 +440,67 @@
 		.gm-box { width: calc(100% - 24px); border-radius: 30px; padding: 12px 8px 6px 20px; }
 		.gm-foot { display: none; }
 		.gm-box { margin-bottom: calc(10px + env(safe-area-inset-bottom, 0px)); }
+	}
+	.gm-try, .gm-eb, .gm-pl { display: none; }
+
+	/* Phone: CRED's look in the app's own colours. A glow at the top, the greeting in serif, the
+	   suggestions as tiles, the answers' actions and the box as NeoPOP blocks with a hard edge. */
+	.gm.gm-phone { --bg: #F7F4F4; --s1: #FFFFFF; --s2: #F2EDED; --ink: #1E171C; --mut: #6F656C; --line: #D9CFCF;
+		background: radial-gradient(130% 42% at 50% 0%, color-mix(in oklab, var(--g1) 16%, transparent), transparent 70%), var(--bg); animation: gm-rise .5s cubic-bezier(.2, 1.1, .3, 1) both; }
+	:global(:root[data-theme='dark']) .gm.gm-phone { --bg: #110D11; --s1: #1A151A; --s2: #231D23; --ink: #F4EEF2; --mut: #A39AA1; --line: #3E343E; }
+	@media (prefers-color-scheme: dark) { :global(:root:not([data-theme='light'])) .gm.gm-phone { --bg: #110D11; --s1: #1A151A; --s2: #231D23; --ink: #F4EEF2; --mut: #A39AA1; --line: #3E343E; } }
+	@keyframes gm-rise { from { transform: translateY(40%); opacity: 0; } }
+	.gm-phone .gm-title { font-size: 11px; font-weight: 700; letter-spacing: .17em; text-transform: uppercase; color: var(--mut); }
+	.gm-phone .gm-ib.rec { border-radius: 0; box-shadow: 3px 3px 0 color-mix(in oklab, var(--bad) 55%, #000); }
+
+	.gm-phone .gm-hello > * { animation: gm-up .6s cubic-bezier(.2, .9, .25, 1) both; }
+	.gm-phone .gm-hello > :nth-child(2) { animation-delay: .06s; }
+	.gm-phone .gm-hello > :nth-child(3) { animation-delay: .12s; }
+	.gm-phone .gm-hello > :nth-child(4) { animation-delay: .16s; }
+	@keyframes gm-up { from { opacity: 0; transform: translateY(22px); } }
+	.gm-phone .gm-eb, .gm-phone .gm-try { display: block; font-size: 10.5px; font-weight: 700; letter-spacing: .17em; text-transform: uppercase; color: var(--mut); }
+	.gm-phone .gm-hello h2 { margin: 8px 0 26px; gap: 6px; }
+	.gm-phone .gm-grad { font: italic 400 46px/1.02 var(--f-serif, Georgia, serif); letter-spacing: -.01em; padding-right: 6px; }
+	.gm-phone .gm-sub { font-size: 18px; font-weight: 500; letter-spacing: -.01em; color: var(--mut); }
+	.gm-phone .gm-try { margin-bottom: 12px; }
+	.gm-phone .gm-sugg { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 0; padding: 0 4px 4px 0; overflow: visible; }
+	.gm-phone .gm-pill { width: auto; min-height: 92px; flex-direction: column; justify-content: space-between; align-items: flex-start; gap: 10px; padding: 14px; border-radius: 0; border: 1px solid var(--line); background: var(--s1); box-shadow: 3px 3px 0 var(--line); transition: transform .07s, box-shadow .07s;
+		animation: gm-pop .5s cubic-bezier(.2, 1.5, .4, 1) both; animation-delay: calc(.18s + var(--i, 0) * 50ms); }
+	.gm-phone .gm-pill:first-child { grid-column: 1 / -1; min-height: 80px; flex-direction: row; align-items: center; justify-content: flex-start; color: #fff; border-color: transparent; box-shadow: 4px 4px 0 color-mix(in oklab, var(--g1) 60%, #000);
+		background: linear-gradient(120deg, color-mix(in oklab, var(--g1) 85%, #000), color-mix(in oklab, var(--g2) 80%, #000)); }
+	.gm-phone .gm-pill:first-child :global(.ic) { color: #fff; border-color: rgba(255, 255, 255, .4); }
+	.gm-phone .gm-pill:first-child small { color: rgba(255, 255, 255, .75); }
+	.gm-phone .gm-pill:active { transform: translate(3px, 3px); box-shadow: 0 0 0 var(--line); }
+	.gm-phone .gm-pill :global(.ic) { box-sizing: content-box; width: 18px; height: 18px; padding: 8px; border-radius: 50%; border: 1px solid var(--line); color: var(--g2); }
+	.gm-phone .gm-pq { display: none; }
+	.gm-phone .gm-pl { display: grid; gap: 2px; text-align: left; }
+	.gm-phone .gm-pl b { font-size: 15px; font-weight: 700; }
+	.gm-phone .gm-pl small { font-size: 12.5px; color: var(--mut); }
+	@keyframes gm-pop { from { opacity: 0; transform: translateY(14px) scale(.94); } }
+
+	.gm-phone .gm-q p { border-radius: 18px 18px 4px 18px; background: var(--ink); color: var(--bg); animation: gm-up .35s cubic-bezier(.2, .9, .25, 1) both; }
+	.gm-phone .gm-a { animation: gm-up .45s cubic-bezier(.2, .9, .25, 1) both; }
+	.gm-phone .gm-spark { border-radius: 50%; background: conic-gradient(from 210deg, var(--g3), var(--g2), var(--g1), var(--g3)); color: #fff; }
+	.gm-phone .gm-spark :global(.ic) { width: 16px; height: 16px; }
+	.gm-phone .gm-chip { height: 38px; border-radius: 0; border: 1px solid var(--line); background: var(--s1); box-shadow: 2.5px 2.5px 0 var(--line); font-weight: 600; transition: transform .07s, box-shadow .07s; }
+	.gm-phone .gm-chip:first-child { background: var(--ink); color: var(--bg); border-color: transparent; box-shadow: 2.5px 2.5px 0 var(--accent); }
+	.gm-phone .gm-chip:first-child :global(.ic) { color: var(--g3); }
+	.gm-phone .gm-chip:active { transform: translate(2.5px, 2.5px); box-shadow: 0 0 0 transparent; }
+	.gm-phone .gm-src { background: transparent; border: 1px solid var(--line); }
+	.gm-phone .gm-confirm { width: calc(100% - 28px); border-radius: 0; border: 1px solid var(--line); background: var(--s1); box-shadow: 4px 4px 0 var(--g2); animation: gm-up .4s cubic-bezier(.2, .9, .25, 1) both; }
+	.gm-phone :is(.gm-yes, .gm-no) { flex: 1; justify-content: center; height: 46px; border-radius: 0; transition: transform .07s, box-shadow .07s; }
+	.gm-phone .gm-yes { background: var(--ink); color: var(--bg); box-shadow: 3px 3px 0 var(--accent); }
+	.gm-phone .gm-no { background: var(--s1); border: 1px solid var(--line); box-shadow: 3px 3px 0 var(--line); }
+	.gm-phone :is(.gm-yes, .gm-no):active { transform: translate(3px, 3px); box-shadow: none; }
+	.gm-phone .gm-new { border-radius: 0; background: var(--ink); color: var(--bg); box-shadow: 3px 3px 0 var(--accent); }
+	.gm-phone .gm-ri { border-radius: 0; }
+
+	.gm-phone .gm-box { width: calc(100% - 28px); border-radius: 0; padding: 12px 8px 8px 16px; background: var(--s1); border: 1px solid var(--line); box-shadow: 4px 4px 0 var(--line); transition: box-shadow .2s, border-color .2s; }
+	.gm-phone .gm-box:focus-within { background: var(--s1); border-color: var(--ink); box-shadow: 4px 4px 0 var(--accent); }
+	.gm-phone .gm-send { border-radius: 0; background: var(--ink); color: var(--bg); box-shadow: 3px 3px 0 var(--accent); transition: transform .35s cubic-bezier(.2, 1.6, .4, 1), opacity .2s, box-shadow .07s; }
+	.gm-phone .gm-send:active { transform: translate(3px, 3px); box-shadow: none; }
+	.gm-phone .gm-drawer { border-radius: 0; background: var(--bg); }
+	@media (prefers-reduced-motion: reduce) {
+		.gm.gm-phone, .gm-phone .gm-hello > *, .gm-phone .gm-pill, .gm-phone .gm-q p, .gm-phone .gm-a, .gm-phone .gm-confirm { animation: none; }
 	}
 </style>

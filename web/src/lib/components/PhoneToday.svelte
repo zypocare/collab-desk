@@ -106,6 +106,18 @@
 		return t.d === 0 ? 'today' : relWord(t.d);
 	};
 	const link = $derived((s.site_url || location.origin).replace(/\/$/, ''));
+	// The moving line under the circles (CRED's "cashback disbursed today"): today in numbers.
+	const ticker = $derived(
+		[
+			received > 0 && { b: inrS(received), t: ` came in this ${monthName}` },
+			urgent > 0 && { b: String(urgent), t: ` due today` },
+			list.filter((c) => c.stage === 'request').length > 0 && { b: String(list.filter((c) => c.stage === 'request').length), t: ' new requests waiting' },
+			outs > 0 && { b: inrS(outs), t: ' still to come in' },
+			goal > 0 && { b: `${pctN}%`, t: ` of the ${inrS(goal)} goal` },
+			active.length > 0 && { b: String(active.length), t: ` active collab${active.length === 1 ? '' : 's'}` },
+			nextPayout && { b: nextPayout.brand.name, t: ` pays next, ${fmt(nextPayout.pay_due!)}` }
+		].filter((x): x is { b: string; t: string } => !!x)
+	);
 	// Beside the greeting: live Instagram numbers, or this month's goal when Instagram isn't connected.
 	const ig = $derived(studio.ig?.connected ? studio.ig : null);
 </script>
@@ -133,6 +145,9 @@
 </section>
 
 <Stories />
+{#if ticker.length > 1}
+	<div class="cr-ticker cr-tk" aria-label="Today in numbers"><div>{#each [0, 1] as k (k)}{#each ticker as f, j (j)}<span aria-hidden={k === 1}><b>{f.b}</b>{f.t}</span><i aria-hidden="true">✦</i>{/each}{/each}</div></div>
+{/if}
 
 
 <section class="hero-card glow m-hero" aria-label="Money this month">
