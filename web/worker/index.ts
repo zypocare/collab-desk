@@ -51,7 +51,7 @@ export default {
 				const allowed = await takeTicket(req, env, kind);
 				if (allowed !== true) return json({ error: allowed }, 403);
 				let why = env.GEMINI_API_KEY ? '' : 'no Gemini key';
-				if (kind !== 'classify' && env.GEMINI_API_KEY) {
+				if ((kind === 'cheer' || kind === 'scout') && env.GEMINI_API_KEY) {
 					try {
 						return json({ ...(await job({ env, gemini: true, neurons: 0 })), by: 'gemini' });
 					} catch (e) {
@@ -59,10 +59,17 @@ export default {
 						const k = (env.GEMINI_API_KEY ?? '').trim().replace(/^["']+|["']+$/g, '');
 						why = `${String((e as Error)?.message ?? e).slice(0, kind === 'scout' ? 1200 : 140)} (key …${k.slice(-4)}, ${k.length} characters)`;
 						// Finding brands only works with Gemini (it searches Google): say what went wrong.
-						if (kind === 'scout') return json({ error: `Gemini couldn't search: ${why}`.slice(0, 1400) }, 502);
 					}
 				}
-				return json({ ...(await job({ env, gemini: false, neurons: 0 })), ...(kind === 'cheer' ? { by: 'cloudflare', why } : {}) });
+				// Pitches: Cloudflare first (Gemini's small free allowance stays for the nudges and the brand search).
+				if (kind === 'pitch' && env.GEMINI_API_KEY) {
+					try {
+						return json({ ...(await job({ env, gemini: false, neurons: 0 })), by: 'cloudflare' });
+					} catch {
+						return json({ ...(await job({ env, gemini: true, neurons: 0 })), by: 'gemini' });
+					}
+				}
+				return json({ ...(await job({ env, gemini: false, neurons: 0 })), ...(kind === 'cheer' || kind === 'scout' ? { by: 'cloudflare', why } : {}) });
 			}
 
 			// The same reading asked again is answered from the cache (two weeks), at no cost.
@@ -446,31 +453,27 @@ Return ONLY JSON: {"text": "the message"}`,
 // Real brands that suit her and already work with creators, with their official website. The
 // daily finder then checks each website itself for a public email before anything is written.
 async function scout(x: Run, b: Record<string, unknown>) {
-	if (!x.gemini) throw new Error('!Finding brands needs the Gemini key.');
-	const n = Math.min(20, Math.max(1, Math.round(Number(b.count) || 12)));
+	const n = Math.min(x.gemini ? 20 : 14, Math.max(1, Math.round(Number(b.count) || 12)));
 	const skip = (Array.isArray(b.exclude) ? b.exclude : []).map((t) => String(t ?? '').slice(0, 60)).filter(Boolean).slice(0, 200);
-	// With Google Search when this key includes it; otherwise from what Gemini knows. Either way the
-	// daily finder keeps only brands whose own website loads and shows a public email.
-	const ask = (search: boolean) => gemini(
-		x.env,
-		`You find brands for an Indian Instagram creator to pitch for paid collaborations. ${search ? 'Use Google Search.' : 'Use what you know well; only brands you are sure exist and are still trading.'} Find ${n} real, currently active brands or businesses that:
+	// Gemini with Google Search when the key includes it, Gemini from what it knows if not, and
+	// Cloudflare's AI when Gemini is out for the day. Either way the daily finder keeps only brands
+	// whose own website loads and shows a public email.
+	const system = (search: boolean) => `You find brands for an Indian Instagram creator to pitch for paid collaborations. ${search ? 'Use Google Search.' : 'Use what you know well; only brands you are sure exist and are still trading.'} Find ${n} real, currently active brands or businesses that:
 - fit her content and audience (details below), and sell in India (D2C brands, Indian labels, and businesses in or near her city: cafes, restaurants, studios, stays, experiences);
 - already work with Instagram creators (influencer campaigns, ambassador or creator programmes, gifting, paid partnerships), ideally recently;
 - are a realistic fit for her size (skip global giants that only work through big agencies).
 Never include any brand in the exclude list, and no duplicates. ${search ? 'Only brands you found in search results with an official website you saw' : 'Only brands whose official website domain you are sure of'}; never invent a brand, a website or a handle. Vary the picks: mix well-known names with smaller, newer Indian labels and local businesses.
 For each give: "name", "website" (the official site, https://...), "instagram" (handle without @, or ""), "category" (one of: Beauty, Fashion, Food & drink, Travel, Fitness, Wellness, Tech, Home, Lifestyle, Other), "why" (one specific line, under 20 words, why they suit her, e.g. "Bengaluru café chain that hosted creator tastings for its new menu in 2026").
-Return ONLY a JSON array of objects, nothing else.`,
-		`Creator: ${JSON.stringify(b.creator ?? {}).slice(0, 1200)}\nExclude (already known or pitched): ${skip.join(', ') || 'none'}`,
-		4000,
-		0.8,
-		search
-	);
+Return ONLY a JSON array of objects, nothing else.`;
+	const user = `Creator: ${JSON.stringify(b.creator ?? {}).slice(0, 1200)}\nExclude (already known or pitched): ${skip.join(', ') || 'none'}`;
 	let reply = '';
-	try {
-		reply = await ask(true);
-	} catch {
-		reply = await ask(false);
-	}
+	if (x.gemini) {
+		try {
+			reply = await gemini(x.env, system(true), user, 4000, 0.8, true);
+		} catch {
+			reply = await gemini(x.env, system(false), user, 4000, 0.8);
+		}
+	} else reply = await chat(x, system(false), user, 2600, 0.8);
 	const a = reply.indexOf('['), z = reply.lastIndexOf(']');
 	let list: Record<string, unknown>[] = [];
 	try {
