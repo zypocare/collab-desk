@@ -11,7 +11,7 @@ test('Today loads with the AI assistant', async ({ page }) => {
 	const noErrors = watchErrors(page);
 	await page.goto('/studio');
 	await expect(page.getByRole('heading', { name: 'Needs you' })).toBeVisible();
-	await expect(page.getByText('Desk AI', { exact: true })).toBeVisible();
+	await expect(page.getByText(/^Desk AI/).first()).toBeVisible();
 	noErrors();
 });
 

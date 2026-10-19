@@ -359,6 +359,14 @@
 					<button class="side-tool" onclick={toggleTheme} title="Light / dark"><Icon name={theme.value === 'dark' ? 'sun' : 'moon'} />{theme.value === 'dark' ? 'Light mode' : 'Dark mode'}</button>
 					<button class="side-tool" onclick={logout} aria-label="Sign out" title="Sign out"><Icon name="logout" /></button>
 				</div>
+				<!-- The design's foot: Ask your desk, then who's signed in. -->
+				<div class="side-end">
+					<button class="side-ask" onclick={() => (ui.askOpen = true)}><Icon name="spark" />Ask your desk</button>
+					<a class="side-who" href="/studio/profile" title="How brands see you">
+						<span class="side-av"><Avatar name={studio.settings?.display_name ?? ''} src={studio.ig?.connected ? studio.ig.profile_picture_url : ''} size="36px" /></span>
+						<span><b>{firstName(studio.settings?.display_name ?? '')}</b><small>@{studio.settings?.handle ?? ''}</small></span>
+					</a>
+				</div>
 			</nav>
 		{:else}
 		<nav class="rail" aria-label="Main">

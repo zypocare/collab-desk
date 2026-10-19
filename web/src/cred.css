@@ -873,36 +873,37 @@
 @media (max-width: 760px) { .rp-m .tp-rank li { grid-template-columns: 46px minmax(0, 1fr) auto; } .rp-m .tp-n small { display: block; font: 600 10px var(--f-body, inherit); letter-spacing: .1em; color: var(--ink-3); } }
 
 /* ==========================================================================================
-   Laptop: the side menu in the same language as the phone's bottom bar. Black in both looks,
-   the name in serif, labels in spaced capitals, the current place marked with the gradient edge,
-   search as an outlined pill and the goal as a slim gradient bar.
+   Laptop side menu, exactly as the approved design: black, the logo and name in serif, eight
+   places in spaced capitals with the gradient edge on the current one, then Ask your desk and
+   who is signed in at the foot. Search, the goal card and light/dark live elsewhere now.
    ========================================================================================== */
 @media (min-width: 761px) {
-  [data-side="studio"] .side { background: #09070A; border-right: 1px solid #1f191f; color: #F4EEF2; }
-  [data-side="studio"] .side-logo { color: #F4EEF2; padding-bottom: 20px; }
-  [data-side="studio"] .side-logo span { font: italic 400 25px var(--f-serif, Georgia, serif); letter-spacing: -.01em; }
-  [data-side="studio"] .side-logo circle[stroke="var(--ink)"] { stroke: #F4EEF2; }
-  [data-side="studio"] .side-me { background: transparent; border: 0; border-bottom: 1px solid #1f191f; border-radius: 0; padding: 4px 6px 16px; margin-bottom: 14px; color: #F4EEF2; }
-  [data-side="studio"] .side-me small { color: #A39AA1; }
-  [data-side="studio"] .side-search { height: 40px; border-radius: 999px; border-color: #3E343E; background: transparent; color: #A39AA1; }
-  [data-side="studio"] .side-search:hover { color: #F4EEF2; border-color: #F4EEF2; }
-  [data-side="studio"] .side-search kbd { border-radius: 0; border-color: #3E343E; color: #A39AA1; }
-  [data-side="studio"] .side-it { position: relative; height: 42px; border-radius: 0; color: rgba(255, 255, 255, .5); font-size: 11.5px; font-weight: 700; letter-spacing: .13em; text-transform: uppercase; box-shadow: none; }
-  [data-side="studio"] .side-it:hover { background: rgba(255, 255, 255, .04); color: #fff; }
+  [data-side="studio"] .side { padding: 26px 16px 22px; gap: 6px; background: #09070A; border-right: 1px solid #1f191f; color: #F4EEF2; }
+  [data-side="studio"] .side-logo { gap: 10px; padding: 0 8px 22px; color: #F4EEF2; }
+  [data-side="studio"] .side-logo svg { width: 30px; height: 30px; }
+  [data-side="studio"] .side-logo span { font: italic 400 26px var(--f-serif, Georgia, serif); letter-spacing: -.01em; }
+  [data-side="studio"] .side-logo circle[stroke="var(--ink)"] { stroke: #fff; }
+  [data-side="studio"] :is(.side-me, .side-search, .side-lbl, .side-lbl ~ .side-it, .side-goal, .side-foot, .side-sp, .side-new) { display: none !important; }
+  [data-side="studio"] .side-nav { gap: 6px; }
+  [data-side="studio"] .side-it { position: relative; height: 44px; gap: 14px; padding: 0 12px; border-radius: 0; color: rgba(255, 255, 255, .5); font-size: 11.5px; font-weight: 700; letter-spacing: .13em; text-transform: uppercase; box-shadow: none; background: none; }
+  [data-side="studio"] .side-it .ic { width: 19px; height: 19px; }
+  [data-side="studio"] .side-it:hover { background: rgba(255, 255, 255, .04); color: rgba(255, 255, 255, .8); }
   [data-side="studio"] .side-it[aria-current="page"] { background: rgba(255, 255, 255, .06); color: #fff; box-shadow: none; }
-  [data-side="studio"] .side-it[aria-current="page"]::before { content: ''; position: absolute; left: -12px; top: 9px; bottom: 9px; width: 3px; border-radius: 0 3px 3px 0; background: linear-gradient(180deg, var(--g1), var(--g2), var(--g3)); }
-  [data-side="studio"] .side-badge { background: var(--bad); color: #1C0912; font-family: var(--f-body, inherit); font-weight: 800; letter-spacing: 0; }
-  [data-side="studio"] .side-new { color: #A39AA1; letter-spacing: 0; text-transform: none; }
-  [data-side="studio"] .side-lbl { font-size: 10.5px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; color: #6f656c; }
-  [data-side="studio"] .side-b { border-radius: 50%; }
-  [data-side="studio"] .side-goal { background: transparent; border: 1px solid #2E262E; border-radius: 18px; color: #F4EEF2; }
-  [data-side="studio"] .sg-top { color: #A39AA1; font-size: 10.5px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
-  [data-side="studio"] .sg-top b { color: #F4EEF2; font: 400 20px var(--f-serif, Georgia, serif); letter-spacing: 0; }
-  [data-side="studio"] .sg-bar { background: #2E262E; }
-  [data-side="studio"] .side-goal small, [data-side="studio"] .side-goal small b { color: #A39AA1; }
-  [data-side="studio"] .side-tool { color: #A39AA1; border-radius: 0; }
-  [data-side="studio"] .side-tool:hover { background: rgba(255, 255, 255, .05); color: #fff; }
-  /* Today's own header replaces the page's top bar there. */
+  [data-side="studio"] .side-it[aria-current="page"]::before { content: ''; position: absolute; left: -16px; top: 10px; bottom: 10px; width: 3px; border-radius: 0 3px 3px 0; background: linear-gradient(180deg, #9C7BFF, #F25A90, #FFAE6B); }
+  [data-side="studio"] .side-badge { min-width: 20px; height: 20px; padding: 0 6px; box-sizing: border-box; border-radius: 999px; background: #FF7B70; color: #1C0912; font: 800 11px/20px var(--f-body, inherit); letter-spacing: 0; text-align: center; }
+  [data-side="studio"] .side-end { margin-top: auto; display: flex; flex-direction: column; gap: 16px; padding: 0 4px; }
+  [data-side="studio"] .side-ask { position: relative; overflow: hidden; height: 48px; border: 0; border-radius: 0; background: #F4EEF2; color: #1E171C; font: 700 14.5px var(--f-body, inherit); display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 4px 4px 0 #F25A90; cursor: pointer; transition: transform .07s, box-shadow .07s; }
+  [data-side="studio"] .side-ask .ic { width: 17px; height: 17px; color: #C8255E; }
+  [data-side="studio"] .side-ask:active { transform: translate(3px, 3px); box-shadow: none; }
+  [data-side="studio"] .side-ask::after { content: ''; position: absolute; top: 0; bottom: 0; left: -60%; width: 45%; background: linear-gradient(100deg, transparent, rgba(255, 255, 255, .55), transparent); transform: skewX(-18deg); animation: cr-sweep 5s ease-in-out 1s infinite; }
+  [data-side="studio"] .side-who { display: flex; align-items: center; gap: 10px; padding-top: 14px; border-top: 1px solid #1f191f; color: #F4EEF2; text-decoration: none; }
+  [data-side="studio"] .side-who > span:last-child { display: grid; gap: 2px; min-width: 0; }
+  [data-side="studio"] .side-who b { font-size: 14px; }
+  [data-side="studio"] .side-who small { font-size: 12px; color: #A39AA1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  [data-side="studio"] .side-av { width: 40px; height: 40px; flex: none; display: grid; place-items: center; }
+  @keyframes cr-sweep { 0%, 70% { left: -60%; } 100% { left: 130%; } }
+  /* Today's page: the design's margins and glow. */
+  [data-side="studio"] .main:has(.lt) { --lt-gut: 40px; padding: 0 40px 48px; background: radial-gradient(900px 420px at 85% -10%, rgba(156, 123, 255, .16), transparent 60%), radial-gradient(700px 380px at 10% 0%, rgba(242, 90, 144, .10), transparent 60%); }
   [data-side="studio"] .pg:has(> .lt) { padding-top: 30px; }
 }
 
