@@ -664,15 +664,16 @@
 			{#if ['confirmed', 'creating', 'live', 'wrapped'].includes(c.stage) && !noPost(c)}
 				<section class="sec" hidden={!sh('check')}>
 					<h3>Posting checklist <span>{CHECKLIST.length - checklistMissing(c).length} of {CHECKLIST.length}</span></h3>
+					<div class="ck-bar" aria-hidden="true">{#each CHECKLIST as item, i (item.key)}<i class:on={i < CHECKLIST.length - checklistMissing(c).length}></i>{/each}</div>
 					{#each CHECKLIST as item (item.key)}
-						<label class="check-row">
+						<label class="check-row ck-row" class:done={!!c.checklist?.[item.key]}>
 							<input type="checkbox" class="cbx" checked={!!c.checklist?.[item.key]} onchange={(e) => c && setChecklist(c, { [item.key]: (e.currentTarget as HTMLInputElement).checked })} />
 							<span>{item.label}</span>
 							{#if capCheck && item.key === 'ad_tag'}<small class:ok={capCheck.ad_tag}>{capCheck.ad_tag ? 'found in caption' : 'not in caption'}</small>{/if}
 							{#if capCheck && item.key === 'brand_tag'}<small class:ok={capCheck.brand_tag}>{capCheck.brand_tag ? `@${c.brand.instagram} found` : `@${c.brand.instagram || 'brand'} missing`}</small>{/if}
 						</label>
 					{/each}
-					<p class="hint" style="margin-top:8px">Indian advertising rules (ASCI) need paid posts and gifted products to be clearly marked.</p>
+					<p class="hint ck-note"><Icon name="shield" />Indian advertising rules (ASCI) need paid posts and gifted products to be clearly marked.</p>
 				</section>
 			{/if}
 
