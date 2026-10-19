@@ -226,10 +226,10 @@
 	let cardI = $state(0);
 	const onCards = () => cardsEl && (cardI = Math.round(cardsEl.scrollLeft / Math.max(1, cardsEl.clientWidth * 0.86)));
 	const cards = $derived([
-		{ icon: 'link', text: 'Brands request collabs from your link', act: 'Copy link', run: () => copyText(link, 'Link copied. Put it in your Instagram bio.') },
-		{ icon: 'film', text: 'Your media kit, ready to send', act: 'Download', run: kit },
-		{ icon: 'qr', text: 'A QR code for events and prints', act: 'Open', run: () => goto('/studio/qr') },
-		...(s.show_insights && studio.ig?.connected ? [{ icon: 'chart', text: 'Send brands your live insights', act: 'Copy', run: () => copyText(`${link}/insights`, 'Insights link copied') }] : [])
+		{ icon: 'link', eb: 'Your link', text: 'Brands request collabs from your link', act: 'Copy link', run: () => copyText(link, 'Link copied. Put it in your Instagram bio.') },
+		{ icon: 'film', eb: 'Media kit', text: 'Your media kit, ready to send', act: 'Download', run: kit },
+		{ icon: 'qr', eb: 'QR code', text: 'A QR code for events and prints', act: 'Open', run: () => goto('/studio/qr') },
+		...(s.show_insights && studio.ig?.connected ? [{ icon: 'chart', eb: 'Insights', text: 'Send brands your live insights', act: 'Copy', run: () => copyText(`${link}/insights`, 'Insights link copied') }] : [])
 	]);
 
 	function open(id: Sec) {
@@ -283,7 +283,7 @@
 			</header>
 			<div class="cs-cards" bind:this={cardsEl} onscroll={onCards}>
 				{#each cards as k (k.icon)}
-					<div class="cs-card"><span class="cs-ci"><Icon name={k.icon} /></span><p>{k.text}</p><button class="cs-cb" onclick={k.run} disabled={k.icon === 'film' && kitBusy}>{#if k.icon === 'film' && kitBusy}<span class="spinner"></span>{:else}{k.act}{/if}</button></div>
+					<div class="cs-card"><span class="cs-eb"><span class="cs-ci"><Icon name={k.icon} /></span>{k.eb}</span><p>{k.text}</p><button class="cs-cb" onclick={k.run} disabled={k.icon === 'film' && kitBusy}>{#if k.icon === 'film' && kitBusy}<span class="spinner"></span>{:else}{k.act}{/if}</button></div>
 				{/each}
 			</div>
 			<div class="cs-dots" aria-hidden="true">{#each cards as k, i (k.icon)}<i class:on={i === cardI}></i>{/each}</div>
