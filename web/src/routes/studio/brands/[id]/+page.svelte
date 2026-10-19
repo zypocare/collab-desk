@@ -15,6 +15,9 @@
 	import Select from '#lib/components/Select.svelte';
 	import Mono from '#lib/components/Mono.svelte';
 	import PayPill from '#lib/components/PayPill.svelte';
+	import CollabRow from '#lib/components/CollabRow.svelte';
+	import { phone } from '#lib/phone.svelte.ts';
+	import { hueOf, initials, inrS } from '#lib/util.ts';
 
 	const brand = $derived(studio.brands.find((b) => b.id === page.params.id));
 	const s = $derived(brand ? brandStats(brand, studio.collabs) : null);
@@ -72,7 +75,23 @@
 		</div>
 	</header>
 
-	<section class="kpis k4" aria-label="Brand summary">
+	{#if phone.on}
+		<!-- Phone: the brand on a big band in its colour (like its ticket), its numbers in serif. -->
+		<section class="bd-band" style="--h:var(--m{hueOf(brand.name)})" aria-label="Brand summary">
+			<div class="bd-top">
+				<span class="tk-tile">{initials(brand.name)}</span>
+				<div class="bd-who"><b>{brand.name}</b><small>{brand.category || 'Brand'}{#if brand.instagram}{' · '}<span class="tk-ig">@{brand.instagram.replace(/^@+/, '')}</span>{/if}</small></div>
+			</div>
+			<div class="bd-nums">
+				<div><b use:countUp={{ value: s.paid, money: true }}>{inr(s.paid)}</b><small>earned</small></div>
+				<div><b>{s.count}</b><small>collab{s.count === 1 ? '' : 's'} · {s.active} active</small></div>
+				<div><b>{s.avgDaysToPay === null ? '—' : s.avgDaysToPay === 0 ? 'Same day' : `${s.avgDaysToPay}d`}</b><small>pays in</small></div>
+				<div><b>{s.barter ? inrS(s.barter) : '—'}</b><small>in products</small></div>
+			</div>
+			{#if s.outstanding}<p class="bd-due"><i></i>{inr(s.outstanding)} still to come</p>{/if}
+		</section>
+	{/if}
+	<section class="kpis k4" aria-label="Brand summary" hidden={phone.on}>
 		<div class="kpi glow rv" style="--i:1"><div><div class="lbl">Earned</div><div class="big" use:countUp={{ value: s.paid, money: true }}>{inr(s.paid)}</div><div class="sub">{s.outstanding ? `${inr(s.outstanding)} still due` : 'nothing due'}</div></div></div>
 		<div class="kpi glow rv" style="--i:2"><div><div class="lbl">Collabs</div><div class="big" use:countUp={{ value: s.count }}>{s.count}</div><div class="sub">{s.active} active</div></div></div>
 		<div class="kpi glow rv" style="--i:3"><div><div class="lbl">Barter value</div><div class="big" use:countUp={{ value: s.barter, money: true }}>{inr(s.barter)}</div><div class="sub">products received</div></div></div>
@@ -84,6 +103,9 @@
 			<MonthlyDeals brandId={brand.id} brandName={brand.name} />
 			<section class="panel rv" style="--i:5">
 				<div class="panel-h"><h2>Collabs</h2><small>newest first</small></div>
+				{#if phone.on}
+					<div class="m-list m-wallet">{#each s.collabs as c, i (c.id)}<CollabRow {c} {i} />{/each}</div>
+				{:else}
 				{#each s.collabs as c, i (c.id)}
 					<button class="prod-row" style="width:100%;border-left:0;border-right:0;border-bottom:0;background:none;text-align:left;animation:rise .5s var(--ease) both;animation-delay:calc({i} * 40ms)" onclick={() => (ui.openCollab = c.id)}>
 						<span class="ticon tint st-{c.stage}" style="width:34px;height:34px"><span class="dt"></span></span>
@@ -91,6 +113,7 @@
 						<span style="display:flex;flex-direction:column;align-items:flex-end;gap:4px"><span class="v">{c.type === 'barter' ? inr(c.product_value) : inr(c.fee)}</span><PayPill {c} /></span>
 					</button>
 				{/each}
+				{/if}
 			</section>
 		</div>
 		<div class="stack">

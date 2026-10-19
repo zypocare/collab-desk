@@ -4,6 +4,7 @@
 	import { delivText, diff, errMessage, fmt, hasProduct, inr, inrS, isPaid, outstanding, overdue, parse, payState, relWord, stageIndex, stageLabel } from '#lib/util.ts';
 	import Icon from '#lib/components/Icon.svelte';
 	import Mono from '#lib/components/Mono.svelte';
+	import Ticket from '#lib/components/Ticket.svelte';
 	import PayPill from '#lib/components/PayPill.svelte';
 	import Segmented from '#lib/components/Segmented.svelte';
 	import BankCredits from '#lib/components/BankCredits.svelte';
@@ -129,24 +130,24 @@
 			<button role="tab" aria-selected={filter === k} class:on={filter === k} onclick={() => ((filter = k), swapKey++)}><i class="dt" style="--hue:{k === 'all' ? 'var(--accent)' : HUE[k]}"></i>{label}<span>{counts[k]}</span></button>
 		{/each}
 	</div>
-	<!-- CRED's stacked bills: three, the edges of the rest, "+N more". -->
-	<div class="cr-stack m-plist">
+	<!-- Each payment a ticket (like Needs you on Today): three, the edge of the rest, "+N more". -->
+	<div class="tks m-plist">
 		{#key swapKey}
 			{#each fanPay ? list : list.slice(0, 3) as c, i (c.id)}
 				{@const st = payState(c)}
-				<div class="cr-it" style="--i:{i}">
-					<button class="cr-av" onclick={() => (ui.openCollab = c.id)} aria-label="Open {c.brand.name}"><Mono name={c.brand.name} /></button>
-					<button class="cr-t" onclick={() => (ui.openCollab = c.id)}>
-						<b>{c.brand.name}</b>
-						<small>{delivText(c.deliverables)}{c.invoice_no ? ` · ${c.invoice_no}` : ''}</small>
-					</button>
-					<span class="cr-r">
-						{#if c.pay_status !== 'paid'}<button class="btn sm primary" onclick={() => markPaid(c)} aria-label="Mark {c.brand.name} as paid">Paid?</button>{/if}
-						<span class="cr-due" class:bad={st === 'overdue'} class:ok={c.pay_status === 'paid'}>
-							{inrS(c.fee)} · {#if c.pay_status === 'paid'}paid {fmt(c.paid_on)}{:else if c.pay_due}{diff(c.pay_due) < 0 ? `${-diff(c.pay_due)} days late` : `due ${fmt(c.pay_due)}`}{:else}not invoiced{/if}
-						</span>
-					</span>
-				</div>
+				<Ticket
+					name={c.brand.name}
+					sub={delivText(c.deliverables) || 'Collab'}
+					money={inrS(c.fee)}
+					moneySub={c.pay_status === 'paid' ? 'paid' : st === 'overdue' ? 'overdue' : c.pay_due ? 'due' : 'not invoiced'}
+					task={c.invoice_no ? `Invoice ${c.invoice_no}` : c.pay_status === 'paid' ? 'Paid in full' : 'No invoice sent yet'}
+					status={c.pay_status === 'paid' ? `Paid ${fmt(c.paid_on)}` : c.pay_due ? (diff(c.pay_due) < 0 ? `${-diff(c.pay_due)} day${diff(c.pay_due) === -1 ? '' : 's'} late` : diff(c.pay_due) === 0 ? 'Due today' : `Due ${fmt(c.pay_due)}`) : 'Send the invoice'}
+					tone={c.pay_status === 'paid' ? 'ok' : st === 'overdue' ? 'hot' : c.pay_due ? 'warn' : 'calm'}
+					onopen={() => (ui.openCollab = c.id)}
+					{i}
+				>
+					{#if c.pay_status !== 'paid'}<button class="btn primary" onclick={() => markPaid(c)} aria-label="Mark {c.brand.name} as paid">Paid?</button>{:else}<button class="btn" onclick={() => (ui.openCollab = c.id)}>Open</button>{/if}
+				</Ticket>
 			{:else}
 				<div class="clear hero-card glow m-none">
 					<div class="mesh" aria-hidden="true"></div>
@@ -156,26 +157,28 @@
 				</div>
 			{/each}
 		{/key}
-		{#if !fanPay && list.length > 3}<span class="cr-edge" aria-hidden="true"></span>{#if list.length > 4}<span class="cr-edge" aria-hidden="true"></span>{/if}{/if}
+		{#if !fanPay && list.length > 3}<span class="cr-edge tk-edge" aria-hidden="true"></span>{/if}
 	</div>
 	{#if list.length > 3}<button class="cr-more" onclick={() => (fanPay = !fanPay)}>{fanPay ? 'Show less' : `+${list.length - 3} more`}</button>{/if}
 	{#if certs.length}
 		<section class="hs">
 			<header class="hs-h"><h2>TDS certificates</h2><span class="m-gn">{certs.length}</span></header>
-			<div class="m-list">
-				{#each certs as t (t.inv.id)}
-					<div class="m-ccard m-mini" style="--hue:var(--accent)">
-						<span class="m-cc-av"><Mono name={t.c.brand.name} /></span>
-						<span class="m-cc-b">
-							<span class="m-cc-t"><b>{t.c.brand.name}</b></span>
-							<span class="m-cc-s">{money(t.inv.tds_deducted, t.inv.currency)} TDS · {t.inv.number}</span>
-							<span class="m-cc-n" class:late={t.overdue}>{t.overdue ? `Form 16A due since ${fmt(t.due)}` : `Form 16A due by ${fmt(t.due)}`}</span>
-							<span class="m-mini-acts">
-								{#if t.overdue}<button class="btn sm" disabled={asking === t.inv.id || t.askedRecently} onclick={() => askCert(t.inv.id, t.c.brand.name)}>{#if asking === t.inv.id}<span class="spinner"></span>{:else}<Icon name="send" />{/if}{t.askedRecently ? 'Asked' : 'Ask for it'}</button>{/if}
-								<button class="btn sm" onclick={() => setInvoiceFlags(t.inv, { tds_certificate: true })}><Icon name="check" />Got it</button>
-							</span>
-						</span>
-					</div>
+			<div class="tks">
+				{#each certs as t, i (t.inv.id)}
+					<Ticket
+						name={t.c.brand.name}
+						sub="Invoice {t.inv.number}"
+						money={money(t.inv.tds_deducted, t.inv.currency)}
+						moneySub="TDS"
+						task="Form 16A certificate"
+						status={t.overdue ? `Due since ${fmt(t.due)}` : `Due by ${fmt(t.due)}`}
+						tone={t.overdue ? 'hot' : 'warn'}
+						onopen={() => (ui.openCollab = t.c.id)}
+						{i}
+					>
+						{#if t.overdue}<button class="btn" disabled={asking === t.inv.id || t.askedRecently} onclick={() => askCert(t.inv.id, t.c.brand.name)}>{#if asking === t.inv.id}<span class="spinner"></span>{/if}{t.askedRecently ? 'Asked' : 'Ask'}</button>{/if}
+						<button class="btn primary" onclick={() => setInvoiceFlags(t.inv, { tds_certificate: true })}>Got it</button>
+					</Ticket>
 				{/each}
 			</div>
 		</section>
@@ -183,16 +186,21 @@
 	{#if prods.length}
 		<section class="hs">
 			<header class="hs-h"><h2>Barter products</h2><span class="m-gn">{prods.length}</span><small class="m-hs-r">{inr(prods.reduce((a, c) => a + c.product_value, 0))}</small></header>
-			<div class="m-list">
+			<div class="tks">
 				{#each prods as c, i (c.id)}
-					<button class="m-ccard" style="--i:{Math.min(i, 8)};--hue:var(--g2)" onclick={() => (ui.openCollab = c.id)}>
-						<span class="m-cc-av"><Mono name={c.brand.name} /></span>
-						<span class="m-cc-b">
-							<span class="m-cc-t"><b>{c.product || 'Product'}</b></span>
-							<span class="m-cc-s">{c.brand.name} · {stageLabel(c.stage)}</span>
-						</span>
-						<span class="m-cc-money">{inr(c.product_value)}</span>
-					</button>
+					<Ticket
+						name={c.brand.name}
+						sub={stageLabel(c.stage)}
+						money={inr(c.product_value)}
+						moneySub="product"
+						task={c.product || 'Product'}
+						status={c.product_received_at ? 'Received' : c.shipped_at ? 'On the way' : 'Not shipped yet'}
+						tone={c.product_received_at ? 'ok' : c.shipped_at ? 'warn' : 'calm'}
+						onopen={() => (ui.openCollab = c.id)}
+						{i}
+					>
+						<button class="btn" onclick={() => (ui.openCollab = c.id)}>Open</button>
+					</Ticket>
 				{/each}
 			</div>
 		</section>

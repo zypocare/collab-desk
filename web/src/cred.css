@@ -618,3 +618,92 @@
   .tk-task small.calm { color: var(--ink-3); }
 }
 @media (max-width: 760px) { .tk-who small .tk-ig { text-transform: none; letter-spacing: .02em; font-weight: 600; } }
+
+/* ==========================================================================================
+   One look across the phone app (round seven). Titles in serif (top bar, card titles, the
+   collab and brand headers), entities as tickets or bands in the brand's colour, timelines for
+   days, and the same spaced-capital section names everywhere.
+   ========================================================================================== */
+@media (max-width: 760px) {
+  /* ---------- titles ---------- */
+  [data-side="studio"] .m-bar .m-brand:not(.wordmark) { font-family: var(--f-serif, Georgia, serif); font-weight: 400; font-size: 31px; letter-spacing: -.01em; }
+  [data-side="studio"] .m-bar .m-title { font-family: var(--f-serif, Georgia, serif); font-weight: 400; font-size: 22px; letter-spacing: -.005em; }
+  /* An eyebrow and a title on a card ("Month by month / What came in"): the title in serif. */
+  [data-side="studio"] .bx-eb + h2, [data-side="studio"] .md-h h2 { font-family: var(--f-serif, Georgia, serif); font-weight: 400; font-size: 25px; letter-spacing: -.01em; line-height: 1.1; }
+  [data-side="studio"] .bx-eb { font-size: 10.5px; letter-spacing: .16em; }
+  [data-side="studio"] .ib-h b { font-size: 11px; font-weight: 700; letter-spacing: .17em; text-transform: uppercase; color: var(--ink-3); }
+  [data-side="studio"] .kpis[hidden], [data-side="studio"] .set-menu[hidden] { display: none !important; }
+  [data-side="studio"] a.back { display: none; }
+
+  /* ---------- tickets that open on tap (a button band) ---------- */
+  button.tk-band { width: 100%; border: 0; font: inherit; text-align: left; cursor: pointer; }
+  .pt-tk-acts { display: flex; align-items: center; gap: 8px; flex: none; }
+  .pt-tk-acts .icon-btn { width: 36px; height: 36px; }
+  [data-side="studio"] .tk-foot .btn + .btn { margin-left: -2px; }
+  .tks + .cr-more { margin-top: 4px; }
+
+  /* ---------- brand page: the band ---------- */
+  .bd-band { position: relative; display: flex; flex-direction: column; gap: 16px; margin: 4px 0 18px; padding: 18px; border-radius: 24px; color: #fff; overflow: hidden; isolation: isolate;
+    background: linear-gradient(140deg, color-mix(in oklab, var(--h) 82%, #1a0d18) 0%, color-mix(in oklab, var(--h) 45%, #140a12) 65%, #140a12 100%); }
+  .bd-band::before { content: ''; position: absolute; inset: 0; z-index: -1; background: radial-gradient(110% 90% at 100% 0%, rgba(255, 255, 255, .16), transparent 50%), repeating-linear-gradient(135deg, rgba(255, 255, 255, .035) 0 2px, transparent 2px 9px); }
+  .bd-top { display: flex; align-items: center; gap: 12px; }
+  .bd-top .tk-tile { width: 48px; height: 48px; font-size: 18px; border-radius: 14px; }
+  .bd-who { min-width: 0; display: grid; gap: 4px; }
+  .bd-who b { font: italic 400 34px/1.02 var(--f-serif, Georgia, serif); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bd-who small { font-size: 10.5px; font-weight: 700; letter-spacing: .13em; text-transform: uppercase; color: rgba(255, 255, 255, .75); }
+  .bd-who small .tk-ig { text-transform: none; letter-spacing: .02em; font-weight: 600; }
+  .bd-nums { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 18px; padding-top: 14px; border-top: 2px dashed rgba(255, 255, 255, .22); }
+  .bd-nums div { display: grid; gap: 2px; }
+  .bd-nums b { font: 400 28px/1 var(--f-serif, Georgia, serif); }
+  .bd-nums small { font-size: 10px; font-weight: 700; letter-spacing: .13em; text-transform: uppercase; color: rgba(255, 255, 255, .7); }
+  .bd-due { margin: 0; display: inline-flex; align-items: center; gap: 8px; font-size: 10.5px; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; color: #ffb3aa; }
+  .bd-due i { width: 8px; height: 8px; border-radius: 50%; background: #ff7b70; animation: tk-pulse 1.6s ease-out infinite; }
+
+  /* ---------- collab page: the header as the brand's band ---------- */
+  [data-side="studio"] .drawer.as-page .dr-h { padding: 18px; margin-bottom: 14px; border: 0; border-radius: 24px; color: #fff; overflow: hidden;
+    background: linear-gradient(140deg, color-mix(in oklab, var(--hue) 82%, #1a0d18) 0%, color-mix(in oklab, var(--hue) 45%, #140a12) 65%, #140a12 100%); }
+  [data-side="studio"] .drawer.as-page .dr-h::before { display: block; background: radial-gradient(110% 90% at 100% 0%, rgba(255, 255, 255, .16), transparent 50%), repeating-linear-gradient(135deg, rgba(255, 255, 255, .035) 0 2px, transparent 2px 9px); }
+  [data-side="studio"] .drawer.as-page .dr-h .mono { width: 48px; height: 48px; border-radius: 14px; background: rgba(255, 255, 255, .18); border: 1px solid rgba(255, 255, 255, .25); color: #fff; }
+  [data-side="studio"] .drawer.as-page .dr-h .title-inp { font: italic 400 32px/1.05 var(--f-serif, Georgia, serif); color: #fff; letter-spacing: -.01em; }
+  [data-side="studio"] .drawer.as-page .dr-h .dr-sub { color: rgba(255, 255, 255, .75); font-size: 10.5px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+  [data-side="studio"] .drawer.as-page .dr-h .dr-sub .id { color: #fff; }
+
+  /* ---------- calendar: the picked day as a timeline card ---------- */
+  [data-side="studio"] .agenda { margin-top: 14px; padding: 18px; border-radius: 24px; border: 1px solid var(--line); background: radial-gradient(120% 60% at 100% 0%, color-mix(in oklab, var(--g2) 12%, transparent), transparent 60%), var(--surface); }
+  [data-side="studio"] .agenda .panel-h { padding: 0 0 12px; border: 0; }
+  [data-side="studio"] .agenda .panel-h h2 { font: 400 25px var(--f-serif, Georgia, serif); letter-spacing: -.01em; text-transform: none; color: var(--ink); }
+  [data-side="studio"] .agenda .ag { position: relative; display: grid; grid-template-columns: 18px minmax(0, 1fr) 18px; gap: 12px; align-items: start; width: 100%; padding: 0 0 16px; border: 0; background: none; text-align: left; }
+  [data-side="studio"] .agenda .ag:not(:last-child)::before { content: ''; position: absolute; left: 8px; top: 18px; bottom: 0; width: 2px; background: var(--line); }
+  [data-side="studio"] .agenda .ag .ticon { position: relative; z-index: 1; width: 12px; height: 12px; margin: 3px 0 0 3px; padding: 0; border-radius: 50%; background: var(--hue); box-shadow: 0 0 0 4px var(--surface), 0 0 14px var(--hue); }
+  [data-side="studio"] .agenda .ag .ticon .ic { display: none; }
+  [data-side="studio"] .agenda .ag b { font-size: 15.5px; font-weight: 700; }
+  [data-side="studio"] .agenda .ag small { font-size: 13px; color: var(--ink-3); }
+  [data-side="studio"] .agenda .ag > .ic { width: 16px; height: 16px; margin-top: 2px; color: var(--ink-3); }
+}
+@media (max-width: 760px) {
+  /* Month in review: its title and headline in serif, like every other card title. */
+  [data-side="studio"] .mr-h h2 { font-family: var(--f-serif, Georgia, serif); font-weight: 400; font-size: 28px; letter-spacing: -.01em; }
+  [data-side="studio"] .mr-head { font-family: var(--f-serif, Georgia, serif); font-weight: 400; font-size: 24px; line-height: 1.15; }
+  [data-side="studio"] .mr-h .eb { font-size: 10.5px; letter-spacing: .16em; }
+}
+@media (max-width: 760px) {
+  /* Every sheet: its title in serif (like Add a collab), and plain buttons with the NeoPOP edge. */
+  [data-side] .dialog-scrim:not(.cmdk-scrim) > .dialog:not(.nc) h2 { font-family: var(--f-serif, Georgia, serif); font-weight: 400; font-size: 30px; line-height: 1.08; letter-spacing: -.01em; }
+  [data-side] .dialog-scrim:not(.cmdk-scrim) > .dialog:not(.nc) > h2 + p, [data-side] .dialog-scrim:not(.cmdk-scrim) > .dialog:not(.nc) form > h2 + p { color: var(--ink-3); }
+  [data-side="studio"] .dialog .row .btn:not(.grad):not(.primary):not(.danger) { --edge: var(--line-strong); background: var(--surface); border: 1px solid var(--line-strong); box-shadow: 3px 3px 0 var(--edge); color: var(--ink); }
+}
+@media (max-width: 760px) {
+  /* Picking one of a few options (quote options, content tiles, team roles): one look everywhere.
+     Rounded, a thin line; the picked one gets an ink line and the NeoPOP edge. */
+  [data-side="studio"] :is(.q-opt, .dp, .team-roles .team-r) { border-radius: 16px !important; border: 1px solid var(--line-strong) !important; background: var(--surface) !important; box-shadow: none; transition: box-shadow .2s, border-color .2s, transform .1s; }
+  [data-side="studio"] :is(.q-opt.on, .dp.on, .team-roles .team-r.on) { border-color: var(--ink) !important; box-shadow: 3px 3px 0 var(--accent) !important; }
+  [data-side="studio"] :is(.q-opt, .dp, .team-roles .team-r):active { transform: translate(2px, 2px); }
+  [data-side="studio"] .q-opt.on .q-opt-t { color: var(--accent); }
+}
+@media (max-width: 760px) {
+  /* Tickets with several buttons: the buttons drop to their own line instead of squeezing the text. */
+  .pt-tks .tk-foot, .md-tks .tk-foot { flex-wrap: wrap; row-gap: 12px; }
+  .pt-tks .tk-task { flex: 1 1 55%; }
+  .pt-tks .pt-tk-acts { margin-left: auto; }
+  .md-tks { margin-top: 4px; }
+}

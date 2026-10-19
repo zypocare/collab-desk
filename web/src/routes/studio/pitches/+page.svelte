@@ -10,6 +10,8 @@
 	import Icon from '#lib/components/Icon.svelte';
 	import Mono from '#lib/components/Mono.svelte';
 	import Segmented from '#lib/components/Segmented.svelte';
+	import Ticket from '#lib/components/Ticket.svelte';
+	import { phone } from '#lib/phone.svelte.ts';
 
 	// Brands she'd like to work with: a wishlist, a pitch from her own email, polite follow-ups.
 	type Pitch = {
@@ -127,6 +129,30 @@
 	<Segmented label="Show" bind:value={show} options={[{ value: 'open', label: 'In progress' }, { value: 'all', label: 'All' }]} />
 </div>
 
+{#if phone.on && shown.length}
+	<!-- Phone: each pitch a ticket, like Needs you on Today. -->
+	<section class="tks pt-tks">
+		{#each shown as p, i (p.id)}
+			<Ticket
+				name={p.brand_name}
+				sub={p.instagram ? `${LABEL[p.status].t} · @${p.instagram}` : LABEL[p.status].t}
+				task={p.status === 'idea' ? 'On your wishlist' : p.status === 'sent' ? `Pitched ${fmt(p.sent_at?.slice(0, 10))}` : p.status === 'replied' ? 'They replied' : p.status === 'won' ? 'Won' : 'Not now'}
+				status={p.status === 'sent' ? (p.auto_follow && p.followups < 2 && p.next_follow_on ? `Next follow-up ${fmt(p.next_follow_on)}` : p.followups ? `${p.followups} follow-up${p.followups > 1 ? 's' : ''} sent` : 'Waiting for a reply') : p.status === 'idea' ? 'Not pitched yet' : p.status === 'replied' ? 'Reply and close it' : p.status === 'won' ? 'Now a collab' : 'Parked for later'}
+				tone={p.status === 'replied' || p.status === 'won' ? 'ok' : p.status === 'sent' ? 'warn' : 'calm'}
+				{i}
+			>
+				<span class="pt-tk-acts">
+					{#if p.status === 'idea'}<button class="btn primary" onclick={() => (open = { ...p })}><Icon name="send" />Pitch</button>{/if}
+					{#if p.status === 'sent'}<button class="btn" onclick={() => setStatus(p, 'replied')}>Replied</button>{/if}
+					{#if p.status === 'sent' || p.status === 'replied'}<button class="btn primary" onclick={() => won(p)}><Icon name="check" />Won</button>{/if}
+					{#if p.status === 'won' && p.collab_id}<button class="btn" onclick={() => (ui.openCollab = p.collab_id)}>Open</button>{/if}
+					{#if p.status !== 'won' && p.status !== 'not_now'}<button class="icon-btn" aria-label="Not now" onclick={() => setStatus(p, 'not_now')}><Icon name="clock" /></button>{/if}
+					<button class="icon-btn" aria-label="Remove" onclick={() => remove(p)}><Icon name="x" /></button>
+				</span>
+			</Ticket>
+		{/each}
+	</section>
+{:else}
 <section class="panel rv pt-list" style="--i:2">
 	{#each shown as p (p.id)}
 		<div class="pt-row">
@@ -153,6 +179,7 @@
 		</div>
 	{/each}
 </section>
+{/if}
 
 {#if open}
 	<div class="dialog-scrim" role="presentation" onclick={(e) => e.target === e.currentTarget && (open = null)}>
