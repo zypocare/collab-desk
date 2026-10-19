@@ -91,6 +91,7 @@
 	<div class="pf-btns">
 		<a class="btn" href="/studio/settings?s=profile">Edit profile</a>
 		<button class="btn" onclick={share}>Share profile</button>
+		<a class="btn pf-kit" href="/studio/qr" aria-label="Your QR code" title="Your QR code"><Icon name="qr" /></a>
 		<button class="btn pf-kit" onclick={kit} disabled={kitBusy} aria-label="Download media kit PDF">{#if kitBusy}<span class="spinner"></span>{:else}<Icon name="download" />{/if}</button>
 	</div>
 	<div class="pf-hl" aria-label="Highlights">

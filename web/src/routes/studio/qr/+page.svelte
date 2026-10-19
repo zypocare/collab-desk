@@ -31,6 +31,8 @@
 		const { data, error } = await supabase.from('qr_codes').select('*').order('created_at', { ascending: false });
 		if (error) toast(`Couldn't load your QR codes: ${errMessage(error)}`, 'alert');
 		codes = (data as QrCode[] | null) ?? [];
+		// The first visit makes her brand-page code straight away, ready to share.
+		if (!error && !codes.length) await create();
 		selId = codes[0]?.id ?? '';
 		loaded = true;
 		photo = await loadPhoto(studio.ig?.profile_picture_url);
@@ -158,9 +160,9 @@
 				<div><b>{lastScan(sel)}</b><small>&nbsp;</small></div>
 			</div>
 			<div class="qr-acts">
-				<button class="btn grad" onclick={downloadPng}><Icon name="download" />PNG</button>
+				{#if canShare}<button class="btn grad qr-share" onclick={share}><Icon name="share" />Share QR code</button>{/if}
+				<button class="btn" class:grad={!canShare} onclick={downloadPng}><Icon name="download" />{canShare ? 'Save image' : 'PNG'}</button>
 				<button class="btn" onclick={downloadSvg}><Icon name="download" />SVG for print</button>
-				{#if canShare}<button class="btn" onclick={share}><Icon name="share" />Share</button>{/if}
 				<button class="btn" onclick={() => sel && copyText(url(sel), 'Link copied')}><Icon name="copy" />Copy link</button>
 			</div>
 		</section>
@@ -247,6 +249,7 @@
 	.qr-stats b.num { font: 600 24px/1.1 var(--f-mono); letter-spacing: -.03em; }
 	.qr-stats small { font-size: 12.5px; color: var(--ink-3); }
 	.qr-acts { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+	@media (max-width: 760px) { .qr-acts .qr-share { flex: 1 0 100%; justify-content: center; height: 48px; } .qr-stage canvas { max-width: 300px; } .qr-stage .qr-acts { order: 3; } .qr-stage .qr-stats { order: 4; } .qr-stage .qr-url { order: 2; } .qr-stage canvas { order: 1; } }
 
 	.qr-ctl { display: grid; gap: 18px; padding: 22px; }
 	.f { display: grid; gap: 8px; }
