@@ -1,7 +1,6 @@
 <script lang="ts">
-	import { supabase } from '../supabase';
 	import { studio } from '../studio.svelte';
-	import { toast, ui } from '../ui.svelte';
+	import { addLeadAsCollab } from '../leads';
 	import Icon from './Icon.svelte';
 	import Mono from './Mono.svelte';
 
@@ -17,15 +16,8 @@
 	/** "Add": the chat goes into Add a collab, where it's read and filled in. */
 	async function add(igsid: string, username: string, name = '') {
 		busy = igsid;
-		const { data, error } = await supabase.from('ig_dms').select('from_me, text').eq('igsid', igsid).order('created_at', { ascending: false }).limit(15);
+		await addLeadAsCollab(igsid, username, name);
 		busy = null;
-		if (error) return toast(error.message, 'alert');
-		const me = studio.settings?.display_name || 'Me';
-		ui.pasteText = (data ?? []).reverse().map((m) => `${m.from_me ? me : username || 'Brand'}: ${m.text}`).join('\n');
-		ui.fromIg = igsid;
-		ui.fromIgUser = username;
-		ui.fromIgName = name;
-		ui.newCollab = true;
 	}
 </script>
 

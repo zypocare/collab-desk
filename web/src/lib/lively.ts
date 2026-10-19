@@ -8,7 +8,7 @@ const onPhone = () => matchMedia('(max-width: 760px)').matches;
 const IOS = typeof navigator !== 'undefined' && (/iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1));
 
 // What tilts when pressed.
-const TILT = '.wc, .hero-card, .md-hero, .cr-it, .m-ccard, .qr-item, .ct-mini';
+const TILT = '.wc, .hero-card, .md-hero, .cr-it, .m-ccard, .qr-item, .ct-mini, .tk, .dk2-sc';
 // What rises in as it comes on screen.
 const RISE = ['.hs', '.wc', '.md-card', '.m-hero', '.md-hero', '.set-list', '.set-group', '.m-ccard', '.cr-ring', '.cr-ticker', '.qr-item', '.ct-mini', '.m-group', '.pf-tile', '.dr-sec']
 	.map((s) => `main ${s}`)

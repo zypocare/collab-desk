@@ -12,6 +12,8 @@
 	import Icon from './Icon.svelte';
 	import Mono from './Mono.svelte';
 	import ScoreRing from './ScoreRing.svelte';
+	import { addLeadAsCollab, lastBrandLines } from '../leads';
+	import { relWord, diff } from '../util';
 
 	// Today's AI assistant: every open request, read and scored ("Should you take it?"), and how
 	// many free AI uses are left today.
@@ -45,6 +47,39 @@
 				: 'I spotted these in your Instagram DMs.'
 			: open.length ? `Read ${open.length === 1 ? 'your new request' : `your ${open.length} open requests`} and scored ${open.length === 1 ? 'it' : 'them'}.` : "When a brand writes, I'll read it and tell you if it's worth it."
 	);
+
+	// Phone: the Desk AI card. A one-line read of what's waiting, the Instagram leads one at a time
+	// (with what the brand actually wrote), and the open requests as swipeable score cards.
+	const phoneLeads = $derived([...studio.leads].sort((a, b) => Number(b.collab_flag === 'likely') - Number(a.collab_flag === 'likely')).slice(0, 3));
+	let leadI = $state(0);
+	const lead = $derived(phoneLeads[Math.min(leadI, Math.max(0, phoneLeads.length - 1))]);
+	let said = $state<Record<string, string>>({});
+	$effect(() => {
+		if (!phone) return;
+		const ids = phoneLeads.map((l) => l.igsid);
+		if (ids.length) lastBrandLines(ids).then((r) => (said = r));
+	});
+	let adding = $state(false);
+	async function addLead() {
+		if (!lead) return;
+		adding = true;
+		await addLeadAsCollab(lead.igsid, lead.username, lead.name);
+		adding = false;
+	}
+	const VERDICT_WORD: Record<string, string> = { take: 'worth a yes', negotiate: 'worth a counter', pass: 'likely a pass' };
+	// The line at the top, in pieces so two words can stand out.
+	const say = $derived.by(() => {
+		const parts: { t: string; em?: 'g' | 'w' }[] = [];
+		const n = studio.leads.length;
+		if (n) parts.push({ t: n === 1 ? 'A brand slid into your ' : `${n} brands slid into your ` }, { t: 'DMs', em: 'g' }, { t: '. ' });
+		const best = open[0];
+		if (best) parts.push({ t: `${best.c.brand.name} looks ` }, { t: VERDICT_WORD[best.d!.verdict] ?? 'worth a look', em: 'w' }, { t: '.' });
+		if (!parts.length) parts.push({ t: 'A quiet desk. Time to ' }, { t: 'pitch', em: 'g' }, { t: ' a brand you love.' });
+		return parts;
+	});
+	const forYou = $derived(Math.min(studio.leads.length, 3) + open.length);
+	const ago = (at: string | null) => (at ? relWord(diff(at.slice(0, 10))) : '');
+	const gauge = (score: number) => `${((2 * Math.PI * 27 * score) / 100).toFixed(1)} ${(2 * Math.PI * 27).toFixed(1)}`;
 </script>
 
 {#snippet body()}
@@ -76,15 +111,65 @@
 {/snippet}
 
 {#if phone}
-	<section class="hs">
-		<header class="hs-h"><h2>AI assistant</h2>{#if left}<span class="ai-left-chip" title={leftTitle}><Icon name="spark" />{left.pct}% free left{left.gemini ? ' + backup' : ''}</span>{/if}</header>
-		<div class="ai-desk ai-desk-m">
-			<span class="ai-desk-fx" aria-hidden="true"></span>
-			<div class="ai-desk-h">
-				<span class="ai-desk-ic"><Icon name="spark" /></span>
-				<p>{sub}</p>
+	<section class="hs dk2">
+		<header class="dk2-h">
+			<span class="dk2-orb" aria-hidden="true"><i></i><i></i><i></i></span>
+			<span class="dk2-eb">Desk AI</span>
+			{#if forYou}<span class="dk2-eb dk2-mute">· {forYou} for you</span>{/if}
+			{#if left}<span class="dk2-left" title={leftTitle}><svg viewBox="0 0 36 36" aria-hidden="true"><circle cx="18" cy="18" r="14" /><circle class="dk2-arc" cx="18" cy="18" r="14" style="stroke-dasharray:{(88 * left.pct) / 100} 88" /></svg>{left.pct}% free</span>{/if}
+		</header>
+		<h2 class="dk2-say">{#each say as p, i (i)}{#if p.em}<em class="dk2-{p.em}">{p.t}</em>{:else}{p.t}{/if}{/each}</h2>
+
+		{#if lead}
+			<div class="dk2-lead">
+				<div class="dk2-lead-in">
+					<div class="dk2-lt">
+						<Icon name="send" />
+						<span>Spotted in your DMs</span>
+						<em class:maybe={lead.collab_flag !== 'likely'}><i></i>{lead.collab_flag === 'likely' ? 'Likely' : 'Maybe'}</em>
+					</div>
+					<a class="dk2-who" href="/studio/inbox/ig/{lead.igsid}">
+						<span class="dk2-av">{#if lead.picture}<img src={lead.picture} alt="" referrerpolicy="no-referrer" />{:else}<b>{(lead.username || 'IG').slice(0, 1).toUpperCase()}</b>{/if}</span>
+						<span class="dk2-wt"><b>@{lead.username || 'someone'}</b><small>{lead.collab_hint || (lead.collab_flag === 'likely' ? 'May want to work with you' : 'Might be asking about a collab')}</small></span>
+					</a>
+					{#if said[lead.igsid]}
+						<p class="dk2-dm">{said[lead.igsid]}<small>Instagram{lead.last_at ? ` · ${ago(lead.last_at)}` : ''}</small></p>
+					{/if}
+					<div class="dk2-acts">
+						<button class="btn primary dk2-add" disabled={adding} onclick={addLead}>{#if adding}<span class="spinner"></span>{:else}<Icon name="plus" />{/if}Add as collab</button>
+						<a class="btn dk2-open" href="/studio/inbox/ig/{lead.igsid}" aria-label="Open the chat"><Icon name="arrow" /></a>
+					</div>
+					{#if phoneLeads.length > 1}
+						<div class="dk2-dots">{#each phoneLeads as l, i (l.igsid)}<button class:on={i === leadI} onclick={() => (leadI = i)} aria-label="Show @{l.username || 'lead'}"></button>{/each}</div>
+					{/if}
+				</div>
 			</div>
-			{@render body()}
+			{#if studio.leads.length > 3}<a class="ail-more" href="/studio/inbox">+{studio.leads.length - 3} more possible collabs in Messages<Icon name="chevR" /></a>{/if}
+		{/if}
+
+		{#if open.length}
+			<div class="dk2-sh"><span>Open requests · scored</span>{#if open.length > 1}<small>swipe</small>{/if}</div>
+			<div class="dk2-deck">
+				{#each open as { c, d } (c.id)}
+					<button class="dk2-sc v-{d!.verdict}" onclick={() => (ui.openCollab = c.id)}>
+						<span class="dk2-g">
+							<svg viewBox="0 0 66 66" aria-hidden="true"><circle cx="33" cy="33" r="27" /><circle class="dk2-arc" cx="33" cy="33" r="27" style="stroke-dasharray:{gauge(d!.score)}" /></svg>
+							<b>{d!.score}</b>
+						</span>
+						<em>{d!.label}</em>
+						<strong>{c.brand.name}</strong>
+						{#if studio.reading.includes(c.id)}<AiThinking label="Reading" />{:else}<small>{d!.line}</small>{/if}
+					</button>
+				{/each}
+			</div>
+		{/if}
+
+		{#if new Date().getDate() <= 10}
+			<a class="ai-desk-review" href="/studio/reports?m={prevMonth()}"><Icon name="chart" /><span><b>Your {monthLabel(prevMonth()).split(' ')[0]} in review</b><small>What you earned, what worked, what to charge next</small></span><Icon name="chevR" /></a>
+		{/if}
+		<div class="ai-desk-acts">
+			<button class="btn sm ai-btn" onclick={() => (ui.askOpen = true)}><Icon name="spark" />Ask your desk</button>
+			<a class="btn sm ghost" href="/studio/inbox"><Icon name="send" />Messages{#if unread}<span class="ai-acts-n" aria-label="{unread} unread">{unread}</span>{/if}</a>
 		</div>
 	</section>
 {:else}

@@ -5,6 +5,8 @@
 	import { copyText, countUp, ui } from '../ui.svelte';
 	import {
 		KIND_ICON,
+		TYPE_LABEL,
+		stageLabel,
 		STAGES,
 		delivText,
 		diff,
@@ -106,6 +108,27 @@
 		return t.d === 0 ? 'today' : relWord(t.d);
 	};
 	const link = $derived((s.site_url || location.origin).replace(/\/$/, ''));
+	// Needs you, as tickets: red and pulsing when late or waiting on her, amber when it's coming up.
+	const hot = (t: Task) => t.kind === 'pay' || t.kind === 'msg' || t.d < 0 || (t.kind === 'new' && diff(t.c.received_on) <= -1);
+	const ticketMoney = (t: Task) => (t.c.type === 'barter' ? (t.c.product_value ? inrS(t.c.product_value) : 'Barter') : t.c.fee ? inrS(t.c.fee) : 'Quote');
+
+	// This week: the next seven days as capsules, the day she taps opened below (today first).
+	let pick = $state(0);
+	const KIND_WORD: Record<string, string> = { shoot: 'Shoot', draft: 'Draft due', live: 'Goes live', pay: 'Payment due', follow: 'Follow-up', product: 'Product arrives' };
+	const weekN = $derived(week.reduce((a, d) => a + d.list.length, 0));
+	const busiest = $derived([...week].sort((a, b) => b.list.length - a.list.length)[0]);
+	const dayName = (d: Date, i: number) => (i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : d.toLocaleDateString('en-IN', { weekday: 'long' }));
+	const NUM = ['No', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten'];
+	const picked = $derived(week[pick]);
+	// Her collab slots this calendar week (Monday to Sunday), the same count her brand page uses.
+	const cap = $derived(Math.max(1, s.weekly_capacity ?? 3));
+	const booked = $derived.by(() => {
+		const m = new Date(T);
+		m.setDate(m.getDate() - ((m.getDay() + 6) % 7));
+		const from = iso(m), to = iso(new Date(m.getTime() + 7 * 864e5));
+		return list.filter((c) => ['confirmed', 'creating', 'live'].includes(c.stage) && (c.live_date ?? c.draft_date ?? c.preferred_live ?? '') >= from && (c.live_date ?? c.draft_date ?? c.preferred_live ?? '') < to).length;
+	});
+	const slotNote = $derived(booked >= cap ? 'Fully booked: brands see this week as full.' : cap - booked === 1 && cap > 1 ? 'One slot open: brands see this week as limited.' : `${cap - booked} slots open this week.`);
 	// The moving line under the circles (CRED's "cashback disbursed today"): today in numbers.
 	const ticker = $derived(
 		[
@@ -184,33 +207,34 @@
 <section class="hs">
 	<header class="hs-h"><h2>Needs you</h2>{#if ts.length}<span class="hs-n">{ts.length}</span>{/if}</header>
 	{#if ts.length}
-		<!-- CRED's stacked bills: the first two, the edges of the rest, and "+N more" to fan them out. -->
-		<div class="cr-stack">
+		<!-- Tickets: the brand on a band in its colour, a torn line, then what to do and by when. -->
+		<div class="tks">
 			{#each fanned ? ts : ts.slice(0, 2) as t, i (t.c.id + t.kind)}
 				{@const key = t.c.id + t.kind}
-				<div class="cr-it" class:leaving={leaving === key} style="--i:{i}">
-					<a href="/studio/c/{t.c.code}" aria-label="Open {t.c.brand.name}"><Mono name={t.c.brand.name} /></a>
-					<a class="cr-t" href="/studio/c/{t.c.code}" style="color:inherit;text-decoration:none">
-						<b>{t.c.brand.name}</b>
-						<small>{t.title} · {delivText(t.c.deliverables)}{t.c.fee ? ` · ${inr(t.c.fee)}` : t.c.type === 'barter' ? ' · barter' : ''}</small>
+				<article class="tk" class:leaving={leaving === key} style="--h:var(--m{hueOf(t.c.brand.name)});--i:{i}">
+					<a class="tk-band" href="/studio/c/{t.c.code}">
+						<span class="tk-tile">{t.c.brand.name.trim().slice(0, 1).toUpperCase()}</span>
+						<span class="tk-who"><b>{t.c.brand.name}</b><small>{stageLabel(t.c.stage)}</small></span>
+						<span class="tk-money"><b>{ticketMoney(t)}</b><small>{delivText(t.c.deliverables) || TYPE_LABEL[t.c.type]}</small></span>
 					</a>
-					<span class="cr-r">
+					<div class="tk-cut" aria-hidden="true"></div>
+					<div class="tk-foot">
+						<span class="tk-task"><b>{t.title}</b><small class:hot={hot(t)}><i></i>{when(t)}</small></span>
 						{#if t.kind === 'follow'}
-							<button class="btn sm" onclick={() => leaveThen(key, () => completeFollow(t.c))}>Done</button>
+							<button class="btn" onclick={() => leaveThen(key, () => completeFollow(t.c))}>Done</button>
 						{:else if t.kind === 'pay'}
-							<button class="btn sm primary" onclick={async () => (await askPaid(t.c)) && leaveThen(key, () => markPaid(t.c, false, true))}>Mark paid</button>
+							<button class="btn primary" onclick={async () => (await askPaid(t.c)) && leaveThen(key, () => markPaid(t.c, false, true))}>Mark paid</button>
 						{:else if t.kind === 'product' && inTransit(t.c)}
-							<button class="btn sm" onclick={() => leaveThen(key, () => markReceived(t.c))}>Received</button>
+							<button class="btn" onclick={() => leaveThen(key, () => markReceived(t.c))}>Received</button>
 						{:else if t.kind === 'msg'}
-							<a class="btn sm grad" href="/studio/inbox/{t.c.code}">Reply</a>
+							<a class="btn grad" href="/studio/inbox/{t.c.code}">Reply</a>
 						{:else}
-							<a class="btn sm grad" href="/studio/c/{t.c.code}">{t.kind === 'new' ? 'Review' : 'Open'}</a>
+							<a class="btn grad" href="/studio/c/{t.c.code}">{t.kind === 'new' ? 'Review' : 'Open'}</a>
 						{/if}
-						<span class="cr-due" class:bad={t.kind === 'pay' || t.d < 0}>{when(t)}</span>
-					</span>
-				</div>
+					</div>
+				</article>
 			{/each}
-			{#if !fanned && ts.length > 2}<span class="cr-edge" aria-hidden="true"></span>{#if ts.length > 3}<span class="cr-edge" aria-hidden="true"></span>{/if}{/if}
+			{#if !fanned && ts.length > 2}<span class="cr-edge tk-edge" aria-hidden="true"></span>{/if}
 		</div>
 		{#if ts.length > 2}
 			<button class="cr-more" onclick={() => (fanned = !fanned)}>
@@ -240,26 +264,51 @@
 
 <AlertsPrompt />
 
-<section class="hs">
+<section class="hs wk2">
 	<header class="hs-h"><h2>This week</h2><a href="/studio/calendar">Calendar</a></header>
-	<div class="wkx">
+	<p class="wk2-say">
+		{#if weekN}{NUM[weekN] ?? weekN} thing{weekN === 1 ? '' : 's'} this week.{#if busiest.list.length > 1}{' '}<em>{dayName(busiest.dt, busiest.i)}</em> is the big one.{:else}{' '}Next up: <em>{dayName(week.find((d) => d.list.length)!.dt, week.find((d) => d.list.length)!.i).toLowerCase()}</em>.{/if}
+		{:else}A free week. <em>Make it count.</em>{/if}
+	</p>
+	<a class="wk2-cap" href="/studio/settings?s=bookings">
+		<span class="wk2-cap-h"><small>Collab slots this week</small><b>{Math.min(booked, cap)} <span>of {cap} booked</span></b></span>
+		<span class="wk2-bar" style="--n:{Math.min(cap, 10)}">{#each Array.from({ length: Math.min(cap, 10) }, (_, k) => k) as k (k)}<i class:on={k < booked}></i>{/each}</span>
+		<small>{slotNote}</small>
+	</a>
+	<div class="wk2-days" role="group" aria-label="Pick a day">
 		{#each week as d (d.i)}
-			<a class="wkx-d" class:now={d.i === 0} class:busy={d.list.length > 0} href="/studio/calendar" style="--i:{d.i}">
+			<button class="wk2-d" class:now={d.i === 0} class:on={d.i === pick} onclick={() => (pick = d.i)} aria-label="{dayName(d.dt, d.i)}, {d.list.length || 'nothing'} {d.list.length === 1 ? 'thing' : 'things'}" aria-pressed={d.i === pick}>
 				<small>{d.i === 0 ? 'Today' : d.dt.toLocaleDateString('en-IN', { weekday: 'short' })}</small>
 				<b>{d.dt.getDate()}</b>
-				<span class="wkx-dots">{#each d.list.slice(0, 3) as e (e.c.id + e.kind)}<i class="k-{e.kind}"></i>{/each}</span>
-			</a>
+				<span class="wk2-dots">{#each d.list.slice(0, 3) as e (e.c.id + e.kind)}<i class="k-{e.kind}"></i>{/each}</span>
+			</button>
 		{/each}
 	</div>
-	{#if upcoming.length}
-		<ul class="upc">
-			{#each upcoming as e (e.c.id + e.kind + e.date)}
-				<li><a href="/studio/c/{e.c.code}"><span class="upc-ic tint k-{e.kind}"><Icon name={KIND_ICON[e.kind] ?? 'cal'} /></span><span class="upc-t"><b>{evLabel(e)}</b><small>{e.c.brand.name}</small></span><span class="upc-w">{relWord(diff(e.date))}</span></a></li>
-			{/each}
-		</ul>
-	{:else}
-		<p class="upc-none">A free week ahead. Good time to plan content.</p>
-	{/if}
+	{#key pick}
+		<div class="wk2-day">
+			<div class="wk2-day-h"><b>{dayName(picked.dt, picked.i)}{picked.i > 1 ? `, ${picked.dt.getDate()} ${picked.dt.toLocaleDateString('en-IN', { month: 'short' })}` : ''}</b><small>{picked.list.length ? `${picked.list.length} thing${picked.list.length === 1 ? '' : 's'}` : 'Free'}</small></div>
+			{#if picked.list.length}
+				<ul class="wk2-tl">
+					{#each picked.list as e (e.c.id + e.kind)}
+						<li class="k-{e.kind}">
+							<a href="/studio/c/{e.c.code}">
+								<span class="wk2-node" aria-hidden="true"></span>
+								<span class="wk2-ev"><em>{KIND_WORD[e.kind] ?? evLabel(e)}{e.kind === 'live' && e.c.live_time ? ` · ${e.c.live_time.slice(0, 5)}` : ''}</em><b>{e.c.brand.name}{delivText(e.c.deliverables) ? ` · ${delivText(e.c.deliverables)}` : ''}</b><small>{e.kind === 'pay' ? `${inr(outstanding(e.c))} to come in` : e.kind === 'draft' ? 'First cut to the brand' : e.kind === 'live' ? 'Post, tag the brand, pin the link' : e.kind === 'shoot' ? 'Charge up, find the light' : e.kind === 'product' ? 'Unbox it on camera' : 'A friendly nudge keeps it moving'}</small></span>
+							</a>
+						</li>
+					{/each}
+				</ul>
+			{:else}
+				<p class="wk2-free">Nothing booked. A free day is where the next big collab starts:</p>
+				<div class="wk2-ideas">
+					<a href="/studio/content"><span class="k-shoot"><Icon name="film" /></span>Plan a reel</a>
+					<a href="/studio/pitches"><span class="k-live"><Icon name="send" /></span>Pitch a brand</a>
+					<a href="/studio/calendar"><span class="k-draft"><Icon name="edit" /></span>Batch captions</a>
+				</div>
+			{/if}
+		</div>
+	{/key}
+	<div class="wk2-key" aria-hidden="true"><span class="k-shoot"><i></i>Shoot</span><span class="k-draft"><i></i>Draft due</span><span class="k-live"><i></i>Goes live</span><span class="k-pay"><i></i>Payment</span></div>
 </section>
 
 <section class="hs">
