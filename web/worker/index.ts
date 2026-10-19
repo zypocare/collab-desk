@@ -53,7 +53,9 @@ export default {
 					try {
 						return json({ ...(await job({ env, gemini: true, neurons: 0 })), by: 'gemini' });
 					} catch (e) {
-						why = String((e as Error)?.message ?? e).slice(0, 160);
+						// Which key Cloudflare holds, by its last four characters and length only (as AI Studio shows it).
+						const k = (env.GEMINI_API_KEY ?? '').trim().replace(/^["']+|["']+$/g, '');
+						why = `${String((e as Error)?.message ?? e).slice(0, 140)} (key …${k.slice(-4)}, ${k.length} characters)`;
 					}
 				}
 				return json({ ...(await job({ env, gemini: false, neurons: 0 })), ...(kind === 'cheer' ? { by: 'cloudflare', why } : {}) });
