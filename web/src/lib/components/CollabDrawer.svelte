@@ -580,7 +580,7 @@
 				{#if dates && c.stage !== 'live' && c.stage !== 'wrapped' && c.stage !== 'declined' && (c.draft_date !== dates.draft || c.live_date !== dates.live)}
 					<div class="date-sug">
 						<Icon name="spark" />
-						<span><b>Suggested:</b> draft {fmt(dates.draft)}, live {fmt(dates.live)}{dates.why ? ` (${dates.why})` : ''}</span>
+						<span><em class="ds-eb">Suggested dates</em>Draft {fmt(dates.draft)}, live {fmt(dates.live)}{#if dates.why}<small>{dates.why}</small>{/if}</span>
 						<button class="btn sm" onclick={() => c && dates && updateCollab(c.id, { draft_date: dates.draft, live_date: dates.live })}>Use</button>
 					</div>
 				{/if}
@@ -600,7 +600,7 @@
 				{#if best && !noPost(c) && c.live_date && !['live', 'wrapped', 'declined'].includes(c.stage) && c.live_time?.slice(0, 5) !== best.value}
 					<div class="date-sug">
 						<Icon name="spark" />
-						<span><b>Your best time:</b> {best.label}. Your posts then get {best.lift}% more interactions.</span>
+						<span><em class="ds-eb">Your best time</em>{best.label}<small>Your posts then get {best.lift}% more interactions.</small></span>
 						<button class="btn sm" onclick={() => best && save('live_time', best.value)}>Use {timeLabel(best.value)}</button>
 					</div>
 				{/if}
@@ -631,13 +631,18 @@
 						<p class="hint warn-text">This would be an extra round beyond the {roundsIncluded} included in the agreement.</p>
 					{/if}
 					<form class="draft-form" onsubmit={sendDraft}>
-						<div class="f">
-							<label for="dr-file">Upload the draft <span class="hint">(video or photo, up to {DRAFT_MAX_MB} MB)</span></label>
-							<input class="inp" id="dr-file" type="file" accept="video/mp4,video/quicktime,video/webm,image/jpeg,image/png,image/webp,image/heic" onchange={(e) => (draftFile = (e.currentTarget as HTMLInputElement).files?.[0] ?? null)} />
+						<div class="df-h"><span>New draft</span><b>Round {c.drafts.length + 1}</b></div>
+						<div class="df-file">
+							<input id="dr-file" type="file" accept="video/mp4,video/quicktime,video/webm,image/jpeg,image/png,image/webp,image/heic" onchange={(e) => (draftFile = (e.currentTarget as HTMLInputElement).files?.[0] ?? null)} />
+							<label for="dr-file" class="df-drop" class:has={!!draftFile}>
+								<span class="df-ic"><Icon name={draftFile ? 'check' : 'plus'} /></span>
+								<b>{draftFile ? draftFile.name : 'Upload the draft'}</b>
+								<small>{draftFile ? `${Math.max(1, Math.round(draftFile.size / 1048576))} MB · tap to change` : `Video or photo, up to ${DRAFT_MAX_MB} MB`}</small>
+							</label>
 							{#if draftFile && draftFile.size > DRAFT_MAX_MB * 1024 * 1024}<p class="hint warn-text" style="margin-top:6px">{Math.round(draftFile.size / 1048576)} MB is too big. Add a Drive link below instead.</p>{/if}
 						</div>
 						<div class="f"><label for="dr-link">Or a link to it</label><input class="inp" id="dr-link" placeholder="Google Drive or WeTransfer link" bind:value={draftForm.link} /></div>
-						<div class="f"><label for="dr-cap">Caption <span class="cap-start">Start from the brief: <button type="button" class="lnk" onclick={() => c && (draftForm.caption = captionStarter(c, 'short'))}>Short</button> · <button type="button" class="lnk" onclick={() => c && (draftForm.caption = captionStarter(c, 'detailed'))}>Detailed</button> · <button type="button" class="lnk ai-lnk" disabled={capBusy} onclick={writeCaption}><Icon name="spark" />{capBusy ? 'Writing…' : 'Write with AI'}</button></span></label><textarea class="inp" id="dr-cap" rows="3" placeholder="#ad The caption you plan to post, with @brand tag" bind:value={draftForm.caption}></textarea>{#if shots.length}<div class="ai-shots"><span class="lbl-t">Shot list</span><ol>{#each shots as sh, i (i)}<li>{sh}</li>{/each}</ol></div>{/if}
+						<div class="f"><label for="dr-cap">Caption</label><div class="df-starts"><span>Start from the brief</span><button type="button" onclick={() => c && (draftForm.caption = captionStarter(c, 'short'))}>Short</button><button type="button" onclick={() => c && (draftForm.caption = captionStarter(c, 'detailed'))}>Detailed</button><button type="button" class="ai" disabled={capBusy} onclick={writeCaption}><Icon name="spark" />{capBusy ? 'Writing…' : 'Write with AI'}</button></div><textarea class="inp" id="dr-cap" rows="3" placeholder="#ad The caption you plan to post, with @brand tag" bind:value={draftForm.caption}></textarea>{#if shots.length}<div class="ai-shots"><span class="lbl-t">Shot list</span><ol>{#each shots as sh, i (i)}<li>{sh}</li>{/each}</ol></div>{/if}
 							{#if draftForm.caption.trim()}
 								{@const bc = briefCheck(draftForm.caption, c.brand.instagram, c.brief_details, c.type)}
 								<div class="cap-check" aria-live="polite">
@@ -653,7 +658,7 @@
 								<small>Keep this screen open. If the signal drops, the upload carries on from where it stopped.</small>
 							</div>
 						{:else}
-							<button class="btn sm primary" type="submit" disabled={draftBusy || (!draftFile && !draftForm.link.trim() && !draftForm.caption.trim())}><Icon name="send" />Send draft {c.drafts.length + 1} for approval</button>
+							<button class="btn df-send" type="submit" disabled={draftBusy || (!draftFile && !draftForm.link.trim() && !draftForm.caption.trim())}><Icon name="send" />Send draft {c.drafts.length + 1} for approval</button>
 						{/if}
 					</form>
 				{:else}
