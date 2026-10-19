@@ -296,6 +296,7 @@
 					<a class="cs-row" href="?s={x.id}" onclick={(e) => (e.preventDefault(), open(x.id))}><Icon name={x.icon} /><span>{x.label}</span>{#if x.warn}<i class="cs-dot" title={x.warn}></i>{/if}</a>
 				{/each}
 			{/each}
+			<a class="cs-row" href="/studio/qr"><Icon name="qr" /><span>QR codes: look and extra codes</span></a>
 			<a class="cs-row" href="/studio/import"><Icon name="layers" /><span>Import collabs</span></a>
 			<button class="cs-row" onclick={toggleTheme}><Icon name={theme.value === 'dark' ? 'sun' : 'moon'} /><span>{theme.value === 'dark' ? 'Light look' : 'Dark look'}</span></button>
 			{#if pwa.installEvent && !pwa.installed}<button class="cs-row" onclick={install}><Icon name="download" /><span>Install the app</span></button>{/if}
@@ -317,6 +318,11 @@
 				<Icon name="chevR" class="set-chev" />
 			</a>
 		{/each}
+		<a class="set-item" href="/studio/qr">
+			<span class="set-ic"><Icon name="qr" /></span>
+			<span class="set-t"><b>QR codes</b><small>Their look, colours and extra codes for events</small></span>
+			<Icon name="chevR" class="set-chev" />
+		</a>
 	</nav>
 	{#if active && current}
 		<div class="set-body">

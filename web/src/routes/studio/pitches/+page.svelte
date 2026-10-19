@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { ask } from '#lib/confirm.svelte.ts';
 	import { onMount } from 'svelte';
-	import { createCollab, studio } from '#lib/studio.svelte.ts';
+	import { createCollab, saveSettings, studio } from '#lib/studio.svelte.ts';
 	import { supabase } from '#lib/supabase.ts';
 	import { askAi } from '#lib/ai.ts';
 	import { toast, ui } from '#lib/ui.svelte.ts';
@@ -16,7 +16,7 @@
 	// Brands she'd like to work with: a wishlist, a pitch from her own email, polite follow-ups.
 	type Pitch = {
 		id: string; brand_name: string; instagram: string; category: string; contact_name: string; email: string; subject: string; body: string;
-		status: 'idea' | 'sent' | 'replied' | 'won' | 'not_now'; auto_follow: boolean; followups: number; sent_at: string | null; next_follow_on: string | null; collab_id: string | null; created_at: string;
+		status: 'idea' | 'ready' | 'sent' | 'replied' | 'won' | 'not_now' | 'skipped'; auto_follow: boolean; website?: string; source?: string; fit_note?: string; approved?: boolean; send_after?: string | null; followups: number; sent_at: string | null; next_follow_on: string | null; collab_id: string | null; created_at: string;
 	};
 	let list = $state<Pitch[]>([]);
 	let loaded = $state(false);
@@ -35,9 +35,37 @@
 	const s = $derived(studio.settings!);
 	const link = $derived((s.site_url || location.origin).replace(/\/$/, ''));
 	const LABEL: Record<Pitch['status'], { t: string; k: string }> = {
-		idea: { t: 'Wishlist', k: 'plain' }, sent: { t: 'Pitched', k: 'k-new' }, replied: { t: 'Replied', k: 'k-pay' }, won: { t: 'Won', k: 'k-live' }, not_now: { t: 'Not now', k: 'plain' }
+		idea: { t: 'Wishlist', k: 'plain' }, sent: { t: 'Pitched', k: 'k-new' }, replied: { t: 'Replied', k: 'k-pay' }, won: { t: 'Won', k: 'k-live' }, not_now: { t: 'Not now', k: 'plain' }, ready: { t: 'Ready', k: 'k-new' }, skipped: { t: 'Skipped', k: 'plain' }
 	};
-	const shown = $derived(list.filter((p) => show === 'all' || ['idea', 'sent', 'replied'].includes(p.status)));
+	const shown = $derived(list.filter((p) => p.status !== 'ready' && (show === 'all' || ['idea', 'sent', 'replied'].includes(p.status))));
+	// Pitch autopilot: what's queued to go out today, soonest first.
+	const ready = $derived(list.filter((p) => p.status === 'ready').sort((a, b) => (a.send_after ?? '').localeCompare(b.send_after ?? '')));
+	const auto = $derived(s.pitch_mode === 'auto');
+	const waiting = $derived(ready.filter((p) => !p.approved && !auto));
+	const at = (t: string | null | undefined) => (t ? new Date(t).toLocaleString('en-IN', { weekday: new Date(t).toDateString() === new Date().toDateString() ? undefined : 'short', hour: 'numeric', minute: '2-digit' }) : '');
+	const goes = (p: Pitch) => (p.approved || auto ? `Goes out ${at(p.send_after)}` : 'Waiting for your OK');
+	async function approve(ps: Pitch[]) {
+		const { error } = await supabase.from('pitches').update({ approved: true }).in('id', ps.map((p) => p.id));
+		if (error) return toast(errMessage(error), 'alert');
+		toast(ps.length === 1 ? `${ps[0].brand_name} goes out ${at(ps[0].send_after)}` : `${ps.length} pitches approved. They go out one at a time through the day.`, 'send');
+		load();
+	}
+	async function skip(p: Pitch) {
+		await supabase.from('pitches').update({ status: 'skipped' }).eq('id', p.id);
+		toast(`${p.brand_name} skipped. It won't come back.`, 'x');
+		load();
+	}
+	let finding = $state(false);
+	async function findNow() {
+		finding = true;
+		const { data, error } = await supabase.functions.invoke('pitch-finder', { body: {} });
+		finding = false;
+		if (error) return toast(`Couldn't find brands just now: ${errMessage(error)}`, 'alert');
+		const r = data as { added?: number; skipped?: string; error?: string };
+		if (r.error) return toast(r.error, 'alert');
+		toast(r.added ? `${r.added} new brand${r.added === 1 ? '' : 's'} ready` : r.skipped ? `Nothing new: ${r.skipped}` : 'No new brands with a public email today', r.added ? 'check' : 'alert');
+		load();
+	}
 	const counts = $derived({ idea: list.filter((p) => p.status === 'idea').length, sent: list.filter((p) => p.status === 'sent').length, won: list.filter((p) => p.status === 'won').length });
 
 	function template(p: Partial<Pitch>) {
@@ -124,6 +152,60 @@
 	</div>
 	<div class="acts"><button class="btn grad" onclick={newPitch}><Icon name="plus" />New pitch</button></div>
 </header>
+
+<!-- Pitch autopilot: new brands every morning, pitched from her email. -->
+<section class="panel rv pa" style="--i:1">
+	<div class="switch-row" style="border-top:0">
+		<div><b>Pitch autopilot</b><small>Up to {s.pitch_daily ?? 10} new brands a day that suit you and already work with creators, found with Google and checked for a public email on their own website. Sent from your email between 10 AM and 6 PM, one at a time, with two polite follow-ups. A brand is never pitched twice.</small></div>
+		<input type="checkbox" class="tgl" checked={s.pitch_auto ?? false} aria-label="Pitch autopilot" onchange={(e) => saveSettings({ pitch_auto: (e.currentTarget as HTMLInputElement).checked })} />
+	</div>
+	{#if s.pitch_auto}
+		<div class="pa-mode">
+			<Segmented label="How pitches go out" value={s.pitch_mode ?? 'approve'} options={[{ value: 'approve', label: 'Ask me first' }, { value: 'auto', label: 'Fully automatic' }]} onchange={(v) => saveSettings({ pitch_mode: v as 'approve' | 'auto' })} />
+			<small>{auto ? 'Every morning at 8:30 the day’s pitches are written and go out on their own. You get a note with the brands.' : 'Every morning at 8:30 you get a note. Each pitch goes out only after you approve it.'}</small>
+		</div>
+		<div class="pa-acts">
+			<button class="btn" onclick={findNow} disabled={finding}>{#if finding}<span class="spinner"></span>Finding brands…{:else}<Icon name="search" />Find brands now{/if}</button>
+			{#if waiting.length > 1}<button class="btn primary" onclick={() => approve(waiting)}><Icon name="check" />Approve all {waiting.length}</button>{/if}
+		</div>
+	{/if}
+</section>
+
+{#if ready.length}
+	<section class="hs pa-q">
+		<header class="hs-h"><h2>Ready to send</h2><span class="hs-n">{ready.length}</span></header>
+		{#if phone.on}
+			<div class="tks pt-tks">
+				{#each ready as p, i (p.id)}
+					<Ticket name={p.brand_name} sub={[p.category, p.email].filter(Boolean).join(' · ')} task={p.fit_note || p.subject} status={goes(p)} tone={p.approved || auto ? 'ok' : 'warn'} onopen={() => (open = { ...p })} {i}>
+						<span class="pt-tk-acts">
+							{#if !p.approved && !auto}<button class="btn primary" onclick={() => approve([p])}><Icon name="check" />Approve</button>{/if}
+							<button class="icon-btn" aria-label="Read or change the pitch" onclick={() => (open = { ...p })}><Icon name="edit" /></button>
+							<button class="icon-btn" aria-label="Skip this brand" onclick={() => skip(p)}><Icon name="x" /></button>
+						</span>
+					</Ticket>
+				{/each}
+			</div>
+		{:else}
+			<div class="panel pt-list">
+				{#each ready as p (p.id)}
+					<div class="pt-row">
+						<Mono name={p.brand_name} />
+						<div class="pt-b">
+							<b>{p.brand_name}{p.website ? ` · ${p.website.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '')}` : ''}</b>
+							<small><span class="pill tint {p.approved || auto ? 'k-pay' : 'k-new'}">{goes(p)}</span>{p.fit_note} · {p.email}</small>
+						</div>
+						<div class="pt-acts">
+							{#if !p.approved && !auto}<button class="btn sm primary" onclick={() => approve([p])}><Icon name="check" />Approve</button>{/if}
+							<button class="btn sm" onclick={() => (open = { ...p })}><Icon name="edit" />Read</button>
+							<button class="icon-btn" title="Skip" aria-label="Skip this brand" onclick={() => skip(p)}><Icon name="x" /></button>
+						</div>
+					</div>
+				{/each}
+			</div>
+		{/if}
+	</section>
+{/if}
 
 <div class="toolbar rv" style="--i:1">
 	<Segmented label="Show" bind:value={show} options={[{ value: 'open', label: 'In progress' }, { value: 'all', label: 'All' }]} />

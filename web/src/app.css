@@ -2106,3 +2106,9 @@ body{font-feature-settings:'cv11','ss01';letter-spacing:-.005em}
 .rq-lang .hint{display:block;margin-top:8px}
 .instant-note{display:flex!important;align-items:center;gap:5px;margin-top:4px;color:var(--ok)!important;font-weight:600}
 .instant-note .ic{width:13px;height:13px}
+/* Pitch autopilot on the Pitches page */
+.pa .pa-mode{display:grid;gap:8px;padding:0 20px 12px}
+.pa .pa-mode small{font-size:13px;color:var(--ink-3)}
+.pa .pa-acts{display:flex;flex-wrap:wrap;gap:10px;padding:4px 20px 18px}
+.pa-q{margin-top:18px}
+@media (max-width:760px){.pa .pa-mode,.pa .pa-acts{padding-left:16px;padding-right:16px}}

@@ -10,6 +10,7 @@
 	import { PHONE_Q } from '#lib/phone.svelte.ts';
 	import Icon from '#lib/components/Icon.svelte';
 	import Avatar from '#lib/components/Avatar.svelte';
+	import QrShareSheet from '#lib/components/QrShareSheet.svelte';
 
 	// Her profile on the phone, laid out like an Instagram profile: photo and numbers, bio,
 	// buttons, highlight circles into each part of the page, then posts and collabs as grids.
@@ -30,8 +31,10 @@
 	const earned = $derived(studio.collabs.reduce((a, c) => a + (c.pay_received || 0), 0));
 	const followers = $derived(ig?.followers ? compact(ig.followers) : s.followers || '—');
 
+	// The QR code opens as a sheet to share; its look is changed in Settings > QR codes.
+	let qrOpen = $state(false);
 	const HIGHLIGHTS = [
-		{ label: 'QR codes', icon: 'qr', href: '/studio/qr' },
+		{ label: 'QR code', icon: 'qr', href: '#qr' },
 		{ label: 'Rates', icon: 'rupee', href: '/studio/settings?s=rates' },
 		{ label: 'Bookings', icon: 'cal', href: '/studio/settings?s=bookings' },
 		{ label: 'Insights', icon: 'chart', href: '/insights' },
@@ -91,12 +94,16 @@
 	<div class="pf-btns">
 		<a class="btn" href="/studio/settings?s=profile">Edit profile</a>
 		<button class="btn" onclick={share}>Share profile</button>
-		<a class="btn pf-kit" href="/studio/qr" aria-label="Your QR code" title="Your QR code"><Icon name="qr" /></a>
+		<button class="btn pf-kit" onclick={() => (qrOpen = true)} aria-label="Your QR code" title="Your QR code"><Icon name="qr" /></button>
 		<button class="btn pf-kit" onclick={kit} disabled={kitBusy} aria-label="Download media kit PDF">{#if kitBusy}<span class="spinner"></span>{:else}<Icon name="download" />{/if}</button>
 	</div>
 	<div class="pf-hl" aria-label="Highlights">
 		{#each HIGHLIGHTS as h (h.label)}
-			<a class="hl" href={h.href} target={h.href.startsWith('/insights') ? '_blank' : undefined} rel="noopener"><span class="hl-c"><Icon name={h.icon} /></span><span class="hl-l">{h.label}</span></a>
+			{#if h.href === '#qr'}
+				<button class="hl" onclick={() => (qrOpen = true)}><span class="hl-c"><Icon name={h.icon} /></span><span class="hl-l">{h.label}</span></button>
+			{:else}
+				<a class="hl" href={h.href} target={h.href.startsWith('/insights') ? '_blank' : undefined} rel="noopener"><span class="hl-c"><Icon name={h.icon} /></span><span class="hl-l">{h.label}</span></a>
+			{/if}
 		{/each}
 	</div>
 </section>
@@ -164,3 +171,5 @@
 	@keyframes wt-in { from { opacity: 0; transform: translateY(10px) scale(.97); } }
 	@media (prefers-reduced-motion: reduce) { .wt { animation: none; } }
 </style>
+
+{#if qrOpen}<QrShareSheet onclose={() => (qrOpen = false)} />{/if}

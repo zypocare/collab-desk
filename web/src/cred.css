@@ -774,3 +774,4 @@
 @media (max-width: 760px) {
   [data-side="brand"] .bx-avail > header b, [data-side="brand"] .bx-avail header b { font-size: 11px; font-weight: 700; letter-spacing: .17em; text-transform: uppercase; color: var(--ink-3); }
 }
+@media (max-width: 760px) { .pa-q .tk-who small { text-transform: none; letter-spacing: .02em; font-weight: 600; } }

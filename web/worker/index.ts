@@ -37,19 +37,21 @@ export default {
 		try {
 			const kind = url.pathname.slice('/api/ai/'.length);
 			if (kind === 'status') return json(await status(req, env));
-			if (!['dm', 'reply', 'caption', 'pitch', 'classify', 'fit', 'summary', 'negotiate', 'script', 'nudge', 'ask', 'voice', 'embed', 'cheer'].includes(kind)) return json({ error: 'Unknown.' }, 404);
+			if (!['dm', 'reply', 'caption', 'pitch', 'classify', 'fit', 'summary', 'negotiate', 'script', 'nudge', 'ask', 'voice', 'embed', 'cheer', 'scout'].includes(kind)) return json({ error: 'Unknown.' }, 404);
 			const body = (await req.json()) as Record<string, unknown>;
 			const job = (x: Run) =>
-				kind === 'cheer' ? cheer(x, body) : kind === 'dm' ? readDm(x, body) : kind === 'reply' ? replies(x, body) : kind === 'pitch' ? pitch(x, body) : kind === 'classify' ? classify(x, body) : kind === 'fit' ? fit(x, body) : kind === 'summary' ? summary(x, body) : kind === 'negotiate' ? negotiate(x, body) : kind === 'script' ? script(x, body) : kind === 'nudge' ? nudge(x, body) : kind === 'ask' ? ask(x, body) : kind === 'voice' ? voice(x, body) : kind === 'embed' ? embed(x, body) : caption(x, body);
+				kind === 'cheer' ? cheer(x, body) : kind === 'scout' ? scout(x, body) : kind === 'dm' ? readDm(x, body) : kind === 'reply' ? replies(x, body) : kind === 'pitch' ? pitch(x, body) : kind === 'classify' ? classify(x, body) : kind === 'fit' ? fit(x, body) : kind === 'summary' ? summary(x, body) : kind === 'negotiate' ? negotiate(x, body) : kind === 'script' ? script(x, body) : kind === 'nudge' ? nudge(x, body) : kind === 'ask' ? ask(x, body) : kind === 'voice' ? voice(x, body) : kind === 'embed' ? embed(x, body) : caption(x, body);
 
 			// Checking an incoming Instagram DM comes from the DM webhook with a single-use pass, and the
 			// hourly fun nudge from its job the same way. DMs stay on Cloudflare (never sent to Google);
 			// the fun nudges are written by Gemini first (wittier), Cloudflare if Gemini can't.
-			if (kind === 'classify' || kind === 'cheer') {
+			// The daily pitch finder comes the same way for finding brands (Gemini with Google Search) and
+			// writing their pitches (Gemini first).
+			if (kind === 'classify' || kind === 'cheer' || kind === 'scout' || (kind === 'pitch' && req.headers.get('x-ai-ticket'))) {
 				const allowed = await takeTicket(req, env, kind);
 				if (allowed !== true) return json({ error: allowed }, 403);
 				let why = env.GEMINI_API_KEY ? '' : 'no Gemini key';
-				if (kind === 'cheer' && env.GEMINI_API_KEY) {
+				if (kind !== 'classify' && env.GEMINI_API_KEY) {
 					try {
 						return json({ ...(await job({ env, gemini: true, neurons: 0 })), by: 'gemini' });
 					} catch (e) {
@@ -195,7 +197,7 @@ function voiceOf(b: Record<string, unknown>) {
 const private_ = (t: string) => t.replace(/[\w.+-]+@[\w-]+\.[\w.]{2,}/g, '[email]').replace(/(?:\+?91[\s-]?)?[6-9]\d{4}[\s-]?\d{5}\b/g, '[phone]').replace(/\+?\d[\d\s-]{8,}\d/g, (m) => (m.replace(/\D/g, '').length >= 10 ? '[phone]' : m));
 
 /** Google Gemini's free tier (a key with no billing attached, so it can't charge). */
-async function gemini(env: Env, system: string, user: string, max: number, temperature = 0.3) {
+async function gemini(env: Env, system: string, user: string, max: number, temperature = 0.3, search = false) {
 	for (const model of ['gemini-flash-latest', 'gemini-2.5-flash']) {
 		for (const thinking of [true, false]) {
 			const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
@@ -205,8 +207,10 @@ async function gemini(env: Env, system: string, user: string, max: number, tempe
 				body: JSON.stringify({
 					systemInstruction: { parts: [{ text: system }] },
 					contents: [{ role: 'user', parts: [{ text: user }] }],
+					// Looking things up on the web: Google Search inside Gemini (JSON mode can't be used with it).
+					...(search ? { tools: [{ google_search: {} }] } : {}),
 					// Jobs that ask for JSON get Gemini's JSON mode, so the reply is never loose prose.
-					generationConfig: { temperature, maxOutputTokens: max, ...(/Return ONLY JSON/.test(system) ? { responseMimeType: 'application/json' } : {}), ...(thinking ? { thinkingConfig: { thinkingBudget: 0 } } : {}) }
+					generationConfig: { temperature, maxOutputTokens: max, ...(!search && /Return ONLY JSON/.test(system) ? { responseMimeType: 'application/json' } : {}), ...(thinking ? { thinkingConfig: { thinkingBudget: 0 } } : {}) }
 				})
 			});
 			if (r.status === 429) throw new Error('USED_UP');
@@ -407,6 +411,41 @@ Return ONLY JSON: {"text": "the message"}`,
 	const text = String(firstJson(reply)?.text ?? '').trim();
 	if (!text) throw new Error('No clear answer from the AI.');
 	return { text };
+}
+
+// ---------- 5a. Finding brands to pitch (Gemini with Google Search) ----------
+// Real brands that suit her and already work with creators, with their official website. The
+// daily finder then checks each website itself for a public email before anything is written.
+async function scout(x: Run, b: Record<string, unknown>) {
+	if (!x.gemini) throw new Error('!Finding brands needs the Gemini key.');
+	const n = Math.min(20, Math.max(1, Math.round(Number(b.count) || 12)));
+	const skip = (Array.isArray(b.exclude) ? b.exclude : []).map((t) => String(t ?? '').slice(0, 60)).filter(Boolean).slice(0, 200);
+	const reply = await gemini(
+		x.env,
+		`You find brands for an Indian Instagram creator to pitch for paid collaborations. Use Google Search. Find ${n} real, currently active brands or businesses that:
+- fit her content and audience (details below), and sell in India (D2C brands, Indian labels, and businesses in or near her city: cafes, restaurants, studios, stays, experiences);
+- already work with Instagram creators (influencer campaigns, ambassador or creator programmes, gifting, paid partnerships), ideally recently;
+- are a realistic fit for her size (skip global giants that only work through big agencies).
+Never include any brand in the exclude list, and no duplicates. Only brands you found in search results with an official website you saw; never invent a brand, a website or a handle.
+For each give: "name", "website" (the official site, https://...), "instagram" (handle without @, or ""), "category" (one of: Beauty, Fashion, Food & drink, Travel, Fitness, Wellness, Tech, Home, Lifestyle, Other), "why" (one specific line, under 20 words, why they suit her, e.g. "Bengaluru café chain that hosted creator tastings for its new menu in 2026").
+Return ONLY a JSON array of objects, nothing else.`,
+		`Creator: ${JSON.stringify(b.creator ?? {}).slice(0, 1200)}\nExclude (already known or pitched): ${skip.join(', ') || 'none'}`,
+		4000,
+		0.7,
+		true
+	);
+	const a = reply.indexOf('['), z = reply.lastIndexOf(']');
+	let list: Record<string, unknown>[] = [];
+	try {
+		list = a >= 0 && z > a ? (JSON.parse(reply.slice(a, z + 1)) as Record<string, unknown>[]) : [];
+	} catch {
+		list = [];
+	}
+	const brands = list
+		.map((r) => ({ name: String(r.name ?? '').trim().slice(0, 80), website: String(r.website ?? '').trim().slice(0, 200), instagram: String(r.instagram ?? '').replace(/^@+/, '').trim().slice(0, 60), category: String(r.category ?? 'Other').slice(0, 30), why: String(r.why ?? '').trim().slice(0, 160) }))
+		.filter((r) => r.name && /^https?:\/\/[^\s/]+\.[^\s]+/.test(r.website));
+	if (!brands.length) throw new Error(`No brands came back: ${reply.replace(/\s+/g, ' ').slice(0, 120)}`);
+	return { brands };
 }
 
 // ---------- 5b2. The hourly fun nudge: one funny, kind, useful phone notification ----------

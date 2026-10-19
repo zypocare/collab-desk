@@ -1,0 +1,205 @@
+// Pitch autopilot, once a day (8:30 AM India) from the database cron job, or when she taps "Find
+// brands now". Up to 10 new brands a day: found by Gemini with Google Search, checked on their own
+// website for a public business email (brands without one are left out), a pitch written for each,
+// and queued to go out between 10 AM and 6 PM, one at a time (private.pitch_send_due sends them).
+// "approve": each waits for her tap; "auto": they go out on their own. A brand is never pitched twice.
+//   ?dry=1        find and write, save nothing, send nothing
+//   ?site=<url>   where the AI lives (local testing)
+import { createClient } from 'npm:@supabase/supabase-js@2';
+import { admin, cronAllowed, todayIST } from '../_shared/admin.ts';
+import { pushToCreator } from '../_shared/push.ts';
+
+const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type' };
+type Brand = { name: string; website: string; instagram: string; category: string; why: string };
+type Found = Brand & { email: string; domain: string };
+
+const norm = (t: string) => t.toLowerCase().normalize('NFKD').replace(/[^a-z0-9]/g, '');
+const domainOf = (u: string) => {
+  try {
+    return new URL(u).hostname.replace(/^www\./, '').toLowerCase();
+  } catch {
+    return '';
+  }
+};
+
+Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
+  const reply = (body: unknown, status = 200) => Response.json(body, { status, headers: cors });
+  const url = new URL(req.url);
+  const dry = url.searchParams.get('dry') === '1';
+  // The cron job, or the creator herself ("Find brands now").
+  let manual = false;
+  if (!cronAllowed(req)) {
+    const asUser = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_ANON_KEY')!, {
+      global: { headers: { Authorization: req.headers.get('Authorization') ?? '' } },
+      auth: { persistSession: false },
+    });
+    const { data: ok } = await asUser.rpc('is_creator');
+    if (ok !== true) return reply({ error: 'Only the creator can do this.' }, 403);
+    manual = true;
+  }
+  const db = admin();
+  const { data: s } = await db
+    .from('creator_settings')
+    .select('pitch_auto, pitch_mode, pitch_daily, display_name, handle, niche, city, followers, engagement, content_languages, site_url')
+    .eq('id', 1)
+    .single();
+  if (!s) return reply({ error: 'No settings.' }, 500);
+  if (!s.pitch_auto && !manual && !dry) return reply({ skipped: 'autopilot is off' });
+
+  const today = todayIST();
+  const { data: all } = await db.from('pitches').select('brand_name, instagram, email, website, status, approved, found_on');
+  const pitches = all ?? [];
+  // Never more than her daily number waiting: what's still waiting and what was found today count.
+  const waiting = pitches.filter((p) => p.status === 'ready' && !p.approved && s.pitch_mode === 'approve').length;
+  const foundToday = pitches.filter((p) => p.found_on === today).length;
+  const want = Math.max(0, (s.pitch_daily ?? 10) - Math.max(waiting, foundToday));
+  if (!want) return reply({ skipped: waiting ? `${waiting} still waiting for you` : 'today is done' });
+
+  // Everything already known, so nothing comes back twice.
+  const { data: brands } = await db.from('brands').select('name, instagram, website');
+  const seenName = new Set([...pitches.map((p) => norm(p.brand_name)), ...(brands ?? []).map((b) => norm(b.name))].filter(Boolean));
+  const seenIg = new Set([...pitches.map((p) => norm(p.instagram)), ...(brands ?? []).map((b) => norm(b.instagram ?? ''))].filter(Boolean));
+  const seenDomain = new Set(
+    [...pitches.map((p) => domainOf(p.website || '') || (p.email ?? '').split('@')[1] || ''), ...(brands ?? []).map((b) => domainOf(b.website ?? ''))]
+      .filter((d) => d && !/gmail|yahoo|outlook|hotmail/.test(d))
+  );
+
+  const { data: ig } = await db.from('ig_account').select('followers, avg_views, username').eq('id', 1).maybeSingle();
+  const { data: done } = await db.from('collabs').select('stage, brand:brands(name, category)').in('stage', ['live', 'wrapped']).limit(60);
+  const pastBrands = [...new Set((done ?? []).map((c) => (c.brand as unknown as { name: string } | null)?.name).filter(Boolean))] as string[];
+  const pastCats = [...new Set((done ?? []).map((c) => (c.brand as unknown as { category: string } | null)?.category).filter(Boolean))] as string[];
+  const site = String(url.searchParams.get('site') || s.site_url || 'https://collab-desk.zypocare.workers.dev').replace(/\/$/, '');
+  const page = String(s.site_url || site).replace(/\/$/, '');
+  const creator = {
+    name: s.display_name, handle: s.handle, niche: s.niche, city: s.city, languages: s.content_languages,
+    followers: ig?.followers ?? s.followers, avg_views: ig?.avg_views ?? null, engagement: s.engagement,
+    worked_with: pastBrands.slice(0, 12), categories_that_paid: pastCats.slice(0, 8),
+  };
+
+  // 1. Brands (Gemini with Google Search).
+  const exclude = [...new Set([...pitches.map((p) => p.brand_name), ...(brands ?? []).map((b) => b.name)])].slice(0, 200);
+  const scouted = await ai<{ brands: Brand[] }>(db, site, 'scout', { count: Math.min(20, want * 2 + 2), creator, exclude });
+  if (!scouted?.brands?.length) return reply({ error: 'No brands came back from the search.', detail: scouted }, 502);
+  const fresh = scouted.brands.filter((b) => {
+    const d = domainOf(b.website);
+    return d && !seenName.has(norm(b.name)) && !(b.instagram && seenIg.has(norm(b.instagram))) && !seenDomain.has(d);
+  });
+
+  // 2. A public business email on each brand's own website (five at a time).
+  const found: Found[] = [];
+  for (let i = 0; i < fresh.length && found.length < want; i += 5) {
+    const batch = await Promise.all(fresh.slice(i, i + 5).map(async (b) => ({ ...b, domain: domainOf(b.website), email: await siteEmail(b.website) })));
+    for (const b of batch) if (b.email && found.length < want && !found.some((f) => f.domain === b.domain)) found.push(b);
+  }
+
+  // 3. A pitch for each (Gemini first), queued through the day.
+  const slots = sendTimes(found.length);
+  const rows = [];
+  for (const [k, b] of found.entries()) {
+    const w = await ai<{ subject: string; body: string }>(db, site, 'pitch', {
+      brand: b.name, brand_instagram: b.instagram, category: b.category, contact: '', why_they_fit: b.why,
+      creator: s.display_name, handle: s.handle, niche: s.niche, city: s.city, followers: creator.followers,
+      engagement: s.engagement, page_link: page, past_brands: pastBrands.slice(0, 5),
+    });
+    const subject = w?.subject?.trim() || `Content idea for ${b.name}`;
+    const body =
+      (w?.body?.trim() ||
+        `Hi there,\n\nI'm ${s.display_name} (@${s.handle}), a ${s.niche || 'lifestyle'} creator from ${s.city || 'India'}. I love what ${b.name} is doing and would really enjoy creating content for you.\n\nMy rates, past work and live Instagram numbers are all here: ${page}\n\nWould you be open to a quick chat?\n\nThanks,\n${s.display_name}`) +
+      `\n\nNot the right fit right now? Just reply "no" and I won't write again.`;
+    rows.push({
+      brand_name: b.name, instagram: b.instagram, category: b.category, email: b.email, website: b.website, subject, body,
+      status: 'ready', source: 'autopilot', fit_note: b.why, found_on: today, approved: s.pitch_mode === 'auto', send_after: slots[k], auto_follow: true,
+    });
+  }
+  if (dry) return reply({ dry: true, want, scouted: scouted.brands.length, fresh: fresh.length, found: rows.length, rows });
+  if (rows.length) {
+    const { error } = await db.from('pitches').insert(rows);
+    if (error) return reply({ error: error.message }, 500);
+    await pushToCreator(db, {
+      title: s.pitch_mode === 'auto' ? `${rows.length} new brand${rows.length === 1 ? '' : 's'} will be pitched today` : `${rows.length} new brand${rows.length === 1 ? '' : 's'} to pitch`,
+      body: s.pitch_mode === 'auto' ? `${rows.slice(0, 3).map((r) => r.brand_name).join(', ')}${rows.length > 3 ? ' and more' : ''}. They go out from 10 AM.` : `${rows.slice(0, 3).map((r) => r.brand_name).join(', ')}${rows.length > 3 ? ' and more' : ''}. Approve the ones you like.`,
+      url: '/studio/pitches',
+      tag: 'pitch-autopilot',
+    });
+  }
+  return reply({ added: rows.length, scouted: scouted.brands.length, fresh: fresh.length, brands: rows.map((r) => `${r.brand_name} <${r.email}>`) });
+});
+
+/** The AI job through a single-use pass (no keys leave the server). */
+async function ai<T>(db: ReturnType<typeof admin>, site: string, kind: string, payload: Record<string, unknown>): Promise<T | null> {
+  const ticket = crypto.randomUUID() + crypto.randomUUID();
+  const { error } = await db.from('ai_tickets').insert({ token: ticket, kind });
+  if (error) return null;
+  const r = await fetch(`${site}/api/ai/${kind}`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', 'x-ai-ticket': ticket, apikey: Deno.env.get('SUPABASE_ANON_KEY') ?? '' },
+    body: JSON.stringify(payload),
+    signal: AbortSignal.timeout(90_000),
+  }).catch(() => null);
+  return ((await r?.json().catch(() => null)) as T | null) ?? null;
+}
+
+/** Today's send times: from 10 AM (or now, if later) every 45 minutes until 6 PM, then tomorrow. */
+function sendTimes(n: number) {
+  const out: string[] = [];
+  const ist = (d: Date) => new Date(d.getTime() + 5.5 * 3600e3);
+  let t = new Date(Math.max(Date.now() + 10 * 60e3, Date.parse(`${todayIST()}T10:00:00+05:30`)));
+  for (let i = 0; i < n; i++) {
+    if (ist(t).getUTCHours() >= 18) t = new Date(Date.parse(`${todayIST(1)}T10:00:00+05:30`));
+    out.push(t.toISOString());
+    t = new Date(t.getTime() + 45 * 60e3);
+  }
+  return out;
+}
+
+// ---------- a public business email from the brand's own website ----------
+const EMAIL = /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g;
+const BAD = /(\.(png|jpe?g|gif|webp|svg|css|js)$)|example\.|sentry|wixpress|domain\.com|email\.com|yourname|@2x|noreply|no-reply|donotreply|privacy|legal|grievance|careers|jobs|hr@|recruit/i;
+const GOOD = ['collab', 'influenc', 'creator', 'partner', 'marketing', 'pr@', 'brand', 'social', 'media', 'hello', 'contact', 'info', 'care', 'support'];
+
+async function siteEmail(website: string): Promise<string> {
+  const base = (() => {
+    try {
+      const u = new URL(website);
+      return `${u.protocol}//${u.host}`;
+    } catch {
+      return '';
+    }
+  })();
+  if (!base) return '';
+  const domain = domainOf(base);
+  const home = await get(base);
+  if (!home) return '';
+  const links = [...home.matchAll(/href=["']([^"'#]+)["']/gi)]
+    .map((m) => m[1])
+    .filter((h) => /contact|collab|partner|influenc|creator|about/i.test(h))
+    .map((h) => (h.startsWith('http') ? h : `${base}${h.startsWith('/') ? '' : '/'}${h}`))
+    .filter((h) => domainOf(h) === domain);
+  const extra = [...new Set([...links, `${base}/pages/contact`, `${base}/contact`, `${base}/contact-us`])].slice(0, 4);
+  const pages = [home, ...(await Promise.all(extra.map(get)))].filter(Boolean) as string[];
+  const emails = new Set<string>();
+  for (const html of pages) {
+    for (const m of html.matchAll(/data-cfemail=["']([0-9a-f]+)["']/gi)) emails.add(cfDecode(m[1]));
+    for (const m of html.replace(/&#64;|\[at\]|\(at\)/gi, '@').matchAll(EMAIL)) emails.add(m[0]);
+  }
+  const ok = [...emails].map((e) => e.toLowerCase().replace(/^mailto:/, '')).filter((e) => !BAD.test(e));
+  // Their own domain first, then the most collab-like address.
+  const score = (e: string) => (e.endsWith('@' + domain) || e.endsWith('.' + domain) ? 100 : /gmail|yahoo|outlook/.test(e) ? 10 : 0) + (20 - Math.min(20, GOOD.findIndex((g) => e.includes(g)) >>> 0));
+  return ok.sort((a, b) => score(b) - score(a))[0] ?? '';
+}
+async function get(u: string): Promise<string> {
+  try {
+    const r = await fetch(u, { headers: { 'user-agent': 'Mozilla/5.0 (compatible; CollabDesk/1.0; +creator pitch)', accept: 'text/html' }, redirect: 'follow', signal: AbortSignal.timeout(7000) });
+    if (!r.ok || !(r.headers.get('content-type') ?? '').includes('html')) return '';
+    return (await r.text()).slice(0, 800_000);
+  } catch {
+    return '';
+  }
+}
+function cfDecode(hex: string) {
+  const k = parseInt(hex.slice(0, 2), 16);
+  let out = '';
+  for (let i = 2; i < hex.length; i += 2) out += String.fromCharCode(parseInt(hex.slice(i, i + 2), 16) ^ k);
+  return out;
+}

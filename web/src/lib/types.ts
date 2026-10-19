@@ -309,6 +309,10 @@ export type Settings = {
 	fun_to?: number;
 	fun_yoga_hour?: number;
 	fun_food?: boolean;
+	/** Pitch autopilot: on, how pitches go out, how many new brands a day (1 to 10). */
+	pitch_auto?: boolean;
+	pitch_mode?: 'approve' | 'auto';
+	pitch_daily?: number;
 	page_card_v?: number;
 	page_card_sig?: string;
 	accepting: boolean;
