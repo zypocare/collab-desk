@@ -303,6 +303,12 @@ export type Settings = {
 	/** Phone reminders about money still to come in, at these hours (India time). */
 	pay_alerts?: boolean;
 	pay_alert_hours?: number[];
+	/** Fun nudges through the day (India time hours; yoga 0 = off). */
+	fun_nudges?: boolean;
+	fun_from?: number;
+	fun_to?: number;
+	fun_yoga_hour?: number;
+	fun_food?: boolean;
 	page_card_v?: number;
 	page_card_sig?: string;
 	accepting: boolean;

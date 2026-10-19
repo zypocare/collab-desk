@@ -442,6 +442,9 @@ verify_jwt = false
 [functions.push-test]
 verify_jwt = false
 
+[functions.day-nudges]
+verify_jwt = false
+
 # Called by the Gmail watcher script, protected by the private inbox token.
 [functions.bank-alert]
 verify_jwt = false

@@ -85,6 +85,8 @@
 
 	// Times for the pending-payment notification (India time), up to six a day.
 	const HOURS = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22];
+	// Fun nudges: any hour from 5 AM to 11 PM.
+	const FUN_HOURS = Array.from({ length: 19 }, (_, i) => i + 5);
 	const hours = $derived([...(s.pay_alert_hours ?? [9, 13, 17, 21])].sort((a, b) => a - b));
 	const hourLabel = (h: number) => (h === 12 ? '12 PM' : h > 12 ? `${h - 12} PM` : `${h} AM`);
 	function toggleHour(h: number) {
@@ -112,6 +114,22 @@
 				<button type="button" class="pay-h" class:on={hours.includes(h)} aria-pressed={hours.includes(h)} onclick={() => toggleHour(h)}>{hourLabel(h)}</button>
 			{/each}
 			<small>{hours.length} a day{hours.length >= 6 ? ' (the most)' : ''}</small>
+		</div>
+	{/if}
+
+	<div class="switch-row">
+		<div><b>Fun nudges through the day</b><small>A funny, useful note every hour: your work in between water and food, yoga in the evening and a wind-down at night. Written fresh from your real day, never the same line twice. Phone alerts must be on (above).</small></div>
+		<input type="checkbox" class="tgl" checked={s.fun_nudges ?? true} aria-label="Fun nudges through the day" onchange={(e) => saveSettings({ fun_nudges: (e.currentTarget as HTMLInputElement).checked })} />
+	</div>
+	{#if s.fun_nudges ?? true}
+		<div class="fun-set">
+			<div class="f"><label for="fun-from">From</label><Select id="fun-from" value={s.fun_from ?? 11} options={FUN_HOURS.filter((h) => h <= (s.fun_to ?? 23)).map((h) => ({ value: h, label: hourLabel(h) }))} onchange={(v) => saveSettings({ fun_from: v })} /></div>
+			<div class="f"><label for="fun-to">Until</label><Select id="fun-to" value={s.fun_to ?? 23} options={FUN_HOURS.filter((h) => h >= (s.fun_from ?? 11)).map((h) => ({ value: h, label: hourLabel(h) }))} onchange={(v) => saveSettings({ fun_to: v })} /></div>
+			<div class="f"><label for="fun-yoga">Yoga</label><Select id="fun-yoga" value={s.fun_yoga_hour ?? 18} options={[{ value: 0, label: 'No yoga reminder' }, ...FUN_HOURS.map((h) => ({ value: h, label: hourLabel(h) }))]} onchange={(v) => saveSettings({ fun_yoga_hour: v })} /></div>
+		</div>
+		<div class="switch-row">
+			<div><b>Food and water</b><small>Water, lunch, chai and dinner reminders between the work ones.</small></div>
+			<input type="checkbox" class="tgl" checked={s.fun_food ?? true} aria-label="Food and water reminders" onchange={(e) => saveSettings({ fun_food: (e.currentTarget as HTMLInputElement).checked })} />
 		</div>
 	{/if}
 
@@ -167,4 +185,6 @@
 	.pay-h { height: 34px; padding: 0 12px; border: 1px solid var(--line); border-radius: 999px; background: none; color: var(--ink-2); font: 500 13.5px var(--f-body); cursor: pointer; }
 	.pay-h.on { border-color: transparent; background: var(--ink); color: var(--surface); }
 	.pay-hours small { font-size: 12.5px; color: var(--ink-3); margin-left: 4px; }
+	.fun-set { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; padding: 0 18px 14px; }
+	@media (max-width: 760px) { .fun-set { gap: 12px; padding: 0 16px 10px; } }
 </style>

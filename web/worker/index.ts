@@ -18,7 +18,7 @@ type Env = {
 type Run = { env: Env; gemini: boolean; neurons: number };
 
 // Expected size of each job in Cloudflare neurons (reserved before, corrected after).
-const COST: Record<string, number> = { dm: 160, reply: 110, caption: 110, pitch: 140, fit: 230, classify: 40, summary: 220, negotiate: 210, script: 330, nudge: 120, ask: 260, voice: 60, embed: 8 };
+const COST: Record<string, number> = { dm: 160, reply: 110, caption: 110, pitch: 140, fit: 230, classify: 40, summary: 220, negotiate: 210, script: 330, nudge: 120, ask: 260, voice: 60, embed: 8, cheer: 60 };
 // Cloudflare's price list in neurons per token (Llama 3.3 70B fast; Llama 3.2 11B vision).
 const PER_TOKEN = { text: [0.0267, 0.2048], vision: [0.0045, 0.0615] };
 const USED_UP = "Today's free AI is used up. It's back at 5:30 am.";
@@ -37,15 +37,15 @@ export default {
 		try {
 			const kind = url.pathname.slice('/api/ai/'.length);
 			if (kind === 'status') return json(await status(req, env));
-			if (!['dm', 'reply', 'caption', 'pitch', 'classify', 'fit', 'summary', 'negotiate', 'script', 'nudge', 'ask', 'voice', 'embed'].includes(kind)) return json({ error: 'Unknown.' }, 404);
+			if (!['dm', 'reply', 'caption', 'pitch', 'classify', 'fit', 'summary', 'negotiate', 'script', 'nudge', 'ask', 'voice', 'embed', 'cheer'].includes(kind)) return json({ error: 'Unknown.' }, 404);
 			const body = (await req.json()) as Record<string, unknown>;
 			const job = (x: Run) =>
-				kind === 'dm' ? readDm(x, body) : kind === 'reply' ? replies(x, body) : kind === 'pitch' ? pitch(x, body) : kind === 'classify' ? classify(x, body) : kind === 'fit' ? fit(x, body) : kind === 'summary' ? summary(x, body) : kind === 'negotiate' ? negotiate(x, body) : kind === 'script' ? script(x, body) : kind === 'nudge' ? nudge(x, body) : kind === 'ask' ? ask(x, body) : kind === 'voice' ? voice(x, body) : kind === 'embed' ? embed(x, body) : caption(x, body);
+				kind === 'cheer' ? cheer(x, body) : kind === 'dm' ? readDm(x, body) : kind === 'reply' ? replies(x, body) : kind === 'pitch' ? pitch(x, body) : kind === 'classify' ? classify(x, body) : kind === 'fit' ? fit(x, body) : kind === 'summary' ? summary(x, body) : kind === 'negotiate' ? negotiate(x, body) : kind === 'script' ? script(x, body) : kind === 'nudge' ? nudge(x, body) : kind === 'ask' ? ask(x, body) : kind === 'voice' ? voice(x, body) : kind === 'embed' ? embed(x, body) : caption(x, body);
 
-			// Checking an incoming Instagram DM comes from the DM webhook with a single-use pass
-			// (Cloudflare only: DMs are never sent to the backup automatically).
-			if (kind === 'classify') {
-				const allowed = await takeTicket(req, env);
+			// Checking an incoming Instagram DM comes from the DM webhook with a single-use pass, and the
+			// hourly fun nudge from its job the same way (Cloudflare only: never sent to the backup).
+			if (kind === 'classify' || kind === 'cheer') {
+				const allowed = await takeTicket(req, env, kind);
 				if (allowed !== true) return json({ error: allowed }, 403);
 				return json(await job({ env, gemini: false, neurons: 0 }));
 			}
@@ -127,7 +127,7 @@ async function status(req: Request, env: Env) {
 }
 
 /** A single-use pass made by the DM webhook (checked and spent by the database). */
-async function takeTicket(req: Request, env: Env): Promise<true | string> {
+async function takeTicket(req: Request, env: Env, want: string): Promise<true | string> {
 	const ticket = req.headers.get('x-ai-ticket') ?? '';
 	const apikey = req.headers.get('apikey') ?? '';
 	if (!ticket || !apikey) return 'Not allowed.';
@@ -137,7 +137,8 @@ async function takeTicket(req: Request, env: Env): Promise<true | string> {
 		body: JSON.stringify({ p_ticket: ticket })
 	});
 	if (!r.ok) return 'Not allowed.';
-	return ((await r.json()) as { ok: boolean }).ok ? true : 'Not allowed.';
+	const j = (await r.json()) as { ok: boolean; kind?: string };
+	return j.ok && (j.kind ?? 'classify') === want ? true : 'Not allowed.';
 }
 
 /** Text out of whatever the model returned. */
@@ -164,9 +165,9 @@ function meter(x: Run, r: unknown, model: 'text' | 'vision', input: string, extr
 	const tout = u?.completion_tokens ?? out(r).length / 4;
 	x.neurons += tin * PER_TOKEN[model][0] + tout * PER_TOKEN[model][1];
 }
-async function chat(x: Run, system: string, user: string, max = 700) {
+async function chat(x: Run, system: string, user: string, max = 700, temperature = 0.3) {
 	if (x.gemini) return gemini(x.env, system, private_(user), max);
-	const r = await x.env.AI.run(TEXT, { messages: [{ role: 'system', content: system }, { role: 'user', content: user }], max_tokens: max, temperature: 0.3 });
+	const r = await x.env.AI.run(TEXT, { messages: [{ role: 'system', content: system }, { role: 'user', content: user }], max_tokens: max, temperature });
 	meter(x, r, 'text', system + user);
 	return out(r);
 }
@@ -393,6 +394,38 @@ Return ONLY JSON: {"text": "the message"}`,
 	const text = String(firstJson(reply)?.text ?? '').trim();
 	if (!text) throw new Error('No clear answer from the AI.');
 	return { text };
+}
+
+// ---------- 5b2. The hourly fun nudge: one funny, kind, useful phone notification ----------
+// The hourly job sends what kind it is (work, water, food, yoga, night), the one fact to build on, and
+// the recent lines already sent; the AI writes a new one. The job checks it isn't a near-copy.
+const CHEER_GOAL: Record<string, string> = {
+	work: 'nudge her to act on the one work fact given (reply, edit, shoot, post, invoice, chase a payment, pitch), so she does it now',
+	water: 'get her to drink a glass of water right now',
+	food: 'get her to eat a proper meal or snack now (the meal named), not skip it for work',
+	yoga: 'get her onto the yoga mat now for her evening practice',
+	night: 'help her wind down and sleep on time; mention tomorrow only if a fact is given'
+};
+async function cheer(x: Run, b: Record<string, unknown>) {
+	const kind = String(b.kind ?? 'work');
+	const recent = (Array.isArray(b.recent) ? b.recent : []).map((t) => String(t ?? '').slice(0, 200)).slice(0, 40);
+	const reply = await chat(
+		x,
+		`You write ONE phone notification for ${String(b.name || 'her').slice(0, 30)}, an Indian Instagram creator in Bengaluru (lifestyle, travel, fashion, yoga, food) who runs her brand collabs in an app. It is ${String(b.when ?? '').slice(0, 40)}. Kind: ${kind}${b.meal ? ` (${String(b.meal)})` : ''}. Goal: ${CHEER_GOAL[kind] ?? CHEER_GOAL.work}.
+Make her smile: playful, witty and warm, like a funny best friend who also manages her career. Creator-life jokes are welcome (reels, hooks, the algorithm, edits, brand DMs, golden hour, chai, filter coffee, Bengaluru traffic and rain). Plain English, at most one light Hinglish word. Never mean, no body or weight talk, no diet advice, no guilt. No hashtags, no quotation marks.
+Use only the facts given; never invent brands, numbers, dates or plans.
+Title: at most 42 characters, may end with one emoji. Body: one or two short sentences, at most 130 characters.
+It must be clearly different from every earlier notification listed (new joke, new angle, new words); don't reuse their openings.
+Return ONLY JSON: {"title": "...", "body": "..."}`,
+		`Fact: ${String(b.fact ?? 'none').slice(0, 300)}\nTry: ${Math.round(Number(b.attempt) || 0) + 1}\nEarlier notifications (do not echo):\n${recent.map((t) => `- ${t}`).join('\n') || '- none yet'}`,
+		160,
+		0.95
+	);
+	const j = firstJson(reply) ?? {};
+	const title = String(j.title ?? '').replace(/["“”]/g, '').trim().slice(0, 60);
+	const body = String(j.body ?? '').replace(/["“”]/g, '').trim().slice(0, 180);
+	if (!title || !body) throw new Error('No clear answer from the AI.');
+	return { title, body };
 }
 
 // ---------- 5b3. "Ask your desk": questions about her own collabs, money and plans ----------
