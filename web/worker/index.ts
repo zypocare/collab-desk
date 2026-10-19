@@ -348,10 +348,14 @@ async function pitch(x: Run, b: Record<string, unknown>) {
 		`You write short pitch emails for an Indian Instagram creator to a brand she would like to collaborate with. Personal, specific to the brand, confident, not pushy. 90 to 140 words. Mention one concrete content idea for the brand, her audience fit (only facts given), and end with an easy next step and her page link. No made-up numbers. Sign with her name.
 Return ONLY JSON: {"subject": "...", "body": "..."} (body is plain text with blank lines between paragraphs).`,
 		JSON.stringify(b).slice(0, 3000),
-		600
+		// Room for newer Gemini models that think before answering.
+		1600
 	);
 	const j = firstJson(reply) ?? {};
-	return { subject: String(j.subject ?? '').trim(), body: String(j.body ?? '').trim() };
+	const subject = String(j.subject ?? '').trim(), text = String(j.body ?? '').trim();
+	// An empty or cut-off answer counts as no answer (the server's run then tries the other AI).
+	if (!subject || text.length < 60) throw new Error('No clear answer from the AI.');
+	return { subject, body: text };
 }
 
 // ---------- 5. Does an Instagram DM look like a brand collaboration? ----------
