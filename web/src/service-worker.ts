@@ -81,7 +81,8 @@ sw.addEventListener('push', (e) => {
 		sw.registration.showNotification(data.title || 'Collab Desk', {
 			body: data.body || '',
 			icon: '/icon-192.png',
-			badge: '/icon-192.png',
+			// Android shows the small icon as a one-colour silhouette: the logo's rings in white.
+			badge: '/badge-96.png',
 			tag: data.tag,
 			// A newer one with the same tag still buzzes (it's a fresh reminder, not an edit).
 			renotify: !!data.tag,

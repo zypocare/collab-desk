@@ -100,7 +100,7 @@
 	<div class="pf-hl" aria-label="Highlights">
 		{#each HIGHLIGHTS as h (h.label)}
 			{#if h.href === '#qr'}
-				<button class="hl" onclick={() => (qrOpen = true)}><span class="hl-c"><Icon name={h.icon} /></span><span class="hl-l">{h.label}</span></button>
+				<button class="hl hl-qr" onclick={() => (qrOpen = true)} aria-label="Show and share your QR code"><span class="hl-c"><span class="hl-in"><Icon name={h.icon} /></span><i class="hl-badge" aria-hidden="true"><Icon name="share" /></i></span><span class="hl-l">{h.label}</span></button>
 			{:else}
 				<a class="hl" href={h.href} target={h.href.startsWith('/insights') ? '_blank' : undefined} rel="noopener"><span class="hl-c"><Icon name={h.icon} /></span><span class="hl-l">{h.label}</span></a>
 			{/if}

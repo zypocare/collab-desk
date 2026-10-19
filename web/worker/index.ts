@@ -166,10 +166,24 @@ const out = (r: unknown) => {
 function firstJson(s: string) {
 	const a = s.indexOf('{'), b = s.lastIndexOf('}');
 	if (a < 0 || b <= a) return null;
+	const raw = s.slice(a, b + 1);
 	try {
-		return JSON.parse(s.slice(a, b + 1)) as Record<string, unknown>;
+		return JSON.parse(raw) as Record<string, unknown>;
 	} catch {
-		return null;
+		// Models often put real line breaks or tabs inside the text of a field: escape those and try again.
+		let out = '', inStr = false, esc = false;
+		for (const ch of raw) {
+			if (inStr && !esc && (ch === '\n' || ch === '\r' || ch === '\t')) out += ch === '\n' ? '\\n' : ch === '\t' ? '\\t' : '';
+			else out += ch;
+			if (esc) esc = false;
+			else if (ch === '\\') esc = true;
+			else if (ch === '"') inStr = !inStr;
+		}
+		try {
+			return JSON.parse(out) as Record<string, unknown>;
+		} catch {
+			return null;
+		}
 	}
 }
 type Usage = { usage?: { prompt_tokens?: number; completion_tokens?: number } };
@@ -354,7 +368,7 @@ Return ONLY JSON: {"subject": "...", "body": "..."} (body is plain text with bla
 	const j = firstJson(reply) ?? {};
 	const subject = String(j.subject ?? '').trim(), text = String(j.body ?? '').trim();
 	// An empty or cut-off answer counts as no answer (the server's run then tries the other AI).
-	if (!subject || text.length < 60) throw new Error('No clear answer from the AI.');
+	if (!subject || text.length < 60) throw new Error(`No clear answer from the AI: ${reply.replace(/\s+/g, ' ').slice(0, 160)}`);
 	return { subject, body: text };
 }
 

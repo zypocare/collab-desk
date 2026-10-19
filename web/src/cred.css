@@ -782,3 +782,16 @@
   [data-side] .th-box .th-in, [data-side] .th-box .th-in:focus, [data-side] .th-box .th-in:focus-visible { outline: none !important; box-shadow: none !important; border: 0 !important; border-radius: 0 !important; background: none !important; }
   [data-side] .th-box .th-cam { width: 38px; height: 38px; margin: 0; box-shadow: none; }
 }
+@media (max-width: 760px) {
+  /* My page circles: a button looks exactly like the links beside it (no grey box when tapped). */
+  [data-side] button.hl { appearance: none; -webkit-appearance: none; margin: 0; padding: 0; border: 0; border-radius: 0; background: none; box-shadow: none; font: inherit; color: var(--ink); cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  [data-side] .hl:focus { outline: none; }
+  [data-side] .hl:focus-visible .hl-c { box-shadow: 0 0 0 3px var(--bg), 0 0 0 5px var(--accent); }
+  /* The QR code: the one to share, so it wears the turning gradient ring and a share badge. */
+  [data-side] .hl-qr .hl-c { position: relative; padding: 2.5px; border: 0; box-sizing: border-box; background: conic-gradient(from var(--cr-a), var(--g3), var(--g2), var(--g1), var(--g3)); box-shadow: none; animation: cr-turn 5s linear infinite; }
+  [data-side] .hl-qr .hl-in { display: grid; place-items: center; width: 100%; height: 100%; border-radius: 50%; border: 2.5px solid var(--bg); box-sizing: border-box; background: var(--surface-2); color: var(--ink); }
+  [data-side] .hl-qr .hl-badge { position: absolute; right: -2px; bottom: -2px; width: 22px; height: 22px; display: grid; place-items: center; border-radius: 50%; border: 2px solid var(--bg); background: linear-gradient(135deg, var(--g1), var(--g2)); color: #fff; }
+  [data-side] .hl-qr .hl-badge .ic { width: 11px; height: 11px; }
+  [data-side] .hl-qr .hl-l { font-weight: 700; }
+  @media (prefers-reduced-motion: reduce) { [data-side] .hl-qr .hl-c { animation: none; } }
+}
