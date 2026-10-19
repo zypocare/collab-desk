@@ -11,6 +11,9 @@
 	// sign-out from anywhere. A new device signing in sends an email.
 	let keys = $state<Passkey[] | null>(null);
 	let devices = $state<Device[]>([]);
+	// Five at a time (this device first), so a long history doesn't fill the screen.
+	let allDevices = $state(false);
+	const shown = $derived(allDevices ? devices : [...devices].sort((a, b) => Number(!!b.current) - Number(!!a.current)).slice(0, 5));
 	let loaded = $state(false);
 	let adding = $state(false);
 	const here = passkeysHere();
@@ -104,7 +107,10 @@
 <section class="panel rv" style="--i:2">
 	<div class="panel-h"><h2>Signed-in devices</h2><small>an email arrives when a new one signs in</small></div>
 	<div class="rv-list">
-		{#each devices as d (d.id)}
+		{#if devices.filter((d) => !d.current).length > 1}
+			<div class="sec-act"><button class="btn sm" onclick={endOthers}><Icon name="logout" />Sign out all other devices</button></div>
+		{/if}
+		{#each shown as d (d.id)}
 			{@const x = describe(d.agent)}
 			<div class="rv-row">
 				<span class="set-ic"><Icon name={x.phone ? 'grid' : 'sidebar'} /></span>
@@ -114,8 +120,8 @@
 		{:else}
 			{#if loaded}<div class="rv-row"><small>No devices found.</small></div>{/if}
 		{/each}
-		{#if devices.filter((d) => !d.current).length > 1}
-			<div class="sec-act"><button class="btn sm" onclick={endOthers}><Icon name="logout" />Sign out all other devices</button></div>
+		{#if devices.length > 5}
+			<div class="sec-act"><button class="cr-more" onclick={() => (allDevices = !allDevices)}>{allDevices ? 'Show fewer' : `+${devices.length - 5} more devices`}</button></div>
 		{/if}
 	</div>
 </section>

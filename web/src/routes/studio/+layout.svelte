@@ -168,7 +168,7 @@
 		reviews: 'Results & reviews',
 		alerts: 'Inbox, replies & alerts',
 		team: 'Team',
-		account: 'Shipping & account'
+		account: 'Sign-in, devices & account'
 	};
 	const sec = $derived(path === '/studio/settings' ? page.url.searchParams.get('s') : null);
 	const detail = $derived(path.startsWith('/studio/c/'));
