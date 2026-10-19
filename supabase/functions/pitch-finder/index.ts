@@ -174,7 +174,7 @@ function sendTimes(n: number) {
 
 // ---------- a public business email from the brand's own website ----------
 const EMAIL = /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g;
-const BAD = /(\.(png|jpe?g|gif|webp|svg|css|js)$)|example\.|sentry|wixpress|domain\.com|email\.com|yourname|@2x|noreply|no-reply|donotreply|privacy|legal|grievance|careers|jobs|hr@|recruit/i;
+const BAD = /(\.(png|jpe?g|gif|webp|svg|css|js)$)|example\.|sentry|wixpress|domain\.com|email\.com|yourname|@2x|noreply|no-reply|donotreply|privacy|legal|grievance|careers|jobs|hr@|recruit|admission|returns?@|refund|orders?@|invest|ir@|compliance|accounts@|billing|resv\./i;
 const GOOD = ['collab', 'influenc', 'creator', 'partner', 'marketing', 'pr@', 'brand', 'social', 'media', 'hello', 'contact', 'info', 'care', 'support'];
 
 async function siteEmail(website: string): Promise<string> {
