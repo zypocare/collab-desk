@@ -1,0 +1,123 @@
+/* ==========================================================================================
+   Phone studio in CRED's style (phones only; laptop and the brand side are unchanged).
+   CRED's pieces, in the app's own colours: a black bottom bar with labels, pill tabs in small
+   capitals, NeoPOP buttons (flat blocks with a hard edge that press into it), section names in
+   spaced capitals, serif money, pill chips, stacked lists ("+N more") and wallet cards.
+   ========================================================================================== */
+@media (max-width: 760px) {
+  /* ---------- the bottom bar: black, with labels and a gradient mark on the current place ---------- */
+  [data-side="studio"] .rail { background: var(--chrome); border-top: 0; }
+  [data-side="studio"] .rail .nav { position: relative; flex-direction: column; gap: 4px; color: rgba(255, 255, 255, .5); }
+  [data-side="studio"] .rail .nav .nav-t { display: block; font-size: 9px; font-weight: 700; letter-spacing: .13em; text-transform: uppercase; color: inherit; line-height: 1; }
+  [data-side="studio"] .rail .nav-ic { color: inherit !important; }
+  [data-side="studio"] .rail .nav .ic, [data-side="studio"] .rail .nav[aria-current="page"] .ic { color: inherit; }
+  [data-side="studio"] .rail .nav-ic .ic { width: 23px; height: 23px; }
+  [data-side="studio"] .rail .nav[aria-current="page"] { color: #fff; }
+  [data-side="studio"] .rail .nav[aria-current="page"]::after { content: ''; position: absolute; top: 0; left: 50%; width: 24px; height: 3px; margin-left: -12px; border-radius: 0 0 3px 3px; background: linear-gradient(90deg, var(--g1), var(--g2), var(--g3)); }
+  [data-side="studio"] .rail .nav-ic .ring::before { background: transparent; }
+  [data-side="studio"] .rail .nav[aria-current="page"] .nav-ic .ring::before { background: linear-gradient(115deg, var(--g1), var(--g2), var(--g3)); }
+  [data-side="studio"] .rail .nav .badge { top: 4px; }
+
+  /* ---------- pill tabs (Board · Brands · Pitches, Overview · Payments · Reports …) ---------- */
+  [data-side="studio"] .m-seg { margin: 6px 0 16px; padding: 3px; gap: 0; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); }
+  [data-side="studio"] .m-seg::after { display: none; }
+  [data-side="studio"] .m-seg a { height: 34px; border-radius: 999px; font-size: 11px; font-weight: 700; letter-spacing: .13em; text-transform: uppercase; transition: background .2s, color .2s; }
+  [data-side="studio"] .m-seg a[aria-current="page"] { background: var(--ink); color: var(--bg); }
+
+  /* ---------- NeoPOP buttons ---------- */
+  [data-side="studio"] .btn { --edge: var(--line-strong); border-radius: 0; border: 1px solid var(--line); background: var(--surface); box-shadow: 3px 3px 0 var(--edge); transition: transform .08s ease, box-shadow .08s ease, background .2s; }
+  [data-side="studio"] .btn.grad { --edge: color-mix(in oklab, var(--g1) 72%, #000); border-color: transparent; box-shadow: 4px 4px 0 var(--edge); }
+  [data-side="studio"] .btn.primary { --edge: var(--accent); background: var(--ink); color: var(--bg); border-color: transparent; box-shadow: 4px 4px 0 var(--edge); }
+  [data-side="studio"] :is(.btn, .btn.grad, .btn.primary):active { transform: translate(3px, 3px); opacity: 1; box-shadow: 0 0 0 var(--edge); }
+  [data-side="studio"] .btn.lg { border-radius: 0; }
+  [data-side="studio"] .btn.sm { border-radius: 0; box-shadow: 2.5px 2.5px 0 var(--edge); }
+  [data-side="studio"] .btn.ghost { box-shadow: none; border-color: transparent; }
+  [data-side="studio"] .btn.danger { --edge: color-mix(in oklab, var(--bad) 60%, #000); }
+  /* On the dark hero cards the plain button is the white NeoPOP. */
+  [data-side="studio"] :is(.hero-card, .m-hero) .btn:not(.grad):not(.primary) { --edge: rgba(0, 0, 0, .45); background: #fff; color: #1e171c; border-color: transparent; }
+
+  /* ---------- section names in spaced capitals ---------- */
+  [data-side="studio"] .hs-h h2, [data-side="studio"] .m-gh h2 { font-size: 11px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; color: var(--ink-3); }
+  [data-side="studio"] .hs-h { margin: 6px 0 12px; }
+  [data-side="studio"] .hs-h a { font-size: 13px; color: var(--ink-2); }
+  [data-side="studio"] .hs-n { font-size: 11px; }
+
+  /* ---------- money in serif, like CRED's totals ---------- */
+  [data-side="studio"] .m-hero .hc-val, [data-side="studio"] .md-hero .md-big { font-family: var(--f-serif, 'Instrument Serif', Georgia, serif); font-weight: 400; letter-spacing: -.01em; font-size: 48px; }
+  [data-side="studio"] .m-hero .hc-eb, [data-side="studio"] .md-hero .bx-eb { font-size: 10.5px; letter-spacing: .17em; }
+
+  /* ---------- pill chips ---------- */
+  [data-side="studio"] .m-stages button { height: 36px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); }
+  [data-side="studio"] .m-stages button.on { border-color: var(--ink); }
+  [data-side="studio"] .glass-chip { border-radius: 999px; }
+
+  /* ---------- grouped lists (Settings, menus), like CRED's profile ---------- */
+  [data-side="studio"] .set-list, [data-side="studio"] .set-group { border-radius: 18px; overflow: hidden; }
+
+  /* ---------- stacked lists: the first ones, the edges of the rest, and "+N more" ---------- */
+  .cr-stack { display: grid; gap: 8px; }
+  .cr-it { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 13px; border-radius: 16px; background: var(--surface); border: 1px solid var(--line); color: inherit; text-decoration: none; animation: cr-drop .3s cubic-bezier(.2, .8, .2, 1) both; animation-delay: calc(var(--i, 0) * 30ms); }
+  .cr-it .cr-t { min-width: 0; display: grid; gap: 2px; }
+  .cr-it .cr-t b { font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cr-it .cr-t small { font-size: 12.5px; color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cr-it .cr-r { display: grid; justify-items: end; gap: 6px; }
+  .cr-it .cr-r .btn { height: 32px; padding: 0 12px; font-size: 13px; }
+  .cr-due { font-size: 9.5px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); white-space: nowrap; }
+  .cr-due.bad { color: var(--bad); }
+  .cr-due.ok { color: var(--ok); }
+  .cr-edge { height: 10px; margin: -16px 10px 0; background: var(--surface); border: 1px solid var(--line); border-top: 0; border-radius: 0 0 16px 16px; opacity: .8; }
+  .cr-edge + .cr-edge { margin: -9px 20px 0; opacity: .5; }
+  .cr-more { display: flex; align-items: center; gap: 8px; margin: 12px auto 0; height: 36px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+  .cr-more .cr-dots { display: inline-flex; }
+  .cr-more .cr-dots i { width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--surface); margin-left: -6px; background: var(--h); }
+  .cr-more .cr-dots i:first-child { margin-left: 0; }
+  @keyframes cr-drop { from { opacity: 0; transform: translateY(-10px); } }
+
+  /* ---------- wallet cards: each collab a card in its brand's colour, stacked like a wallet ---------- */
+  [data-side="studio"] .m-list.m-wallet { display: block; }
+  .wc { position: relative; display: block; height: 172px; padding: 16px; border-radius: 18px; color: #fff; text-decoration: none; overflow: hidden; isolation: isolate;
+    background: linear-gradient(140deg, color-mix(in oklab, var(--h) 72%, #1a0d18) 0%, color-mix(in oklab, var(--h) 40%, #140a12) 62%, #140a12 100%);
+    box-shadow: 0 18px 34px -22px rgba(0, 0, 0, .7), inset 0 1px 0 rgba(255, 255, 255, .16); transition: transform .3s cubic-bezier(.2, .9, .25, 1); }
+  .wc + .wc { margin-top: -98px; }
+  .wc::before { content: ''; position: absolute; inset: 0; z-index: -1; background: radial-gradient(110% 90% at 100% 0%, rgba(255, 255, 255, .18), transparent 50%), repeating-linear-gradient(135deg, rgba(255, 255, 255, .04) 0 2px, transparent 2px 9px); }
+  .wc:active { transform: translateY(-6px); }
+  .wc-top { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; }
+  .wc-bn { font-family: var(--f-serif, 'Instrument Serif', Georgia, serif); font-style: italic; font-weight: 400; font-size: 23px; line-height: 1.05; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .wc-money { text-align: right; font-size: 18px; font-weight: 600; line-height: 1.1; font-variant-numeric: tabular-nums; flex: none; }
+  .wc-money small { display: block; margin-top: 4px; font-size: 9px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; opacity: .9; }
+  .wc-money i { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #ff8a7a; margin-right: 6px; vertical-align: 2px; box-shadow: 0 0 0 3px rgba(255, 138, 122, .25); }
+  .wc-meta { margin-top: 8px; font-family: var(--f-mono, ui-monospace, monospace); font-size: 10.5px; font-weight: 600; letter-spacing: .08em; opacity: .8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .wc-foot { position: absolute; left: 16px; right: 16px; bottom: 14px; display: flex; justify-content: space-between; align-items: flex-end; gap: 10px; }
+  .wc-next { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; opacity: .92; min-width: 0; }
+  .wc-next .ic { width: 15px; height: 15px; flex: none; }
+  .wc-next span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .wc-tag { flex: none; height: 26px; padding: 0 10px; display: inline-grid; place-items: center; background: #fff; color: #1e171c; font-size: 10.5px; font-weight: 800; letter-spacing: .12em; box-shadow: 2px 2px 0 rgba(0, 0, 0, .4); }
+
+  /* ---------- Money: round shortcuts and the moving ticker ---------- */
+  .cr-rings { display: flex; gap: 14px; overflow-x: auto; scrollbar-width: none; margin: 16px -16px 0; padding: 4px 16px; }
+  .cr-rings::-webkit-scrollbar { display: none; }
+  .cr-ring { flex: none; display: grid; justify-items: center; gap: 6px; width: 66px; color: var(--ink); text-decoration: none; font-size: 11.5px; font-weight: 500; }
+  .cr-ring i { display: block; width: 62px; height: 62px; padding: 2.5px; border-radius: 50%; background: conic-gradient(var(--g3), var(--g2), var(--g1), var(--g3)); }
+  .cr-ring i span { display: grid; place-items: center; width: 100%; height: 100%; border-radius: 50%; border: 2.5px solid var(--bg); background: var(--surface-2); color: var(--accent); }
+  .cr-ring i .ic { width: 22px; height: 22px; }
+  .cr-ring b { margin-top: -14px; position: relative; z-index: 1; padding: 2px 6px; border-radius: 4px; background: var(--g3); color: #2a1300; font-size: 8px; font-weight: 800; letter-spacing: .08em; }
+  .cr-ticker { overflow: hidden; margin: 16px -16px 0; border-block: 1px solid var(--line); background: var(--surface); }
+  .cr-ticker div { display: inline-flex; gap: 22px; padding: 10px 0; white-space: nowrap; animation: cr-tick 28s linear infinite; font-size: 12.5px; font-weight: 600; color: var(--ink-2); }
+  .cr-ticker b { color: var(--accent); }
+  @keyframes cr-tick { to { transform: translateX(-50%); } }
+  @media (prefers-reduced-motion: reduce) { .cr-ticker div, .cr-it { animation: none; } }
+}
+@media (max-width: 760px) {
+  .cr-it { transition: transform .3s cubic-bezier(.2, .8, .2, 1), opacity .25s; }
+  .cr-it.leaving { transform: translateX(40px); opacity: 0; }
+}
+@media (max-width: 760px) {
+  .cr-it :is(.cr-av, button.cr-t) { border: 0; background: none; padding: 0; margin: 0; font: inherit; color: inherit; text-align: left; cursor: pointer; }
+  .cr-it .cr-av { display: block; line-height: 0; }
+}
+@media (max-width: 760px) {
+  .cr-ring small { max-width: 70px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 11.5px; }
+}
+@media (max-width: 760px) {
+  [data-side="studio"] .m-stages button.on { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+}

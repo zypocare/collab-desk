@@ -16,6 +16,7 @@
 
 	let filter = $state<'all' | 'due' | 'overdue' | 'paid'>('all');
 	let swapKey = $state(0);
+	let fanPay = $state(false);
 
 	const rows = $derived(studio.collabs.filter((c) => isPaid(c) && stageIndex(c.stage) >= 2));
 	const recd = $derived(rows.reduce((a, c) => a + c.pay_received, 0));
@@ -128,29 +129,23 @@
 			<button role="tab" aria-selected={filter === k} class:on={filter === k} onclick={() => ((filter = k), swapKey++)}><i class="dt" style="--hue:{k === 'all' ? 'var(--accent)' : HUE[k]}"></i>{label}<span>{counts[k]}</span></button>
 		{/each}
 	</div>
-	<div class="m-list m-plist">
+	<!-- CRED's stacked bills: three, the edges of the rest, "+N more". -->
+	<div class="cr-stack m-plist">
 		{#key swapKey}
-			{#each list as c, i (c.id)}
-				{@const p = c.fee ? Math.min(1, c.pay_received / c.fee) : 0}
+			{#each fanPay ? list : list.slice(0, 3) as c, i (c.id)}
 				{@const st = payState(c)}
-				<div class="m-ccard m-pcard" style="--i:{Math.min(i, 8)};--hue:{HUE[st]}">
-					<button class="m-pc-open" onclick={() => (ui.openCollab = c.id)} aria-label="Open {c.brand.name}">
-						<span class="m-cc-av" class:fresh={st === 'overdue'}><Mono name={c.brand.name} /></span>
-						<span class="m-cc-b">
-							<span class="m-cc-t"><b>{c.brand.name}</b></span>
-							<span class="m-cc-s">{delivText(c.deliverables)}{c.invoice_no ? ` · ${c.invoice_no}` : ''}</span>
-							<span class="m-pbar" title="{inr(c.pay_received)} received"><i style="--p:{p}"></i></span>
-							<span class="m-cc-f">
-								<span class="m-cc-money">{inr(c.fee)}</span>
-								<span class="m-cc-n" class:late={st === 'overdue'}>
-									{#if c.pay_status === 'paid'}<Icon name="check" />Paid {fmt(c.paid_on)}
-									{:else if c.pay_due}<Icon name="clock" />{diff(c.pay_due) < 0 ? `${-diff(c.pay_due)} days late` : `Due ${fmt(c.pay_due)}`}
-									{:else}<PayPill {c} />{/if}
-								</span>
-							</span>
-						</span>
+				<div class="cr-it" style="--i:{i}">
+					<button class="cr-av" onclick={() => (ui.openCollab = c.id)} aria-label="Open {c.brand.name}"><Mono name={c.brand.name} /></button>
+					<button class="cr-t" onclick={() => (ui.openCollab = c.id)}>
+						<b>{c.brand.name}</b>
+						<small>{delivText(c.deliverables)}{c.invoice_no ? ` · ${c.invoice_no}` : ''}</small>
 					</button>
-					{#if c.pay_status !== 'paid'}<button class="m-pc-pay" onclick={() => markPaid(c)} aria-label="Mark {c.brand.name} as paid"><Icon name="wallet" /><small>Paid?</small></button>{/if}
+					<span class="cr-r">
+						{#if c.pay_status !== 'paid'}<button class="btn sm primary" onclick={() => markPaid(c)} aria-label="Mark {c.brand.name} as paid">Paid?</button>{/if}
+						<span class="cr-due" class:bad={st === 'overdue'} class:ok={c.pay_status === 'paid'}>
+							{inrS(c.fee)} · {#if c.pay_status === 'paid'}paid {fmt(c.paid_on)}{:else if c.pay_due}{diff(c.pay_due) < 0 ? `${-diff(c.pay_due)} days late` : `due ${fmt(c.pay_due)}`}{:else}not invoiced{/if}
+						</span>
+					</span>
 				</div>
 			{:else}
 				<div class="clear hero-card glow m-none">
@@ -161,7 +156,9 @@
 				</div>
 			{/each}
 		{/key}
+		{#if !fanPay && list.length > 3}<span class="cr-edge" aria-hidden="true"></span>{#if list.length > 4}<span class="cr-edge" aria-hidden="true"></span>{/if}{/if}
 	</div>
+	{#if list.length > 3}<button class="cr-more" onclick={() => (fanPay = !fanPay)}>{fanPay ? 'Show less' : `+${list.length - 3} more`}</button>{/if}
 	{#if certs.length}
 		<section class="hs">
 			<header class="hs-h"><h2>TDS certificates</h2><span class="m-gn">{certs.length}</span></header>

@@ -5,7 +5,7 @@ export const REDUCED = typeof matchMedia !== 'undefined' && matchMedia('(prefers
 
 type Toast = { id: number; msg: string; icon: string; out: boolean };
 /** holdRedirect: a guest's sign-in code is being checked; don't move them off the request form yet. */
-export const ui = $state<{ toasts: Toast[]; openCollab: string | null; newCollab: boolean; pendingNext: string | null; pasteText: string; /** A screenshot shared into the app (Android Share). */ pasteImage?: File | null; fromIg: string; holdRedirect?: boolean; /** The Instagram account it came from (username, name). */ fromIgUser?: string; fromIgName?: string; /** "Ask your desk" is open. */ askOpen?: boolean }>({
+export const ui = $state<{ toasts: Toast[]; openCollab: string | null; newCollab: boolean; pendingNext: string | null; pasteText: string; /** A screenshot shared into the app (Android Share). */ pasteImage?: File | null; fromIg: string; holdRedirect?: boolean; /** The Instagram account it came from (username, name). */ fromIgUser?: string; fromIgName?: string; /** "Ask your desk" is open. */ askOpen?: boolean; /** The money-in moment (phone). */ moneyIn?: { amount: number; brand: string } | null }>({
 	toasts: [],
 	openCollab: null,
 	newCollab: false,
@@ -157,4 +157,16 @@ export async function copyText(text: string, msg = 'Copied') {
 	} catch {
 		toast(`Copy this: ${text}`, 'copy');
 	}
+}
+
+/** CRED's money-in moment on the phone: a coin flip and a buzz. False on a laptop (it shows confetti). */
+export function moneyIn(amount: number, brand: string) {
+	if (typeof window === 'undefined' || !matchMedia('(max-width: 760px)').matches || !(amount > 0)) return false;
+	ui.moneyIn = { amount, brand };
+	try {
+		navigator.vibrate?.([30, 40, 60]);
+	} catch {
+		/* no vibration here */
+	}
+	return true;
 }

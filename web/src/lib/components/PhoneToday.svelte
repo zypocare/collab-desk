@@ -89,6 +89,8 @@
 	});
 
 	let leaving = $state<string | null>(null);
+	// Needs you shows two, then "+N more" fans out the rest.
+	let fanned = $state(false);
 	function leaveThen(key: string, fn: () => void) {
 		leaving = key;
 		setTimeout(() => {
@@ -167,34 +169,39 @@
 <section class="hs">
 	<header class="hs-h"><h2>Needs you</h2>{#if ts.length}<span class="hs-n">{ts.length}</span>{/if}</header>
 	{#if ts.length}
-		<div class="deck">
-			{#each ts as t, i (t.c.id + t.kind)}
+		<!-- CRED's stacked bills: the first two, the edges of the rest, and "+N more" to fan them out. -->
+		<div class="cr-stack">
+			{#each fanned ? ts : ts.slice(0, 2) as t, i (t.c.id + t.kind)}
 				{@const key = t.c.id + t.kind}
-				<article class="dk k-{t.kind === 'pay' ? 'bad' : t.kind}" class:leaving={leaving === key} style="--hue:var(--m{hueOf(t.c.brand.name)});--i:{i}">
-					<span class="fx" aria-hidden="true"><i></i><i></i><i></i><b></b><b></b><b></b><b></b><b></b></span>
-					<a class="dk-top" href="/studio/c/{t.c.code}"><Mono name={t.c.brand.name} size="sm" /><b>{t.c.brand.name}</b><small>{when(t)}</small></a>
-					<a class="dk-body" href="/studio/c/{t.c.code}">
-						<span class="dk-ic"><Icon name={KIND_ICON[t.kind]} /></span>
-						<b>{t.title}</b>
-						<small>{delivText(t.c.deliverables)}{t.c.fee ? ` · ${inr(t.c.fee)}` : t.c.type === 'barter' ? ' · barter' : ''}</small>
+				<div class="cr-it" class:leaving={leaving === key} style="--i:{i}">
+					<a href="/studio/c/{t.c.code}" aria-label="Open {t.c.brand.name}"><Mono name={t.c.brand.name} /></a>
+					<a class="cr-t" href="/studio/c/{t.c.code}" style="color:inherit;text-decoration:none">
+						<b>{t.c.brand.name}</b>
+						<small>{t.title} · {delivText(t.c.deliverables)}{t.c.fee ? ` · ${inr(t.c.fee)}` : t.c.type === 'barter' ? ' · barter' : ''}</small>
 					</a>
-					<div class="dk-acts">
+					<span class="cr-r">
 						{#if t.kind === 'follow'}
-							<button class="dk-go" onclick={() => leaveThen(key, () => completeFollow(t.c))}><Icon name="check" />Done</button>
+							<button class="btn sm" onclick={() => leaveThen(key, () => completeFollow(t.c))}>Done</button>
 						{:else if t.kind === 'pay'}
-							<button class="dk-go" onclick={async () => (await askPaid(t.c)) && leaveThen(key, () => markPaid(t.c, false, true))}><Icon name="wallet" />Mark paid</button>
+							<button class="btn sm primary" onclick={async () => (await askPaid(t.c)) && leaveThen(key, () => markPaid(t.c, false, true))}>Mark paid</button>
 						{:else if t.kind === 'product' && inTransit(t.c)}
-							<button class="dk-go" onclick={() => leaveThen(key, () => markReceived(t.c))}><Icon name="box" />Received</button>
+							<button class="btn sm" onclick={() => leaveThen(key, () => markReceived(t.c))}>Received</button>
 						{:else if t.kind === 'msg'}
-							<a class="dk-go" href="/studio/inbox/{t.c.code}"><Icon name="send" />Reply</a>
+							<a class="btn sm grad" href="/studio/inbox/{t.c.code}">Reply</a>
 						{:else}
-							<a class="dk-go" href="/studio/c/{t.c.code}">{t.kind === 'new' ? 'Review' : 'Open'}<Icon name="arrow" /></a>
+							<a class="btn sm grad" href="/studio/c/{t.c.code}">{t.kind === 'new' ? 'Review' : 'Open'}</a>
 						{/if}
-						<a class="dk-ib" href="/studio/inbox/{t.c.code}" aria-label="Message {t.c.brand.name}"><Icon name="send" /></a>
-					</div>
-				</article>
+						<span class="cr-due" class:bad={t.kind === 'pay' || t.d < 0}>{when(t)}</span>
+					</span>
+				</div>
 			{/each}
+			{#if !fanned && ts.length > 2}<span class="cr-edge" aria-hidden="true"></span>{#if ts.length > 3}<span class="cr-edge" aria-hidden="true"></span>{/if}{/if}
 		</div>
+		{#if ts.length > 2}
+			<button class="cr-more" onclick={() => (fanned = !fanned)}>
+				{#if !fanned}<span class="cr-dots" aria-hidden="true">{#each ts.slice(2, 5) as t (t.c.id + t.kind)}<i style="--h:var(--m{hueOf(t.c.brand.name)})"></i>{/each}</span>+{ts.length - 2} more{:else}Show less{/if}
+			</button>
+		{/if}
 	{:else}
 		<!-- Nothing to do: the same glowing card as the money one, with two good next steps. -->
 		<div class="clear hero-card glow">

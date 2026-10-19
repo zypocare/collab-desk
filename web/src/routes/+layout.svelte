@@ -9,6 +9,7 @@
 	import '../mobile.css';
 	import '../atelier.css';
 	import '../dash.css';
+	import '../cred.css';
 	import type { LayoutProps } from './$types';
 	import { onMount } from 'svelte';
 	import { onNavigate } from '$app/navigation';

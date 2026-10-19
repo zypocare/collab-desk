@@ -8,7 +8,7 @@ import { supabase } from './supabase';
 import type { Package } from './types';
 import type { BankAlert, Brand, BrandPrivate, BrandReport, Checklist, Collab, Deliverable, IgAccount, IgMedia, Quote, Retainer, Settings, Stage } from './types';
 import { balanceDue, normaliseInvoice, type Invoice, type InvoiceItem } from './invoice';
-import { confetti, toast, ui } from './ui.svelte';
+import { confetti, moneyIn, toast, ui } from './ui.svelte';
 import { ask } from './confirm.svelte';
 import { diff, errMessage, inr, stageLabel, todayIso, unreadFor } from './util';
 import { isNetworkError, load as loadSaved, net, save as saveLocal } from './offline.svelte';
@@ -398,8 +398,11 @@ export async function markPaid(c: Collab, quiet = false, asked = false) {
 		await updateCollab(c.id, { pay_status: 'paid', pay_received: c.fee, paid_on: todayIso(), ...(c.stage === 'live' ? { stage: 'wrapped' as Stage } : {}) });
 	}
 	if (quiet) return true;
-	confetti();
-	toast(`${inr(owed)} from ${c.brand.name} marked as paid`, 'wallet');
+	// On the phone, CRED's money-in moment; on the laptop, confetti and a note.
+	if (!moneyIn(owed, c.brand.name)) {
+		confetti();
+		toast(`${inr(owed)} from ${c.brand.name} marked as paid`, 'wallet');
+	}
 	return true;
 }
 
@@ -713,7 +716,7 @@ export async function recordPayment(inv: Invoice, p: { amount: number; tds: numb
 		return false;
 	}
 	await reloadOne(inv.collab_id);
-	if (!quiet) {
+	if (!quiet && !moneyIn(p.amount, byId(inv.collab_id)?.brand.name ?? '')) {
 		confetti();
 		toast(`${inr(p.amount)} recorded for ${inv.number}`, 'wallet');
 	}

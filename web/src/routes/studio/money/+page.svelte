@@ -4,7 +4,7 @@
 	import { fyFromStart, fyOf } from '#lib/reports.ts';
 	import { phone } from '#lib/phone.svelte.ts';
 	import { countUp } from '#lib/ui.svelte.ts';
-	import { inr, inrS, today } from '#lib/util.ts';
+	import { diff, inr, inrS, outstanding, overdue, today } from '#lib/util.ts';
 	import Icon from '#lib/components/Icon.svelte';
 	import Segmented from '#lib/components/Segmented.svelte';
 	import Columns from '#lib/components/charts/Columns.svelte';
@@ -25,6 +25,19 @@
 	const comingTotal = $derived(m.weeks.reduce((a, w) => a + w.value, 0));
 	const RECEIVED = 'linear-gradient(180deg, var(--g2), var(--g1))';
 	// Small screens: months as one letter, weeks as the day of the month.
+	// Phone (CRED's rewards zone): round shortcuts and a moving line of money facts.
+	const lateList = $derived(studio.collabs.filter(overdue).sort((a, b) => outstanding(b) - outstanding(a)));
+	const dueN = $derived(studio.collabs.filter((c) => outstanding(c) > 0 && (c.pay_status === 'invoiced' || c.pay_status === 'advance')).length);
+	const paidWeek = $derived(studio.collabs.filter((c) => c.pay_status === 'paid' && c.paid_on && diff(c.paid_on) >= -7).length);
+	const facts = $derived(
+		[
+			...lateList.slice(0, 2).map((c) => ({ b: inr(outstanding(c)), t: ` from ${c.brand.name} is ${-diff(c.pay_due!)} days late` })),
+			{ b: inrS(m.thisMonth), t: ' came in this month' },
+			paidWeek ? { b: String(paidWeek), t: ` payment${paidWeek === 1 ? '' : 's'} in this week` } : null,
+			m.due ? { b: inrS(m.due), t: ' still to come' } : null,
+			m.tds ? { b: inrS(m.tds), t: ' TDS to claim back' } : null
+		].filter((x): x is { b: string; t: string } => !!x)
+	);
 	const mLabel = (l: string) => (phone.on ? l.slice(0, 1) : l);
 	const wLabel = (l: string, i: number) => (!phone.on ? l : i === 0 ? 'Now' : l.split(' ')[0]);
 </script>
@@ -62,6 +75,19 @@
 		<a class="md-tile" href="/studio/reports"><small>Average deal</small><b class="num">{m.avgDeal ? inrS(m.avgDeal) : '—'}</b><span>{m.deals} paid deal{m.deals === 1 ? '' : 's'} this year</span></a>
 	</div>
 </section>
+
+{#if phone.on}
+	<nav class="cr-rings" aria-label="Money shortcuts">
+		<a class="cr-ring" href="/studio/payments"><i><span><Icon name="wallet" /></span></i>{#if lateList.length}<b>{lateList.length} LATE</b>{:else if dueN}<b>{dueN} DUE</b>{/if}<small>Payments</small></a>
+		<a class="cr-ring" href="/studio/reports"><i><span><Icon name="chart" /></span></i><small>Reports</small></a>
+		<a class="cr-ring" href="/studio/payments"><i><span><Icon name="doc" /></span></i><small>Invoices</small></a>
+		<a class="cr-ring" href="/studio/reports"><i><span><Icon name="rupee" /></span></i><small>TDS</small></a>
+		<a class="cr-ring" href="/studio/calendar"><i><span><Icon name="cal" /></span></i><small>Due dates</small></a>
+	</nav>
+	{#if facts.length}
+		<div class="cr-ticker" aria-label="Money facts"><div>{#each [0, 1] as k (k)}{#each facts as f, j (j)}<span aria-hidden={k === 1}><b>{f.b}</b>{f.t}</span><span aria-hidden="true">✦</span>{/each}{/each}</div></div>
+	{/if}
+{/if}
 
 <div class="md-grid">
 	<section class="md-card md-wide rv" style="--i:1">

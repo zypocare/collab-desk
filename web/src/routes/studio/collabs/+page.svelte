@@ -323,7 +323,7 @@
 	{#each mgroups as g (g.s.id)}
 		<section class="m-group st-{g.s.id}">
 			<header class="m-gh"><span class="dt"></span><h2>{g.s.label}</h2><span class="m-gn">{g.cs.length}</span>{#if g.sum}<small>{inrS(g.sum)}</small>{/if}</header>
-			<div class="m-list">
+			<div class="m-list m-wallet">
 				{#each g.cs as c, i (c.id)}<CollabRow {c} {i} />{/each}
 			</div>
 		</section>

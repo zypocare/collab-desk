@@ -19,7 +19,8 @@ test('phone: confirm sheet buttons are full size', async ({ page }) => {
 	await page.goto('/studio/collabs');
 	await page.waitForLoadState('networkidle');
 	// Open the first new request and start declining it (then cancel).
-	await page.locator('a[href^="/studio/c/"], .m-crow').first().click();
+	// Collabs are wallet cards stacked over each other: tap the visible top strip of the first one.
+	await page.locator('a[href^="/studio/c/"], .m-crow').first().click({ position: { x: 40, y: 22 } });
 	const decline = page.getByRole('button', { name: /Decline this request/ });
 	if (await decline.count()) {
 		await decline.click();

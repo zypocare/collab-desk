@@ -18,6 +18,7 @@
 	import CommandPalette from '#lib/components/CommandPalette.svelte';
 	import AskDesk from '#lib/components/AskDesk.svelte';
 	import PasskeyNudge from '#lib/components/PasskeyNudge.svelte';
+	import MoneyIn from '#lib/components/MoneyIn.svelte';
 	import { phone, startPhone } from '#lib/phone.svelte.ts';
 	import { net } from '#lib/offline.svelte.ts';
 
@@ -197,6 +198,21 @@
 		const nav = navigator as Navigator & { setAppBadge?: (n?: number) => Promise<void>; clearAppBadge?: () => Promise<void> };
 		if (!studio.loaded) return;
 		(n ? nav.setAppBadge?.(n) : nav.clearAppBadge?.())?.catch(() => {});
+	});
+	// Phone: a short vibration on every pressable button (CRED's feel). Android only; iPhone ignores it.
+	onMount(() => {
+		const press = (e: PointerEvent) => {
+			if (!phone.on) return;
+			if ((e.target as Element | null)?.closest?.('.btn, .rail .nav, .m-seg a, .cr-more, .wc')) {
+				try {
+					navigator.vibrate?.(9);
+				} catch {
+					/* no vibration */
+				}
+			}
+		};
+		addEventListener('pointerdown', press, { passive: true });
+		return () => removeEventListener('pointerdown', press);
 	});
 	// Home-screen shortcuts (long-press the app icon): /studio?new=1 and /studio?ask=1.
 	onMount(() => {
@@ -459,5 +475,6 @@
 	<CommandPalette bind:this={palette} />
 	{#if ui.askOpen}<AskDesk onclose={() => (ui.askOpen = false)} />{/if}
 	{#if studio.loaded}<PasskeyNudge />{/if}
+	<MoneyIn />
 	{#if ui.newCollab}<NewCollabDialog />{/if}
 {/if}
