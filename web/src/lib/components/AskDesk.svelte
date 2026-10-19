@@ -39,6 +39,31 @@
 	const active = $derived(chats.find((c) => c.id === activeId) ?? null);
 	const turns = $derived(active?.turns ?? []);
 	const name = $derived(firstName(studio.settings?.display_name ?? ''));
+	// Phone: opening it is a moment. A glow in her colours rises over the screen she's on, an orb of
+	// dots gathers in the middle, the greeting appears, and the desk settles in. A tap skips it.
+	const playIntro = phone.on && typeof matchMedia !== 'undefined' && !matchMedia('(prefers-reduced-motion: reduce)').matches;
+	let intro = $state(playIntro);
+	const ORB = Array.from({ length: 81 }, (_, k) => ({ x: (k % 9) - 4, y: Math.floor(k / 9) - 4 }))
+		.filter((d) => Math.abs(d.x) + Math.abs(d.y) <= 4)
+		.map((d) => ({ ...d, r: Math.abs(d.x) + Math.abs(d.y) }));
+	// After the moment the desk is already open: it doesn't slide up again.
+	const hadIntro = playIntro;
+	let introTimer: ReturnType<typeof setTimeout> | undefined;
+	function endIntro() {
+		clearTimeout(introTimer);
+		intro = false;
+		if (!phone.on) tick().then(() => box?.focus());
+	}
+	onMount(() => {
+		if (!intro) return;
+		try {
+			navigator.vibrate?.(8);
+		} catch {
+			/* no vibration */
+		}
+		introTimer = setTimeout(endIntro, 1750);
+		return () => clearTimeout(introTimer);
+	});
 
 	const TOOLS = [
 		{ icon: 'wallet', label: 'Who owes me', hint: 'Unpaid invoices', q: 'Who hasn’t paid me yet?' },
@@ -266,7 +291,16 @@
 	</div>
 {/snippet}
 
-<div class="gm" class:gm-phone={phone.on} role="dialog" aria-modal="true" aria-label="Ask your desk" use:portal>
+<div class="gm" class:gm-phone={phone.on} class:gm-intro-on={intro} class:gm-intro-done={hadIntro && !intro} role="dialog" aria-modal="true" aria-label="Ask your desk" use:portal>
+	{#if intro}
+		<!-- svelte-ignore a11y_click_events_have_key_events -->
+		<div class="gi" role="presentation" onclick={endIntro}>
+			<span class="gi-wash" aria-hidden="true"><i></i><i></i><i></i></span>
+			<span class="gi-orb" aria-hidden="true">{#each ORB as d (d.x + ':' + d.y)}<i style="--x:{d.x};--y:{d.y};--r:{d.r}"></i>{/each}</span>
+			<p class="gi-hi"><b>Hello, {name}</b><span>Your desk is listening</span></p>
+			<span class="gi-paper" aria-hidden="true"></span>
+		</div>
+	{/if}
 	{#if !phone.on}
 		<aside class="gm-side">
 			<div class="gm-brand"><span class="gm-spark lg" aria-hidden="true"><Icon name="spark" /></span><b>Ask your desk</b></div>
@@ -274,6 +308,7 @@
 			<p class="gm-priv"><Icon name="shield" />Answers come from your own data. Chats stay on this device.</p>
 		</aside>
 	{/if}
+	{#if !intro}
 	<main class="gm-main">
 		<header class="gm-top">
 			{#if phone.on}<button class="gm-ib" onclick={() => (menuOpen = true)} aria-label="Recent chats"><Icon name="menu" /></button>{/if}
@@ -322,6 +357,7 @@
 		</form>
 		<p class="gm-foot">Answers come from your own collabs and money. Check anything important.</p>
 	</main>
+	{/if}
 
 	{#if phone.on && menuOpen}
 		<div class="gm-scrim" role="presentation" onclick={() => (menuOpen = false)}></div>
@@ -500,6 +536,30 @@
 	.gm-phone .gm-send { border-radius: 0; background: var(--ink); color: var(--bg); box-shadow: 3px 3px 0 var(--accent); transition: transform .35s cubic-bezier(.2, 1.6, .4, 1), opacity .2s, box-shadow .07s; }
 	.gm-phone .gm-send:active { transform: translate(3px, 3px); box-shadow: none; }
 	.gm-phone .gm-drawer { border-radius: 0; background: var(--bg); }
+	/* ---------- the opening moment (phone) ---------- */
+	.gm.gm-phone.gm-intro-on { background: transparent; animation: none; }
+	.gm.gm-phone.gm-intro-done { animation: none; }
+	.gi { position: fixed; inset: 0; z-index: 5; overflow: hidden; cursor: pointer; }
+	.gi-wash { position: absolute; inset: -20%; -webkit-backdrop-filter: blur(0); backdrop-filter: blur(0); animation: gi-blur 1.1s ease forwards; }
+	.gi-wash i { position: absolute; border-radius: 50%; filter: blur(48px); opacity: 0; mix-blend-mode: screen; }
+	.gi-wash i:nth-child(1) { left: 0; top: 30%; width: 80%; height: 70%; background: var(--g2); animation: gi-rise 1.2s cubic-bezier(.2, .8, .2, 1) forwards; }
+	.gi-wash i:nth-child(2) { right: -5%; top: 10%; width: 70%; height: 65%; background: var(--g1); animation: gi-rise 1.2s .08s cubic-bezier(.2, .8, .2, 1) forwards; }
+	.gi-wash i:nth-child(3) { left: 15%; bottom: -5%; width: 75%; height: 55%; background: var(--g3); animation: gi-rise 1.2s .16s cubic-bezier(.2, .8, .2, 1) forwards; }
+	@keyframes gi-rise { from { opacity: 0; transform: translateY(45%) scale(.8); } to { opacity: .72; transform: none; } }
+	@keyframes gi-blur { to { -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); } }
+	.gi-orb { position: absolute; left: 50%; top: 44%; width: 0; height: 0; animation: gi-orb-out .35s 1.05s ease forwards; }
+	.gi-orb i { position: absolute; left: calc(var(--x) * 13px - 3.5px); top: calc(var(--y) * 13px - 3.5px); width: 7px; height: 7px; border-radius: 50%; background: #fff; box-shadow: 0 0 10px rgba(255, 255, 255, .9); opacity: 0; transform: scale(0);
+		animation: gi-dot .45s cubic-bezier(.2, 1.6, .4, 1) forwards, gi-pulse .9s ease-in-out infinite; animation-delay: calc(.22s + var(--r) * 70ms), calc(.6s + var(--r) * 70ms); }
+	@keyframes gi-dot { to { opacity: 1; transform: scale(1); } }
+	@keyframes gi-pulse { 50% { transform: scale(.55); opacity: .6; } }
+	@keyframes gi-orb-out { to { opacity: 0; transform: scale(1.6); filter: blur(4px); } }
+	.gi-hi { position: absolute; left: 0; right: 0; top: 44%; margin: 0; transform: translateY(-50%); display: grid; justify-items: center; gap: 6px; text-align: center; opacity: 0; animation: gi-hi .5s .95s cubic-bezier(.2, .9, .25, 1) forwards; }
+	.gi-hi b { font: italic 400 40px/1.05 var(--f-serif, Georgia, serif); color: #fff; text-shadow: 0 2px 24px rgba(0, 0, 0, .25); }
+	.gi-hi span { font-size: 15px; font-weight: 600; color: rgba(255, 255, 255, .86); }
+	@keyframes gi-hi { from { opacity: 0; transform: translateY(-30%) scale(.96); } to { opacity: 1; transform: translateY(-50%); } }
+	.gi-paper { position: absolute; inset: 0; background: var(--bg); opacity: 0; animation: gi-paper .45s 1.3s ease forwards; }
+	@keyframes gi-paper { to { opacity: 1; } }
+
 	@media (prefers-reduced-motion: reduce) {
 		.gm.gm-phone, .gm-phone .gm-hello > *, .gm-phone .gm-pill, .gm-phone .gm-q p, .gm-phone .gm-a, .gm-phone .gm-confirm { animation: none; }
 	}
