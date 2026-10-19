@@ -152,7 +152,7 @@
 		'/studio/brands': 'Brands',
 		'/studio/pitches': 'Pitches',
 		'/studio/content': 'Content',
-		'/studio/calendar': 'Calendar',
+		'/studio/calendar': 'Plan',
 		'/studio/money': 'Money',
 		'/studio/page': 'Brand page',
 		'/studio/qr': 'QR codes',

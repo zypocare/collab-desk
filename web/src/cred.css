@@ -1733,3 +1733,8 @@
 @media (min-width: 761px) {
   [data-side="studio"] .pg:has(> .lm) > .at-bar { display: none; }
 }
+
+/* Laptop Calendar: the page carries its own tabs and New collab (approved design), so the shared top bar steps aside. */
+@media (min-width: 761px) {
+  [data-side="studio"] .pg:has(> .cl-lap) > .at-bar { display: none; }
+}
