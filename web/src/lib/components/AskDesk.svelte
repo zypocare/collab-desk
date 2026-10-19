@@ -61,7 +61,7 @@
 		} catch {
 			/* no vibration */
 		}
-		introTimer = setTimeout(endIntro, 1750);
+		introTimer = setTimeout(endIntro, 3300);
 		return () => clearTimeout(introTimer);
 	});
 
@@ -540,24 +540,25 @@
 	.gm.gm-phone.gm-intro-on { background: transparent; animation: none; }
 	.gm.gm-phone.gm-intro-done { animation: none; }
 	.gi { position: fixed; inset: 0; z-index: 5; overflow: hidden; cursor: pointer; }
-	.gi-wash { position: absolute; inset: -20%; -webkit-backdrop-filter: blur(0); backdrop-filter: blur(0); animation: gi-blur 1.1s ease forwards; }
+	.gi-wash { position: absolute; inset: -20%; -webkit-backdrop-filter: blur(0); backdrop-filter: blur(0); animation: gi-blur 1.6s ease forwards; }
 	.gi-wash i { position: absolute; border-radius: 50%; filter: blur(48px); opacity: 0; mix-blend-mode: screen; }
-	.gi-wash i:nth-child(1) { left: 0; top: 30%; width: 80%; height: 70%; background: var(--g2); animation: gi-rise 1.2s cubic-bezier(.2, .8, .2, 1) forwards; }
-	.gi-wash i:nth-child(2) { right: -5%; top: 10%; width: 70%; height: 65%; background: var(--g1); animation: gi-rise 1.2s .08s cubic-bezier(.2, .8, .2, 1) forwards; }
-	.gi-wash i:nth-child(3) { left: 15%; bottom: -5%; width: 75%; height: 55%; background: var(--g3); animation: gi-rise 1.2s .16s cubic-bezier(.2, .8, .2, 1) forwards; }
+	.gi-wash i:nth-child(1) { left: 0; top: 30%; width: 80%; height: 70%; background: var(--g2); animation: gi-rise 1.6s cubic-bezier(.2, .8, .2, 1) forwards; }
+	.gi-wash i:nth-child(2) { right: -5%; top: 10%; width: 70%; height: 65%; background: var(--g1); animation: gi-rise 1.6s .12s cubic-bezier(.2, .8, .2, 1) forwards; }
+	.gi-wash i:nth-child(3) { left: 15%; bottom: -5%; width: 75%; height: 55%; background: var(--g3); animation: gi-rise 1.6s .24s cubic-bezier(.2, .8, .2, 1) forwards; }
 	@keyframes gi-rise { from { opacity: 0; transform: translateY(45%) scale(.8); } to { opacity: .72; transform: none; } }
 	@keyframes gi-blur { to { -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); } }
-	.gi-orb { position: absolute; left: 50%; top: 44%; width: 0; height: 0; animation: gi-orb-out .35s 1.05s ease forwards; }
+	.gi-orb { position: absolute; left: 50%; top: 44%; width: 0; height: 0; animation: gi-orb-out .5s 1.65s ease forwards; }
 	.gi-orb i { position: absolute; left: calc(var(--x) * 13px - 3.5px); top: calc(var(--y) * 13px - 3.5px); width: 7px; height: 7px; border-radius: 50%; background: #fff; box-shadow: 0 0 10px rgba(255, 255, 255, .9); opacity: 0; transform: scale(0);
-		animation: gi-dot .45s cubic-bezier(.2, 1.6, .4, 1) forwards, gi-pulse .9s ease-in-out infinite; animation-delay: calc(.22s + var(--r) * 70ms), calc(.6s + var(--r) * 70ms); }
+		animation: gi-dot .45s cubic-bezier(.2, 1.6, .4, 1) forwards, gi-pulse .9s ease-in-out infinite; animation-delay: calc(.3s + var(--r) * 100ms), calc(.85s + var(--r) * 100ms); }
 	@keyframes gi-dot { to { opacity: 1; transform: scale(1); } }
 	@keyframes gi-pulse { 50% { transform: scale(.55); opacity: .6; } }
 	@keyframes gi-orb-out { to { opacity: 0; transform: scale(1.6); filter: blur(4px); } }
-	.gi-hi { position: absolute; left: 0; right: 0; top: 44%; margin: 0; transform: translateY(-50%); display: grid; justify-items: center; gap: 6px; text-align: center; opacity: 0; animation: gi-hi .5s .95s cubic-bezier(.2, .9, .25, 1) forwards; }
+	.gi-hi { position: absolute; left: 0; right: 0; top: 44%; margin: 0; transform: translateY(-50%); display: grid; justify-items: center; gap: 6px; text-align: center; z-index: 2; opacity: 0; animation: gi-hi .6s 1.55s cubic-bezier(.2, .9, .25, 1) forwards, gi-hi-out .5s 2.75s ease-in forwards; }
 	.gi-hi b { font: italic 400 40px/1.05 var(--f-serif, Georgia, serif); color: #fff; text-shadow: 0 2px 24px rgba(0, 0, 0, .25); }
 	.gi-hi span { font-size: 15px; font-weight: 600; color: rgba(255, 255, 255, .86); }
 	@keyframes gi-hi { from { opacity: 0; transform: translateY(-30%) scale(.96); } to { opacity: 1; transform: translateY(-50%); } }
-	.gi-paper { position: absolute; inset: 0; background: var(--bg); opacity: 0; animation: gi-paper .45s 1.3s ease forwards; }
+	@keyframes gi-hi-out { from { opacity: 1; transform: translateY(-50%); } to { opacity: 0; transform: translateY(-90%); } }
+	.gi-paper { position: absolute; inset: 0; background: var(--bg); opacity: 0; z-index: 1; animation: gi-paper .55s 2.7s ease forwards; }
 	@keyframes gi-paper { to { opacity: 1; } }
 
 	@media (prefers-reduced-motion: reduce) {
