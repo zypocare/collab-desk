@@ -50,7 +50,7 @@
 	/>
 </div>
 
-{#if phone.on}
+
 	<!-- Phone: each brand a ticket, like Needs you on Today: its colour band, then how it's going. -->
 	<section class="tks bk-tks">
 		{#each stats as s, i (s.brand.id)}
@@ -79,19 +79,4 @@
 			<div class="empty">No brands yet.</div>
 		{/each}
 	</section>
-{:else}
-<section class="panel rv" style="--i:2">
-	<div class="brand-row head"><span>Brand</span><span>Collabs</span><span>Earned</span><span class="hide-sm">Pays in</span><span class="hide-sm">Last collab</span></div>
-	{#each stats as s, i (s.brand.id)}
-		<a class="brand-row" href="/studio/brands/{s.brand.id}" style="--i:{i}">
-			<span class="who"><Mono name={s.brand.name} /><div><b>{s.brand.name}</b><small>{s.brand.category}{s.brand.instagram ? ` · @${s.brand.instagram.replace(/^@+/, '')}` : ''}</small></div></span>
-			<span class="n hide-sm">{s.count}<span class="m">{s.active ? `${s.active} active` : 'none active'}</span></span>
-			<span class="n">{inr(s.paid)}<span class="m">{s.barter ? `+ ${inr(s.barter)} products` : s.outstanding ? `${inr(s.outstanding)} due` : ''}</span></span>
-			<span class="n hide-sm">{s.avgDaysToPay === null ? '—' : `${s.avgDaysToPay} days`}<span class="m">{s.onTimeRate === null ? '' : `${Math.round(s.onTimeRate * 100)}% on time`}</span></span>
-			<span class="n hide-sm">{fmt(s.lastDate)}</span>
-		</a>
-	{:else}
-		<div class="empty">No brands yet.</div>
-	{/each}
-</section>
-{/if}
+

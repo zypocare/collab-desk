@@ -3,7 +3,7 @@
 	import { isRanked } from '../priority';
 	import { priorityOf } from '../studio.svelte';
 	import { ui } from '../ui.svelte';
-	import { delivText, diff, fmt, inr, inrS, nextLine, stageIndex, stageLabel, unreadFor } from '../util';
+	import { delivText, diff, fmt, hueOf, inr, inrS, nextLine, stageIndex, stageLabel, unreadFor } from '../util';
 	import Icon from './Icon.svelte';
 	import { nextStep } from '../suggest';
 	import PriorityBadge from './PriorityBadge.svelte';
@@ -41,7 +41,7 @@
 	tabindex="0"
 	role="button"
 	aria-pressed={selecting ? picked : undefined}
-	style="--i:{i}"
+	style="--i:{i};--h:var(--m{hueOf(c.brand.name)})"
 	aria-label="{c.brand.name}, {stageLabel(c.stage)}"
 	ondragstart={(e) => {
 		e.dataTransfer?.setData('text/plain', c.id);

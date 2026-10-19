@@ -257,11 +257,17 @@
 	.nc-add:disabled { opacity: .45; cursor: default; box-shadow: none; }
 	.nc-add :global(.ic) { width: 18px; height: 18px; }
 	.nc-eb, .nc-go { display: none; }
-	/* Phone: CRED's sheet. A spaced-capitals line, the title in serif, the message box as a NeoPOP
+	/* CRED's sheet (phone and laptop). A spaced-capitals line, the title in serif, the message box as a NeoPOP
 	   card with its tools as tiles, the brand on a big underline, and two NeoPOP blocks to finish. */
 	@media (max-width: 760px) {
-		:global([data-side]) .dialog.nc { padding: 22px 18px calc(18px + env(safe-area-inset-bottom, 0px)); border-radius: 24px 24px 0 0;
-			background: radial-gradient(130% 34% at 50% 0%, color-mix(in oklab, var(--g2) 16%, transparent), transparent 72%), var(--surface); }
+		:global([data-side]) .dialog.nc { padding: 22px 18px calc(18px + env(safe-area-inset-bottom, 0px)); border-radius: 24px 24px 0 0; }
+	}
+	/* Laptop: the same sheet as a centred card. */
+	@media (min-width: 761px) {
+		:global([data-side]) .dialog.nc { width: min(560px, calc(100vw - 48px)); padding: 30px 30px 28px; border-radius: 28px; border: 1px solid var(--line); }
+	}
+	@media all {
+		:global([data-side]) .dialog.nc { background: radial-gradient(130% 34% at 50% 0%, color-mix(in oklab, var(--g2) 16%, transparent), transparent 72%), var(--surface); }
 		.nc form > * { animation: nc-up .55s cubic-bezier(.2, .9, .25, 1) both; }
 		.nc form > :nth-child(2) { animation-delay: .04s; } .nc form > :nth-child(3) { animation-delay: .08s; } .nc form > :nth-child(4) { animation-delay: .12s; }
 		.nc form > :nth-child(5) { animation-delay: .16s; } .nc form > :nth-child(n+6) { animation-delay: .2s; }
@@ -312,7 +318,7 @@
 		.nc-add:not(:disabled) .nc-go { animation: nc-nudge 1.6s ease-in-out infinite; }
 		@keyframes nc-nudge { 50% { transform: translateX(4px); } }
 	}
-	@media (max-width: 760px) and (prefers-reduced-motion: reduce) {
+	@media (prefers-reduced-motion: reduce) {
 		.nc form > *, .nc-chip, .nc-add::after, .nc-go, .nc-pill.rec :global(.ic), .nc-compose.busy { animation: none !important; }
 	}
 </style>

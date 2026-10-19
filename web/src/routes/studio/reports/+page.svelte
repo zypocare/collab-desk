@@ -16,6 +16,8 @@
 	let fyStart = $state(String(current.start));
 	const fy = $derived(fyFromStart(Number(fyStart)));
 	const r = $derived(buildReport(studio.collabs, fy));
+	const liveMonths = $derived(r.months.filter((m) => m.taxable || m.received || m.barter));
+	const brandTop = $derived(Math.max(1, ...r.brands.map((b) => b.received)));
 	const d = $derived(dealStats(studio.collabs, fy.from, fy.to, studio.settings?.rates ?? {}));
 	const pct = (x: number | null) => (x === null ? '—' : `${Math.round(x * 100)}%`);
 	const dayText = (x: number | null) => (x === null ? '—' : `${Math.round(x)} day${Math.round(x) === 1 ? '' : 's'}`);
@@ -103,39 +105,23 @@
 <div class="md-grid rep-grid">
 	<section class="panel rv" style="--i:6">
 		<div class="panel-h"><h2>Month by month</h2><button class="btn sm" onclick={exportMonthly}><Icon name="arrow" />CSV</button></div>
-		{#if phone.on}
-			{@const live = r.months.filter((m) => m.taxable || m.received || m.barter)}
 			<div class="rp-m">
 				<div class="rp-total"><small>Kept this year</small><b>{inr(r.total.received - r.total.costs)}</b><span>{inr(r.total.received)} received · {inr(r.total.tds)} TDS · {inr(r.total.costs)} costs</span></div>
 				<ol class="tp-rank">
-					{#each live as m (m.key)}
+					{#each liveMonths as m (m.key)}
 						{@const kept = m.received - m.costs}
 						<li>
 							<span class="tp-n">{m.label.split(' ')[0].slice(0, 3)}<small>{m.label.split(' ')[1] ?? ''}</small></span>
-							<span class="tp-t"><b>{m.received ? `${inr(m.received)} in` : 'Nothing in'}</b><small>{[m.taxable ? `${inrS(m.taxable)} invoiced` : '', m.tds ? `${inrS(m.tds)} TDS` : '', m.barter ? `${inrS(m.barter)} barter` : '', m.costs ? `${inrS(m.costs)} costs` : ''].filter(Boolean).join(' · ') || 'no costs'}</small><span class="tp-bar"><i style="width:{Math.max(6, Math.round((Math.max(0, kept) / Math.max(1, ...live.map((x) => x.received - x.costs))) * 100))}%"></i></span></span>
+							<span class="tp-t"><b>{m.received ? `${inr(m.received)} in` : 'Nothing in'}</b><small>{[m.taxable ? `${inrS(m.taxable)} invoiced` : '', m.tds ? `${inrS(m.tds)} TDS` : '', m.barter ? `${inrS(m.barter)} barter` : '', m.costs ? `${inrS(m.costs)} costs` : ''].filter(Boolean).join(' · ') || 'no costs'}</small><span class="tp-bar"><i style="width:{Math.max(6, Math.round((Math.max(0, kept) / Math.max(1, ...liveMonths.map((x) => x.received - x.costs))) * 100))}%"></i></span></span>
 							<b class="tp-v">{inr(kept)}</b>
 						</li>
 					{:else}
 						<li class="rp-none">Nothing in this year yet.</li>
 					{/each}
 				</ol>
-				{#if live.length && live.length < 12}<p class="rp-quiet">{12 - live.length} quiet month{12 - live.length === 1 ? '' : 's'} not shown. The CSV has every month.</p>{/if}
+				{#if liveMonths.length && liveMonths.length < 12}<p class="rp-quiet">{12 - liveMonths.length} quiet month{12 - liveMonths.length === 1 ? '' : 's'} not shown. The CSV has every month.</p>{/if}
 			</div>
-		{:else}
-		<div style="overflow-x:auto;padding:0 20px 16px">
-			<table class="doc-table rep-table">
-				<thead><tr><th>Month</th><th>Invoiced</th>{#if s.gst_registered}<th>GST</th>{/if}<th>Received</th><th>TDS</th><th>Barter</th><th>Costs</th><th>Kept</th></tr></thead>
-				<tbody>
-					{#each r.months as m (m.key)}
-						<tr class:empty={!m.taxable && !m.received && !m.barter}>
-							<td>{m.label}</td><td>{m.taxable ? inr(m.taxable) : '—'}</td>{#if s.gst_registered}<td>{m.gst ? inr(m.gst) : '—'}</td>{/if}<td>{m.received ? inr(m.received) : '—'}</td><td>{m.tds ? inr(m.tds) : '—'}</td><td>{m.barter ? inr(m.barter) : '—'}</td><td>{m.costs ? inr(m.costs) : '—'}</td><td>{m.received || m.costs ? inr(m.received - m.costs) : '—'}</td>
-						</tr>
-					{/each}
-				</tbody>
-				<tfoot><tr><td>Total</td><td>{inr(r.total.taxable)}</td>{#if s.gst_registered}<td>{inr(r.total.gst)}</td>{/if}<td>{inr(r.total.received)}</td><td>{inr(r.total.tds)}</td><td>{inr(r.total.barter)}</td><td>{inr(r.total.costs)}</td><td>{inr(r.total.received - r.total.costs)}</td></tr></tfoot>
-			</table>
-		</div>
-		{/if}
+		
 	</section>
 	<section class="md-card rv" style="--i:7">
 		<header class="md-h"><div><span class="bx-eb">Month by month</span><h2>Money received</h2></div><a href="/studio/money">Dashboard<Icon name="arrow" /></a></header>
@@ -156,10 +142,9 @@
 	{#if tip}<p class="dl-tip"><Icon name="spark" />{tip}</p>{/if}
 	<div class="dl-tables">
 		{#each [{ title: 'By category', rows: d.byCategory }, { title: 'Where they came from', rows: d.bySource }, { title: 'By type', rows: d.byType }] as { title, rows } (title)}
+			{@const top = Math.max(1, ...rows.map((g) => g.deals))}
 			<div>
 				<h3>{title}</h3>
-				{#if phone.on}
-					{@const top = Math.max(1, ...rows.map((g) => g.deals))}
 					<ol class="tp-rank">
 						{#each rows as g, i (g.key)}
 							<li class:top={i === 0}>
@@ -169,14 +154,7 @@
 							</li>
 						{:else}<li class="rp-none">No requests in this year yet.</li>{/each}
 					</ol>
-				{:else}
-				<table class="doc-table rep-table">
-					<thead><tr><th></th><th>Requests</th><th>Won</th><th>Avg. fee</th></tr></thead>
-					<tbody>
-						{#each rows as g (g.key)}<tr><td>{g.key}</td><td>{g.deals}</td><td>{g.rate === null ? '—' : pct(g.rate)}</td><td>{g.avgFee ? inr(g.avgFee) : '—'}</td></tr>{:else}<tr><td colspan="4" class="hint">No requests in this year yet.</td></tr>{/each}
-					</tbody>
-				</table>
-				{/if}
+				
 			</div>
 		{/each}
 	</div>
@@ -184,31 +162,16 @@
 
 <section class="panel rv" style="--i:8;margin-bottom:18px">
 	<div class="panel-h"><h2>By brand</h2><button class="btn sm" onclick={exportBrands}><Icon name="arrow" />CSV</button></div>
-	{#if phone.on}
-		{@const top = Math.max(1, ...r.brands.map((b) => b.received))}
 		<ol class="tp-rank rp-b">
 			{#each r.brands as b, i (b.name + i)}
 				<li class:top={i === 0}>
 					<span class="tp-n">{String(i + 1).padStart(2, '0')}</span>
-					<span class="tp-t"><b>{b.name}</b><small>{[b.taxable ? `${inrS(b.taxable)} invoiced` : '', b.tds ? `${inrS(b.tds)} TDS` : '', b.barter ? `${inrS(b.barter)} barter` : ''].filter(Boolean).join(' · ') || 'received'}{#if b.tdsCertsMissing} · <em class="rp-warn">Form 16A missing</em>{/if}</small><span class="tp-bar"><i style="width:{Math.max(6, Math.round((b.received / top) * 100))}%"></i></span></span>
+					<span class="tp-t"><b>{b.name}</b><small>{[b.taxable ? `${inrS(b.taxable)} invoiced` : '', b.tds ? `${inrS(b.tds)} TDS` : '', b.barter ? `${inrS(b.barter)} barter` : ''].filter(Boolean).join(' · ') || 'received'}{#if b.tdsCertsMissing} · <em class="rp-warn">Form 16A missing</em>{/if}</small><span class="tp-bar"><i style="width:{Math.max(6, Math.round((b.received / brandTop) * 100))}%"></i></span></span>
 					<b class="tp-v">{inr(b.received)}</b>
 				</li>
 			{:else}<li class="rp-none">Nothing in this year yet.</li>{/each}
 		</ol>
-	{:else}
-	<div style="overflow-x:auto;padding:0 20px 16px">
-		<table class="doc-table rep-table">
-			<thead><tr><th>Brand</th><th>Invoiced</th><th>Received</th><th>TDS</th><th>Barter</th></tr></thead>
-			<tbody>
-				{#each r.brands as b, bi (b.name + bi)}
-					<tr><td>{b.name}{#if b.tdsCertsMissing}<span class="pill tint k-follow" style="margin-left:8px">Form 16A missing</span>{/if}</td><td>{inr(b.taxable)}</td><td>{inr(b.received)}</td><td>{inr(b.tds)}</td><td>{b.barter ? inr(b.barter) : '—'}</td></tr>
-				{:else}
-					<tr><td colspan="5" class="hint">Nothing in this year yet.</td></tr>
-				{/each}
-			</tbody>
-		</table>
-	</div>
-	{/if}
+	
 </section>
 
 <TaxPack {fy} />

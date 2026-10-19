@@ -339,7 +339,7 @@
 		</a>
 		{#if !phone.on}
 			<button class="set-item" onclick={toggleTheme}><span class="set-ic"><Icon name={theme.value === 'dark' ? 'sun' : 'moon'} /></span><span class="set-t"><b>{theme.value === 'dark' ? 'Light look' : 'Dark look'}</b><small>How the app looks on this computer</small></span></button>
-			<button class="set-item" onclick={async () => (await signOut(), goto('/login', { replaceState: true }))}><span class="set-ic"><Icon name="logout" /></span><span class="set-t"><b>Log out</b><small>@{s.handle}</small></span></button>
+			<button class="set-item set-out" onclick={async () => (await signOut(), goto('/login', { replaceState: true }))}><span class="set-ic"><Icon name="logout" /></span><span class="set-t"><b>Log out</b><small>@{s.handle}</small></span></button>
 		{/if}
 	</nav>
 	{#if active && current}

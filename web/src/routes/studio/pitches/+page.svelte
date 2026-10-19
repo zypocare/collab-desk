@@ -178,7 +178,7 @@
 {#if ready.length}
 	<section class="hs pa-q">
 		<header class="hs-h"><h2>Ready to send</h2><span class="hs-n">{ready.length}</span></header>
-		{#if phone.on}
+		
 			<div class="tks pt-tks">
 				{#each ready as p, i (p.id)}
 					<Ticket name={p.brand_name} sub={[p.category, p.email].filter(Boolean).join(' · ')} task={p.fit_note || p.subject} status={goes(p)} tone={p.approved || auto ? 'ok' : 'warn'} onopen={() => (open = { ...p })} {i}>
@@ -190,24 +190,7 @@
 					</Ticket>
 				{/each}
 			</div>
-		{:else}
-			<div class="panel pt-list">
-				{#each ready as p (p.id)}
-					<div class="pt-row">
-						<Mono name={p.brand_name} />
-						<div class="pt-b">
-							<b>{p.brand_name}{p.website ? ` · ${p.website.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '')}` : ''}</b>
-							<small><span class="pill tint {p.approved || auto ? 'k-pay' : 'k-new'}">{goes(p)}</span>{p.fit_note} · {p.email}</small>
-						</div>
-						<div class="pt-acts">
-							{#if !p.approved && !auto}<button class="btn sm primary" onclick={() => approve([p])}><Icon name="check" />Approve</button>{/if}
-							<button class="btn sm" onclick={() => (open = { ...p })}><Icon name="edit" />Read</button>
-							<button class="icon-btn" title="Skip" aria-label="Skip this brand" onclick={() => skip(p)}><Icon name="x" /></button>
-						</div>
-					</div>
-				{/each}
-			</div>
-		{/if}
+		
 	</section>
 {/if}
 
@@ -215,7 +198,7 @@
 	<Segmented label="Show" bind:value={show} options={[{ value: 'open', label: 'In progress' }, { value: 'all', label: 'All' }]} />
 </div>
 
-{#if phone.on && shown.length}
+{#if shown.length}
 	<!-- Phone: each pitch a ticket, like Needs you on Today. -->
 	<section class="tks pt-tks">
 		{#each shown as p, i (p.id)}

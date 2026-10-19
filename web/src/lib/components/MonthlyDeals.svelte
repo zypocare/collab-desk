@@ -42,7 +42,7 @@
 		<h2>Monthly deals</h2>
 		<button class="btn sm" onclick={() => (open = {})}><Icon name="plus" />{brandId ? 'Set up a monthly deal' : 'New monthly deal'}</button>
 	</div>
-	{#if phone.on && list.length}
+	{#if list.length}
 		<!-- Phone: each monthly deal a ticket, like Needs you on Today. -->
 		<div class="tks md-tks">
 			{#each list as r, i (r.id)}
@@ -69,24 +69,7 @@
 			{/each}
 		</div>
 	{:else}
-	{#each list as r (r.id)}
-		{@const cur = thisMonth(r)}
-		<div class="md-row" class:off={!r.active}>
-			<Mono name={brandOf(r.brand_id)} />
-			<div class="md-b">
-				<b>{brandId ? r.title || 'Monthly deal' : `${brandOf(r.brand_id)}${r.title ? ` · ${r.title}` : ''}`}</b>
-				<small>{what(r)} a month · {inr(r.fee)} · go-live on the {r.live_day}{r.live_day === 1 || r.live_day === 21 ? 'st' : r.live_day === 2 || r.live_day === 22 ? 'nd' : r.live_day === 3 || r.live_day === 23 ? 'rd' : 'th'}</small>
-				<span class="md-st"><span class="pill tint {r.active ? 'k-pay' : 'plain'}">{status(r)}</span>{#if cur}<a class="lnk" href="/studio/c/{cur.code}">This month: {cur.code}{cur.live_date ? `, live ${fmt(cur.live_date)}` : ''}</a>{/if}</span>
-			</div>
-			<div class="md-acts">
-				<button class="icon-btn" aria-label="Change" title="Change" onclick={() => (open = { editing: r })}><Icon name="edit" /></button>
-				<button class="icon-btn" aria-label={r.active ? 'Pause' : 'Resume'} title={r.active ? 'Pause' : 'Resume'} onclick={() => toggle(r)}><Icon name={r.active ? 'clock' : 'refresh'} /></button>
-				<button class="icon-btn" aria-label="Remove" title="Remove" onclick={() => remove(r)}><Icon name="x" /></button>
-			</div>
-		</div>
-	{:else}
 		<p class="hint md-empty">Ambassador or retainer deal? Set it up once and each month's collab, go-live date and invoice are created on their own.</p>
-	{/each}
 	{/if}
 </section>
 

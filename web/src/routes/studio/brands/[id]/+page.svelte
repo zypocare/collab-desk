@@ -75,7 +75,7 @@
 		</div>
 	</header>
 
-	{#if phone.on}
+	
 		<!-- Phone: the brand on a big band in its colour (like its ticket), its numbers in serif. -->
 		<section class="bd-band" style="--h:var(--m{hueOf(brand.name)})" aria-label="Brand summary">
 			<div class="bd-top">
@@ -90,30 +90,16 @@
 			</div>
 			{#if s.outstanding}<p class="bd-due"><i></i>{inr(s.outstanding)} still to come</p>{/if}
 		</section>
-	{/if}
-	<section class="kpis k4" aria-label="Brand summary" hidden={phone.on}>
-		<div class="kpi glow rv" style="--i:1"><div><div class="lbl">Earned</div><div class="big" use:countUp={{ value: s.paid, money: true }}>{inr(s.paid)}</div><div class="sub">{s.outstanding ? `${inr(s.outstanding)} still due` : 'nothing due'}</div></div></div>
-		<div class="kpi glow rv" style="--i:2"><div><div class="lbl">Collabs</div><div class="big" use:countUp={{ value: s.count }}>{s.count}</div><div class="sub">{s.active} active</div></div></div>
-		<div class="kpi glow rv" style="--i:3"><div><div class="lbl">Barter value</div><div class="big" use:countUp={{ value: s.barter, money: true }}>{inr(s.barter)}</div><div class="sub">products received</div></div></div>
-		<div class="kpi glow rv" style="--i:4"><div><div class="lbl">Pays in</div><div class="big">{s.avgDaysToPay === null ? '—' : `${s.avgDaysToPay}d`}</div><div class="sub">{s.avgDaysToPay === null ? 'no paid invoices yet' : s.onTimeRate === null ? 'from invoice to payment' : `${Math.round(s.onTimeRate * 100)}% paid on time`}</div></div></div>
-	</section>
+	
 
 	<div class="page-grid">
 		<div class="stack">
 			<MonthlyDeals brandId={brand.id} brandName={brand.name} />
 			<section class="panel rv" style="--i:5">
 				<div class="panel-h"><h2>Collabs</h2><small>newest first</small></div>
-				{#if phone.on}
+				
 					<div class="m-list m-wallet">{#each s.collabs as c, i (c.id)}<CollabRow {c} {i} />{/each}</div>
-				{:else}
-				{#each s.collabs as c, i (c.id)}
-					<button class="prod-row" style="width:100%;border-left:0;border-right:0;border-bottom:0;background:none;text-align:left;animation:rise .5s var(--ease) both;animation-delay:calc({i} * 40ms)" onclick={() => (ui.openCollab = c.id)}>
-						<span class="ticon tint st-{c.stage}" style="width:34px;height:34px"><span class="dt"></span></span>
-						<div><b>{delivText(c.deliverables)}</b><small><span class="id">{c.code}</span> · {stageLabel(c.stage)} · {fmt(c.live_date ?? c.received_on)}</small></div>
-						<span style="display:flex;flex-direction:column;align-items:flex-end;gap:4px"><span class="v">{c.type === 'barter' ? inr(c.product_value) : inr(c.fee)}</span><PayPill {c} /></span>
-					</button>
-				{/each}
-				{/if}
+				
 			</section>
 		</div>
 		<div class="stack">

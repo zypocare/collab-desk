@@ -76,7 +76,7 @@
 	</div>
 </section>
 
-{#if phone.on}
+
 	<nav class="cr-rings" aria-label="Money shortcuts">
 		<a class="cr-ring" href="/studio/payments"><i><span><Icon name="wallet" /></span></i>{#if lateList.length}<b>{lateList.length} LATE</b>{:else if dueN}<b>{dueN} DUE</b>{/if}<small>Payments</small></a>
 		<a class="cr-ring" href="/studio/reports"><i><span><Icon name="chart" /></span></i><small>Reports</small></a>
@@ -87,7 +87,7 @@
 	{#if facts.length}
 		<div class="cr-ticker" aria-label="Money facts"><div>{#each [0, 1] as k (k)}{#each facts as f, j (j)}<span aria-hidden={k === 1}><b>{f.b}</b>{f.t}</span><span aria-hidden="true">✦</span>{/each}{/each}</div></div>
 	{/if}
-{/if}
+
 
 <div class="md-grid">
 	<section class="md-card md-wide rv" style="--i:1">

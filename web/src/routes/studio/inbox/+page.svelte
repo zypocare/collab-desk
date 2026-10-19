@@ -23,7 +23,7 @@
 		<span class="ibx-ring"><Icon name="send" /></span>
 		<h2>Your messages</h2>
 		<p>Pick a chat on the left, or send a message to a brand to start one.</p>
-		<button class="btn ibx-btn" onclick={start}>Send message</button>
+		<button class="btn grad ibx-btn" onclick={start}>Send message</button>
 	</div>
 {/if}
 
@@ -31,8 +31,6 @@
 	.ibx-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 40px; text-align: center; }
 	.ibx-ring { width: 104px; height: 104px; border-radius: 50%; border: 2.5px solid var(--ink); display: grid; place-items: center; margin-bottom: 12px; }
 	.ibx-ring :global(.ic) { width: 48px; height: 48px; stroke-width: 1.4; }
-	.ibx-empty h2 { margin: 0; font-size: 22px; font-weight: 500; letter-spacing: -.01em; }
+	.ibx-empty h2 { margin: 0; font: 400 36px/1.1 var(--f-serif, Georgia, serif); letter-spacing: -.01em; }
 	.ibx-empty p { margin: 0 0 12px; color: var(--ink-3); font-size: 15px; }
-	:global([data-side='studio']) .ibx-btn { background: #4a5df9; color: #fff; border-color: transparent; }
-	:global([data-side='studio']) .ibx-btn:hover:not([disabled]) { background: #3b4ee6; border-color: transparent; }
 </style>
