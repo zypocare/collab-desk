@@ -431,20 +431,28 @@ async function scout(x: Run, b: Record<string, unknown>) {
 	if (!x.gemini) throw new Error('!Finding brands needs the Gemini key.');
 	const n = Math.min(20, Math.max(1, Math.round(Number(b.count) || 12)));
 	const skip = (Array.isArray(b.exclude) ? b.exclude : []).map((t) => String(t ?? '').slice(0, 60)).filter(Boolean).slice(0, 200);
-	const reply = await gemini(
+	// With Google Search when this key includes it; otherwise from what Gemini knows. Either way the
+	// daily finder keeps only brands whose own website loads and shows a public email.
+	const ask = (search: boolean) => gemini(
 		x.env,
-		`You find brands for an Indian Instagram creator to pitch for paid collaborations. Use Google Search. Find ${n} real, currently active brands or businesses that:
+		`You find brands for an Indian Instagram creator to pitch for paid collaborations. ${search ? 'Use Google Search.' : 'Use what you know well; only brands you are sure exist and are still trading.'} Find ${n} real, currently active brands or businesses that:
 - fit her content and audience (details below), and sell in India (D2C brands, Indian labels, and businesses in or near her city: cafes, restaurants, studios, stays, experiences);
 - already work with Instagram creators (influencer campaigns, ambassador or creator programmes, gifting, paid partnerships), ideally recently;
 - are a realistic fit for her size (skip global giants that only work through big agencies).
-Never include any brand in the exclude list, and no duplicates. Only brands you found in search results with an official website you saw; never invent a brand, a website or a handle.
+Never include any brand in the exclude list, and no duplicates. ${search ? 'Only brands you found in search results with an official website you saw' : 'Only brands whose official website domain you are sure of'}; never invent a brand, a website or a handle. Vary the picks: mix well-known names with smaller, newer Indian labels and local businesses.
 For each give: "name", "website" (the official site, https://...), "instagram" (handle without @, or ""), "category" (one of: Beauty, Fashion, Food & drink, Travel, Fitness, Wellness, Tech, Home, Lifestyle, Other), "why" (one specific line, under 20 words, why they suit her, e.g. "Bengaluru café chain that hosted creator tastings for its new menu in 2026").
 Return ONLY a JSON array of objects, nothing else.`,
 		`Creator: ${JSON.stringify(b.creator ?? {}).slice(0, 1200)}\nExclude (already known or pitched): ${skip.join(', ') || 'none'}`,
 		4000,
-		0.7,
-		true
+		0.8,
+		search
 	);
+	let reply = '';
+	try {
+		reply = await ask(true);
+	} catch {
+		reply = await ask(false);
+	}
 	const a = reply.indexOf('['), z = reply.lastIndexOf(']');
 	let list: Record<string, unknown>[] = [];
 	try {
