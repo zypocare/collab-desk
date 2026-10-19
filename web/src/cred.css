@@ -1728,3 +1728,57 @@
   [data-side] .cs-cb:active { transform: translate(3px, 3px); box-shadow: none; }
   [data-side] .cs-dots i { border-radius: 0; height: 3px; }
 }
+
+/* ===== Collab page (phone and laptop): the section tabs, the next step and the stage in the CRED look.
+   Tabs are one square bar, the next step a card with a serif line and a NeoPOP button, the stage a
+   row of six square blocks that fill in the brand gradient. ===== */
+@media all {
+  /* Jump to a part: one outlined bar, segments split by thin lines. */
+  [data-side="studio"] .drawer .cx-nav.cx-nav { display: flex; gap: 0; width: max-content; max-width: 100%; padding: 0; border: 1px solid var(--line-strong); border-radius: 0; background: var(--bg); box-shadow: none; overflow-x: auto; scrollbar-width: none; }
+  [data-side="studio"] .drawer .cx-nav.cx-nav a { flex: none; height: 40px; margin: 0; padding: 0 16px; display: inline-flex; align-items: center; border: 0; border-radius: 0; background: transparent; color: var(--ink-2); font: 800 11px var(--f-body, inherit); letter-spacing: .14em; text-transform: uppercase; transition: background .2s, color .2s; }
+  [data-side="studio"] .drawer .cx-nav.cx-nav a + a { border-left: 1px solid var(--line); }
+  [data-side="studio"] .drawer .cx-nav.cx-nav a:hover { background: var(--ink); color: var(--bg); }
+
+  /* The next step: a card with the step in serif. */
+  [data-side="studio"] .drawer .next-bar.next-bar { position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 14px; margin: 14px 0 6px; padding: 18px 20px; border: 1px solid var(--line); border-radius: 22px; box-shadow: none;
+    background: radial-gradient(120% 90% at 0% 0%, color-mix(in oklab, var(--g2) 18%, transparent), transparent 60%), var(--surface); }
+  [data-side="studio"] .drawer .next-bar.next-bar::before, [data-side="studio"] .drawer .next-bar.next-bar::after { display: none; }
+  [data-side="studio"] .drawer .next-bar .nb-ic { width: 42px; height: 42px; border-radius: 50%; border: 1px solid var(--line-strong); background: transparent; color: var(--accent); box-shadow: none; }
+  [data-side="studio"] .drawer .next-bar .nb-ic .ic { width: 18px; height: 18px; }
+  [data-side="studio"] .drawer .next-bar.next-bar small { display: block; margin: 0 0 4px; font-size: 10.5px; font-weight: 800; letter-spacing: .17em; text-transform: uppercase; color: var(--accent); }
+  [data-side="studio"] .drawer .next-bar.next-bar b { display: block; margin: 0; font: 400 22px/1.15 var(--f-serif, Georgia, serif); letter-spacing: -.01em; color: var(--ink); }
+  [data-side="studio"] .drawer .next-bar.next-bar .btn { height: 44px; padding: 0 18px; border: 0; border-radius: 0; background: var(--ink); color: var(--bg); font-weight: 700; box-shadow: 3px 3px 0 var(--g2); }
+  [data-side="studio"] .drawer .next-bar.next-bar .btn:active { transform: translate(3px, 3px); box-shadow: none; }
+
+  /* The stage: six square blocks; done ones in the gradient, the current one ink with a pink edge. */
+  [data-side="studio"] .drawer .sh.sh { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; padding: 4px 4px 2px 0; }
+  [data-side="studio"] .drawer .sh .sh-track { display: none; }
+  [data-side="studio"] .drawer .sh .sh-step { align-items: flex-start; gap: 9px; padding: 0; cursor: pointer; }
+  [data-side="studio"] .drawer .sh .sh-step .sh-dot { width: 100%; height: 10px; border: 0; border-radius: 0; background: color-mix(in oklab, var(--ink) 9%, transparent); box-shadow: none; transform: none; transition: background .3s, box-shadow .15s; }
+  [data-side="studio"] .drawer .sh .sh-step .sh-dot .ic, [data-side="studio"] .drawer .sh .sh-step .sh-dot::after { display: none; }
+  [data-side="studio"] .drawer .sh .sh-step.past .sh-dot { background: linear-gradient(90deg, var(--g1), var(--g2), var(--g3)); background-size: 600% 100%; }
+  [data-side="studio"] .drawer .sh .sh-step.past:nth-child(2) .sh-dot { background-position: 0 0; }
+  [data-side="studio"] .drawer .sh .sh-step.past:nth-child(3) .sh-dot { background-position: 20% 0; }
+  [data-side="studio"] .drawer .sh .sh-step.past:nth-child(4) .sh-dot { background-position: 40% 0; }
+  [data-side="studio"] .drawer .sh .sh-step.past:nth-child(5) .sh-dot { background-position: 60% 0; }
+  [data-side="studio"] .drawer .sh .sh-step.past:nth-child(6) .sh-dot { background-position: 80% 0; }
+  [data-side="studio"] .drawer .sh .sh-step.on .sh-dot { background: var(--ink); box-shadow: 3px 3px 0 var(--g2); }
+  [data-side="studio"] .drawer .sh .sh-step:hover:not(.on) .sh-dot { background: color-mix(in oklab, var(--ink) 22%, transparent); }
+  [data-side="studio"] .drawer .sh .sh-step.past:hover .sh-dot { filter: brightness(1.15); }
+  [data-side="studio"] .drawer .sh .sh-l { font-size: 10.5px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; text-align: left; color: var(--ink-3); }
+  [data-side="studio"] .drawer .sh .sh-step.past .sh-l { color: var(--ink-2); }
+  [data-side="studio"] .drawer .sh .sh-step.on .sh-l { color: var(--ink); }
+}
+@media (max-width: 760px) {
+  /* Phone: the tabs bar runs edge to edge and scrolls; the next step's button lives in the bottom bar. */
+  [data-side="studio"] .drawer .cx-nav.cx-nav { width: auto; margin: 4px 0 0; }
+  [data-side="studio"] .drawer .cx-nav.cx-nav a { height: 42px; padding: 0 14px; }
+  [data-side="studio"] .drawer .next-bar.next-bar { grid-template-columns: auto minmax(0, 1fr); margin: 14px 0 4px; padding: 16px; }
+  [data-side="studio"] .drawer .next-bar.next-bar b { font-size: 20px; }
+  [data-side="studio"] .drawer .sh.sh { gap: 4px; }
+  [data-side="studio"] .drawer .sh .sh-l { font-size: 9px; letter-spacing: .02em; }
+}
+@media (min-width: 761px) {
+  /* Laptop: section names over each card in spaced capitals, like the phone. */
+  [data-side="studio"] .drawer.as-page .sec > h3 { font-size: 11px !important; font-weight: 700; letter-spacing: .17em !important; text-transform: uppercase; color: var(--ink-3); }
+}
