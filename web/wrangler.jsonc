@@ -14,6 +14,8 @@
 		"run_worker_first": ["/api/*", "/", "/q/*"]
 	},
 	"ai": { "binding": "AI" },
+	// Keep variables added in the Cloudflare dashboard (like GEMINI_API_KEY) when the app redeploys.
+	"keep_vars": true,
 	// Public address of the database (the same one the website uses).
 	// The public key (the same one inside the website); it only reaches what logged-out visitors can.
 	"vars": { "SUPABASE_URL": "https://qzsfuvcxpqaavmwkxutt.supabase.co", "SUPABASE_ANON_KEY": "sb_publishable_UaW1ryl2S-gvm7worjrHJw_Hjr9k3wj" }
