@@ -1782,3 +1782,61 @@
   /* Laptop: section names over each card in spaced capitals, like the phone. */
   [data-side="studio"] .drawer.as-page .sec > h3 { font-size: 11px !important; font-weight: 700; letter-spacing: .17em !important; text-transform: uppercase; color: var(--ink-3); }
 }
+
+/* ===== Collab page (phone and laptop): the Brief helpers and the Activity timeline in the CRED look ===== */
+@media all {
+  /* The Reel script card: a capital line, the offer in serif, a NeoPOP button. */
+  [data-side="studio"] .drawer .sc-cta.sc-cta { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 14px; margin: 0 0 14px; padding: 18px 20px; border: 1px solid var(--line); border-radius: 22px; box-shadow: none;
+    background: radial-gradient(120% 100% at 0% 0%, color-mix(in oklab, var(--g1) 20%, transparent), transparent 60%), radial-gradient(90% 90% at 100% 100%, color-mix(in oklab, var(--g2) 14%, transparent), transparent 60%), var(--surface); }
+  [data-side="studio"] .drawer .sc-cta .sc-cta-ic { width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--line-strong); background: transparent; color: var(--accent); }
+  [data-side="studio"] .drawer .sc-cta .sc-cta-ic .ic { width: 19px; height: 19px; }
+  [data-side="studio"] .drawer .sc-cta .sc-eb { display: block; margin-bottom: 4px; font-style: normal; font-size: 10.5px; font-weight: 800; letter-spacing: .17em; text-transform: uppercase; color: var(--accent); }
+  [data-side="studio"] .drawer .sc-cta b { display: block; font: 400 22px/1.12 var(--f-serif, Georgia, serif); letter-spacing: -.01em; color: var(--ink); }
+  [data-side="studio"] .drawer .sc-cta small { display: block; margin-top: 4px; font-size: 12.5px; color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  [data-side="studio"] .drawer .sc-cta .btn { height: 44px; padding: 0 18px; border: 0; border-radius: 0; background: var(--ink); color: var(--bg); font-weight: 700; box-shadow: 3px 3px 0 var(--g2); }
+  [data-side="studio"] .drawer .sc-cta .btn .ic { color: var(--g3); }
+  [data-side="studio"] .drawer .sc-cta .btn:active { transform: translate(3px, 3px); box-shadow: none; }
+
+  /* What the brief is missing: a square strip with each gap as a chip. */
+  [data-side="studio"] .drawer .date-sug.brief-gap { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; margin: 0 0 14px; padding: 14px 16px; border: 1px solid color-mix(in oklab, var(--warn, #e0a23a) 45%, var(--line)); border-radius: 0; background: color-mix(in oklab, var(--warn, #e0a23a) 8%, transparent); }
+  [data-side="studio"] .drawer .brief-gap > svg { box-sizing: content-box; width: 15px; height: 15px; padding: 8px; border-radius: 50%; border: 1px solid color-mix(in oklab, var(--warn, #e0a23a) 55%, transparent); color: var(--warn, #e0a23a); }
+  [data-side="studio"] .drawer .brief-gap > span { min-width: 0; display: grid; gap: 8px; }
+  [data-side="studio"] .drawer .brief-gap > span > b { font-size: 10.5px; font-weight: 800; letter-spacing: .15em; text-transform: uppercase; color: var(--warn, #e0a23a); }
+  [data-side="studio"] .drawer .bg-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  [data-side="studio"] .drawer .bg-chips i { height: 28px; padding: 0 10px; display: inline-flex; align-items: center; border: 1px solid var(--line-strong); font-style: normal; font-size: 12.5px; font-weight: 600; color: var(--ink); }
+  [data-side="studio"] .drawer .brief-gap .btn { height: 38px; padding: 0 14px; border: 1px solid var(--line-strong); border-radius: 0; background: transparent; color: var(--ink); font-weight: 700; box-shadow: 3px 3px 0 var(--line-strong); }
+
+  /* Start from a template: one tidy row, the suggestion in capitals, a square arrow. */
+  [data-side="studio"] .drawer .tpl-open.tpl-open { gap: 14px; margin: 0 0 16px; padding: 16px 18px; border: 1px solid var(--line); border-radius: 22px; background: var(--surface); }
+  [data-side="studio"] .drawer .tpl-open:hover { border-color: var(--line-strong); background: var(--surface); }
+  [data-side="studio"] .drawer .tpl-open .tpl-ic { width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--line-strong); background: transparent; color: var(--accent); }
+  [data-side="studio"] .drawer .tpl-open .tpl-name b { font-size: 15.5px; font-weight: 700; }
+  [data-side="studio"] .drawer .tpl-open .tpl-name small { font-size: 10.5px; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; color: var(--ink-3); }
+  [data-side="studio"] .drawer .tpl-open .tpl-chev { box-sizing: content-box; width: 16px; height: 16px; padding: 8px; border: 1px solid var(--line-strong); color: var(--ink); }
+  [data-side="studio"] .drawer .tpl-open:hover .tpl-chev { transform: translateX(3px); }
+
+  /* Activity: a day block in serif on the left, that day's events on a line on the right. */
+  [data-side="studio"] .drawer .act { display: flex; flex-direction: column; }
+  [data-side="studio"] .drawer .act-day { display: grid; grid-template-columns: 52px minmax(0, 1fr); gap: 14px; padding: 14px 0; border-top: 1px solid var(--line); }
+  [data-side="studio"] .drawer .act-day:first-child { border-top: 0; padding-top: 4px; }
+  [data-side="studio"] .drawer .act-d { display: grid; align-content: start; gap: 2px; }
+  [data-side="studio"] .drawer .act-d b { font: 400 32px/1 var(--f-serif, Georgia, serif); }
+  [data-side="studio"] .drawer .act-day.first .act-d b { background: linear-gradient(135deg, var(--g1), var(--g2) 60%, var(--g3)); -webkit-background-clip: text; background-clip: text; color: transparent; padding-right: 3px; }
+  [data-side="studio"] .drawer .act-d small { font-size: 10px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); }
+  [data-side="studio"] .drawer .act ol { list-style: none; margin: 0; padding: 0 0 0 18px; position: relative; display: flex; flex-direction: column; gap: 14px; }
+  [data-side="studio"] .drawer .act ol::before { content: ""; position: absolute; left: 4px; top: 6px; bottom: 6px; width: 1.5px; background: var(--line); }
+  [data-side="studio"] .drawer .act li { position: relative; display: grid; gap: 3px; min-width: 0; }
+  [data-side="studio"] .drawer .act li::before { content: ""; position: absolute; left: -18px; top: 4px; width: 10px; height: 10px; border-radius: 50%; background: var(--bg); border: 1.5px solid var(--line-strong); box-sizing: border-box; }
+  [data-side="studio"] .drawer .act li.now::before { border: 0; background: var(--g2); box-shadow: 0 0 0 4px color-mix(in oklab, var(--g2) 22%, transparent); }
+  [data-side="studio"] .drawer .act-t { display: flex; align-items: center; gap: 10px; font-size: 10px; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; color: var(--ink-3); }
+  [data-side="studio"] .drawer .act-t em { font-style: normal; color: var(--accent); }
+  [data-side="studio"] .drawer .act-x { font-size: 15px; line-height: 1.4; color: var(--ink); overflow-wrap: anywhere; }
+  [data-side="studio"] .drawer .act li:not(.now) .act-x { color: var(--ink-2); }
+}
+@media (max-width: 760px) {
+  /* Phone: the script button drops under the text, full width. */
+  [data-side="studio"] .drawer .sc-cta.sc-cta { grid-template-columns: auto minmax(0, 1fr); padding: 16px; }
+  [data-side="studio"] .drawer .sc-cta .btn { grid-column: 1 / -1; width: 100%; justify-content: center; }
+  [data-side="studio"] .drawer .date-sug.brief-gap { grid-template-columns: auto minmax(0, 1fr); }
+  [data-side="studio"] .drawer .brief-gap .btn { grid-column: 1 / -1; justify-self: start; }
+}

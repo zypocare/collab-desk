@@ -144,6 +144,19 @@
 		}
 		capBusy = false;
 	}
+	// Activity, newest first, grouped by day.
+	const clock = (at: string) => new Date(at).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit' });
+	const actDays = $derived.by(() => {
+		const out: { day: string; d: number; m: string; items: NonNullable<typeof c>['events'] }[] = [];
+		for (const ev of c?.events ?? []) {
+			const dt = new Date(ev.at);
+			const day = dt.toDateString();
+			const last = out[out.length - 1];
+			if (last && last.day === day) last.items.push(ev);
+			else out.push({ day, d: dt.getDate(), m: dt.toLocaleDateString('en-IN', { month: 'short' }), items: [ev] });
+		}
+		return out;
+	});
 	const sh = (k: string) => !page || showAll || (FOCUS[c?.stage ?? ''] ?? []).includes(k);
 	$effect(() => {
 		if (!page) return;
@@ -785,14 +798,14 @@
 				{#if !['declined', 'wrapped'].includes(c.stage)}
 					<div class="sc-cta">
 						<span class="sc-cta-ic"><Icon name="script" /></span>
-						<span><b>{c.script ? 'Your Reel script' : 'Turn this brief into a Reel script'}</b><small>{c.script ? `${c.script.scenes.length} scenes${c.script.hook ? ` · “${c.script.hook}”` : ''}` : 'Hooks, every scene with what to say, the must-says and a caption'}</small></span>
+						<span><em class="sc-eb">AI · Reel script</em><b>{c.script ? 'Your Reel script' : 'Turn this brief into a Reel script'}</b><small>{c.script ? `${c.script.scenes.length} scenes${c.script.hook ? ` · “${c.script.hook}”` : ''}` : 'Hooks, every scene with what to say, the must-says and a caption'}</small></span>
 						<button class="btn sm ai-btn" onclick={() => (scriptOpen = true)}><Icon name="spark" />{c.script ? 'Open' : 'Write script'}</button>
 					</div>
 				{/if}
 				{#if missingBrief.length && !['declined', 'wrapped'].includes(c.stage)}
 					<div class="date-sug brief-gap">
 						<Icon name="alert" />
-						<span><b>Missing:</b> {missingBrief.map((k) => BRIEF_NEEDS[k]).join(', ')}{c.brief_asked_at ? `. Asked ${fmt(c.brief_asked_at.slice(0, 10))}` : ''}</span>
+						<span><b>Missing from the brief{c.brief_asked_at ? ` · asked ${fmt(c.brief_asked_at.slice(0, 10))}` : ''}</b><span class="bg-chips">{#each missingBrief as k (k)}<i>{BRIEF_NEEDS[k]}</i>{/each}</span></span>
 						{#if c.contact_email}<button class="btn sm" disabled={askBusy} onclick={askBrief}>{c.brief_asked_at ? 'Ask again' : 'Ask the brand'}</button>{/if}
 					</div>
 				{/if}
@@ -826,11 +839,22 @@
 
 			<section class="sec" id="sec-activity" hidden={!sh('activity')}>
 				<h3>Activity</h3>
-				<ol class="log">
-					{#each c.events as ev (ev.id)}
-						<li><time>{fmt(ev.at)}</time><span title={fmtTime(ev.at)}>{ev.text}</span></li>
+				<div class="act">
+					{#each actDays as g, gi (g.day)}
+						<div class="act-day" class:first={gi === 0}>
+							<span class="act-d"><b>{g.d}</b><small>{g.m}</small></span>
+							<ol>
+								{#each g.items as ev, i (ev.id)}
+									{@const k = ev.text.match(/^([A-Z][A-Za-z ]{1,24}):\s+(.+)$/)}
+									<li class:now={gi === 0 && i === 0}>
+										<span class="act-t"><time title={fmtTime(ev.at)}>{clock(ev.at)}</time>{#if k}<em>{k[1]}</em>{/if}</span>
+										<span class="act-x">{k ? k[2] : ev.text}</span>
+									</li>
+								{/each}
+							</ol>
+						</div>
 					{/each}
-				</ol>
+				</div>
 			</section>
 			{#if page}
 				<div class="more-row">
