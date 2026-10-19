@@ -98,17 +98,13 @@
 </script>
 
 <div class="lm">
-	<header class="lm-h">
-		<div class="lm-hi">
-			<span class="lm-eb">Money · {fy.label} · April to March</span>
-			<h1>Your <em>money</em></h1>
+	<!-- The same header as Payments and Reports; the shared top bar carries the tabs and buttons. -->
+	<header class="ph rv">
+		<div>
+			<div class="eb">Money · {fy.label}</div>
+			<h1>Money</h1>
+			<p>Everything you've earned, what's coming in, and who pays best.</p>
 		</div>
-		<nav class="lm-tabs" aria-label="Money pages">
-			<a href="/studio/money" aria-current="page">Overview</a>
-			<a href="/studio/payments">Payments</a>
-			<a href="/studio/reports">Reports</a>
-		</nav>
-		<button class="lm-neo lm-grad lm-shine lm-new" onclick={() => (ui.newCollab = true)}><Icon name="plus" />New collab</button>
 	</header>
 
 	<!-- Row 1: the year + this month's goal -->
@@ -256,28 +252,14 @@
 	/* Every size, gap and colour below is taken from the approved laptop Money design. */
 	.lm { display: flex; flex-direction: column; gap: 26px; padding-bottom: 56px; color: var(--ink); font-family: var(--f-body, Inter, system-ui, sans-serif); }
 	.lm-eb, .lm-sh span, .lm-ht > span { font-size: 11px; font-weight: 700; letter-spacing: .17em; text-transform: uppercase; color: var(--ink-3); }
-	h1, h2 { margin: 0; font-family: var(--f-serif, Georgia, serif); font-weight: 400; letter-spacing: -.01em; }
-	h1 em, h2 em { background: linear-gradient(90deg, var(--g1), var(--g2) 60%, var(--g3)); -webkit-background-clip: text; background-clip: text; color: transparent; padding-right: 4px; }
-
-	/* Header */
-	.lm-h { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 20px; }
-	.lm-hi { flex: 1 1 380px; display: grid; gap: 8px; }
-	.lm-hi h1 { font-size: 52px; line-height: 1.02; }
-	.lm-tabs { display: flex; border: 1px solid var(--line-strong); }
-	.lm-tabs a { height: 44px; padding: 0 18px; display: inline-flex; align-items: center; color: var(--ink-3); font-size: 11px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; text-decoration: none; }
-	.lm-tabs a + a { border-left: 1px solid var(--line); }
-	.lm-tabs a:hover { color: var(--ink); }
-	.lm-tabs a[aria-current='page'] { position: relative; z-index: 1; background: var(--ink); color: var(--bg); box-shadow: 3px 3px 0 var(--g2); }
+	h2 { margin: 0; font-family: var(--f-serif, Georgia, serif); font-weight: 400; letter-spacing: -.01em; }
+	h2 em { background: linear-gradient(90deg, var(--g1), var(--g2) 60%, var(--g3)); -webkit-background-clip: text; background-clip: text; color: transparent; padding-right: 4px; }
 
 	/* NeoPOP buttons */
 	.lm-neo { position: relative; overflow: hidden; display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 0; border-radius: 0; font: 700 14px var(--f-body, inherit); text-decoration: none; cursor: pointer; transition: transform .07s, box-shadow .07s; }
 	.lm-neo:active { transform: translate(3px, 3px); box-shadow: none !important; }
 	.lm-neo :global(.ic) { width: 17px; height: 17px; stroke-width: 2.4; }
-	.lm-grad { color: #fff; background: linear-gradient(110deg, var(--g1), var(--g2) 55%, var(--g3)); box-shadow: 4px 4px 0 #5c3ea0; }
 	.lm-dark { border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink); box-shadow: 3px 3px 0 var(--line-strong); }
-	.lm-new { height: 46px; padding: 0 22px; font-size: 14.5px; }
-	.lm-shine::after { content: ''; position: absolute; top: 0; bottom: 0; left: -60%; width: 45%; background: linear-gradient(100deg, transparent, rgba(255, 255, 255, .45), transparent); transform: skewX(-18deg); animation: lm-sweep 5s ease-in-out 1s infinite; }
-	@keyframes lm-sweep { 0%, 70% { left: -60%; } 100% { left: 130%; } }
 
 	.lm-r1 { display: grid; grid-template-columns: minmax(0, 2fr) minmax(300px, 1fr); gap: 22px; }
 	.lm-r4 { display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 22px; align-items: start; }
@@ -420,6 +402,6 @@
 		.lm-strip a:nth-child(n + 3) { border-top: 1px solid var(--line); }
 	}
 	@media (prefers-reduced-motion: reduce) {
-		.lm-tick > div, .lm-bar i, .lm-shine::after { animation: none; }
+		.lm-tick > div, .lm-bar i { animation: none; }
 	}
 </style>

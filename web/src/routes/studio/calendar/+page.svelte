@@ -229,16 +229,13 @@
 	</div>
 {:else}
 	<div class="cl cl-lap">
-		<header class="cl-h">
-			<div class="cl-hi">
-				<span class="cl-eb">Plan · {inMonth.length} thing{inMonth.length === 1 ? '' : 's'} this month · {todayN} today</span>
+		<!-- The same header as Content; the shared top bar carries the tabs and buttons. -->
+		<header class="ph rv">
+			<div>
+				<div class="eb">Plan · {inMonth.length} thing{inMonth.length === 1 ? '' : 's'} this month · {todayN} today</div>
 				<h1>Your <em>calendar</em></h1>
+				<p>Every shoot, draft, go-live, follow-up and payment date in one place.</p>
 			</div>
-			<nav class="cl-tabs" aria-label="Plan pages">
-				<a href="/studio/content">Content</a>
-				<a href="/studio/calendar" aria-current="page">Calendar</a>
-			</nav>
-			<button class="cl-neo cl-grad cl-shine cl-new" onclick={() => (ui.newCollab = true)}><Icon name="plus" />New collab</button>
 		</header>
 		{@render toggles()}
 		<div class="cl-body">
@@ -280,21 +277,6 @@
 	.cl-neo { position: relative; overflow: hidden; display: inline-flex; align-items: center; justify-content: center; gap: 8px; border-radius: 0; font-family: var(--f-body, inherit); cursor: pointer; transition: transform .07s, box-shadow .07s; }
 	.cl-neo:active { transform: translate(3px, 3px); box-shadow: none !important; }
 	.cl-neo :global(.ic) { width: 16px; height: 16px; stroke-width: 2.2; }
-	.cl-grad { border: 0; color: #fff; background: linear-gradient(110deg, var(--g1), var(--g2) 55%, var(--g3)); box-shadow: 4px 4px 0 #5c3ea0; font-weight: 700; }
-	.cl-new { height: 46px; padding: 0 22px; font-size: 14.5px; }
-	.cl-new :global(.ic) { width: 17px; height: 17px; stroke-width: 2.4; }
-	.cl-shine::after { content: ''; position: absolute; top: 0; bottom: 0; left: -60%; width: 45%; background: linear-gradient(100deg, transparent, rgba(255, 255, 255, .45), transparent); transform: skewX(-18deg); animation: cl-sweep 5s ease-in-out 1s infinite; }
-	@keyframes cl-sweep { 0%, 70% { left: -60%; } 100% { left: 130%; } }
-
-	/* Laptop header */
-	.cl-h { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 20px; }
-	.cl-hi { flex: 1 1 380px; display: grid; gap: 8px; }
-	.cl-hi h1 { font-size: 52px; line-height: 1.02; }
-	.cl-tabs { display: flex; border: 1px solid var(--line-strong); }
-	.cl-tabs a { height: 44px; padding: 0 18px; display: inline-flex; align-items: center; color: var(--ink-3); font-size: 11px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; text-decoration: none; }
-	.cl-tabs a + a { border-left: 1px solid var(--line); }
-	.cl-tabs a:hover { color: var(--ink); }
-	.cl-tabs a[aria-current='page'] { position: relative; z-index: 1; background: var(--ink); color: var(--bg); box-shadow: 3px 3px 0 var(--g2); }
 
 	/* What to show */
 	.cl-kinds { display: flex; flex-wrap: wrap; gap: 10px; }
@@ -414,6 +396,6 @@
 		.cl-body { grid-template-columns: minmax(0, 1fr); }
 	}
 	@media (prefers-reduced-motion: reduce) {
-		.cl-grid, .cl-pgrid, .cl-shine::after { animation: none; }
+		.cl-grid, .cl-pgrid { animation: none; }
 	}
 </style>
