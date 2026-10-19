@@ -48,14 +48,15 @@ export default {
 			if (kind === 'classify' || kind === 'cheer') {
 				const allowed = await takeTicket(req, env, kind);
 				if (allowed !== true) return json({ error: allowed }, 403);
+				let why = env.GEMINI_API_KEY ? '' : 'no Gemini key';
 				if (kind === 'cheer' && env.GEMINI_API_KEY) {
 					try {
 						return json({ ...(await job({ env, gemini: true, neurons: 0 })), by: 'gemini' });
-					} catch {
-						/* Cloudflare below */
+					} catch (e) {
+						why = String((e as Error)?.message ?? e).slice(0, 160);
 					}
 				}
-				return json({ ...(await job({ env, gemini: false, neurons: 0 })), ...(kind === 'cheer' ? { by: 'cloudflare' } : {}) });
+				return json({ ...(await job({ env, gemini: false, neurons: 0 })), ...(kind === 'cheer' ? { by: 'cloudflare', why } : {}) });
 			}
 
 			// The same reading asked again is answered from the cache (two weeks), at no cost.
