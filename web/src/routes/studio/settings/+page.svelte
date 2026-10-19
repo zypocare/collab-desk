@@ -20,6 +20,7 @@
 	import Icon from '#lib/components/Icon.svelte';
 	import Avatar from '#lib/components/Avatar.svelte';
 	import Ticket from '#lib/components/Ticket.svelte';
+	import { APP_VERSION, BUILD_LABEL } from '#lib/appVersion.ts';
 	import ShippingSettings from '#lib/components/ShippingSettings.svelte';
 	import NotificationSettings from '#lib/components/NotificationSettings.svelte';
 	import BillingSettings from '#lib/components/BillingSettings.svelte';
@@ -314,12 +315,18 @@
 			<a class="cs-row" href="/studio/import"><Icon name="layers" /><span>Import collabs</span></a>
 			<button class="cs-row" onclick={toggleTheme}><Icon name={theme.value === 'dark' ? 'sun' : 'moon'} /><span>{theme.value === 'dark' ? 'Light look' : 'Dark look'}</span></button>
 			{#if pwa.installEvent && !pwa.installed}<button class="cs-row" onclick={install}><Icon name="download" /><span>Install the app</span></button>{/if}
-			<button class="cs-row cs-out" onclick={async () => (await signOut(), goto('/login', { replaceState: true }))}><Icon name="logout" /><span>Log out @{s.handle}</span></button>
-			<div class="cs-quick cs-stats">
-				<a class="cs-row" href="/studio/payments"><Icon name="wallet" /><span>earned with your desk</span><b>{inr(earnedAll)}</b></a>
-				<a class="cs-row" href="/studio/collabs"><Icon name="check" /><span>collabs wrapped</span><b>{doneN}</b></a>
+			<!-- What the desk has done for her, in two big numbers. -->
+			<div class="cs-wins">
+				<a href="/studio/payments"><small>Earned so far</small><b>{inr(earnedAll)}</b><span>See payments →</span></a>
+				<a href="/studio/collabs"><small>Collabs wrapped</small><b>{doneN}</b><span>See collabs →</span></a>
 			</div>
-			<p class="cs-foot">{s.app_name || 'Collab Desk'} · made for creators</p>
+			<button class="cs-logout" onclick={async () => (await signOut(), goto('/login', { replaceState: true }))}><Icon name="logout" /><span>Log out</span><small>@{s.handle}</small></button>
+			<footer class="cs-foot">
+				<svg width="26" height="26" viewBox="0 0 512 512" aria-hidden="true"><defs><linearGradient id="cs-lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#9C7BFF"></stop><stop offset=".52" stop-color="#F25A90"></stop><stop offset="1" stop-color="#FFAE6B"></stop></linearGradient></defs><circle cx="200" cy="256" r="118" fill="none" stroke="url(#cs-lg)" stroke-width="56"></circle><circle cx="312" cy="256" r="118" fill="none" stroke="currentColor" stroke-width="56"></circle></svg>
+				<b>{s.app_name || 'Collab Desk'}</b>
+				<span>Made for creators</span>
+				<small>Version {APP_VERSION} · build {BUILD_LABEL}</small>
+			</footer>
 		</div>
 	{/if}
 	{#if active && current && phone.on}<h1 class="cs-title">{current.label}</h1>{/if}
@@ -340,6 +347,7 @@
 		{#if !phone.on}
 			<button class="set-item" onclick={toggleTheme}><span class="set-ic"><Icon name={theme.value === 'dark' ? 'sun' : 'moon'} /></span><span class="set-t"><b>{theme.value === 'dark' ? 'Light look' : 'Dark look'}</b><small>How the app looks on this computer</small></span></button>
 			<button class="set-item set-out" onclick={async () => (await signOut(), goto('/login', { replaceState: true }))}><span class="set-ic"><Icon name="logout" /></span><span class="set-t"><b>Log out</b><small>@{s.handle}</small></span></button>
+			<p class="set-ver">Version {APP_VERSION} · build {BUILD_LABEL}</p>
 		{/if}
 	</nav>
 	{#if active && current}
