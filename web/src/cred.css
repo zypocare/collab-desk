@@ -852,3 +852,22 @@
   [data-side] .cmdk-l b { font-size: 15.5px; font-weight: 600; }
   [data-side] .cmdk-l small { font-size: 13px; color: var(--ink-3); }
 }
+@media (max-width: 760px) {
+  /* Reports on the phone: the year's total in serif, then ranked lists (like Content tips) instead of tables. */
+  .rp-m { padding: 0 16px 16px; }
+  .rp-total { display: grid; gap: 4px; padding: 4px 0 14px; border-bottom: 1px dashed var(--line-strong); }
+  .rp-total small { font-size: 10.5px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; color: var(--ink-3); }
+  .rp-total b { font: 400 40px/1 var(--f-serif, Georgia, serif); letter-spacing: -.01em; }
+  .rp-total span { font-size: 12.5px; color: var(--ink-3); }
+  .rp-m .tp-n { font-size: 17px; text-transform: uppercase; letter-spacing: .04em; }
+  .rp-quiet, .rp-none { margin: 10px 0 0; font-size: 12.5px; color: var(--ink-3); list-style: none; }
+  .rp-b { padding: 0 16px 16px; }
+  .rp-warn { font-style: normal; font-weight: 700; color: var(--warn); }
+  [data-side] .dl-tables h3 { font-size: 10.5px !important; font-weight: 700; letter-spacing: .16em !important; text-transform: uppercase; color: var(--ink-3); margin: 18px 0 2px; }
+  [data-side] .tp-rank .tp-v { font-family: var(--f-serif, Georgia, serif); font-weight: 400; font-size: 19px; }
+  [data-side] .dl-kpis b { font-family: var(--f-serif, Georgia, serif); font-weight: 400; font-size: 30px; letter-spacing: -.01em; }
+  /* Settings: the page ticket sits where the quick card was. */
+  .cs-tk { margin: 2px 0 6px; }
+  .cs-tk .tk-task b { text-transform: none; font-size: 14px; }
+}
+@media (max-width: 760px) { .rp-m .tp-rank li { grid-template-columns: 46px minmax(0, 1fr) auto; } .rp-m .tp-n small { display: block; font: 600 10px var(--f-body, inherit); letter-spacing: .1em; color: var(--ink-3); } }

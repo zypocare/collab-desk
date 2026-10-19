@@ -19,6 +19,7 @@
 	import { rateCheck, suggestRates } from '#lib/rateSuggest.ts';
 	import Icon from '#lib/components/Icon.svelte';
 	import Avatar from '#lib/components/Avatar.svelte';
+	import Ticket from '#lib/components/Ticket.svelte';
 	import ShippingSettings from '#lib/components/ShippingSettings.svelte';
 	import NotificationSettings from '#lib/components/NotificationSettings.svelte';
 	import BillingSettings from '#lib/components/BillingSettings.svelte';
@@ -286,9 +287,22 @@
 				{/each}
 			</div>
 			<div class="cs-dots" aria-hidden="true">{#each cards as k, i (k.icon)}<i class:on={i === cardI}></i>{/each}</div>
-			<div class="cs-quick">
-				<a class="cs-row" href="?s=bookings" onclick={(e) => (e.preventDefault(), open('bookings'))}><Icon name="cal" /><span>{s.accepting ? 'taking requests' : 'requests paused'}</span><em>{s.accepting ? `${s.weekly_capacity} a week` : 'open up'}</em></a>
-				<button class="cs-row" onclick={() => copyText(link, 'Link copied')}><Icon name="link" /><span>your link</span><em>copy</em></button>
+			<!-- Her page at a glance, as a ticket like Needs you on Today. -->
+			<div class="tks cs-tk">
+				<Ticket
+					name={s.display_name || 'Your page'}
+					title={s.accepting ? 'Taking requests' : 'Requests paused'}
+					sub="Your brand page"
+					money={s.accepting ? String(s.weekly_capacity) : '0'}
+					moneySub="a week"
+					hue="var(--g1)"
+					task={link.replace(/^https?:\/\//, '')}
+					status={s.accepting ? 'Open for collabs' : 'Brands see you as away'}
+					tone={s.accepting ? 'ok' : 'calm'}
+					onopen={() => open('bookings')}
+				>
+					<button class="btn primary" onclick={() => copyText(link, 'Link copied')}><Icon name="copy" />Copy</button>
+				</Ticket>
 			</div>
 			{#each GROUPS as g (g.label)}
 				<div class="cs-h">{g.label}</div>

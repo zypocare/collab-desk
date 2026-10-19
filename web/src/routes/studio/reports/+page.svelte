@@ -5,6 +5,7 @@
 	import { buildReport, dmy, downloadCsv, fyFromStart, fyOf, n2 } from '#lib/reports.ts';
 	import { inr, inrS, today } from '#lib/util.ts';
 	import Icon from '#lib/components/Icon.svelte';
+	import { phone } from '#lib/phone.svelte.ts';
 	import Segmented from '#lib/components/Segmented.svelte';
 	import MonthReview from '#lib/components/MonthReview.svelte';
 	import TaxPack from '#lib/components/TaxPack.svelte';
@@ -102,6 +103,25 @@
 <div class="md-grid rep-grid">
 	<section class="panel rv" style="--i:6">
 		<div class="panel-h"><h2>Month by month</h2><button class="btn sm" onclick={exportMonthly}><Icon name="arrow" />CSV</button></div>
+		{#if phone.on}
+			{@const live = r.months.filter((m) => m.taxable || m.received || m.barter)}
+			<div class="rp-m">
+				<div class="rp-total"><small>Kept this year</small><b>{inr(r.total.received - r.total.costs)}</b><span>{inr(r.total.received)} received · {inr(r.total.tds)} TDS · {inr(r.total.costs)} costs</span></div>
+				<ol class="tp-rank">
+					{#each live as m (m.key)}
+						{@const kept = m.received - m.costs}
+						<li>
+							<span class="tp-n">{m.label.split(' ')[0].slice(0, 3)}<small>{m.label.split(' ')[1] ?? ''}</small></span>
+							<span class="tp-t"><b>{m.received ? `${inr(m.received)} in` : 'Nothing in'}</b><small>{[m.taxable ? `${inrS(m.taxable)} invoiced` : '', m.tds ? `${inrS(m.tds)} TDS` : '', m.barter ? `${inrS(m.barter)} barter` : '', m.costs ? `${inrS(m.costs)} costs` : ''].filter(Boolean).join(' · ') || 'no costs'}</small><span class="tp-bar"><i style="width:{Math.max(6, Math.round((Math.max(0, kept) / Math.max(1, ...live.map((x) => x.received - x.costs))) * 100))}%"></i></span></span>
+							<b class="tp-v">{inr(kept)}</b>
+						</li>
+					{:else}
+						<li class="rp-none">Nothing in this year yet.</li>
+					{/each}
+				</ol>
+				{#if live.length && live.length < 12}<p class="rp-quiet">{12 - live.length} quiet month{12 - live.length === 1 ? '' : 's'} not shown. The CSV has every month.</p>{/if}
+			</div>
+		{:else}
 		<div style="overflow-x:auto;padding:0 20px 16px">
 			<table class="doc-table rep-table">
 				<thead><tr><th>Month</th><th>Invoiced</th>{#if s.gst_registered}<th>GST</th>{/if}<th>Received</th><th>TDS</th><th>Barter</th><th>Costs</th><th>Kept</th></tr></thead>
@@ -115,6 +135,7 @@
 				<tfoot><tr><td>Total</td><td>{inr(r.total.taxable)}</td>{#if s.gst_registered}<td>{inr(r.total.gst)}</td>{/if}<td>{inr(r.total.received)}</td><td>{inr(r.total.tds)}</td><td>{inr(r.total.barter)}</td><td>{inr(r.total.costs)}</td><td>{inr(r.total.received - r.total.costs)}</td></tr></tfoot>
 			</table>
 		</div>
+		{/if}
 	</section>
 	<section class="md-card rv" style="--i:7">
 		<header class="md-h"><div><span class="bx-eb">Month by month</span><h2>Money received</h2></div><a href="/studio/money">Dashboard<Icon name="arrow" /></a></header>
@@ -137,12 +158,25 @@
 		{#each [{ title: 'By category', rows: d.byCategory }, { title: 'Where they came from', rows: d.bySource }, { title: 'By type', rows: d.byType }] as { title, rows } (title)}
 			<div>
 				<h3>{title}</h3>
+				{#if phone.on}
+					{@const top = Math.max(1, ...rows.map((g) => g.deals))}
+					<ol class="tp-rank">
+						{#each rows as g, i (g.key)}
+							<li class:top={i === 0}>
+								<span class="tp-n">{String(i + 1).padStart(2, '0')}</span>
+								<span class="tp-t"><b>{g.key}</b><small>{g.deals} request{g.deals === 1 ? '' : 's'}{g.rate === null ? '' : ` · ${pct(g.rate)} won`}</small><span class="tp-bar"><i style="width:{Math.max(6, Math.round((g.deals / top) * 100))}%"></i></span></span>
+								<b class="tp-v">{g.avgFee ? inr(g.avgFee) : '—'}</b>
+							</li>
+						{:else}<li class="rp-none">No requests in this year yet.</li>{/each}
+					</ol>
+				{:else}
 				<table class="doc-table rep-table">
 					<thead><tr><th></th><th>Requests</th><th>Won</th><th>Avg. fee</th></tr></thead>
 					<tbody>
 						{#each rows as g (g.key)}<tr><td>{g.key}</td><td>{g.deals}</td><td>{g.rate === null ? '—' : pct(g.rate)}</td><td>{g.avgFee ? inr(g.avgFee) : '—'}</td></tr>{:else}<tr><td colspan="4" class="hint">No requests in this year yet.</td></tr>{/each}
 					</tbody>
 				</table>
+				{/if}
 			</div>
 		{/each}
 	</div>
@@ -150,6 +184,18 @@
 
 <section class="panel rv" style="--i:8;margin-bottom:18px">
 	<div class="panel-h"><h2>By brand</h2><button class="btn sm" onclick={exportBrands}><Icon name="arrow" />CSV</button></div>
+	{#if phone.on}
+		{@const top = Math.max(1, ...r.brands.map((b) => b.received))}
+		<ol class="tp-rank rp-b">
+			{#each r.brands as b, i (b.name + i)}
+				<li class:top={i === 0}>
+					<span class="tp-n">{String(i + 1).padStart(2, '0')}</span>
+					<span class="tp-t"><b>{b.name}</b><small>{[b.taxable ? `${inrS(b.taxable)} invoiced` : '', b.tds ? `${inrS(b.tds)} TDS` : '', b.barter ? `${inrS(b.barter)} barter` : ''].filter(Boolean).join(' · ') || 'received'}{#if b.tdsCertsMissing} · <em class="rp-warn">Form 16A missing</em>{/if}</small><span class="tp-bar"><i style="width:{Math.max(6, Math.round((b.received / top) * 100))}%"></i></span></span>
+					<b class="tp-v">{inr(b.received)}</b>
+				</li>
+			{:else}<li class="rp-none">Nothing in this year yet.</li>{/each}
+		</ol>
+	{:else}
 	<div style="overflow-x:auto;padding:0 20px 16px">
 		<table class="doc-table rep-table">
 			<thead><tr><th>Brand</th><th>Invoiced</th><th>Received</th><th>TDS</th><th>Barter</th></tr></thead>
@@ -162,6 +208,7 @@
 			</tbody>
 		</table>
 	</div>
+	{/if}
 </section>
 
 <TaxPack {fy} />
