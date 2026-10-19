@@ -8,7 +8,7 @@ const SUBJECT = Deno.env.get('VAPID_SUBJECT') ?? 'mailto:push@example.com';
 export const pushConfigured = PUBLIC !== '' && PRIVATE !== '';
 if (pushConfigured) webpush.setVapidDetails(SUBJECT, PUBLIC, PRIVATE);
 
-export type Push = { title: string; body: string; url: string; tag?: string; /** Buttons on the notification (Android, Windows, Mac Chrome). */ actions?: { action: string; title: string; url: string }[] };
+export type Push = { title: string; body: string; url: string; tag?: string; /** Buttons on the notification (Android, Windows, Mac Chrome). */ actions?: { action: string; title: string; url: string }[]; /** Her name only, without her line under each alert (for the light, friendly nudges). */ nameOnly?: boolean };
 
 /** Sends to every device she turned alerts on for; forgets devices the browser says are gone. */
 export async function pushToCreator(db: SupabaseClient, msg: Push) {
@@ -19,7 +19,7 @@ export async function pushToCreator(db: SupabaseClient, msg: Push) {
   const name = String(me?.alert_name ?? '').trim();
   const line = String(me?.alert_line ?? '').trim();
   if (name) msg = { ...msg, title: `Hey ${name}! ${msg.title}` };
-  if (line) msg = { ...msg, body: msg.body ? `${msg.body}\n${line}` : line };
+  if (line && !msg.nameOnly) msg = { ...msg, body: msg.body ? `${msg.body}\n${line}` : line };
   let sent = 0;
   const failed: { device: string; code: number | null; error: string }[] = [];
   for (const s of subs ?? []) {

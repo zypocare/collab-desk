@@ -438,6 +438,10 @@ verify_jwt = false
 [functions.payment-alerts]
 verify_jwt = false
 
+# The app itself checks who is calling (the creator, or its own server jobs).
+[functions.push-test]
+verify_jwt = false
+
 # Called by the Gmail watcher script, protected by the private inbox token.
 [functions.bank-alert]
 verify_jwt = false
