@@ -58,13 +58,13 @@
 {#if f}
 	<section class="mr rv" style="--i:1" id="month-review">
 		<span class="mr-fx" aria-hidden="true"></span>
-		<header class="mr-h">
+		<header class="mr-h" class:mr-picks={months.length > 1}>
 			<div>
 				<span class="eb">Your month in review <span class="ai-tag"><Icon name="spark" />AI</span></span>
 				<h2>{monthLabel(month)}</h2>
 			</div>
 			{#if months.length > 1}
-				<label class="mr-pick"><span class="sr-only">Month</span><select class="inp" bind:value={month}>{#each months as m (m)}<option value={m}>{monthLabel(m)}</option>{/each}</select></label>
+				<label class="mr-pick"><span class="sr-only">Month</span><select class="inp" bind:value={month}>{#each months as m (m)}<option value={m}>{monthLabel(m)}</option>{/each}</select><Icon name="chevD" /></label>
 			{/if}
 		</header>
 
@@ -81,7 +81,7 @@
 			<div class="mr-cols">
 				<div class="mr-col good"><h3><Icon name="check" />What went well</h3><ul>{#each r.wins as x (x)}<li>{x}</li>{/each}</ul></div>
 				{#if r.watch.length}<div class="mr-col bad"><h3><Icon name="alert" />Keep an eye on</h3><ul>{#each r.watch as x (x)}<li>{x}</li>{/each}</ul></div>{/if}
-				<div class="mr-col act"><h3><Icon name="arrow" />Do this month</h3><ol>{#each r.actions as x (x)}<li>{x}</li>{/each}</ol></div>
+				<div class="mr-col act"><h3><Icon name="arrow" />Do this month</h3><ol>{#each r.actions as x, i (x)}<li><span class="mr-n" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>{x}</li>{/each}</ol></div>
 			</div>
 			<div class="mr-foot"><span>Written by AI from your numbers.</span><button class="btn sm ai-btn" disabled={busy} onclick={() => write()}><Icon name="spark" />Write again</button></div>
 		{:else if quiet}

@@ -795,3 +795,60 @@
   [data-side] .hl-qr .hl-l { font-weight: 700; }
   @media (prefers-reduced-motion: reduce) { [data-side] .hl-qr .hl-c { animation: none; } }
 }
+
+/* Month in review: on laptop the select keeps its own arrow and the list its own numbers. */
+.mr-pick > .ic, .mr-n { display: none; }
+
+@media (max-width: 760px) {
+  /* ---------- Month in review ---------- */
+  /* The month is the title: a serif heading with a chevron that opens the month list. */
+  [data-side] .mr-h.mr-picks h2 { display: none; }
+  [data-side] .mr-h .mr-pick { position: relative; display: inline-flex; align-items: center; width: auto; margin-top: 4px; }
+  [data-side] .mr-h .mr-pick select { width: auto; min-width: 0; height: auto; padding: 0 30px 0 0; border: 0; border-radius: 0; background: none; box-shadow: none; color: var(--ink); font: 400 34px/1.1 var(--f-serif, Georgia, serif); letter-spacing: -.01em; -webkit-appearance: none; appearance: none; }
+  [data-side] .mr-h .mr-pick select:focus { box-shadow: none; outline: none; }
+  [data-side] .mr-h .mr-pick > .ic { display: block; position: absolute; right: 2px; width: 20px; height: 20px; pointer-events: none; color: var(--ink-3); }
+  [data-side] .mr-head { margin-top: 10px; font-size: 24px; color: var(--ink-2); font-style: italic; }
+  /* The numbers: serif, labels in spaced capitals. */
+  [data-side] .mr-kpis > div { border-radius: 18px; border: 1px solid var(--line); background: var(--surface); }
+  [data-side] .mr-kpis small { font-size: 10px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); }
+  [data-side] .mr-kpis b { font-family: var(--f-serif, Georgia, serif); font-weight: 400; font-size: 32px; letter-spacing: -.01em; }
+  [data-side] .mr-kpis em { font-style: normal; font-size: 12.5px; color: var(--ink-3); }
+  /* Wins, watch-outs and to-dos: no boxes; a ringed icon and a spaced-capital name, then rows. */
+  [data-side] .mr-col { padding: 18px 0 4px; border: 0; border-top: 1px dashed var(--line-strong); border-radius: 0; background: none; }
+  [data-side] .mr-col h3 { display: flex; align-items: center; gap: 10px; margin: 0 0 6px; font-size: 10.5px !important; font-weight: 700; letter-spacing: .16em !important; text-transform: uppercase; color: var(--ink-2); }
+  [data-side] .mr-col h3 .ic { box-sizing: content-box; width: 14px; height: 14px; padding: 7px; border-radius: 50%; border: 1px solid var(--line-strong); }
+  [data-side] .mr-col.good h3 .ic { color: var(--ok); }
+  [data-side] .mr-col.bad h3 .ic { color: var(--bad); }
+  [data-side] .mr-col.act h3 .ic { color: var(--g2); }
+  [data-side] .mr-col :is(ul, ol) { list-style: none; margin: 0; padding: 0; }
+  [data-side] .mr-col li { position: relative; padding: 11px 0 11px 20px; border-bottom: 1px solid var(--line); font-size: 15.5px; line-height: 1.4; }
+  [data-side] .mr-col li:last-child { border-bottom: 0; }
+  [data-side] .mr-col :is(.good, .bad) li::before, [data-side] .mr-col.good li::before, [data-side] .mr-col.bad li::before { content: ''; position: absolute; left: 2px; top: 19px; width: 7px; height: 7px; border-radius: 50%; background: var(--ok); }
+  [data-side] .mr-col.bad li::before { background: var(--bad); }
+  [data-side] .mr-col.act li { display: grid; grid-template-columns: 38px minmax(0, 1fr); gap: 6px; padding-left: 0; font-weight: 600; }
+  [data-side] .mr-col.act .mr-n { display: block; font: 400 24px/1 var(--f-serif, Georgia, serif); color: var(--g3); }
+  [data-side] .mr-foot span { font-size: 12.5px; color: var(--ink-3); }
+
+  /* ---------- empty states (Collabs, Payments, Today): NeoPOP blocks, serif title ---------- */
+  [data-side] .clear > b { font-family: var(--f-serif, Georgia, serif) !important; font-weight: 400 !important; font-size: 28px !important; letter-spacing: -.01em; }
+  [data-side] .clear-acts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; width: 100%; padding-right: 4px; box-sizing: border-box; }
+  [data-side] .clear-acts .glass-chip { height: 46px; justify-content: center; border-radius: 0; border: 1px solid rgba(255, 255, 255, .3); background: rgba(255, 255, 255, .06); color: #fff; font-size: 14px; font-weight: 700; box-shadow: 3px 3px 0 rgba(0, 0, 0, .45); -webkit-backdrop-filter: none; backdrop-filter: none; transition: transform .07s, box-shadow .07s; }
+  [data-side] .clear-acts .glass-chip:last-child { background: #fff; color: #1e171c; border-color: transparent; box-shadow: 3px 3px 0 var(--accent); }
+  [data-side] .clear-acts .glass-chip:active { transform: translate(3px, 3px); box-shadow: none; }
+  /* The numbers on the dark money cards: serif, like every other figure. */
+  [data-side] .m-hero .hc-foot b { font-family: var(--f-serif, Georgia, serif); font-weight: 400; font-size: 26px; letter-spacing: -.01em; }
+
+  /* ---------- search and actions ---------- */
+  [data-side] .cmdk-in { height: 52px; padding: 0 16px; gap: 12px; border-radius: 999px; border: 1px solid var(--line-strong); background: transparent; box-shadow: none; }
+  [data-side] .cmdk-in:focus-within { border-color: var(--ink); box-shadow: 3px 3px 0 var(--accent); }
+  [data-side] .cmdk-in > .ic { color: var(--ink); }
+  [data-side] .cmdk-in kbd, [data-side] .cmdk-it kbd { display: none; }
+  [data-side] .cmdk-g { padding: 22px 4px 8px; font-size: 10.5px; font-weight: 700; letter-spacing: .17em; text-transform: uppercase; color: var(--ink-3); }
+  [data-side] .cmdk-it { gap: 16px; min-height: 64px; padding: 8px 4px; border-radius: 0; border-bottom: 1px solid var(--line); background: transparent !important; }
+  [data-side] .cmdk-it:active { background: var(--surface-2) !important; }
+  [data-side] .cmdk-ic { width: 40px; height: 40px; border-radius: 50% !important; border: 1px solid var(--line-strong); background: transparent !important; color: var(--ink) !important; }
+  [data-side] .cmdk-ic .ic { width: 18px; height: 18px; }
+  [data-side] .cmdk-it[aria-selected="true"] .cmdk-ic { border-color: transparent; background: conic-gradient(from 210deg, var(--g3), var(--g2), var(--g1), var(--g3)) !important; color: #fff !important; }
+  [data-side] .cmdk-l b { font-size: 15.5px; font-weight: 600; }
+  [data-side] .cmdk-l small { font-size: 13px; color: var(--ink-3); }
+}
