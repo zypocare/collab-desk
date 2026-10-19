@@ -414,17 +414,18 @@ async function cheer(x: Run, b: Record<string, unknown>) {
 		`You write ONE phone notification for ${String(b.name || 'her').slice(0, 30)}, an Indian Instagram creator in Bengaluru (lifestyle, travel, fashion, yoga, food) who runs her brand collabs in an app. It is ${String(b.when ?? '').slice(0, 40)}. Kind: ${kind}${b.meal ? ` (${String(b.meal)})` : ''}. Goal: ${CHEER_GOAL[kind] ?? CHEER_GOAL.work}.
 Make her smile: playful, witty and warm, like a funny best friend who also manages her career. Creator-life jokes are welcome (reels, hooks, the algorithm, edits, brand DMs, golden hour, chai, filter coffee, Bengaluru traffic and rain). Plain English, at most one light Hinglish word. Never mean, no body or weight talk, no diet advice, no guilt. No hashtags, no quotation marks.
 Use only the facts given; never invent brands, numbers, dates or plans.
-Title: at most 42 characters, may end with one emoji. Body: one or two short sentences, at most 130 characters.
-It must be clearly different from every earlier notification listed (new joke, new angle, new words); don't reuse their openings.
+Shape: the title is a playful hook or twist (at most 42 characters, may end with one emoji); the body lands the punchline and says the one thing to do now (two short sentences, 70 to 135 characters).
+The level of wit to match (style only, never copy these): "Breakfast > brand DMs 🍳" / "No brand has ever paid extra for a hungry creator. Eat something real first, then go win the week." · "Downward dog beats doom-scrolling 🧘‍♀️" / "Mat out. The DMs can wait an hour; your spine cannot." · "Sorso is refreshing their inbox 👀" / "Put them out of their misery: a two-line reply keeps the deal, and your rate, warm."
+Avoid tired puns (reel in, fuel up, stay hydrated, self-care) and generic lines like "check it out". It must be clearly different from every earlier notification listed (new joke, new angle, new words); don't reuse their openings.
 Return ONLY JSON: {"title": "...", "body": "..."}`,
 		`Fact: ${String(b.fact ?? 'none').slice(0, 300)}\nTry: ${Math.round(Number(b.attempt) || 0) + 1}\nEarlier notifications (do not echo):\n${recent.map((t) => `- ${t}`).join('\n') || '- none yet'}`,
-		160,
-		0.95
+		200,
+		0.9
 	);
 	const j = firstJson(reply) ?? {};
 	const title = String(j.title ?? '').replace(/["“”]/g, '').trim().slice(0, 60);
 	const body = String(j.body ?? '').replace(/["“”]/g, '').trim().slice(0, 180);
-	if (!title || !body) throw new Error('No clear answer from the AI.');
+	if (!title || body.length < 40) throw new Error('No clear answer from the AI.');
 	return { title, body };
 }
 
