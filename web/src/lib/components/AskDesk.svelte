@@ -376,6 +376,12 @@
 	@media (prefers-color-scheme: dark) { :global(:root:not([data-theme='light'])) .gm { --bg: #131314; --s1: #1e1f20; --s2: #282a2c; --ink: #e3e3e3; --mut: #9aa0a6; --line: #2d2f31; } }
 	.gm.gm-phone { grid-template-columns: minmax(0, 1fr); height: var(--vv-h, 100dvh); top: var(--vv-top, 0); bottom: auto; }
 	@keyframes gmf { from { opacity: 0; } }
+	/* Laptop: open inside the app, over the page area; the side menu stays in view. */
+	@media (min-width: 761px) {
+		.gm { left: 248px; grid-template-columns: 250px minmax(0, 1fr); border-left: 1px solid var(--line); box-shadow: -24px 0 60px -30px rgba(0, 0, 0, .6); animation: gm-in .35s cubic-bezier(.2, .9, .25, 1) both; }
+		.gm :global(.gi) { left: 248px; }
+	}
+	@keyframes gm-in { from { opacity: 0; transform: translateX(24px); } }
 
 	.gm-side { display: flex; flex-direction: column; gap: 4px; min-height: 0; padding: 16px 12px; background: var(--s1); }
 	.gm-brand { display: flex; align-items: center; gap: 10px; padding: 6px 10px 18px; font-size: 17px; }

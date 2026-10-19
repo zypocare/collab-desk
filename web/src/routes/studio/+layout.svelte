@@ -39,6 +39,12 @@
 		{ href: '/studio/settings', label: 'My page', short: 'Page', icon: 'link', also: ['/studio/profile'] }
 	];
 	const path = $derived(page.url.pathname);
+	// On a laptop Ask your desk sits over the page area with the side menu still showing,
+	// so moving to another page from the menu closes it.
+	$effect(() => {
+		void path;
+		untrack(() => (ui.askOpen = false));
+	});
 	const group = $derived(
 		NAV.find((n) => (n.href === '/studio' ? path === '/studio' : [n.href, ...(n.tabs ?? []).map((t) => t.href), ...(n.also ?? [])].some((h) => path.startsWith(h))))
 	);
