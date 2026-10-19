@@ -11,6 +11,8 @@
 	import { supabase } from '#lib/supabase.ts';
 	import { money } from '#lib/currency.ts';
 	import { phone } from '#lib/phone.svelte.ts';
+	import { ask } from '#lib/confirm.svelte.ts';
+	import { page } from '$app/state';
 
 	let filter = $state<'all' | 'due' | 'overdue' | 'paid'>('all');
 	let swapKey = $state(0);
@@ -52,6 +54,36 @@
 		swapKey++;
 	};
 	const prods = $derived(studio.collabs.filter((c) => hasProduct(c) && c.product_value && c.stage !== 'declined'));
+
+	// "Remind brands" (also the button on the payment notification): a polite reminder to every brand
+	// with an invoice still unpaid. Nobody gets two in a day (the database checks).
+	const toRemind = $derived(rows.filter((c) => outstanding(c) > 0 && (c.pay_status === 'invoiced' || c.pay_status === 'advance')));
+	let reminding = $state(false);
+	async function remindAll() {
+		if (!toRemind.length) return toast('No unpaid invoices to remind about. Send the invoices first.', 'alert');
+		const names = [...new Set(toRemind.map((c) => c.brand.name))];
+		const ok = await ask({
+			title: `Remind ${names.length} brand${names.length > 1 ? 's' : ''} about ${toRemind.length} unpaid invoice${toRemind.length > 1 ? 's' : ''}?`,
+			body: `${names.slice(0, 4).join(', ')}${names.length > 4 ? ` and ${names.length - 4} more` : ''}. Each gets a polite email with their invoice and amount due. Nobody gets two in a day.`,
+			ok: 'Send reminders'
+		});
+		if (!ok) return;
+		reminding = true;
+		const { data, error } = await supabase.rpc('send_reminders', { p_ids: toRemind.map((c) => c.id) });
+		reminding = false;
+		if (error) return toast(`Couldn't send: ${errMessage(error)}`, 'alert');
+		const r = data as { payment: number; skipped: number };
+		toast(r.payment ? `${r.payment} payment reminder${r.payment > 1 ? 's' : ''} sent${r.skipped ? `. ${r.skipped} were reminded today already` : ''}` : 'Everyone was reminded today already.', r.payment ? 'send' : 'alert');
+		await reloadCollabs();
+	}
+	// Opened from the notification's "Remind brands" button.
+	let fromPush = false;
+	$effect(() => {
+		if (fromPush || !studio.loaded || page.url.searchParams.get('act') !== 'remind') return;
+		fromPush = true;
+		history.replaceState(history.state, '', '/studio/payments');
+		remindAll();
+	});
 </script>
 
 <svelte:head><title>Payments · {studio.settings?.app_name}</title></svelte:head>
@@ -62,6 +94,7 @@
 		<h1>Payments</h1>
 		<p>Track every invoice from fee agreed to money in the bank.</p>
 	</div>
+	{#if toRemind.length}<button class="btn" onclick={remindAll} disabled={reminding}>{#if reminding}<span class="spinner"></span>{:else}<Icon name="bell" />{/if}Remind brands ({toRemind.length})</button>{/if}
 </header>
 
 {#if phone.on}
@@ -71,6 +104,7 @@
 			<div class="hc-top">
 				<span class="hc-eb">Still to come</span>
 				{#if nOd}<button class="glass-chip" onclick={() => pick('overdue')}><Icon name="alert" />{nOd} overdue</button>{/if}
+				{#if toRemind.length}<button class="glass-chip" onclick={remindAll} disabled={reminding}><Icon name="bell" />Remind</button>{/if}
 			</div>
 			<div class="hc-val" use:countUp={{ value: due + od, money: true }}>{inr(due + od)}</div>
 			<div class="hc-sub">{next ? `Next: ${next.brand.name} · ${fmt(next.pay_due)}` : 'Nothing waiting to be paid'}</div>

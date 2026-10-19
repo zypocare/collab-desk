@@ -71,7 +71,7 @@ sw.addEventListener('fetch', (e) => {
 });
 
 sw.addEventListener('push', (e) => {
-	let data: { title?: string; body?: string; url?: string; tag?: string } = {};
+	let data: { title?: string; body?: string; url?: string; tag?: string; actions?: { action: string; title: string; url: string }[] } = {};
 	try {
 		data = e.data?.json() ?? {};
 	} catch {
@@ -83,14 +83,19 @@ sw.addEventListener('push', (e) => {
 			icon: '/icon-192.png',
 			badge: '/icon-192.png',
 			tag: data.tag,
-			data: { url: data.url || '/studio' }
-		})
+			// A newer one with the same tag still buzzes (it's a fresh reminder, not an edit).
+			renotify: !!data.tag,
+			// Buttons where the phone supports them (Android); elsewhere a tap opens the screen.
+			actions: (data.actions ?? []).slice(0, 2).map((a) => ({ action: a.action, title: a.title })),
+			data: { url: data.url || '/studio', actions: Object.fromEntries((data.actions ?? []).map((a) => [a.action, a.url])) }
+		} as NotificationOptions)
 	);
 });
 
 sw.addEventListener('notificationclick', (e) => {
 	e.notification.close();
-	const url = new URL((e.notification.data?.url as string) || '/studio', sw.location.origin).href;
+	const byButton = e.action ? (e.notification.data?.actions as Record<string, string> | undefined)?.[e.action] : undefined;
+	const url = new URL(byButton || (e.notification.data?.url as string) || '/studio', sw.location.origin).href;
 	e.waitUntil(
 		(async () => {
 			const tabs = await sw.clients.matchAll({ type: 'window', includeUncontrolled: true });

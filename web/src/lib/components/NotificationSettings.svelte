@@ -82,6 +82,17 @@
 		regenArm = false;
 		toast('New calendar link made. Subscribe again with the new link.');
 	}
+
+	// Times for the pending-payment notification (India time), up to six a day.
+	const HOURS = [8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22];
+	const hours = $derived([...(s.pay_alert_hours ?? [9, 13, 17, 21])].sort((a, b) => a - b));
+	const hourLabel = (h: number) => (h === 12 ? '12 PM' : h > 12 ? `${h - 12} PM` : `${h} AM`);
+	function toggleHour(h: number) {
+		const next = hours.includes(h) ? hours.filter((x) => x !== h) : [...hours, h];
+		if (next.length > 6) return toast('Six reminders a day is the most', 'alert');
+		if (!next.length) return saveSettings({ pay_alerts: false, pay_alert_hours: [9, 13, 17, 21] });
+		saveSettings({ pay_alert_hours: next.sort((a, b) => a - b) });
+	}
 </script>
 
 <section class="panel rv" style="--i:5">
@@ -90,6 +101,19 @@
 		<div><b>9 AM summary email</b><small>Every morning: follow-ups, drafts due, go-lives, overdue payments and brand replies. Skipped on days with nothing to do.</small></div>
 		<input type="checkbox" class="tgl" checked={s.digest_enabled} aria-label="9 AM summary email" onchange={(e) => saveSettings({ digest_enabled: (e.currentTarget as HTMLInputElement).checked })} />
 	</div>
+
+	<div class="switch-row">
+		<div><b>Pending payment reminders</b><small>A phone notification with the money still to come in, at the times below. Its buttons remind the brands or open Payments. Skipped when nothing is pending. Phone alerts must be on (above).</small></div>
+		<input type="checkbox" class="tgl" checked={s.pay_alerts ?? true} aria-label="Pending payment reminders" onchange={(e) => saveSettings({ pay_alerts: (e.currentTarget as HTMLInputElement).checked })} />
+	</div>
+	{#if s.pay_alerts ?? true}
+		<div class="pay-hours" role="group" aria-label="Reminder times">
+			{#each HOURS as h (h)}
+				<button type="button" class="pay-h" class:on={hours.includes(h)} aria-pressed={hours.includes(h)} onclick={() => toggleHour(h)}>{hourLabel(h)}</button>
+			{/each}
+			<small>{hours.length} a day{hours.length >= 6 ? ' (the most)' : ''}</small>
+		</div>
+	{/if}
 
 	<div class="switch-row">
 		<div>
@@ -137,3 +161,10 @@
 		<Select style="width:auto;min-width:120px" ariaLabel="Competitor warning window" value={Number(s.competitor_window_days)} options={[3, 7, 14, 21, 30].map((d) => ({ value: d, label: `${d} days` }))} onchange={(v) => saveSettings({ competitor_window_days: v })} />
 	</div>
 </section>
+
+<style>
+	.pay-hours { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 0 18px 14px; }
+	.pay-h { height: 34px; padding: 0 12px; border: 1px solid var(--line); border-radius: 999px; background: none; color: var(--ink-2); font: 500 13.5px var(--f-body); cursor: pointer; }
+	.pay-h.on { border-color: transparent; background: var(--ink); color: var(--surface); }
+	.pay-hours small { font-size: 12.5px; color: var(--ink-3); margin-left: 4px; }
+</style>

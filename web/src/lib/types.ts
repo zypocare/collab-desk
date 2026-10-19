@@ -300,6 +300,9 @@ export type Settings = {
 	followers: string;
 	engagement: string;
 	reply_time: string;
+	/** Phone reminders about money still to come in, at these hours (India time). */
+	pay_alerts?: boolean;
+	pay_alert_hours?: number[];
 	page_card_v?: number;
 	page_card_sig?: string;
 	accepting: boolean;

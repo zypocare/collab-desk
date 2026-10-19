@@ -434,6 +434,10 @@ verify_jwt = false
 [functions.payment-reminders]
 verify_jwt = false
 
+# Phone reminders about pending payments (cron, checked with the shared secret).
+[functions.payment-alerts]
+verify_jwt = false
+
 # Called by the Gmail watcher script, protected by the private inbox token.
 [functions.bank-alert]
 verify_jwt = false

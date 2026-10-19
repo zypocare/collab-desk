@@ -8,7 +8,7 @@ const SUBJECT = Deno.env.get('VAPID_SUBJECT') ?? 'mailto:push@example.com';
 export const pushConfigured = PUBLIC !== '' && PRIVATE !== '';
 if (pushConfigured) webpush.setVapidDetails(SUBJECT, PUBLIC, PRIVATE);
 
-export type Push = { title: string; body: string; url: string; tag?: string };
+export type Push = { title: string; body: string; url: string; tag?: string; /** Buttons on the notification (Android, Windows, Mac Chrome). */ actions?: { action: string; title: string; url: string }[] };
 
 /** Sends to every device she turned alerts on for; forgets devices the browser says are gone. */
 export async function pushToCreator(db: SupabaseClient, msg: Push) {
