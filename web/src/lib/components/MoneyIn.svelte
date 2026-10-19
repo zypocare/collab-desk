@@ -43,8 +43,9 @@
 {/if}
 
 <style>
-	.mi { position: fixed; inset: 0; z-index: 200; display: grid; place-items: center; background: radial-gradient(80% 60% at 50% 40%, color-mix(in oklab, var(--ok) 35%, transparent), rgba(20, 8, 18, .94) 70%); animation: mi-fade .3s ease; }
-	.mi-in { display: grid; justify-items: center; gap: 10px; padding: 24px; text-align: center; color: #fbf2f6; }
+	/* A solid, blurred backdrop: nothing on the page shows through the amount. */
+	.mi { position: fixed; inset: 0; z-index: 200; display: grid; place-items: center; background: radial-gradient(70% 45% at 50% 38%, color-mix(in oklab, var(--ok) 26%, transparent), transparent 70%), radial-gradient(90% 60% at 50% 100%, color-mix(in oklab, var(--g1) 18%, transparent), transparent 70%), #0e080d; -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px); animation: mi-fade .3s ease; }
+	.mi-in { position: relative; z-index: 1; display: grid; justify-items: center; gap: 10px; padding: 24px; text-align: center; color: #fbf2f6; }
 	.mi-coin { width: 120px; height: 120px; border-radius: 50%; display: grid; place-items: center; font: 400 56px var(--f-serif); color: #3a1500; background: radial-gradient(circle at 35% 30%, #fff1cf, var(--g3) 55%, #a24a0a); box-shadow: 0 0 60px color-mix(in oklab, var(--g3) 70%, transparent), inset 0 -6px 12px rgba(0, 0, 0, .25); animation: mi-flip 1.1s cubic-bezier(.2, .9, .25, 1); }
 	.mi-cap { margin-top: 6px; font-size: 11px; font-weight: 700; letter-spacing: .17em; text-transform: uppercase; color: rgba(251, 242, 246, .7); }
 	.mi-amt { font: 400 50px/1 var(--f-serif); font-variant-numeric: tabular-nums; }

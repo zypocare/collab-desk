@@ -205,7 +205,8 @@ async function gemini(env: Env, system: string, user: string, max: number, tempe
 				body: JSON.stringify({
 					systemInstruction: { parts: [{ text: system }] },
 					contents: [{ role: 'user', parts: [{ text: user }] }],
-					generationConfig: { temperature, maxOutputTokens: max, ...(thinking ? { thinkingConfig: { thinkingBudget: 0 } } : {}) }
+					// Jobs that ask for JSON get Gemini's JSON mode, so the reply is never loose prose.
+					generationConfig: { temperature, maxOutputTokens: max, ...(/Return ONLY JSON/.test(system) ? { responseMimeType: 'application/json' } : {}), ...(thinking ? { thinkingConfig: { thinkingBudget: 0 } } : {}) }
 				})
 			});
 			if (r.status === 429) throw new Error('USED_UP');

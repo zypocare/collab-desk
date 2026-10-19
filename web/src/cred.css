@@ -543,3 +543,70 @@
     .dk2-orb i, .dk2-lead, .dk2-g .dk2-arc, .tk, .tk-task small.hot i, .wk2-d.now, .wk2-bar i.on, .wk2-day { animation: none !important; }
   }
 }
+
+/* ==========================================================================================
+   Content page (phone): tips as CRED cards (a serif line, capsule bars, a ranking, big numbers),
+   section names in spaced capitals, and shoot-day cards with a torn line above the plan.
+   ========================================================================================== */
+@media (max-width: 760px) {
+  /* ---------- tips ---------- */
+  .tp { display: flex; flex-direction: column; gap: 14px; }
+  .tp .hs-h { margin-bottom: 0; }
+  .tp-from { margin-left: auto; font-size: 12.5px; color: var(--ink-3); }
+  .tp-card { display: flex; flex-direction: column; gap: 14px; padding: 18px; border-radius: 24px; border: 1px solid var(--line); background: radial-gradient(120% 55% at 100% 0%, color-mix(in oklab, var(--g1) 12%, transparent), transparent 60%), var(--surface); }
+  .tp-eb { display: flex; align-items: center; gap: 10px; font-size: 10.5px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; color: var(--ink-2); }
+  .tp-eb i { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 50%; border: 1px solid var(--line-strong); color: var(--g2); }
+  .tp-eb .ic { width: 15px; height: 15px; }
+  .tp-say { margin: 0; font: 400 29px/1.1 var(--f-serif, Georgia, serif); letter-spacing: -.01em; text-wrap: balance; }
+  .tp-say-sm { font-size: 24px; }
+  .tp-say em { font-style: italic; background: linear-gradient(90deg, var(--g1), var(--g2) 60%, var(--g3)); -webkit-background-clip: text; background-clip: text; color: transparent; padding-right: 3px; margin-right: -3px; }
+  .tp-cols { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 8px; align-items: end; }
+  .tp-col { display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; }
+  .tp-col > b { font-size: 13px; font-weight: 700; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+  .tp-track { position: relative; display: block; width: 100%; height: 118px; border-radius: 16px; background: var(--surface-2); overflow: hidden; }
+  .tp-track i { position: absolute; left: 0; right: 0; bottom: 0; border-radius: 16px; background: color-mix(in oklab, var(--ink) 22%, transparent); transform-origin: bottom; animation: tp-grow .9s cubic-bezier(.2, .9, .25, 1) both; }
+  .tp-col.best .tp-track i { background: linear-gradient(0deg, var(--g1), var(--g2) 60%, var(--g3)); box-shadow: 0 0 22px -4px color-mix(in oklab, var(--g2) 70%, transparent); }
+  .tp-col.best > b { color: var(--ink); }
+  @keyframes tp-grow { from { transform: scaleY(0); } }
+  .tp-lbl { display: grid; gap: 1px; font-size: 12px; font-weight: 600; color: var(--ink-3); }
+  .tp-lbl small { font-size: 10.5px; font-weight: 500; }
+  .tp-col.best .tp-lbl { color: var(--ink); }
+  .tp-days .tp-track { height: 64px; border-radius: 12px; }
+  .tp-days .tp-track i { border-radius: 12px; }
+  .tp-days { gap: 6px; padding-top: 4px; border-top: 1px dashed var(--line-strong); padding-top: 14px; }
+  .tp-hint { font-size: 12.5px; line-height: 1.45; color: var(--ink-3); }
+  .tp-rank { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+  .tp-rank li { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 12px 0; border-top: 1px solid var(--line); }
+  .tp-rank li:first-child { border-top: 0; }
+  .tp-n { font: 400 22px var(--f-serif, Georgia, serif); color: var(--ink-3); }
+  .tp-rank li.top .tp-n { color: var(--g3); }
+  .tp-t { min-width: 0; display: grid; grid-template-columns: auto 1fr; column-gap: 8px; align-items: baseline; }
+  .tp-t b { font-size: 15.5px; font-weight: 700; }
+  .tp-t small { font-size: 12px; color: var(--ink-3); }
+  .tp-bar { grid-column: 1 / -1; display: block; height: 5px; margin-top: 7px; border-radius: 99px; background: var(--surface-2); overflow: hidden; }
+  .tp-bar i { display: block; height: 100%; border-radius: 99px; background: color-mix(in oklab, var(--ink) 30%, transparent); transform-origin: left; animation: tp-fill .9s cubic-bezier(.2, .9, .25, 1) both; }
+  .tp-rank li.top .tp-bar i { background: linear-gradient(90deg, var(--g1), var(--g2), var(--g3)); }
+  @keyframes tp-fill { from { transform: scaleX(0); } }
+  .tp-v { font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .tp-nums { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .tp-nums div { display: grid; gap: 4px; padding: 4px 0; }
+  .tp-nums div + div { padding-left: 18px; border-left: 1px dashed var(--line-strong); }
+  .tp-nums b { font: 400 50px/1 var(--f-serif, Georgia, serif); letter-spacing: -.02em; }
+  .tp-nums b small { font-size: 26px; margin-left: 2px; color: var(--ink-3); }
+  .tp-nums span { font-size: 10.5px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; color: var(--ink-3); }
+
+  /* ---------- the rest of Content ---------- */
+  [data-side="studio"] .ct-grid .panel-h h2 { font-size: 11px; font-weight: 700; letter-spacing: .17em; text-transform: uppercase; color: var(--ink-3); }
+  [data-side="studio"] .ct-grid .panel-h h2 .ic { width: 14px; height: 14px; color: var(--g2); }
+  [data-side="studio"] .ct-grid .ct-day.today .panel-h h2 { color: var(--accent); }
+  [data-side="studio"] .ct-grid .panel { background: none; border: 0; box-shadow: none; padding-left: 0; padding-right: 0; }
+  [data-side="studio"] .ct-row { margin-bottom: 12px; padding: 16px; border-radius: 22px; border: 1px solid var(--line); background: var(--surface); }
+  [data-side="studio"] .ct-name { font: italic 400 24px/1.1 var(--f-serif, Georgia, serif) !important; letter-spacing: -.01em; }
+  [data-side="studio"] .ct-meta span { border-radius: 999px; background: transparent; border: 1px solid var(--line-strong); font-size: 10.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+  [data-side="studio"] .ct-plan { position: relative; margin: 14px -16px 0; padding: 14px 16px 0; border-top: 2px dashed var(--line-strong); }
+  [data-side="studio"] .ct-plan::before, [data-side="studio"] .ct-plan::after { content: ''; position: absolute; top: -12px; width: 22px; height: 22px; border-radius: 50%; background: var(--bg); border: 1px solid var(--line); }
+  [data-side="studio"] .ct-plan::before { left: -12px; clip-path: inset(0 0 0 50%); }
+  [data-side="studio"] .ct-plan::after { right: -12px; clip-path: inset(0 50% 0 0); }
+
+  @media (prefers-reduced-motion: reduce) { .tp-track i, .tp-bar i { animation: none; } }
+}
