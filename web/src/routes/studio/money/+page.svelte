@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { studio } from '#lib/studio.svelte.ts';
+	import { useFinancialReport } from '#lib/financialReport.svelte.ts';
 	import { moneyDash } from '#lib/moneyDash.ts';
 	import { fyFromStart, fyOf } from '#lib/reports.ts';
 	import { phone } from '#lib/phone.svelte.ts';
@@ -19,7 +20,9 @@
 	const current = fyOf(today());
 	let fyStart = $state(String(current.start));
 	const fy = $derived(fyFromStart(Number(fyStart)));
-	const m = $derived(moneyDash(studio.collabs, fy, Math.max(0, studio.settings?.monthly_goal || 0)));
+	const liveReport = useFinancialReport(() => Number(fyStart));
+	const previousReport = useFinancialReport(() => Number(fyStart) - 1);
+	const m = $derived(moneyDash(studio.collabs, fy, Math.max(0, studio.settings?.monthly_goal || 0), liveReport.summary, previousReport.summary));
 	const fyOptions = [current.start - 1, current.start].map((y) => ({ value: String(y), label: fyFromStart(y).label }));
 	const catTotal = $derived(m.categories.reduce((a, s) => a + s.value, 0));
 	const mixTotal = $derived(m.mix.reduce((a, s) => a + s.value, 0));
@@ -48,6 +51,7 @@
 {#if !phone.on}
 	<LaptopMoney />
 {:else}
+	{#if liveReport.error || previousReport.error}<p class="err-box" role="status">{liveReport.error || previousReport.error}</p>{/if}
 
 	<div class="md-fy"><Segmented label="Financial year" bind:value={fyStart} options={fyOptions} /></div>
 

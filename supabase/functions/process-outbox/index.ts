@@ -37,6 +37,7 @@ Deno.serve(async (req) => {
 
   let sent = 0, failed = 0, skipped = 0;
   for (const row of rows ?? []) {
+    if (row.status === 'skipped') { skipped++; continue; }
     // Amounts for a foreign brand are in their currency: older payloads don't say which, so look it up
     // from the collab's latest quote (the collab fee itself is kept in rupees).
     const p = (row.payload ?? {}) as Record<string, unknown>;

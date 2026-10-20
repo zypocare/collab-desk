@@ -12,6 +12,7 @@ const addDays = (iso: string, n: number) => {
 };
 
 export function milestones(r: BrandRequest, creator: string): Milestone[] {
+	if (r.stage === 'paused' || r.stage === 'cancelled') return [{ key: r.stage, date: r.resume_on ?? null, title: r.stage === 'paused' ? 'Collaboration paused' : 'Collaboration cancelled', who: 'creator', note: r.lifecycle_reason || 'Contact the creator to discuss next steps.' }];
 	const out: Milestone[] = [];
 	const accepted = r.quotes?.find((q) => q.status === 'accepted');
 	const open = r.quotes?.find((q) => q.status === 'sent');

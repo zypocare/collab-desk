@@ -14,6 +14,11 @@ const inFy = (d: string | null | undefined, fy: FY) => !!d && d >= fy.from && d 
 
 export type MonthRow = { key: string; label: string; taxable: number; gst: number; received: number; tds: number; barter: number; invoices: number; costs: number };
 export type BrandRow = { name: string; gstin: string; taxable: number; received: number; tds: number; barter: number; tdsCertsMissing: number };
+export type FinancialSummary = {
+	months: MonthRow[];
+	total: { taxable: number; gst: number; received: number; tds: number; barter: number; invoices: number; costs: number };
+	brands: BrandRow[];
+};
 
 export function buildReport(collabs: Collab[], fy: FY) {
 	const months: MonthRow[] = Array.from({ length: 12 }, (_, i) => {

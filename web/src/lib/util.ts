@@ -11,8 +11,12 @@ export const STAGES: { id: Stage; label: string; pub: string }[] = [
 	{ id: 'wrapped', label: 'Wrapped', pub: 'Wrapped up' }
 ];
 export const stageIndex = (s: Stage) => STAGES.findIndex((x) => x.id === s);
-export const stageLabel = (s: Stage) => (s === 'declined' ? 'Declined' : STAGES[stageIndex(s)].label);
-export const stagePub = (s: Stage) => (s === 'declined' ? 'Not going ahead' : STAGES[stageIndex(s)].pub);
+export const HELD_STAGES: { id: Stage; label: string; pub: string }[] = [
+	{ id: 'paused', label: 'Paused', pub: 'Paused' }, { id: 'cancelled', label: 'Cancelled', pub: 'Cancelled' }
+];
+export const stageLabel = (s: Stage) => (s === 'declined' ? 'Declined' : [...STAGES, ...HELD_STAGES].find((x) => x.id === s)?.label ?? s);
+export const stagePub = (s: Stage) => (s === 'declined' ? 'Not going ahead' : [...STAGES, ...HELD_STAGES].find((x) => x.id === s)?.pub ?? s);
+export const productionHeld = (c: { stage: Stage }) => c.stage === 'paused' || c.stage === 'cancelled';
 
 /** WhatsApp click-to-chat link (free). Indian 10-digit numbers get +91. Empty if no usable number. */
 /** An email address someone can actually receive at: one @, a name, and a domain with a dot. */
@@ -154,9 +158,15 @@ export function trackUrl(carrier: string, tracking: string) {
 	return `https://www.google.com/search?q=${encodeURIComponent(`${carrier} tracking ${tracking.trim()}`)}`;
 }
 export const allDone = (c: Collab) => c.deliverables.length > 0 && c.deliverables.every((d) => d.done);
-export const isActive = (c: Collab) => c.stage !== 'wrapped' && c.stage !== 'declined';
+export const deliverableProgress = (deliverables: { qty: number; done: boolean; items?: { status: string }[] }[]) => ({
+	total: deliverables.reduce((n, d) => n + d.qty, 0),
+	done: deliverables.reduce((n, d) => n + (d.items?.length ? d.items.filter((x) => ['published', 'delivered'].includes(x.status)).length : d.done ? d.qty : 0), 0)
+});
+export const isActive = (c: Collab) => !['wrapped', 'declined', 'paused', 'cancelled'].includes(c.stage);
 export const outstanding = (c: Collab) =>
-	isPaid(c) && c.pay_status !== 'paid' && ['confirmed', 'creating', 'live', 'wrapped'].includes(c.stage)
+	productionHeld(c)
+		? (c.invoices ?? []).filter((i) => ['sent', 'partly_paid'].includes(i.status)).reduce((sum, i) => sum + Math.max(0, Number(i.total) - Number(i.amount_received) - Math.max(Number(i.tds_amount), Number(i.tds_deducted))) * (Number(i.inr_rate) || 1), 0)
+		: isPaid(c) && c.pay_status !== 'paid' && ['confirmed', 'creating', 'live', 'wrapped'].includes(c.stage)
 		? Math.max(0, (Number(c.fee) || 0) - (Number(c.pay_received) || 0))
 		: 0;
 export const overdue = (c: Collab) => isPaid(c) && c.pay_status === 'invoiced' && !!c.pay_due && diff(c.pay_due) < 0;
@@ -167,6 +177,8 @@ export function nextLine(c: Collab): NextLine {
 	const tone = (d: number) => (d < 0 ? 'late' : d <= 2 ? 'soon' : '') as NextLine['tone'];
 	const r = (text: string, d: number | null, icon = 'clock'): NextLine => ({ text, tone: d === null ? '' : tone(d), icon });
 	switch (c.stage) {
+		case 'paused': return r(c.resume_on ? `Paused · review ${fmt(c.resume_on)}` : 'Paused', null, 'clock');
+		case 'cancelled': return r('Cancelled · review settlement', null, 'x');
 		case 'request':
 			return r(`Received ${relWord(diff(c.received_on))}`, null, 'inbox');
 		case 'negotiating':
@@ -218,7 +230,14 @@ export function tasks(collabs: Collab[]): Task[] {
 	for (const c of collabs) {
 		const unread = unreadFor(c);
 		if (unread) out.push({ c, kind: 'msg', d: 0, title: `Reply to ${unread} new message${unread > 1 ? 's' : ''}`, order: -1 });
+		if (productionHeld(c)) {
+			if (c.stage === 'paused' && c.resume_on && diff(c.resume_on) <= 0) out.push({ c, kind: 'follow', d: diff(c.resume_on), title: 'Review paused collaboration', order: 1 });
+			continue;
+		}
 		if (c.stage === 'declined') continue;
+		const pieces = c.deliverables.flatMap((d) => (d.items ?? []).filter((x) => x.due_date && !['published', 'delivered'].includes(x.status)).map((x) => ({ ...x, kind: d.kind })));
+		const firstPiece = [...pieces].sort((a, b) => a.due_date!.localeCompare(b.due_date!))[0];
+		if (firstPiece && diff(firstPiece.due_date!) <= 3) out.push({ c, kind: 'draft', d: diff(firstPiece.due_date!), title: `${firstPiece.kind} ${firstPiece.position} due ${fmt(firstPiece.due_date)}${firstPiece.assigned_to ? ` · ${firstPiece.assigned_to}` : ''}`, order: 2 });
 		if (c.usage_ext_status === 'requested')
 			out.push({ c, kind: 'usage', d: 0, title: `Wants ${c.usage_ext_days} more days of paid usage (${inr(c.usage_ext_price)})`, order: 0 });
 		else if (c.usage_ends && diff(c.usage_ends) >= 0 && diff(c.usage_ends) <= 7)
@@ -231,7 +250,7 @@ export function tasks(collabs: Collab[]): Task[] {
 		if (c.follow_date && diff(c.follow_date) <= 2) out.push({ c, kind: 'follow', d: diff(c.follow_date), title: c.follow_note || 'Follow up', order: 1 });
 		if (['confirmed', 'creating'].includes(c.stage) && c.shoot_date && !allDone(c) && diff(c.shoot_date) <= 1)
 			out.push({ c, kind: 'shoot', d: diff(c.shoot_date), title: `Shoot · ${delivText(c.deliverables.filter((x) => !x.done))}`, order: 2 });
-		if (['confirmed', 'creating'].includes(c.stage) && c.draft_date && !allDone(c) && diff(c.draft_date) <= 3)
+		if (!pieces.length && ['confirmed', 'creating'].includes(c.stage) && c.draft_date && !allDone(c) && diff(c.draft_date) <= 3)
 			out.push({ c, kind: 'draft', d: diff(c.draft_date), title: `Send draft · ${delivText(c.deliverables)}`, order: 2 });
 		if (['confirmed', 'creating'].includes(c.stage) && c.live_date && diff(c.live_date) <= 3 && diff(c.live_date) >= 0)
 			out.push({ c, kind: 'live', d: diff(c.live_date), title: `Goes live · ${delivText(c.deliverables)}`, order: 3 });
@@ -287,15 +306,21 @@ export function mergeSteps(list: Task[]): Task[] {
 	});
 }
 
-export type CalEvent = { date: string; kind: 'shoot' | 'draft' | 'live' | 'follow' | 'pay' | 'product'; c: Collab };
+export type CalEvent = { date: string; kind: 'shoot' | 'draft' | 'live' | 'follow' | 'pay' | 'product'; c: Collab; label?: string };
 export function events(collabs: Collab[]): CalEvent[] {
 	const ev: CalEvent[] = [];
 	for (const c of collabs) {
+		if (productionHeld(c)) {
+			if (c.stage === 'paused' && c.resume_on) ev.push({ date: c.resume_on, kind: 'follow', c });
+			continue;
+		}
 		if (c.stage === 'declined') continue;
 		const si = stageIndex(c.stage);
+		const pieces = c.deliverables.flatMap((d) => (d.items ?? []).filter((x) => x.due_date && !['published', 'delivered'].includes(x.status)).map((x) => ({ ...x, kind: d.kind })));
+		for (const date of new Set(pieces.map((x) => x.due_date!))) ev.push({ date, kind: 'draft', c, label: pieces.filter((x) => x.due_date === date).map((x) => `${x.kind} ${x.position}`).join(', ') });
 		if (c.product_date && si >= 2 && si <= 3) ev.push({ date: c.product_date, kind: 'product', c });
 		if (c.shoot_date && si >= 2 && si <= 3 && !allDone(c)) ev.push({ date: c.shoot_date, kind: 'shoot', c });
-		if (c.draft_date && si >= 2 && si <= 3) ev.push({ date: c.draft_date, kind: 'draft', c });
+		if (!pieces.length && c.draft_date && si >= 2 && si <= 3) ev.push({ date: c.draft_date, kind: 'draft', c });
 		if (c.live_date && si >= 2) ev.push({ date: c.live_date, kind: 'live', c });
 		if (c.follow_date) ev.push({ date: c.follow_date, kind: 'follow', c });
 		if (isPaid(c) && c.pay_due && ['invoiced', 'advance'].includes(c.pay_status)) ev.push({ date: c.pay_due, kind: 'pay', c });

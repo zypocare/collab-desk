@@ -3,7 +3,7 @@
 	import { isRanked } from '../priority';
 	import { priorityOf } from '../studio.svelte';
 	import { ui } from '../ui.svelte';
-	import { delivText, diff, fmt, hueOf, inr, inrS, nextLine, stageIndex, stageLabel, unreadFor } from '../util';
+	import { delivText, deliverableProgress, diff, fmt, hueOf, inr, inrS, nextLine, stageIndex, stageLabel, unreadFor } from '../util';
 	import Icon from './Icon.svelte';
 	import { nextStep } from '../suggest';
 	import PriorityBadge from './PriorityBadge.svelte';
@@ -25,7 +25,7 @@
 	const prio = $derived(isRanked(c) ? priorityOf(c) : null);
 	const unread = $derived(unreadFor(c));
 	const step = $derived(nextStep(c));
-	const done = $derived(c.deliverables.filter((d) => d.done).length);
+	const progress = $derived(deliverableProgress(c.deliverables));
 	const showProg = $derived(stageIndex(c.stage) >= 2 && stageIndex(c.stage) <= 4 && c.deliverables.length > 0);
 	const followTone = $derived(c.follow_date ? (diff(c.follow_date) < 0 ? 'late' : diff(c.follow_date) === 0 ? 'soon' : '') : '');
 	let dragging = $state(false);
@@ -60,7 +60,7 @@
 	</div>
 	<div class="deliv">{delivText(c.deliverables)}</div>
 	{#if showProg}
-		<div class="dprog" title="{done} of {c.deliverables.length} deliverables done"><i style="--p:{done / c.deliverables.length}"></i></div>
+		<div class="dprog" title="{progress.done} of {progress.total} deliverables done"><i style="--p:{progress.done / progress.total}"></i></div>
 	{/if}
 	<div class="chips">
 		{#if prio}<PriorityBadge p={prio} compact />{/if}

@@ -9,7 +9,7 @@ export const DEFAULT_HOURS: Record<string, number> = { Reel: 6, Story: 1, 'Stati
 /** Hours still needed for a collab: pieces not done × her time per piece. */
 export function hoursLeft(c: Collab, s: Pick<Settings, 'piece_hours'> | null) {
 	const per = { ...DEFAULT_HOURS, ...(s?.piece_hours ?? {}) };
-	return c.deliverables.filter((d) => !d.done).reduce((a, d) => a + (Number(per[d.kind]) || 2) * d.qty, 0);
+	return c.deliverables.filter((d) => !d.done).reduce((a, d) => a + (Number(per[d.kind]) || 2) * (d.items?.length ? d.items.filter((x) => !['published', 'delivered'].includes(x.status)).length : d.qty), 0);
 }
 
 /** Where a collab sits in her content week. */

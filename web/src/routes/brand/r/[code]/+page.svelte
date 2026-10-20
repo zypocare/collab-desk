@@ -1,5 +1,6 @@
 <script lang="ts">
 	import QuoteChoices from '#lib/components/QuoteChoices.svelte';
+	import DeliverableProgress from '#lib/components/DeliverableProgress.svelte';
 	import { langText } from '#lib/languages.ts';
 	import { page } from '$app/state';
 	import BrandLink from '#lib/components/BrandLink.svelte';
@@ -58,7 +59,8 @@
 	const si = $derived(r ? (r.stage === 'declined' ? -1 : stageIndex(r.stage)) : 0);
 	const creator = $derived(firstName(pub.data?.display_name ?? ''));
 	const quote = $derived(r?.quotes?.[0]);
-	const openQuote0 = $derived(quote?.status === 'sent' ? quote : undefined);
+	const held = $derived(r?.stage === 'paused' || r?.stage === 'cancelled');
+	const openQuote0 = $derived(!held && quote?.status === 'sent' ? quote : undefined);
 	// Several options (Good / Better / Best): the brand picks one; the details below show that one.
 	const opts = $derived(openQuote0?.options?.length ? openQuote0.options : null);
 	let choice = $state(-1);
@@ -68,7 +70,7 @@
 	const openQuote = $derived(openQuote0 && opts && opts[choice] ? { ...openQuote0, ...opts[choice], options: opts } : openQuote0);
 	const accepted = $derived(r?.quotes?.find((q) => q.status === 'accepted'));
 	const expired = $derived(!!openQuote?.valid_until && openQuote.valid_until < todayIso());
-	const pendingDraft = $derived(r?.drafts?.find((d) => d.status === 'pending'));
+	const pendingDraft = $derived(!held ? r?.drafts?.find((d) => d.status === 'pending') : undefined);
 
 	// The draft file and comments pinned to moments in it (the same as on the email link).
 	let comments = $state<DraftComment[]>([]);
@@ -193,7 +195,11 @@
 	</header>
 
 	<!-- Where it stands, at a glance. -->
-	{#if r.stage !== 'declined'}
+	{#if held}
+		<div class="warn-box" role="status"><b>{r.stage_label}</b><span>{r.lifecycle_reason}</span>{#if r.resume_on}<span>Review on {fmt(r.resume_on)}. The creator will confirm when work resumes.</span>{/if}<span>Existing invoices and payments remain available below.</span></div>
+	{/if}
+	<DeliverableProgress deliverables={r.deliverables} />
+	{#if r.stage !== 'declined' && !held}
 		<ol class="rtrack rv" style="--i:1;--p:{Math.max(0, si) / (STAGES.length - 1)}" aria-label="Progress">
 			{#each STAGES as st, i (st.id)}
 				<li class:done={i < si} class:now={i === si}><span>{#if i < si}<Icon name="check" />{:else}{i + 1}{/if}</span><b>{TRACK[i]}</b></li>

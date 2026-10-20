@@ -1,6 +1,6 @@
 // The Money dashboard's numbers, for one financial year (April to March): what came in, from whom,
 // how fast, what is still to come and how the year compares with the last one.
-import { buildReport, fyFromStart, type FY } from './reports';
+import { buildReport, fyFromStart, type FY, type FinancialSummary } from './reports';
 import type { Collab } from './types';
 import { diff, iso, isPaid, outstanding, overdue, parse, today } from './util';
 
@@ -22,10 +22,10 @@ function receivedFy(c: Collab, fy: FY) {
 	return issued.filter((i) => inFy(i.paid_on, fy)).reduce((a, i) => a + (Number(i.amount_received) || 0) * (Number(i.inr_rate) || 1), 0);
 }
 
-export function moneyDash(collabs: Collab[], fy: FY, goal: number) {
-	const r = buildReport(collabs, fy);
+export function moneyDash(collabs: Collab[], fy: FY, goal: number, summary?: FinancialSummary | null, previous?: FinancialSummary | null) {
+	const r = summary ?? buildReport(collabs, fy);
 	const prevFy = fyFromStart(fy.start - 1);
-	const prev = buildReport(collabs, prevFy);
+	const prev = previous ?? buildReport(collabs, prevFy);
 	const T = today();
 	const ymNow = iso(T).slice(0, 7);
 	const months = monthsOf(fy);

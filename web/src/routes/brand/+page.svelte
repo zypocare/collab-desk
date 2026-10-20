@@ -37,12 +37,14 @@
 		brandData.requests.flatMap((r) => milestones(r, creator || 'the creator').filter((m) => m.who === 'you').map((m) => ({ r, m })))
 	);
 	// Laptop: filter the list.
-	let show = $state<'all' | 'active' | 'done' | 'declined'>('all');
+	let show = $state<'all' | 'active' | 'done' | 'declined' | 'paused' | 'cancelled'>('all');
 	const groups = $derived({
 		all: brandData.requests,
-		active: brandData.requests.filter((r) => r.stage !== 'declined' && r.stage !== 'wrapped' && !(r.stage === 'live' && (r.type === 'barter' || r.pay_status === 'paid'))),
+		active: brandData.requests.filter((r) => !['declined', 'wrapped', 'paused', 'cancelled'].includes(r.stage) && !(r.stage === 'live' && r.deliverables.every((d) => d.done) && (r.type === 'barter' || r.pay_status === 'paid'))),
 		// Completed: wrapped, or live with nothing left to settle.
-		done: brandData.requests.filter((r) => r.stage === 'wrapped' || (r.stage === 'live' && (r.type === 'barter' || r.pay_status === 'paid'))),
+		done: brandData.requests.filter((r) => r.stage === 'wrapped' || (r.stage === 'live' && r.deliverables.every((d) => d.done) && (r.type === 'barter' || r.pay_status === 'paid'))),
+		paused: brandData.requests.filter((r) => r.stage === 'paused'),
+		cancelled: brandData.requests.filter((r) => r.stage === 'cancelled'),
 		declined: brandData.requests.filter((r) => r.stage === 'declined')
 	});
 	const ig = $derived(pub.data?.instagram ?? null);
@@ -51,7 +53,7 @@
 	);
 	// Phone: each request a ticket, its band in the colour of where it stands.
 	const STAGE_HUE: Record<string, string> = { request: 'var(--h-request)', negotiating: 'var(--h-nego)', confirmed: 'var(--h-confirmed)', creating: 'var(--h-creating)', live: 'var(--h-live)', wrapped: 'var(--h-wrapped)', declined: 'var(--bad)' };
-	const needsAnswer = (r: (typeof brandData.requests)[number]) => r.quotes?.[0]?.status === 'sent' || !!r.drafts?.some((d) => d.status === 'pending');
+	const needsAnswer = (r: (typeof brandData.requests)[number]) => !['paused', 'cancelled'].includes(r.stage) && (r.quotes?.[0]?.status === 'sent' || !!r.drafts?.some((d) => d.status === 'pending'));
 </script>
 
 <svelte:head><title>My requests</title></svelte:head>
@@ -142,7 +144,7 @@
 		</div>
 	{:else if !phone.on}
 		<div class="brq-tabs" role="tablist">
-			{#each [['all', 'All'], ['active', 'Active'], ['done', 'Completed'], ['declined', 'Not going ahead']] as [k, label] (k)}
+			{#each [['all', 'All'], ['active', 'Active'], ['done', 'Completed'], ['paused', 'Paused'], ['cancelled', 'Cancelled'], ['declined', 'Not going ahead']] as [k, label] (k)}
 				{#if k === 'all' || groups[k as 'active'].length}
 					<button role="tab" aria-selected={show === k} class:on={show === k} onclick={() => (show = k as typeof show)}>{label}<span>{groups[k as 'all'].length}</span></button>
 				{/if}

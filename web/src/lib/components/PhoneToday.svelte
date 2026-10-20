@@ -220,7 +220,7 @@
 					<div class="tk-cut" aria-hidden="true"></div>
 					<div class="tk-foot">
 						<span class="tk-task"><b>{t.title}</b><small class:hot={hot(t)}><i></i>{when(t)}</small></span>
-						{#if t.kind === 'follow'}
+				{#if t.kind === 'follow' && t.c.stage !== 'paused'}
 							<button class="btn" onclick={() => leaveThen(key, () => completeFollow(t.c))}>Done</button>
 						{:else if t.kind === 'pay'}
 							<button class="btn primary" onclick={async () => (await askPaid(t.c)) && leaveThen(key, () => markPaid(t.c, false, true))}>Mark paid</button>

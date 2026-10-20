@@ -13,8 +13,12 @@
 			if (ui.openCollab !== id) ui.openCollab = id;
 		});
 	});
-	// Leaving the page closes it (so other screens don't jump back here).
-	onDestroy(() => (ui.openCollab = null));
+	// The responsive layout can remount this page without navigating. Keep its selected collab
+	// during that remount; clearing it would invalidate child effects while the new page mounts.
+	const collabPath = untrack(() => page.url.pathname);
+	onDestroy(() => {
+		if (location.pathname !== collabPath) ui.openCollab = null;
+	});
 </script>
 
 <svelte:head><title>{c ? `${c.brand.name} · ${c.code}` : 'Collab'} · {studio.settings?.app_name}</title></svelte:head>

@@ -82,11 +82,21 @@ export const balanceDue = (i: Pick<InvoiceView, 'total' | 'tds_amount' | 'amount
 	i.status === 'paid' || i.status === 'cancelled' ? 0 : Math.max(0, num(i.total) - num(i.amount_received) - Math.max(num(i.tds_amount), num(i.tds_deducted)));
 
 /** UPI payment link with the amount filled in. Opens GPay, PhonePe, Paytm and other UPI apps on a phone. */
-export function upiLink(i: InvoiceView) {
-	const amount = balanceDue(i);
-	const p = new URLSearchParams({ pa: i.seller.upi_id, pn: i.seller.name, cu: 'INR', tn: `Invoice ${i.number}` });
-	if (amount > 0) p.set('am', amount.toFixed(2));
+export const validUpiId = (id: string) => /^[\w.-]{2,}@[a-zA-Z][\w.-]*$/.test(id.trim());
+export const validUpiAmount = (amount: number) => Number.isFinite(amount) && amount > 0
+	&& Number.isSafeInteger(Math.round(amount * 100))
+	&& Math.abs(amount * 100 - Math.round(amount * 100)) <= Math.max(1e-6, amount * 100 * Number.EPSILON * 4);
+
+export function upiPaymentLink(id: string, name: string, amount: number, note = '') {
+	if (!validUpiId(id) || !validUpiAmount(amount) || Number(amount.toFixed(2)) <= 0) return '';
+	const p = new URLSearchParams({ pa: id.trim(), pn: name.trim() || id.trim(), am: amount.toFixed(2), cu: 'INR' });
+	if (note.trim()) p.set('tn', note.trim());
 	return `upi://pay?${p.toString().replace(/\+/g, '%20')}`;
+}
+
+export function upiLink(i: InvoiceView) {
+	if ((i.currency && i.currency !== 'INR') || i.status === 'draft') return '';
+	return upiPaymentLink(i.seller.upi_id, i.seller.name, balanceDue(i), `Invoice ${i.number}`);
 }
 
 /** QR code modules for any text (true = dark). */

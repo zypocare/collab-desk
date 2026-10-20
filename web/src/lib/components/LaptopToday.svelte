@@ -253,7 +253,7 @@
 					{#each fanned ? ts : ts.slice(0, 4) as t, i (t.c.id + t.kind)}
 						{@const key = t.c.id + t.kind}
 						<Ticket name={t.c.brand.name} sub={stageLabel(t.c.stage)} money={ticketMoney(t)} moneySub={t.kind === 'pay' ? 'Due' : delivText(t.c.deliverables) || TYPE_LABEL[t.c.type]} task={t.title} status={when(t)} tone={hot(t) ? 'hot' : 'warn'} href="/studio/c/{t.c.code}" leaving={leaving === key} {i}>
-							{#if t.kind === 'follow'}
+							{#if t.kind === 'follow' && t.c.stage !== 'paused'}
 								<button class="l-neo l-white" onclick={() => leaveThen(key, () => completeFollow(t.c))}>Done</button>
 							{:else if t.kind === 'pay'}
 								<button class="l-neo l-white" onclick={async () => (await askPaid(t.c)) && leaveThen(key, () => markPaid(t.c, false, true))}>Mark paid</button>

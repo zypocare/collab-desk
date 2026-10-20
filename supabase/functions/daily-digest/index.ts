@@ -25,7 +25,7 @@ Deno.serve(async (req) => {
   const { data, error } = await db
     .from('collabs')
     .select('*, brand:brands(name), deliverables(kind, qty, done), quotes(version, status), drafts(round, status, feedback)')
-    .not('stage', 'in', '(wrapped,declined)');
+    .not('stage', 'in', '(wrapped,declined,paused,cancelled)');
   if (error) return Response.json({ error: error.message }, { status: 500 });
 
   const today = todayIST();

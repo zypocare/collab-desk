@@ -6,7 +6,8 @@ import { askAi } from './ai';
 import { voiceAlert, voiceLine } from './voice';
 import { supabase } from './supabase';
 import type { Package } from './types';
-import type { BankAlert, Brand, BrandPrivate, BrandReport, Checklist, Collab, Deliverable, IgAccount, IgMedia, Quote, Retainer, Settings, Stage } from './types';
+import type { BankAlert, Brand, BrandPrivate, BrandReport, Checklist, Collab, Deliverable, DeliverableItem, IgAccount, IgMedia, Quote, Retainer, Settings, Stage } from './types';
+import { collectPages, collectRanges } from './pagination';
 import { balanceDue, normaliseInvoice, type Invoice, type InvoiceItem } from './invoice';
 import { confetti, moneyIn, toast, ui } from './ui.svelte';
 import { ask } from './confirm.svelte';
@@ -18,6 +19,8 @@ import { uploadResumable } from './resumable';
 export const studio = $state<{
 	loaded: boolean;
 	error: string;
+	/** Changes only after a complete snapshot has been fetched. */
+	revision: number;
 	collabs: Collab[];
 	brands: Brand[];
 	notes: Record<string, BrandPrivate>;
@@ -35,9 +38,18 @@ export const studio = $state<{
 	packages: Package[];
 	retainers: Retainer[];
 	me: { role: 'creator'; email: string; team_role: 'owner' | 'manager' | 'assistant' | 'accountant'; name?: string } | null;
-}>({ me: null, loaded: false, error: '', collabs: [], brands: [], notes: {}, fits: {}, reading: [], leads: [], settings: null, alerts: [], ig: null, media: [], followersHistory: [], packages: [], retainers: [] });
+}>({ revision: 0, me: null, loaded: false, error: '', collabs: [], brands: [], notes: {}, fits: {}, reading: [], leads: [], settings: null, alerts: [], ig: null, media: [], followersHistory: [], packages: [], retainers: [] });
 
-const COLLAB_SELECT = '*, brand:brands(*), deliverables(*), events:collab_events(*), quotes(*), drafts(*, comments:draft_comments(*)), expenses:collab_expenses(*), files:collab_files(*), invoices(*), posts:collab_posts(matched_by, media:ig_media(*)), reports:brand_reports(*), messages:collab_messages(id, sender, body, created_at), reads:collab_reads(side, read_at), links:collab_links(*)';
+type CollabCursor = { created_at: string; id: string };
+async function fetchCollabs(id?: string) {
+	return collectPages<Collab, CollabCursor>(async (cursor) => {
+		const { data, error } = await supabase.rpc('studio_collabs_page', { p_cursor: cursor, p_limit: 100, p_collab: id ?? null });
+		if (error) throw error;
+		if (!data || !Array.isArray(data.rows)) throw new Error('The collaboration page was incomplete. Please refresh.');
+		return data as { rows: Collab[]; next: CollabCursor | null };
+	});
+}
+const fetchBrands = () => collectRanges<Brand>((from, to) => supabase.from('brands').select('*').order('id').range(from, to));
 
 function normalise(c: Collab): Collab {
 	c.fee = Number(c.fee) || 0;
@@ -45,7 +57,7 @@ function normalise(c: Collab): Collab {
 	c.pay_received = Number(c.pay_received) || 0;
 	c.usage_ext_price = Number(c.usage_ext_price) || 0;
 	c.expenses = (c.expenses ?? []).map((x) => ({ ...x, amount: Number(x.amount) || 0 })).sort((a, b) => a.spent_on.localeCompare(b.spent_on));
-	c.deliverables = (c.deliverables ?? []).sort((a, b) => a.position - b.position);
+	c.deliverables = (c.deliverables ?? []).map((d) => ({ ...d, items: (d.items ?? []).sort((a, b) => a.position - b.position) })).sort((a, b) => a.position - b.position);
 	c.events = (c.events ?? []).sort((a, b) => b.at.localeCompare(a.at));
 	c.quotes = (c.quotes ?? [])
 		.map((q) => ({ ...q, total: Number(q.total) || 0, usage_fee: Number(q.usage_fee) || 0, discount: Number(q.discount) || 0 }))
@@ -62,7 +74,7 @@ function normalise(c: Collab): Collab {
 
 // ---------- Offline: the last loaded data is kept on this device and shown while offline ----------
 const savedKey = async () => `studio:${(await supabase.auth.getSession()).data.session?.user.id ?? ''}`;
-type Saved = Pick<typeof studio, 'collabs' | 'brands' | 'notes' | 'settings' | 'alerts' | 'ig' | 'media' | 'followersHistory' | 'packages' | 'retainers' | 'me'> & { at: string };
+type Saved = Pick<typeof studio, 'collabs' | 'brands' | 'notes' | 'settings' | 'alerts' | 'ig' | 'media' | 'followersHistory' | 'packages' | 'retainers' | 'me'> & { at: string; version: 2 };
 let saveTimer: ReturnType<typeof setTimeout> | undefined;
 /** Keep a copy of what's loaded (a second after the last change). */
 export function keepCopy() {
@@ -71,13 +83,13 @@ export function keepCopy() {
 	saveTimer = setTimeout(async () => {
 		const at = new Date().toISOString();
 		const { collabs, brands, notes, settings, alerts, ig, media, followersHistory, packages, retainers, me } = studio;
-		await saveLocal(await savedKey(), { collabs, brands, notes, settings, alerts, ig, media, followersHistory, packages, retainers, me, at });
+		await saveLocal(await savedKey(), { collabs, brands, notes, settings, alerts, ig, media, followersHistory, packages, retainers, me, at, version: 2 });
 		net.savedAt = at;
 	}, 1000);
 }
 async function restoreCopy() {
 	const s = await loadSaved<Saved>(await savedKey());
-	if (!s?.settings || studio.loaded) return false;
+	if (!s?.settings || s.version !== 2 || studio.loaded) return false;
 	Object.assign(studio, { ...s, loaded: true, error: '' });
 	net.savedAt = s.at;
 	return true;
@@ -86,36 +98,37 @@ async function restoreCopy() {
 export async function loadStudio() {
 	// Show the saved copy straight away (instant start, and the app works offline), then refresh.
 	if (!studio.loaded) await restoreCopy();
-	const [collabs, brands, notes, settings] = await Promise.all([
-		supabase.from('collabs').select(COLLAB_SELECT).order('received_on', { ascending: false }),
-		supabase.from('brands').select('*').order('name'),
-		supabase.from('brand_private').select('*'),
-		supabase.from('creator_settings').select('*').eq('id', 1).single()
-	]);
-	loadAlerts();
-	loadInstagram();
-	loadPackages();
-	loadRetainers();
-	loadFits();
-	loadLeads();
-	supabase.rpc('studio_account').then(({ data }) => {
-		studio.me = (data as typeof studio.me) ?? null;
-	});
-	const err = collabs.error || brands.error || notes.error || settings.error;
-	if (err) {
+	try {
+		const [collabs, brands, notes, settings] = await Promise.all([
+			fetchCollabs(), fetchBrands(),
+			collectRanges<BrandPrivate>((from, to) => supabase.from('brand_private').select('*').order('brand_id').range(from, to)),
+			supabase.from('creator_settings').select('*').eq('id', 1).single()
+		]);
+		if (settings.error) throw settings.error;
+		loadAlerts();
+		loadInstagram();
+		loadPackages();
+		loadRetainers();
+		loadFits();
+		loadLeads();
+		supabase.rpc('studio_account').then(({ data }) => {
+			studio.me = (data as typeof studio.me) ?? null;
+		});
+		studio.collabs = collabs.map(normalise);
+		studio.brands = brands.sort((a, b) => a.name.localeCompare(b.name));
+		studio.notes = Object.fromEntries(notes.map((n) => [n.brand_id, n]));
+		studio.settings = settings.data as Settings;
+		studio.loaded = true;
+		studio.error = '';
+		studio.revision++;
+		lastSync = Date.now();
+		keepCopy();
+	} catch (err) {
 		// Offline with a saved copy: keep showing it.
-		if (studio.loaded && isNetworkError(err)) return;
 		studio.error = isNetworkError(err) ? "You're offline and nothing is saved on this phone yet. Connect once and it will work offline after that." : errMessage(err);
+		if (studio.loaded && isNetworkError(err)) studio.error = 'Could not refresh all records. Showing the last complete saved snapshot.';
 		return;
 	}
-	studio.collabs = (collabs.data as Collab[]).map(normalise);
-	studio.brands = brands.data as Brand[];
-	studio.notes = Object.fromEntries((notes.data as BrandPrivate[]).map((n) => [n.brand_id, n]));
-	studio.settings = settings.data as Settings;
-	studio.loaded = true;
-	studio.error = '';
-	lastSync = Date.now();
-	keepCopy();
 }
 
 let channel: RealtimeChannel | null = null;
@@ -142,6 +155,7 @@ export function watchStudio() {
 			schedule();
 		})
 		.on('postgres_changes', { event: '*', schema: 'public', table: 'deliverables' }, schedule)
+		.on('postgres_changes', { event: '*', schema: 'public', table: 'deliverable_items' }, schedule)
 		.on('postgres_changes', { event: '*', schema: 'public', table: 'ig_threads' }, () => loadLeads())
 		.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'collab_events' }, schedule)
 		.on('postgres_changes', { event: '*', schema: 'public', table: 'quotes' }, (p) => {
@@ -210,22 +224,29 @@ export async function catchUp(minAgeMs = 30_000) {
 }
 
 export async function reloadCollabs() {
-	const { data, error } = await supabase.from('collabs').select(COLLAB_SELECT).order('received_on', { ascending: false });
-	if (!error && data) studio.collabs = (data as Collab[]).map(normalise);
-	const b = await supabase.from('brands').select('*').order('name');
-	if (!b.error && b.data) studio.brands = b.data as Brand[];
-	lastSync = Date.now();
-	keepCopy();
-	autoFit();
+	try {
+		const [collabs, brands] = await Promise.all([fetchCollabs(), fetchBrands()]);
+		studio.collabs = collabs.map(normalise);
+		studio.brands = brands.sort((a, b) => a.name.localeCompare(b.name));
+		studio.error = '';
+		studio.revision++;
+		lastSync = Date.now();
+		keepCopy();
+		autoFit();
+	} catch (error) {
+		studio.error = `Could not refresh all records. Showing the last complete snapshot. ${errMessage(error)}`;
+	}
 }
 
 export async function reloadOne(id: string) {
-	const { data, error } = await supabase.from('collabs').select(COLLAB_SELECT).eq('id', id).single();
-	if (error || !data) return;
-	const fresh = normalise(data as Collab);
+	let data: Collab | undefined;
+	try { data = (await fetchCollabs(id))[0]; } catch (error) { toast(`Couldn't refresh: ${errMessage(error)}`, 'alert'); return; }
+	if (!data) return;
+	const fresh = normalise(data);
 	const i = studio.collabs.findIndex((c) => c.id === id);
 	if (i >= 0) studio.collabs[i] = fresh;
 	else studio.collabs.unshift(fresh);
+	studio.revision++;
 	keepCopy();
 }
 
@@ -279,8 +300,10 @@ function speak(what: string) {
 }
 
 export async function loadFits() {
-	const { data } = await supabase.from('collab_fit').select('collab_id, data');
-	if (data) studio.fits = Object.fromEntries(data.map((r) => [r.collab_id as string, r.data as FitData]));
+	try {
+		const data = await collectRanges<{ collab_id: string; data: FitData }>((from, to) => supabase.from('collab_fit').select('collab_id, data').order('collab_id').range(from, to));
+		studio.fits = Object.fromEntries(data.map((r) => [r.collab_id, r.data]));
+	} catch { return; }
 	autoFit();
 }
 
@@ -347,15 +370,15 @@ export async function autoFit() {
 
 type CollabPatch = Partial<Omit<Collab, 'id' | 'brand' | 'deliverables' | 'events'>>;
 
-/** Saves fields on a collab. Updates the screen first, then the database. */
+/** Publish confirmed changes after the database has checked the workflow rules. */
 export async function updateCollab(id: string, patch: CollabPatch) {
-	const c = byId(id);
-	if (c) Object.assign(c, patch);
 	const { error } = await supabase.from('collabs').update(patch).eq('id', id);
 	if (error) {
 		toast(`Couldn't save: ${errMessage(error)}`, 'alert');
+		return false;
 	}
 	await reloadOne(id);
+	return true;
 }
 
 export async function setStage(c: Collab, stage: Stage, quiet = false) {
@@ -370,11 +393,7 @@ export async function setStage(c: Collab, stage: Stage, quiet = false) {
 		const quoted = Math.round(q.total * (q.inr_rate || 1));
 		if (quoted > 0 && quoted !== c.fee) patch.fee = quoted;
 	}
-	await updateCollab(c.id, patch);
-	if (stage === 'live' && c.deliverables.some((d) => !d.done)) {
-		await supabase.from('deliverables').update({ done: true }).eq('collab_id', c.id);
-		await reloadOne(c.id);
-	}
+	if (!(await updateCollab(c.id, patch))) return;
 	if (quiet) return;
 	if (stage === 'live' || stage === 'wrapped') confetti();
 	toast(`${c.brand.name} moved to ${stageLabel(stage)}`, 'layers');
@@ -410,9 +429,10 @@ export async function markPaid(c: Collab, quiet = false, asked = false) {
 // Packages
 // ---------------------------------------------------------------------------
 export async function loadPackages() {
-	const { data, error } = await supabase.from('packages').select('*').order('position').order('created_at');
-	if (error && isNetworkError(error)) return;
-	studio.packages = ((data as Package[]) ?? []).map((p) => ({ ...p, price: Number(p.price) || 0 }));
+	try {
+		const data = await collectRanges<Package>((from, to) => supabase.from('packages').select('*').order('id').range(from, to));
+		studio.packages = data.map((p) => ({ ...p, price: Number(p.price) || 0 })).sort((a, b) => a.position - b.position || a.created_at.localeCompare(b.created_at));
+	} catch { return; }
 	keepCopy();
 }
 
@@ -451,15 +471,26 @@ export async function completeFollow(c: Collab) {
 }
 
 export async function setDeliverable(d: Deliverable, patch: Partial<Pick<Deliverable, 'done' | 'qty'>>) {
-	const c = byId(d.collab_id);
-	const local = c?.deliverables.find((x) => x.id === d.id);
-	if (local) Object.assign(local, patch);
 	const { error } = await supabase.from('deliverables').update(patch).eq('id', d.id);
 	if (error) toast(`Couldn't save: ${errMessage(error)}`, 'alert');
-	if (c && patch.done && c.deliverables.every((x) => x.done)) {
-		confetti();
-		toast('All deliverables done');
-	}
+	await reloadOne(d.collab_id);
+}
+
+export async function saveDeliverableItem(item: DeliverableItem, patch: Partial<Pick<DeliverableItem, 'status' | 'due_date' | 'assigned_to' | 'draft_id' | 'media_id'>>) {
+	const { error } = await supabase.from('deliverable_items').update(patch).eq('id', item.id);
+	if (error) toast(`Couldn't save this item: ${errMessage(error)}`, 'alert');
+	await reloadOne(item.collab_id);
+	return !error;
+}
+
+export async function changeLifecycle(c: Collab, stage: 'paused' | 'cancelled' | 'resume', reason = '', resumeOn: string | null = null) {
+	const { error } = await supabase.from('collabs').update(stage === 'resume'
+		? { stage: c.resume_stage ?? 'request' }
+		: { stage, lifecycle_reason: reason.trim(), resume_on: stage === 'paused' ? resumeOn : null }).eq('id', c.id);
+	if (error) { toast(`Couldn't update this collaboration: ${errMessage(error)}`, 'alert'); return false; }
+	await reloadOne(c.id);
+	toast(stage === 'resume' ? 'Collaboration resumed. Review dates and held posts before scheduling.' : `Collaboration ${stage}. Existing invoices and payments are retained.`, 'check');
+	return true;
 }
 
 export async function addDeliverable(c: Collab, kind: string) {
@@ -499,9 +530,10 @@ export async function ensureBrand(brandName: string, instagram = ''): Promise<Br
 
 // ---------- Monthly deals ----------
 export async function loadRetainers() {
-	const { data, error } = await supabase.from('retainers').select('*').order('created_at', { ascending: false });
-	if (error && isNetworkError(error)) return;
-	studio.retainers = ((data as Retainer[]) ?? []).map((r) => ({ ...r, fee: Number(r.fee) || 0 }));
+	try {
+		const data = await collectRanges<Retainer>((from, to) => supabase.from('retainers').select('*').order('id').range(from, to));
+		studio.retainers = data.map((r) => ({ ...r, fee: Number(r.fee) || 0 })).sort((a, b) => b.created_at.localeCompare(a.created_at));
+	} catch { return; }
 	keepCopy();
 }
 export async function saveRetainer(r: Partial<Retainer> & { brand_id: string }) {
@@ -824,7 +856,6 @@ export async function linkPost(c: Collab, m: IgMedia) {
 	if (error) return toast(`Couldn't link the post: ${errMessage(error)}`, 'alert');
 	if (['confirmed', 'creating'].includes(c.stage)) {
 		await updateCollab(c.id, { stage: 'live', live_date: m.posted_at.slice(0, 10) });
-		await supabase.from('deliverables').update({ done: true }).eq('collab_id', c.id);
 	}
 	await reloadOne(c.id);
 	toast('Post linked');

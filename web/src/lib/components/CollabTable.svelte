@@ -18,14 +18,18 @@
 	type Sort = 'stage' | 'brand' | 'value' | 'date';
 	let sort = $state<Sort>('stage');
 	let desc = $state(false);
+	let pageNumber = $state(1);
+	const pageSize = 25;
+	$effect(() => { void list; pageNumber = 1; });
 	function by(k: Sort) {
+		pageNumber = 1;
 		if (sort === k) desc = !desc;
 		else {
 			sort = k;
 			desc = k === 'value';
 		}
 	}
-	const order = (s: Stage) => (s === 'declined' ? 99 : stageIndex(s));
+	const order = (s: Stage) => (({ paused: 7, cancelled: 8, declined: 9 } as Partial<Record<Stage, number>>)[s] ?? stageIndex(s));
 	// The date that matters at this stage: draft, then go-live, then payment, else when it came in.
 	const keyDate = (c: Collab) => c.draft_date || c.live_date || c.pay_due || c.received_on;
 	const value = (c: Collab) => (Number(c.fee) || 0) + (Number(c.product_value) || 0);
@@ -66,7 +70,7 @@
 			</tr>
 		</thead>
 		<tbody>
-			{#each rows as c (c.id)}
+			{#each rows.slice((pageNumber - 1) * pageSize, pageNumber * pageSize) as c (c.id)}
 				{@const n = nextLine(c)}
 				{@const unread = unreadFor(c)}
 				<tr class="st-{c.stage}" class:picked={picked?.has(c.id)} onclick={() => open(c)}>
@@ -97,3 +101,12 @@
 		</tbody>
 	</table>
 </div>
+{#if rows.length > pageSize}
+	<nav class="table-pages" aria-label="Collaboration pages">
+		<button class="btn sm" disabled={pageNumber === 1} onclick={() => pageNumber--}>Previous</button>
+		<span>Page {pageNumber} of {Math.ceil(rows.length / pageSize)} · {rows.length} collaborations</span>
+		<button class="btn sm" disabled={pageNumber * pageSize >= rows.length} onclick={() => pageNumber++}>Next</button>
+	</nav>
+{/if}
+
+<style>.table-pages { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 12px; padding: 16px; font-size: 12px; }</style>

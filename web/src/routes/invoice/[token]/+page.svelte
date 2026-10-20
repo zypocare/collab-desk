@@ -4,7 +4,8 @@
 	import { money } from '#lib/currency.ts';
 	import { onMount } from 'svelte';
 	import { supabase } from '#lib/supabase.ts';
-	import { amountInWords, balanceDue, INVOICE_STATUS, normaliseInvoice, qrSvgPath, upiLink, type InvoiceView } from '#lib/invoice.ts';
+	import { amountInWords, balanceDue, INVOICE_STATUS, normaliseInvoice, upiLink, type InvoiceView } from '#lib/invoice.ts';
+	import UpiQr from '#lib/components/UpiQr.svelte';
 	import { copyText, toast } from '#lib/ui.svelte.ts';
 	import { errMessage, fmtLong, inr } from '#lib/util.ts';
 	import Icon from '#lib/components/Icon.svelte';
@@ -23,7 +24,6 @@
 	// UPI is for rupees only; foreign brands pay by international transfer.
 	const foreign = $derived(!!inv && !!inv.currency && inv.currency !== 'INR');
 	const upi = $derived(inv && !foreign && inv.seller.upi_id && due > 0 ? upiLink(inv) : '');
-	const qr = $derived(upi ? qrSvgPath(upi) : null);
 	const isMobile = typeof navigator !== 'undefined' && /Android|iPhone|iPad/i.test(navigator.userAgent);
 
 	// "I've paid": amount, UTR / reference and date, so she can confirm it.
@@ -91,11 +91,8 @@
 							</div>
 						{/if}
 					</div>
-					{#if qr}
-						<figure class="qr">
-							<svg viewBox="-2 -2 {qr.size + 4} {qr.size + 4}" role="img" aria-label="UPI QR code for {cm(due)}"><rect x="-2" y="-2" width={qr.size + 4} height={qr.size + 4} fill="#fff" /><path d={qr.d} fill="#000" /></svg>
-							<figcaption>Scan with GPay, PhonePe, Paytm or any UPI app</figcaption>
-						</figure>
+					{#if upi}
+						<UpiQr upiId={inv.seller.upi_id} name={inv.seller.name} amount={due} note={`Invoice ${inv.number}`} />
 					{/if}
 				</section>
 				{#if inv.claim_at}

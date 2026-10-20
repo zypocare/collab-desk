@@ -13,7 +13,7 @@ Deno.serve(async (req) => {
 
   const { data: invoices, error } = await db
     .from('invoices')
-    .select('id, collab_id, number, public_token, due_date, total, payable, amount_received, tds_deducted, reminders_sent, send_to, collab:collabs(code, contact_name, contact_email)')
+    .select('id, collab_id, number, public_token, due_date, total, payable, amount_received, tds_deducted, reminders_sent, send_to, collab:collabs(code, contact_name, contact_email, stage)')
     .in('status', ['sent', 'partly_paid'])
     .eq('auto_remind', true)
     .not('due_date', 'is', null);
@@ -27,7 +27,8 @@ Deno.serve(async (req) => {
     const step = [...STEPS].reverse().find((st) => daysLate >= st && daysLate - st <= 2);
     if (step === undefined || (inv.reminders_sent ?? []).includes(step)) continue;
 
-    const collab = inv.collab as unknown as { code: string; contact_name: string; contact_email: string };
+    const collab = inv.collab as unknown as { code: string; contact_name: string; contact_email: string; stage: string };
+    if (!collab || ['paused', 'cancelled'].includes(collab.stage)) continue;
     const recipients = [...new Set([collab.contact_email, inv.send_to].map((e) => (e ?? '').trim()).filter(Boolean))];
     if (!recipients.length) continue;
 

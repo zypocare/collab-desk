@@ -104,6 +104,13 @@ export function exportEverything() {
 			text: csv([['Collab', 'Brand', 'Kind', 'Quantity', 'Done'], ...cs.flatMap((c) => c.deliverables.map((d) => [c.code, c.brand.name, d.kind, d.qty, d.done ? 'yes' : 'no']))])
 		},
 		{
+			name: 'deliverable-items.csv',
+			text: csv([
+				['Collab', 'Brand', 'Kind', 'Piece', 'Status', 'Due date', 'Assigned to', 'Draft ID', 'Post ID', 'Completed at'],
+				...cs.flatMap((c) => c.deliverables.flatMap((d) => (d.items ?? []).map((x) => [c.code, c.brand.name, d.kind, x.position, x.status, x.due_date, x.assigned_to, x.draft_id, x.media_id, x.completed_at])))
+			])
+		},
+		{
 			name: 'messages.csv',
 			text: csv([['Collab', 'Brand', 'From', 'When', 'Message'], ...cs.flatMap((c) => (c.messages ?? []).map((m) => [c.code, c.brand.name, m.sender === 'creator' ? 'You' : 'Brand', m.created_at, m.body]))])
 		},

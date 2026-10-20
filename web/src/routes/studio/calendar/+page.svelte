@@ -101,9 +101,10 @@
 		return { t: `${count(l.length)} things.`, color: 'var(--g3)' };
 	});
 	const sub = (e: CalEvent) =>
-		e.kind === 'follow' ? e.c.follow_note || 'Check in with the brand' : e.kind === 'pay' ? `${inr(outstanding(e.c))} · ${e.c.invoice_no || 'invoice'}` : delivText(e.c.deliverables);
+		e.label || (e.kind === 'follow' ? e.c.follow_note || 'Check in with the brand' : e.kind === 'pay' ? `${inr(outstanding(e.c))} · ${e.c.invoice_no || 'invoice'}` : delivText(e.c.deliverables));
 	// The next step, when there is one to take from here; otherwise open the collab.
 	function step(e: CalEvent): { label: string; run: () => unknown } | null {
+		if (['paused', 'cancelled'].includes(e.c.stage)) return null;
 		const due = diff(e.date) <= 0;
 		if (e.kind === 'live' && due && stageIndex(e.c.stage) < 4) return { label: 'Posted', run: () => setStage(e.c, 'live') };
 		if (e.kind === 'pay' && due) return { label: 'Paid?', run: () => markPaid(e.c) };

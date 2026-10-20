@@ -160,23 +160,25 @@ export async function invoicePdf(inv: InvoiceView): Promise<Uint8Array> {
 	// The heading only when there is something under it (UPI or bank details).
 	const foreign = CUR !== 'INR';
 	const bank = foreign && inv.seller.intl_bank ? inv.seller.intl_bank : inv.seller.bank_details;
-	if ((!foreign && inv.seller.upi_id && due > 0) || bank) {
+	const upi = upiLink(inv);
+	if (upi || bank) {
 		text('HOW TO PAY', M, y, 7.5, bold, MUTED);
 		y -= 6;
 	}
-	if (!foreign && inv.seller.upi_id && due > 0) {
-		const m = qrMatrix(upiLink(inv));
+	if (upi) {
+		const m = qrMatrix(upi);
 		const size = 104, cell = size / m.length;
-		const qx = M, qy = y - size - 8;
-		page.drawRectangle({ x: qx - 6, y: qy - 6, width: size + 12, height: size + 12, color: rgb(1, 1, 1), borderColor: LINE, borderWidth: 0.7 });
+		const quiet = cell * 4;
+		const qx = M + quiet, qy = y - size - quiet - 10;
+		page.drawRectangle({ x: qx - quiet, y: qy - quiet, width: size + quiet * 2, height: size + quiet * 2, color: rgb(1, 1, 1), borderColor: LINE, borderWidth: 0.7 });
 		m.forEach((row, r) => row.forEach((dark, c) => dark && page.drawRectangle({ x: qx + c * cell, y: qy + size - (r + 1) * cell, width: cell + 0.15, height: cell + 0.15, color: rgb(0, 0, 0) })));
-		const px = M + size + 26;
+		const px = M + size + quiet * 2 + 20;
 		text('Scan with any UPI app', px, y - 20, 10.5, bold);
 		text(`UPI ID: ${inv.seller.upi_id}`, px, y - 36, 9.5);
 		text(`Amount: ${money(due)}`, px, y - 50, 9.5);
 		text(`Note: Invoice ${inv.number}`, px, y - 64, 9.5, reg, MUTED);
 		if (due > 100000) text('UPI limits are often ₹1 lakh a day; use bank transfer for larger amounts.', px, y - 80, 8, reg, MUTED);
-		y = qy - 22;
+		y = qy - quiet - 22;
 	}
 	if (bank) {
 		text(foreign ? 'International bank transfer' : 'Bank transfer', M, y, 10, bold);
@@ -184,7 +186,7 @@ export async function invoicePdf(inv: InvoiceView): Promise<Uint8Array> {
 		for (const l of wrap(bank, reg, 9, W - 2 * M)) (text(l, M, y, 9, reg, MUTED), (y -= 12));
 		y -= 10;
 	}
-	if ((!foreign && inv.seller.upi_id) || bank) {
+	if (upi || bank) {
 		hr(y + 2);
 		y -= 16;
 	}

@@ -37,7 +37,7 @@ Deno.serve(async (req) => {
   // Quoted earlier messages ("On … wrote:") are cut off.
   const { data: open } = await db
     .from('collabs').select('id, code').ilike('contact_email', email)
-    .not('stage', 'in', '(wrapped,declined)').order('created_at', { ascending: false }).limit(1);
+    .not('stage', 'in', '(wrapped,declined,paused,cancelled)').order('created_at', { ascending: false }).limit(1);
   if (open?.length) {
     const reply = text.split(/\n(?:On .{5,200} wrote:|-{2,} ?Original Message|From: .+\nSent: )/i)[0].trim();
     await db.from('collab_messages').insert({ collab_id: open[0].id, sender: 'brand', body: (subject && !/^re:/i.test(subject) ? `${subject}\n\n` : '') + (reply || text).slice(0, 4000) });

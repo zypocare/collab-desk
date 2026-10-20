@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { studio } from '#lib/studio.svelte.ts';
+	import { useFinancialReport } from '#lib/financialReport.svelte.ts';
 	import { dealStats } from '#lib/dealStats.ts';
 	import { countUp } from '#lib/ui.svelte.ts';
 	import { buildReport, dmy, downloadCsv, fyFromStart, fyOf, n2 } from '#lib/reports.ts';
@@ -15,8 +16,9 @@
 	const current = fyOf(today());
 	let fyStart = $state(String(current.start));
 	const fy = $derived(fyFromStart(Number(fyStart)));
-	const r = $derived(buildReport(studio.collabs, fy));
-	const liveMonths = $derived(r.months.filter((m) => m.taxable || m.received || m.barter));
+	const liveReport = useFinancialReport(() => Number(fyStart));
+	const r = $derived({ ...buildReport(studio.collabs, fy), ...liveReport.summary });
+	const liveMonths = $derived(r.months.filter((m) => m.taxable || m.received || m.barter || m.costs || m.tds));
 	const brandTop = $derived(Math.max(1, ...r.brands.map((b) => b.received)));
 	const d = $derived(dealStats(studio.collabs, fy.from, fy.to, studio.settings?.rates ?? {}));
 	const pct = (x: number | null) => (x === null ? '—' : `${Math.round(x * 100)}%`);
@@ -75,6 +77,7 @@
 	</div>
 </header>
 
+{#if liveReport.error}<p class="err-box" role="status">{liveReport.error}</p>{/if}
 <section class="md-hero rv" aria-label="Year summary">
 	<div class="mesh" aria-hidden="true"></div>
 	<div class="md-main">

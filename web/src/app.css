@@ -94,6 +94,7 @@ p{margin:0}
 .tint{background:color-mix(in oklab,var(--hue) 13%,var(--surface));color:color-mix(in oklab,var(--hue) 82%,var(--ink))}
 .st-request{--hue:var(--h-request)} .st-negotiating{--hue:var(--h-nego)} .st-confirmed{--hue:var(--h-confirmed)}
 .st-creating{--hue:var(--h-creating)} .st-live{--hue:var(--h-live)} .st-wrapped{--hue:var(--h-wrapped)}
+.st-paused{--hue:var(--h-nego)} .st-cancelled{--hue:var(--bad)}
 .k-shoot{--hue:var(--accent)} .k-draft{--hue:var(--h-creating)} .k-live{--hue:var(--h-live)} .k-follow{--hue:var(--h-nego)}
 .k-pay{--hue:var(--ok)} .k-product{--hue:var(--h-confirmed)} .k-new{--hue:var(--h-request)} .k-bad{--hue:var(--bad)}
 .dt{width:7px;height:7px;border-radius:50%;background:var(--hue);flex:none}

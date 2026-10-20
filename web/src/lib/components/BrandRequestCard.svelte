@@ -7,7 +7,7 @@
 	// Laptop: one of the brand's requests, with what was offered, where it stands and who acts next.
 	let { r, creator, unread = 0 }: { r: BrandRequest; creator: string; unread?: number } = $props();
 	const STEPS = ['Request', 'Talks', 'Agreed', 'Creating', 'Live', 'Done'];
-	const declined = $derived(r.stage === 'declined');
+	const declined = $derived(['declined', 'paused', 'cancelled'].includes(r.stage));
 	const si = $derived(declined ? -1 : stageIndex(r.stage));
 	const next = $derived(declined ? null : milestones(r, creator || 'the creator').find((m) => m.who !== 'done') ?? null);
 	const offer = $derived(
@@ -37,7 +37,7 @@
 			<span><Icon name="clock" />Sent {fmt(r.received_on)}</span>
 		</div>
 		{#if declined}
-			<p class="brq-note">{r.note_for_brand || `${creator || 'The creator'} can't take this one on right now.`}</p>
+			<p class="brq-note">{r.lifecycle_reason || r.note_for_brand || `${creator || 'The creator'} can't take this one on right now.`}</p>
 		{:else}
 			<ol class="brq-steps" aria-label="Progress">
 				{#each STEPS as label, k (label)}
@@ -52,8 +52,8 @@
 			<b>{next.title}</b>
 			{#if next.date || next.note}<em>{next.note ?? ''}{next.note && next.date ? ' · ' : ''}{next.date ? fmt(next.date) : ''}</em>{/if}
 		{:else if declined}
-			<small>Closed</small>
-			<b>Not going ahead</b>
+			<small>{r.stage === 'paused' ? 'On hold' : 'Closed'}</small>
+			<b>{r.stage_label}</b>
 		{:else}
 			<small>All done</small>
 			<b>Wrapped up</b>

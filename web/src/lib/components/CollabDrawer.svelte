@@ -1,5 +1,7 @@
 <script lang="ts">
 	import LanguagePicker from './LanguagePicker.svelte';
+	import DeliverableTracker from './DeliverableTracker.svelte';
+	import LifecycleControls from './LifecycleControls.svelte';
 	import { ask, askNote } from '../confirm.svelte';
 	import SchedulePost from './SchedulePost.svelte';
 	import { askAi } from '../ai';
@@ -10,15 +12,12 @@
 	import { goto } from '$app/navigation';
 	import { goBackOr } from '../back';
 	import {
-		addDeliverable,
 		byId,
 		completeFollow,
 		markPaid,
 		markReceived,
 		sendReport,
-		removeDeliverable,
 		saveBrand,
-		setDeliverable,
 		setStage,
 		studio,
 		updateCollab
@@ -27,10 +26,10 @@
 	import { copyText, ui } from '../ui.svelte';
 	import {
 		CATS,
-		KINDS,
 		noPost,
 		stageName,
 		PAY_LABEL,
+		plural,
 		STAGES,
 		TYPE_LABEL,
 		USAGE,
@@ -45,7 +44,6 @@
 		isPaid,
 		outstanding,
 		overdue,
-		plural,
 		stageIndex
 	} from '../util';
 	import Icon from './Icon.svelte';
@@ -102,8 +100,10 @@
 		negotiating: ['deal', 'quote', 'deliv', 'brief', 'contact'],
 		confirmed: ['quote', 'deliv', 'product', 'dates', 'drafts', 'pay', 'brand', 'brief'],
 		creating: ['deliv', 'product', 'dates', 'drafts', 'check', 'link', 'files', 'brand', 'brief'],
-		live: ['check', 'posts', 'link', 'pay', 'dates', 'files', 'usage', 'costs'],
-		wrapped: ['pay', 'posts', 'link', 'review', 'costs', 'files', 'usage'],
+		live: ['deliv', 'check', 'posts', 'link', 'pay', 'dates', 'files', 'usage', 'costs'],
+		wrapped: ['deliv', 'pay', 'posts', 'link', 'review', 'costs', 'files', 'usage'],
+		paused: ['deliv', 'dates', 'pay', 'activity'],
+		cancelled: ['deliv', 'pay', 'costs', 'activity'],
 		declined: ['deal', 'activity']
 	};
 	let showAll = $state(false);
@@ -210,7 +210,6 @@
 	}
 	const open = $derived(!!c);
 	const si = $derived(c ? stageIndex(c.stage) : 0);
-	const done = $derived(c ? c.deliverables.filter((d) => d.done).length : 0);
 	const balance = $derived(c ? Math.max(0, c.fee - c.pay_received) : 0);
 
 	let fresh = $state(false);
@@ -404,7 +403,7 @@
 			{/if}
 			<section class="sec">
 				<h3>Stage {#if c.stage === 'declined'}<span class="danger">Declined</span>{/if}</h3>
-				{#if c.stage !== 'declined'}
+				{#if !['declined', 'paused', 'cancelled'].includes(c.stage)}
 					<div class="sh" style="--p:{si / 5}">
 						<div class="sh-track"><i></i></div>
 						{#each STAGES as s, i (s.id)}
@@ -433,6 +432,7 @@
 					<p class="hint" style="margin:0 0 10px">The brand sees this request as "Not going ahead".</p>
 					<button class="btn sm" onclick={() => changeStage('request')}><Icon name="refresh" />Reopen request</button>
 				{/if}
+				<LifecycleControls {c} />
 			</section>
 
 			{#if isRanked(c)}<DecisionCard {c} />{/if}
@@ -555,20 +555,7 @@
 			</section>
 
 			<section class="sec" hidden={!sh('deliv')}>
-				<h3>Deliverables <span>{done} of {c.deliverables.length} done</span></h3>
-				<div class="dl">
-					{#each c.deliverables as d (d.id)}
-						<div class="dl-row" class:done={d.done}>
-							<input type="checkbox" class="cbx" id="dl-{d.id}" checked={d.done} onchange={(e) => setDeliverable(d, { done: (e.currentTarget as HTMLInputElement).checked })} />
-							<input class="inp qty num" type="number" min="1" max="50" value={d.qty} aria-label="How many {d.kind}" onchange={(e) => setDeliverable(d, { qty: Math.min(50, Math.max(1, num(e))) })} />
-							<label for="dl-{d.id}">{plural(d.kind, d.qty)}</label>
-							<button class="icon-btn sm" onclick={async () => (await ask({ title: `Remove ${d.kind}?`, body: 'It comes off this collab’s deliverables.', ok: 'Remove', danger: true })) && removeDeliverable(d)} aria-label="Remove {d.kind}"><Icon name="x" /></button>
-						</div>
-					{:else}
-						<p class="hint">Add what the brand is expecting.</p>
-					{/each}
-				</div>
-				<Select action class="add-sel" ariaLabel="Add deliverable" placeholder="+ Add deliverable" options={KINDS.map((k) => ({ value: k, label: k }))} onchange={(k) => c && addDeliverable(c, k)} />
+				<DeliverableTracker {c} />
 			</section>
 
 			{#if c.stage === 'live' || c.stage === 'wrapped'}<section class="sec" hidden={!sh('review')}><h3>How was {c.brand.name}?<small class="sec-sub">private</small></h3><BrandRating brand={c.brand} compact /></section>{/if}

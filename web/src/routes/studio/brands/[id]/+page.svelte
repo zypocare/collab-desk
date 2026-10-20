@@ -38,6 +38,32 @@
 	// Brands that came through this brand's recommendation link.
 	const referred = $derived(brand ? studio.collabs.filter((x) => x.referred_by === brand.id) : []);
 
+	// Merge a brand added twice by mistake into the right one: its collabs, monthly deals, notes and
+	// brand logins move over, then this one is removed.
+	let mergeInto = $state<string | undefined>(undefined);
+	let merging = $state(false);
+	const others = $derived(brand ? studio.brands.filter((b) => b.id !== brand.id).map((b) => ({ value: b.id, label: b.instagram ? `${b.name} · @${b.instagram.replace(/^@+/, '')}` : b.name })) : []);
+	async function merge() {
+		if (!brand || !s || !mergeInto) return;
+		const into = studio.brands.find((b) => b.id === mergeInto);
+		if (!into) return;
+		const n = s.collabs.length;
+		const ok = await ask({
+			title: `Merge ${brand.name} into ${into.name}?`,
+			body: `${n ? `Its ${n} collab${n === 1 ? '' : 's'}, ` : 'Its '}monthly deals, notes and brand logins move to ${into.name}, and ${brand.name}${brand.instagram ? ` (@${brand.instagram.replace(/^@+/, '')})` : ''} is removed. This can't be undone.`,
+			ok: 'Merge brands'
+		});
+		if (!ok) return;
+		merging = true;
+		const { error } = await supabase.rpc('merge_brands', { p_from: brand.id, p_into: into.id });
+		merging = false;
+		if (error) return toast(`Couldn't merge: ${errMessage(error)}`, 'alert');
+		const from = brand.name;
+		await goto(`/studio/brands/${into.id}`);
+		await reloadCollabs();
+		toast(`${from} merged into ${into.name}`, 'check');
+	}
+
 	// Delete the brand and its collabs (not possible while an invoice to them was sent or paid).
 	const issued = $derived(s ? s.collabs.reduce((a, c) => a + c.invoices.filter((i) => i.status !== 'draft' && i.status !== 'cancelled').length, 0) : 0);
 	let deleting = $state(false);
@@ -163,6 +189,16 @@
 					{/each}
 				</section>
 			{/if}
+			{#if others.length}
+				<section class="panel merge-zone rv" style="--i:9">
+					<div class="panel-h"><h2>Merge into another brand</h2></div>
+					<p class="hint dz-text">Added the same brand twice? Pick the one to keep. {s.collabs.length ? `This brand's ${s.collabs.length} collab${s.collabs.length === 1 ? '' : 's'}, ` : "This brand's "}monthly deals, notes and brand logins move there, and this one is removed.</p>
+					<div class="mz-act">
+						<Select ariaLabel="Brand to keep" placeholder="Brand to keep" value={mergeInto} options={others} onchange={(v) => (mergeInto = v)} />
+						<button class="btn" onclick={merge} disabled={merging || !mergeInto}>{#if merging}<span class="spinner"></span>{:else}<Icon name="layers" />{/if}Merge</button>
+					</div>
+				</section>
+			{/if}
 			<section class="panel danger-zone rv" style="--i:9">
 				<div class="panel-h"><h2>Delete brand</h2></div>
 				<p class="hint dz-text">{issued ? `Has ${issued} sent or paid invoice${issued === 1 ? '' : 's'}, kept for your tax records. Cancel ${issued === 1 ? 'it' : 'them'} first to delete this brand.` : s.collabs.length ? `Removes ${brand.name} and its ${s.collabs.length} collab${s.collabs.length === 1 ? '' : 's'} for good.` : `Removes ${brand.name} for good.`}</p>
@@ -175,4 +211,5 @@
 <style>
 	.dz-text { margin: 0; padding: 0 20px; }
 	.dz-act { padding: 14px 20px 20px; }
+	.mz-act { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 14px 20px 20px; }
 </style>

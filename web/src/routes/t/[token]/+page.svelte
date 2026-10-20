@@ -1,4 +1,5 @@
 <script lang="ts">
+	import DeliverableProgress from '#lib/components/DeliverableProgress.svelte';
 	import { page } from '$app/state';
 	import { money } from '#lib/currency.ts';
 	import { onMount } from 'svelte';
@@ -21,8 +22,9 @@
 		loaded = true;
 	});
 	const creator = $derived(firstName(pub.data?.display_name ?? ''));
-	const openQuote = $derived(r?.quotes?.find((q) => q.status === 'sent'));
-	const pendingDraft = $derived(r?.drafts?.find((d) => d.status === 'pending'));
+	const held = $derived(r?.stage === 'paused' || r?.stage === 'cancelled');
+	const openQuote = $derived(!held ? r?.quotes?.find((q) => q.status === 'sent') : undefined);
+	const pendingDraft = $derived(!held ? r?.drafts?.find((d) => d.status === 'pending') : undefined);
 	const unpaid = $derived((r?.invoices ?? []).filter((i) => (i.status === 'sent' || i.status === 'partly_paid') && !i.claimed));
 	const signIn = $derived(r ? `/login?next=${encodeURIComponent(`/brand/r/${r.code}`)}${r.contact_email ? `&email=${encodeURIComponent(r.contact_email)}` : ''}` : '/login');
 </script>
@@ -46,6 +48,8 @@
 			<div class="acts"><span class="chip tint st-{r.stage}">{r.stage_label}</span></div>
 		</header>
 
+		{#if held}<div class="warn-box" role="status"><b>{r.stage_label}</b><span>{r.lifecycle_reason}</span>{#if r.resume_on}<span>Review on {fmt(r.resume_on)}.</span>{/if}</div>{/if}
+		<DeliverableProgress deliverables={r.deliverables} />
 		{#if openQuote || pendingDraft || unpaid.length}
 			<section class="panel rv trk-act" style="--i:1">
 				<div class="panel-h"><h2>Needs you</h2></div>

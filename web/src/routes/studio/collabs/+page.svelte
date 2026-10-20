@@ -8,7 +8,7 @@
 	import { supabase } from '#lib/supabase.ts';
 	import type { Stage } from '#lib/types.ts';
 	import { confetti, copyText, countUp, pointer, toast, ui } from '#lib/ui.svelte.ts';
-	import { STAGES, errMessage, inr, inrS, parse, stageLabel } from '#lib/util.ts';
+	import { STAGES, HELD_STAGES, isActive, productionHeld, errMessage, inr, inrS, parse, stageLabel } from '#lib/util.ts';
 	import Select from '#lib/components/Select.svelte';
 	import CollabCard from '#lib/components/CollabCard.svelte';
 	import Icon from '#lib/components/Icon.svelte';
@@ -23,6 +23,9 @@
 	let showDeclined = $state(false);
 	let over = $state<string | null>(null);
 	let popped = $state<string | null>(null);
+	let shown = $state<Record<string, number>>({});
+	const limit = (stage: Stage) => shown[stage] ?? 25;
+	$effect(() => { void q; void filter; shown = {}; });
 
 	// Batch actions: pick several cards, then move, mark paid or remind them all at once.
 	let selecting = $state(false);
@@ -40,7 +43,7 @@
 		for (const id of ids) all ? picked.delete(id) : picked.add(id);
 	}
 	async function batchMove(stage: Stage) {
-		const list = pickedCollabs.filter((c) => c.stage !== stage);
+		const list = pickedCollabs.filter((c) => c.stage !== stage && !productionHeld(c));
 		if (!list.length) return;
 		if (!(await ask({ title: `Move ${list.length} collab${list.length > 1 ? 's' : ''} to ${stageLabel(stage)}?`, body: stage === 'declined' ? 'Brands with updates turned on are told politely.' : 'Brands with updates turned on get a short email about the new stage.', ok: 'Move', danger: stage === 'declined' }))) return;
 		busy = true;
@@ -111,7 +114,7 @@
 	);
 	const key = (d: string | null) => (d ? parse(d).getTime() : 0);
 	const columns = $derived(
-		[...STAGES, ...(showDeclined ? [{ id: 'declined' as Stage, label: 'Declined', pub: '' }] : [])].map((s) => {
+		[...STAGES, ...HELD_STAGES.filter((s) => visible.some((c) => c.stage === s.id)), ...(showDeclined ? [{ id: 'declined' as Stage, label: 'Declined', pub: '' }] : [])].map((s) => {
 			const cs = visible
 				.filter((c) => c.stage === s.id)
 				.sort((a, b) => {
@@ -129,11 +132,11 @@
 	const mtabs = $derived(
 		[
 			{ id: 'active' as const, label: 'Active', n: visible.filter((c) => ACTIVE.includes(c.stage)).length },
-			...[...STAGES, { id: 'declined' as Stage, label: 'Declined' }].map((s) => ({ id: s.id, label: s.label, n: visible.filter((c) => c.stage === s.id).length }))
+			...[...STAGES, ...HELD_STAGES, { id: 'declined' as Stage, label: 'Declined' }].map((s) => ({ id: s.id, label: s.label, n: visible.filter((c) => c.stage === s.id).length }))
 		].filter((t) => t.id === 'active' || t.n || t.id === mstage)
 	);
 	const mgroups = $derived(
-		[...STAGES, { id: 'declined' as Stage, label: 'Declined' }]
+		[...STAGES, ...HELD_STAGES, { id: 'declined' as Stage, label: 'Declined' }]
 			.map((s) => ({ s, cs: columns.find((x) => x.s.id === s.id)?.cs ?? visible.filter((c) => c.stage === s.id) }))
 			.map((g) => ({ ...g, sum: g.cs.reduce((a, c) => a + c.fee + c.product_value, 0) }))
 			.filter((g) => g.cs.length && (mstage === 'active' ? ACTIVE.includes(g.s.id) : g.s.id === mstage))
@@ -179,6 +182,11 @@
 		const id = e.dataTransfer?.getData('text/plain');
 		const c = byId(id);
 		if (!c || c.stage === stage) return;
+		if (productionHeld(c) || ['paused', 'cancelled'].includes(stage)) {
+			ui.openCollab = c.id;
+			toast('Use the collaboration’s Pause, Cancel or Resume controls to review the reason and schedule.', 'info');
+			return;
+		}
 		pointer.x = e.clientX;
 		pointer.y = e.clientY;
 		popped = c.id;
@@ -193,7 +201,7 @@
 	<div>
 		<div class="eb">Pipeline</div>
 		<h1>Your <em>collabs</em></h1>
-		<p>{studio.collabs.filter((c) => c.stage !== 'wrapped' && c.stage !== 'declined').length} active, {studio.collabs.filter((c) => c.stage === 'request').length} waiting for your reply.</p>
+		<p>{studio.collabs.filter(isActive).length} active, {studio.collabs.filter((c) => c.stage === 'request').length} waiting for your reply.</p>
 	</div>
 </header>
 
@@ -325,7 +333,8 @@
 		<section class="m-group st-{g.s.id}">
 			<header class="m-gh"><span class="dt"></span><h2>{g.s.label}</h2><span class="m-gn">{g.cs.length}</span>{#if g.sum}<small>{inrS(g.sum)}</small>{/if}</header>
 			<div class="m-list m-wallet">
-				{#each g.cs as c, i (c.id)}<CollabRow {c} {i} />{/each}
+				{#each g.cs.slice(0, limit(g.s.id)) as c, i (c.id)}<CollabRow {c} {i} />{/each}
+				{#if g.cs.length > limit(g.s.id)}<button class="btn sm" onclick={() => (shown[g.s.id] = limit(g.s.id) + 25)}>Show more {g.s.label.toLowerCase()} ({g.cs.length - limit(g.s.id)} remaining)</button>{/if}
 			</div>
 		</section>
 	{:else}
@@ -367,11 +376,12 @@
 					<span class="dt" class:pulse={col.s.id === 'request' && col.cs.length > 0}></span><b>{col.s.label}</b><span class="cnt tint">{col.cs.length}</span><span class="sum num">{col.sum ? inrS(col.sum) : ''}</span>
 					{#if selecting && col.cs.length}<button class="lnk col-all" onclick={() => pickColumn(col.cs.map((c) => c.id))}>{col.cs.every((c) => picked.has(c.id)) ? 'None' : 'All'}</button>{/if}
 				</header>
-				{#each col.cs as c, i (c.id)}
+				{#each col.cs.slice(0, limit(col.s.id)) as c, i (c.id)}
 					<CollabCard {c} i={ci + i} pop={popped === c.id} {selecting} picked={picked.has(c.id)} onpick={() => toggle(c.id)} />
 				{:else}
 					<div class="col-empty">{q ? 'No matches' : 'Drag a collab here'}</div>
 				{/each}
+				{#if col.cs.length > limit(col.s.id)}<button class="btn sm" onclick={() => (shown[col.s.id] = limit(col.s.id) + 25)}>Show more ({col.cs.length - limit(col.s.id)} remaining)</button>{/if}
 			</section>
 		{/each}
 	</div>

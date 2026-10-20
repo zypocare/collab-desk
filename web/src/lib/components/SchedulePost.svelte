@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount } from 'svelte';
+
 	import { todayIso } from '../util';
 	import { ask } from '../confirm.svelte';
 	import { studio } from '../studio.svelte';
@@ -70,17 +71,17 @@
 		await supabase.from('scheduled_posts').update({ status: 'cancelled' }).eq('id', p.id);
 		load();
 	}
-	const LABEL: Record<string, string> = { scheduled: 'Scheduled', publishing: 'Posting…', published: 'Posted', failed: "Didn't post" };
+	const LABEL: Record<string, string> = { scheduled: 'Scheduled', publishing: 'Posting…', published: 'Posted', failed: "Didn't post", on_hold: 'On hold' };
 </script>
 
-{#if d.status === 'approved' && d.file_path && canPost !== null}
+{#if d.status === 'approved' && d.file_path && canPost !== null && !['paused', 'cancelled'].includes(c.stage)}
 	<div class="sp">
 		{#each mine as p (p.id)}
 			<div class="sp-row">
 				<span class="pill tint {p.status === 'published' ? 'k-pay' : p.status === 'failed' ? 'k-bad' : 'k-new'}">{LABEL[p.status] ?? p.status}</span>
 				<span class="hint">{fmtTime(p.publish_at)}</span>
 				{#if p.permalink}<a class="lnk" href={p.permalink} target="_blank" rel="noopener">View on Instagram</a>{/if}
-				{#if p.status === 'scheduled'}<button class="lnk" onclick={() => cancel(p)}>Cancel</button>{/if}
+				{#if ['scheduled', 'on_hold'].includes(p.status)}<button class="lnk" onclick={() => cancel(p)}>Cancel</button>{/if}
 				{#if p.error}<p class="err" style="margin:4px 0 0;flex-basis:100%">{p.error}</p>{/if}
 			</div>
 		{/each}

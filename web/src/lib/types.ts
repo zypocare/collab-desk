@@ -1,6 +1,6 @@
 import type { Invoice } from './invoice';
 
-export type Stage = 'request' | 'negotiating' | 'confirmed' | 'creating' | 'live' | 'wrapped' | 'declined';
+export type Stage = 'request' | 'negotiating' | 'confirmed' | 'creating' | 'live' | 'wrapped' | 'declined' | 'paused' | 'cancelled';
 export type CollabType = 'paid' | 'barter' | 'hybrid';
 export type PayStatus = 'na' | 'pending' | 'advance' | 'invoiced' | 'paid';
 
@@ -29,7 +29,12 @@ export type BrandPrivate = {
 	rated_at?: string | null;
 };
 
-export type Deliverable = { id: string; collab_id: string; kind: string; qty: number; done: boolean; position: number };
+export type DeliverableStatus = 'planned' | 'creating' | 'in_review' | 'approved' | 'published' | 'delivered';
+export type DeliverableItem = {
+	id: string; deliverable_id: string; collab_id: string; position: number; status: DeliverableStatus;
+	due_date: string | null; assigned_to: string; draft_id: string | null; media_id: string | null; completed_at: string | null;
+};
+export type Deliverable = { id: string; collab_id: string; kind: string; qty: number; done: boolean; position: number; items?: DeliverableItem[] };
 
 export type QuoteItem = { kind: string; qty: number; rate: number };
 export type QuoteChoice = { title: string; sub: string; items: QuoteItem[]; usage: string; usage_fee: number; discount: number; total: number; popular?: boolean };
@@ -154,6 +159,11 @@ export type Collab = {
 	contact_phone: string;
 	type: CollabType;
 	stage: Stage;
+	lifecycle_reason?: string;
+	resume_on?: string | null;
+	resume_stage?: Stage | null;
+	paused_at?: string | null;
+	cancelled_at?: string | null;
 	fee: number;
 	product: string;
 	product_value: number;
@@ -451,6 +461,8 @@ export type Account =
 	  };
 
 export type BrandRequest = {
+	lifecycle_reason?: string;
+	resume_on?: string | null;
 	content_language?: string;
 	/** An experience (stay, meal, event) is never shipped. */
 	barter_kind?: 'product' | 'experience';
@@ -475,7 +487,7 @@ export type BrandRequest = {
 	note_for_brand: string;
 	contact_name: string;
 	created_at: string;
-	deliverables: { kind: string; qty: number; done: boolean }[];
+	deliverables: { kind: string; qty: number; done: boolean; items?: Pick<DeliverableItem, 'position' | 'status' | 'due_date'>[] }[];
 	events: { at: string; text: string }[];
 	quotes: Quote[];
 	drafts: Draft[];

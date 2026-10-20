@@ -41,6 +41,11 @@ Deno.serve(async (req) => {
 
   for (const p of (due ?? []) as any[]) {
     try {
+      const { data: collab } = await db.from('collabs').select('stage').eq('id', p.collab_id).single();
+      if (!collab || ['paused', 'cancelled'].includes(collab.stage)) {
+        done[p.id] = 'on hold';
+        continue;
+      }
       if (!canPost) throw new Error('Allow posting first: My page > Profile & Instagram > Allow DMs and posting.');
       let container = p.container_id as string | null;
       if (!container) {
@@ -61,6 +66,9 @@ Deno.serve(async (req) => {
         done[p.id] = 'processing';
         continue; // still preparing: the next run publishes it
       }
+      // Recheck after Instagram prepares a container: pausing may have happened in the meantime.
+      const { data: current } = await db.from('scheduled_posts').select('status').eq('id', p.id).single();
+      if (!current || !['scheduled', 'publishing'].includes(current.status)) continue;
       const pub = await call(tok.access_token, '/me/media_publish', { creation_id: container });
       const media = await call(tok.access_token, `/${pub.id}`, { fields: 'permalink' }, 'GET').catch(() => ({}));
       await db.from('scheduled_posts').update({ status: 'published', ig_media_id: String(pub.id), permalink: media.permalink ?? '', error: '' }).eq('id', p.id);

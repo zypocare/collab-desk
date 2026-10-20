@@ -3,6 +3,7 @@
 	// The year at the top, this month's goal beside it, four numbers in one strip, a line of money
 	// facts, month by month next to what is coming in, then who pays most and where it comes from.
 	import { studio } from '../studio.svelte';
+	import { useFinancialReport } from '../financialReport.svelte';
 	import { ui, countUp } from '../ui.svelte';
 	import { moneyDash } from '../moneyDash';
 	import { fyFromStart, fyOf } from '../reports';
@@ -13,7 +14,9 @@
 	let fyStart = $state(current.start);
 	const fy = $derived(fyFromStart(fyStart));
 	const s = $derived(studio.settings!);
-	const m = $derived(moneyDash(studio.collabs, fy, Math.max(0, s.monthly_goal || 0)));
+	const liveReport = useFinancialReport(() => fyStart);
+	const previousReport = useFinancialReport(() => fyStart - 1);
+	const m = $derived(moneyDash(studio.collabs, fy, Math.max(0, s.monthly_goal || 0), liveReport.summary, previousReport.summary));
 	const years = [current.start - 1, current.start];
 
 	const monthName = new Date().toLocaleDateString('en-IN', { month: 'long' });
@@ -96,6 +99,8 @@
 		].filter((x): x is { b: string; t: string } => !!x)
 	);
 </script>
+
+{#if liveReport.error || previousReport.error}<p class="err-box" role="status">{liveReport.error || previousReport.error}</p>{/if}
 
 <div class="lm">
 	<!-- The same header as Payments and Reports; the shared top bar carries the tabs and buttons. -->

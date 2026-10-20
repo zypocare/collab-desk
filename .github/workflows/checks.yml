@@ -33,6 +33,12 @@ jobs:
       - name: DM reading accuracy
         run: npm run test:dm
         working-directory: web
+      - name: Pagination regressions
+        run: npm run test:workflow
+        working-directory: web
+      - name: UPI payment QR regressions
+        run: npm run test:upi
+        working-directory: web
 
   e2e:
     if: github.event_name != 'push'
@@ -54,6 +60,8 @@ jobs:
         run: |
           eval "$(supabase status -o env)"
           printf 'VITE_SUPABASE_URL=%s\nVITE_SUPABASE_ANON_KEY=%s\n' "$API_URL" "$ANON_KEY" > web/.env
+      - name: Workflow and reporting database regressions
+        run: docker exec -i supabase_db_Influence psql -U supabase_admin -d postgres -v ON_ERROR_STOP=1 < supabase/tests/workflows.sql
       - run: npm ci
         working-directory: web
       - run: npx playwright install --with-deps chromium

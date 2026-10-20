@@ -4,6 +4,7 @@ import type { SupabaseClient } from 'npm:@supabase/supabase-js@2';
 import { ig, IgError, type Insights } from './instagram.ts';
 import { esc, todayIST } from './admin.ts';
 import { sendTelegram, telegramConfigured } from './telegram.ts';
+import { consumeContent, postKind, remainingContent, type PromisedContent } from './deliverableProgress.ts';
 
 const DAY = 864e5;
 // A post's reach keeps growing for a couple of days while its views update at once, so averages leave
@@ -312,17 +313,19 @@ export async function runStorySync(db: SupabaseClient) {
   const taken = new Set((links ?? []).map((l) => l.media_id));
   const { data: collabs } = await db
     .from('collabs')
-    .select('id, code, stage, live_date, brand:brands(name), deliverables(kind)')
+    .select('id, code, stage, live_date, brand:brands(name), deliverables(kind, qty, done, items:deliverable_items(status))')
     .in('stage', ['confirmed', 'creating', 'live']);
-  type C = { id: string; code: string; stage: string; live_date: string | null; brand: { name: string }; deliverables: { kind: string }[] };
+  type C = { id: string; code: string; stage: string; live_date: string | null; brand: { name: string }; deliverables: PromisedContent[] };
   let linked = 0;
   for (const r of rows) {
     if (taken.has(r.id)) continue;
     const day = istDate(r.posted_at);
-    const match = ((collabs ?? []) as unknown as C[]).filter((c) => c.live_date === day && c.deliverables.some((d) => /story/i.test(d.kind)));
+    const match = ((collabs ?? []) as unknown as C[]).filter((c) => c.live_date === day && remainingContent(c.deliverables, 'Story') > 0);
     if (match.length !== 1) continue;
     const c = match[0];
-    await db.from('collab_posts').insert({ collab_id: c.id, media_id: r.id, matched_by: 'date' });
+    const { error } = await db.from('collab_posts').insert({ collab_id: c.id, media_id: r.id, matched_by: 'date' });
+    if (error) continue;
+    consumeContent(c.deliverables, 'Story');
     await db.from('collab_events').insert({ collab_id: c.id, kind: 'post', text: 'Story saved from Instagram (its numbers are kept after it disappears)', visible_to_brand: true });
     taken.add(r.id);
     linked++;
@@ -342,33 +345,35 @@ async function detectPosts(db: SupabaseClient, media: MediaRow[]) {
   const taken = new Set((links ?? []).map((l) => l.media_id));
   const { data: collabs } = await db
     .from('collabs')
-    .select('id, code, stage, received_on, live_date, checklist, contact_name, brief_details, brand:brands(name, instagram), posts:collab_posts(media_id)')
+    .select('id, code, stage, received_on, live_date, checklist, contact_name, brief_details, brand:brands(name, instagram), posts:collab_posts(media_id), deliverables(kind, qty, done, items:deliverable_items(status))')
     .in('stage', ['confirmed', 'creating', 'live']);
-  type C = { id: string; code: string; stage: string; received_on: string; live_date: string | null; checklist: Record<string, boolean>; brief_details: { hashtags?: string[]; mentions?: string[] } | null; brand: { name: string; instagram: string }; posts: { media_id: string }[] };
-  const candidates = ((collabs ?? []) as unknown as C[]).filter((c) => c.brand?.instagram && (c.stage !== 'live' || !c.posts.length));
+  type C = { id: string; code: string; stage: string; received_on: string; live_date: string | null; checklist: Record<string, boolean>; brief_details: { hashtags?: string[]; mentions?: string[] } | null; brand: { name: string; instagram: string }; posts: { media_id: string }[]; deliverables: PromisedContent[] };
+  const candidates = ((collabs ?? []) as unknown as C[]).filter((c) => c.brand?.instagram);
 
   let found = 0;
   for (const m of [...media].sort((a, b) => a.posted_at.localeCompare(b.posted_at))) {
     if (taken.has(m.id)) continue;
     const day = istDate(m.posted_at);
+    const kind = postKind(m.product_type, m.media_type);
     const c = candidates
-      .filter((x) => mentions(m.caption, x.brand.instagram) && day >= x.received_on)
+      .filter((x) => mentions(m.caption, x.brand.instagram) && day >= x.received_on && remainingContent(x.deliverables, kind) > 0)
       .sort((a, b) => (a.stage === 'live' ? 1 : 0) - (b.stage === 'live' ? 1 : 0))[0];
     if (!c) continue;
 
-    taken.add(m.id);
-    found++;
     const hasAd = adTagged(m.caption);
     // Hashtags and @mentions the brief asked for that the caption doesn't have.
     const capLower = m.caption.toLowerCase();
     const missingItems = [...(c.brief_details?.mentions ?? []), ...(c.brief_details?.hashtags ?? [])].filter((t) => !capLower.includes(t.toLowerCase()));
-    await db.from('collab_posts').insert({ collab_id: c.id, media_id: m.id, matched_by: 'auto' });
+    const { error } = await db.from('collab_posts').insert({ collab_id: c.id, media_id: m.id, matched_by: 'auto' });
+    if (error) continue;
+    taken.add(m.id);
+    found++;
+    consumeContent(c.deliverables, kind);
     await db.from('collab_events').insert({ collab_id: c.id, kind: 'post', text: `Post spotted on Instagram: ${m.permalink}`, visible_to_brand: true });
     const checklist = { ...c.checklist, brand_tag: true, ad_tag: hasAd || !!c.checklist?.ad_tag };
     if (c.stage !== 'live') {
       // Moving to Live emails the brand ("Live on Instagram") through the normal stage trigger.
       await db.from('collabs').update({ stage: 'live', live_date: day, checklist }).eq('id', c.id);
-      await db.from('deliverables').update({ done: true }).eq('collab_id', c.id);
     } else {
       await db.from('collabs').update({ checklist }).eq('id', c.id);
     }
@@ -377,7 +382,8 @@ async function detectPosts(db: SupabaseClient, media: MediaRow[]) {
       { code: c.code, brand: c.brand.name, permalink: m.permalink, missing_ad: !hasAd, missing_items: missingItems },
       `📸 Your post for <b>${esc(c.brand.name)}</b> is live and moved to Live.${hasAd ? '' : '\n⚠️ The caption has no #ad or #collab in the first line. Add it to follow ASCI rules.'}${missingItems.length ? `\n⚠️ The brief asked for: ${esc(missingItems.join(' '))}` : ''}`,
     );
-    candidates.splice(candidates.indexOf(c), 1);
+    c.stage = 'live';
+    c.checklist = checklist;
   }
   return found;
 }

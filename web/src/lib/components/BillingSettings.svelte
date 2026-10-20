@@ -2,13 +2,16 @@
 	import { saveSettings, studio } from '../studio.svelte';
 	import type { Settings } from '../types';
 	import { copyText, toast } from '../ui.svelte';
-	import { INDIAN_STATES } from '../invoice';
+	import { INDIAN_STATES, validUpiAmount, validUpiId } from '../invoice';
+	import UpiQr from './UpiQr.svelte';
 	import Icon from './Icon.svelte';
 	import Select from './Select.svelte';
 
 	const s = $derived(studio.settings!);
 	const webhook = $derived(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/bank-alert`);
 	let errors = $state<Record<string, string>>({});
+	let qrAmount = $state<number | undefined>();
+	let qrNote = $state('');
 	const val = (e: Event) => (e.currentTarget as HTMLInputElement).value;
 
 	const RULES: Partial<Record<keyof Settings, [RegExp, string]>> = {
@@ -40,6 +43,17 @@
 		</div>
 		<div class="f span2"><label for="bl-addr">Address</label><textarea class="inp" id="bl-addr" rows="2" value={s.address} onchange={(e) => set('address', val(e))}></textarea></div>
 		<div class="f"><label for="bl-upi">UPI ID</label><input class="inp" id="bl-upi" value={s.upi_id} placeholder="name@okicici" onchange={(e) => set('upi_id', val(e))} />{#if errors.upi_id}<div class="err">{errors.upi_id}</div>{/if}</div>
+		<div class="f span2 upi-preview">
+			<h3>Payment QR code</h3>
+			<p class="hint">Uses your saved UPI ID and fills in the amount. Invoice pages and PDFs also include their own QR for the balance due.</p>
+			<div class="fields">
+				<div class="f"><label for="bl-qr-amount">QR amount (INR)</label><input class="inp num" id="bl-qr-amount" type="number" inputmode="decimal" min="0.01" step="0.01" placeholder="e.g. 2500" bind:value={qrAmount} /></div>
+				<div class="f"><label for="bl-qr-note">Payment note (optional)</label><input class="inp" id="bl-qr-note" maxlength="80" placeholder="e.g. Collaboration advance" bind:value={qrNote} /></div>
+			</div>
+			{#if !validUpiId(s.upi_id)}<p class="hint">Save your UPI ID above to generate a payment QR.</p>
+			{:else if qrAmount !== undefined && !validUpiAmount(qrAmount)}<p class="err">Enter an amount greater than zero with up to two decimal places.</p>
+			{:else if qrAmount !== undefined}<UpiQr upiId={s.upi_id} name={s.legal_name || s.display_name} amount={qrAmount} note={qrNote} />{/if}
+		</div>
 		<div class="f"><label for="bl-prefix">Invoice number prefix</label><input class="inp" id="bl-prefix" value={s.invoice_prefix} onchange={(e) => set('invoice_prefix', val(e))} />{#if errors.invoice_prefix}<div class="err">{errors.invoice_prefix}</div>{:else}<p class="hint" style="margin-top:5px">Numbers look like {s.invoice_prefix}/26-27/001</p>{/if}</div>
 		<div class="f span2"><label for="bl-bank">Bank details for transfers</label><textarea class="inp" id="bl-bank" rows="3" placeholder={'Account name\nBank and branch\nA/c number · IFSC'} value={s.bank_details} onchange={(e) => set('bank_details', val(e))}></textarea></div>
 		<div class="f span2"><label for="bl-intl">Bank details for international payments <span class="hint">(foreign brands)</span></label><textarea class="inp" id="bl-intl" rows="3" placeholder={'Account name and number\nBank name and address\nSWIFT code'} value={s.intl_bank_details} onchange={(e) => set('intl_bank_details', val(e))}></textarea></div>
