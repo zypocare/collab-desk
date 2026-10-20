@@ -30,7 +30,7 @@
 		rel,
 		relWord,
 		stageLabel,
-		tasks,
+		mergeSteps, tasks,
 		today,
 		type Task
 	} from '../util';
@@ -54,7 +54,7 @@
 	const mac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform);
 
 	const ts = $derived.by(() => {
-		const all = tasks(list);
+		const all = mergeSteps(tasks(list));
 		const ranked = all.filter((t) => t.kind === 'new').sort((a, b) => (priorityOf(b.c)?.score ?? 0) - (priorityOf(a.c)?.score ?? 0));
 		let n = 0;
 		return all.map((t) => (t.kind === 'new' ? ranked[n++] : t));

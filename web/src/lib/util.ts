@@ -253,6 +253,40 @@ export function tasks(collabs: Collab[]): Task[] {
 	return out.sort((a, b) => a.d - b.d || a.order - b.order);
 }
 
+/** One collab's production steps due the same day (shoot, draft, go live, product) become one card:
+ * "Shoot, send draft and go live · 1 Story" instead of three cards for the same story. */
+export function mergeSteps(list: Task[]): Task[] {
+	const STEP = new Set(['shoot', 'draft', 'live', 'product']);
+	const out: Task[] = [];
+	const seen = new Map<string, Task[]>();
+	for (const t of list) {
+		if (!STEP.has(t.kind)) {
+			out.push(t);
+			continue;
+		}
+		const key = `${t.c.id}:${t.d}`;
+		const group = seen.get(key);
+		if (group) group.push(t);
+		else {
+			const g = [t];
+			seen.set(key, g);
+			out.push(t);
+		}
+	}
+	return out.map((t) => {
+		if (!STEP.has(t.kind)) return t;
+		const g = seen.get(`${t.c.id}:${t.d}`)!;
+		if (g.length < 2) return t;
+		const steps = g.map((x, i) => {
+			const w = x.title.split(' · ')[0];
+			return i === 0 ? w : w.charAt(0).toLowerCase() + w.slice(1);
+		});
+		const what = t.title.includes(' · ') ? t.title.slice(t.title.indexOf(' · ')) : '';
+		const said = steps.length === 2 ? steps.join(' and ') : `${steps.slice(0, -1).join(', ')} and ${steps[steps.length - 1]}`;
+		return { ...t, title: said + what, order: Math.min(...g.map((x) => x.order)) };
+	});
+}
+
 export type CalEvent = { date: string; kind: 'shoot' | 'draft' | 'live' | 'follow' | 'pay' | 'product'; c: Collab };
 export function events(collabs: Collab[]): CalEvent[] {
 	const ev: CalEvent[] = [];
