@@ -25,10 +25,18 @@ export const langText = (v: string | null | undefined) => {
 	return parts.length > 1 ? `${parts.join(' + ')} (mixed)` : parts[0] ?? '';
 };
 
-/** The Reel script's spoken-language option that fits a collab's language. */
+/** The Reel script's spoken-language option that fits a collab's language ("Kannada" → "Kannada + English"). */
 export function scriptLanguage(v: string | null | undefined): string {
 	const p = String(v ?? '').split('+').map((x) => x.trim());
-	if (p.includes('Kannada')) return 'Kannada + English';
+	const own = p.find((x) => x && x !== 'English' && x !== 'Hindi');
+	if (own) return `${own} + English`;
 	if (p.includes('Hindi')) return p.includes('English') ? 'Hinglish' : 'Hindi';
 	return 'English';
+}
+
+/** The Reel script's spoken-language options: English, Hinglish, each other language she creates in
+ *  mixed with English ("Kannada + English"), and Hindi. */
+export function scriptLanguages(own: readonly string[] | null | undefined): string[] {
+	const more = (own ?? []).map((x) => x.trim()).filter((x) => x && x !== 'English' && x !== 'Hindi');
+	return ['English', 'Hinglish', ...more.map((x) => `${x} + English`), 'Hindi'];
 }

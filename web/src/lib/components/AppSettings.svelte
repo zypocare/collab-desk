@@ -76,7 +76,7 @@
 		{/if}
 	</div>
 	<div class="form-b alert-greet">
-		<div class="f"><label for="al-name">Call me</label><input class="inp" id="al-name" maxlength="30" placeholder="e.g. Nivy" value={studio.settings?.alert_name ?? ''} onchange={(e) => saveSettings({ alert_name: (e.currentTarget as HTMLInputElement).value.trim() })} /></div>
+		<div class="f"><label for="al-name">Call me</label><input class="inp" id="al-name" maxlength="30" placeholder={`e.g. ${String(studio.settings?.display_name ?? '').trim().split(' ')[0] || 'your first name'}`} value={studio.settings?.alert_name ?? ''} onchange={(e) => saveSettings({ alert_name: (e.currentTarget as HTMLInputElement).value.trim() })} /></div>
 		<div class="f"><label for="al-line">A line under each alert <span class="hint">(optional)</span></label><input class="inp" id="al-line" maxlength="80" placeholder="e.g. Check your collab app" value={studio.settings?.alert_line ?? ''} onchange={(e) => saveSettings({ alert_line: (e.currentTarget as HTMLInputElement).value.trim() })} /></div>
 		<div class="switch-row span2 voice-row">
 			<div><b>Say it out loud in the app</b><small>While the app is open, a chime and "{voiceLine(studio.settings?.alert_name ?? '', 'You might have a new collab.')}" for a new possible collab or request. Phone alerts use your phone's usual sound.</small></div>

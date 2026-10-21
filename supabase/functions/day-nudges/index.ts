@@ -1,20 +1,23 @@
 // Fun nudges through the day. Runs every hour on the hour (India time) from the database cron job.
-// From 11 AM to 11 PM to start: work lines built on her real day, water and food in between, yoga at
-// 6 PM and a wind-down at the end. The free AI writes each one fresh (shown the recent ones so it
+// From 11 AM to 11 PM to start: work lines built on her real day, water and food in between, her
+// evening hobby at 6 PM (the "yoga" slot: yoga, the gym, a walk; a stretch if she named none) and a
+// wind-down at the end. The free AI writes each one fresh (shown the recent ones so it
 // doesn't echo them); near-copies are dropped and written again; if the day's free AI is used up,
 // a hand-written line that has never been sent goes instead. Every line sent is kept, so none repeats.
 //   ?dry=1         work out and show the message, send nothing
 //   ?hour=13       pretend it's this hour (India time)
 //   ?site=<url>    where the AI lives (local testing)
+// It runs once for every active creator, each with her own hours, collabs and sent log.
 import { admin, cronAllowed, daysBetween, todayIST } from '../_shared/admin.ts';
 import { pushToCreator } from '../_shared/push.ts';
 import { LINES, PARTS, WORK, type Line } from '../_shared/funLines.ts';
+import { activeCreators, type Settings } from '../_shared/creators.ts';
 
 type Kind = 'work' | 'water' | 'food' | 'yoga' | 'night';
 type Fact = { topic: string; text: string; url: string; prio: number; vars: Record<string, string> };
 type Written = Line & { by: string };
 
-// The day: work and wellbeing take turns; yoga at her yoga hour; wind down at 11 PM.
+// The day: work and wellbeing take turns; her hobby at its hour (fun_yoga_hour); wind down at 11 PM.
 const PLAN: Record<number, Kind> = { 11: 'work', 12: 'water', 13: 'food', 14: 'work', 15: 'water', 16: 'work', 17: 'food', 18: 'yoga', 19: 'work', 20: 'water', 21: 'food', 22: 'work', 23: 'night' };
 const meal = (h: number) => (h < 11 ? 'breakfast' : h < 16 ? 'lunch' : h < 19 ? 'evening chai and a snack' : 'dinner');
 const rupees = (n: number) => '₹' + Math.round(n).toLocaleString('en-IN');
@@ -45,31 +48,46 @@ Deno.serve(async (req) => {
   const dry = url.searchParams.get('dry') === '1';
   const db = admin();
 
-  const { data: s } = await db
-    .from('creator_settings')
-    .select('fun_nudges, fun_from, fun_to, fun_yoga_hour, fun_food, alert_name, display_name, site_url, pay_alerts, pay_alert_hours, away_until, away_weeks, monthly_goal')
-    .eq('id', 1)
-    .single();
-  if (!s?.fun_nudges && !dry) return Response.json({ skipped: 'turned off' });
+  let creators: Settings[];
+  try {
+    creators = await activeCreators(db);
+  } catch (e) {
+    return Response.json({ error: e instanceof Error ? e.message : String(e) }, { status: 500 });
+  }
+  const results = [];
+  for (const s of creators) {
+    try {
+      results.push({ creator: s.id, ...(await nudgeFor(db, s, url, dry)) });
+    } catch (e) {
+      console.error(`[day-nudges] creator ${s.id}:`, e);
+      results.push({ creator: s.id, error: e instanceof Error ? e.message : String(e) });
+    }
+  }
+  return Response.json({ creators: results });
+});
+
+/** One creator's nudge for this hour, if she gets one. */
+async function nudgeFor(db: ReturnType<typeof admin>, s: Settings, url: URL, dry: boolean): Promise<Record<string, unknown>> {
+  if (!s.fun_nudges && !dry) return { skipped: 'turned off' };
   // A minute's grace either side of the hour.
   const now = new Date(Date.now() + 5.5 * 3600e3 + 5 * 60e3);
   const hour = url.searchParams.has('hour') ? Number(url.searchParams.get('hour')) : now.getUTCHours();
-  const from = s?.fun_from ?? 11, to = s?.fun_to ?? 23, yoga = s?.fun_yoga_hour ?? 18;
-  if (hour < from || hour > to) return Response.json({ skipped: `outside her hours (${hour}:00)` });
+  const from = s.fun_from ?? 11, to = s.fun_to ?? 23, yoga = s.fun_yoga_hour ?? 18;
+  if (hour < from || hour > to) return { skipped: `outside her hours (${hour}:00)` };
 
   let kind: Kind = hour === yoga ? 'yoga' : PLAN[hour] ?? 'work';
   if (kind === 'yoga' && hour !== yoga) kind = 'work';
-  if ((kind === 'food' || kind === 'water') && s?.fun_food === false) return Response.json({ skipped: 'food and water reminders are off' });
+  if ((kind === 'food' || kind === 'water') && s.fun_food === false) return { skipped: 'food and water reminders are off' };
 
   const today = todayIST(), tomorrow = todayIST(1);
   const monday = (() => { const d = new Date(today + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7)); return d.toISOString().slice(0, 10); })();
-  const away = (!!s?.away_until && s.away_until >= today) || ((s?.away_weeks as string[] | null) ?? []).includes(monday);
-  const payHour = !!s?.pay_alerts && ((s?.pay_alert_hours as number[] | null) ?? []).includes(hour);
-  if (kind === 'work' && away) return Response.json({ skipped: 'she is away: no work nudges' });
-  if (kind === 'work' && payHour) return Response.json({ skipped: 'payment reminder goes out this hour' });
+  const away = (!!s.away_until && s.away_until >= today) || ((s.away_weeks as string[] | null) ?? []).includes(monday);
+  const payHour = !!s.pay_alerts && ((s.pay_alert_hours as number[] | null) ?? []).includes(hour);
+  if (kind === 'work' && away) return { skipped: 'she is away: no work nudges' };
+  if (kind === 'work' && payHour) return { skipped: 'payment reminder goes out this hour' };
 
   // What has gone out before (newest first), and which work topics already went today.
-  const { data: sent } = await db.from('fun_nudges_sent').select('kind, topic, title, body, sent_at').order('sent_at', { ascending: false }).limit(300);
+  const { data: sent } = await db.from('fun_nudges_sent').select('kind, topic, title, body, sent_at').eq('creator_id', s.id).order('sent_at', { ascending: false }).limit(300);
   const past: Line[] = (sent ?? []).map((r) => ({ title: r.title, body: r.body }));
   const startOfDay = new Date(Date.parse(today + 'T00:00:00+05:30')).toISOString();
   const usedToday = new Set((sent ?? []).filter((r) => r.sent_at >= startOfDay && r.kind === 'work').map((r) => r.topic));
@@ -77,41 +95,42 @@ Deno.serve(async (req) => {
   // Her day, in facts the line can stand on.
   let fact: Fact | null = null;
   if (kind === 'work' || kind === 'night') {
-    const facts = await herDay(db, today, tomorrow, Number(s?.monthly_goal) || 0);
+    const facts = await herDay(db, s.id, today, tomorrow, Number(s.monthly_goal) || 0);
     if (kind === 'night') fact = facts.find((f) => f.topic.endsWith('_tomorrow')) ?? null;
     else fact = facts.find((f) => !usedToday.has(f.topic)) ?? facts[0] ?? null;
   }
 
-  const name = String(s?.alert_name || String(s?.display_name ?? '').split(' ')[0] || '').trim();
+  const name = String(s.alert_name || String(s.display_name ?? '').split(' ')[0] || '').trim();
   const when = `${new Date(today + 'T00:00:00Z').toLocaleDateString('en-IN', { weekday: 'long', timeZone: 'UTC' })}, ${hourLabel(hour)}`;
-  const vars = { meal: meal(hour), ...(fact?.vars ?? {}) };
+  const hobby = String(s.fun_hobby ?? '').trim();
+  const vars = { meal: meal(hour), hobby, ...(fact?.vars ?? {}) };
 
   // 1. The free AI writes it (three goes at a fresh one).
   let line: Line | null = null, source = 'ai';
-  const site = String(url.searchParams.get('site') || s?.site_url || 'https://collab-desk.zypocare.workers.dev').replace(/\/$/, '');
+  const site = String(url.searchParams.get('site') || s.site_url || 'https://collab-desk.zypocare.workers.dev').replace(/\/$/, '');
   for (let attempt = 0; attempt < 3 && !line; attempt++) {
-    const l = await aiLine(db, site, { kind, meal: kind === 'food' ? meal(hour) : '', name, when, fact: fact?.text ?? 'none', attempt, recent: past.slice(0, 40).map((p) => `${p.title} — ${p.body}`) });
+    const l = await aiLine(db, s.id, site, { kind, meal: kind === 'food' ? meal(hour) : '', name, city: s.city ?? '', niche: s.niche ?? '', hobby, when, fact: fact?.text ?? 'none', attempt, recent: past.slice(0, 40).map((p) => `${p.title} — ${p.body}`) });
     if (!l) break;
     if (!tooClose(l, past)) ((line = l), (source = l.by));
   }
   // 2. A hand-written one that has never gone out.
   if (!line) {
     source = 'lib';
-    line = pickWritten(kind, fact, vars, past);
+    line = pickWritten(kind, fact, vars, past, hobby, String(s.city ?? ''));
   }
-  if (!line) return Response.json({ skipped: 'nothing new to say' });
+  if (!line) return { skipped: 'nothing new to say' };
 
   const msg = { title: line.title, body: line.body, url: kind === 'work' ? fact?.url ?? '/studio' : kind === 'night' ? '/studio/calendar' : '/studio', tag: 'day-nudge', plain: true };
-  if (dry) return Response.json({ dry: true, hour, kind, fact, source, msg });
-  const res = await pushToCreator(db, msg);
-  await db.from('fun_nudges_sent').insert({ kind, topic: fact?.topic ?? kind, title: line.title, body: line.body, source, norm: norm(line.title + ' ' + line.body) });
-  return Response.json({ ...res, hour, kind, source, title: line.title });
-});
+  if (dry) return { dry: true, hour, kind, fact, source, msg };
+  const res = await pushToCreator(db, s.id, msg);
+  await db.from('fun_nudges_sent').insert({ creator_id: s.id, kind, topic: fact?.topic ?? kind, title: line.title, body: line.body, source, norm: norm(line.title + ' ' + line.body) });
+  return { ...res, hour, kind, source, title: line.title };
+}
 
 /** The free AI, through a single-use pass the database checks (no keys leave the server). */
-async function aiLine(db: ReturnType<typeof admin>, site: string, payload: Record<string, unknown>): Promise<Written | null> {
+async function aiLine(db: ReturnType<typeof admin>, creator: number, site: string, payload: Record<string, unknown>): Promise<Written | null> {
   const ticket = crypto.randomUUID() + crypto.randomUUID();
-  const { error } = await db.from('ai_tickets').insert({ token: ticket, kind: 'cheer' });
+  const { error } = await db.from('ai_tickets').insert({ creator_id: creator, token: ticket, kind: 'cheer' });
   if (error) return null;
   const r = await fetch(`${site}/api/ai/cheer`, {
     method: 'POST',
@@ -123,13 +142,17 @@ async function aiLine(db: ReturnType<typeof admin>, site: string, payload: Recor
   return title && body && title.length <= 60 && body.length <= 180 ? { title, body, by: j?.by || 'ai' } : null;
 }
 
-/** A hand-written line never sent before; when the list runs out, a new pairing of opener and closer. */
-function pickWritten(kind: Kind, fact: Fact | null, vars: Record<string, string>, past: Line[]): Line | null {
-  const pool = kind === 'work' ? WORK[fact?.topic ?? 'clear'] ?? WORK.clear : LINES[kind] ?? [];
+/** A hand-written line never sent before; when the list runs out, a new pairing of opener and closer.
+ *  The evening slot uses her hobby's lines (yoga has its own), or stretch lines if she named none;
+ *  lines about one city only go to creators there. */
+function pickWritten(kind: Kind, fact: Fact | null, vars: Record<string, string>, past: Line[], hobby: string, city: string): Line | null {
+  const set = kind === 'yoga' ? (!hobby ? 'stretch' : /yoga/i.test(hobby) ? 'yoga' : 'hobby') : kind;
+  const here = (l: Line) => !l.city || city.toLowerCase().includes(l.city.toLowerCase()) || (l.city === 'Bengaluru' && /bangalore/i.test(city));
+  const pool = (kind === 'work' ? WORK[fact?.topic ?? 'clear'] ?? WORK.clear : LINES[set] ?? []).filter(here);
   const shuffled = [...pool].sort(() => Math.random() - 0.5).map((l) => ({ title: fill(l.title, vars), body: fill(l.body, vars) }));
   const fresh = shuffled.find((l) => !tooSame(l, past));
   if (fresh) return fresh;
-  const parts = PARTS[kind];
+  const parts = PARTS[set];
   const v = { ...vars, fact: fact?.text ?? '' };
   for (const o of [...parts.open].sort(() => Math.random() - 0.5))
     for (const c of [...parts.close].sort(() => Math.random() - 0.5)) {
@@ -142,10 +165,11 @@ function pickWritten(kind: Kind, fact: Fact | null, vars: Record<string, string>
 const tooSame = (l: Line, past: Line[]) => past.some((p) => norm(p.title + ' ' + p.body) === norm(l.title + ' ' + l.body));
 
 /** Her day from her collabs: most urgent first. */
-async function herDay(db: ReturnType<typeof admin>, today: string, tomorrow: string, goal: number): Promise<Fact[]> {
+async function herDay(db: ReturnType<typeof admin>, creator: number, today: string, tomorrow: string, goal: number): Promise<Fact[]> {
   const { data: rows } = await db
     .from('collabs')
     .select('id, code, stage, type, fee, pay_received, pay_status, pay_due, draft_date, shoot_date, live_date, product_date, follow_date, paid_on, brand:brands(name)')
+    .eq('creator_id', creator)
     .not('stage', 'in', '(declined,paused,cancelled)');
   const cs = (rows ?? []).map((c) => ({ ...c, b: (c.brand as unknown as { name: string } | null)?.name ?? 'a brand' }));
   const open = cs.filter((c) => c.stage !== 'wrapped');
@@ -161,7 +185,7 @@ async function herDay(db: ReturnType<typeof admin>, today: string, tomorrow: str
 
   // Brands whose last message is theirs (in the last two weeks): waiting for her reply.
   const since = new Date(Date.now() - 14 * 864e5).toISOString();
-  const { data: msgs } = await db.from('collab_messages').select('collab_id, sender, created_at').gte('created_at', since).order('created_at', { ascending: false }).limit(500);
+  const { data: msgs } = await db.from('collab_messages').select('collab_id, sender, created_at').eq('creator_id', creator).gte('created_at', since).order('created_at', { ascending: false }).limit(500);
   const last = new Map<string, string>();
   for (const m of msgs ?? []) if (!last.has(m.collab_id)) last.set(m.collab_id, m.sender);
   const waiting = open.filter((c) => last.get(c.id) === 'brand');

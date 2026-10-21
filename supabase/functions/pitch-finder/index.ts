@@ -1,4 +1,4 @@
-// Pitch autopilot, once a day (8:30 AM India) from the database cron job, or when she taps "Find
+// Pitch autopilot, once a day (8:30 AM India) for each creator from the database cron job, or when she taps "Find
 // brands now". Up to 10 new brands a day: found by Gemini with Google Search, checked on their own
 // website for a public business email (brands without one are left out), a pitch written for each,
 // and queued to go out between 10 AM and 6 PM, one at a time (private.pitch_send_due sends them).
@@ -7,6 +7,7 @@
 //   ?site=<url>   where the AI lives (local testing)
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { admin, cronAllowed, todayIST } from '../_shared/admin.ts';
+import { activeCreators, creatorOfCaller, settingsOf, type Settings } from '../_shared/creators.ts';
 import { pushToCreator } from '../_shared/push.ts';
 
 const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type' };
@@ -27,37 +28,73 @@ Deno.serve(async (req) => {
   const reply = (body: unknown, status = 200) => Response.json(body, { status, headers: cors });
   const url = new URL(req.url);
   const dry = url.searchParams.get('dry') === '1';
-  // The cron job, or the creator herself ("Find brands now").
-  let manual = false;
+  const siteParam = url.searchParams.get('site') ?? '';
+  const db = admin();
+
+  // The creator herself ("Find brands now"): only for the creator she is signed in for.
   if (!cronAllowed(req)) {
     const asUser = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_ANON_KEY')!, {
       global: { headers: { Authorization: req.headers.get('Authorization') ?? '' } },
       auth: { persistSession: false },
     });
     const { data: ok } = await asUser.rpc('is_creator');
-    if (ok !== true) return reply({ error: 'Only the creator can do this.' }, 403);
-    manual = true;
+    const id = ok === true ? await creatorOfCaller(req) : null;
+    if (!id) return reply({ error: 'Only the creator can do this.' }, 403);
+    const s = await settingsOf(db, id);
+    if (!s) return reply({ error: 'No settings.' }, 500);
+    const r = await findFor(db, s, { manual: true, dry, siteParam });
+    return reply(r.body, r.status);
   }
-  const db = admin();
-  const { data: s } = await db
-    .from('creator_settings')
-    .select('pitch_auto, pitch_mode, pitch_daily, display_name, handle, niche, city, followers, engagement, content_languages, site_url')
-    .eq('id', 1)
-    .single();
-  if (!s) return reply({ error: 'No settings.' }, 500);
-  if (!s.pitch_auto && !manual && !dry) return reply({ skipped: 'autopilot is off' });
+
+  // The cron job for one creator (sent by the run below; the cron secret makes the id trustworthy).
+  const body = await req.json().catch(() => ({}));
+  const one = Number(body?.creator);
+  if (Number.isInteger(one) && one > 0) {
+    const s = await settingsOf(db, one);
+    if (!s) return reply({ error: 'No settings.' }, 404);
+    const r = await findFor(db, s, { manual: false, dry, siteParam });
+    return reply(r.body, r.status);
+  }
+
+  // The daily cron job: one run per active creator with the autopilot on, side by side, each as its own
+  // call so every creator gets the full time limit. One creator failing doesn't stop the others.
+  const creators = (await activeCreators(db)).filter((c) => c.pitch_auto || dry);
+  const self = `${Deno.env.get('SUPABASE_URL')}/functions/v1/pitch-finder${url.search}`;
+  const results = await Promise.all(creators.map(async (c) => {
+    try {
+      const r = await fetch(self, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'x-cron-secret': req.headers.get('x-cron-secret') ?? '' },
+        body: JSON.stringify({ creator: c.id }),
+      });
+      const out = await r.json().catch(() => ({ error: `status ${r.status}` }));
+      if (!r.ok) console.error(`pitch-finder: creator ${c.id} failed`, out);
+      return { creator: c.id, ...out };
+    } catch (e) {
+      console.error(`pitch-finder: creator ${c.id} failed`, e);
+      return { creator: c.id, error: e instanceof Error ? e.message : String(e) };
+    }
+  }));
+  return reply({ creators: results });
+});
+
+/** One creator's run: brands found, pitches written and queued, her alert sent. */
+async function findFor(db: ReturnType<typeof admin>, s: Settings, opt: { manual: boolean; dry: boolean; siteParam: string }): Promise<{ status: number; body: unknown }> {
+  const { manual, dry } = opt;
+  const result = (body: unknown, status = 200) => ({ status, body });
+  if (!s.pitch_auto && !manual && !dry) return result({ skipped: 'autopilot is off' });
 
   const today = todayIST();
-  const { data: all } = await db.from('pitches').select('brand_name, instagram, email, website, status, approved, found_on');
+  const { data: all } = await db.from('pitches').select('brand_name, instagram, email, website, status, approved, found_on').eq('creator_id', s.id);
   const pitches = all ?? [];
   // Never more than her daily number waiting: what's still waiting and what was found today count.
   const waiting = pitches.filter((p) => p.status === 'ready' && !p.approved && s.pitch_mode === 'approve').length;
   const foundToday = pitches.filter((p) => p.found_on === today).length;
   const want = Math.max(0, (s.pitch_daily ?? 10) - Math.max(waiting, foundToday));
-  if (!want) return reply({ skipped: waiting ? `${waiting} still waiting for you` : 'today is done' });
+  if (!want) return result({ skipped: waiting ? `${waiting} still waiting for you` : 'today is done' });
 
   // Everything already known, so nothing comes back twice.
-  const { data: brands } = await db.from('brands').select('name, instagram, website');
+  const { data: brands } = await db.from('brands').select('name, instagram, website').eq('creator_id', s.id);
   const seenName = new Set([...pitches.map((p) => norm(p.brand_name)), ...(brands ?? []).map((b) => norm(b.name))].filter(Boolean));
   const seenIg = new Set([...pitches.map((p) => norm(p.instagram)), ...(brands ?? []).map((b) => norm(b.instagram ?? ''))].filter(Boolean));
   const seenDomain = new Set(
@@ -65,11 +102,11 @@ Deno.serve(async (req) => {
       .filter((d) => d && !/gmail|yahoo|outlook|hotmail/.test(d))
   );
 
-  const { data: ig } = await db.from('ig_account').select('followers, avg_views, username').eq('id', 1).maybeSingle();
-  const { data: done } = await db.from('collabs').select('stage, brand:brands(name, category)').in('stage', ['live', 'wrapped']).limit(60);
+  const { data: ig } = await db.from('ig_account').select('followers, avg_views, username').eq('id', s.id).maybeSingle();
+  const { data: done } = await db.from('collabs').select('stage, brand:brands(name, category)').eq('creator_id', s.id).in('stage', ['live', 'wrapped']).limit(60);
   const pastBrands = [...new Set((done ?? []).map((c) => (c.brand as unknown as { name: string } | null)?.name).filter(Boolean))] as string[];
   const pastCats = [...new Set((done ?? []).map((c) => (c.brand as unknown as { category: string } | null)?.category).filter(Boolean))] as string[];
-  const site = String(url.searchParams.get('site') || s.site_url || 'https://collab-desk.zypocare.workers.dev').replace(/\/$/, '');
+  const site = String(opt.siteParam || s.site_url || 'https://collab-desk.zypocare.workers.dev').replace(/\/$/, '');
   const page = String(s.site_url || site).replace(/\/$/, '');
   const creator = {
     name: s.display_name, handle: s.handle, niche: s.niche, city: s.city, languages: s.content_languages,
@@ -84,7 +121,7 @@ Deno.serve(async (req) => {
   const found: Found[] = [];
   let scoutedN = 0, freshN = 0, lastErr: unknown = null;
   for (let round = 0; round < 3 && found.length < want && Date.now() - started < 70_000; round++) {
-    const scouted = await ai<{ brands?: Brand[]; error?: string }>(db, site, 'scout', { count: Math.min(20, want - found.length + 8), creator, exclude: exclude.slice(-200) });
+    const scouted = await ai<{ brands?: Brand[]; error?: string }>(db, s.id, site, 'scout', { count: Math.min(20, want - found.length + 8), creator, exclude: exclude.slice(-200) });
     if (!scouted?.brands?.length) {
       lastErr = scouted;
       break;
@@ -105,14 +142,14 @@ Deno.serve(async (req) => {
       for (const b of batch) if (b.email && found.length < want && !found.some((f) => f.domain === b.domain)) found.push(b);
     }
   }
-  if (!found.length && !scoutedN) return reply({ error: 'No brands came back from the search.', detail: lastErr }, 502);
+  if (!found.length && !scoutedN) return result({ error: 'No brands came back from the search.', detail: lastErr }, 502);
 
   // 3. A pitch for each (Gemini first), queued through the day.
   const slots = sendTimes(found.length);
   // Written five at a time, so a run from the app finishes well inside the time limit.
   const written = await Promise.all(found.map((b, k) => new Promise<unknown>((r) => setTimeout(r, Math.floor(k / 5) * 1500)).then(() => write(b))));
   async function write(b: Found) {
-    return await ai<{ subject: string; body: string }>(db, site, 'pitch', {
+    return await ai<{ subject: string; body: string }>(db, s.id, site, 'pitch', {
       brand: b.name, brand_instagram: b.instagram, category: b.category, contact: '', why_they_fit: b.why,
       creator: s.display_name, handle: s.handle, niche: s.niche, city: s.city, followers: creator.followers,
       engagement: s.engagement, page_link: page, past_brands: pastBrands.slice(0, 5),
@@ -124,31 +161,31 @@ Deno.serve(async (req) => {
     const subject = w?.subject?.trim() || `Content idea for ${b.name}`;
     const body =
       (w?.body?.trim() ||
-        `Hi there,\n\nI'm ${s.display_name} (@${s.handle}), a ${s.niche || 'lifestyle'} creator from ${s.city || 'India'}. I love what ${b.name} is doing and would really enjoy creating content for you.\n\nMy rates, past work and live Instagram numbers are all here: ${page}\n\nWould you be open to a quick chat?\n\nThanks,\n${s.display_name}`) +
+        `Hi there,\n\nI'm ${s.display_name} (@${s.handle}), a ${s.niche || 'content'} creator from ${s.city || 'India'}. I love what ${b.name} is doing and would really enjoy creating content for you.\n\nMy rates, past work and live Instagram numbers are all here: ${page}\n\nWould you be open to a quick chat?\n\nThanks,\n${s.display_name}`) +
       `\n\nNot the right fit right now? Just reply "no" and I won't write again.`;
     rows.push({
-      brand_name: b.name, instagram: b.instagram, category: b.category, email: b.email, website: b.website, subject, body,
+      creator_id: s.id, brand_name: b.name, instagram: b.instagram, category: b.category, email: b.email, website: b.website, subject, body,
       status: 'ready', source: 'autopilot', fit_note: b.why, found_on: today, approved: s.pitch_mode === 'auto', send_after: slots[k], auto_follow: true,
     });
   }
-  if (dry) return reply({ dry: true, want, scouted: scoutedN, fresh: freshN, found: rows.length, seconds: Math.round((Date.now() - started) / 1000), rows });
+  if (dry) return result({ dry: true, want, scouted: scoutedN, fresh: freshN, found: rows.length, seconds: Math.round((Date.now() - started) / 1000), rows });
   if (rows.length) {
     const { error } = await db.from('pitches').insert(rows);
-    if (error) return reply({ error: error.message }, 500);
-    await pushToCreator(db, {
+    if (error) return result({ error: error.message }, 500);
+    await pushToCreator(db, s.id, {
       title: s.pitch_mode === 'auto' ? `${rows.length} new brand${rows.length === 1 ? '' : 's'} will be pitched today` : `${rows.length} new brand${rows.length === 1 ? '' : 's'} to pitch`,
       body: s.pitch_mode === 'auto' ? `${rows.slice(0, 3).map((r) => r.brand_name).join(', ')}${rows.length > 3 ? ' and more' : ''}. They go out from 10 AM.` : `${rows.slice(0, 3).map((r) => r.brand_name).join(', ')}${rows.length > 3 ? ' and more' : ''}. Approve the ones you like.`,
       url: '/studio/pitches',
       tag: 'pitch-autopilot',
     });
   }
-  return reply({ added: rows.length, scouted: scoutedN, fresh: freshN, ...(rows.length ? {} : { skipped: 'none of the brands found today show a public email on their website' }), brands: rows.map((r) => `${r.brand_name} <${r.email}>`) });
-});
+  return result({ added: rows.length, scouted: scoutedN, fresh: freshN, ...(rows.length ? {} : { skipped: 'none of the brands found today show a public email on their website' }), brands: rows.map((r) => `${r.brand_name} <${r.email}>`) });
+}
 
-/** The AI job through a single-use pass (no keys leave the server). */
-async function ai<T>(db: ReturnType<typeof admin>, site: string, kind: string, payload: Record<string, unknown>): Promise<T | null> {
+/** The AI job through a single-use pass (no keys leave the server), charged to this creator. */
+async function ai<T>(db: ReturnType<typeof admin>, creator: number, site: string, kind: string, payload: Record<string, unknown>): Promise<T | null> {
   const ticket = crypto.randomUUID() + crypto.randomUUID();
-  const { error } = await db.from('ai_tickets').insert({ token: ticket, kind });
+  const { error } = await db.from('ai_tickets').insert({ creator_id: creator, token: ticket, kind });
   if (error) return null;
   const r = await fetch(`${site}/api/ai/${kind}`, {
     method: 'POST',

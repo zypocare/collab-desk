@@ -1,8 +1,9 @@
 // Hand-written fun nudges, for when the day's free AI is used up. Each line goes out at most once
 // (the hourly job checks the sent log); when a kind runs out, openers and closers are paired up
-// into new ones. Work lines fill in her real facts: {brand}, {n}, {amt}, {pct}, {goal}.
+// into new ones. Work lines fill in her real facts: {brand}, {n}, {amt}, {pct}, {goal}, {hobby}.
+// A line with a city only goes to creators in that city.
 
-export type Line = { title: string; body: string };
+export type Line = { title: string; body: string; city?: string };
 
 export const LINES: Record<string, Line[]> = {
   water: [
@@ -12,7 +13,7 @@ export const LINES: Record<string, Line[]> = {
     { title: 'Glow-up, the free version 💧', body: 'No filter beats a hydrated face. One full glass, go.' },
     { title: 'Plot twist: drink water 💧', body: 'Every great creator arc has a hydration scene. This is yours.' },
     { title: 'Battery low: refill 💧', body: 'Phone at 20% gets a charger. You get a glass of water. Fair is fair.' },
-    { title: 'Bengaluru weather, but inside you 💧', body: 'Bring a little drizzle in. One glass of water, right now.' },
+    { title: 'Bengaluru weather, but inside you 💧', body: 'Bring a little drizzle in. One glass of water, right now.', city: 'Bengaluru' },
     { title: 'Ring light on, water in 💧', body: 'Hydrated creators blink less on camera. Science-ish. Drink up.' },
     { title: 'Tiny task, big win 💧', body: 'Easiest to-do of the day: one glass of water. Tick it off.' },
     { title: 'Your next reel called 💧', body: 'It asked for a creator with fresh energy. A glass of water will do it.' },
@@ -58,8 +59,30 @@ export const LINES: Record<string, Line[]> = {
     { title: 'Algorithm off, asana on 🧘‍♀️', body: 'The only reach that matters now is touching your toes.' },
     { title: 'Golden hour, yoga hour 🌇🧘‍♀️', body: 'Best light of the day is for your practice, not for a shoot.' },
     { title: 'Inner peace, zero edits 🧘‍♀️', body: 'No transitions, no hooks. Just breath and a mat. Go.' },
-    { title: 'Tree pose, unshakeable you 🌳', body: 'Rooted like Cubbon Park. Yoga time.' },
+    { title: 'Tree pose, unshakeable you 🌳', body: 'Rooted like Cubbon Park. Yoga time.', city: 'Bengaluru' },
     { title: 'Your spine called a meeting 🧘‍♀️', body: 'Agenda: stretching. Attendance: mandatory. Mat now.' }
+  ],
+  // The evening slot for a creator whose hobby isn't yoga: {hobby} is what she wrote ("the gym", "a walk").
+  hobby: [
+    { title: 'Time for {hobby} ⏰', body: 'Laptop closed, phone face down. This hour is yours, not the brands.' },
+    { title: 'Out of office: {hobby} 🌿', body: 'Auto-reply on in your head. The DMs will keep for an hour.' },
+    { title: 'Scheduled: {hobby} 📅', body: 'The most important meeting today is with yourself. Do not be late.' },
+    { title: 'Log off for {hobby} 🔌', body: 'The algorithm will survive an hour without you. Promise.' },
+    { title: 'Creator off duty 🌙', body: 'Hooks, edits and invoices are on pause. Time for {hobby}.' },
+    { title: 'Recharge mode 🔋', body: 'Phones charge on a cable. You charge with {hobby}. Go now.' },
+    { title: 'Your calendar says {hobby} 🗓️', body: 'And today the calendar is the boss. Close the apps and go.' },
+    { title: 'Brands can wait an hour ✨', body: 'Every deal in your inbox will still be there after {hobby}. Go.' }
+  ],
+  // The evening slot when she hasn't named a hobby: a stretch or a short walk.
+  stretch: [
+    { title: 'Your chair filed a complaint 🪑', body: 'Hours of sitting is enough. Stand up, stretch and walk around for five minutes.' },
+    { title: 'Stretch break, superstar 🙆‍♀️', body: 'Shoulders down, arms up, neck rolls. Two minutes, then back to it.' },
+    { title: 'Walk it out 🚶‍♀️', body: 'A ten-minute walk beats ten more minutes of scrolling. Shoes on.' },
+    { title: 'Screen time, meet sky time ☁️', body: 'Step outside or to a window. Fresh air for five minutes, phone in pocket.' },
+    { title: 'Posture check 🧍‍♀️', body: 'Unclench the jaw, drop the shoulders, stand up tall. Now stretch.' },
+    { title: 'Move like nobody is filming 💃', body: 'One song, one full dance break. Nobody needs to see it.' },
+    { title: 'Desk to deep breath 🌿', body: 'Five slow breaths and one long stretch. The inbox can wait.' },
+    { title: 'Your legs want screen time 🦵', body: 'They have been off camera all day. Take them for a short walk.' }
   ],
   night: [
     { title: 'Logging off is a strategy 🌙', body: 'Rested creators make better reels. Phone down, lights low.' },
@@ -144,6 +167,14 @@ export const PARTS: Record<string, { open: string[]; close: string[] }> = {
   yoga: {
     open: ['Mat time 🧘‍♀️', 'Yoga o\'clock 🧘‍♀️', 'Stretch break 🧘‍♀️', 'Breathe 🧘‍♀️'],
     close: ['Roll out the mat and start.', 'Phone on silent, practice on.', 'One hour for you, nothing else.', 'Your body booked this slot.']
+  },
+  hobby: {
+    open: ['Time for {hobby} ⏰', 'Off duty 🌿', 'Your hour ✨', 'Switch off 🔌'],
+    close: ['Close the apps and go.', 'The inbox can wait an hour.', 'This hour is yours, nothing else.', 'Phone on silent, go enjoy it.']
+  },
+  stretch: {
+    open: ['Stretch break 🙆‍♀️', 'Move a little 🚶‍♀️', 'Stand up 🧍‍♀️', 'Breathe 🌿'],
+    close: ['Stand, stretch and walk for five minutes.', 'Shoulders down, arms up, one deep breath.', 'A short walk now, then back to work.', 'Your back booked this break.']
   },
   night: {
     open: ['Wind down 🌙', 'Day done 🌙', 'Lights low 🌙', 'Good night 🌙'],

@@ -5,6 +5,7 @@ import { ig, IgError, type Insights } from './instagram.ts';
 import { esc, todayIST } from './admin.ts';
 import { sendTelegram, telegramConfigured } from './telegram.ts';
 import { consumeContent, postKind, remainingContent, type PromisedContent } from './deliverableProgress.ts';
+import { activeCreators } from './creators.ts';
 
 const DAY = 864e5;
 // A post's reach keeps growing for a couple of days while its views update at once, so averages leave
@@ -26,16 +27,25 @@ const adTagged = (caption: string) => /#(ad|collab|sponsored|paidpartnership|par
 type MediaRow = {
   id: string; caption: string; media_type: string; product_type: string; permalink: string; posted_at: string; thumbnail_url: string;
   likes: number | null; comments: number | null; saves: number | null; shares: number | null; reach: number | null; views: number | null;
-  interactions: number | null; insights_at: string | null; owner_id?: string; avg_watch_ms?: number | null;
+  interactions: number | null; insights_at: string | null; owner_id?: string; avg_watch_ms?: number | null; creator_id?: number;
 };
 
 export type SyncOptions = { reportFor?: string };
 
-export async function runSync(db: SupabaseClient, opts: SyncOptions = {}) {
+/** The active creators who have connected Instagram (the timed jobs run once for each). */
+export async function connectedCreators(db: SupabaseClient): Promise<number[]> {
+  const ids = (await activeCreators(db)).map((c) => c.id);
+  if (!ids.length) return [];
+  const { data } = await db.from('ig_token').select('id').in('id', ids).order('id');
+  return (data ?? []).map((t) => Number(t.id));
+}
+
+/** One creator's sync. Her token and account rows have her creator id as their id; every other row is tagged with creator_id. */
+export async function runSync(db: SupabaseClient, creator: number, opts: SyncOptions = {}) {
   const summary: Record<string, unknown> = {};
-  const { data: tokenRow } = await db.from('ig_token').select('*').eq('id', 1).maybeSingle();
+  const { data: tokenRow } = await db.from('ig_token').select('*').eq('id', creator).maybeSingle();
   if (!tokenRow) {
-    await db.from('ig_account').update({ connected: false }).eq('id', 1);
+    await db.from('ig_account').update({ connected: false }).eq('id', creator);
     return { skipped: 'Instagram is not connected' };
   }
   let token: string = tokenRow.access_token;
@@ -46,25 +56,28 @@ export async function runSync(db: SupabaseClient, opts: SyncOptions = {}) {
     if (expires - Date.now() < 10 * DAY && Date.now() - Date.parse(tokenRow.obtained_at) > DAY) {
       const r = await ig.refresh(token);
       token = r.token;
-      await db.from('ig_token').update({ access_token: token, obtained_at: new Date().toISOString(), expires_at: new Date(Date.now() + r.expiresIn * 1000).toISOString() }).eq('id', 1);
+      await db.from('ig_token').update({ access_token: token, obtained_at: new Date().toISOString(), expires_at: new Date(Date.now() + r.expiresIn * 1000).toISOString() }).eq('id', creator);
       summary.refreshed = true;
     }
 
     // 2. Account.
     const p = await ig.profile(token);
     // A different account was connected: the old one's follower history means nothing for this one.
-    const { data: before } = await db.from('ig_account').select('ig_user_id').eq('id', 1).single();
+    const { data: before } = await db.from('ig_account').select('ig_user_id').eq('id', creator).maybeSingle();
+    // An Instagram account belongs to one creator only.
+    const { data: owner } = await db.from('ig_account').select('id').eq('ig_user_id', p.user_id).neq('id', creator).limit(1);
+    if (owner?.length) throw new IgError(`@${p.username} is already connected to another creator on Miracle.`);
     const switched = !!before?.ig_user_id && before.ig_user_id !== p.user_id;
-    if (switched) await db.from('ig_followers_history').delete().lt('day', '9999-12-31');
-    await db.from('ig_followers_history').upsert({ day: todayIST(), followers: p.followers_count });
+    if (switched) await db.from('ig_followers_history').delete().eq('creator_id', creator);
+    await db.from('ig_followers_history').upsert({ creator_id: creator, day: todayIST(), followers: p.followers_count }, { onConflict: 'creator_id,day' });
 
     // 3. Posts.
     const list = await ig.media(token, 60);
-    const { data: existing } = await db.from('ig_media').select('id, insights_at, views, reach, avg_watch_ms').in('id', list.map((m) => m.id));
+    const { data: existing } = await db.from('ig_media').select('id, insights_at, views, reach, avg_watch_ms').eq('creator_id', creator).in('id', list.map((m) => m.id));
     const hasWatch = new Set((existing ?? []).filter((e) => e.avg_watch_ms !== null).map((e) => e.id));
     // A post whose figures came back empty counts as never fetched, so it is tried again.
     const lastInsights = new Map((existing ?? []).map((e) => [e.id, (e.views === null && e.reach === null ? null : e.insights_at) as string | null]));
-    const { data: linkedRows } = await db.from('collab_posts').select('media_id');
+    const { data: linkedRows } = await db.from('collab_posts').select('media_id').eq('creator_id', creator);
     const linked = new Set((linkedRows ?? []).map((l) => l.media_id));
 
     // The posts that make the averages: per format, the 12 newest that are at least 3 days old.
@@ -93,7 +106,7 @@ export async function runSync(db: SupabaseClient, opts: SyncOptions = {}) {
         posted_at: m.timestamp, thumbnail_url: m.thumbnail_url || m.media_url || '', likes, comments,
         saves: ins?.saved ?? null, shares: ins?.shares ?? null, reach: ins?.reach ?? null, views: ins?.views ?? null,
         interactions: ins?.total_interactions ?? ((likes ?? 0) + (comments ?? 0) + (ins?.saved ?? 0) + (ins?.shares ?? 0)),
-        insights_at: ins ? new Date().toISOString() : lastInsights.get(m.id) ?? null, owner_id: p.user_id,
+        insights_at: ins ? new Date().toISOString() : lastInsights.get(m.id) ?? null, owner_id: p.user_id, creator_id: creator,
       };
       // Don't wipe stored insights when this run skipped them.
       if (!ins && lastInsights.get(m.id)) for (const k of ['saves', 'shares', 'reach', 'views', 'interactions'] as const) delete (row as Partial<MediaRow>)[k];
@@ -114,14 +127,14 @@ export async function runSync(db: SupabaseClient, opts: SyncOptions = {}) {
     for (const g of groups.values()) await db.from('ig_media').upsert(g);
     summary.posts = rows.length;
     // Posts from another account (one connected before) don't count towards her numbers.
-    let others = db.from('ig_media').delete({ count: 'exact' }).or(`owner_id.is.null,owner_id.neq.${p.user_id}`);
+    let others = db.from('ig_media').delete({ count: 'exact' }).eq('creator_id', creator).or(`owner_id.is.null,owner_id.neq.${p.user_id}`);
     if (linked.size) others = others.not('id', 'in', `(${[...linked].map((x) => `"${x}"`).join(',')})`);
     const { count: removed } = await others;
     if (removed) summary.removed_other_account = removed;
 
     // 4. Account averages from the last 12 posts that are at least 3 days old.
     const settledBefore = new Date(Date.now() - SETTLE).toISOString();
-    const { data: last12 } = await db.from('ig_media').select('views, reach, interactions, likes, comments').neq('product_type', 'STORY').lt('posted_at', settledBefore).order('posted_at', { ascending: false }).limit(12);
+    const { data: last12 } = await db.from('ig_media').select('views, reach, interactions, likes, comments').eq('creator_id', creator).neq('product_type', 'STORY').lt('posted_at', settledBefore).order('posted_at', { ascending: false }).limit(12);
     const avg = (xs: (number | null)[]) => {
       const v = xs.filter((x): x is number => typeof x === 'number');
       return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null;
@@ -141,7 +154,7 @@ export async function runSync(db: SupabaseClient, opts: SyncOptions = {}) {
     ]);
     // Her most recent posts of each kind (whatever their dates: she may not have posted lately).
     const { data: m90 } = await db.from('ig_media').select('id, caption, media_type, product_type, posted_at, views, reach, interactions, likes, comments, saves, shares, avg_watch_ms')
-      .order('posted_at', { ascending: false }).limit(200);
+      .eq('creator_id', creator).order('posted_at', { ascending: false }).limit(200);
     type Post = NonNullable<typeof m90>[number];
     const nums = (xs: (number | null | undefined)[]) => xs.filter((x): x is number => typeof x === 'number');
     const median = (xs: (number | null | undefined)[]) => {
@@ -223,7 +236,7 @@ export async function runSync(db: SupabaseClient, opts: SyncOptions = {}) {
 
     const followersOn = async (daysAgo: number) =>
       // The count on (or just before) that day; nothing if the history doesn't go back that far yet.
-      (await db.from('ig_followers_history').select('followers').lte('day', new Date(Date.now() - daysAgo * DAY).toISOString().slice(0, 10)).order('day', { ascending: false }).limit(1)).data?.[0]?.followers ?? null;
+      (await db.from('ig_followers_history').select('followers').eq('creator_id', creator).lte('day', new Date(Date.now() - daysAgo * DAY).toISOString().slice(0, 10)).order('day', { ascending: false }).limit(1)).data?.[0]?.followers ?? null;
     const [f30, f90] = await Promise.all([followersOn(30), followersOn(90)]);
     const insights = {
       from: new Date(Date.now() - 30 * DAY).toISOString().slice(0, 10), to: now.toISOString().slice(0, 10),
@@ -235,18 +248,18 @@ export async function runSync(db: SupabaseClient, opts: SyncOptions = {}) {
     const monthOf = (d: Date) => `${ist(d.toISOString()).toISOString().slice(0, 7)}-01`;
     const t30 = cur as Record<string, number>, p30 = prev as Record<string, number>;
     await db.from('ig_monthly').upsert({
-      month: monthOf(now), followers: p.followers_count, reach: t30.reach ?? null, views: t30.views ?? null, engaged: t30.accounts_engaged ?? null,
+      creator_id: creator, month: monthOf(now), followers: p.followers_count, reach: t30.reach ?? null, views: t30.views ?? null, engaged: t30.accounts_engaged ?? null,
       interactions: t30.total_interactions ?? null, er: engagement, reels_er: formats.reels.er, updated_at: now.toISOString(),
-    });
+    }, { onConflict: 'creator_id,month' });
     if (p30.reach || p30.views) {
       await db.from('ig_monthly').upsert({
-        month: monthOf(new Date(Date.now() - 30 * DAY)), followers: f30, reach: p30.reach ?? null, views: p30.views ?? null,
+        creator_id: creator, month: monthOf(new Date(Date.now() - 30 * DAY)), followers: f30, reach: p30.reach ?? null, views: p30.views ?? null,
         engaged: p30.accounts_engaged ?? null, interactions: p30.total_interactions ?? null, er: null, reels_er: null,
-      }, { onConflict: 'month', ignoreDuplicates: true });
+      }, { onConflict: 'creator_id,month', ignoreDuplicates: true });
     }
 
     // 5. Audience, once a week.
-    const { data: acct } = await db.from('ig_account').select('demographics, demographics_at').eq('id', 1).single();
+    const { data: acct } = await db.from('ig_account').select('demographics, demographics_at').eq('id', creator).maybeSingle();
     const demographicsStale = switched || !acct?.demographics_at || !acct.demographics?.country || Date.now() - Date.parse(acct.demographics_at) > 7 * DAY;
     let demographics = acct?.demographics ?? {};
     if (demographicsStale) {
@@ -256,25 +269,27 @@ export async function runSync(db: SupabaseClient, opts: SyncOptions = {}) {
       else if (switched || !acct?.demographics_at) demographics = {};
     }
 
-    await db.from('ig_account').update({
-      connected: true, ig_user_id: p.user_id, username: p.username, name: p.name ?? '', profile_picture_url: p.profile_picture_url ?? '',
+    // An upsert: a creator who has just connected may not have an account row yet.
+    const { error: saveError } = await db.from('ig_account').upsert({
+      id: creator, connected: true, ig_user_id: p.user_id, username: p.username, name: p.name ?? '', profile_picture_url: p.profile_picture_url ?? '',
       followers: p.followers_count, follows: p.follows_count, media_count: p.media_count,
       engagement_rate: engagement, avg_views: avgViews === null ? null : Math.round(avgViews), avg_reach: avgReach === null ? null : Math.round(avgReach),
       demographics, ...(demographicsStale ? { demographics_at: new Date().toISOString() } : {}), insights, last_sync_at: new Date().toISOString(), last_error: '', updated_at: new Date().toISOString(),
-      token_expires_at: (await db.from('ig_token').select('expires_at').eq('id', 1).single()).data?.expires_at,
-    }).eq('id', 1);
+      token_expires_at: (await db.from('ig_token').select('expires_at').eq('id', creator).single()).data?.expires_at,
+    });
+    if (saveError) throw new Error(saveError.message);
     // The brand page shows these.
-    await db.from('creator_settings').update({ followers: short(p.followers_count), ...(engagement !== null ? { engagement: `${engagement}%` } : {}) }).eq('id', 1);
+    await db.from('creator_settings').update({ followers: short(p.followers_count), ...(engagement !== null ? { engagement: `${engagement}%` } : {}) }).eq('id', creator);
 
     // 6. Go-live detection and disclosure check.
-    summary.detected = await detectPosts(db, rows);
+    summary.detected = await detectPosts(db, creator, rows);
 
     // 7. 7-day results reports.
-    summary.reports = await makeReports(db, opts.reportFor);
+    summary.reports = await makeReports(db, creator, opts.reportFor);
     return summary;
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);
-    await db.from('ig_account').update({ last_error: message.slice(0, 300), connected: !(e instanceof IgError && e.code === 190) }).eq('id', 1);
+    await db.from('ig_account').update({ last_error: message.slice(0, 300), connected: !(e instanceof IgError && e.code === 190) }).eq('id', creator);
     throw e;
   }
 }
@@ -284,14 +299,14 @@ export async function runSync(db: SupabaseClient, opts: SyncOptions = {}) {
  * A Story whose text tags a brand is linked like a post; on a collab's go-live day, a Story is
  * also linked to the one collab that day with a Story deliverable.
  */
-export async function runStorySync(db: SupabaseClient) {
-  const { data: tokenRow } = await db.from('ig_token').select('access_token').eq('id', 1).maybeSingle();
+export async function runStorySync(db: SupabaseClient, creator: number) {
+  const { data: tokenRow } = await db.from('ig_token').select('access_token').eq('id', creator).maybeSingle();
   if (!tokenRow) return { skipped: 'Instagram is not connected' };
   const token: string = tokenRow.access_token;
 
   const stories = await ig.stories(token);
   if (!stories.length) return { stories: 0 };
-  const { data: acct } = await db.from('ig_account').select('ig_user_id').eq('id', 1).single();
+  const { data: acct } = await db.from('ig_account').select('ig_user_id').eq('id', creator).maybeSingle();
 
   const rows: MediaRow[] = [];
   for (const m of stories) {
@@ -300,20 +315,21 @@ export async function runStorySync(db: SupabaseClient) {
       id: m.id, caption: m.caption ?? '', media_type: m.media_type, product_type: 'STORY', permalink: m.permalink,
       posted_at: m.timestamp, thumbnail_url: m.thumbnail_url || m.media_url || '', likes: null, comments: ins.replies ?? null,
       saves: null, shares: ins.shares ?? null, reach: ins.reach ?? null, views: ins.views ?? null,
-      interactions: ins.total_interactions ?? null, insights_at: new Date().toISOString(), owner_id: acct?.ig_user_id ?? undefined,
+      interactions: ins.total_interactions ?? null, insights_at: new Date().toISOString(), owner_id: acct?.ig_user_id ?? undefined, creator_id: creator,
     });
   }
   await db.from('ig_media').upsert(rows);
 
   // Tagged in the Story text: same handling as posts (links it, moves the collab to Live, tells her).
-  const detected = await detectPosts(db, rows);
+  const detected = await detectPosts(db, creator, rows);
 
   // Go-live day match: one collab, a Story deliverable, live today.
-  const { data: links } = await db.from('collab_posts').select('media_id');
+  const { data: links } = await db.from('collab_posts').select('media_id').eq('creator_id', creator);
   const taken = new Set((links ?? []).map((l) => l.media_id));
   const { data: collabs } = await db
     .from('collabs')
     .select('id, code, stage, live_date, brand:brands(name), deliverables(kind, qty, done, items:deliverable_items(status))')
+    .eq('creator_id', creator)
     .in('stage', ['confirmed', 'creating', 'live']);
   type C = { id: string; code: string; stage: string; live_date: string | null; brand: { name: string }; deliverables: PromisedContent[] };
   let linked = 0;
@@ -333,19 +349,20 @@ export async function runStorySync(db: SupabaseClient) {
   return { stories: rows.length, detected, linked };
 }
 
-async function notifyCreator(db: SupabaseClient, kind: string, payload: Record<string, unknown>, telegram: string) {
-  const { data: s } = await db.from('creator_settings').select('creator_email, telegram_chat_id').eq('id', 1).single();
+async function notifyCreator(db: SupabaseClient, creator: number, kind: string, payload: Record<string, unknown>, telegram: string) {
+  const { data: s } = await db.from('creator_settings').select('creator_email, telegram_chat_id').eq('id', creator).single();
   if (!s) return;
-  await db.from('outbox').insert({ kind, to_email: s.creator_email, payload });
+  await db.from('outbox').insert({ creator_id: creator, kind, to_email: s.creator_email, payload });
   if (telegramConfigured && s.telegram_chat_id) await sendTelegram(s.telegram_chat_id, telegram).catch(() => {});
 }
 
-async function detectPosts(db: SupabaseClient, media: MediaRow[]) {
-  const { data: links } = await db.from('collab_posts').select('media_id');
+async function detectPosts(db: SupabaseClient, creator: number, media: MediaRow[]) {
+  const { data: links } = await db.from('collab_posts').select('media_id').eq('creator_id', creator);
   const taken = new Set((links ?? []).map((l) => l.media_id));
   const { data: collabs } = await db
     .from('collabs')
     .select('id, code, stage, received_on, live_date, checklist, contact_name, brief_details, brand:brands(name, instagram), posts:collab_posts(media_id), deliverables(kind, qty, done, items:deliverable_items(status))')
+    .eq('creator_id', creator)
     .in('stage', ['confirmed', 'creating', 'live']);
   type C = { id: string; code: string; stage: string; received_on: string; live_date: string | null; checklist: Record<string, boolean>; brief_details: { hashtags?: string[]; mentions?: string[] } | null; brand: { name: string; instagram: string }; posts: { media_id: string }[]; deliverables: PromisedContent[] };
   const candidates = ((collabs ?? []) as unknown as C[]).filter((c) => c.brand?.instagram);
@@ -378,7 +395,7 @@ async function detectPosts(db: SupabaseClient, media: MediaRow[]) {
       await db.from('collabs').update({ checklist }).eq('id', c.id);
     }
     await notifyCreator(
-      db, 'post_detected',
+      db, creator, 'post_detected',
       { code: c.code, brand: c.brand.name, permalink: m.permalink, missing_ad: !hasAd, missing_items: missingItems },
       `📸 Your post for <b>${esc(c.brand.name)}</b> is live and moved to Live.${hasAd ? '' : '\n⚠️ The caption has no #ad or #collab in the first line. Add it to follow ASCI rules.'}${missingItems.length ? `\n⚠️ The brief asked for: ${esc(missingItems.join(' '))}` : ''}`,
     );
@@ -388,14 +405,15 @@ async function detectPosts(db: SupabaseClient, media: MediaRow[]) {
   return found;
 }
 
-async function makeReports(db: SupabaseClient, reportFor?: string) {
-  const { data: s } = await db.from('creator_settings').select('report_mode, display_name, handle').eq('id', 1).single();
+async function makeReports(db: SupabaseClient, creator: number, reportFor?: string) {
+  const { data: s } = await db.from('creator_settings').select('report_mode, display_name, handle').eq('id', creator).single();
   if (!s || (s.report_mode === 'off' && !reportFor)) return 0;
-  const { data: acct } = await db.from('ig_account').select('followers, username').eq('id', 1).single();
+  const { data: acct } = await db.from('ig_account').select('followers, username').eq('id', creator).maybeSingle();
 
   let q = db
     .from('collabs')
     .select('id, code, contact_name, brand:brands(name, instagram), deliverables(kind, qty), posts:collab_posts(media:ig_media(*)), reports:brand_reports(id)')
+    .eq('creator_id', creator)
     .in('stage', ['live', 'wrapped']);
   if (reportFor) q = q.eq('id', reportFor);
   const { data } = await q;
@@ -430,7 +448,7 @@ async function makeReports(db: SupabaseClient, reportFor?: string) {
     const status = s.report_mode === 'auto' && !reportFor ? 'sent' : 'ready';
     await db.from('brand_reports').insert({ collab_id: c.id, data, status });
     if (status === 'ready' && !reportFor) {
-      await notifyCreator(db, 'report_ready', { code: c.code, brand: c.brand.name, views: totals.views, reach: totals.reach },
+      await notifyCreator(db, creator, 'report_ready', { code: c.code, brand: c.brand.name, views: totals.views, reach: totals.reach },
         `📊 The results report for <b>${esc(c.brand.name)}</b> is ready. Check it and send it from the collab panel.`);
     }
     made++;

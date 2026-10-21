@@ -1,11 +1,13 @@
 // Receives "money credited" emails from her bank (sent here by the Gmail watcher script) and
-// marks the matching invoice as paid. Protected by the private inbox token from creator_settings.
+// marks the matching invoice as paid. Protected by the private inbox token from creator_settings; the
+// token says which creator's bank this is, and only that creator's invoices are matched.
 //
 // Matching, in order:
 //   1. The invoice number appears in the email (UPI note or transfer remarks).
 //   2. Exactly one open invoice is waiting for this exact amount (with or without TDS deducted).
 //   Otherwise the credit is saved as "unmatched" for her to assign in Payments.
 import { admin, esc, inr, todayIST } from '../_shared/admin.ts';
+import { creatorByToken } from '../_shared/creators.ts';
 import { sendTelegram, telegramConfigured } from '../_shared/telegram.ts';
 
 type OpenInvoice = {
@@ -27,9 +29,9 @@ export function parseAlert(text: string) {
 Deno.serve(async (req) => {
   if (req.method !== 'POST') return new Response('Method not allowed', { status: 405 });
   const db = admin();
-  const { data: s } = await db.from('creator_settings').select('inbox_token, creator_email, telegram_chat_id').eq('id', 1).single();
-  const token = req.headers.get('x-inbox-token') ?? '';
-  if (!s || !token || token !== s.inbox_token) return new Response('Forbidden', { status: 403 });
+  const s = await creatorByToken(db, 'inbox_token', req.headers.get('x-inbox-token') ?? '');
+  if (!s) return new Response('Unauthorized', { status: 401 });
+  const creator_id = s.id;
 
   const body = await req.json().catch(() => ({}));
   const subject = String(body.subject ?? '');
@@ -44,6 +46,7 @@ Deno.serve(async (req) => {
   const { data: open } = await db
     .from('invoices')
     .select('id, number, total, payable, amount_received, tds_amount, tds_deducted, bill_to')
+    .eq('creator_id', creator_id)
     .in('status', ['sent', 'partly_paid']);
   const invoices = (open ?? []) as OpenInvoice[];
   const textNorm = norm(flat);
@@ -64,6 +67,7 @@ Deno.serve(async (req) => {
 
   const excerpt = flat.slice(0, 400);
   const { error: insErr } = await db.from('bank_alerts').insert({
+    creator_id,
     received_at: body.date ? new Date(body.date).toISOString() : new Date().toISOString(),
     sender: String(body.from ?? '').slice(0, 200), amount, ref, excerpt, hash,
     status: match ? 'matched' : 'unmatched', invoice_id: match?.id ?? null,
@@ -79,12 +83,12 @@ Deno.serve(async (req) => {
       tds_deducted: withTds ? match.tds_amount : match.tds_deducted,
       payment_ref: ref,
       paid_on: todayIST(),
-    }).eq('id', match.id);
+    }).eq('id', match.id).eq('creator_id', creator_id);
   }
 
   const brand = match?.bill_to?.name ?? '';
   await db.from('outbox').insert({
-    kind: match ? 'bank_matched' : 'bank_unmatched', to_email: s.creator_email,
+    creator_id, kind: match ? 'bank_matched' : 'bank_unmatched', to_email: s.creator_email,
     payload: { amount, number: match?.number ?? '', brand, excerpt: excerpt.slice(0, 240) },
   });
   if (telegramConfigured && s.telegram_chat_id) {

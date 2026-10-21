@@ -21,6 +21,8 @@
 	$effect(() => {
 		if (!auth.session && page.url.pathname !== '/brand/new') goto(`/login?next=${encodeURIComponent(page.url.pathname + page.url.search)}`, { replaceState: true });
 		else if (auth.account?.role === 'creator' && !ui.holdRedirect) goto('/studio', { replaceState: true });
+		// Waiting to be approved as a creator: her request's status is on /join.
+		else if (auth.account?.role === 'pending' && !ui.holdRedirect) goto('/join', { replaceState: true });
 	});
 
 	onMount(() => {

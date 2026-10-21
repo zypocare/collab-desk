@@ -969,7 +969,7 @@ footer{position:relative;overflow:hidden;padding-block:70px 0;border-top:1px sol
     const v = clean(input.value);
     note.textContent = v ? `Opening sign-in to set up ${v}.miracleapp.live…` : 'Type the name you want first.';
     if (!v) { input.focus(); return; }
-    setTimeout(() => { location.href = 'https://collab-desk.zypocare.workers.dev/login'; }, 700);
+    setTimeout(() => { location.href = `https://${v}.miracleapp.live/join`; }, 700);
   });
 
   /* buttons lean toward the cursor; a soft light follows it */

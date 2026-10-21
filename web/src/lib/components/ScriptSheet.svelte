@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { scriptLanguage } from '../languages';
+	import { scriptLanguage, scriptLanguages } from '../languages';
 	import { untrack } from 'svelte';
 	import { askAi, collabFacts } from '../ai';
 	import { portal } from '../portal';
@@ -16,7 +16,6 @@
 	let { c, onclose }: { c: Collab; onclose: () => void } = $props();
 
 	const STYLES = ['Talking to camera', 'Aesthetic voiceover', 'Tutorial / how-to', 'Storytime', 'Before and after', 'Day in my life'];
-	const LANGS = ['English', 'Hinglish', 'Kannada + English', 'Hindi'];
 	const LENGTHS = ['15 seconds', '30 seconds', '45-60 seconds'];
 
 	const saved = untrack(() => c.script);
@@ -24,6 +23,11 @@
 	// The collab's content language decides the spoken language (Kannada → Kannada + English, Hindi + English → Hinglish).
 	let language = $state(saved?.language ?? untrack(() => scriptLanguage(c.content_language)));
 	let length = $state(saved?.length ?? LENGTHS[1]);
+	// Spoken languages from the ones she creates in (a saved script's language stays on the list).
+	const LANGS = $derived.by(() => {
+		const o = scriptLanguages(studio.settings?.content_languages);
+		return language && !o.includes(language) ? [...o, language] : o;
+	});
 	let s = $state<ReelScript | null>(saved ? structuredClone($state.snapshot(saved) as ReelScript) : null);
 	let hook = $state(saved?.hook ?? saved?.hooks?.[0] ?? '');
 	let busy = $state(false);

@@ -16,7 +16,11 @@
 	"ai": { "binding": "AI" },
 	// Niveditha's own address. Cloudflare makes the DNS record and the certificate on deploy; the old
 	// workers.dev address keeps working alongside it.
-	"routes": [{ "pattern": "nivy.miracleapp.live", "custom_domain": true }],
+	"routes": [
+		{ "pattern": "nivy.miracleapp.live", "custom_domain": true },
+		// Every other creator's address (needs a proxied "*" DNS record in Cloudflare).
+		{ "pattern": "*.miracleapp.live/*", "zone_name": "miracleapp.live" }
+	],
 	// With routes set, Cloudflare turns the workers.dev address off unless this says otherwise.
 	"workers_dev": true,
 	// Keep variables added in the Cloudflare dashboard (like GEMINI_API_KEY) when the app redeploys.

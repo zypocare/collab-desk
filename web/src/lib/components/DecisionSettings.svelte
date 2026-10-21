@@ -21,7 +21,7 @@
 	<div class="form-b">
 		<div class="f span2">
 			<label for="dc-home">Home area</label>
-			<input class="inp" id="dc-home" value={s.home_area} placeholder="e.g. HSR Layout, Bengaluru" onchange={(e) => saveSettings({ home_area: val(e), home_lat: null, home_lng: null })} />
+			<input class="inp" id="dc-home" value={s.home_area} placeholder={s.city?.trim() ? `e.g. your area, ${s.city.trim()}` : 'e.g. your area and city'} onchange={(e) => saveSettings({ home_area: val(e), home_lat: null, home_lng: null })} />
 			<p class="hint" style="margin-top:6px">Area and city is enough. Only used to work out travel time to store visits and events; brands never see it.</p>
 		</div>
 		<div class="f span2">

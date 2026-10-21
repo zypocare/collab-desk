@@ -16,7 +16,7 @@
 	import { rateValue } from '#lib/priority.ts';
 	import Avatar from '#lib/components/Avatar.svelte';
 	import AskQuestion from '#lib/components/AskQuestion.svelte';
-	import { supabase } from '#lib/supabase.ts';
+	import { pageSlug, supabase } from '#lib/supabase.ts';
 	import { reachOk, type PublicInsights } from '#lib/insights.ts';
 
 	const preview = $derived(page.url.searchParams.has('preview'));
@@ -24,6 +24,8 @@
 	// The creator works in the studio; this page is for brands (the creator can still preview it).
 	$effect(() => {
 		if (auth.account?.role === 'creator' && !preview) goto('/studio', { replaceState: true });
+		// Waiting to be approved: she sees where her request stands.
+		else if (auth.account?.role === 'pending') goto('/join', { replaceState: true });
 	});
 
 	// Shared insights (null when they're off): the 30-day reach goes in the stats, plus a link.
@@ -109,6 +111,14 @@
 <div class="page">
 	{#if pub.error}
 		<div class="wrap"><div class="err-box">This page couldn't load: {pub.error}</div></div>
+	{:else if pub.missing}
+		<!-- An address nobody has yet. -->
+		<div class="wrap">
+			<div class="err-box">
+				<b>{pageSlug ? `${pageSlug}.miracleapp.live` : 'This page'} isn't anyone's page yet.</b>
+				<p>Creators get their own link on Miracle. <a href={pageSlug ? '/join' : 'https://miracleapp.live/#claim'}>Claim this one</a></p>
+			</div>
+		</div>
 	{:else if p}
 		<div class="bx">
 			<!-- Hero: who, status, the main actions and the numbers brands look for first. -->

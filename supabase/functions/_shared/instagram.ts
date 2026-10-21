@@ -183,7 +183,7 @@ const mock = {
   configured: true,
   exchangeCode: async (_c: string, _r: string) => ({ token: 'mock-token', expiresIn: 5184000 }),
   refresh: async (_t: string) => ({ token: 'mock-token', expiresIn: 5184000 }),
-  profile: async (_t: string): Promise<Profile> => ({ user_id: '1784000000', username: 'nicks_universe_it_is', name: 'Niveditha', profile_picture_url: '', followers_count: 251340, follows_count: 812, media_count: 642 }),
+  profile: async (_t: string): Promise<Profile> => ({ user_id: '1784000000', username: 'demo.creator', name: 'Demo Creator', profile_picture_url: '', followers_count: 251340, follows_count: 812, media_count: 642 }),
   media: async (_t: string) => MOCK_MEDIA,
   insights: async (_t: string, id: string): Promise<Insights> => {
     const seed = id.charCodeAt(1) * 7919;
@@ -215,6 +215,17 @@ const mock = {
 
 export const ig = MOCK ? mock : real;
 
+/** The Instagram sign-in page; Instagram sends her back to redirectUri with a code and this state. */
+export function authorizeUrl(redirectUri: string, scope: string, state: string) {
+  const u = new URL('https://www.instagram.com/oauth/authorize');
+  u.searchParams.set('client_id', APP_ID);
+  u.searchParams.set('redirect_uri', redirectUri);
+  u.searchParams.set('response_type', 'code');
+  u.searchParams.set('scope', scope);
+  u.searchParams.set('state', state);
+  return u.toString();
+}
+
 /**
  * Ask Instagram to send this account's DMs to the app's webhook. Meta only delivers messages for
  * accounts subscribed like this, once they've allowed messages; it's safe to repeat.
@@ -229,9 +240,9 @@ export async function subscribeMessages(token: string) {
   return json as { success?: boolean };
 }
 
-/** Subscribe the connected account to DMs if it allowed messages (used after connecting and daily). */
-export async function ensureMessages(db: any) {
-  const { data: t } = await db.from('ig_token').select('access_token, permissions').eq('id', 1).maybeSingle();
+/** Subscribe a creator's connected account to DMs if it allowed messages (used after connecting and daily). */
+export async function ensureMessages(db: any, creator: number) {
+  const { data: t } = await db.from('ig_token').select('access_token, permissions').eq('id', creator).maybeSingle();
   if (!t?.access_token || !String(t.permissions ?? '').includes('instagram_business_manage_messages')) return { skipped: 'DMs not allowed yet' };
   return await subscribeMessages(t.access_token);
 }

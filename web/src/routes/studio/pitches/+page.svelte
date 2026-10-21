@@ -76,7 +76,7 @@
 		const first = (p.contact_name ?? '').split(' ')[0] || 'there';
 		return {
 			subject: `Content idea for ${p.brand_name || 'your brand'}`,
-			body: `Hi ${first},\n\nI'm ${s.display_name} (@${s.handle}), a ${s.niche || 'lifestyle'} creator from ${s.city || 'India'}. I love what ${p.brand_name || 'you'} ${p.brand_name ? 'is' : 'are'} doing and would really enjoy creating for you.\n\nOne idea: a Reel that shows how your product fits into a real day, the way my audience follows along every week.\n\nMy rates, audience and past results are all here: ${link}\n\nWould a quick chat this week work?\n\nThanks,\n${s.display_name}`
+			body: `Hi ${first},\n\nI'm ${s.display_name} (@${s.handle}), a ${s.niche || 'content'} creator from ${s.city || 'India'}. I love what ${p.brand_name || 'you'} ${p.brand_name ? 'is' : 'are'} doing and would really enjoy creating for you.\n\nOne idea: a Reel that shows how your product fits into a real day, the way my audience follows along every week.\n\nMy rates, audience and past results are all here: ${link}\n\nWould a quick chat this week work?\n\nThanks,\n${s.display_name}`
 		};
 	}
 	function newPitch() {

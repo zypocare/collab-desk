@@ -30,6 +30,8 @@ const json = (body: unknown, status = 200) => new Response(JSON.stringify(body),
 export default {
 	async fetch(req: Request, env: Env, ctx: { waitUntil: (p: Promise<unknown>) => void }): Promise<Response> {
 		const url = new URL(req.url);
+		// The Miracle website (on Vercel) isn't a creator's address: pass it straight through.
+		if (url.hostname === 'miracleapp.live' || url.hostname === 'www.miracleapp.live') return fetch(req);
 		if (url.pathname.startsWith('/q/')) return qrScan(req, env, url);
 		if (url.pathname === '/' && req.method === 'GET') return brandPage(req, env, url, ctx);
 		if (!url.pathname.startsWith('/api/ai/')) return env.ASSETS.fetch(req);
@@ -40,7 +42,7 @@ export default {
 			if (!['dm', 'reply', 'caption', 'pitch', 'classify', 'fit', 'summary', 'negotiate', 'script', 'nudge', 'ask', 'voice', 'embed', 'cheer', 'scout'].includes(kind)) return json({ error: 'Unknown.' }, 404);
 			const body = (await req.json()) as Record<string, unknown>;
 			const job = (x: Run) =>
-				kind === 'cheer' ? cheer(x, body) : kind === 'scout' ? scout(x, body) : kind === 'dm' ? readDm(x, body) : kind === 'reply' ? replies(x, body) : kind === 'pitch' ? pitch(x, body) : kind === 'classify' ? classify(x, body) : kind === 'fit' ? fit(x, body) : kind === 'summary' ? summary(x, body) : kind === 'negotiate' ? negotiate(x, body) : kind === 'script' ? script(x, body) : kind === 'nudge' ? nudge(x, body) : kind === 'ask' ? ask(x, body) : kind === 'voice' ? voice(x, body) : kind === 'embed' ? embed(x, body) : caption(x, body);
+				kind === 'cheer' ? cheer(x, body) : kind === 'scout' ? scout(x, body) : kind === 'dm' ? readDm(x, body) : kind === 'reply' ? replies(x, body) : kind === 'pitch' ? pitch(x, body) : kind === 'classify' ? classify(x, body) : kind === 'fit' ? fit(x, body) : kind === 'summary' ? summary(x, body) : kind === 'negotiate' ? creatorOf(req, env).then((me) => negotiate(x, body, me)) : kind === 'script' ? script(x, body) : kind === 'nudge' ? nudge(x, body) : kind === 'ask' ? creatorOf(req, env).then((me) => ask(x, body, me)) : kind === 'voice' ? voice(x, body) : kind === 'embed' ? embed(x, body) : creatorOf(req, env).then((me) => caption(x, body, me));
 
 			// Checking an incoming Instagram DM comes from the DM webhook with a single-use pass, and the
 			// hourly fun nudge from its job the same way. DMs stay on Cloudflare (never sent to Google);
@@ -216,6 +218,36 @@ function voiceOf(b: Record<string, unknown>) {
 		(formal ? ' This one is for a big brand or agency: keep her voice but make it polished and formal, no emojis.' : '')
 	);
 }
+/** Who the signed-in creator is, from her own settings (the database shows each person only the
+ *  creator they work for). Asked once per request; empty when there is no signed-in creator. */
+type Creator = { display_name?: string; handle?: string; niche?: string; city?: string; content_languages?: string[] };
+const creators = new WeakMap<Request, Promise<Creator>>();
+function creatorOf(req: Request, env: Env): Promise<Creator> {
+	let p = creators.get(req);
+	if (!p) {
+		p = (async () => {
+			const auth = req.headers.get('authorization') ?? '';
+			const apikey = req.headers.get('apikey') ?? '';
+			if (!auth.startsWith('Bearer ') || !apikey) return {};
+			const r = await fetch(`${env.SUPABASE_URL}/rest/v1/creator_settings?select=display_name,handle,niche,city,content_languages&limit=1`, { headers: { authorization: auth, apikey } }).catch(() => null);
+			const rows = r?.ok ? ((await r.json().catch(() => null)) as Creator[] | null) : null;
+			return rows?.[0] ?? {};
+		})();
+		creators.set(req, p);
+	}
+	return p;
+}
+/** What she makes content about, from her niche ("lifestyle, travel, fashion"), or ''. */
+const nicheOf = (v: unknown) => String(v ?? '').replace(/\s+/g, ' ').trim().toLowerCase().slice(0, 120);
+/** "lifestyle, travel, fashion; Bengaluru": her niche and city, or '' when neither is known. */
+const aboutOf = (niche: unknown, city: unknown) => [nicheOf(niche), String(city ?? '').trim().slice(0, 60)].filter(Boolean).join('; ');
+/** "English, Hinglish, Hindi or Kannada": the languages to expect, with the ones she creates in. */
+function tongues(langs: unknown) {
+	const own = (Array.isArray(langs) ? langs : []).map((l) => String(l ?? '').trim().slice(0, 20)).filter((l) => l && !['English', 'Hinglish', 'Hindi'].includes(l)).slice(0, 4);
+	return ['English', 'Hinglish', 'Hindi', ...own];
+}
+const orList = (a: string[]) => (a.length > 1 ? `${a.slice(0, -1).join(', ')} or ${a[a.length - 1]}` : (a[0] ?? ''));
+
 /** Emails and phone numbers stay out of what goes to Google (the app reads those itself). */
 const private_ = (t: string) => t.replace(/[\w.+-]+@[\w-]+\.[\w.]{2,}/g, '[email]').replace(/(?:\+?91[\s-]?)?[6-9]\d{4}[\s-]?\d{5}\b/g, '[phone]').replace(/\+?\d[\d\s-]{8,}\d/g, (m) => (m.replace(/\D/g, '').length >= 10 ? '[phone]' : m));
 
@@ -346,10 +378,11 @@ Return ONLY JSON: {"replies": ["...", "...", "..."]} with three different option
 }
 
 // ---------- 3. A caption (and shot list) from the brief ----------
-async function caption(x: Run, b: Record<string, unknown>) {
+async function caption(x: Run, b: Record<string, unknown>, me: Creator) {
+	const niche = nicheOf(me.niche);
 	const reply = await chat(
 		x,
-		`You write Instagram captions for an Indian lifestyle creator's brand collaborations. The caption must sound like her (first person, natural, not salesy), start with a hook line, include the brand's key message and required tags/hashtags from the brief, mention the promo code if given, and start with "#ad" or include "#ad" as Indian ASCI rules require. Keep it under 120 words. Also give a short shot list for the Reel.
+		`You write Instagram captions for an Indian Instagram creator's brand collaborations${niche ? ` (she makes ${niche} content)` : ''}. The caption must sound like her (first person, natural, not salesy), start with a hook line, include the brand's key message and required tags/hashtags from the brief, mention the promo code if given, and start with "#ad" or include "#ad" as Indian ASCI rules require. Keep it under 120 words. Also give a short shot list for the Reel.
 Return ONLY JSON: {"caption": "...", "hashtags": ["#..."], "shots": ["...", "..."]}`,
 		JSON.stringify(b).slice(0, 4000),
 		700
@@ -380,10 +413,12 @@ Return ONLY JSON: {"subject": "...", "body": "..."} (body is plain text with bla
 }
 
 // ---------- 5. Does an Instagram DM look like a brand collaboration? ----------
+// The DM webhook sends her niche, city and languages with the chat (it comes with a pass, not her sign-in).
 async function classify(x: Run, b: Record<string, unknown>) {
+	const about = aboutOf(b.niche, b.city);
 	const reply = await chat(
 		x,
-		`You screen Instagram DMs for an Indian lifestyle creator (yoga, travel, fashion, food; Bengaluru). You get the chat so far ("Them:" is the sender, "Her:" is the creator); judge what THEM wants. Messages may be in English, Hinglish, Hindi, Kannada or other Indian languages.
+		`You screen Instagram DMs for an Indian Instagram creator${about ? ` (${about})` : ''}. You get the chat so far ("Them:" is the sender, "Her:" is the creator); judge what THEM wants. Messages may be in ${tongues(b.languages).join(', ')} or other Indian languages.
 "likely": a business wants her to make content for them, in any form: paid Reel/Story/post/video, UGC, barter or gifted product for a review, a free stay/meal/evening/event invite in exchange for content, an event appearance, ambassador or affiliate deal, or asking her rates/charges/commercials/media kit for content. No brand name is needed: "would you do a paid Reel? budget 30k" and "aapka 1 reel ka rate kya hai" are likely.
 "maybe": business interest without an offer yet: "do you do collabs?", "who manages your collaborations?", "can I get your email for a business inquiry", "we're a new label, would love to connect", "we might have something for you".
 "no": fans and compliments (even about her past collabs or asking what brands pay her), friends and family, people asking HER to promote THEM or to buy/pay for anything, people selling her services (photography, editing, followers, verification), customers asking about her classes or sessions, giveaways, follow-for-follow, crypto/job/investment scams, phishing.
@@ -401,13 +436,13 @@ Return ONLY JSON: {"collab": "likely" | "maybe" | "no", "kind": "...", "brand": 
 // ---------- 5b. Negotiation: three replies when a brand pushes back on price ----------
 // The numbers (their offer, her ask, her walk-away point) are worked out in the app; the AI writes the
 // words and may only use those numbers. Any option below her walk-away point is dropped here.
-async function negotiate(x: Run, b: Record<string, unknown>) {
+async function negotiate(x: Run, b: Record<string, unknown>, me: Creator) {
 	const num = (v: unknown) => Math.max(0, Math.round(Number(v) || 0));
 	const offer = num(b.offer), ask = num(b.ask), floor = num(b.floor);
 	const thread = (Array.isArray(b.thread) ? b.thread : []).slice(-10) as { from: string; text: string }[];
 	const reply = await chat(
 		x,
-		`You are a seasoned talent manager negotiating brand deals for an Indian Instagram creator. Write replies in her voice (first person), warm and confident, never apologetic or desperate, 2 to 4 short sentences, no more than one emoji. Reply in the language the brand used (English, Hinglish, Hindi or Kannada), keeping amounts as ₹ figures.
+		`You are a seasoned talent manager negotiating brand deals for an Indian Instagram creator. Write replies in her voice (first person), warm and confident, never apologetic or desperate, 2 to 4 short sentences, no more than one emoji. Reply in the language the brand used (${orList(tongues(me.content_languages))}), keeping amounts as ₹ figures.
 Numbers you may use, and no others: their offer ₹${offer || 'not stated'}, her ask ₹${ask}, her walk-away point ₹${floor} (never go below it, and never mention it). Facts: ${JSON.stringify(b.facts ?? {})}. Her audience: ${JSON.stringify(b.stats ?? {})}. History with this brand: ${JSON.stringify(b.history ?? {})}.
 Good tactics: anchor on value (audience, engagement, what the deliverables include, usage rights), keep the door open, trade instead of discounting (fewer deliverables, a Story instead of a second Reel, shorter usage rights, no exclusivity, no paid-ads/whitelisting rights, 50% advance, a longer timeline, a long-term package), and ask a question that moves the deal forward.
 Give exactly three options:
@@ -465,7 +500,7 @@ async function scout(x: Run, b: Record<string, unknown>) {
 - are a brand or business in their own right: no marketplaces or stores that sell other brands (Myntra, Amazon, Flipkart, Nykaa, Ajio, Tata Cliq), and nothing unrelated to her content (no B2B, real estate, senior living, finance);
 - ideally publish a contact or collaborations email on their own website.
 Never include any brand in the exclude list, and no duplicates. ${search ? 'Only brands you found in search results with an official website you saw' : 'Only brands whose official website domain you are sure of'}; never invent a brand, a website or a handle. Vary the picks: mix well-known names with smaller, newer Indian labels and local businesses.
-For each give: "name", "website" (the official site, https://...), "instagram" (handle without @, or ""), "category" (one of: Beauty, Fashion, Food & drink, Travel, Fitness, Wellness, Tech, Home, Lifestyle, Other), "why" (one specific line, under 20 words, why they suit her, e.g. "Bengaluru café chain that hosted creator tastings for its new menu in 2026").
+For each give: "name", "website" (the official site, https://...), "instagram" (handle without @, or ""), "category" (one of: Beauty, Fashion, Food & drink, Travel, Fitness, Wellness, Tech, Home, Lifestyle, Other), "why" (one specific line, under 20 words, why they suit her, e.g. "${String((b.creator as Record<string, unknown> | undefined)?.city ?? '').trim().slice(0, 40) || 'Local'} café chain that hosted creator tastings for its new menu in 2026").
 Return ONLY a JSON array of objects, nothing else.`;
 	const user = `Creator: ${JSON.stringify(b.creator ?? {}).slice(0, 1200)}\nExclude (already known or pitched): ${skip.join(', ') || 'none'}`;
 	let reply = '';
@@ -491,25 +526,32 @@ Return ONLY a JSON array of objects, nothing else.`;
 }
 
 // ---------- 5b2. The hourly fun nudge: one funny, kind, useful phone notification ----------
-// The hourly job sends what kind it is (work, water, food, yoga, night), the one fact to build on, and
-// the recent lines already sent; the AI writes a new one. The job checks it isn't a near-copy.
+// The hourly job sends what kind it is (work, water, food, yoga, night), the one fact to build on, the
+// recent lines already sent and a little about her (city, niche, and her evening hobby for the "yoga"
+// slot); the AI writes a new one. The job checks it isn't a near-copy.
 const CHEER_GOAL: Record<string, string> = {
 	work: 'nudge her to act on the one work fact given (reply, edit, shoot, post, invoice, chase a payment, pitch), so she does it now',
 	water: 'get her to drink a glass of water right now',
 	food: 'get her to eat a proper meal or snack now (the meal named), not skip it for work',
-	yoga: 'get her onto the yoga mat now for her evening practice',
 	night: 'help her wind down and sleep on time; mention tomorrow only if a fact is given'
 };
+/** The evening slot: her own hobby (yoga, the gym, a walk), or a plain stretch break if she gave none. */
+const breakGoal = (hobby: string) =>
+	/yoga/i.test(hobby) ? 'get her onto the yoga mat now for her evening practice' : hobby ? `get her to stop work now for her evening ${hobby}` : 'get her away from the screen now for a short stretch or walk';
 async function cheer(x: Run, b: Record<string, unknown>) {
 	const kind = String(b.kind ?? 'work');
 	const recent = (Array.isArray(b.recent) ? b.recent : []).map((t) => String(t ?? '').slice(0, 200)).slice(0, 40);
+	const city = String(b.city ?? '').trim().slice(0, 40), niche = nicheOf(b.niche), hobby = String(b.hobby ?? '').trim().slice(0, 40);
+	const goal = kind === 'yoga' ? breakGoal(hobby) : (CHEER_GOAL[kind] ?? CHEER_GOAL.work);
+	// One of the wit samples is about the evening slot: her yoga, or a stretch for everyone else.
+	const sample = /yoga/i.test(hobby) ? '"Downward dog beats doom-scrolling 🧘‍♀️" / "Mat out. The DMs can wait an hour; your spine cannot."' : '"Your chair filed a complaint 🪑" / "Stand up and stretch. The DMs can wait five minutes; your back cannot."';
 	const reply = await chat(
 		x,
-		`You write ONE phone notification for ${String(b.name || 'her').slice(0, 30)}, an Indian Instagram creator in Bengaluru (lifestyle, travel, fashion, yoga, food) who runs her brand collabs in an app. It is ${String(b.when ?? '').slice(0, 40)}. Kind: ${kind}${b.meal ? ` (${String(b.meal)})` : ''}. Goal: ${CHEER_GOAL[kind] ?? CHEER_GOAL.work}.
-Make her smile: playful, witty and warm, like a funny best friend who also manages her career. Creator-life jokes are welcome (reels, hooks, the algorithm, edits, brand DMs, golden hour, chai, filter coffee, Bengaluru traffic and rain). Plain English, at most one light Hinglish word. Never mean, no body or weight talk, no diet advice, no guilt. No hashtags, no quotation marks.
+		`You write ONE phone notification for ${String(b.name || 'her').slice(0, 30)}, an Indian Instagram creator${city ? ` in ${city}` : ''}${niche ? ` (${niche})` : ''} who runs her brand collabs in an app. It is ${String(b.when ?? '').slice(0, 40)}. Kind: ${kind === 'yoga' ? hobby || 'stretch break' : kind}${b.meal ? ` (${String(b.meal)})` : ''}. Goal: ${goal}.
+Make her smile: playful, witty and warm, like a funny best friend who also manages her career. Creator-life jokes are welcome (reels, hooks, the algorithm, edits, brand DMs, golden hour, chai, filter coffee, ${city ? `${city} traffic and rain` : 'traffic and rain'}). Plain English, at most one light Hinglish word. Never mean, no body or weight talk, no diet advice, no guilt. No hashtags, no quotation marks.
 Use only the facts given; never invent brands, numbers, dates or plans.
 Shape: the title is a playful hook or twist (at most 42 characters, may end with one emoji); the body lands the punchline and says the one thing to do now (two short sentences, 70 to 135 characters).
-The level of wit to match (style only, never copy these): "Breakfast > brand DMs 🍳" / "No brand has ever paid extra for a hungry creator. Eat something real first, then go win the week." · "Downward dog beats doom-scrolling 🧘‍♀️" / "Mat out. The DMs can wait an hour; your spine cannot." · "Sorso is refreshing their inbox 👀" / "Put them out of their misery: a two-line reply keeps the deal, and your rate, warm."
+The level of wit to match (style only, never copy these): "Breakfast > brand DMs 🍳" / "No brand has ever paid extra for a hungry creator. Eat something real first, then go win the week." · ${sample} · "Sorso is refreshing their inbox 👀" / "Put them out of their misery: a two-line reply keeps the deal, and your rate, warm."
 Avoid tired puns (reel in, fuel up, stay hydrated, self-care) and generic lines like "check it out". It must be clearly different from every earlier notification listed (new joke, new angle, new words); don't reuse their openings.
 Return ONLY JSON: {"title": "...", "body": "..."}`,
 		`Fact: ${String(b.fact ?? 'none').slice(0, 300)}\nTry: ${Math.round(Number(b.attempt) || 0) + 1}\nEarlier notifications (do not echo):\n${recent.map((t) => `- ${t}`).join('\n') || '- none yet'}`,
@@ -530,7 +572,7 @@ Return ONLY JSON: {"title": "...", "body": "..."}`,
 const ASK_ACTIONS = ['open_collab', 'mark_paid', 'new_invoice', 'nudge', 'go', 'new_collab', 'remind', 'move_stage', 'shoot_day'];
 const ASK_STAGES = ['negotiating', 'confirmed', 'creating', 'live', 'wrapped', 'declined'];
 const ASK_PATHS = ['/studio', '/studio/collabs', '/studio/payments', '/studio/reports', '/studio/content', '/studio/calendar', '/studio/inbox', '/studio/settings', '/studio/pitches', '/studio/brands'];
-async function ask(x: Run, b: Record<string, unknown>) {
+async function ask(x: Run, b: Record<string, unknown>, me: Creator) {
 	const history = (Array.isArray(b.history) ? b.history : []).slice(-6) as { q: string; a: string }[];
 	const sources = (Array.isArray(b.sources) ? b.sources : []).slice(0, 8).map((s: Record<string, unknown>, i: number) => ({
 		n: i + 1,
@@ -542,7 +584,7 @@ async function ask(x: Run, b: Record<string, unknown>) {
 	}));
 	const reply = await chat(
 		x,
-		`You are the assistant inside an Indian Instagram creator's collab studio. Answer her question using ONLY the data below (her collabs, money and plans). Today is ${String(b.today ?? '')}. If the answer isn't in the data, say so plainly. Be brief: 1 to 4 sentences, or a short list of up to 6 lines. Amounts in rupees in Indian format (₹1,50,000), dates like "18 Oct". Reply in the language she asked in (English, Hinglish, Hindi or Kannada).
+		`You are the assistant inside an Indian Instagram creator's collab studio. Answer her question using ONLY the data below (her collabs, money and plans). Today is ${String(b.today ?? '')}. If the answer isn't in the data, say so plainly. Be brief: 1 to 4 sentences, or a short list of up to 6 lines. Amounts in rupees in Indian format (₹1,50,000), dates like "18 Oct". Reply in the language she asked in (${orList(tongues(me.content_languages))}).
 When useful, suggest up to 3 actions, each one of: open_collab {code}, mark_paid {code} (only for a collab with money still owed), new_invoice {code} (agreed or later, not invoiced yet), nudge {code} (brand gone quiet), go {path: one of ${ASK_PATHS.join(', ')}}, new_collab {text: the details she gave}, remind {codes: [codes]} (when she asks to remind or chase several brands: those with an unpaid invoice, an open quote or a draft waiting), move_stage {code, stage: one of ${ASK_STAGES.join(', ')}} (when she asks to move or mark a collab), shoot_day {code, date: YYYY-MM-DD} (when she asks to plan a shoot). Give each a short button label. She confirms every action in the app before anything happens.
 Data (stage: request=new, negotiating=in talks, confirmed=agreed, creating, live, wrapped=done; money in rupees): ${JSON.stringify(b.data ?? {}).slice(0, 12000)}
 ${sources.length ? `Messages, emails, briefs and notes that may answer the question (numbered). When you use one, cite it like [2]; quote the brand's own words when it helps:\n${sources.map((s) => `[${s.n}] ${s.kind} · ${s.brand}${s.code ? ` (${s.code})` : ''} · ${s.date}: ${s.text}`).join('\n')}\n` : ''}Return ONLY JSON: {"answer": "...", "cites": [numbers of the sources you used], "actions": [{"type": "...", "code": "", "codes": [], "stage": "", "date": "", "path": "", "text": "", "label": "..."}]}`,
@@ -552,7 +594,8 @@ ${sources.length ? `Messages, emails, briefs and notes that may answer the quest
 	const j = firstJson(reply) ?? {};
 	const answer = String(j.answer ?? '').trim();
 	if (!answer) throw new Error('No clear answer from the AI.');
-	const CODE = /^CD-[A-Z0-9]{4,8}$/;
+	// a collab code: the creator's 1–4 letter prefix, then the code (CD-AB12CD)
+	const CODE = /^[A-Z]{1,4}-[A-Z0-9]{4,8}$/;
 	const actions = (Array.isArray(j.actions) ? (j.actions as Record<string, unknown>[]) : [])
 		.map((a) => ({
 			type: String(a.type ?? ''),

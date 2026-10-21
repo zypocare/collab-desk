@@ -135,14 +135,16 @@ export async function ensurePageCard() {
 		if (!data) return;
 		const p = data as PublicPage;
 		const f = facts(p);
-		const sig = JSON.stringify([f, p.accepting, studio.ig?.username ?? '', !!studio.ig?.profile_picture_url, 2]);
+		const sig = JSON.stringify([f, p.accepting, studio.ig?.username ?? '', !!studio.ig?.profile_picture_url, 3]);
 		if (studio.settings.page_card_sig === sig) return;
 		const blob = await draw(p, studio.ig?.profile_picture_url);
 		if (!blob) return;
-		const up = await supabase.storage.from('cards').upload('page.jpg', blob, { upsert: true, contentType: 'image/jpeg', cacheControl: '31536000' });
+		// each creator's card lives under their own id
+		const id = studio.settings.id;
+		const up = await supabase.storage.from('cards').upload(`${id}/page.jpg`, blob, { upsert: true, contentType: 'image/jpeg', cacheControl: '31536000' });
 		if (up.error) return;
 		const v = Date.now();
-		const { error } = await supabase.from('creator_settings').update({ page_card_v: v, page_card_sig: sig }).eq('id', 1);
+		const { error } = await supabase.from('creator_settings').update({ page_card_v: v, page_card_sig: sig }).eq('id', id);
 		if (!error) Object.assign(studio.settings, { page_card_v: v, page_card_sig: sig });
 	} catch {
 		/* the old card stays; next visit tries again */

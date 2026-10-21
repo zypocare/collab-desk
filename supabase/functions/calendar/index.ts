@@ -1,7 +1,8 @@
 // Private calendar feed (.ics) with every draft, go-live, follow-up, product and payment date.
 // Subscribe once in Google Calendar or the iPhone Calendar; it refreshes by itself.
-// URL: /functions/v1/calendar?token=<creator_settings.calendar_token>
+// URL: /functions/v1/calendar?token=<creator_settings.calendar_token> (the token says whose dates to list)
 import { admin, inr } from '../_shared/admin.ts';
+import { creatorByToken } from '../_shared/creators.ts';
 
 type Row = {
   id: string; code: string; stage: string; type: string; fee: number; pay_received: number; pay_status: string;
@@ -19,14 +20,14 @@ const fold = (line: string) => line.match(/.{1,73}/g)!.join('\r\n ');
 Deno.serve(async (req) => {
   const token = new URL(req.url).searchParams.get('token') ?? '';
   const db = admin();
-  const { data: s } = await db.from('creator_settings').select('calendar_token, display_name, app_name, site_url').eq('id', 1).single();
-  if (!s || !token || token !== s.calendar_token) return new Response('Not found', { status: 404 });
+  const s = await creatorByToken(db, 'calendar_token', token);
+  if (!s) return new Response('Not found', { status: 404 });
 
   const data: Row[] = [];
   for (;;) {
     const { data: page, error } = await db.from('collabs')
       .select('id, code, stage, type, fee, pay_received, pay_status, product_date, shoot_date, draft_date, live_date, pay_due, follow_date, follow_note, resume_on, brand:brands(name), deliverables(kind, qty, items:deliverable_items(id, position, status, due_date, assigned_to))')
-      .not('stage', 'in', '(declined,cancelled)').order('id').range(data.length, data.length + 199);
+      .eq('creator_id', s.id).not('stage', 'in', '(declined,cancelled)').order('id').range(data.length, data.length + 199);
     if (error) return new Response('Calendar could not be refreshed. Please try again.', { status: 503 });
     if (!page?.length) break;
     data.push(...page as unknown as Row[]);

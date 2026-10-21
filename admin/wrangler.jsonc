@@ -1,0 +1,12 @@
+// The Miracle admin panel: static files only (the "dist" folder Vite builds), at admin.miracleapp.live.
+// Every address that isn't a file gets index.html, and the page handles it.
+{
+	"name": "miracle-admin",
+	"compatibility_date": "2026-10-01",
+	"assets": {
+		"directory": "./dist",
+		"not_found_handling": "single-page-application"
+	},
+	// Cloudflare makes the DNS record and the certificate on deploy.
+	"routes": [{ "pattern": "admin.miracleapp.live", "custom_domain": true }]
+}
