@@ -26,7 +26,7 @@ the longest.
 ## Step 1. Settings in the Meta app (once)
 
 **App settings → Basic**
-- App icon: `docs/meta-app-icon-1024.png` (1024 × 1024).
+- App icon: `docs/miracle-icon-1024.png` (1024 × 1024, the current logo).
 - Privacy policy URL: `https://miracleapp.live/privacy`
 - User data deletion: choose **Data deletion instructions URL** → `https://miracleapp.live/data-deletion`
 - Category: Business. App domains: `miracleapp.live`. Contact email: `contact@miracleapp.live`.
