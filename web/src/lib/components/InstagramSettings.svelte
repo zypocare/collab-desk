@@ -1,6 +1,10 @@
 <script lang="ts">
 	import { ask } from '../confirm.svelte';
-	import { igDisconnect, igSync, saveSettings, studio } from '../studio.svelte';
+	import { igDisconnect, igStart, igSync, loadInstagram, saveSettings, studio } from '../studio.svelte';
+	import { confetti, toast } from '../ui.svelte';
+	import { errMessage } from '../util';
+	import { goto } from '$app/navigation';
+	import { page } from '$app/state';
 	import { compact, fmtTime } from '../util';
 	import Icon from './Icon.svelte';
 	import Avatar from './Avatar.svelte';
@@ -15,29 +19,33 @@
 	const daysLeft = $derived(ig?.token_expires_at ? Math.round((Date.parse(ig.token_expires_at) - Date.now()) / 864e5) : null);
 
 	// Optional extras: DMs in the app and posting from the app (asked for only when she turns them on).
-	const EXTRA = 'instagram_business_manage_messages,instagram_business_content_publish';
 	let perms = $state('');
 	onMount(() => {
 		supabase.rpc('ig_permissions').then(({ data }) => (perms = String(data ?? '')));
 	});
 	const dmsOn = $derived(perms.includes('instagram_business_manage_messages'));
 	const postOn = $derived(perms.includes('instagram_business_content_publish'));
-	function connect(extra = false) {
-		const state = crypto.randomUUID();
+	// Instagram sends every creator back to one server address, which saves the connection and then
+	// returns her here with ?ig=connected (or to /studio/instagram with the error).
+	let starting = $state(false);
+	async function connect(extra = false) {
+		starting = true;
 		try {
-			sessionStorage.setItem('ig_state', state);
-		} catch {
-			/* private mode: the callback will still work, just without the extra check */
+			location.href = await igStart(extra || dmsOn || postOn);
+		} catch (e) {
+			toast(errMessage(e), 'alert');
+			starting = false;
 		}
-		const redirect = `${location.origin}/studio/instagram`;
-		const u = new URL('https://www.instagram.com/oauth/authorize');
-		u.searchParams.set('client_id', appId);
-		u.searchParams.set('redirect_uri', redirect);
-		u.searchParams.set('response_type', 'code');
-		u.searchParams.set('scope', `instagram_business_basic,instagram_business_manage_insights${extra || dmsOn || postOn ? ',' + EXTRA : ''}`);
-		u.searchParams.set('state', state);
-		location.href = u.toString();
 	}
+	onMount(() => {
+		if (page.url.searchParams.get('ig') !== 'connected') return;
+		loadInstagram();
+		confetti();
+		toast('Instagram connected');
+		const u = new URL(page.url.href);
+		u.searchParams.delete('ig');
+		goto(u.pathname + u.search, { replaceState: true });
+	});
 	async function sync() {
 		busy = true;
 		await igSync();
@@ -70,11 +78,11 @@
 				<b>DMs and posting from the app</b>
 				<small>{dmsOn || postOn ? `On: ${[dmsOn && 'Instagram DMs show in Messages', postOn && 'approved Reels can be scheduled to post'].filter(Boolean).join(', ')}.` : 'See Instagram DMs in Messages and reply there, and schedule approved Reels to post with the brand tagged. Instagram asks you to allow it once.'}</small>
 			</div>
-			{#if appId && !(dmsOn && postOn)}<button class="btn sm" onclick={() => connect(true)}><Icon name="send" />Allow DMs and posting</button>{/if}
+			{#if appId && !(dmsOn && postOn)}<button class="btn sm" disabled={starting} onclick={() => connect(true)}><Icon name="send" />Allow DMs and posting</button>{/if}
 		</div>
 		<div class="row-btns">
 			<button class="btn sm primary" disabled={busy} onclick={sync}>{#if busy}<span class="spinner"></span>{:else}<Icon name="refresh" />{/if}Sync now</button>
-			{#if appId}<button class="btn sm" onclick={() => connect()}>Reconnect</button>{/if}
+			{#if appId}<button class="btn sm" disabled={starting} onclick={() => connect()}>Reconnect</button>{/if}
 			<button class="btn sm ghost danger" onclick={async () => (await ask({ title: 'Disconnect Instagram?', body: 'Live stats, post matching and brand reports stop until you connect again.', ok: 'Disconnect', danger: true })) && igDisconnect()}>Disconnect</button>
 		</div>
 	{:else}
@@ -83,7 +91,7 @@
 				Connect your Instagram (a Creator or Business account) to show live follower numbers and audience on your brand page, spot collab posts automatically, and send brands their results.
 			</p>
 			{#if appId}
-				<button class="btn grad" onclick={() => connect()}><Icon name="link" />Connect Instagram</button>
+				<button class="btn grad" disabled={starting} onclick={() => connect()}><Icon name="link" />Connect Instagram</button>
 			{:else}
 				<p class="hint warn-text">The Instagram app isn't set up yet. Follow "Instagram" in the setup guide, then add VITE_INSTAGRAM_APP_ID to the website settings.</p>
 			{/if}

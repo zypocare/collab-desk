@@ -385,10 +385,20 @@ button,input{font:inherit;color:inherit}
 
 /* footer */
 footer{position:relative;overflow:hidden;padding-block:70px 0;border-top:1px solid var(--line);background:#09070A;color:var(--ink-3);font-size:14.5px}
-.foot{display:grid;grid-template-columns:1.4fr repeat(3,minmax(0,1fr));gap:30px}
-.foot b{display:block;margin-bottom:12px;color:var(--ink);font-weight:600}
-.foot a{display:block;padding:4px 0}
+.f-cta{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:24px;padding:30px 34px;margin-bottom:64px;border-radius:24px;background:radial-gradient(120% 140% at 0% 0%,rgba(156,123,255,.16),transparent 55%),radial-gradient(90% 120% at 100% 100%,rgba(242,90,144,.14),transparent 55%),var(--surface);box-shadow:inset 0 0 0 1px var(--line-2)}
+.f-cta-t{margin:12px 0 0;font-size:clamp(22px,2.6vw,30px);line-height:1.2;color:var(--ink);font-weight:600;letter-spacing:-.01em}
+.f-cta-t .serif{font-size:1.12em;font-weight:400}
+.f-mail{gap:10px;text-transform:none;letter-spacing:.01em;font-size:15px}
+.f-mail svg{width:18px;height:18px}
+.foot{display:grid;grid-template-columns:1.6fr repeat(4,minmax(0,1fr));gap:36px 30px}
+.foot nav b{display:block;margin-bottom:14px;color:var(--ink);font-weight:600;font-size:13px;letter-spacing:.16em;text-transform:uppercase}
+.foot nav a{display:block;padding:5px 0;transition:color .2s}
 .foot a:hover{color:var(--ink)}
+.f-brand p{margin:16px 0 0;max-width:32ch}
+.f-brand .f-tag{margin-top:10px;font-size:13.5px;color:var(--ink-3)}
+.f-bot{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px 24px;margin-top:56px;padding-top:24px;border-top:1px solid var(--line);font-size:13px}
+.f-links{display:flex;flex-wrap:wrap;gap:8px 22px}
+.f-links a:hover{color:var(--ink)}
 .giant{margin:40px 0 0;padding:0 .12em .14em;font:400 clamp(110px,22vw,340px)/1 var(--f-display);font-style:italic;letter-spacing:-.03em;text-align:center;color:transparent;-webkit-text-stroke:1px var(--line-2);background:var(--grad);-webkit-background-clip:text;background-clip:text;background-size:0% 100%;background-repeat:no-repeat;transition:background-size 1.4s var(--ease)}
 .giant:hover,.giant.in{background-size:100% 100%}
 
@@ -419,6 +429,9 @@ footer{position:relative;overflow:hidden;padding-block:70px 0;border-top:1px sol
   .ai .wrap{grid-template-columns:minmax(0,1fr)}
   .pillars{grid-template-columns:minmax(0,1fr)}
   .foot{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .f-brand{grid-column:1/-1}
+  .f-cta{padding:24px 22px}
+  .f-mail{width:100%}
 }
 @media (max-width:560px){
   .phone3d{zoom:.74}
@@ -744,13 +757,21 @@ footer{position:relative;overflow:hidden;padding-block:70px 0;border-top:1px sol
 
 <footer>
   <div class="wrap">
-    <div class="foot">
-      <div><a class="brand" href="#top" aria-label="Miracle, back to the top"><svg viewBox="0 0 512 512" aria-hidden="true" style="width:34px;height:34px"><g transform="translate(256 256) scale(1.04) translate(-256 -256)"><g transform="translate(256 256) scale(.79) skewX(-13) translate(-304.5 -266)" fill="none" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"><use href="#kd" transform="translate(-13 -10)" stroke="#F4EEF2"/><use href="#kd" transform="translate(13 10)" stroke="url(#kg)"/></g></g></svg><b style="font:400 28px/1 var(--f-display);font-style:italic;color:var(--ink)">Miracle</b></a><p style="margin:16px 0 0;max-width:30ch">The business side of being a creator, handled. Made in Bengaluru for creators in India.</p></div>
-      <div><b>Product</b><a href="#how">How it works</a><a href="#features">Features</a><a href="#ai">Desk AI</a></div>
-      <div><b>For brands</b><a href="#claim">Send a request</a><a href="#claim">Track a collab</a></div>
-      <div><b>Company</b><a href="#trust">No commission</a><a href="https://collab-desk.zypocare.workers.dev/privacy">Privacy</a><a href="https://collab-desk.zypocare.workers.dev/login">Sign in</a></div>
+    <div class="f-cta">
+      <div><span class="eb">Contact us</span><p class="f-cta-t">Questions, partnerships or press? <span class="serif gt">Write to us.</span></p></div>
+      <a class="neo light f-mail" href="mailto:contact@miracleapp.live"><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>contact@miracleapp.live</a>
     </div>
-    <p style="margin:56px 0 0;font-size:13px">© 2026 Miracle</p>
+    <div class="foot">
+      <div class="f-brand"><a class="brand" href="#top" aria-label="Miracle, back to the top"><svg viewBox="0 0 512 512" aria-hidden="true" style="width:34px;height:34px"><g transform="translate(256 256) scale(1.04) translate(-256 -256)"><g transform="translate(256 256) scale(.79) skewX(-13) translate(-304.5 -266)" fill="none" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"><use href="#kd" transform="translate(-13 -10)" stroke="#F4EEF2"/><use href="#kd" transform="translate(13 10)" stroke="url(#kg)"/></g></g></svg><b style="font:400 28px/1 var(--f-display);font-style:italic;color:var(--ink)">Miracle</b></a><p>The business side of being a creator, handled. Made in Bengaluru for creators in India.</p><p class="f-tag">No commission on any deal. Brands pay creators directly.</p></div>
+      <nav aria-label="Product"><b>Product</b><a href="#how">How it works</a><a href="#features">Features</a><a href="#ai">Desk AI</a><a href="#trust">No commission</a></nav>
+      <nav aria-label="For creators"><b>For creators</b><a href="#claim">Claim your link</a><a href="https://collab-desk.zypocare.workers.dev/login">Sign in</a></nav>
+      <nav aria-label="For brands"><b>For brands</b><a href="#claim">Send a request</a><a href="#claim">Track a collab</a></nav>
+      <nav aria-label="Company"><b>Company</b><a href="mailto:contact@miracleapp.live">Contact us</a><a href="/privacy">Privacy policy</a><a href="/data-deletion">Data deletion</a></nav>
+    </div>
+    <div class="f-bot">
+      <span>© 2026 Miracle. All rights reserved.</span>
+      <span class="f-links"><a href="/privacy">Privacy</a><a href="/data-deletion">Data deletion</a><a href="mailto:contact@miracleapp.live">contact@miracleapp.live</a></span>
+    </div>
   </div>
   <div class="giant" aria-hidden="true" data-r>Miracle</div>
 </footer>

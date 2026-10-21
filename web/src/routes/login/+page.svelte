@@ -26,6 +26,10 @@
 	let tsBox = $state<HTMLElement>();
 	let tsId = '';
 	let codeInput = $state<HTMLInputElement>();
+	// A password instead of an email code, only for accounts that were given one (Meta's app reviewers,
+	// who can't receive our codes). Reached with /login?pw=1; everyone else never sees it.
+	const withPw = page.url.searchParams.get('pw') === '1';
+	let password = $state('');
 
 	// Already signed in? Go straight to the right area.
 	let signingIn = false;
@@ -129,6 +133,29 @@
 		location.replace(targetFor(account));
 	}
 
+	async function signInPw(e?: SubmitEvent) {
+		e?.preventDefault();
+		error = '';
+		if (!email.trim() || !password) {
+			error = 'Enter the email and password you were given.';
+			return;
+		}
+		busy = true;
+		signingIn = true;
+		const { data, error: err } = await supabase.auth
+			.signInWithPassword({ email: email.trim(), password, options: captchaToken ? { captchaToken } : undefined })
+			.catch((x) => ({ data: { session: null }, error: x as Error }));
+		if (err || !data.session) {
+			busy = false;
+			signingIn = false;
+			error = 'That email and password don’t match.';
+			return;
+		}
+		auth.session = data.session;
+		const account = await Promise.race([refreshAccount().catch(() => null), new Promise<null>((r) => setTimeout(() => r(null), 8000))]);
+		location.replace(targetFor(account));
+	}
+
 	// Fingerprint / face sign-in (a passkey made earlier on this device), no email code.
 	const canPasskey = passkeysHere();
 	async function withPasskey() {
@@ -196,13 +223,17 @@
 				<span class="lg-eb">Sign in</span>
 				<h1>Your <em>email</em></h1>
 				<p class="lg-lead">We'll send you a 6-digit code. No password needed.</p>
-				<form onsubmit={sendCode} novalidate>
+				<form onsubmit={withPw ? signInPw : sendCode} novalidate>
 					<label class="lg-l" for="email">Email address</label>
 					<input class="lg-in" id="email" type="email" inputmode="email" autocomplete="email" placeholder="name@brand.com" bind:value={email} />
+					{#if withPw}
+						<label class="lg-l" for="password">Password</label>
+						<input class="lg-in" id="password" type="password" autocomplete="current-password" bind:value={password} />
+					{/if}
 					{#if turnstileSiteKey}<div class="ts-box" bind:this={tsBox}></div>{/if}
 					{#if error}<div class="lg-err" role="alert">{error}</div>{/if}
 					<button class="lg-neo lg-grad" type="submit" disabled={busy}>
-						{#if busy}<span class="spinner"></span>Sending code…{:else}<Icon name="send" />Send code{/if}
+						{#if withPw}{#if busy}<span class="spinner"></span>Signing in…{:else}Sign in{/if}{:else if busy}<span class="spinner"></span>Sending code…{:else}<Icon name="send" />Send code{/if}
 					</button>
 					{#if canPasskey}
 						<button class="lg-neo lg-ghost" type="button" disabled={busy} onclick={withPasskey}><Icon name="shield" />Use fingerprint or face</button>

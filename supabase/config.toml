@@ -499,6 +499,11 @@ sender_name = "Miracle"
 [functions.instagram-webhook]
 verify_jwt = false
 
+# Instagram sends creators back here after they allow access (a GET with no sign-in; a signed state
+# says which creator). The studio's own calls are checked in the function: only her team gets an id.
+[functions.instagram-auth]
+verify_jwt = false
+
 # Called by the database every 5 minutes (shared secret) and by the creator.
 [functions.instagram-publish]
 verify_jwt = false

@@ -838,6 +838,14 @@ export async function igSync(reportFor?: string) {
 	}
 }
 
+/** The Instagram sign-in address for this creator. Every creator comes back through the same server
+ * address (the one registered with Meta), and the signed state says whose account it is. */
+export async function igStart(extra: boolean): Promise<string> {
+	const r = (await invokeFn('instagram-auth', { action: 'start', extra })) as { url?: string };
+	if (!r?.url) throw new Error('Instagram sign-in could not start. Try again.');
+	return r.url;
+}
+
 export async function igConnect(code: string, redirectUri: string) {
 	await invokeFn('instagram-auth', { code, redirect_uri: redirectUri });
 	await Promise.all([loadInstagram(), reloadCollabs()]);
