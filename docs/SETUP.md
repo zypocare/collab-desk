@@ -72,7 +72,7 @@ that presses Reply reaches her. They show as "Her Name via Miracle".
    allow outside apps to send (SMTP); the mailbox needs a paid plan such as Mail Lite.
 2. In the domain's DNS (GoDaddy), add the records Zoho's admin console lists under **Domains →
    miracleapp.live → Email configuration**: the MX records, the SPF record
-   (`v=spf1 include:zohomail.in ~all`) and the DKIM record. Without SPF and DKIM, Gmail sends the
+   (`v=spf1 include:zoho.in ~all`) and the DKIM record. Without SPF and DKIM, Gmail sends the
    mail to spam or refuses it.
 
 | Setting | Value |
