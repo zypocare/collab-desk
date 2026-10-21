@@ -17,6 +17,8 @@
 	// Niveditha's own address. Cloudflare makes the DNS record and the certificate on deploy; the old
 	// workers.dev address keeps working alongside it.
 	"routes": [{ "pattern": "nivy.miracleapp.live", "custom_domain": true }],
+	// With routes set, Cloudflare turns the workers.dev address off unless this says otherwise.
+	"workers_dev": true,
 	// Keep variables added in the Cloudflare dashboard (like GEMINI_API_KEY) when the app redeploys.
 	"keep_vars": true,
 	// Public address of the database (the same one the website uses).
