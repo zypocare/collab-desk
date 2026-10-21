@@ -472,8 +472,9 @@ verify_jwt = false
 project_id = "qzsfuvcxpqaavmwkxutt"
 
 [remotes.production.auth]
-site_url = "https://collab-desk.zypocare.workers.dev"
-additional_redirect_urls = ["https://collab-desk.zypocare.workers.dev"]
+# Every creator's sign-in email links to the Miracle website; each creator's address may sign in.
+site_url = "https://miracleapp.live"
+additional_redirect_urls = ["https://*.miracleapp.live/**", "https://collab-desk.zypocare.workers.dev/**"]
 
 [remotes.production.auth.rate_limit]
 email_sent = 30
@@ -491,8 +492,8 @@ host = "env(SMTP_HOST)"
 port = 465
 user = "env(SMTP_USER)"
 pass = "env(SMTP_PASS)"
-admin_email = "env(SMTP_USER)"
-sender_name = "env(SMTP_SENDER_NAME)"
+admin_email = "no-reply@miracleapp.live"
+sender_name = "Miracle"
 
 # Meta calls this for new Instagram DMs (signed with the app secret, checked in the function).
 [functions.instagram-webhook]
