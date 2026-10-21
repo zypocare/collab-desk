@@ -109,7 +109,14 @@ Deno.serve(async (req) => {
         skipped++;
         continue;
       }
-      await sendMail({ to: row.to_email, cc: String(row.to_email).toLowerCase() === ownerEmail && row.kind !== 'new_device' ? teamCc : undefined, ...mail });
+      // Mail to anyone but her comes from "Her Name via Miracle", and their replies reach her inbox.
+      const toOwner = String(row.to_email).toLowerCase() === ownerEmail;
+      await sendMail({
+        to: row.to_email,
+        cc: toOwner && row.kind !== 'new_device' ? teamCc : undefined,
+        ...mail,
+        ...(toOwner || !ownerEmail ? {} : { replyTo: ownerEmail, fromName: `${settings.display_name} via ${settings.app_name || 'Miracle'}` }),
+      });
       await supabase.from('outbox').update({ status: 'sent', sent_at: new Date().toISOString(), last_error: null }).eq('id', row.id);
       sent++;
     } catch (e) {

@@ -61,33 +61,34 @@ where id = 1;
 
 Everything else (followers, rates, goal, app name) she can change later on the **My page** screen.
 
-## 3. Email: Gmail (or Zoho) for sign-in codes and notifications
+## 3. Email: no-reply@miracleapp.live (Zoho) for sign-in codes and notifications
 
-### Gmail
+Every email the app sends goes out from **no-reply@miracleapp.live**, a Zoho Mail mailbox on the
+domain. Nobody reads that inbox: emails to brands carry a Reply-To with her own email, so a brand
+that presses Reply reaches her. They show as "Her Name via Miracle".
 
-1. Turn on **2-Step Verification** for the Gmail account: <https://myaccount.google.com/security>.
-2. Create an **App password**: <https://myaccount.google.com/apppasswords> → name it "Collab Desk" → copy the 16 letters.
+1. In Zoho Mail, sign in as no-reply@miracleapp.live → **My Account → Security → App Passwords**
+   → generate one named "Miracle" (needed when two-factor sign-in is on). Zoho's free plan does not
+   allow outside apps to send (SMTP); the mailbox needs a paid plan such as Mail Lite.
+2. In the domain's DNS (GoDaddy), add the records Zoho's admin console lists under **Domains →
+   miracleapp.live → Email configuration**: the MX records, the SPF record
+   (`v=spf1 include:zohomail.in ~all`) and the DKIM record. Without SPF and DKIM, Gmail sends the
+   mail to spam or refuses it.
 
 | Setting | Value |
 |---|---|
-| Host | `smtp.gmail.com` |
-| Port | `465` |
-| User | the full Gmail address |
-| Password | the 16-letter app password |
-
-Gmail allows about 500 emails a day.
-
-### Zoho (optional)
-
-Same as above with host `smtp.zoho.in` (India accounts), port `465`, and a Zoho **app-specific password**.
-Zoho's free plan may refuse outside apps. If sign-in emails don't arrive, use Gmail.
+| Host | `smtppro.zoho.in` (Zoho accounts on your own domain, India data centre) |
+| Port | `465` (SSL) |
+| User | `no-reply@miracleapp.live` |
+| Password | the Zoho app password |
+| Sender | `Miracle <no-reply@miracleapp.live>` |
 
 ### a) Sign-in code emails (Supabase Auth)
 
 In Supabase:
 
 1. **Authentication → Emails → SMTP Settings** → enable custom SMTP, fill in the table above.
-   Sender name: her name. Sender email: the Gmail address.
+   Sender name: `Miracle`. Sender email: `no-reply@miracleapp.live`.
 2. **Authentication → Emails → Templates**:
    - **Magic link**: subject `Your sign-in code: {{ .Token }}`, body = paste the contents of `supabase/templates/otp.html`.
    - **Confirm signup**: same subject and body.
@@ -100,7 +101,7 @@ These are sent by the `process-outbox` server function. Give it the same email s
 random secret (any long random text, for example from <https://www.uuidgenerator.net>):
 
 ```bash
-npx supabase secrets set SMTP_HOST=smtp.gmail.com SMTP_PORT=465 SMTP_USER=her-email@gmail.com SMTP_PASS=the-app-password "SMTP_FROM=Her Name <her-email@gmail.com>" CRON_SECRET=PASTE-A-LONG-RANDOM-TEXT
+npx supabase secrets set SMTP_HOST=smtppro.zoho.in SMTP_PORT=465 SMTP_USER=no-reply@miracleapp.live SMTP_PASS=the-zoho-app-password "SMTP_FROM=Miracle <no-reply@miracleapp.live>" CRON_SECRET=PASTE-A-LONG-RANDOM-TEXT
 npx supabase functions deploy
 ```
 
