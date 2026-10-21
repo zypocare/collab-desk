@@ -191,7 +191,7 @@ password_requirements = ""
 enabled = true
 
 [auth.webauthn]
-rp_display_name = "Collab Desk"
+rp_display_name = "Miracle"
 rp_id = "localhost"
 rp_origins = ["http://localhost:5173", "http://localhost:8788"]
 
@@ -246,11 +246,11 @@ otp_expiry = 3600
 
 # Sign-in code emails. Both templates show the 6-digit code ({{ .Token }}) instead of a link.
 [auth.email.template.magic_link]
-subject = "{{ .Token }} is your Collab Desk sign-in code"
+subject = "{{ .Token }} is your Miracle sign-in code"
 content_path = "./supabase/templates/otp.html"
 
 [auth.email.template.confirmation]
-subject = "{{ .Token }} is your Collab Desk sign-in code"
+subject = "{{ .Token }} is your Miracle sign-in code"
 content_path = "./supabase/templates/otp.html"
 
 # Uncomment to customize notification email template
@@ -481,7 +481,7 @@ email_sent = 30
 # Passkeys belong to the address: after moving to a new domain, change these and people add their
 # fingerprint again (the email code keeps working meanwhile).
 [remotes.production.auth.webauthn]
-rp_display_name = "Collab Desk"
+rp_display_name = "Miracle"
 rp_id = "collab-desk.zypocare.workers.dev"
 rp_origins = ["https://collab-desk.zypocare.workers.dev"]
 
