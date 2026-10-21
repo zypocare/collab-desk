@@ -69,6 +69,7 @@ button,input{font:inherit;color:inherit}
 .signin{font-weight:600;font-size:14.5px;color:var(--ink-2)}
 .signin:hover{color:var(--ink)}
 @media (max-width:900px){.nav{display:none}.signin{margin-left:auto}.top .wrap{gap:16px;height:66px}.brand b{font-size:26px}.brand svg{width:30px;height:30px}.top .neo{height:40px;padding:0 14px;font-size:11px}}
+@media (max-width:560px){.top .wrap{gap:14px;padding-right:max(21px,env(safe-area-inset-right,0px))}.top .neo{padding:0 16px;letter-spacing:.12em;box-shadow:4px 4px 0 var(--g2)}.top .neo .long{display:none}.signin{font-size:14px}}
 
 /* hero */
 .hero{position:relative;overflow:hidden;padding-top:120px;padding-bottom:90px;isolation:isolate}
@@ -498,8 +499,8 @@ footer{position:relative;overflow:hidden;padding-block:70px 0;border-top:1px sol
       <a href="#ai">Desk AI</a>
       <a href="#trust">No commission</a>
     </nav>
-    <a class="signin" href="https://collab-desk.zypocare.workers.dev/login">Sign in</a>
-    <a class="neo light mag" href="#claim">Claim your link</a>
+    <a class="signin" href="/signin">Sign in</a>
+    <a class="neo light mag" href="#claim">Claim<span class="long"> your link</span></a>
   </div>
 </header>
 
@@ -773,8 +774,8 @@ footer{position:relative;overflow:hidden;padding-block:70px 0;border-top:1px sol
     <div class="foot">
       <div class="f-brand"><a class="brand" href="#top" aria-label="Miracle, back to the top"><svg viewBox="0 0 512 512" aria-hidden="true" style="width:34px;height:34px"><g transform="translate(256 256) scale(1.04) translate(-256 -256)"><g transform="translate(256 256) scale(.79) skewX(-13) translate(-304.5 -266)" fill="none" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"><use href="#kd" transform="translate(-13 -10)" stroke="#F4EEF2"/><use href="#kd" transform="translate(13 10)" stroke="url(#kg)"/></g></g></svg><b style="font:400 28px/1 var(--f-display);font-style:italic;color:var(--ink)">Miracle</b></a><p>The business side of being a creator, handled. Made in Bengaluru for creators in India.</p><p class="f-tag">No commission on any deal. Brands pay creators directly.</p></div>
       <nav aria-label="Product"><b>Product</b><a href="#how">How it works</a><a href="#features">Features</a><a href="#ai">Desk AI</a><a href="#trust">No commission</a></nav>
-      <nav aria-label="For creators"><b>For creators</b><a href="#claim">Claim your link</a><a href="https://collab-desk.zypocare.workers.dev/login">Sign in</a></nav>
-      <nav aria-label="For brands"><b>For brands</b><a href="#claim">Send a request</a><a href="#claim">Track a collab</a></nav>
+      <nav aria-label="For creators"><b>For creators</b><a href="#claim">Claim your link</a><a href="/signin">Sign in</a></nav>
+      <nav aria-label="For brands"><b>For brands</b><a href="#claim">Send a request</a><a href="/signin?as=brand">Track a collab</a><a href="/signin?as=brand">Brand sign in</a></nav>
       <nav aria-label="Company"><b>Company</b><a href="mailto:contact@miracleapp.live">Contact us</a><a href="/privacy">Privacy policy</a><a href="/data-deletion">Data deletion</a></nav>
     </div>
     <div class="f-bot">
