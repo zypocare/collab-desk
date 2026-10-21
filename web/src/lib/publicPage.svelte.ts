@@ -2,7 +2,8 @@ import { supabase } from './supabase';
 import type { PublicInsights } from './insights';
 import type { PublicPage } from './types';
 
-export const pub = $state<{ data: PublicPage | null; ins: PublicInsights | null; error: string }>({ data: null, ins: null, error: '' });
+// missing: nobody has this address (name.miracleapp.live) yet.
+export const pub = $state<{ data: PublicPage | null; ins: PublicInsights | null; error: string; missing: boolean }>({ data: null, ins: null, error: '', missing: false });
 
 function apply(page: unknown, extra: unknown, ins: unknown) {
 	const d = { ...(page as PublicPage), ...((extra as Partial<PublicPage> | null) ?? {}) };
@@ -35,6 +36,7 @@ export async function loadPublicPage() {
 	const [page, ins, extra] = await Promise.all([supabase.rpc('public_page'), supabase.rpc('public_insights'), supabase.rpc('page_extras')]);
 	if (page.error) {
 		if (!pub.data) pub.error = page.error.message;
-	} else apply(page.data, extra.data, ins.data);
+	} else if (!page.data) pub.missing = true;
+	else apply(page.data, extra.data, ins.data);
 	return pub.data;
 }

@@ -50,7 +50,7 @@
 		tgError = '';
 		try {
 			await tg('connect', { code });
-			const { data } = await supabase.from('creator_settings').select('telegram_chat_id').eq('id', 1).single();
+			const { data } = await supabase.from('creator_settings').select('telegram_chat_id').single();
 			if (studio.settings && data) studio.settings.telegram_chat_id = data.telegram_chat_id;
 			code = '';
 			toast('Telegram connected');

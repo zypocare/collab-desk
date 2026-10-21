@@ -30,6 +30,8 @@ const json = (body: unknown, status = 200) => new Response(JSON.stringify(body),
 export default {
 	async fetch(req: Request, env: Env, ctx: { waitUntil: (p: Promise<unknown>) => void }): Promise<Response> {
 		const url = new URL(req.url);
+		// The Miracle website (on Vercel) isn't a creator's address: pass it straight through.
+		if (url.hostname === 'miracleapp.live' || url.hostname === 'www.miracleapp.live') return fetch(req);
 		if (url.pathname.startsWith('/q/')) return qrScan(req, env, url);
 		if (url.pathname === '/' && req.method === 'GET') return brandPage(req, env, url, ctx);
 		if (!url.pathname.startsWith('/api/ai/')) return env.ASSETS.fetch(req);

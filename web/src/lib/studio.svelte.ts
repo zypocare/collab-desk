@@ -102,7 +102,8 @@ export async function loadStudio() {
 		const [collabs, brands, notes, settings] = await Promise.all([
 			fetchCollabs(), fetchBrands(),
 			collectRanges<BrandPrivate>((from, to) => supabase.from('brand_private').select('*').order('brand_id').range(from, to)),
-			supabase.from('creator_settings').select('*').eq('id', 1).single()
+			// the access rules show only the creator being worked for
+			supabase.from('creator_settings').select('*').single()
 		]);
 		if (settings.error) throw settings.error;
 		loadAlerts();
@@ -587,7 +588,9 @@ export async function createCollab(brandName: string, extra?: NewCollabExtra): P
 
 export async function saveSettings(patch: Partial<Settings>) {
 	if (studio.settings) Object.assign(studio.settings, patch);
-	const { error } = await supabase.from('creator_settings').update({ ...patch, updated_at: new Date().toISOString() }).eq('id', 1);
+	const id = studio.settings?.id;
+	if (!id) return;
+	const { error } = await supabase.from('creator_settings').update({ ...patch, updated_at: new Date().toISOString() }).eq('id', id);
 	if (error) toast(`Couldn't save: ${errMessage(error)}`, 'alert');
 }
 
@@ -793,7 +796,7 @@ export async function ignoreAlert(a: BankAlert) {
 // ---- Instagram ----
 export async function loadInstagram() {
 	const [acct, media, hist] = await Promise.all([
-		supabase.from('ig_account').select('*').eq('id', 1).single(),
+		supabase.from('ig_account').select('*').single(),
 		supabase.from('ig_media').select('*').order('posted_at', { ascending: false }).limit(40),
 		supabase.from('ig_followers_history').select('*').order('day', { ascending: false }).limit(60)
 	]);

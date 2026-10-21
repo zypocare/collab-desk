@@ -8,8 +8,8 @@ create temp table results (check_name text, ok boolean, detail text) on commit d
 grant all on results to authenticated, anon;
 
 -- creator B, with its own owner login
-insert into public.creator_settings (creator_email, handle, display_name, code_prefix, invoice_prefix)
-values ('creator-b@test.dev', 'creatorb', 'Creator B', 'BB', 'BINV');
+insert into public.creator_settings (creator_email, handle, slug, display_name, code_prefix, invoice_prefix)
+values ('creator-b@test.dev', 'creatorb', 'creatorb', 'Creator B', 'BB', 'BINV');
 select id as b_id from public.creator_settings where handle = 'creatorb' \gset
 select id as a_id, lower(creator_email) as a_email from public.creator_settings where id = 1 \gset
 
