@@ -9,6 +9,7 @@
 	import { TYPE_LABEL, delivText, firstName, fmt, fmtLong, inr, usageLabel } from '#lib/util.ts';
 	import CampaignTimeline from '#lib/components/CampaignTimeline.svelte';
 	import BrandTopbar from '#lib/components/BrandTopbar.svelte';
+	import BrandFooter from '#lib/components/BrandFooter.svelte';
 	import Icon from '#lib/components/Icon.svelte';
 
 	// A brand's private tracking link for a collab she added herself: no sign-in to see where it stands.
@@ -102,3 +103,4 @@
 		</div>
 	{/if}
 </div></div>
+<BrandFooter />

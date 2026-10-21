@@ -15,6 +15,7 @@
 	import Icon from './Icon.svelte';
 	import Select from './Select.svelte';
 	import Avatar from './Avatar.svelte';
+	import Logo from './Logo.svelte';
 
 	const name = $derived(pub.data?.display_name ?? '');
 	const signedIn = $derived(!!auth.session && auth.account?.role === 'brand');
@@ -81,7 +82,7 @@
 			<div class="m-title">{title}</div>
 			<div class="m-r"></div>
 		{:else}
-			<a class="b-who" href="/"><Avatar {name} src={pub.data?.instagram?.profile_picture_url} size="34px" /><span><b>{title}</b>{#if sub}<small>{sub}</small>{/if}</span></a>
+			<a class="b-who bt-who" href="/"><span class="bt-logo"><Logo size={30} /></span><span><b>{title}</b>{#if sub}<small>{sub}</small>{/if}</span></a>
 			<div class="m-r">
 				{#if signedIn && path === '/brand' && pub.data?.accepting !== false}<a class="m-ib" href="/brand/new" aria-label="New request"><Icon name="plus" /></a>{/if}
 				{#if !signedIn}<button class="m-ib" onclick={toggleTheme} aria-label="Switch light or dark mode"><Icon name={theme.value === 'dark' ? 'sun' : 'moon'} /></button>{/if}
@@ -95,10 +96,14 @@
 	</header>
 {:else}
 
-<header class="topbar">
-	<a class="brandmark" href="/" aria-label="Miracle home"><Avatar {name} src={pub.data?.instagram?.profile_picture_url} /><b>{name ? `Collaborate with ${name.split(' ')[0]}` : ''}</b></a>
+<!-- Laptops: Miracle on the left (like her page), then whose page this is. -->
+<header class="topbar bt-top">
+	<a class="bt-mark" href="/" aria-label="Miracle, back to {first}'s page"><Logo size={32} /><b>Miracle</b></a>
+	{#if name}
+		<a class="bt-for" href="/" title="{name}'s page"><Avatar {name} src={pub.data?.instagram?.profile_picture_url} size="26px" /><span>with <b>{first}</b></span></a>
+	{/if}
 	{#if signedIn}
-		<nav aria-label="Brand">
+		<nav class="bt-nav" aria-label="Brand">
 			<a href="/brand" aria-current={path === '/brand' || path.startsWith('/brand/r/') ? 'page' : undefined}>My requests</a>
 			<a href="/brand/new" aria-current={path === '/brand/new' ? 'page' : undefined}>New request</a>
 			<a href="/brand/details" aria-current={path === '/brand/details' ? 'page' : undefined}>Company</a>
@@ -118,11 +123,11 @@
 		{:else}
 			<span class="who-chip"><span>{auth.account?.email}</span></span>
 		{/if}
-		<button class="btn sm signout" onclick={logout} aria-label="Sign out"><Icon name="logout" /><span>Sign out</span></button>
+		<button class="bt-btn bt-ghost signout" onclick={logout} aria-label="Sign out"><Icon name="logout" /><span>Sign out</span></button>
 	{:else if auth.account?.role === 'creator'}
-		<a class="btn sm" href="/studio"><Icon name="back" />Back to studio</a>
+		<a class="bt-btn bt-ghost" href="/studio"><Icon name="back" />Back to studio</a>
 	{:else}
-		<a class="btn sm" href="/login">Sign in</a>
+		<a class="bt-btn bt-grad" href="/login">Sign in</a>
 	{/if}
 </header>
 {/if}
@@ -136,3 +141,162 @@
 		<a href="/brand/details" aria-current={path.startsWith('/brand/details') ? 'page' : undefined}><span class="bt-ic"><Icon name="users" /></span><span>Company</span></a>
 	</nav>
 {/if}
+
+<style>
+	/* Miracle's bar, in the look of her page's header: the serif italic name, quiet links, NeoPOP buttons. */
+	.bt-top {
+		gap: 18px;
+		min-height: 68px;
+		background: color-mix(in oklab, var(--bg) 92%, transparent);
+		backdrop-filter: blur(14px);
+		-webkit-backdrop-filter: blur(14px);
+	}
+	.bt-mark {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		flex: none;
+		color: var(--ink);
+		text-decoration: none;
+	}
+	.bt-mark b {
+		font: 400 27px/1 var(--f-serif);
+		font-style: italic;
+		letter-spacing: -0.01em;
+	}
+	.bt-for {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		min-width: 0;
+		margin-right: auto;
+		padding: 4px 12px 4px 4px;
+		border-radius: 999px;
+		box-shadow: inset 0 0 0 1px var(--line);
+		color: var(--ink-3);
+		font-size: 13.5px;
+		text-decoration: none;
+		white-space: nowrap;
+		transition:
+			box-shadow 0.2s,
+			color 0.2s;
+	}
+	.bt-for b {
+		color: var(--ink);
+		font-weight: 600;
+	}
+	.bt-for:hover {
+		color: var(--ink-2);
+		box-shadow: inset 0 0 0 1px var(--ink-3);
+	}
+	.bt-top:not(:has(.bt-for)) .bt-mark {
+		margin-right: auto;
+	}
+	.topbar .bt-nav {
+		gap: 26px;
+		margin-right: 8px;
+	}
+	.topbar .bt-nav a {
+		position: relative;
+		padding: 8px 0;
+		border-radius: 0;
+		background: none;
+		box-shadow: none;
+		font-size: 14.5px;
+		font-weight: 500;
+		color: var(--ink-3);
+	}
+	.topbar .bt-nav a:hover {
+		background: none;
+		color: var(--ink);
+	}
+	.topbar .bt-nav a[aria-current='page'] {
+		background: none;
+		box-shadow: none;
+		color: var(--ink);
+	}
+	.topbar .bt-nav a[aria-current='page']::after {
+		content: '';
+		position: absolute;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		height: 2px;
+		background: var(--grad);
+	}
+	.bt-btn {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 8px;
+		flex: none;
+		height: 40px;
+		padding: 0 16px;
+		border: 0;
+		border-radius: 0;
+		cursor: pointer;
+		font: 700 11.5px/1 var(--f-body);
+		letter-spacing: 0.14em;
+		text-transform: uppercase;
+		text-decoration: none;
+		transition:
+			transform 0.12s,
+			box-shadow 0.12s;
+	}
+	.bt-btn :global(.ic) {
+		width: 15px;
+		height: 15px;
+	}
+	.bt-grad {
+		background: var(--grad);
+		color: #fff;
+		box-shadow: 4px 4px 0 #6a4bc9;
+	}
+	.bt-ghost {
+		background: transparent;
+		color: var(--ink);
+		box-shadow:
+			inset 0 0 0 1.5px var(--ink-3),
+			4px 4px 0 var(--line);
+	}
+	.bt-btn:hover {
+		transform: translate(-2px, -2px);
+	}
+	.bt-btn:active {
+		transform: translate(4px, 4px);
+		box-shadow: none;
+	}
+	@media (max-width: 1100px) {
+		.bt-for span {
+			display: none;
+		}
+		.bt-for {
+			padding: 4px;
+		}
+	}
+	@media (max-width: 560px) {
+		.bt-top .signout {
+			width: 40px;
+			padding: 0;
+		}
+	}
+	/* Phones: Miracle's mark where her photo was. */
+	.bt-logo {
+		display: grid;
+		place-items: center;
+		flex: none;
+		width: 38px;
+		height: 38px;
+		border-radius: 12px;
+		background: color-mix(in oklab, var(--ink) 6%, transparent);
+		box-shadow: inset 0 0 0 1px var(--line);
+		color: var(--ink);
+	}
+	.bt-who b {
+		font-family: var(--f-serif);
+		font-style: italic;
+		font-weight: 400;
+		font-size: 22px;
+		letter-spacing: -0.01em;
+	}
+</style>

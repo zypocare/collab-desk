@@ -19,6 +19,7 @@
 	import { copyText } from '#lib/ui.svelte.ts';
 	import { downloadMediaKit } from '#lib/mediaKitPdf.ts';
 	import BrandTopbar from '#lib/components/BrandTopbar.svelte';
+	import BrandFooter from '#lib/components/BrandFooter.svelte';
 	import Audience from '#lib/components/Audience.svelte';
 	import Avatar from '#lib/components/Avatar.svelte';
 	import Icon from '#lib/components/Icon.svelte';
@@ -239,3 +240,4 @@
 		</section>
 	{/if}
 </div></div>
+<BrandFooter />

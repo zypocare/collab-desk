@@ -8,6 +8,7 @@
 	import { loadRequests } from '#lib/brand.svelte.ts';
 	import { loadPublicPage, pub } from '#lib/publicPage.svelte.ts';
 	import BrandTopbar from '#lib/components/BrandTopbar.svelte';
+	import BrandFooter from '#lib/components/BrandFooter.svelte';
 
 	let { children }: LayoutProps = $props();
 	// Anyone can start a request (they confirm their email when sending); everything else needs sign-in.
@@ -34,4 +35,5 @@
 {#if allowed}
 	<BrandTopbar />
 	<div class="page"><div class="wrap">{@render children()}</div></div>
+	<BrandFooter />
 {/if}
