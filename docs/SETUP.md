@@ -105,6 +105,13 @@ npx supabase secrets set SMTP_HOST=smtp.zoho.in SMTP_PORT=465 SMTP_USER=no-reply
 npx supabase functions deploy
 ```
 
+**Backup sender (optional).** Add a second account with the same names plus a `2`
+(`SMTP2_HOST`, `SMTP2_PORT`, `SMTP2_USER`, `SMTP2_PASS`, `SMTP2_FROM`). When the main account fails or hits
+its daily limit, the email goes through the backup instead, and the function log notes it. A good pair:
+a sending service (Brevo, Resend or Zoho ZeptoMail) as the main account and the Zoho mailbox as the backup,
+both sending from `no-reply@miracleapp.live`. Sign-in code emails come from Supabase's own SMTP setting
+(step a) and have no backup.
+
 This deploys all server functions:
 
 | Function | What it does |
