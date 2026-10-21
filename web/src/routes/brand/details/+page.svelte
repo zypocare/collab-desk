@@ -28,7 +28,7 @@
 
 <svelte:head><title>Company details</title></svelte:head>
 
-<a class="back" href="/brand"><Icon name="back" />My requests</a>
+<a class="back" href="/brand/requests"><Icon name="back" />My requests</a>
 <header class="ph rv">
 	<div>
 		<div class="eb">Your account</div>
@@ -42,7 +42,7 @@
 	</div>
 </header>
 {#key isNew}
-	<section class="panel rv" style="--i:1;padding:22px"><BrandDetailsForm {isNew} submitLabel={isNew ? 'Add brand' : 'Save details'} onsaved={() => (loadRequests(), goto('/brand'))} /></section>
+	<section class="panel rv" style="--i:1;padding:22px"><BrandDetailsForm {isNew} submitLabel={isNew ? 'Add brand' : 'Save details'} onsaved={() => (loadRequests(), goto('/brand/requests'))} /></section>
 {/key}
 {#if !isNew}<p class="hint" style="margin:12px 4px 0">Managing more than one brand? <a class="lnk" href="/brand/details?new=1">Add another brand</a></p>{/if}
 {#if !isNew && auth.account?.role === 'brand' && auth.account.brand}

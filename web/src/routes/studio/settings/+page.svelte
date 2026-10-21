@@ -148,9 +148,13 @@
 		saveSettings({ offered_kinds: next });
 		toast(on ? `${k} is back on your page` : `${k} hidden from brands`, on ? 'eye' : 'x');
 	}
-	function toggle(k: 'accepting' | 'show_rates', on: boolean) {
+	function toggle(k: 'accepting' | 'show_rates' | 'listed', on: boolean) {
 		saveSettings({ [k]: on });
-		toast(k === 'accepting' ? (on ? 'Your page is open for requests' : 'New requests are paused') : on ? 'Rates shown on your page' : 'Rates hidden from your page');
+		toast(
+			k === 'accepting' ? (on ? 'Your page is open for requests' : 'New requests are paused')
+			: k === 'listed' ? (on ? 'Brands on Miracle can now find you in Discover' : 'You are no longer listed in Discover')
+			: on ? 'Rates shown on your page' : 'Rates hidden from your page'
+		);
 	}
 
 	// Settings are split into a few sections and only the one she picks is shown.
@@ -441,6 +445,10 @@
 							<div class="switch-row" style="border-top:0">
 								<div><b>Accepting collaborations</b><small>Turn off when you're fully booked. Brands can still follow requests they've sent.</small></div>
 								<input type="checkbox" class="tgl" checked={s.accepting} aria-label="Accepting collaborations" onchange={(e) => toggle('accepting', (e.currentTarget as HTMLInputElement).checked)} />
+							</div>
+							<div class="switch-row">
+								<div><b>List me in Discover</b><small>Brands signed in to Miracle can find you by name, niche or city and send a request. They see what your page shows: your name, niche, city and Instagram numbers.</small></div>
+								<input type="checkbox" class="tgl" checked={!!s.listed} aria-label="List me in Discover" onchange={(e) => toggle('listed', (e.currentTarget as HTMLInputElement).checked)} />
 							</div>
 						</section>
 						<AwayMode />

@@ -43,9 +43,9 @@ reset role;
 
 
 -- B tries A's rows through the database functions (these skip the access rules, so they must check)
-select id as a_invoice from public.invoices where creator_id = 1 order by created_at desc limit 1 \gset
-select id as a_quote from public.quotes where creator_id = 1 order by created_at desc limit 1 \gset
-select id as a_brand from public.brands where creator_id = 1 limit 1 \gset
+select coalesce((select id::text from public.invoices where creator_id = 1 order by created_at desc limit 1), '00000000-0000-0000-0000-000000000000') as a_invoice \gset
+select coalesce((select id::text from public.quotes where creator_id = 1 order by created_at desc limit 1), '00000000-0000-0000-0000-000000000000') as a_quote \gset
+select brand_id as a_brand from public.collabs where creator_id = 1 order by created_at limit 1 \gset
 select set_config('request.jwt.claims', json_build_object('email', 'creator-b@test.dev', 'sub', gen_random_uuid(), 'role', 'authenticated')::text, true);
 set local role authenticated;
 insert into results select 'B gets nothing from A''s agreement', public.get_agreement(:'a_quote') is null, null;
@@ -56,6 +56,44 @@ do $$ declare r jsonb; begin r := to_jsonb(public.send_reminders(array[(select i
 insert into results select 'B''s studio account names B', (public.studio_account() ->> 'creator_id')::int = :b_id, public.studio_account()::text;
 reset role;
 select count(*) as a_outbox_before from public.outbox where creator_id = 1 \gset
+
+-- One brand login that works with both creators. Which company it acts as follows the page it's on.
+select slug as a_slug from public.creator_settings where id = 1 \gset
+select id as b_brand from public.brands where name = 'Brand Of B' \gset
+select code as b_code from public.collabs where brief = 'Collab of B' \gset
+select id as a_collab, code as a_code from public.collabs where creator_id = 1 and brand_id = :'a_brand' limit 1 \gset
+select gen_random_uuid() as brand_uid \gset
+insert into auth.users (id, email, aud, role) values (:'brand_uid', 'shopper@test.dev', 'authenticated', 'authenticated');
+insert into public.profiles (id, email) values (:'brand_uid', 'shopper@test.dev') on conflict do nothing;
+insert into public.brand_members (profile_id, brand_id) values (:'brand_uid', :'a_brand'), (:'brand_uid', :'b_brand') on conflict do nothing;
+update public.profiles set brand_id = :'a_brand' where id = :'brand_uid';
+update public.creator_settings set listed = true where id = :b_id;
+
+select set_config('request.jwt.claims', json_build_object('email', 'shopper@test.dev', 'sub', :'brand_uid', 'role', 'authenticated')::text, true);
+-- on B's page
+select set_config('request.headers', json_build_object('x-creator', 'creatorb')::text, true);
+set local role authenticated;
+insert into results select 'Brand on B''s page acts as its B company', (public.my_account() -> 'brand' ->> 'id')::uuid = :'b_brand', (public.my_account() -> 'brand' ->> 'id')::uuid::text;
+insert into results select 'Brand on B''s page sees only B''s requests', (select coalesce(bool_and(x ->> 'code' like 'BB%'), true) and count(*) >= 1 from jsonb_array_elements(public.my_requests()) x), public.my_requests()::text;
+insert into results select 'Brand on B''s page can''t read A''s collab messages', not public.is_my_collab(:'a_collab'), null;
+insert into results select 'Brand account lists both creators', jsonb_array_length(public.my_account() -> 'creators') = 2, (public.my_account() -> 'creators')::text;
+insert into results select 'Brand account offers only B''s companies here', (select bool_and((x ->> 'id')::uuid = :'b_brand') from jsonb_array_elements(public.my_account() -> 'brands') x), null;
+insert into results select 'Brand can''t switch to A''s company on B''s page', false, null;
+do $$ begin perform public.switch_brand((select id from public.brands where creator_id = 1 and id in (select brand_id from public.brand_members where profile_id = auth.uid()) limit 1)); exception when others then update results set ok = true, detail = sqlerrm where check_name = 'Brand can''t switch to A''s company on B''s page'; end $$;
+insert into results select 'A request link says which creator it belongs to', public.request_place(:'a_code') ->> 'slug' = :'a_slug', public.request_place(:'a_code')::text;
+insert into results select 'Dashboard covers both creators', jsonb_array_length(public.brand_dashboard() -> 'creators') = 2, null;
+insert into results select 'Discover lists only listed creators', (select bool_and(x ->> 'slug' = 'creatorb') and count(*) = 1 from jsonb_array_elements(public.discover_creators('', '')) x), public.discover_creators('', '')::text;
+-- on A's page
+select set_config('request.headers', json_build_object('x-creator', :'a_slug')::text, true);
+insert into results select 'Brand on A''s page acts as its A company', (public.my_account() -> 'brand' ->> 'id')::uuid = :'a_brand', (public.my_account() -> 'brand' ->> 'id')::uuid::text;
+insert into results select 'Brand on A''s page sees none of B''s requests', not exists (select 1 from jsonb_array_elements(public.my_requests()) x where x ->> 'code' like 'BB%'), null;
+insert into results select 'Brand on A''s page can''t read B''s collab', not public.is_my_collab((select id from public.collabs where code = :'b_code')), null;
+reset role;
+select set_config('request.headers', '', true);
+
+-- A collab can't be given another creator's company
+insert into results select 'A collab can''t take another creator''s brand', false, null;
+do $$ begin update public.collabs set brand_id = (select id from public.brands where creator_id = 1 limit 1) where brief = 'Collab of B'; exception when others then update results set ok = true, detail = sqlerrm where check_name = 'A collab can''t take another creator''s brand'; end $$;
 
 select case when ok then 'PASS' else 'FAIL' end, check_name, coalesce(detail, '') from results;
 rollback;

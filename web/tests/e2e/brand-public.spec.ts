@@ -14,8 +14,10 @@ test('public pages load', async ({ page }) => {
 test('a new brand can sign in and reach the request form', async ({ page }) => {
 	const noErrors = watchErrors(page);
 	await signIn(page, `brand${Date.now()}@example.test`);
-	await page.goto('/brand');
-	await page.waitForLoadState('networkidle');
+	for (const path of ['/brand', '/brand/requests', '/brand/creators', '/brand/creators?tab=discover']) {
+		await page.goto(path);
+		await page.waitForLoadState('networkidle');
+	}
 	await page.goto('/brand/new');
 	await page.waitForLoadState('networkidle');
 	await expect(page.locator('form, .dialog, .panel').first()).toBeVisible();

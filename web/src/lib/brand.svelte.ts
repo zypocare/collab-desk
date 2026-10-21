@@ -1,6 +1,6 @@
 // The signed-in brand's own requests (via the my_requests() database function).
 import { supabase } from './supabase';
-import type { BrandRequest } from './types';
+import type { BrandCreator, BrandDashboard, BrandRequest } from './types';
 import { errMessage } from './util';
 
 export const brandData = $state<{ loaded: boolean; error: string; requests: BrandRequest[]; unread: Record<string, number> }>({
@@ -9,6 +9,26 @@ export const brandData = $state<{ loaded: boolean; error: string; requests: Bran
 	requests: [],
 	unread: {}
 });
+
+/** Across every creator this brand works with (the brand dashboard). */
+export const brandHome = $state<{ dash: BrandDashboard | null; error: string }>({ dash: null, error: '' });
+
+export async function loadDashboard() {
+	const { data, error } = await supabase.rpc('brand_dashboard');
+	if (error) brandHome.error = errMessage(error);
+	else {
+		const d = data as BrandDashboard;
+		brandHome.dash = { ...d, spent_month: Number(d.spent_month) || 0, to_pay: Number(d.to_pay) || 0 };
+		brandHome.error = '';
+	}
+}
+
+/** Creators who chose to be listed for brands. */
+export async function discoverCreators(q = '', niche = ''): Promise<BrandCreator[]> {
+	const { data, error } = await supabase.rpc('discover_creators', { p_q: q, p_niche: niche });
+	if (error) throw new Error(errMessage(error));
+	return (data as BrandCreator[]) ?? [];
+}
 
 /** Unread messages from the creator, by request code. */
 export async function loadUnread() {

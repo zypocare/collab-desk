@@ -9,7 +9,7 @@
 	import { brandData, loadRequests, loadUnread } from '#lib/brand.svelte.ts';
 	import { pub } from '#lib/publicPage.svelte.ts';
 	import ExpectedResults from '#lib/components/ExpectedResults.svelte';
-	import { supabase } from '#lib/supabase.ts';
+	import { pageSlug, supabase } from '#lib/supabase.ts';
 	import { confetti, toast } from '#lib/ui.svelte.ts';
 	import {
 		DRAFT_STATUS,
@@ -36,20 +36,25 @@
 	import BrandUsage from '#lib/components/BrandUsage.svelte';
 	import BrandShipping from '#lib/components/BrandShipping.svelte';
 	import MessageThread from '#lib/components/MessageThread.svelte';
+	import { addressFor } from '#lib/creatorHost.ts';
 	import CampaignTimeline from '#lib/components/CampaignTimeline.svelte';
 	import CampaignDocs from '#lib/components/CampaignDocs.svelte';
 
 	const r = $derived(brandData.requests.find((x) => x.code.toUpperCase() === (page.params.code ?? '').toUpperCase()));
-	// An agency's other brand: switch to it and show the request (once per visit).
+	// Not in this list: the request is with another creator (open it on their address; the sign-in is
+	// shared), or with another of this login's companies here (switch to it). Once per visit.
 	let triedSwitch = '';
 	$effect(() => {
 		const code = page.params.code ?? '';
 		const acc = auth.account;
-		if (!brandData.loaded || r || triedSwitch === code || acc?.role !== 'brand' || (acc.brands?.length ?? 0) < 2) return;
+		if (!brandData.loaded || r || triedSwitch === code || acc?.role !== 'brand') return;
 		triedSwitch = code;
-		supabase.rpc('request_brand', { p_code: code }).then(async ({ data }) => {
-			if (!data || data === acc.brand?.id) return;
-			await switchBrand(data as string);
+		supabase.rpc('request_place', { p_code: code }).then(async ({ data }) => {
+			const place = data as { brand_id: string; slug: string } | null;
+			if (!place) return;
+			if (place.slug && place.slug !== pageSlug) return location.replace(addressFor(place.slug, page.url.pathname + page.url.search));
+			if (place.brand_id === acc.brand?.id) return;
+			await switchBrand(place.brand_id);
 			await loadRequests();
 			toast(`Switched to ${auth.account?.role === 'brand' ? (auth.account.brand?.name ?? 'that brand') : 'that brand'}`, 'check');
 		});
@@ -175,7 +180,7 @@
 
 <svelte:head><title>{r ? r.code : 'Request'}</title></svelte:head>
 
-<a class="back" href="/brand"><Icon name="back" />My requests</a>
+<a class="back" href="/brand/requests"><Icon name="back" />My requests</a>
 
 {#if !brandData.loaded}
 	<div class="loader" style="min-height:30vh"><span class="ring"><span></span></span></div>

@@ -328,6 +328,8 @@ export type Settings = {
 	page_card_v?: number;
 	page_card_sig?: string;
 	accepting: boolean;
+	/** Listed in Discover, where brands on Miracle look for creators. */
+	listed?: boolean;
 	show_rates: boolean;
 	monthly_goal: number;
 	rates: Record<string, number>;
@@ -464,7 +466,7 @@ export type CreatorRequest = {
 };
 
 export type Account =
-	| { role: 'creator'; email: string }
+	| { role: 'creator'; email: string; slug?: string }
 	/** Asked to join as a creator and not approved yet. */
 	| { role: 'pending'; email: string; request: CreatorRequest | null }
 	| {
@@ -473,9 +475,41 @@ export type Account =
 			full_name: string;
 			phone: string;
 			brand: { id: string; name: string; instagram: string; website: string; category: string } | null;
-			/** Every brand this login manages (agencies have several). */
+			/** This creator's brands this login manages (agencies have several). */
 			brands: { id: string; name: string }[];
+			/** Companies this login has with other creators, to reuse on a first request here. */
+			companies?: { id: string; name: string }[];
+			/** Every creator this login works with. */
+			creators?: BrandCreator[];
 	  };
+
+/** A creator as a brand sees them: public page facts, plus how much is going on together. */
+export type BrandCreator = {
+	id: number;
+	slug: string;
+	name: string;
+	niche: string;
+	city: string;
+	accepting: boolean;
+	photo: string | null;
+	followers: number | null;
+	engagement: number | null;
+	current?: boolean;
+	open?: number;
+	waiting?: number;
+	done?: number;
+};
+
+/** Everything across every creator a brand works with. */
+export type BrandDashboard = {
+	name: string | null;
+	open: number;
+	spent_month: number;
+	to_pay: number;
+	waiting: { kind: 'quote' | 'draft'; code: string; slug: string; creator: string; amount?: number; currency?: string; round?: number; live_date?: string | null }[];
+	live_soon: { code: string; slug: string; creator: string; live_date: string }[];
+	creators: BrandCreator[];
+};
 
 export type BrandRequest = {
 	lifecycle_reason?: string;

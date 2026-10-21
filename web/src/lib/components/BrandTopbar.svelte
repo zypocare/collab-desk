@@ -16,12 +16,25 @@
 	import Select from './Select.svelte';
 	import Avatar from './Avatar.svelte';
 	import Logo from './Logo.svelte';
+	import { addressFor } from '../creatorHost';
+	import { pageSlug } from '../supabase';
 
 	const name = $derived(pub.data?.display_name ?? '');
 	const signedIn = $derived(!!auth.session && auth.account?.role === 'brand');
 	const path = $derived(page.url.pathname);
 	const acct = $derived(auth.account?.role === 'brand' ? auth.account : null);
 	const many = $derived((acct?.brands?.length ?? 0) > 1);
+	// Every creator this brand works with; picking one opens the same screen on that creator's address
+	// (the sign-in is shared), or their requests from a single request.
+	const creators = $derived(acct?.creators ?? []);
+	let picking = $state(false);
+	function goCreator(slug: string) {
+		picking = false;
+		if (slug === pageSlug) return;
+		location.href = addressFor(slug, path.startsWith('/brand') && !path.startsWith('/brand/r/') ? path : '/brand/requests');
+	}
+	const creatorLine = (c: (typeof creators)[number]) =>
+		[c.open ? `${c.open} open request${c.open === 1 ? '' : 's'}` : 'No open requests', c.waiting ? `${c.waiting} waiting on you` : ''].filter(Boolean).join(' · ');
 
 	async function switchTo(id: string) {
 		if (id === '__add') return goto('/brand/details?new=1');
@@ -30,7 +43,7 @@
 			await switchBrand(id);
 			await loadRequests();
 			toast(`Now working as ${acct?.brand?.name ?? 'that brand'}`, 'refresh');
-			if (path !== '/brand') goto('/brand');
+			if (path.startsWith('/brand/r/')) goto('/brand/requests');
 		} catch (e) {
 			toast(errMessage(e), 'alert');
 		}
@@ -46,7 +59,9 @@
 	const isNew = $derived(path === '/brand/details' && page.url.searchParams.get('new') === '1');
 	const title = $derived(
 		path === '/' ? name
-		: path === '/brand' ? 'Requests'
+		: path === '/brand' ? 'Miracle'
+		: path === '/brand/requests' ? 'Requests'
+		: path === '/brand/creators' ? 'Creators'
 		: path === '/brand/new' ? 'New request'
 		: isNew ? 'Add a brand'
 		: path === '/brand/details' ? 'Company'
@@ -54,12 +69,12 @@
 		: path.startsWith('/insights') ? 'Insights'
 		: ''
 	);
-	const sub = $derived(path === '/' ? 'Brand collaborations' : path === '/brand' ? (acct?.brand?.name ?? '') : '');
+	const sub = $derived(path === '/' ? 'Brand collaborations' : signedIn && name && path !== '/brand' && path !== '/brand/creators' ? `with ${first}` : '');
 	const back = $derived(
-		path.startsWith('/brand/r/') ? '/brand'
+		path.startsWith('/brand/r/') ? '/brand/requests'
 		: isNew ? '/brand/details'
 		: path.startsWith('/insights') ? '/'
-		: path === '/brand/new' ? (signedIn ? '/brand' : '/')
+		: path === '/brand/new' ? (signedIn ? '/brand/requests' : '/')
 		: ''
 	);
 	const unread = $derived(Object.values(brandData.unread ?? {}).reduce((a, n) => a + n, 0));
@@ -82,9 +97,15 @@
 			<div class="m-title">{title}</div>
 			<div class="m-r"></div>
 		{:else}
-			<a class="b-who bt-who" href="/"><span class="bt-logo"><Logo size={30} /></span><span><b>{title}</b>{#if sub}<small>{sub}</small>{/if}</span></a>
+			{#if signedIn && creators.length}
+				<button class="b-who bt-who bt-pick" onclick={() => (picking = true)} aria-haspopup="dialog" aria-label="Switch creator">
+					<span class="bt-logo"><Logo size={30} /></span><span><b>{title}</b>{#if sub}<small>{sub}<Icon name="chevD" /></small>{/if}</span>
+				</button>
+			{:else}
+				<a class="b-who bt-who" href="/"><span class="bt-logo"><Logo size={30} /></span><span><b>{title}</b>{#if sub}<small>{sub}</small>{/if}</span></a>
+			{/if}
 			<div class="m-r">
-				{#if signedIn && path === '/brand' && pub.data?.accepting !== false}<a class="m-ib" href="/brand/new" aria-label="New request"><Icon name="plus" /></a>{/if}
+				{#if signedIn && (path === '/brand' || path === '/brand/requests') && pub.data?.accepting !== false}<a class="m-ib" href="/brand/new" aria-label="New request"><Icon name="plus" /></a>{/if}
 				{#if !signedIn}<button class="m-ib" onclick={toggleTheme} aria-label="Switch light or dark mode"><Icon name={theme.value === 'dark' ? 'sun' : 'moon'} /></button>{/if}
 				{#if auth.account?.role === 'creator'}
 					<a class="b-pill" href="/studio">Studio</a>
@@ -99,13 +120,35 @@
 <!-- Laptops: Miracle on the left (like her page), then whose page this is. -->
 <header class="topbar bt-top">
 	<a class="bt-mark" href="/" aria-label="Miracle, back to {first}'s page"><Logo size={32} /><b>Miracle</b></a>
-	{#if name}
+	{#if signedIn && creators.length}
+		<div class="bt-for-wrap">
+			<button class="bt-for" class:open={picking} onclick={() => (picking = !picking)} aria-expanded={picking} aria-haspopup="menu">
+				{#if name}<Avatar {name} src={pub.data?.instagram?.profile_picture_url} size="26px" /><span>with <b>{first}</b></span>{:else}<span>Your creators</span>{/if}
+				<Icon name="chevD" />
+			</button>
+			{#if picking}
+				<div class="bt-menu" role="menu">
+					<span class="bt-menu-h">Creators you work with</span>
+					{#each creators as c (c.id)}
+						<button role="menuitem" class="bt-cr" class:cur={c.slug === pageSlug} onclick={() => goCreator(c.slug)}>
+							<Avatar name={c.name} src={c.photo} size="40px" />
+							<span><b>{c.name}</b><small>{c.slug}.miracleapp.live · {creatorLine(c)}</small></span>
+							{#if c.slug === pageSlug}<i class="bt-tick" aria-label="Current"><Icon name="check" /></i>{/if}
+						</button>
+					{/each}
+					<a class="bt-cr bt-find" role="menuitem" href="/brand/creators?tab=discover" onclick={() => (picking = false)}><span class="bt-add" aria-hidden="true">+</span><span><b>Find more creators</b></span></a>
+					<p class="bt-menu-f">You stay signed in when you switch. Each creator only sees your requests to them.</p>
+				</div>
+			{/if}
+		</div>
+	{:else if name}
 		<a class="bt-for" href="/" title="{name}'s page"><Avatar {name} src={pub.data?.instagram?.profile_picture_url} size="26px" /><span>with <b>{first}</b></span></a>
 	{/if}
 	{#if signedIn}
 		<nav class="bt-nav" aria-label="Brand">
-			<a href="/brand" aria-current={path === '/brand' || path.startsWith('/brand/r/') ? 'page' : undefined}>My requests</a>
-			<a href="/brand/new" aria-current={path === '/brand/new' ? 'page' : undefined}>New request</a>
+			<a href="/brand" aria-current={path === '/brand' ? 'page' : undefined}>Dashboard</a>
+			<a href="/brand/creators" aria-current={path === '/brand/creators' ? 'page' : undefined}>Creators</a>
+			<a href="/brand/requests" aria-current={path === '/brand/requests' || path.startsWith('/brand/r/') || path === '/brand/new' ? 'page' : undefined}>Requests</a>
 			<a href="/brand/details" aria-current={path === '/brand/details' ? 'page' : undefined}>Company</a>
 		</nav>
 	{/if}
@@ -132,13 +175,33 @@
 </header>
 {/if}
 
+{#if phone.on && picking}
+	<!-- Phones: the creator switcher as a sheet from the bottom. -->
+	<button class="bt-scrim" aria-label="Close" onclick={() => (picking = false)}></button>
+	<div class="bt-sheet" role="dialog" aria-modal="true" aria-label="Your creators">
+		<i class="bt-grab" aria-hidden="true"></i>
+		<h2>Your creators</h2>
+		<p>You stay signed in when you switch.</p>
+		{#each creators as c (c.id)}
+			<button class="bt-cr" class:cur={c.slug === pageSlug} onclick={() => goCreator(c.slug)}>
+				<Avatar name={c.name} src={c.photo} size="44px" />
+				<span><b>{c.name}</b><small>{creatorLine(c)}</small></span>
+				{#if c.slug === pageSlug}<i class="bt-tick" aria-label="Current"><Icon name="check" /></i>{:else}<Icon name="chevR" />{/if}
+			</button>
+		{/each}
+		<a class="bt-cr bt-find" href="/brand/creators?tab=discover" onclick={() => (picking = false)}><span class="bt-add" aria-hidden="true">+</span><span><b>Find more creators</b></span></a>
+	</div>
+{/if}
+
+<svelte:window onkeydown={(e) => e.key === 'Escape' && (picking = false)} onclick={(e) => picking && !phone.on && !(e.target as HTMLElement).closest?.('.bt-for-wrap') && (picking = false)} />
+
 {#if signedIn}
 	<!-- Phones and tablets: the brand menu moves to a tab bar at the bottom. -->
 	<nav class="brand-tabs" class:hide-tabs={phone.on && (path.startsWith('/brand/r/') || path === '/brand/new')} aria-label="Brand">
-		{#if phone.on}<a href="/" aria-current={path === '/' ? 'page' : undefined}><span class="bt-av"><Avatar {name} src={pub.data?.instagram?.profile_picture_url} size="26px" /></span><span>{first}</span></a>{/if}
-		<a href="/brand" aria-current={path === '/brand' || path.startsWith('/brand/r/') ? 'page' : undefined}><span class="bt-ic"><Icon name="inbox" />{#if unread}<i class="bt-n">{unread}</i>{/if}</span><span>Requests</span></a>
-		<a class="bt-new" href="/brand/new" aria-current={path === '/brand/new' ? 'page' : undefined}><span class="bt-plus"><Icon name="plus" /></span><span>New</span></a>
-		<a href="/brand/details" aria-current={path.startsWith('/brand/details') ? 'page' : undefined}><span class="bt-ic"><Icon name="users" /></span><span>Company</span></a>
+		<a href="/brand" aria-current={path === '/brand' ? 'page' : undefined}><span class="bt-ic"><Icon name="home" /></span><span>Home</span></a>
+		<a href="/brand/creators" aria-current={path === '/brand/creators' ? 'page' : undefined}><span class="bt-ic"><Icon name="users" /></span><span>Creators</span></a>
+		<a href="/brand/requests" aria-current={path === '/brand/requests' || path.startsWith('/brand/r/') ? 'page' : undefined}><span class="bt-ic"><Icon name="inbox" />{#if unread}<i class="bt-n">{unread}</i>{/if}</span><span>Requests</span></a>
+		<a href="/brand/details" aria-current={path.startsWith('/brand/details') ? 'page' : undefined}><span class="bt-ic"><Icon name="box" /></span><span>Company</span></a>
 	</nav>
 {/if}
 
@@ -279,6 +342,195 @@
 			width: 40px;
 			padding: 0;
 		}
+	}
+	/* The creator switcher: a menu under the "with" chip (laptops), a sheet from the bottom (phones). */
+	.bt-for-wrap {
+		position: relative;
+		margin-right: auto;
+	}
+	.bt-for-wrap .bt-for {
+		margin-right: 0;
+	}
+	button.bt-for {
+		border: 0;
+		background: transparent;
+		cursor: pointer;
+		font: inherit;
+		font-size: 13.5px;
+	}
+	.bt-for :global(.ic) {
+		width: 14px;
+		height: 14px;
+	}
+	.bt-for.open {
+		box-shadow: inset 0 0 0 1.5px var(--g2);
+	}
+	.bt-menu {
+		position: absolute;
+		z-index: 60;
+		top: calc(100% + 10px);
+		left: 0;
+		width: 430px;
+		display: grid;
+		gap: 2px;
+		padding: 10px;
+		border-radius: 18px;
+		background: var(--surface);
+		box-shadow:
+			inset 0 0 0 1px var(--line-strong),
+			0 30px 60px -20px rgba(0, 0, 0, 0.6);
+	}
+	.bt-menu-h {
+		padding: 10px 12px 6px;
+		font-size: 11px;
+		font-weight: 700;
+		letter-spacing: 0.24em;
+		text-transform: uppercase;
+		color: var(--ink-3);
+	}
+	.bt-cr {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		width: 100%;
+		min-height: 60px;
+		padding: 8px 12px;
+		border: 0;
+		border-radius: 12px;
+		background: transparent;
+		color: var(--ink);
+		font: inherit;
+		text-align: left;
+		text-decoration: none;
+		cursor: pointer;
+	}
+	.bt-cr:hover,
+	.bt-cr.cur {
+		background: color-mix(in oklab, var(--ink) 6%, transparent);
+	}
+	.bt-cr > span:not(.ring):not(.bt-add) {
+		flex: 1;
+		min-width: 0;
+		display: grid;
+		gap: 1px;
+	}
+	.bt-cr b {
+		font-weight: 600;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+	.bt-cr small {
+		font-size: 12.5px;
+		color: var(--ink-3);
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+	.bt-tick {
+		color: var(--ok);
+	}
+	.bt-tick :global(.ic) {
+		width: 18px;
+		height: 18px;
+		stroke-width: 2.4;
+	}
+	.bt-add {
+		width: 40px;
+		height: 40px;
+		flex: none;
+		display: grid;
+		place-items: center;
+		border-radius: 50%;
+		box-shadow: inset 0 0 0 1.5px var(--line-strong);
+		font-size: 20px;
+		color: var(--ink-2);
+	}
+	.bt-menu-f {
+		margin: 6px 4px 0;
+		padding: 10px 8px 4px;
+		border-top: 1px solid var(--line);
+		font-size: 12.5px;
+		line-height: 1.45;
+		color: var(--ink-3);
+	}
+	.bt-pick {
+		border: 0;
+		background: transparent;
+		padding: 0;
+		font: inherit;
+		color: inherit;
+		text-align: left;
+		cursor: pointer;
+	}
+	.bt-pick small {
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
+	}
+	.bt-pick small :global(.ic) {
+		width: 13px;
+		height: 13px;
+	}
+	.bt-scrim {
+		position: fixed;
+		inset: 0;
+		z-index: 90;
+		border: 0;
+		background: rgba(0, 0, 0, 0.55);
+	}
+	.bt-sheet {
+		position: fixed;
+		z-index: 91;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		display: grid;
+		gap: 4px;
+		max-height: 80vh;
+		overflow-y: auto;
+		padding: 10px 16px calc(24px + env(safe-area-inset-bottom, 0px));
+		border-radius: 24px 24px 0 0;
+		background: var(--surface);
+		box-shadow: inset 0 1px 0 var(--line-strong);
+		animation: bt-up 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+	}
+	@keyframes bt-up {
+		from {
+			transform: translateY(40%);
+			opacity: 0;
+		}
+	}
+	.bt-grab {
+		justify-self: center;
+		width: 40px;
+		height: 4px;
+		margin-bottom: 10px;
+		border-radius: 4px;
+		background: var(--line-strong);
+	}
+	.bt-sheet h2 {
+		margin: 0;
+		padding: 0 4px;
+		font-family: var(--f-serif);
+		font-style: italic;
+		font-weight: 400;
+		font-size: 28px;
+	}
+	.bt-sheet p {
+		margin: 0 0 10px;
+		padding: 0 4px;
+		font-size: 13px;
+		color: var(--ink-3);
+	}
+	.bt-sheet .bt-cr {
+		min-height: 64px;
+		border-radius: 14px;
+	}
+	.bt-sheet .bt-cr > :global(.ic) {
+		width: 18px;
+		height: 18px;
+		color: var(--ink-3);
 	}
 	/* Phones: Miracle's mark where her photo was. */
 	.bt-logo {

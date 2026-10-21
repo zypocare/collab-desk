@@ -13,7 +13,7 @@
 	import { confetti, copyText, toast, ui } from '#lib/ui.svelte.ts';
 	import { KINDS, USAGE, TYPE_LABEL, delivText, fmtLong, usageLabel, usageOption, errMessage, firstName, inr, offeredKinds, packageOffered, rel } from '#lib/util.ts';
 	import { budgetCombos, type Combo } from '#lib/suggest.ts';
-	import BrandDetailsForm from '#lib/components/BrandDetailsForm.svelte';
+	import CompanyStep from '#lib/components/CompanyStep.svelte';
 	import Icon from '#lib/components/Icon.svelte';
 	import ExpectedResults from '#lib/components/ExpectedResults.svelte';
 	import BriefEditor from '#lib/components/BriefEditor.svelte';
@@ -376,13 +376,13 @@
 
 <svelte:head><title>New request</title></svelte:head>
 
-{#if guest}<a class="back" href="/"><Icon name="back" />Back</a>{:else}<a class="back" href="/brand"><Icon name="back" />My requests</a>{/if}
+{#if guest}<a class="back" href="/"><Icon name="back" />Back</a>{:else}<a class="back" href="/brand/requests"><Icon name="back" />My requests</a>{/if}
 
 {#if acc && !acc.brand && !codeBusy}
 	<header class="ph rv"><div><div class="eb">Step 1 of 2</div><h1>About your <em>brand</em></h1><p>Then you'll choose what you'd like.</p></div></header>
-	<section class="panel rv" style="--i:1;padding:22px"><BrandDetailsForm submitLabel="Continue" /></section>
+	<CompanyStep {creator} />
 {:else if pub.data && !pub.data.accepting}
-	<div class="empty-card"><h2>{creator} is fully booked right now</h2><p>New requests are paused. You can still follow requests you already sent.</p><a class="btn" href="/brand">My requests</a></div>
+	<div class="empty-card"><h2>{creator} is fully booked right now</h2><p>New requests are paused. You can still follow requests you already sent.</p><a class="btn" href="/brand/requests">My requests</a></div>
 {:else if acc || guest}
 	<header class="ph rv">
 		<div>
@@ -414,7 +414,7 @@
 				<div class="codebox"><b>{sent}</b><button class="btn sm" onclick={() => copyText(sent!, 'Code copied')}><Icon name="copy" />Copy</button></div>
 				<div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center">
 					<a class="btn primary" href="/brand/r/{sent}">See its status</a>
-					<a class="btn" href="/brand">My requests</a>
+					<a class="btn" href="/brand/requests">My requests</a>
 				</div>
 			</div>
 		{:else}

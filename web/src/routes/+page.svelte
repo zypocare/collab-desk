@@ -57,7 +57,7 @@
 	const isCreator = $derived(auth.account?.role === 'creator');
 	const email = $derived(auth.session?.user.email ?? '');
 	const requestHref = '/brand/new';
-	const trackHref = $derived(signedInBrand ? '/brand' : '/login?next=/brand');
+	const trackHref = $derived(signedInBrand ? '/brand/requests' : '/login?next=/brand/requests');
 
 	// ---------- numbers ----------
 	/** 20076 -> "20.1K", 146959 -> "147K" (the count-ups). */
@@ -596,7 +596,7 @@
 				{#if isCreator}
 					<a class="mp-acct" class:mp-solo={!nav.length} href="/studio">Studio</a>
 				{:else if signedInBrand}
-					<a class="mp-acct" class:mp-solo={!nav.length} href="/brand">My requests</a>
+					<a class="mp-acct" class:mp-solo={!nav.length} href="/brand/requests">My requests</a>
 				{:else}
 					<a class="mp-acct" class:mp-solo={!nav.length} href="/login">Sign in</a>
 				{/if}
@@ -916,7 +916,7 @@
 				<span>Brands pay {first} directly. Miracle never takes a cut.</span>
 				{#if ins}<a href="/insights" style="color:var(--ink-2)">See {first}'s full insights</a>{/if}
 				{#if signedInBrand}
-					<span class="mp-me">{email} · <a href="/brand">My requests</a> · <button class="mp-tl" onclick={logout}>Sign out</button></span>
+					<span class="mp-me">{email} · <a href="/brand/requests">My requests</a> · <button class="mp-tl" onclick={logout}>Sign out</button></span>
 				{:else if !isCreator}
 					<a class="mp-me" href="/login" style="color:var(--ink-2)">Sign in</a>
 				{/if}

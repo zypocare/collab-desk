@@ -6,6 +6,8 @@
 	import { onMount, tick, untrack } from 'svelte';
 	import { watchVoiceUnlock } from '#lib/voice.ts';
 	import type { LayoutProps } from './$types';
+	import { pageSlug } from '#lib/supabase.ts';
+	import { addressFor } from '#lib/creatorHost.ts';
 	import { auth, homeFor, signOut } from '#lib/auth.svelte.ts';
 	import { byId, catchUp, loadStudio, studio, stopWatching, watchStudio } from '#lib/studio.svelte.ts';
 	import { ensurePageCard } from '#lib/pageCard.ts';
@@ -92,6 +94,12 @@
 			removeEventListener('focus', back);
 			stopWatching();
 		};
+	});
+	// Sign-ins are shared across creators' addresses: a creator who opens someone else's address
+	// is taken to her own studio.
+	$effect(() => {
+		const a = auth.account;
+		if (a?.role === 'creator' && a.slug && pageSlug && pageSlug !== a.slug) location.replace(addressFor(a.slug, page.url.pathname + page.url.search));
 	});
 	// Load and listen once she is signed in (also when the session is restored a moment after this screen opens).
 	$effect(() => {
