@@ -118,6 +118,15 @@
 	const spark = $derived(ig ? sparkPath(ig.history) : '');
 
 	// ---------- packages and rates ----------
+	// What a package's pieces would cost one at a time (at today's prices), so the saving shows.
+	const oneByOne = (items: { kind: string; qty: number }[]) => {
+		const r = p?.rates ?? {};
+		if (!items.length || items.some((it) => !r[it.kind])) return 0;
+		const f = Number(p?.demand_factor) || 1;
+		return Math.ceil((items.reduce((t, it) => t + it.qty * r[it.kind], 0) * f) / 500) * 500;
+	};
+	// WhatsApp with a friendly first line already typed.
+	const wa = $derived(p?.whatsapp ? waLink(p.whatsapp, `Hi ${firstName(p.display_name)}! I'd like to discuss a collaboration.`) : '');
 	const packs = $derived(p?.packages?.filter((x) => packageOffered(x.items, p.offered)) ?? []);
 	const rates = $derived(p?.rates ? Object.entries(p.rates).filter(([k, v]) => v && offeredKinds(p.offered).includes(k)) : []);
 	// The ticket that stands out: "Most booked", or the middle one.
@@ -185,7 +194,6 @@
 		if (ms) out.push({ b: ms < 60000 ? `${Math.round(ms / 1000)}s` : `${Math.floor(ms / 60000)}m ${Math.round((ms % 60000) / 1000)}s`, t: 'average watch time on a Reel' });
 		return out;
 	});
-	const reachLine = (r: Result) => [r.reach ? `reach ${k1(r.reach)}` : '', r.likes ? `${r.likes.toLocaleString('en-IN')} likes` : ''].filter(Boolean).join(' · ');
 
 	// ---------- weeks and barter ----------
 	const weeks = $derived(p?.accepting ? (p.availability ?? p.weeks ?? []).slice(0, 8) : []);
@@ -577,7 +585,7 @@
 		<header class="mp-top" class:mp-scrolled={scrolled}>
 			<div class="mp-wrap">
 				<!-- Top left: the app, Miracle (her name and photo lead the page itself). -->
-				<a class="mp-brand" href="#top" aria-label="Miracle, back to the top">
+				<a class="mp-app" href="#top" aria-label="Miracle, back to the top">
 					<Logo size={34} />
 					<b>Miracle</b>
 				</a>
@@ -624,6 +632,12 @@
 								<a class="mp-neo mp-ghost" href="#ask">Ask a question</a>
 							{:else}
 								<a class="mp-neo mp-grad" href="#ask"><span class="mp-shine" aria-hidden="true"></span>Ask a question</a>
+							{/if}
+							{#if wa}
+								<a class="mp-neo mp-wa" href={wa} target="_blank" rel="noopener" aria-label="Message {first} on WhatsApp"
+									><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2Zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1-.7.8-.8 1-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.3-.4.7-1.3a.5.5 0 0 0 0-.4c0-.1-.6-1.4-.8-1.9s-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 2.9 2.9 0 0 0-.9 2.2 5 5 0 0 0 1.1 2.7 11.6 11.6 0 0 0 4.4 3.9c1.6.7 2.3.8 3.1.6a2.7 2.7 0 0 0 1.8-1.2 2.2 2.2 0 0 0 .2-1.2c-.1-.2-.3-.3-.5-.4Z"/></svg
+									>WhatsApp</a
+								>
 							{/if}
 						</div>
 						<span class="mp-reply mp-fade" style="animation-delay:.7s">{#if p.reply_time}Usually replies within <b>{p.reply_time}</b>{' · '}{/if}No middlemen, you deal with {first} directly</span>
@@ -707,7 +721,7 @@
 								<a class="mp-reel" data-r={i < 4 ? (i ? i + 1 : '') : i - 1} use:rv href={r.permalink} target="_blank" rel="noopener" style="--h:{hue(r.brand)}">
 									<span class="mp-poster">{#if r.thumbnail && !broken[r.permalink]}<img src={r.thumbnail} alt="{r.brand} Reel" loading="lazy" referrerpolicy="no-referrer" onerror={() => (broken[r.permalink] = true)} />{/if}</span>
 									<span class="mp-play"><svg viewBox="0 0 10 12"><path d="M0 0l10 6-10 6z" /></svg></span>
-									<span class="mp-meta"><span class="mp-views"><span use:countUp={{ to: r.views ?? 0 }}></span><small>views</small></span><span class="mp-brand">{r.brand}</span>{#if reachLine(r)}<span class="mp-reach">{reachLine(r)}</span>{/if}</span>
+									<span class="mp-meta"><span class="mp-views"><span use:countUp={{ to: r.views ?? 0 }}></span><small>views</small></span><span class="mp-brand">{r.brand}</span></span>
 								</a>
 							{/each}
 						</div>
@@ -734,6 +748,7 @@
 											<h3>{k.name}</h3>
 											{#if k.description}<p>{k.description}</p>{/if}
 											<span class="mp-price">{inr(k.price)}</span>
+											{#if oneByOne(k.items) > k.price}<span class="mp-save"><s>{inr(oneByOne(k.items))}</s> one by one<b>Save {inr(oneByOne(k.items) - k.price)}</b></span>{/if}
 										</div>
 										<div class="mp-t-cut"></div>
 										<div class="mp-t-bot">
@@ -1196,7 +1211,7 @@
 			box-shadow 0.4s;
 	}
 	.mp-top.mp-scrolled {
-		background: color-mix(in oklab, var(--bg) 75%, transparent);
+		background: color-mix(in oklab, var(--bg) 94%, transparent);
 		backdrop-filter: blur(14px);
 		-webkit-backdrop-filter: blur(14px);
 		box-shadow: 0 1px 0 var(--line);
@@ -1207,14 +1222,14 @@
 		gap: 16px;
 		height: 72px;
 	}
-	.mp-brand {
+	.mp-app {
 		display: flex;
 		align-items: center;
 		gap: 10px;
 		color: var(--ink);
 		text-decoration: none;
 	}
-	.mp-brand b {
+	.mp-app b {
 		font: 400 28px/1 var(--f-display);
 		font-style: italic;
 		letter-spacing: -0.01em;
@@ -1489,6 +1504,19 @@
 		font-size: 13px;
 		color: var(--ink);
 		background: transparent;
+	}
+	.mp-neo.mp-wa {
+		background: #0c090c;
+		color: #f4eef2;
+		box-shadow:
+			inset 0 0 0 1.5px color-mix(in oklab, #25d366 55%, transparent),
+			5px 5px 0 color-mix(in oklab, #25d366 45%, #0c090c);
+	}
+	.mp-neo.mp-wa svg {
+		width: 18px;
+		height: 18px;
+		flex: none;
+		color: #25d366;
 	}
 	.mp-ctas {
 		display: flex;
@@ -1940,10 +1968,6 @@
 	.mp-reel .mp-brand {
 		font: 600 12.5px/1.2 var(--f-body);
 	}
-	.mp-reel .mp-reach {
-		font-size: 11.5px;
-		color: var(--ink-3);
-	}
 	.mp-proof {
 		display: flex;
 		flex-wrap: wrap;
@@ -1975,29 +1999,43 @@
 	}
 	.mp-ticket {
 		--h: var(--m5);
+		--edge: var(--line-strong);
+		--edge-w: 1px;
 		position: relative;
 		border-radius: 24px;
-		background: var(--surface);
-		box-shadow:
-			0 0 0 1px var(--line-strong) inset,
-			0 40px 80px -40px rgba(0, 0, 0, 0.9);
+		box-shadow: 0 40px 80px -40px rgba(0, 0, 0, 0.9);
 		transition: transform 0.5s var(--ease);
+	}
+	/* The two halves are cut where they meet: a round hole on each side, like a ticket. */
+	.mp-t-top,
+	.mp-t-bot {
+		-webkit-mask:
+			radial-gradient(circle at 0 var(--hy), #0000 12px, #000 12.5px) left / 51% 100% no-repeat,
+			radial-gradient(circle at 100% var(--hy), #0000 12px, #000 12.5px) right / 51% 100% no-repeat;
+		mask:
+			radial-gradient(circle at 0 var(--hy), #0000 12px, #000 12.5px) left / 51% 100% no-repeat,
+			radial-gradient(circle at 100% var(--hy), #0000 12px, #000 12.5px) right / 51% 100% no-repeat;
 	}
 	.mp-ticket:hover {
 		transform: translateY(-6px);
 	}
 	.mp-ticket.mp-hot {
+		--edge: color-mix(in oklab, var(--g3) 60%, transparent);
+		--edge-w: 1.5px;
 		transform: translateY(-14px);
-		box-shadow:
-			0 0 0 1.5px color-mix(in oklab, var(--g3) 60%, transparent) inset,
-			0 50px 100px -40px color-mix(in oklab, var(--g2) 60%, transparent);
+		box-shadow: 0 50px 100px -40px color-mix(in oklab, var(--g2) 60%, transparent);
 	}
 	.mp-ticket.mp-hot:hover {
 		transform: translateY(-20px);
 	}
 	.mp-t-top {
+		--hy: 100%;
 		padding: 22px 22px 20px;
 		border-radius: 24px 24px 0 0;
+		box-shadow:
+			inset var(--edge-w) 0 0 var(--edge),
+			inset calc(-1 * var(--edge-w)) 0 0 var(--edge),
+			inset 0 var(--edge-w) 0 var(--edge);
 		background: linear-gradient(135deg, color-mix(in oklab, var(--h) 82%, #1a0d18) 0%, color-mix(in oklab, var(--h) 45%, #140a12) 70%, #140a12 100%);
 		color: #fff;
 		display: grid;
@@ -2033,31 +2071,39 @@
 	}
 	.mp-t-cut {
 		position: relative;
+		z-index: 1;
 		height: 0;
-		margin: 0 24px;
+		margin: 0 22px;
 		border-top: 2px dashed var(--line-strong);
 	}
-	.mp-t-cut::before,
-	.mp-t-cut::after {
-		content: '';
-		position: absolute;
-		top: -12px;
-		width: 24px;
-		height: 24px;
-		border-radius: 50%;
-		background: var(--bg);
-		border: 1px solid var(--line);
+	.mp-save {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 6px 10px;
+		font-size: 12.5px;
+		color: rgba(255, 255, 255, 0.72);
 	}
-	.mp-t-cut::before {
-		left: -36px;
-		clip-path: inset(0 0 0 50%);
+	.mp-save s {
+		color: rgba(255, 255, 255, 0.6);
 	}
-	.mp-t-cut::after {
-		right: -36px;
-		clip-path: inset(0 50% 0 0);
+	.mp-save b {
+		padding: 4px 9px;
+		border-radius: 999px;
+		background: color-mix(in oklab, var(--ok) 22%, transparent);
+		color: var(--ok);
+		font: 700 11px/1 var(--f-body);
+		letter-spacing: 0.04em;
 	}
 	.mp-t-bot {
+		--hy: 0%;
 		padding: 20px 22px 22px;
+		border-radius: 0 0 24px 24px;
+		background: var(--surface);
+		box-shadow:
+			inset var(--edge-w) 0 0 var(--edge),
+			inset calc(-1 * var(--edge-w)) 0 0 var(--edge),
+			inset 0 calc(-1 * var(--edge-w)) 0 var(--edge);
 		display: grid;
 		gap: 16px;
 	}
