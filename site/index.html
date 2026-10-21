@@ -4,459 +4,987 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Miracle: every collab, handled</title>
-<meta name="description" content="Miracle runs the business side of being a creator: one link for every brand, DMs turned into requests, quotes, GST invoices with a UPI QR, payment reminders and a desk AI that knows your work. No commission.">
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Miracle runs the business side of being a creator: brand requests, quotes, GST invoices with a UPI QR, payments and a desk AI. No commission.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@500;600&family=Instrument+Serif:ital@0;1&display=swap">
+<style>
+/* Layout: one long night scene in the app's own colours. A light-painted hero, a deck of collab tickets dealt by scroll,
+   a bento of live demos, Desk AI talking, then the claim. Motion is transform and opacity only, so it stays smooth. */
+:root{
+  color-scheme:dark;
+  --bg:#110D11; --surface:#1A151A; --surface-2:#231D23; --hero:#1F151E; --line:#2E262E; --line-2:#3E343E;
+  --ink:#F4EEF2; --ink-2:#C9BFC6; --ink-3:#A39AA1; --on-light:#1E171C;
+  --g1:#9C7BFF; --g2:#F25A90; --g3:#FFAE6B;
+  --grad:linear-gradient(115deg,var(--g1),var(--g2) 52%,var(--g3));
+  --ok:#6FD08C; --live:#4CCFC2; --req:#7EA2FF; --warn:#EFB35A; --bad:#FF7B70;
+  --b-glow:#2F6F9F; --b-kum:#3D7F6A; --b-sorso:#A8466E; --b-mustard:#A66A2C;
+  --f-display:'Instrument Serif',Georgia,'Times New Roman',serif;
+  --f-body:'Geist',ui-sans-serif,system-ui,-apple-system,'Segoe UI',sans-serif;
+  --f-mono:'Geist Mono',ui-monospace,'SF Mono',Consolas,monospace;
+  --ease:cubic-bezier(.2,.8,.2,1);
+  --gut:max(16px,env(safe-area-inset-left,0px));
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 16px/1.6 var(--f-body);-webkit-font-smoothing:antialiased;overflow-x:hidden}
+a{color:inherit;text-decoration:none}
+button,input{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--g3);outline-offset:3px}
+.wrap{width:min(1240px,100%);margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+@media (min-width:900px){.wrap{padding-left:max(40px,env(safe-area-inset-left,0px));padding-right:max(40px,env(safe-area-inset-right,0px))}}
+.serif{font-family:var(--f-display);font-weight:400}
+.gt{font-style:italic;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;padding-right:.08em}
+.eb{font:700 12px/1 var(--f-body);letter-spacing:.32em;text-transform:uppercase;color:var(--ink-2)}
+.h2{margin:0;font:400 clamp(44px,6.4vw,96px)/.96 var(--f-display);letter-spacing:-.015em;text-wrap:balance}
+.lede{margin:0;max-width:34ch;font-size:clamp(16px,1.35vw,19px);line-height:1.6;color:var(--ink-3)}
+.grain{position:fixed;inset:0;z-index:60;pointer-events:none;opacity:.07;mix-blend-mode:soft-light;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='160' height='160' filter='url(%23n)'/></svg>")}
+
+/* NeoPOP buttons, as in the app */
+.neo{position:relative;display:inline-flex;align-items:center;justify-content:center;gap:10px;height:56px;padding:0 26px;border:0;border-radius:0;cursor:pointer;font:700 13.5px/1 var(--f-body);letter-spacing:.14em;text-transform:uppercase;white-space:nowrap;transition:transform .12s var(--ease),box-shadow .12s var(--ease)}
+.neo.light{background:var(--ink);color:var(--on-light);box-shadow:5px 5px 0 var(--g2)}
+.neo.grad{background:var(--grad);color:#fff;box-shadow:5px 5px 0 #6A4BC9;text-shadow:0 1px 0 rgba(0,0,0,.15)}
+.neo.ghost{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--line-2),5px 5px 0 var(--line)}
+.neo:hover{transform:translate(-2px,-2px)}
+.neo.light:hover{box-shadow:7px 7px 0 var(--g2)}
+.neo.grad:hover{box-shadow:7px 7px 0 #6A4BC9}
+.neo:active{transform:translate(5px,5px);box-shadow:0 0 0 transparent}
+.neo .shine{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+.neo .shine::after{content:"";position:absolute;top:0;bottom:0;left:-50%;width:35%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.55),transparent);transform:translateX(0) skewX(-18deg);animation:sweep 4.5s ease-in-out 1.8s infinite}
+@keyframes sweep{0%,70%{transform:translateX(0) skewX(-18deg)}100%{transform:translateX(560%) skewX(-18deg)}}
+
+/* header */
+.top{position:fixed;z-index:50;top:0;left:0;right:0;padding-top:env(safe-area-inset-top,0px);transition:background .4s,box-shadow .4s}
+.top.scrolled{background:rgba(17,13,17,.72);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:0 1px 0 var(--line)}
+.top .wrap{display:flex;align-items:center;gap:28px;height:78px}
+.brand{display:flex;align-items:center;gap:10px}
+.brand svg{width:36px;height:36px}
+.brand b{font:400 30px/1 var(--f-display);font-style:italic;letter-spacing:-.01em}
+.nav{display:flex;gap:26px;margin-left:auto;font-size:14.5px;color:var(--ink-2)}
+.nav a{position:relative;padding:6px 0}
+.nav a::after{content:"";position:absolute;left:0;right:0;bottom:0;height:1.5px;background:var(--grad);transform:scaleX(0);transform-origin:left;transition:transform .35s var(--ease)}
+.nav a:hover{color:var(--ink)}.nav a:hover::after{transform:scaleX(1)}
+.top .neo{height:44px;padding:0 18px;font-size:12px}
+.signin{font-weight:600;font-size:14.5px;color:var(--ink-2)}
+.signin:hover{color:var(--ink)}
+@media (max-width:900px){.nav{display:none}.signin{margin-left:auto}.top .wrap{gap:16px;height:66px}.brand b{font-size:26px}.brand svg{width:30px;height:30px}.top .neo{height:40px;padding:0 14px;font-size:11px}}
+
+/* hero */
+.hero{position:relative;overflow:hidden;padding-top:120px;padding-bottom:90px;isolation:isolate}
+.hero-bg{position:absolute;inset:0;z-index:-3;background:radial-gradient(70% 60% at 78% 30%,rgba(156,123,255,.26),transparent 62%),radial-gradient(55% 55% at 62% 62%,rgba(242,90,144,.2),transparent 65%),radial-gradient(60% 50% at 10% 10%,rgba(255,174,107,.08),transparent 60%),var(--bg)}
+#aurora{position:absolute;inset:-4%;z-index:-2;width:108%;height:108%;opacity:.9}
+@media (max-width:1000px){#aurora{opacity:.6}}
+.hero-grid{position:absolute;left:-25%;right:-25%;bottom:-8%;height:62%;z-index:-1;perspective:700px;pointer-events:none;-webkit-mask:linear-gradient(to top,#000 10%,transparent 85%);mask:linear-gradient(to top,#000 10%,transparent 85%)}
+.hero-grid i{position:absolute;inset:-64px 0 0;transform:rotateX(64deg);transform-origin:50% 100%;background-image:linear-gradient(rgba(244,238,242,.09) 1px,transparent 1px),linear-gradient(90deg,rgba(244,238,242,.09) 1px,transparent 1px);background-size:64px 64px}
+.hero-grid i{animation:gridmove 2.6s linear infinite}
+@keyframes gridmove{from{transform:rotateX(64deg) translateY(0)}to{transform:rotateX(64deg) translateY(64px)}}
+.hero-veil{position:absolute;inset:0;z-index:-1;background:linear-gradient(90deg,rgba(17,13,17,.6),rgba(17,13,17,.15) 55%,transparent),radial-gradient(120% 70% at 30% 40%,transparent 40%,rgba(17,13,17,.6) 100%);pointer-events:none}
+@media (max-width:1000px){.hero-veil{background:linear-gradient(rgba(17,13,17,.55),rgba(17,13,17,.35) 60%,transparent)}}
+.hero .wrap{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);gap:40px;align-items:center;min-height:min(820px,calc(100svh - 120px))}
+.hero-copy{display:grid;gap:28px;align-content:center;position:relative;z-index:2}
+.hero h1{margin:0;font:400 clamp(64px,9.4vw,148px)/.9 var(--f-display);letter-spacing:-.025em}
+.hero h1 .ln{display:block;overflow:hidden;padding-bottom:.08em;margin-bottom:-.08em}
+.hero h1 .ln>span{display:inline-block;animation:rise 1.1s var(--ease) both}
+.hero h1 .ln:nth-child(2)>span{animation-delay:.12s}
+@keyframes rise{from{transform:translateY(105%) rotate(4deg)}to{transform:none}}
+.hero .lede{max-width:40ch;animation:fade 1s var(--ease) .45s both}
+.cta-row{display:flex;flex-wrap:wrap;gap:18px 22px;align-items:center;animation:fade 1s var(--ease) .6s both}
+.trust{display:flex;flex-wrap:wrap;gap:8px 18px;font-size:13.5px;color:var(--ink-3);animation:fade 1s var(--ease) .75s both}
+.trust span{display:inline-flex;align-items:center;gap:8px}
+.trust i{width:6px;height:6px;border-radius:50%;background:var(--ok);box-shadow:0 0 10px var(--ok)}
+@keyframes fade{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+.big-mark{position:absolute;z-index:-1;right:-16%;top:54%;width:min(980px,84vw);aspect-ratio:1;transform:translateY(-50%);pointer-events:none;opacity:.38}
+.big-mark .glow{stroke-width:60;stroke-opacity:.13}
+.big-mark .core{stroke-width:15}
+.big-mark .spark{filter:url(#sparkBlur)}
+
+/* the phone: an exact copy of the app's home */
+.stage3d{position:relative;display:grid;place-items:center;perspective:1600px;min-height:700px}
+.phone3d{position:relative;transform-style:preserve-3d;animation:phoneIn 1.4s var(--ease) .2s both}
+@keyframes phoneIn{from{opacity:0;translate:0 80px}to{opacity:1;translate:0 0}}
+.phone{position:relative;width:322px;height:684px;padding:9px;border-radius:56px;background:linear-gradient(150deg,#3a2d38,#120d12 40%,#2a1f29);box-shadow:0 0 0 1.5px #4a3b47,0 70px 140px -40px rgba(242,90,144,.55),0 40px 90px -30px rgba(0,0,0,.9)}
+.phone::before{content:"";position:absolute;inset:-1px;border-radius:57px;padding:1.5px;background:conic-gradient(from 210deg,transparent 0 55%,var(--g1) 65%,var(--g2) 75%,var(--g3) 83%,transparent 92%);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;opacity:.9}
+.screen{position:relative;height:100%;border-radius:47px;overflow:hidden;background:var(--bg);font-family:var(--f-body)}
+.island{position:absolute;z-index:5;top:11px;left:50%;width:96px;height:28px;margin-left:-48px;border-radius:20px;background:#000}
+.ph-status{display:flex;justify-content:space-between;padding:15px 26px 0;font:600 12.5px/1 var(--f-body);color:var(--ink)}
+.ph-bar{display:flex;align-items:center;justify-content:space-between;padding:14px 16px 10px}
+.ph-bar b{font:400 25px/1 var(--f-display);font-style:italic}
+.ph-bar span{display:flex;gap:13px;color:var(--ink)}
+.ph-bar svg{width:17px;height:17px}
+.ph-hero{position:relative;margin:0;padding:12px 16px 14px;background:radial-gradient(90% 120% at 100% 0%,rgba(156,123,255,.42),transparent 60%),radial-gradient(80% 90% at 30% 120%,rgba(242,90,144,.38),transparent 65%),var(--hero);display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center}
+.ph-hero small{display:block;font-size:10.5px;color:var(--ink-2)}
+.ph-hi{display:block;margin-top:4px;font:800 21px/1.05 var(--f-body);letter-spacing:-.01em}
+.ph-hi em{display:block;font:400 30px/1 var(--f-display);font-style:italic;background:linear-gradient(90deg,#FF8FB1,#FFAE6B);-webkit-background-clip:text;background-clip:text;color:transparent}
+.ph-due{display:flex;align-items:center;gap:6px;margin-top:8px;font-size:10.5px;color:var(--ink-2)}
+.ph-due i{width:7px;height:7px;border-radius:50%;background:var(--bad)}
+.ph-ring{position:relative;width:96px;height:96px;display:grid;place-items:center;text-align:center}
+.ph-ring svg{position:absolute;inset:0}
+.ph-ring>div{position:relative}
+.ph-ring b{display:block;font:800 17px/1 var(--f-body)}
+.ph-ring small{font-size:9px;color:var(--ink-2)}
+.ph-ring span{display:block;margin-top:3px;padding:2px 6px;border-radius:9px;background:rgba(111,208,140,.18);color:var(--ok);font:700 8.5px/1.3 var(--f-body)}
+.ph-stories{display:flex;gap:11px;padding:12px 14px 4px;background:var(--hero)}
+.st{display:grid;justify-items:center;gap:4px;font-size:8.5px;color:var(--ink-2)}
+.st i{position:relative;width:46px;height:46px;border-radius:50%;padding:2.5px;background:conic-gradient(from 200deg,var(--g1),var(--g2),var(--g3),var(--g1))}
+.st i b{display:grid;place-items:center;width:100%;height:100%;border-radius:50%;border:2px solid var(--hero);font:700 14px/1 var(--f-body);color:#fff}
+.st.me i{background:none;padding:0}
+.st.me i b{background:#231D23;border:0}
+.st.me i::after{content:"+";position:absolute;right:-2px;bottom:-1px;width:17px;height:17px;border-radius:50%;background:var(--g2);color:#fff;font:700 13px/17px var(--f-body);text-align:center}
+.ph-tick{overflow:hidden;padding:7px 0;background:#0C090C;border-block:1px solid var(--line);font:600 9.5px/1 var(--f-body);color:var(--ink-2);white-space:nowrap}
+.ph-tick>div{display:inline-flex;gap:12px;animation:tick 16s linear infinite}
+.ph-tick b{color:var(--g3)}
+.ph-tick .s{color:var(--g2)}
+@keyframes tick{to{transform:translateX(-50%)}}
+.ph-card{margin:12px 12px 0;padding:13px;border-radius:20px;border:1px solid var(--line-2);background:radial-gradient(100% 80% at 0% 0%,rgba(242,90,144,.22),transparent 60%),radial-gradient(80% 80% at 100% 100%,rgba(255,174,107,.12),transparent 60%),#181218;display:grid;grid-template-columns:1fr auto;gap:4px 10px;align-items:center}
+.ph-card .eb{font-size:8px;letter-spacing:.24em}
+.ph-card .goal{justify-self:end;padding:4px 7px;border:1px solid var(--line-2);font-size:8.5px;color:var(--ink-2)}
+.ph-card .amt{font:400 31px/1 var(--f-display)}
+.ph-card p{margin:0;font-size:9.5px;line-height:1.4;color:var(--ink-2)}
+.ph-card .ring{grid-row:2/4;grid-column:2;position:relative;width:70px;height:70px;display:grid;place-items:center;text-align:center}
+.ph-card .ring svg{position:absolute;inset:0}
+.ph-card .ring>span{position:relative}
+.ph-card .ring b{font:800 14px/1 var(--f-body)}
+.ph-card .ring small{display:block;font-size:7.5px;color:var(--ink-2)}
+.ph-eb{display:flex;align-items:center;gap:8px;padding:14px 16px 8px;font:700 9px/1 var(--f-body);letter-spacing:.24em;color:var(--ink-2)}
+.ph-eb span{padding:2px 6px;border-radius:9px;background:var(--bad);color:#fff;letter-spacing:0}
+
+/* collab tickets (the app's "Needs you" card) */
+.ticket{--h:#3D7F6A;position:relative;border-radius:22px;background:var(--surface);box-shadow:0 0 0 1px var(--line-2) inset,0 30px 60px -30px rgba(0,0,0,.8);color:#fff}
+.t-top{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;padding:16px 18px;border-radius:22px 22px 0 0;background:linear-gradient(135deg,var(--h),color-mix(in oklab,var(--h) 42%,#08060a) 82%)}
+.t-ini{width:40px;height:40px;display:grid;place-items:center;border-radius:12px;background:rgba(255,255,255,.18);font:700 14px/1 var(--f-body)}
+.t-name{min-width:0}
+.t-name b{display:block;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font:400 26px/1.05 var(--f-display);font-style:italic}
+.t-name small{font:700 10px/1 var(--f-body);letter-spacing:.2em;opacity:.85}
+.t-amt{text-align:right}
+.t-amt b{display:block;font:800 19px/1.1 var(--f-body)}
+.t-amt small{font:700 10px/1 var(--f-body);letter-spacing:.16em;opacity:.85}
+.t-cut{position:relative;height:0;margin:0 22px;border-top:2px dashed rgba(255,255,255,.16)}
+.t-cut::before,.t-cut::after{content:"";position:absolute;top:-12px;width:24px;height:24px;border-radius:50%;background:var(--cut,var(--bg))}
+.t-cut::before{left:-34px}.t-cut::after{right:-34px}
+.t-bot{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:16px 18px}
+.t-bot b{display:block;font:700 15px/1.3 var(--f-body)}
+.t-bot small{display:inline-flex;align-items:center;gap:7px;margin-top:4px;font:700 10px/1 var(--f-body);letter-spacing:.18em;color:#FF8A7F}
+.t-bot small i{width:7px;height:7px;border-radius:50%;background:currentColor}
+.t-bot .neo{height:42px;padding:0 18px;font-size:12px;letter-spacing:.06em;text-transform:none}
+.ticket.mini{margin:0 12px;border-radius:18px}
+.ticket.mini .t-top{padding:12px 13px;border-radius:18px 18px 0 0;gap:9px}
+.ticket.mini .t-ini{width:30px;height:30px;border-radius:9px;font-size:11px}
+.ticket.mini .t-name b{font-size:19px}
+.ticket.mini .t-name small,.ticket.mini .t-amt small{font-size:7.5px}
+.ticket.mini .t-amt b{font-size:14px}
+.ticket.mini .t-cut{margin:0 16px}
+.ticket.mini .t-cut::before,.ticket.mini .t-cut::after{top:-9px;width:18px;height:18px}
+.ticket.mini .t-cut::before{left:-25px}.ticket.mini .t-cut::after{right:-25px}
+.ticket.mini .t-bot{padding:11px 13px}
+.ticket.mini .t-bot b{font-size:11px}
+.ticket.mini .t-bot small{font-size:7.5px;margin-top:3px}
+.ticket.mini .neo{height:32px;padding:0 12px;font-size:10px;box-shadow:3px 3px 0 #6A4BC9}
+
+/* floating alerts around the phone */
+.float{position:absolute;z-index:3;display:flex;align-items:center;gap:11px;padding:10px 16px 10px 10px;border-radius:999px;background:rgba(26,21,26,.86);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);box-shadow:0 0 0 1px var(--line-2) inset,0 24px 50px -20px rgba(0,0,0,.9);font-size:12.5px;white-space:nowrap}
+.float .fi{width:34px;height:34px;flex:none;display:grid;place-items:center;border-radius:50%;background:var(--grad)}
+.float .fi svg{width:20px;height:20px}
+.float b{display:block;font-weight:700;font-size:13px}
+.float small{color:var(--ink-3);font-size:11.5px}
+.f1{right:calc(100% - 30px);top:14%}.f2{left:calc(100% - 26px);top:44%}.f3{right:calc(100% - 46px);bottom:12%}
+.float .in{animation:bob 6s ease-in-out infinite}
+.f2 .in{animation-delay:-2s}.f3 .in{animation-delay:-4s}
+@keyframes bob{50%{transform:translateY(-10px)}}
+.float{animation:fade 1s var(--ease) both}
+.f1{animation-delay:1.1s}.f2{animation-delay:1.35s}.f3{animation-delay:1.6s}
+
+/* marquee */
+.marq{position:relative;z-index:2;padding:26px 0;background:#0C090C;border-block:1px solid var(--line);overflow:hidden;transform:rotate(-1.2deg);margin:-20px -2% 0}
+.marq .row{display:flex;width:max-content;gap:34px;animation:tick 38s linear infinite;font:400 clamp(26px,3vw,40px)/1 var(--f-display);white-space:nowrap}
+.marq .row.rev{animation-direction:reverse;margin-top:14px;font:600 14px/1 var(--f-body);letter-spacing:.24em;text-transform:uppercase;color:var(--ink-3);animation-duration:46s}
+.marq em{font-style:italic;color:var(--g3)}
+.marq .sp{color:var(--g2)}
+.marq svg{width:.6em;height:.6em;vertical-align:.08em}
+
+/* the deck */
+.deck{position:relative;height:520vh}
+.deck-stage{position:sticky;top:0;height:100vh;height:100svh;overflow:hidden;display:grid;align-items:center}
+.deck-stage .wrap{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:40px;align-items:center}
+.deck-copy{display:grid;gap:22px}
+.deck-copy .h2{font-size:clamp(44px,5.6vw,84px)}
+.steps{position:relative;min-height:190px}
+.step{position:absolute;inset:0;display:grid;gap:12px;align-content:start;opacity:0;transform:translateY(24px);transition:opacity .5s var(--ease),transform .5s var(--ease);pointer-events:none}
+.step.on{opacity:1;transform:none}
+.step b{font:400 clamp(30px,3vw,44px)/1.05 var(--f-display)}
+.step p{margin:0;max-width:38ch;color:var(--ink-3);font-size:17px}
+.step .tag{font:700 11px/1 var(--f-body);letter-spacing:.24em;color:var(--c)}
+.rail{display:flex;gap:8px;align-items:center}
+.rail i{position:relative;height:4px;flex:1;max-width:70px;background:var(--line-2);overflow:hidden}
+.rail i::after{content:"";position:absolute;inset:0;background:var(--grad);transform:scaleX(var(--p,0));transform-origin:left}
+.pile{position:relative;height:440px}
+.pile .ticket{position:absolute;left:50%;top:50%;width:min(440px,92vw);margin-left:calc(min(440px,92vw) / -2);margin-top:-95px;transform:translateY(120vh)}
+.pile .ticket::after{content:"";position:absolute;inset:0;border-radius:22px;background:#08060a;opacity:var(--dim,0);pointer-events:none}
+.stub{transform-origin:85% 0}
+.paid-stamp{position:absolute;right:22px;bottom:16px;padding:8px 14px;border:2px solid var(--ok);color:var(--ok);font:800 13px/1 var(--f-body);letter-spacing:.24em;transform:rotate(-8deg);opacity:var(--stamp,0)}
+.spark-burst{position:absolute;left:70%;bottom:40px;width:0;height:0;pointer-events:none}
+.spark-burst i{position:absolute;width:6px;height:6px;border-radius:50%;background:var(--c);opacity:0}
+.burst .spark-burst i{animation:burst .9s var(--ease) forwards}
+@keyframes burst{0%{opacity:1;transform:translate(0,0) scale(1)}100%{opacity:0;transform:translate(var(--x),var(--y)) scale(.3)}}
+
+/* bento */
+.feat{padding-block:150px 60px}
+.feat-head{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:30px;align-items:end;margin-bottom:56px}
+.bento{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:18px}
+.cell{--mx:50%;--my:0%;position:relative;overflow:hidden;min-height:330px;padding:28px;border-radius:28px;background:var(--surface);box-shadow:0 0 0 1px var(--line) inset;display:flex;flex-direction:column;gap:10px;isolation:isolate}
+.cell::before{content:"";position:absolute;inset:0;z-index:-1;background:radial-gradient(420px circle at var(--mx) var(--my),rgba(242,90,144,.16),transparent 60%);opacity:0;transition:opacity .4s}
+.cell::after{content:"";position:absolute;inset:0;border-radius:inherit;padding:1px;background:radial-gradient(300px circle at var(--mx) var(--my),rgba(255,174,107,.8),rgba(156,123,255,.4) 40%,transparent 70%);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;opacity:0;transition:opacity .4s;pointer-events:none}
+.cell:hover::before,.cell:hover::after{opacity:1}
+.cell h3{margin:0;font:400 34px/1.02 var(--f-display);letter-spacing:-.01em}
+.cell p{margin:0;max-width:40ch;color:var(--ink-3);font-size:15px}
+.c7{grid-column:span 7}.c5{grid-column:span 5}.c4{grid-column:span 4}.c6{grid-column:span 6}
+.demo{margin-top:auto;position:relative}
+/* link demo */
+.url{display:flex;align-items:center;gap:10px;height:46px;padding:0 16px;border-radius:14px;background:#0C090C;box-shadow:0 0 0 1px var(--line-2) inset;font:500 15px/1 var(--f-mono);color:var(--ink-2)}
+.url .lock{color:var(--ok)}
+.url .typed{display:inline-block;overflow:hidden;white-space:nowrap;border-right:2px solid var(--g2);width:21ch}
+.in .url .typed{animation:type 2.4s steps(20) .3s both,caret .8s step-end infinite}
+@keyframes type{from{width:0}to{width:21ch}}
+@keyframes caret{50%{border-color:transparent}}
+.bp{margin-top:14px;display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:14px;align-items:center;padding:16px;border-radius:18px;background:linear-gradient(140deg,#231a22,#161116);box-shadow:0 0 0 1px var(--line) inset}
+.bp .av{width:54px;height:54px;border-radius:50%;padding:2.5px;background:conic-gradient(var(--g1),var(--g2),var(--g3),var(--g1))}
+.bp .av b{display:grid;place-items:center;width:100%;height:100%;border-radius:50%;background:#2a1f29;border:2px solid #1b141b;font:700 16px/1 var(--f-body)}
+.bp strong{display:block;font:400 24px/1.1 var(--f-display);font-style:italic}
+.bp small{color:var(--ink-3);font-size:12.5px}
+.bp .neo{height:40px;padding:0 14px;font-size:11px}
+.bp-stats{display:flex;gap:10px;margin-top:10px}
+.bp-stats span{flex:1;padding:10px 12px;border-radius:14px;background:#0C090C;box-shadow:0 0 0 1px var(--line) inset;font-size:11px;color:var(--ink-3)}
+.bp-stats b{display:block;font:400 22px/1.1 var(--f-display);color:var(--ink)}
+/* score demo */
+.score{display:flex;gap:22px;align-items:center}
+.score .rg{position:relative;width:132px;height:132px;flex:none;display:grid;place-items:center}
+.score .rg svg{position:absolute;inset:0;transform:rotate(-90deg)}
+.score .rg circle.v{stroke-dasharray:345.6;stroke-dashoffset:24.2}
+.in .score .rg circle.v{animation:ring 1.8s var(--ease) .2s both}
+@keyframes ring{from{stroke-dashoffset:345.6}}
+.score .rg b{font:400 52px/1 var(--f-display)}
+.score ul{list-style:none;margin:0;padding:0;display:grid;gap:9px;font-size:13.5px;color:var(--ink-2)}
+.score li{display:flex;gap:9px;align-items:center}
+.score li i{width:7px;height:7px;border-radius:50%;background:var(--ok);flex:none}
+.take{font:700 12px/1 var(--f-body);letter-spacing:.22em;color:var(--ok)}
+/* quote demo */
+.quote{border-radius:18px;background:#0C090C;box-shadow:0 0 0 1px var(--line-2) inset;padding:16px}
+.quote .row{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line);font-size:13px;color:var(--ink-2)}
+.quote .row b{color:var(--ink);font-variant-numeric:tabular-nums}
+.quote .tot{display:flex;justify-content:space-between;align-items:baseline;padding-top:12px}
+.quote .tot b{font:400 40px/1 var(--f-display);font-variant-numeric:tabular-nums}
+.quote .tot small{font-size:11px;letter-spacing:.2em;color:var(--ink-3)}
+/* invoice demo */
+.inv{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:center;padding:16px;border-radius:18px;background:#F6F1F4;color:var(--on-light)}
+.inv small{display:block;font:600 10px/1.4 var(--f-mono);color:#6F656C}
+.inv b{display:block;font:400 34px/1 var(--f-display)}
+.inv .gst{display:grid;gap:3px;margin-top:8px;font:500 11px/1.3 var(--f-mono);color:#4F464C}
+.qr{position:relative;width:96px;height:96px;padding:6px;background:#fff;display:grid;grid-template-columns:repeat(7,1fr);gap:1.5px;overflow:hidden;box-shadow:0 0 0 1px #E2D8DE}
+.qr i{background:#1E171C}.qr i.o{background:transparent}
+.qr::after{content:"";position:absolute;left:0;right:0;height:26px;top:-30px;background:linear-gradient(transparent,rgba(242,90,144,.55),transparent)}
+.in .qr::after{animation:scan 2.6s ease-in-out .4s infinite}
+@keyframes scan{to{top:100%}}
+/* pings demo */
+.pings{display:grid;gap:9px}
+.ping{display:flex;align-items:center;gap:11px;padding:9px 14px 9px 9px;border-radius:999px;background:#0C090C;box-shadow:0 0 0 1px var(--line-2) inset;font-size:12.5px}
+.ping .d{width:30px;height:30px;flex:none;display:grid;place-items:center;border-radius:50%;background:var(--c)}
+.ping .d svg{width:15px;height:15px}
+.ping b{display:block;font-size:13px}
+.ping small{color:var(--ink-3);font-size:11.5px}
+.in .ping{animation:pop .7s var(--spring,var(--ease)) both}
+.in .ping:nth-child(2){animation-delay:.25s}.in .ping:nth-child(3){animation-delay:.5s}
+@keyframes pop{from{opacity:0;transform:translateY(18px) scale(.94)}}
+/* week demo */
+.week{display:flex;gap:8px}
+.day{flex:1;display:grid;justify-items:center;gap:6px;padding:12px 0 10px;border-radius:999px;background:#0C090C;box-shadow:0 0 0 1px var(--line-2) inset;font:700 9.5px/1 var(--f-body);letter-spacing:.14em;color:var(--ink-3)}
+.day b{font:400 26px/1 var(--f-display);color:var(--ink);letter-spacing:0}
+.day i{display:flex;gap:3px;height:6px}
+.day i::before,.day i::after{content:"";width:6px;height:6px;border-radius:50%;background:var(--a,transparent)}
+.day i::after{background:var(--b,transparent)}
+.day.today{background:var(--grad);box-shadow:none;color:#fff}
+.day.today b{color:#fff}
+.slots{margin-top:14px;padding:14px 16px;border-radius:16px;background:#0C090C;box-shadow:0 0 0 1px var(--line) inset;font-size:12px;color:var(--ink-3)}
+.slots div{display:flex;justify-content:space-between;font:700 10px/1 var(--f-body);letter-spacing:.2em;color:var(--ink-2)}
+.slots div b{letter-spacing:0;font-size:12.5px;color:var(--ink)}
+.bars{display:flex;gap:6px;margin:10px 0 8px}
+.bars i{flex:1;height:5px;border-radius:3px;background:var(--grad);transform-origin:left;transform:scaleX(1)}
+.in .bars i{animation:fill 1s var(--ease) both}
+.in .bars i:nth-child(2){animation-delay:.2s}.in .bars i:nth-child(3){animation-delay:.4s}
+@keyframes fill{from{transform:scaleX(0)}}
+/* pitch demo */
+.pitch{display:grid;gap:8px}
+.pt{display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:14px;background:#0C090C;box-shadow:0 0 0 1px var(--line) inset;font-size:13px}
+.pt i{width:9px;height:9px;border-radius:50%;background:var(--c);flex:none;box-shadow:0 0 10px var(--c)}
+.pt span{flex:1;min-width:0}
+.pt small{display:block;color:var(--ink-3);font-size:11.5px}
+.pt em{font:700 9.5px/1 var(--f-body);font-style:normal;letter-spacing:.16em;color:var(--c)}
+.in .pt{animation:slide .6s var(--ease) both}
+.in .pt:nth-child(2){animation-delay:.12s}.in .pt:nth-child(3){animation-delay:.24s}.in .pt:nth-child(4){animation-delay:.36s}
+@keyframes slide{from{opacity:0;transform:translateX(-20px)}}
+
+/* Desk AI */
+.ai{position:relative;padding-block:150px;overflow:hidden}
+.ai::before{content:"";position:absolute;left:50%;top:50%;width:1100px;height:1100px;margin:-550px 0 0 -550px;background:radial-gradient(circle,rgba(156,123,255,.18),rgba(242,90,144,.08) 40%,transparent 65%);pointer-events:none}
+.ai .wrap{position:relative;display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:60px;align-items:center}
+.ai-copy{display:grid;gap:24px}
+.langs{display:flex;flex-wrap:wrap;gap:8px}
+.langs span{padding:8px 14px;border-radius:999px;box-shadow:0 0 0 1px var(--line-2) inset;font-size:14px;color:var(--ink-2)}
+.chat{position:relative;border-radius:30px;padding:1.5px;background:linear-gradient(140deg,rgba(156,123,255,.75),rgba(242,90,144,.45) 45%,rgba(255,174,107,.5));box-shadow:0 60px 120px -40px rgba(242,90,144,.5)}
+.chat-in{border-radius:29px;background:radial-gradient(120% 60% at 50% 0%,rgba(156,123,255,.18),transparent 70%),#161116;padding:24px;display:grid;gap:16px;min-height:470px;align-content:start}
+.chat-head{display:flex;align-items:center;gap:12px}
+.orb{position:relative;width:38px;height:38px;flex:none}
+.orb::before{content:"";position:absolute;inset:-8px;border-radius:50%;background:radial-gradient(circle,rgba(242,90,144,.5),transparent 65%);animation:breathe 3s ease-in-out infinite}
+.orb span{position:absolute;inset:0;border-radius:50%;background:conic-gradient(var(--g1),var(--g2),var(--g3),var(--g1));animation:spin 6s linear infinite}
+.orb span::after{content:"";position:absolute;inset:6px;border-radius:50%;background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.85),rgba(255,255,255,.08) 45%,transparent 60%),#161116}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes breathe{50%{opacity:.5;transform:scale(1.15)}}
+.chat-head b{display:block;font:400 26px/1 var(--f-display)}
+.chat-head small{color:var(--ink-3);font-size:12.5px}
+.msgs{display:grid;gap:14px;align-content:start;min-height:260px}
+.me-b{justify-self:end;max-width:80%;padding:12px 16px;border-radius:18px 18px 4px 18px;background:var(--ink);color:var(--on-light);font-weight:500;font-size:15px}
+.ai-b{max-width:90%;padding:14px 16px;border-radius:18px 18px 18px 4px;background:#0C090C;box-shadow:0 0 0 1px var(--line-2) inset;font:400 21px/1.35 var(--f-display)}
+.ai-b .w{opacity:0;animation:fadeW .35s var(--ease) forwards}
+@keyframes fadeW{to{opacity:1}}
+.acts{display:flex;gap:12px;flex-wrap:wrap}
+.acts .neo{height:40px;padding:0 14px;font-size:11px}
+.acts .neo.light{box-shadow:4px 4px 0 var(--g2)}
+.dots{display:inline-flex;gap:5px;padding:14px 16px;border-radius:18px 18px 18px 4px;background:#0C090C;box-shadow:0 0 0 1px var(--line-2) inset}
+.dots i{width:7px;height:7px;border-radius:50%;background:var(--ink-3);animation:dot 1s ease-in-out infinite}
+.dots i:nth-child(2){animation-delay:.15s}.dots i:nth-child(3){animation-delay:.3s}
+@keyframes dot{50%{transform:translateY(-5px);background:var(--g2)}}
+.composer{display:flex;align-items:center;gap:12px;height:58px;padding:0 10px 0 18px;background:#110D11;box-shadow:0 0 0 1px var(--line-2) inset,4px 4px 0 var(--g2);color:var(--ink-3);font-size:15px}
+.composer span{flex:1}
+.composer i{width:40px;height:40px;display:grid;place-items:center;background:var(--ink);color:var(--on-light)}
+
+/* trust */
+.trust-band{padding-block:120px;border-top:1px solid var(--line);background:radial-gradient(60% 80% at 50% 0%,rgba(242,90,144,.08),transparent 70%),#0C090C}
+.trust-band .wrap{display:grid;gap:56px}
+.pillars{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+.pillar{display:grid;gap:10px;padding:26px;border-top:1px solid var(--line-2)}
+.pillar b{font:400 30px/1.05 var(--f-display)}
+.pillar p{margin:0;color:var(--ink-3);font-size:15px}
+.pillar svg{width:30px;height:30px;color:var(--g3)}
+
+/* claim */
+.claim{position:relative;overflow:hidden;padding-block:170px 150px;text-align:center;isolation:isolate}
+.claim-mark{position:absolute;z-index:-1;left:50%;top:36%;width:min(900px,120vw);aspect-ratio:1;transform:translate(-50%,-50%);opacity:.2;pointer-events:none}
+.claim-mark .glow{stroke-width:64;stroke-opacity:0}.claim-mark .core{stroke-width:14}
+.claim .wrap{display:grid;justify-items:center;gap:34px}
+.claim .h2{font-size:clamp(56px,9vw,140px)}
+.claim form{position:relative;display:flex;flex-wrap:wrap;width:min(720px,100%);padding:10px;border-radius:4px;background:linear-gradient(#1F151E,#1F151E) padding-box,linear-gradient(115deg,rgba(156,123,255,.9),rgba(242,90,144,.9) 52%,rgba(255,174,107,.9)) border-box;border:1.5px solid transparent;box-shadow:0 40px 100px -30px rgba(242,90,144,.55),0 0 0 8px rgba(17,13,17,.85)}
+.claim form::before{content:"";position:absolute;inset:-60px -80px;z-index:-1;background:radial-gradient(closest-side,rgba(17,13,17,.92),transparent);pointer-events:none}
+.claim label.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.claim input{flex:1;min-width:0;height:64px;padding:0 0 0 18px;border:0;background:transparent;font:600 22px/1 var(--f-body);color:var(--ink);outline:0}
+.claim input::placeholder{color:#6F656C}
+.claim .dom{display:flex;align-items:center;padding:0 18px 0 2px;color:var(--ink-2);font:500 22px/1 var(--f-body);white-space:nowrap}
+.claim .neo{height:64px;padding:0 34px;font-size:15px}
+.claim form:focus-within{box-shadow:0 40px 100px -30px rgba(242,90,144,.75),0 0 0 8px rgba(17,13,17,.85),0 0 0 9.5px rgba(255,174,107,.5)}
+.preview{display:inline-flex;align-items:center;gap:10px;padding:10px 16px;border-radius:999px;background:#110D11;box-shadow:0 0 0 1px var(--line-2) inset;font:500 15px/1 var(--f-mono);color:var(--ink-2)}
+.preview b{color:var(--ink);background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.claim .note{margin:0;font-size:15px;color:var(--ink-3);min-height:1.6em}
+
+/* footer */
+footer{position:relative;overflow:hidden;padding-block:70px 0;border-top:1px solid var(--line);background:#09070A;color:var(--ink-3);font-size:14.5px}
+.foot{display:grid;grid-template-columns:1.4fr repeat(3,minmax(0,1fr));gap:30px}
+.foot b{display:block;margin-bottom:12px;color:var(--ink);font-weight:600}
+.foot a{display:block;padding:4px 0}
+.foot a:hover{color:var(--ink)}
+.giant{margin:40px 0 0;padding:0 .12em .14em;font:400 clamp(110px,22vw,340px)/1 var(--f-display);font-style:italic;letter-spacing:-.03em;text-align:center;color:transparent;-webkit-text-stroke:1px var(--line-2);background:var(--grad);-webkit-background-clip:text;background-clip:text;background-size:0% 100%;background-repeat:no-repeat;transition:background-size 1.4s var(--ease)}
+.giant:hover,.giant.in{background-size:100% 100%}
+
+/* cursor glow */
+.cursor{position:fixed;z-index:1;left:0;top:0;width:520px;height:520px;margin:-260px 0 0 -260px;border-radius:50%;background:radial-gradient(circle,rgba(242,90,144,.1),transparent 60%);pointer-events:none;will-change:transform;opacity:0;transition:opacity .4s}
+.cursor.on{opacity:1}
+
+/* scroll reveals */
+.js [data-r]{opacity:0;transform:translateY(34px);transition:opacity .9s var(--ease),transform .9s var(--ease)}
+.js [data-r].in{opacity:1;transform:none}
+.js [data-r="2"]{transition-delay:.12s}.js [data-r="3"]{transition-delay:.24s}
+
+/* phones and tablets */
+@media (max-width:1000px){
+  .hero{padding-top:96px}
+  .hero .wrap{grid-template-columns:minmax(0,1fr);min-height:0;gap:30px}
+  .stage3d{min-height:600px}
+  .phone3d{zoom:.86}
+  .big-mark{right:-40%;top:auto;bottom:-6%;transform:none;width:130vw;opacity:.28}
+  .deck-stage .wrap{grid-template-columns:minmax(0,1fr);gap:16px;align-content:center}
+  .deck-copy{gap:12px}
+  .deck-copy .h2{font-size:clamp(36px,8vw,56px)}
+  .steps{min-height:150px}
+  .step b{font-size:28px}.step p{font-size:15px}
+  .pile{height:360px}
+  .feat-head{grid-template-columns:minmax(0,1fr)}
+  .c7,.c5,.c4,.c6{grid-column:span 12}
+  .ai .wrap{grid-template-columns:minmax(0,1fr)}
+  .pillars{grid-template-columns:minmax(0,1fr)}
+  .foot{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width:560px){
+  .phone3d{zoom:.74}
+  .stage3d{min-height:520px}
+  .float{font-size:11px;padding:8px 12px 8px 8px}
+  .float .fi{width:28px;height:28px}
+  .f1{right:auto;left:-14%;top:4%}.f2{left:auto;right:-14%;top:46%}.f3{display:none}
+  .bp{grid-template-columns:auto minmax(0,1fr)}.bp .neo{grid-column:1/-1}
+  .cell{padding:22px;min-height:0}
+  .cell h3{font-size:30px}
+  .week{gap:5px}.day b{font-size:21px}
+  .claim .dom{font-size:16px}.claim .neo{width:100%}
+  .pile .ticket .t-name b{font-size:21px}
+  .marq{transform:rotate(-2deg)}
+}
+@media (max-height:720px) and (max-width:1000px){.steps{min-height:120px}.step p{display:none}.pile{height:300px}}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+  html{scroll-behavior:auto}
+}
+</style>
 <meta name="theme-color" content="#110D11">
 <meta property="og:title" content="Miracle: every collab, handled">
-<meta property="og:description" content="One link for every brand. Quotes, invoices, payments and a desk AI, made for creators in India. No commission.">
+<meta property="og:description" content="Brand requests, quotes, GST invoices with a UPI QR, payments and a desk AI for creators in India. No commission.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://miracleapp.live/">
 <link rel="icon" href="/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&amp;family=Instrument+Serif:ital@0;1&amp;family=Geist+Mono:wght@500;600&amp;display=swap" rel="stylesheet">
-<style>
-body{margin:0;background:#110D11}
-a{color:#F4EEF2;text-decoration:none}a:hover{color:#FFAE6B}
-*{box-sizing:border-box}
-@property --a{syntax:'<angle>';initial-value:0deg;inherits:false}
-@property --n{syntax:'<integer>';initial-value:0;inherits:false}
-
-/* type */
-.eb{font:700 13px Geist,sans-serif;letter-spacing:.32em;text-transform:uppercase;color:#C9BFC6}
-.big{margin:0;font:400 128px/.95 'Instrument Serif',Georgia,serif;letter-spacing:-.015em;color:#F4EEF2;text-shadow:0 0 30px rgba(242,90,144,.35),0 0 100px rgba(156,123,255,.25)}
-.mid{margin:0;font:400 92px/.98 'Instrument Serif',Georgia,serif;letter-spacing:-.012em;color:#F4EEF2;text-shadow:0 0 26px rgba(242,90,144,.3),0 0 80px rgba(156,123,255,.2)}
-.body{margin:0;max-width:560px;font:400 20px/1.6 Geist,sans-serif;color:#A39AA1}
-.gl{font-style:italic;background:linear-gradient(90deg,#9C7BFF,#F25A90 55%,#FFAE6B);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:none;filter:drop-shadow(0 0 24px rgba(242,90,144,.45))}
-.serif{font-family:'Instrument Serif',Georgia,serif;font-weight:400}
-
-/* NeoPOP */
-.neo{position:relative;overflow:hidden;display:inline-flex;align-items:center;justify-content:center;gap:12px;border:0;border-radius:0;font:700 15px Geist,sans-serif;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;transition:transform .08s,box-shadow .08s}
-.neo:active{transform:translate(5px,5px);box-shadow:none!important}
-.shine::after{content:"";position:absolute;top:0;bottom:0;left:-60%;width:40%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.55),transparent);transform:skewX(-18deg);animation:sweep 4s ease-in-out 1s infinite;will-change:transform}
-
-/* ambient motion */
-@keyframes sweep{0%,65%{transform:translateX(0) skewX(-18deg)}100%{transform:translateX(475%) skewX(-18deg)}}
-@keyframes breathe{0%,100%{opacity:.55;transform:scale(1)}50%{opacity:1;transform:scale(1.12)}}
-@keyframes spin{to{transform:rotate(360deg)}}
-@keyframes intro{from{opacity:0;translate:0 60px}to{opacity:1;translate:0 0}}
-.h-phone-wrap{animation:intro 1.3s cubic-bezier(.2,.8,.2,1) .1s both}
-.h-dim{opacity:0}
-@keyframes count{from{--n:0}to{--n:18}}
-@keyframes ask{0%{opacity:0;width:0}2%{opacity:1;width:0}22%{width:var(--w)}30%{opacity:1;width:var(--w)}33%,100%{opacity:0;width:var(--w)}}
-@keyframes streak{0%{transform:translateX(-120%) skewX(-20deg);opacity:0}20%{opacity:1}100%{transform:translateX(240%) skewX(-20deg);opacity:0}}
-.rimbox{position:relative;padding:1.5px;overflow:hidden;isolation:isolate;background:rgba(255,255,255,.05)}
-.rimbox::before{content:"";position:absolute;z-index:-1;left:50%;top:50%;width:1400px;height:1400px;margin:-700px 0 0 -700px;background:conic-gradient(rgba(255,255,255,.05) 0deg,rgba(255,255,255,.05) 250deg,#9C7BFF 290deg,#F25A90 320deg,#FFAE6B 345deg,rgba(255,255,255,.05) 360deg);animation:spin 5s linear infinite;will-change:transform}
-.cnt{counter-reset:n var(--n);animation:count 2.4s cubic-bezier(.2,.8,.2,1) .4s both}
-.cnt::after{content:counter(n)}
-
-/* ===== scroll-driven scenes (like the reference: things move with your scroll) ===== */
-.hero{position:relative;height:2100px;view-timeline:--hero block}
-.feat{position:relative;height:4600px;view-timeline:--feat block}
-.ai{position:relative;height:3200px;view-timeline:--ai block}
-.stage{position:sticky;top:0;height:min(100vh,960px);display:flex;align-items:center;justify-content:center;overflow:hidden}
-.panel,.screen,.q{position:absolute}
-@supports (animation-timeline: view()){
-  .h-phone,.h-glow,.h-title,.h-sub,.h-dim,.panel,.screen,.f-phone,.f-bar i,.ai-orb,.ai-title,.q,.ai-ans{will-change:transform,opacity}
-  /* hero: the phone lies back in the dark, then stands up and its rim lights up */
-  .h-phone{animation:h-phone linear both;animation-timeline:--hero;animation-range:contain 0% contain 70%}
-  @keyframes h-phone{from{transform:perspective(1400px) rotateX(26deg) translateY(60px) scale(.88)}to{transform:none}}
-  .h-dim{animation:h-dim linear both;animation-timeline:--hero;animation-range:contain 0% contain 45%}
-  @keyframes h-dim{from{opacity:.3}to{opacity:0}}
-  .h-glow{animation:h-glow linear both;animation-timeline:--hero;animation-range:contain 10% contain 80%}
-  @keyframes h-glow{from{opacity:.6;transform:scale(.8)}to{opacity:1;transform:none}}
-  .h-title{animation:sharp linear both;animation-timeline:--hero;animation-range:contain 55% contain 85%}
-  .h-sub{animation:rise linear both;animation-timeline:--hero;animation-range:contain 70% contain 95%}
-  .h-cue{animation:fade linear both;animation-timeline:--hero;animation-range:contain 0% contain 15%}
-  @keyframes fade{to{opacity:0}}
-  @keyframes sharp{from{opacity:0;transform:translateY(30px) scale(1.06)}to{opacity:1;transform:none}}
-  @keyframes rise{from{opacity:0;transform:translateY(40px)}to{opacity:1;transform:none}}
-
-  /* features: the phone stays, its screen and the words change with each step */
-  .panel,.screen{animation:step linear both;animation-timeline:--feat}
-  @keyframes step{0%{opacity:0;transform:translateY(50px)}18%,82%{opacity:1;transform:none}100%{opacity:0;transform:translateY(-40px)}}
-  .s0{animation-range:contain 0% contain 17%}.s1{animation-range:contain 16.6% contain 33.3%}.s2{animation-range:contain 33.3% contain 50%}
-  .s3{animation-range:contain 50% contain 66.6%}.s4{animation-range:contain 66.6% contain 83.3%}.s5{animation-range:contain 83.3% contain 100%}
-  .s0{animation-name:first}.s5{animation-name:last}
-  @keyframes first{0%,82%{opacity:1;transform:none}100%{opacity:0;transform:translateY(-40px)}}
-  @keyframes last{0%{opacity:0;transform:translateY(50px)}18%,100%{opacity:1;transform:none}}
-  .f-bar i{transform-origin:left;animation:barfill linear both;animation-timeline:--feat;animation-range:contain 0% contain 100%}
-  @keyframes barfill{from{transform:scaleX(0)}to{transform:scaleX(1)}}
-  .f-phone{animation:f-tilt linear both;animation-timeline:--feat;animation-range:contain 0% contain 100%}
-  @keyframes f-tilt{0%{transform:perspective(1400px) rotateY(-14deg) rotateX(4deg)}50%{transform:perspective(1400px) rotateY(10deg) rotateX(-2deg)}100%{transform:perspective(1400px) rotateY(-8deg) rotateX(3deg)}}
-
-  /* desk AI: the orb grows, questions arrive one by one, the answer lands */
-  .ai-orb{animation:orb linear both;animation-timeline:--ai;animation-range:contain 0% contain 45%}
-  @keyframes orb{from{transform:scale(.25);opacity:.2}to{transform:none;opacity:1}}
-  .ai-title{animation:sharp linear both;animation-timeline:--ai;animation-range:contain 5% contain 30%}
-  .q{animation:qin linear both;animation-timeline:--ai}
-  @keyframes qin{from{opacity:0;transform:translate(var(--qx),var(--qy)) scale(.6)}to{opacity:1;transform:none}}
-  .q0{animation-range:contain 25% contain 40%}.q1{animation-range:contain 32% contain 47%}.q2{animation-range:contain 39% contain 54%}.q3{animation-range:contain 46% contain 61%}.q4{animation-range:contain 53% contain 68%}
-  .ai-ans{animation:rise linear both;animation-timeline:--ai;animation-range:contain 66% contain 86%}
-}
-@supports not (animation-timeline: view()){
-  .panel:not(.s0),.screen:not(.s0){display:none}
-}
-
-/* layout */
-.f-grid{width:min(1240px,100%);padding:0 40px;display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:60px;align-items:center}
-.claim{display:flex;width:min(620px,100%);border:1px solid #3E343E;background:#1A151A}
-.claim input{flex:1;min-width:0;height:64px;padding:0 0 0 22px;border:0;background:transparent;color:#F4EEF2;font:600 20px Geist,sans-serif;outline:0}
-.claim .dom{display:flex;align-items:center;padding:0 16px 0 2px;color:#A39AA1;font:500 20px Geist,sans-serif;white-space:nowrap}
-.foot-cols{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:30px}
-.caps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;width:min(1100px,100%)}
-@media (max-width: 900px){
-.big{font-size:68px}.mid{font-size:52px}.body{font-size:16.5px}
-.eb{font-size:11.5px;letter-spacing:.28em}
-.f-grid{grid-template-columns:minmax(0,1fr);padding:0 20px;gap:18px;align-content:center}
-.f-phone-wrap{order:2;transform:scale(.7);margin:-90px 0}
-.claim{flex-wrap:wrap}.claim .dom{font-size:16px}.claim .neo{width:100%}
-.foot-cols{grid-template-columns:repeat(2,minmax(0,1fr))}
-.caps{grid-template-columns:minmax(0,1fr)}
-.qs{transform:scale(.62)}
-}
-/* hero: header room on top, then phone, title and line, all on one screen */
-/* Desk AI the same way: the question area zooms with the screen height */
-.hero .stage,.ai .stage{padding:96px 0 26px}
-.ai .big{font-size:clamp(56px,10vh,112px)}
-@media (max-height: 899px){.qs{zoom:.86}}
-@media (max-height: 799px){.qs{zoom:.7}}
-@media (max-height: 699px){.qs{zoom:.58}}
-.stage{top:max(0px,calc(50vh - 480px))}
-.h-phone-wrap{zoom:.8}
-.h-words{margin-top:max(22px,3.6vh)}
-.hero .big{font-size:clamp(56px,10vh,112px)}
-.hero .body{font-size:min(20px,2.1vh + 2px)}
-@media (max-height: 959px){.h-phone-wrap{zoom:.78}}
-@media (max-height: 899px){.h-phone-wrap{zoom:.66}}
-@media (max-height: 799px){.h-phone-wrap{zoom:.52}}
-@media (max-height: 699px){.h-phone-wrap{zoom:.42}}
-@media (max-width: 900px){
-.hero .stage,.ai .stage{padding:84px 0 22px}
-.qs{zoom:.62}
-.hero .big,.ai .big{font-size:min(68px,8vh)}.hero .body{font-size:16px}
-.h-phone-wrap{zoom:.68}
-}
-@media (max-width: 900px) and (max-height: 799px){.h-phone-wrap{zoom:.56}}
-@media (max-width: 900px) and (max-height: 699px){.h-phone-wrap{zoom:.46}.qs{zoom:.5}}
-@media (prefers-reduced-motion: reduce){*{animation:none!important}}
-@media (max-width: 520px){header{padding: 16px 18px!important}header .signin{margin-right: 16px!important;font-size: 13px!important}header .neo{height: 40px!important;padding: 0 14px!important;font-size: 11px!important}}
-</style>
 </head>
 <body>
-<div style="position: relative; background: #110D11; color: #F4EEF2; font-family: Geist, system-ui, sans-serif">
 
-  <!-- Top bar -->
-  <header style="position: fixed; z-index: 20; top: 0; left: 0; right: 0; display: flex; align-items: center; padding: 24px 40px; background: linear-gradient(180deg, rgba(17,13,17,.85), transparent)">
-    <a href="#top" style="display: grid; justify-items: center; gap: 4px" aria-label="Miracle home">
-      <svg width="38" height="38" viewBox="0 0 512 512" aria-hidden="true"><defs><linearGradient id="mkg" gradientUnits="userSpaceOnUse" x1="60" y1="100" x2="560" y2="440"><stop offset="0" stop-color="#6b3fd4"></stop><stop offset=".52" stop-color="#d4296a"></stop><stop offset="1" stop-color="#f2994a"></stop></linearGradient></defs><g transform="translate(256 256) scale(1.08) translate(-256 -256)"><g transform="translate(256 256) scale(.79) skewX(-13) translate(-304.5 -266)" fill="none" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"><path transform="translate(-13 -10)" stroke="#ffffff" stroke-opacity=".94" d="M64 128C92 104 132 112 144 156C154 220 158 330 156 392C155 420 182 420 182 392C182 300 176 200 196 160C220 104 290 104 300 160C310 220 312 330 310 392C309 420 336 420 336 392C336 300 330 200 350 160C374 104 444 104 452 160C460 230 456 330 452 392C450 440 500 440 540 360M499 384L540 360L545 408"></path><path transform="translate(13 10)" stroke="url(#mkg)" d="M64 128C92 104 132 112 144 156C154 220 158 330 156 392C155 420 182 420 182 392C182 300 176 200 196 160C220 104 290 104 300 160C310 220 312 330 310 392C309 420 336 420 336 392C336 300 330 200 350 160C374 104 444 104 452 160C460 230 456 330 452 392C450 440 500 440 540 360M499 384L540 360L545 408"></path></g></g></svg>
-      <span style="font: 700 10.5px Geist, sans-serif; letter-spacing: .34em">MIRACLE</span>
+<div class="grain" aria-hidden="true"></div>
+<div class="cursor" aria-hidden="true"></div>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <linearGradient id="kg" gradientUnits="userSpaceOnUse" x1="60" y1="100" x2="560" y2="440"><stop offset="0" stop-color="#6b3fd4"/><stop offset=".52" stop-color="#d4296a"/><stop offset="1" stop-color="#f2994a"/></linearGradient>
+    <linearGradient id="kgb" gradientUnits="userSpaceOnUse" x1="60" y1="100" x2="560" y2="440"><stop offset="0" stop-color="#9C7BFF"/><stop offset=".52" stop-color="#F25A90"/><stop offset="1" stop-color="#FFAE6B"/></linearGradient>
+    <linearGradient id="rg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#9C7BFF"/><stop offset=".55" stop-color="#F25A90"/><stop offset="1" stop-color="#FFAE6B"/></linearGradient>
+    <filter id="sparkBlur" x="-200%" y="-200%" width="500%" height="500%"><feGaussianBlur stdDeviation="6"/></filter>
+    <path id="kd" d="M64 128C92 104 132 112 144 156C154 220 158 330 156 392C155 420 182 420 182 392C182 300 176 200 196 160C220 104 290 104 300 160C310 220 312 330 310 392C309 420 336 420 336 392C336 300 330 200 350 160C374 104 444 104 452 160C460 230 456 330 452 392C450 440 500 440 540 360M499 384L540 360L545 408"/>
+    <symbol id="spk" viewBox="0 0 32 32"><path d="M16 1.5c1.2 8.2 6.3 13.3 14.5 14.5-8.2 1.2-13.3 6.3-14.5 14.5C14.8 22.3 9.7 17.2 1.5 16 9.7 14.8 14.8 9.7 16 1.5z" fill="currentColor"/></symbol>
+  </defs>
+</svg>
+
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="#top" aria-label="Miracle, back to the top">
+      <svg viewBox="0 0 512 512" aria-hidden="true"><g transform="translate(256 256) scale(1.04) translate(-256 -256)"><g transform="translate(256 256) scale(.79) skewX(-13) translate(-304.5 -266)" fill="none" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"><use href="#kd" transform="translate(-13 -10)" stroke="#F4EEF2"/><use href="#kd" transform="translate(13 10)" stroke="url(#kg)"/></g></g></svg>
+      <b>Miracle</b>
     </a>
-    <a class="signin" href="https://collab-desk.zypocare.workers.dev/login" style="margin-left: auto; margin-right: 22px; font: 600 14px Geist, sans-serif; color: #C9BFC6; white-space: nowrap">Sign in</a>
-    <a class="neo" href="#claim" style="white-space: nowrap; height: 46px; padding: 0 20px; font-size: 12.5px; background: #F4EEF2; color: #1E171C; box-shadow: 4px 4px 0 #F25A90">Claim your link</a>
-  </header>
+    <nav class="nav" aria-label="Sections">
+      <a href="#how">How it works</a>
+      <a href="#features">Features</a>
+      <a href="#ai">Desk AI</a>
+      <a href="#trust">No commission</a>
+    </nav>
+    <a class="signin" href="https://collab-desk.zypocare.workers.dev/login">Sign in</a>
+    <a class="neo light mag" href="#claim">Claim your link</a>
+  </div>
+</header>
 
-  <!-- ===== 1 · Hero: scroll and the phone stands up, lit ===== -->
-  <section id="top" class="hero">
-    <div class="stage" style="flex-direction: column">
-      <span aria-hidden="true" class="h-glow" style="position: absolute; left: 50%; top: 46%; width: 980px; height: 980px; margin: -490px 0 0 -490px; border-radius: 50%; background: radial-gradient(circle, rgba(156,123,255,.32), rgba(242,90,144,.16) 40%, transparent 70%)"></span>
-      <div class="h-phone-wrap" style="position: relative">
-        <div class="h-phone rimbox" style="border-radius: 54px; box-shadow: 0 60px 160px -40px rgba(242,90,144,.6)">
-          <div style="position: relative; width: 300px; height: 600px; border-radius: 53px; overflow: hidden; background: #110D11">
-            <span aria-hidden="true" class="h-dim" style="position: absolute; inset: 0; z-index: 5; background: #08060A; pointer-events: none"></span>
-            <span aria-hidden="true" style="position: absolute; top: 0; bottom: 0; left: 0; width: 45%; background: linear-gradient(90deg, transparent, rgba(255,255,255,.14), transparent); animation: streak 6s ease-in-out 1s infinite"></span>
-            <div style="position: absolute; inset: 0; padding: 54px 18px 18px; display: flex; flex-direction: column; gap: 13px; text-align: left">
-              <span aria-hidden="true" style="position: absolute; top: 14px; left: 50%; width: 92px; height: 26px; margin-left: -46px; border-radius: 20px; background: #000"></span>
-              <span style="font: 600 9.5px Geist, sans-serif; letter-spacing: .3em; color: #A39AA1">TUESDAY · 3 NEED YOU</span>
-              <b class="serif" style="font-size: 34px; line-height: 1">Good morning, <em class="gl">Nivy</em></b>
-              <div style="border-radius: 22px; padding: 15px; background: radial-gradient(120% 90% at 0% 0%, rgba(242,90,144,.4), transparent 55%), linear-gradient(140deg, #2a1424, #160c14); display: grid; gap: 4px">
-                <small style="font: 600 8.5px Geist, sans-serif; letter-spacing: .26em; color: rgba(255,255,255,.7)">RECEIVED IN OCTOBER</small>
-                <b class="serif" style="font-size: 40px; line-height: 1">₹1,64,598</b>
+<main id="top">
+  <!-- 1 · Hero -->
+  <section class="hero" aria-labelledby="hero-title">
+    <div class="hero-bg" aria-hidden="true"></div>
+    <canvas id="aurora" aria-hidden="true"></canvas>
+    <div class="hero-grid" aria-hidden="true"><i></i></div>
+    <div class="hero-veil" aria-hidden="true"></div>
+    <svg class="big-mark draw-mark" viewBox="0 0 512 512" aria-hidden="true">
+      <g transform="translate(256 256) scale(.79) skewX(-13) translate(-304.5 -266)" fill="none" stroke-linecap="round" stroke-linejoin="round">
+        <g class="line" transform="translate(-9 -7)"><use class="glow" href="#kd" stroke="#F4EEF2"/><path class="core draw" stroke="#F4EEF2" d="M64 128C92 104 132 112 144 156C154 220 158 330 156 392C155 420 182 420 182 392C182 300 176 200 196 160C220 104 290 104 300 160C310 220 312 330 310 392C309 420 336 420 336 392C336 300 330 200 350 160C374 104 444 104 452 160C460 230 456 330 452 392C450 440 500 440 540 360M499 384L540 360L545 408"/><circle class="spark" r="16" fill="#fff" opacity="0"/></g>
+        <g class="line" transform="translate(10 8)"><use class="glow" href="#kd" stroke="url(#kgb)"/><path class="core draw" stroke="url(#kgb)" d="M64 128C92 104 132 112 144 156C154 220 158 330 156 392C155 420 182 420 182 392C182 300 176 200 196 160C220 104 290 104 300 160C310 220 312 330 310 392C309 420 336 420 336 392C336 300 330 200 350 160C374 104 444 104 452 160C460 230 456 330 452 392C450 440 500 440 540 360M499 384L540 360L545 408"/><circle class="spark" r="16" fill="#FFAE6B" opacity="0"/></g>
+      </g>
+    </svg>
+    <div class="wrap">
+      <div class="hero-copy">
+        <span class="eb">For creators in India</span>
+        <h1 id="hero-title"><span class="ln"><span>Every collab,</span></span><span class="ln"><span class="gt">handled.</span></span></h1>
+        <p class="lede">Miracle runs the business side of being a creator. Brand requests, quotes, GST invoices, payments and a desk AI that knows your work. You keep every rupee.</p>
+        <div class="cta-row">
+          <a class="neo grad mag" href="#claim"><span class="shine" aria-hidden="true"></span>Claim your link</a>
+          <a class="neo ghost mag" href="#how">See how it works</a>
+        </div>
+        <div class="trust"><span><i></i>No commission on your deals</span><span><i></i>Brands pay you directly</span></div>
+      </div>
+
+      <div class="stage3d" aria-label="The Miracle app home screen">
+        <div class="phone3d">
+          <div class="phone">
+            <div class="screen">
+              <span class="island" aria-hidden="true"></span>
+              <div class="ph-status" aria-hidden="true"><span>9:41</span><span>●●● ▮</span></div>
+              <div class="ph-bar"><b>Miracle</b><span aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg><svg viewBox="0 0 32 32" style="color:#F25A90"><use href="#spk"/></svg><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4z"/></svg></span></div>
+              <div class="ph-hero">
+                <div><small>Wednesday, 21 October</small><b class="ph-hi">Good evening,<em>Nivy</em></b><span class="ph-due"><i></i>3 due today · 12 active collabs</span></div>
+                <div class="ph-ring"><svg viewBox="0 0 96 96"><circle cx="48" cy="48" r="43" fill="#140e14" stroke="rgba(255,255,255,.1)" stroke-width="4"/><circle cx="48" cy="48" r="43" fill="none" stroke="url(#rg)" stroke-width="4" stroke-linecap="round" stroke-dasharray="270" stroke-dashoffset="40" transform="rotate(-90 48 48)"/></svg><div><b>251.3K</b><small>followers</small><span>2.4% eng.</span></div></div>
               </div>
-              
-                <div style="display: flex; align-items: center; gap: 10px; padding: 11px; border-radius: 16px; color: #fff; background: linear-gradient(135deg, #2F6F9F, color-mix(in oklab, #2F6F9F 40%, #08060a) 78%)"><span style="width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; background: rgba(255,255,255,.18); font: 800 10.5px Geist, sans-serif">GC</span><span style="flex: 1; display: grid"><b class="serif" style="font-size: 19px; font-style: italic; line-height: 1.05">Glowberry</b><small style="font: 700 8px Geist, sans-serif; letter-spacing: .16em; color: rgba(255,255,255,.75)">NEW REQUEST</small></span><b style="font: 700 13px Geist, sans-serif">₹68k</b></div>
-              
-                <div style="display: flex; align-items: center; gap: 10px; padding: 11px; border-radius: 16px; color: #fff; background: linear-gradient(135deg, #3D7F6A, color-mix(in oklab, #3D7F6A 40%, #08060a) 78%)"><span style="width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; background: rgba(255,255,255,.18); font: 800 10.5px Geist, sans-serif">KN</span><span style="flex: 1; display: grid"><b class="serif" style="font-size: 19px; font-style: italic; line-height: 1.05">Kumkum Naturals</b><small style="font: 700 8px Geist, sans-serif; letter-spacing: .16em; color: rgba(255,255,255,.75)">PAID TODAY</small></span><b style="font: 700 13px Geist, sans-serif">₹40k</b></div>
-              
-                <div style="display: flex; align-items: center; gap: 10px; padding: 11px; border-radius: 16px; color: #fff; background: linear-gradient(135deg, #A8466E, color-mix(in oklab, #A8466E 40%, #08060a) 78%)"><span style="width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; background: rgba(255,255,255,.18); font: 800 10.5px Geist, sans-serif">S</span><span style="flex: 1; display: grid"><b class="serif" style="font-size: 19px; font-style: italic; line-height: 1.05">Sorso</b><small style="font: 700 8px Geist, sans-serif; letter-spacing: .16em; color: rgba(255,255,255,.75)">DRAFT DUE FRIDAY</small></span><b style="font: 700 13px Geist, sans-serif">₹18k</b></div>
-              
+              <div class="ph-stories" aria-hidden="true">
+                <span class="st me"><i><b>ND</b></i>New collab</span>
+                <span class="st"><i><b style="background:#2F6F9F">GB</b></i>Glowberry</span>
+                <span class="st"><i><b style="background:#3D7F6A">KN</b></i>Kumkum</span>
+                <span class="st"><i><b style="background:#A8466E">S</b></i>Sorso</span>
+                <span class="st"><i><b style="background:#A66A2C">M</b></i>Mustard</span>
+              </div>
+              <div class="ph-tick" aria-hidden="true"><div><span><b>3</b> new requests waiting</span><span class="s">✦</span><span><b>₹3.04L</b> still to come</span><span class="s">✦</span><span>Draft due <b>Friday</b></span><span class="s">✦</span><span><b>3</b> new requests waiting</span><span class="s">✦</span><span><b>₹3.04L</b> still to come</span><span class="s">✦</span><span>Draft due <b>Friday</b></span><span class="s">✦</span></div></div>
+              <div class="ph-card">
+                <span class="eb">Received in October</span><span class="goal">Goal ₹1.5L</span>
+                <span class="amt">₹3,97,082</span>
+                <span class="ring"><svg viewBox="0 0 70 70"><circle cx="35" cy="35" r="29" fill="none" stroke="rgba(255,255,255,.1)" stroke-width="7"/><circle cx="35" cy="35" r="29" fill="none" stroke="url(#rg)" stroke-width="7" stroke-linecap="round" stroke-dasharray="182" stroke-dashoffset="0" transform="rotate(-90 35 35)"/></svg><span><b>265%</b><small>of goal</small></span></span>
+                <p>from 10 brands · <b>265%</b> of this month's goal</p>
+              </div>
+              <div class="ph-eb">Needs you <span>3</span></div>
+              <div class="ticket mini" style="--h:#2F6F9F;--cut:#110D11">
+                <div class="t-top"><span class="t-ini">GB</span><span class="t-name"><b>Glowberry</b><small>NEW REQUEST</small></span><span class="t-amt"><b>₹68k</b><small>1 REEL</small></span></div>
+                <div class="t-cut"></div>
+                <div class="t-bot"><span><b>Review new request</b><small><i></i>Scored 93 · take it</small></span><span class="neo grad">Review</span></div>
+              </div>
             </div>
           </div>
+          <div class="float f1" data-depth="60"><div class="in" style="display:flex;align-items:center;gap:11px"><span class="fi"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg></span><span><b>₹40,000 just landed</b><small>Kumkum Naturals · INV/26-27/011</small></span></div></div>
+          <div class="float f2" data-depth="90"><div class="in" style="display:flex;align-items:center;gap:11px"><span class="fi" style="background:#3D7F6A"><b style="font:400 17px/1 var(--f-display);color:#fff">93</b></span><span><b>New request scored 93</b><small>Glowberry · 1 Reel · ₹68,000</small></span></div></div>
+          <div class="float f3" data-depth="40"><div class="in" style="display:flex;align-items:center;gap:11px"><span class="fi" style="background:#A8466E"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v12H5.2L4 17.2z"/><path d="M8 9h8M8 12h5"/></svg></span><span><b>Draft approved</b><small>Sorso · goes live Friday, 7 PM</small></span></div></div>
         </div>
       </div>
-      <div class="h-words" style="position: relative; display: grid; justify-items: center; gap: 20px; text-align: center; padding: 0 20px">
-        <h1 class="big h-title">Every collab,<br><span class="gl">handled.</span></h1>
-        <p class="body h-sub">Brands request from your link. Miracle reads the DMs, sends the quote and the GST invoice, and chases the payment.</p>
-      </div>
-      <span class="h-cue eb" style="position: absolute; bottom: 34px; font-size: 11px; display: grid; justify-items: center; gap: 10px">Scroll<i style="display: block; width: 1px; height: 46px; background: linear-gradient(#F25A90, transparent)"></i></span>
     </div>
   </section>
 
-  <!-- ===== 2 · Features: the phone stays put while each step plays ===== -->
-  <section id="features" class="feat">
-    <div class="stage">
-      <span aria-hidden="true" style="position: absolute; right: 8%; top: 50%; width: 700px; height: 700px; margin-top: -350px; border-radius: 50%; background: radial-gradient(circle, rgba(242,90,144,.18), transparent 65%); animation: breathe 8s ease-in-out infinite"></span>
-      <div class="f-grid">
-        <div style="position: relative; height: 520px">
-          
-            <div class="panel s0" style="inset: 0; display: flex; flex-direction: column; justify-content: center; gap: 22px">
-              <span class="eb" style="color: #F25A90">01 · A link that works while you sleep</span>
-              <h2 class="mid">One link.<br><span class="gl">Every brand.</span></h2>
-              <p class="body">Your rates, packages, open weeks and past work on one page. Brands send a proper request instead of a DM.</p>
-            </div>
-          
-            <div class="panel s1" style="inset: 0; display: flex; flex-direction: column; justify-content: center; gap: 22px">
-              <span class="eb" style="color: #9C7BFF">02 · No more lost offers</span>
-              <h2 class="mid">Your DMs,<br><span class="gl">sorted.</span></h2>
-              <p class="body">Every brand message becomes a clear request, scored so you know at a glance if it is worth it.</p>
-            </div>
-          
-            <div class="panel s2" style="inset: 0; display: flex; flex-direction: column; justify-content: center; gap: 22px">
-              <span class="eb" style="color: #FFAE6B">03 · Priced in a tap</span>
-              <h2 class="mid">Quotes that<br><span class="gl">close.</span></h2>
-              <p class="body">Worked out from your rate card: the fee, usage rights, revisions and advance, sent as a clean quote.</p>
-            </div>
-          
-            <div class="panel s3" style="inset: 0; display: flex; flex-direction: column; justify-content: center; gap: 22px">
-              <span class="eb" style="color: #6FD08C">04 · GST. TDS. UPI.</span>
-              <h2 class="mid">Invoices that do<br><span class="gl">the maths.</span></h2>
-              <p class="body">A proper tax invoice with GST and TDS, and a UPI QR for the exact amount due.</p>
-            </div>
-          
-            <div class="panel s4" style="inset: 0; display: flex; flex-direction: column; justify-content: center; gap: 22px">
-              <span class="eb" style="color: #4CCFC2">05 · Stay clear of late payments</span>
-              <h2 class="mid">Get paid<br><span class="gl">on time.</span></h2>
-              <p class="body">Due dates tracked, polite reminders sent for you, and a tap on the shoulder the moment money lands.</p>
-            </div>
-          
-            <div class="panel s5" style="inset: 0; display: flex; flex-direction: column; justify-content: center; gap: 22px">
-              <span class="eb" style="color: #7EA2FF">06 · While you create</span>
-              <h2 class="mid">10 pitches<br><span class="gl">a day.</span></h2>
-              <p class="body">Miracle finds brands that suit you and pitches them from your own email. You approve each one, or let it run.</p>
-            </div>
-          
-          <div class="f-bar" aria-hidden="true" style="position: absolute; left: 0; right: 0; bottom: 0">
-            <span style="position: relative; display: block; height: 3px; background: #2E262E"><i style="position: absolute; inset: 0; display: block; background: linear-gradient(90deg, #9C7BFF, #F25A90, #FFAE6B)"></i></span>
+  <!-- marquee, like the app's ticker -->
+  <div class="marq" aria-hidden="true">
+    <div class="row"><span>Brand requests</span><span class="sp">✦</span><span><em>quotes</em></span><span class="sp">✦</span><span>GST invoices</span><span class="sp">✦</span><span><em>UPI QR</em></span><span class="sp">✦</span><span>payment reminders</span><span class="sp">✦</span><span><em>drafts</em></span><span class="sp">✦</span><span>pitch autopilot</span><span class="sp">✦</span><span><em>desk AI</em></span><span class="sp">✦</span><span>Brand requests</span><span class="sp">✦</span><span><em>quotes</em></span><span class="sp">✦</span><span>GST invoices</span><span class="sp">✦</span><span><em>UPI QR</em></span><span class="sp">✦</span><span>payment reminders</span><span class="sp">✦</span><span><em>drafts</em></span><span class="sp">✦</span><span>pitch autopilot</span><span class="sp">✦</span><span><em>desk AI</em></span><span class="sp">✦</span></div>
+    <div class="row rev"><span>3 new requests waiting</span><span class="sp">✦</span><span>₹3.04L still to come</span><span class="sp">✦</span><span>Draft due Friday</span><span class="sp">✦</span><span>₹40,000 just landed</span><span class="sp">✦</span><span>Post in 30 minutes</span><span class="sp">✦</span><span>3 new requests waiting</span><span class="sp">✦</span><span>₹3.04L still to come</span><span class="sp">✦</span><span>Draft due Friday</span><span class="sp">✦</span><span>₹40,000 just landed</span><span class="sp">✦</span><span>Post in 30 minutes</span><span class="sp">✦</span></div>
+  </div>
+
+  <!-- 2 · The deck: one collab, from request to paid -->
+  <section class="deck" id="how" aria-labelledby="how-title">
+    <div class="deck-stage">
+      <div class="wrap">
+        <div class="deck-copy">
+          <span class="eb">How a collab moves</span>
+          <h2 class="h2" id="how-title">From DM to paid, <span class="gt">on one ticket.</span></h2>
+          <div class="rail" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+          <div class="steps">
+            <div class="step on" style="--c:#7EA2FF"><span class="tag">01 · New request</span><b>A brand finds your link.</b><p>They send a proper request with the budget, dates and deliverables. Miracle scores it so you know at a glance if it's worth it.</p></div>
+            <div class="step" style="--c:#EFB35A"><span class="tag">02 · Quote</span><b>Your quote, in a tap.</b><p>Priced from your rate card: the fee, usage rights, revisions and advance, sent as a clean quote the brand can accept.</p></div>
+            <div class="step" style="--c:#B49CFF"><span class="tag">03 · Draft</span><b>Drafts approved in the thread.</b><p>Send the cut, get notes, agree the go-live time. No lost WhatsApp voice notes.</p></div>
+            <div class="step" style="--c:#4CCFC2"><span class="tag">04 · Live</span><b>It goes live. Proof goes out.</b><p>Miracle spots the post and shares the numbers with the brand on a page they can open anytime.</p></div>
+            <div class="step" style="--c:#6FD08C"><span class="tag">05 · Paid</span><b>And the money lands.</b><p>A GST invoice with a UPI QR for the exact amount, polite reminders, and a ping the moment it's paid.</p></div>
           </div>
         </div>
-        <div class="f-phone-wrap" style="display: grid; place-items: center">
-          <div class="f-phone rimbox" style="border-radius: 50px; box-shadow: 0 50px 140px -40px rgba(156,123,255,.6)">
-            <div style="position: relative; width: 320px; height: 640px; border-radius: 49px; overflow: hidden; background: #110D11">
-              <span aria-hidden="true" style="position: absolute; z-index: 3; top: 14px; left: 50%; width: 92px; height: 26px; margin-left: -46px; border-radius: 20px; background: #000"></span>
-
-              <!-- screen 1: brand page -->
-              <div class="screen s0" style="inset: 0; padding: 58px 18px 18px; display: flex; flex-direction: column; gap: 14px; align-items: center; text-align: center">
-                <span style="font: 600 11px 'Geist Mono', monospace; color: #A39AA1">nivy.miracleapp.live</span>
-                <span style="width: 84px; height: 84px; border-radius: 50%; padding: 3px; background: conic-gradient(#FFAE6B, #F25A90, #9C7BFF, #FFAE6B)"><span style="display: grid; place-items: center; width: 100%; height: 100%; border-radius: 50%; border: 3px solid #110D11; background: #2B2230; font-weight: 800; font-size: 22px">ND</span></span>
-                <b class="serif" style="font-size: 32px; font-style: italic; line-height: 1">Niveditha</b>
-                <small style="font-size: 12px; color: #A39AA1">Lifestyle · Travel · Food · Bengaluru</small>
-                <div style="width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 8px">
-                  <span style="padding: 12px; border: 1px solid #2E262E; display: grid; gap: 2px"><b class="serif" style="font-size: 24px">251K</b><small style="font-size: 10px; letter-spacing: .14em; color: #A39AA1">FOLLOWERS</small></span>
-                  <span style="padding: 12px; border: 1px solid #2E262E; display: grid; gap: 2px"><b class="serif" style="font-size: 24px">₹18k</b><small style="font-size: 10px; letter-spacing: .14em; color: #A39AA1">PER REEL</small></span>
-                </div>
-                <span style="width: 100%; padding: 12px; border: 1px solid #2E262E; display: flex; justify-content: space-between; font-size: 12.5px"><span style="color: #A39AA1">This week</span><b style="color: #6FD08C">2 slots open</b></span>
-                <span class="neo" style="width: 100%; height: 48px; background: #F4EEF2; color: #1E171C; box-shadow: 3px 3px 0 #F25A90; font-size: 12px">Send a request</span>
-              </div>
-
-              <!-- screen 2: a DM becomes a request -->
-              <div class="screen s1" style="inset: 0; padding: 58px 16px 18px; display: flex; flex-direction: column; gap: 12px">
-                <span style="font: 600 9.5px Geist, sans-serif; letter-spacing: .3em; color: #A39AA1">FROM YOUR DMS</span>
-                <div style="align-self: flex-start; max-width: 85%; padding: 11px 13px; border-radius: 16px 16px 16px 4px; background: #231D23; font-size: 13px; line-height: 1.4">hi! loved ur cafe reels. can u do 1 reel for our new menu? budget around 15k</div>
-                <div style="align-self: center; display: flex; align-items: center; gap: 8px; font: 700 10px Geist, sans-serif; letter-spacing: .2em; color: #F25A90"><i style="width: 18px; height: 18px; border-radius: 50%; background: conic-gradient(#9C7BFF, #F25A90, #FFAE6B, #9C7BFF); animation: spin 3s linear infinite"></i>DESK AI READ IT</div>
-                <div style="border-radius: 18px; overflow: hidden; background: #1A151A; border: 1px solid #2E262E">
-                  <div style="display: flex; align-items: center; gap: 10px; padding: 12px; background: linear-gradient(135deg, #A8466E, color-mix(in oklab, #A8466E 40%, #08060a) 78%)"><span style="width: 32px; height: 32px; border-radius: 10px; display: grid; place-items: center; background: rgba(255,255,255,.18); font-weight: 800; font-size: 11px">S</span><span style="flex: 1; display: grid"><b class="serif" style="font-size: 21px; font-style: italic">Sorso</b><small style="font: 700 8.5px Geist, sans-serif; letter-spacing: .16em; color: rgba(255,255,255,.75)">NEW REQUEST · 1 REEL</small></span><b>₹15k</b></div>
-                  <div style="display: grid; grid-template-columns: auto 1fr; gap: 12px; align-items: center; padding: 12px; border-top: 1.5px dashed #3E343E">
-                    <span style="width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center; border: 4px solid #EFB35A; font: 400 20px 'Instrument Serif', serif">71</span>
-                    <span style="display: grid; gap: 2px"><b style="font-size: 12.5px; color: #EFB35A; letter-spacing: .12em">NEGOTIATE</b><small style="font-size: 11.5px; color: #A39AA1">Below your rate. Counter at ₹18,000.</small></span>
-                  </div>
-                </div>
-              </div>
-
-              <!-- screen 3: quote -->
-              <div class="screen s2" style="inset: 0; padding: 58px 18px 18px; display: flex; flex-direction: column; gap: 14px">
-                <span style="font: 600 9.5px Geist, sans-serif; letter-spacing: .3em; color: #A39AA1">QUOTE · SORSO</span>
-                <b class="serif" style="font-size: 64px; line-height: 1">₹<span class="cnt"></span>,000</b>
-                <div style="display: grid; gap: 8px; font-size: 13px">
-                  <span style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #2E262E"><span style="color: #A39AA1">1 Reel</span><b>₹15,000</b></span>
-                  <span style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #2E262E"><span style="color: #A39AA1">Usage · 30 days</span><b>₹3,000</b></span>
-                  <span style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #2E262E"><span style="color: #A39AA1">Revisions</span><b>2 included</b></span>
-                  <span style="display: flex; justify-content: space-between; padding: 10px 0"><span style="color: #A39AA1">Advance</span><b>50%</b></span>
-                </div>
-                <span class="neo" style="margin-top: auto; height: 50px; background: linear-gradient(110deg, #9C7BFF, #F25A90 55%, #FFAE6B); color: #fff; box-shadow: 4px 4px 0 #5c3ea0; font-size: 12px">Send quote</span>
-              </div>
-
-              <!-- screen 4: invoice -->
-              <div class="screen s3" style="inset: 0; padding: 58px 18px 18px; display: flex; flex-direction: column; gap: 12px">
-                <span style="font: 600 9.5px Geist, sans-serif; letter-spacing: .3em; color: #A39AA1">TAX INVOICE · INV/26-27/014</span>
-                <div style="display: grid; gap: 8px; font-size: 13px">
-                  <span style="display: flex; justify-content: space-between"><span style="color: #A39AA1">Fee</span><b>₹18,000</b></span>
-                  <span style="display: flex; justify-content: space-between"><span style="color: #A39AA1">GST 18%</span><b>₹3,240</b></span>
-                  <span style="display: flex; justify-content: space-between"><span style="color: #A39AA1">TDS 10%</span><b style="color: #FF9B92">– ₹1,800</b></span>
-                </div>
-                <div style="margin-top: 6px; padding: 16px; display: grid; justify-items: center; gap: 10px; background: #F4EEF2; color: #1E171C">
-                  <span aria-hidden="true" style="width: 120px; height: 120px; display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px">
-                    <i style="display: block; background: #1E171C"></i><i style="display: block; background: #1E171C"></i><i style="display: block; background: #1E171C"></i><i style="display: block; background: transparent"></i><i style="display: block; background: #1E171C"></i><i style="display: block; background: #1E171C"></i><i style="display: block; background: #1E171C"></i><i style="display: block; background: #1E171C"></i><i style="display: block; background: transparent"></i><i style="display: block; background: transparent"></i><i style="display: block; background: transparent"></i><i style="display: block; background: #1E171C"></i><i style="display: block; background: transparent"></i><i style="display: block; background: #1E171C"></i><i style="display: block; background: #1E171C"></i><i style="display: block; background: transparent"></i><i style="display: block; background: #1E171C"></i><i style="display: block; background: transparent"></i><i style="display: block; background: #1E171C"></i><i style="display: block; background: #1E171C"></i><i style="display: block; background: #1E171C"></i><i style="display: block; background: #1E171C"></i><i style="display: block; background: #1E171C"></i><i style="display: block; background: #1E171C"></i><i style="display: block; background: transparent"></i><i style="display: block; background: #1E171C"></i><i style="display: block; background: #1E171C"></i><i style="display: block; background: transparent"></i><i style="display: block; background: transparent"></i><i style="display: block; background: #1E171C"></i><i style="display: block; background: transparent"></i><i style="display: block; background: transparent"></i><i style="display: block; background: transparent"></i><i style="display: block; background: #1E171C"></i><i style="display: block; background: #1E171C"></i><i style="display: block; background: transparent"></i><i style="display: block; background: #1E171C"></i><i style="display: block; background: #1E171C"></i><i style="display: block; background: #1E171C"></i><i style="display: block; background: transparent"></i><i style="display: block; background: #1E171C"></i><i style="display: block; background: transparent"></i><i style="display: block; background: #1E171C"></i><i style="display: block; background: #1E171C"></i><i style="display: block; background: transparent"></i><i style="display: block; background: #1E171C"></i><i style="display: block; background: #1E171C"></i><i style="display: block; background: #1E171C"></i><i style="display: block; background: transparent"></i>
-                  </span>
-                  <small style="font: 700 10px Geist, sans-serif; letter-spacing: .2em">PAY BY ANY UPI APP</small>
-                  <b class="serif" style="font-size: 38px; line-height: 1">₹19,440</b>
-                </div>
-              </div>
-
-              <!-- screen 5: payments -->
-              <div class="screen s4" style="inset: 0; padding: 58px 14px 18px; display: flex; flex-direction: column; gap: 12px">
-                <span style="font: 600 9.5px Geist, sans-serif; letter-spacing: .3em; color: #A39AA1">TODAY</span>
-                
-                  <div style="display: flex; align-items: center; gap: 10px; padding: 8px 14px 8px 8px; border-radius: 999px; background: #1A151A; box-shadow: 0 0 0 1px #3E343E"><span style="flex: none; width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; background: linear-gradient(135deg, #9C7BFF, #F25A90 60%, #FFAE6B)"><svg width="20" height="20" viewBox="0 0 512 512" aria-hidden="true"><g transform="translate(256 256) scale(1.1) translate(-256 -256)"><g transform="translate(256 256) scale(.79) skewX(-13) translate(-304.5 -266)" fill="none" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"><path transform="translate(-13 -10)" stroke="#ffffff" stroke-opacity=".94" d="M64 128C92 104 132 112 144 156C154 220 158 330 156 392C155 420 182 420 182 392C182 300 176 200 196 160C220 104 290 104 300 160C310 220 312 330 310 392C309 420 336 420 336 392C336 300 330 200 350 160C374 104 444 104 452 160C460 230 456 330 452 392C450 440 500 440 540 360M499 384L540 360L545 408"></path><path transform="translate(13 10)" stroke="#ffffff" d="M64 128C92 104 132 112 144 156C154 220 158 330 156 392C155 420 182 420 182 392C182 300 176 200 196 160C220 104 290 104 300 160C310 220 312 330 310 392C309 420 336 420 336 392C336 300 330 200 350 160C374 104 444 104 452 160C460 230 456 330 452 392C450 440 500 440 540 360M499 384L540 360L545 408"></path></g></g></svg></span><span style="display: grid"><b style="font-size: 12.5px">₹40,000 just landed</b><small style="font-size: 11px; color: #A39AA1">Kumkum Naturals · INV/26-27/011</small></span></div>
-                
-                  <div style="display: flex; align-items: center; gap: 10px; padding: 8px 14px 8px 8px; border-radius: 999px; background: #1A151A; box-shadow: 0 0 0 1px #3E343E"><span style="flex: none; width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; background: linear-gradient(135deg, #9C7BFF, #F25A90 60%, #FFAE6B)"><svg width="20" height="20" viewBox="0 0 512 512" aria-hidden="true"><g transform="translate(256 256) scale(1.1) translate(-256 -256)"><g transform="translate(256 256) scale(.79) skewX(-13) translate(-304.5 -266)" fill="none" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"><path transform="translate(-13 -10)" stroke="#ffffff" stroke-opacity=".94" d="M64 128C92 104 132 112 144 156C154 220 158 330 156 392C155 420 182 420 182 392C182 300 176 200 196 160C220 104 290 104 300 160C310 220 312 330 310 392C309 420 336 420 336 392C336 300 330 200 350 160C374 104 444 104 452 160C460 230 456 330 452 392C450 440 500 440 540 360M499 384L540 360L545 408"></path><path transform="translate(13 10)" stroke="#ffffff" d="M64 128C92 104 132 112 144 156C154 220 158 330 156 392C155 420 182 420 182 392C182 300 176 200 196 160C220 104 290 104 300 160C310 220 312 330 310 392C309 420 336 420 336 392C336 300 330 200 350 160C374 104 444 104 452 160C460 230 456 330 452 392C450 440 500 440 540 360M499 384L540 360L545 408"></path></g></g></svg></span><span style="display: grid"><b style="font-size: 12.5px">Reminder sent politely</b><small style="font-size: 11px; color: #A39AA1">Glowberry · due tomorrow</small></span></div>
-                
-                  <div style="display: flex; align-items: center; gap: 10px; padding: 8px 14px 8px 8px; border-radius: 999px; background: #1A151A; box-shadow: 0 0 0 1px #3E343E"><span style="flex: none; width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; background: linear-gradient(135deg, #9C7BFF, #F25A90 60%, #FFAE6B)"><svg width="20" height="20" viewBox="0 0 512 512" aria-hidden="true"><g transform="translate(256 256) scale(1.1) translate(-256 -256)"><g transform="translate(256 256) scale(.79) skewX(-13) translate(-304.5 -266)" fill="none" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"><path transform="translate(-13 -10)" stroke="#ffffff" stroke-opacity=".94" d="M64 128C92 104 132 112 144 156C154 220 158 330 156 392C155 420 182 420 182 392C182 300 176 200 196 160C220 104 290 104 300 160C310 220 312 330 310 392C309 420 336 420 336 392C336 300 330 200 350 160C374 104 444 104 452 160C460 230 456 330 452 392C450 440 500 440 540 360M499 384L540 360L545 408"></path><path transform="translate(13 10)" stroke="#ffffff" d="M64 128C92 104 132 112 144 156C154 220 158 330 156 392C155 420 182 420 182 392C182 300 176 200 196 160C220 104 290 104 300 160C310 220 312 330 310 392C309 420 336 420 336 392C336 300 330 200 350 160C374 104 444 104 452 160C460 230 456 330 452 392C450 440 500 440 540 360M499 384L540 360L545 408"></path></g></g></svg></span><span style="display: grid"><b style="font-size: 12.5px">Post in 30 minutes</b><small style="font-size: 11px; color: #A39AA1">Sorso · 1 Reel at 7 PM</small></span></div>
-                
-                <div style="margin-top: 8px; border-radius: 20px; padding: 16px; background: radial-gradient(120% 90% at 0% 0%, rgba(242,90,144,.4), transparent 55%), linear-gradient(140deg, #2a1424, #160c14); display: grid; gap: 4px">
-                  <small style="font: 600 8.5px Geist, sans-serif; letter-spacing: .26em; color: rgba(255,255,255,.7)">STILL TO COME</small>
-                  <b class="serif" style="font-size: 40px; line-height: 1">₹2,99,082</b>
-                  <small style="font-size: 11.5px; color: #6FD08C">Nothing overdue</small>
-                </div>
-              </div>
-
-              <!-- screen 6: pitch autopilot -->
-              <div class="screen s5" style="inset: 0; padding: 58px 16px 18px; display: flex; flex-direction: column; gap: 10px">
-                <span style="font: 600 9.5px Geist, sans-serif; letter-spacing: .3em; color: #A39AA1">PITCH AUTOPILOT · TODAY</span>
-                
-                  <div style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid #2E262E; background: #1A151A"><span style="flex: none; width: 9px; height: 9px; border-radius: 50%; background: #6FD08C"></span><span style="flex: 1; display: grid"><b style="font-size: 13px">A coffee roaster</b><small style="font-size: 10.5px; color: #A39AA1">Coffee · fits your café reels</small></span><small style="font: 700 9px Geist, sans-serif; letter-spacing: .14em; color: #6FD08C">SENT</small></div>
-                
-                  <div style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid #2E262E; background: #1A151A"><span style="flex: none; width: 9px; height: 9px; border-radius: 50%; background: #FFAE6B"></span><span style="flex: 1; display: grid"><b style="font-size: 13px">A skincare label</b><small style="font-size: 10.5px; color: #A39AA1">Skincare · email found</small></span><small style="font: 700 9px Geist, sans-serif; letter-spacing: .14em; color: #FFAE6B">READY</small></div>
-                
-                  <div style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid #2E262E; background: #1A151A"><span style="flex: none; width: 9px; height: 9px; border-radius: 50%; background: #FFAE6B"></span><span style="flex: 1; display: grid"><b style="font-size: 13px">A streetwear brand</b><small style="font-size: 10.5px; color: #A39AA1">Fashion · email found</small></span><small style="font: 700 9px Geist, sans-serif; letter-spacing: .14em; color: #FFAE6B">READY</small></div>
-                
-                  <div style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid #2E262E; background: #1A151A"><span style="flex: none; width: 9px; height: 9px; border-radius: 50%; background: #6FD08C"></span><span style="flex: 1; display: grid"><b style="font-size: 13px">A travel gear brand</b><small style="font-size: 10.5px; color: #A39AA1">Travel · follow-up 1</small></span><small style="font: 700 9px Geist, sans-serif; letter-spacing: .14em; color: #6FD08C">SENT</small></div>
-                
-                  <div style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid #2E262E; background: #1A151A"><span style="flex: none; width: 9px; height: 9px; border-radius: 50%; background: #F25A90"></span><span style="flex: 1; display: grid"><b style="font-size: 13px">A snack brand</b><small style="font-size: 10.5px; color: #A39AA1">Food · they replied</small></span><small style="font: 700 9px Geist, sans-serif; letter-spacing: .14em; color: #F25A90">REPLIED</small></div>
-                
-              </div>
-            </div>
+        <div class="pile">
+          <div class="ticket" style="--h:#2F6F9F">
+            <div class="t-top"><span class="t-ini">GB</span><span class="t-name"><b>Glowberry</b><small>NEW REQUEST</small></span><span class="t-amt"><b>₹68k</b><small>1 REEL</small></span></div>
+            <div class="t-cut"></div>
+            <div class="t-bot"><span><b>Scored 93 · take it</b><small style="color:#6FD08C"><i></i>Fits your rate and your calendar</small></span><span class="neo grad">Review</span></div>
+          </div>
+          <div class="ticket" style="--h:#B4700A">
+            <div class="t-top"><span class="t-ini">GB</span><span class="t-name"><b>Glowberry</b><small>QUOTE SENT</small></span><span class="t-amt"><b>₹68,000</b><small>+ GST</small></span></div>
+            <div class="t-cut"></div>
+            <div class="t-bot"><span><b>Usage 30 days · 50% advance</b><small style="color:#EFB35A"><i></i>Brand opened it 2 min ago</small></span><span class="neo grad">Nudge</span></div>
+          </div>
+          <div class="ticket" style="--h:#7550D0">
+            <div class="t-top"><span class="t-ini">S</span><span class="t-name"><b>Sorso</b><small>DRAFT APPROVED</small></span><span class="t-amt"><b>1 Reel</b><small>3 STORIES</small></span></div>
+            <div class="t-cut"></div>
+            <div class="t-bot"><span><b>Goes live Friday, 7 PM</b><small style="color:#B49CFF"><i></i>Caption covers every must-say</small></span><span class="neo grad">Schedule</span></div>
+          </div>
+          <div class="ticket" style="--h:#0B877D">
+            <div class="t-top"><span class="t-ini">KN</span><span class="t-name"><b>Kumkum Naturals</b><small>LIVE</small></span><span class="t-amt"><b>48.2K</b><small>VIEWS</small></span></div>
+            <div class="t-cut"></div>
+            <div class="t-bot"><span><b>Insights shared with the brand</b><small style="color:#4CCFC2"><i></i>Opened by the brand today</small></span><span class="neo grad">Share</span></div>
+          </div>
+          <div class="ticket paid" style="--h:#3D7F6A">
+            <div class="t-top"><span class="t-ini">KN</span><span class="t-name"><b>Kumkum Naturals</b><small>PAID</small></span><span class="t-amt"><b>₹40,000</b><small>VIA UPI</small></span></div>
+            <div class="t-cut"></div>
+            <div class="stub"><div class="t-bot"><span><b>INV/26-27/011 · settled</b><small style="color:#6FD08C"><i></i>Landed in your bank</small></span><span class="neo grad">Receipt</span></div></div>
+            <span class="paid-stamp">Paid</span>
+            <span class="spark-burst" aria-hidden="true"></span>
           </div>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- ===== 3 · Desk AI ===== -->
-  <section id="ai" class="ai">
-    <div class="stage" style="flex-direction: column">
-      <span class="eb ai-title" style="position: relative; z-index: 2">Built in · Desk AI</span>
-      <h2 class="big ai-title" style="position: relative; z-index: 2; margin-top: 18px; text-align: center">Ask your desk<br><span class="gl">anything.</span></h2>
-      <div class="qs" style="position: relative; width: 860px; height: 420px; margin-top: 10px">
-        <div class="ai-orb" style="position: absolute; left: 50%; top: 50%; width: 520px; margin: -170px 0 0 -260px; padding: 1.5px; border-radius: 30px; background: linear-gradient(140deg, rgba(156,123,255,.7), rgba(242,90,144,.5) 45%, rgba(255,174,107,.5)); box-shadow: 0 50px 120px -30px rgba(242,90,144,.55)">
-          <div style="position: relative; overflow: hidden; border-radius: 29px; padding: 26px 26px 22px; background: radial-gradient(130% 60% at 50% 0%, rgba(156,123,255,.2), transparent 70%), #161116; display: grid; gap: 16px; text-align: left">
-            <span style="display: flex; align-items: center; gap: 10px"><span aria-hidden="true" style="position: relative; width: 30px; height: 30px; flex: none"><span style="position: absolute; inset: -7px; border-radius: 50%; background: radial-gradient(circle, rgba(242,90,144,.55), transparent 65%); animation: breathe 3s ease-in-out infinite"></span><span style="position: absolute; inset: 0; border-radius: 50%; background: conic-gradient(#9C7BFF, #F25A90, #FFAE6B, #9C7BFF); animation: spin 6s linear infinite"></span><span style="position: absolute; inset: 5px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, rgba(255,255,255,.85), rgba(255,255,255,.08) 45%, transparent 60%), #161116"></span></span><span class="eb" style="font-size: 10.5px; letter-spacing: .26em">Ask your desk</span></span>
-            <b class="serif" style="font-size: 46px; line-height: 1">Hello, <em class="gl">Nivy</em></b>
-            <span style="margin-top: -10px; font-size: 18px; color: #A39AA1">How can I help today?</span>
-            <div style="display: flex; align-items: center; gap: 12px; height: 58px; padding: 0 10px 0 18px; border: 1px solid #3E343E; background: #110D11; box-shadow: 4px 4px 0 #F25A90">
-              <span style="position: relative; flex: 1; height: 24px; font: 500 16px Geist, sans-serif; color: #F4EEF2">
-                <span style="position: absolute; left: 0; top: 0; overflow: hidden; white-space: nowrap; border-right: 2px solid #F25A90; --w: 24ch; animation: ask 12s steps(23) infinite; animation-delay: 0s; opacity: 0">who hasn’t paid me yet?</span><span style="position: absolute; left: 0; top: 0; overflow: hidden; white-space: nowrap; border-right: 2px solid #F25A90; --w: 31ch; animation: ask 12s steps(30) infinite; animation-delay: 4s; opacity: 0">reply to glowberry in hinglish</span><span style="position: absolute; left: 0; top: 0; overflow: hidden; white-space: nowrap; border-right: 2px solid #F25A90; --w: 30ch; animation: ask 12s steps(29) infinite; animation-delay: 8s; opacity: 0">write a reel script for sorso</span>
-              </span>
-              <span aria-hidden="true" style="width: 40px; height: 40px; display: grid; place-items: center; background: #F4EEF2; color: #1E171C"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4z"></path></svg></span>
-            </div>
-            <small style="font-size: 12px; color: #A39AA1">English · Hinglish · ಕನ್ನಡ · हिंदी</small>
+  <!-- 3 · Features -->
+  <section class="feat" id="features" aria-labelledby="feat-title">
+    <div class="wrap">
+      <div class="feat-head">
+        <h2 class="h2" id="feat-title" data-r>The whole business, <span class="gt">in one place.</span></h2>
+        <p class="lede" data-r="2">Everything a creator handles between "hi, collab?" and the money in the bank, built the way the app on your phone already works.</p>
+      </div>
+      <div class="bento">
+        <article class="cell c7" data-r>
+          <h3>One link. <span class="gt">Every brand.</span></h3>
+          <p>Your rates, packages, open weeks and past work on one page. Brands send a proper request instead of a DM.</p>
+          <div class="demo">
+            <div class="url"><span class="lock">●</span><span class="typed">nivy.miracleapp.live</span></div>
+            <div class="bp"><span class="av"><b>ND</b></span><span><strong>Niveditha</strong><small>Lifestyle · Travel · Food · Bengaluru</small></span><span class="neo light">Send a request</span></div>
+            <div class="bp-stats"><span><b>251K</b>followers</span><span><b>₹18k</b>per Reel</span><span><b>2 slots</b>open this week</span></div>
           </div>
-        </div>
-        
-          <span class="q q0" style="left: 50%; top: 50%; margin-left: -470px; margin-top: -190px; --qx: 282px; --qy: 114px; padding: 12px 18px; border-radius: 18px 18px 18px 4px; background: #1A151A; border: 1px solid #3E343E; font: 500 16px Geist, sans-serif; color: #F4EEF2; white-space: nowrap; box-shadow: 0 20px 40px -20px rgba(0,0,0,.8)">who hasn’t paid me yet?</span>
-        
-          <span class="q q1" style="left: 50%; top: 50%; margin-left: 300px; margin-top: -200px; --qx: -180px; --qy: 120px; padding: 12px 18px; border-radius: 18px 18px 18px 4px; background: #1A151A; border: 1px solid #3E343E; font: 500 16px Geist, sans-serif; color: #F4EEF2; white-space: nowrap; box-shadow: 0 20px 40px -20px rgba(0,0,0,.8)">is ₹15k fair for 2 reels?</span>
-        
-          <span class="q q2" style="left: 50%; top: 50%; margin-left: -500px; margin-top: 60px; --qx: 300px; --qy: -36px; padding: 12px 18px; border-radius: 18px 18px 18px 4px; background: #1A151A; border: 1px solid #3E343E; font: 500 16px Geist, sans-serif; color: #F4EEF2; white-space: nowrap; box-shadow: 0 20px 40px -20px rgba(0,0,0,.8)">write a reel script for sorso</span>
-        
-          <span class="q q3" style="left: 50%; top: 50%; margin-left: 320px; margin-top: 80px; --qx: -192px; --qy: -48px; padding: 12px 18px; border-radius: 18px 18px 18px 4px; background: #1A151A; border: 1px solid #3E343E; font: 500 16px Geist, sans-serif; color: #F4EEF2; white-space: nowrap; box-shadow: 0 20px 40px -20px rgba(0,0,0,.8)">reply to glowberry in hinglish</span>
-        
-          <span class="q q4" style="left: 50%; top: 50%; margin-left: -120px; margin-top: 190px; --qx: 72px; --qy: -114px; padding: 12px 18px; border-radius: 18px 18px 18px 4px; background: #1A151A; border: 1px solid #3E343E; font: 500 16px Geist, sans-serif; color: #F4EEF2; white-space: nowrap; box-shadow: 0 20px 40px -20px rgba(0,0,0,.8)">what’s due this week?</span>
-        
+        </article>
+        <article class="cell c5" data-r="2">
+          <h3>Every offer, <span class="gt">scored.</span></h3>
+          <p>Take it, negotiate or skip, with the reason.</p>
+          <div class="demo score">
+            <div class="rg"><svg viewBox="0 0 132 132"><circle cx="66" cy="66" r="55" fill="none" stroke="#2E262E" stroke-width="10"/><circle class="v" cx="66" cy="66" r="55" fill="none" stroke="#6FD08C" stroke-width="10" stroke-linecap="round"/></svg><b data-count="93">93</b></div>
+            <ul><li class="take">TAKE IT</li><li><i></i>Above your Reel rate</li><li><i></i>Free slot that week</li><li><i></i>Brand paid on time before</li></ul>
+          </div>
+        </article>
+        <article class="cell c4" data-r>
+          <h3>Quotes that <span class="gt">close.</span></h3>
+          <p>Worked out from your rate card.</p>
+          <div class="demo quote">
+            <div class="row"><span>1 Reel</span><b>₹15,000</b></div>
+            <div class="row"><span>Usage · 30 days</span><b>₹3,000</b></div>
+            <div class="row"><span>Revisions</span><b>2 included</b></div>
+            <div class="tot"><small>TOTAL</small><b>₹<span data-count="18000" data-fmt="in">18,000</span></b></div>
+          </div>
+        </article>
+        <article class="cell c4" data-r="2">
+          <h3>GST. TDS. <span class="gt">UPI.</span></h3>
+          <p>A proper tax invoice and a QR for the exact amount.</p>
+          <div class="demo inv">
+            <div><small>TAX INVOICE · INV/26-27/012</small><b>₹19,440</b><div class="gst"><span>Fee ₹18,000</span><span>GST 18% ₹3,240</span><span>TDS 10% −₹1,800</span></div></div>
+            <div class="qr" aria-label="UPI QR code for ₹19,440" role="img"></div>
+          </div>
+        </article>
+        <article class="cell c4" data-r="3">
+          <h3>Paid <span class="gt">on time.</span></h3>
+          <p>Reminders go out for you, kindly.</p>
+          <div class="demo pings">
+            <div class="ping"><span class="d" style="--c:#2C7A45"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg></span><span><b>₹40,000 just landed</b><small>Kumkum Naturals</small></span></div>
+            <div class="ping"><span class="d" style="--c:#B4700A"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0112 0c0 7 3 9 3 9H3s3-2 3-9M10 21a2 2 0 004 0"/></svg></span><span><b>Reminder sent politely</b><small>Glowberry · due tomorrow</small></span></div>
+            <div class="ping"><span class="d" style="--c:#A8466E"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg></span><span><b>Post in 30 minutes</b><small>Sorso · 1 Reel at 7 PM</small></span></div>
+          </div>
+        </article>
+        <article class="cell c6" data-r>
+          <h3>Your week, <span class="gt">at a glance.</span></h3>
+          <p>Shoots, drafts, go-lives and payments on one calendar. Brands see when you're full.</p>
+          <div class="demo">
+            <div class="week">
+              <span class="day today">TODAY<b>21</b><i style="--a:#fff"></i></span>
+              <span class="day">THU<b>22</b><i></i></span>
+              <span class="day">FRI<b>23</b><i style="--a:#FFAE6B;--b:#4CCFC2"></i></span>
+              <span class="day">SAT<b>24</b><i></i></span>
+              <span class="day">SUN<b>25</b><i style="--a:#9C7BFF;--b:#F25A90"></i></span>
+              <span class="day">MON<b>26</b><i></i></span>
+              <span class="day">TUE<b>27</b><i style="--a:#6FD08C"></i></span>
+            </div>
+            <div class="slots"><div>COLLAB SLOTS THIS WEEK<b>3 of 3 booked</b></div><div class="bars" style="letter-spacing:0"><i></i><i></i><i></i></div>Fully booked: brands see this week as full.</div>
+          </div>
+        </article>
+        <article class="cell c6" data-r="2">
+          <h3>Pitches while <span class="gt">you create.</span></h3>
+          <p>Miracle finds brands that suit you and pitches them from your own email. You approve each one, or let it run.</p>
+          <div class="demo pitch">
+            <div class="pt" style="--c:#6FD08C"><i></i><span>A coffee roaster<small>Coffee · fits your café Reels</small></span><em>SENT</em></div>
+            <div class="pt" style="--c:#FFAE6B"><i></i><span>A skincare label<small>Skincare · email found</small></span><em>READY</em></div>
+            <div class="pt" style="--c:#F25A90"><i></i><span>A snack brand<small>Food · they replied</small></span><em>REPLIED</em></div>
+            <div class="pt" style="--c:#6FD08C"><i></i><span>A travel gear brand<small>Travel · follow-up 1</small></span><em>SENT</em></div>
+          </div>
+        </article>
       </div>
-      <div class="ai-ans" style="position: relative; z-index: 2; width: min(620px, 92%); margin-top: 6px; padding: 1.5px; border-radius: 24px; background: linear-gradient(90deg, #9C7BFF, #F25A90, #FFAE6B)">
-        <div style="border-radius: 23px; padding: 20px 22px; background: #1A151A; display: grid; gap: 10px; text-align: left">
-          <span style="display: flex; align-items: center; gap: 10px; font: 700 10.5px Geist, sans-serif; letter-spacing: .24em; color: #F25A90"><i style="width: 18px; height: 18px; border-radius: 50%; background: conic-gradient(#9C7BFF, #F25A90, #FFAE6B, #9C7BFF); animation: spin 3s linear infinite"></i>DESK AI</span>
-          <p class="serif" style="margin: 0; font-size: 26px; line-height: 1.25">Two brands owe you <em class="gl">₹1,08,000</em>. Glowberry is 3 days late. Want me to send a polite reminder?</p>
-          <div style="display: flex; gap: 10px; flex-wrap: wrap"><span class="neo" style="height: 42px; padding: 0 16px; background: #F4EEF2; color: #1E171C; box-shadow: 3px 3px 0 #F25A90; font-size: 11.5px">Send reminder</span><span class="neo" style="height: 42px; padding: 0 16px; border: 1px solid #3E343E; background: transparent; color: #F4EEF2; box-shadow: 3px 3px 0 #3E343E; font-size: 11.5px">See invoices</span></div>
+    </div>
+  </section>
+
+  <!-- 4 · Desk AI -->
+  <section class="ai" id="ai" aria-labelledby="ai-title">
+    <div class="wrap">
+      <div class="ai-copy">
+        <span class="eb" data-r>Built in · Desk AI</span>
+        <h2 class="h2" id="ai-title" data-r>Ask your desk <span class="gt">anything.</span></h2>
+        <p class="lede" data-r="2">Desk AI knows your requests, your money and your calendar. It answers, drafts replies in your voice and writes Reel scripts, in the language the brand wrote in.</p>
+        <div class="langs" data-r="3"><span>English</span><span>Hinglish</span><span lang="kn">ಕನ್ನಡ</span><span lang="hi">हिंदी</span></div>
+      </div>
+      <div class="chat" data-r="2">
+        <div class="chat-in">
+          <div class="chat-head"><span class="orb" aria-hidden="true"><span></span></span><span><b>Hello, <span class="gt">Nivy</span></b><small>Ask your desk</small></span></div>
+          <div class="msgs" aria-live="polite">
+            <div class="me-b">Who hasn't paid me yet?</div>
+            <div class="ai-b">Two brands owe you ₹1,08,000. Glowberry is 3 days late. Want me to send a polite reminder?</div>
+            <div class="acts"><span class="neo light">Send reminder</span><span class="neo ghost">See invoices</span></div>
+          </div>
+          <div class="composer" aria-hidden="true"><span>Ask about money, brands or your week</span><i><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4z"/></svg></i></div>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- What Desk AI does -->
-  <section style="position: relative; display: grid; justify-items: center; gap: 40px; padding: 60px 24px 140px">
-    <p class="body" style="text-align: center; max-width: 680px">Desk AI lives inside Miracle. It reads brand messages and emails in English, Hinglish, Kannada and Hindi, and knows your rates, calendar and money.</p>
-    <div class="caps">
-      
-        <div style="padding: 24px; border: 1px solid #2E262E; background: #161116; display: grid; gap: 10px; align-content: start">
-          <span style="width: 42px; height: 42px; display: grid; place-items: center; border-radius: 50%; border: 1px solid #3E343E; color: #F25A90"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"></path></svg></span>
-          <b style="font: 700 18px Geist, sans-serif">Reads your DMs</b>
-          <span style="font-size: 15px; line-height: 1.55; color: #A39AA1">Spots real offers in your Instagram DMs and emails, and adds them as collabs in a tap.</span>
-        </div>
-      
-        <div style="padding: 24px; border: 1px solid #2E262E; background: #161116; display: grid; gap: 10px; align-content: start">
-          <span style="width: 42px; height: 42px; display: grid; place-items: center; border-radius: 50%; border: 1px solid #3E343E; color: #FFAE6B"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 14l4-4M3.5 18a10 10 0 1117 0"></path></svg></span>
-          <b style="font: 700 18px Geist, sans-serif">Scores every offer</b>
-          <span style="font-size: 15px; line-height: 1.55; color: #A39AA1">Take it, negotiate or skip, with the reason: your rate, your calendar, the brand’s history.</span>
-        </div>
-      
-        <div style="padding: 24px; border: 1px solid #2E262E; background: #161116; display: grid; gap: 10px; align-content: start">
-          <span style="width: 42px; height: 42px; display: grid; place-items: center; border-radius: 50%; border: 1px solid #3E343E; color: #9C7BFF"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"></path></svg></span>
-          <b style="font: 700 18px Geist, sans-serif">Replies in your voice</b>
-          <span style="font-size: 15px; line-height: 1.55; color: #A39AA1">Drafts replies and counter-offers the way you write, in the language the brand wrote in.</span>
-        </div>
-      
-        <div style="padding: 24px; border: 1px solid #2E262E; background: #161116; display: grid; gap: 10px; align-content: start">
-          <span style="width: 42px; height: 42px; display: grid; place-items: center; border-radius: 50%; border: 1px solid #3E343E; color: #4CCFC2"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 5h18v14H3zM10 9l5 3-5 3z"></path></svg></span>
-          <b style="font: 700 18px Geist, sans-serif">Writes Reel scripts</b>
-          <span style="font-size: 15px; line-height: 1.55; color: #A39AA1">Turns a brief into hooks, scenes and a caption that covers every must-say.</span>
-        </div>
-      
-        <div style="padding: 24px; border: 1px solid #2E262E; background: #161116; display: grid; gap: 10px; align-content: start">
-          <span style="width: 42px; height: 42px; display: grid; place-items: center; border-radius: 50%; border: 1px solid #3E343E; color: #6FD08C"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"></path></svg></span>
-          <b style="font: 700 18px Geist, sans-serif">Reviews your month</b>
-          <span style="font-size: 15px; line-height: 1.55; color: #A39AA1">What went well, what to watch and three things to do next, from your own numbers.</span>
-        </div>
-      
-        <div style="padding: 24px; border: 1px solid #2E262E; background: #161116; display: grid; gap: 10px; align-content: start">
-          <span style="width: 42px; height: 42px; display: grid; place-items: center; border-radius: 50%; border: 1px solid #3E343E; color: #7EA2FF"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0112 0c0 7 3 9 3 9H3s3-2 3-9M10 21a2 2 0 004 0"></path></svg></span>
-          <b style="font: 700 18px Geist, sans-serif">Nudges you, kindly</b>
-          <span style="font-size: 15px; line-height: 1.55; color: #A39AA1">Reminders to post, reply, drink water and stretch, with a little humour.</span>
-        </div>
-      
+  <!-- 5 · Trust -->
+  <section class="trust-band" id="trust" aria-labelledby="trust-title">
+    <div class="wrap">
+      <h2 class="h2" id="trust-title" data-r>Your money. Your data. <span class="gt">No cut.</span></h2>
+      <div class="pillars">
+        <div class="pillar" data-r><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10h18M5 10v8M9 10v8M15 10v8M19 10v8M3 20h18M12 3l9 5H3z"/></svg><b>Brands pay you directly.</b><p>Money goes straight to your bank or UPI. Miracle never holds it and never touches it.</p></div>
+        <div class="pillar" data-r="2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v6c0 4.5-3 7.8-7 9-4-1.2-7-4.5-7-9V6z"/><path d="M9 12l2 2 4-4"/></svg><b>You choose what brands see.</b><p>Your rates, notes and other deals stay private. A brand sees only its own collab.</p></div>
+        <div class="pillar" data-r="3"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 16L16 8M9 9h.01M15 15h.01"/></svg><b>Zero commission.</b><p>Take ₹5,000 deals or ₹5 lakh deals. Every rupee is yours.</p></div>
+      </div>
     </div>
   </section>
 
-  <!-- ===== 4 · Enter ===== -->
-  <section id="claim" style="position: relative; overflow: hidden; display: flex; flex-direction: column; align-items: center; text-align: center; padding: 160px 24px 150px">
-    <span aria-hidden="true" style="position: absolute; left: 50%; top: 42%; width: 800px; height: 800px; margin: -400px 0 0 -400px; border-radius: 50%; background: radial-gradient(circle, rgba(242,90,144,.3), rgba(156,123,255,.14) 45%, transparent 70%); animation: breathe 6s ease-in-out infinite"></span>
-    <svg width="150" height="150" viewBox="0 0 512 512" aria-hidden="true" style="position: relative; filter: drop-shadow(0 0 40px rgba(212,41,106,.7))"><g transform="translate(256 256) scale(1.12) translate(-256 -256)"><g transform="translate(256 256) scale(.79) skewX(-13) translate(-304.5 -266)" fill="none" stroke-width="17" stroke-linecap="round" stroke-linejoin="round"><path transform="translate(-9 -7)" stroke="#ffffff" stroke-opacity=".94" d="M64 128C92 104 132 112 144 156C154 220 158 330 156 392C155 420 182 420 182 392C182 300 176 200 196 160C220 104 290 104 300 160C310 220 312 330 310 392C309 420 336 420 336 392C336 300 330 200 350 160C374 104 444 104 452 160C460 230 456 330 452 392C450 440 500 440 540 360M499 384L540 360L545 408"></path><path transform="translate(10 8)" stroke="url(#mkg)" d="M64 128C92 104 132 112 144 156C154 220 158 330 156 392C155 420 182 420 182 392C182 300 176 200 196 160C220 104 290 104 300 160C310 220 312 330 310 392C309 420 336 420 336 392C336 300 330 200 350 160C374 104 444 104 452 160C460 230 456 330 452 392C450 440 500 440 540 360M499 384L540 360L545 408"></path></g></g></svg>
-    <h2 class="big" style="position: relative; margin-top: 40px">Your link<br><span class="gl">is waiting.</span></h2>
-    <form class="claim" aria-label="Claim your link" action="https://collab-desk.zypocare.workers.dev/login" method="get" style="position: relative; margin-top: 50px">
-      <label for="c-name" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Your name for the link</label>
-      <input id="c-name" placeholder="yourname" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="30">
-      <span class="dom">.miracleapp.live</span>
-      <button class="neo shine" type="submit" style="height: 64px; padding: 0 26px; background: #F4EEF2; color: #1E171C; box-shadow: 6px 6px 0 #F25A90">Enter</button>
-    </form>
-    <p class="body" style="position: relative; margin-top: 26px; font-size: 16px">No commission on your deals. Brands pay you directly.</p>
-  </section>
-
-  <!-- Trust band -->
-  <section style="border-top: 1px solid #2E262E; background: #0C090C; padding: 70px 24px; text-align: center; display: grid; justify-items: center; gap: 14px">
-    <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#F25A90" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v6c0 4.5-3 7.8-7 9-4-1.2-7-4.5-7-9V6z"></path><path d="M9 12l2 2 4-4"></path></svg>
-    <b class="serif" style="font-size: 40px; letter-spacing: -.01em">Your money. Your data. No cut.</b>
-    <p style="margin: 0; max-width: 560px; font-size: 16px; line-height: 1.6; color: #A39AA1">Brands only see what you choose to share. Payments go straight to your bank or UPI. Miracle never touches your money.</p>
-  </section>
-
-  <!-- Footer -->
-  <footer style="border-top: 1px solid #2E262E; background: #09070A; padding: 56px 40px 40px; font-size: 14.5px; color: #A39AA1">
-    <div class="foot-cols" style="max-width: 1200px; margin: 0 auto">
-      <div style="display: grid; gap: 10px; align-content: start"><b style="color: #F4EEF2">Product</b><a href="#features" style="color: #A39AA1">Brand page</a><a href="#ai" style="color: #A39AA1">Desk AI</a><a href="#features" style="color: #A39AA1">Invoices</a><a href="#features" style="color: #A39AA1">Pitch autopilot</a></div>
-      <div style="display: grid; gap: 10px; align-content: start"><b style="color: #F4EEF2">For brands</b><a href="#" style="color: #A39AA1">Send a request</a><a href="#" style="color: #A39AA1">Track a collab</a></div>
-      <div style="display: grid; gap: 10px; align-content: start"><b style="color: #F4EEF2">Company</b><a href="#" style="color: #A39AA1">About</a><a href="#" style="color: #A39AA1">Contact</a></div>
-      <div style="display: grid; gap: 10px; align-content: start"><b style="color: #F4EEF2">Policy</b><a href="https://collab-desk.zypocare.workers.dev/privacy" style="color: #A39AA1">Privacy</a><a href="#" style="color: #A39AA1">Terms</a></div>
+  <!-- 6 · Claim -->
+  <section class="claim" id="claim" aria-labelledby="claim-title">
+    <svg class="claim-mark draw-mark" viewBox="0 0 512 512" aria-hidden="true">
+      <g transform="translate(256 256) scale(.79) skewX(-13) translate(-304.5 -266)" fill="none" stroke-linecap="round" stroke-linejoin="round">
+        <g class="line" transform="translate(-9 -7)"><use class="glow" href="#kd" stroke="#F4EEF2"/><path class="core draw" stroke="#F4EEF2" d="M64 128C92 104 132 112 144 156C154 220 158 330 156 392C155 420 182 420 182 392C182 300 176 200 196 160C220 104 290 104 300 160C310 220 312 330 310 392C309 420 336 420 336 392C336 300 330 200 350 160C374 104 444 104 452 160C460 230 456 330 452 392C450 440 500 440 540 360M499 384L540 360L545 408"/><circle class="spark" r="16" fill="#fff" opacity="0"/></g>
+        <g class="line" transform="translate(10 8)"><use class="glow" href="#kd" stroke="url(#kgb)"/><path class="core draw" stroke="url(#kgb)" d="M64 128C92 104 132 112 144 156C154 220 158 330 156 392C155 420 182 420 182 392C182 300 176 200 196 160C220 104 290 104 300 160C310 220 312 330 310 392C309 420 336 420 336 392C336 300 330 200 350 160C374 104 444 104 452 160C460 230 456 330 452 392C450 440 500 440 540 360M499 384L540 360L545 408"/><circle class="spark" r="16" fill="#FFAE6B" opacity="0"/></g>
+      </g>
+    </svg>
+    <div class="wrap">
+      <span class="eb" data-r>Free for creators</span>
+      <h2 class="h2" id="claim-title" data-r>Your link <span class="gt">is waiting.</span></h2>
+      <form id="claim-form" data-r="2" novalidate>
+        <label class="sr" for="claim-name">Your name for the link</label>
+        <input id="claim-name" name="name" placeholder="yourname" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="30">
+        <span class="dom">.miracleapp.live</span>
+        <button class="neo grad mag" type="submit"><span class="shine" aria-hidden="true"></span>Claim</button>
+      </form>
+      <span class="preview" data-r="3"><span>Your page:</span><b id="claim-url">yourname.miracleapp.live</b></span>
+      <p class="note" id="claim-note" role="status"></p>
     </div>
-    <p style="max-width: 1200px; margin: 44px auto 0; font-size: 13px">© 2026 Miracle · made for creators in India</p>
-  </footer>
-</div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="foot">
+      <div><a class="brand" href="#top" aria-label="Miracle, back to the top"><svg viewBox="0 0 512 512" aria-hidden="true" style="width:34px;height:34px"><g transform="translate(256 256) scale(1.04) translate(-256 -256)"><g transform="translate(256 256) scale(.79) skewX(-13) translate(-304.5 -266)" fill="none" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"><use href="#kd" transform="translate(-13 -10)" stroke="#F4EEF2"/><use href="#kd" transform="translate(13 10)" stroke="url(#kg)"/></g></g></svg><b style="font:400 28px/1 var(--f-display);font-style:italic;color:var(--ink)">Miracle</b></a><p style="margin:16px 0 0;max-width:30ch">The business side of being a creator, handled. Made in Bengaluru for creators in India.</p></div>
+      <div><b>Product</b><a href="#how">How it works</a><a href="#features">Features</a><a href="#ai">Desk AI</a></div>
+      <div><b>For brands</b><a href="#claim">Send a request</a><a href="#claim">Track a collab</a></div>
+      <div><b>Company</b><a href="#trust">No commission</a><a href="https://collab-desk.zypocare.workers.dev/privacy">Privacy</a><a href="https://collab-desk.zypocare.workers.dev/login">Sign in</a></div>
+    </div>
+    <p style="margin:56px 0 0;font-size:13px">© 2026 Miracle</p>
+  </div>
+  <div class="giant" aria-hidden="true" data-r>Miracle</div>
+</footer>
+
+<script>
+(() => {
+  const root = document.documentElement;
+  root.classList.add('js');
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const fine = matchMedia('(pointer: fine)').matches;
+  const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+  const easeIO = (t) => (t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+
+  /* scroll reveals */
+  const io = new IntersectionObserver((es) => es.forEach((e) => {
+    if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); count(e.target); }
+  }), { rootMargin: '0px 0px -8% 0px' });
+  document.querySelectorAll('[data-r]').forEach((el) => io.observe(el));
+
+  /* numbers count up when they arrive */
+  function count(scope) {
+    scope.querySelectorAll('[data-count]').forEach((el) => {
+      const to = +el.dataset.count, inr = el.dataset.fmt === 'in';
+      const fmt = (n) => (inr ? Math.round(n).toLocaleString('en-IN') : String(Math.round(n)));
+      if (reduce) { el.textContent = fmt(to); return; }
+      const t0 = performance.now(), d = 1600;
+      const f = (now) => { const t = clamp((now - t0) / d, 0, 1); el.textContent = fmt(to * easeIO(t)); if (t < 1) requestAnimationFrame(f); };
+      requestAnimationFrame(f);
+    });
+  }
+
+  /* header turns to glass after the first scroll */
+  const head = document.querySelector('.top');
+  const onHead = () => head.classList.toggle('scrolled', scrollY > 24);
+  addEventListener('scroll', onHead, { passive: true }); onHead();
+
+  /* the logo draws itself in light, a spark at the pen's tip */
+  function drawMark(svg, delay) {
+    const lines = [...svg.querySelectorAll('.line')];
+    const data = lines.map((g) => {
+      const core = g.querySelector('.draw'), glow = g.querySelector('.glow'), spark = g.querySelector('.spark');
+      const len = core.getTotalLength();
+      [core, glow].forEach((p) => { p.style.strokeDasharray = len + ' ' + (len + 80); p.style.strokeDashoffset = len + 40; });
+      return { core, glow, spark, len };
+    });
+    if (reduce) { data.forEach((d) => { d.core.style.strokeDashoffset = 0; d.glow.style.strokeDashoffset = 0; }); return; }
+    const dur = 2600, t0 = performance.now() + delay;
+    const f = (now) => {
+      let busy = false;
+      data.forEach((d, i) => {
+        const t = clamp((now - t0 - i * 220) / dur, 0, 1);
+        if (t < 1) busy = true;
+        const e = easeIO(t), off = (d.len + 40) * (1 - e);
+        d.core.style.strokeDashoffset = off; d.glow.style.strokeDashoffset = off;
+        const pt = d.core.getPointAtLength(d.len * e);
+        d.spark.setAttribute('cx', pt.x); d.spark.setAttribute('cy', pt.y);
+        d.spark.setAttribute('opacity', t > 0 && t < 1 ? 1 : 0);
+      });
+      if (busy) requestAnimationFrame(f);
+    };
+    requestAnimationFrame(f);
+  }
+  drawMark(document.querySelector('.big-mark'), 350);
+  const claimMark = document.querySelector('.claim-mark');
+  const cmio = new IntersectionObserver((es) => { if (es[0].isIntersecting) { drawMark(claimMark, 100); cmio.disconnect(); } }, { threshold: .25 });
+  cmio.observe(claimMark);
+
+  /* hero: an aurora of the app's colours drifting and leaning toward the cursor; the phone tilts toward it too */
+  const hero = document.querySelector('.hero');
+  const canvas = document.getElementById('aurora');
+  const ctx = canvas.getContext('2d');
+  const phone = document.querySelector('.phone3d');
+  const floats = [...document.querySelectorAll('.float')];
+  // drawn small and scaled up by the browser, so the colour fields come out soft for almost no cost
+  const SC = 7;
+  let W = 0, H = 0, heroOn = true;
+  const mouse = { nx: 0, ny: 0, x: .62, y: .4 };
+  const tilt = { x: 0, y: 0 };
+  const blobs = [
+    { c: '156,123,255', r: .62, x: .78, y: .22, ax: .14, ay: .12, sx: .00021, sy: .00029, ph: 0 },
+    { c: '242,90,144', r: .55, x: .58, y: .62, ax: .16, ay: .14, sx: .00017, sy: .00023, ph: 2.1 },
+    { c: '255,174,107', a: .2, r: .36, x: .3, y: .12, ax: .12, ay: .07, sx: .00026, sy: .00019, ph: 4.2 },
+    { c: '107,63,212', r: .5, x: .12, y: .78, ax: .1, ay: .1, sx: .00015, sy: .00021, ph: 1.3 },
+    { c: '212,41,106', r: .32, x: .9, y: .85, ax: .08, ay: .1, sx: .00024, sy: .00016, ph: 3.4 },
+    { c: '255,143,177', a: .26, r: .28, follow: true, x: .62, y: .4 }
+  ];
+  function size() { const r = canvas.getBoundingClientRect(); W = Math.max(40, Math.round(r.width / SC)); H = Math.max(40, Math.round(r.height / SC)); canvas.width = W; canvas.height = H; }
+  size(); addEventListener('resize', size);
+  new IntersectionObserver((es) => { heroOn = es[0].isIntersecting; }).observe(hero);
+  hero.addEventListener('pointermove', (e) => {
+    const r = hero.getBoundingClientRect();
+    mouse.nx = (e.clientX - r.left) / r.width - .5; mouse.ny = (e.clientY - r.top) / r.height - .5;
+  });
+  hero.addEventListener('pointerleave', () => { mouse.nx = mouse.ny = 0; });
+  function paint(t) {
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.clearRect(0, 0, W, H);
+    ctx.globalCompositeOperation = 'screen';
+    const m = Math.max(W, H);
+    for (const b of blobs) {
+      let x, y;
+      if (b.follow) { mouse.x += (mouse.nx + .5 - mouse.x) * .04; mouse.y += (mouse.ny + .5 - mouse.y) * .04; x = mouse.x * W; y = mouse.y * H; }
+      else { x = (b.x + Math.sin(t * b.sx + b.ph) * b.ax + mouse.nx * .05) * W; y = (b.y + Math.cos(t * b.sy + b.ph) * b.ay + mouse.ny * .05) * H; }
+      const rad = b.r * m * (1 + Math.sin(t * .0004 + (b.ph || 0)) * .08);
+      const g = ctx.createRadialGradient(x, y, 0, x, y, rad);
+      g.addColorStop(0, `rgba(${b.c},${b.a || .34})`); g.addColorStop(.45, `rgba(${b.c},${(b.a || .34) * .36})`); g.addColorStop(1, `rgba(${b.c},0)`);
+      ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+    }
+  }
+  function heroFrame(t) {
+    if (heroOn && !document.hidden) {
+      paint(t);
+      tilt.x += (mouse.nx - tilt.x) * .06; tilt.y += (mouse.ny - tilt.y) * .06;
+      const sy = Math.min(scrollY, 900);
+      phone.style.transform = `translateY(${Math.round(sy * -.12)}px) rotateY(${(tilt.x * 14 - 5).toFixed(2)}deg) rotateX(${(tilt.y * -10 + 3 + sy * .008).toFixed(2)}deg)`;
+      floats.forEach((el) => { const d = +el.dataset.depth; el.style.transform = `translate(${Math.round(tilt.x * d)}px, ${Math.round(tilt.y * d - sy * d * .004)}px)`; });
+    }
+    requestAnimationFrame(heroFrame);
+  }
+  if (reduce) paint(0);
+  if (reduce) { phone.style.transform = 'rotateY(-5deg) rotateX(3deg)'; } else requestAnimationFrame(heroFrame);
+
+  /* the deck: tickets dealt by scroll, the last one tears off its stub */
+  const deck = document.querySelector('.deck');
+  const cards = [...deck.querySelectorAll('.pile .ticket')];
+  const steps = [...deck.querySelectorAll('.step')];
+  const rails = [...deck.querySelectorAll('.rail i')];
+  const paid = deck.querySelector('.paid'), stub = paid.querySelector('.stub'), burst = paid.querySelector('.spark-burst');
+  ['#6FD08C', '#FFAE6B', '#F25A90', '#9C7BFF', '#F4EEF2', '#6FD08C', '#FFAE6B', '#F25A90', '#9C7BFF', '#4CCFC2', '#FFAE6B', '#F25A90'].forEach((c, i) => {
+    const s = document.createElement('i'), a = (i / 12) * Math.PI * 2, r = 70 + (i % 3) * 30;
+    s.style.cssText = `--c:${c};--x:${Math.cos(a) * r}px;--y:${Math.sin(a) * r - 30}px`; burst.appendChild(s);
+  });
+  let active = -1, burstOn = false;
+  function deckFrame() {
+    const r = deck.getBoundingClientRect();
+    if (r.bottom > 0 && r.top < innerHeight) {
+      const p = clamp(-r.top / (r.height - innerHeight), 0, 1);
+      // each ticket rests front and centre for a stretch of scroll before the next one comes in
+      const raw = p * (cards.length - 1 + .6), i0 = Math.floor(raw), fr = raw - i0;
+      const s = i0 >= cards.length - 1 ? raw : i0 + easeIO(clamp((fr - .3) / .7, 0, 1));
+      const lift = Math.min(innerHeight * .9, 640);
+      cards.forEach((c, i) => {
+        const d = i === cards.length - 1 ? Math.max(i - s, 0) : i - s;
+        let y, rot, sc, op, dim;
+        if (d > 0) { const k = Math.min(d, 1); y = k * lift; rot = k * 9; sc = 1; op = d > 1.02 ? 0 : 1; dim = 0; }
+        else { const k = Math.min(-d, 4); y = -k * 26; rot = -k * 1.5; sc = 1 - k * .055; op = clamp(1 - k * .26, 0, 1); dim = Math.min(k * .35, .7); }
+        // the ticket in front sits at exactly its own size and place, so its text stays sharp
+        c.style.transform = Math.abs(d) < .02 ? 'none' : `translate(0, ${Math.round(y)}px) rotate(${rot.toFixed(2)}deg) scale(${sc.toFixed(3)})`;
+        c.style.opacity = op; c.style.zIndex = 10 + i; c.style.setProperty('--dim', dim);
+      });
+      const tear = clamp((s - (cards.length - 1) - .1) / .45, 0, 1);
+      stub.style.transform = tear === 0 ? 'none' : `translate(${Math.round(tear * 40)}px, ${Math.round(easeIO(tear) * 150)}px) rotate(${(tear * 14).toFixed(2)}deg)`;
+      stub.style.opacity = 1 - clamp((tear - .6) / .4, 0, 1);
+      paid.style.setProperty('--stamp', clamp((tear - .35) / .4, 0, 1));
+      if (tear > .5 && !burstOn) { burstOn = true; paid.classList.add('burst'); }
+      if (tear < .2 && burstOn) { burstOn = false; paid.classList.remove('burst'); }
+      const now = clamp(Math.round(s), 0, cards.length - 1);
+      if (now !== active) { active = now; steps.forEach((el, i) => el.classList.toggle('on', i === now)); }
+      rails.forEach((el, i) => el.style.setProperty('--p', clamp(s - i + 1, 0, 1)));
+    }
+    requestAnimationFrame(deckFrame);
+  }
+  requestAnimationFrame(deckFrame);
+
+  /* spotlight on the feature cards */
+  const bento = document.querySelector('.bento');
+  bento.addEventListener('pointermove', (e) => {
+    const c = e.target.closest('.cell'); if (!c) return;
+    const r = c.getBoundingClientRect();
+    c.style.setProperty('--mx', e.clientX - r.left + 'px'); c.style.setProperty('--my', e.clientY - r.top + 'px');
+  });
+
+  /* the UPI QR */
+  const qr = document.querySelector('.qr');
+  '1110111100010110101111110110010001101110101101110'.split('').forEach((b) => { const i = document.createElement('i'); if (b === '0') i.className = 'o'; qr.appendChild(i); });
+
+  /* Desk AI talks */
+  const convos = [
+    { q: 'Who hasn’t paid me yet?', a: 'Two brands owe you ₹1,08,000. Glowberry is 3 days late. Want me to send a polite reminder?', acts: ['Send reminder', 'See invoices'] },
+    { q: 'Reply to Glowberry in Hinglish', a: 'Hi team, idea bahut accha hai! 1 Reel aur 2 Stories ₹68,000 mein ho jayenge, 50% advance ke saath. Shoot is Friday tak.', acts: ['Send reply', 'Edit'] },
+    { q: 'Is ₹15k fair for 2 Reels?', a: 'That’s low for you. Your rate card says ₹18k a Reel, so 2 Reels come to ₹36,000. Counter at ₹32,000 with 30 days of usage.', acts: ['Send counter', 'Accept'] },
+    { q: 'Write a Reel script for Sorso', a: 'Hook: “My 7 AM looks like this.” Scene 1, kettle on. Scene 2, the first sip. Close on the bottle with your code NIVY10.', acts: ['Use script', 'Make it funnier'] }
+  ];
+  const msgs = document.querySelector('.msgs');
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  let aiOn = false, aiStarted = false;
+  async function talk() {
+    let k = 1;
+    for (;;) {
+      if (!aiOn) { await sleep(400); continue; }
+      const c = convos[k % convos.length]; k++;
+      msgs.replaceChildren();
+      const me = document.createElement('div'); me.className = 'me-b'; msgs.appendChild(me);
+      for (const ch of c.q) { me.textContent += ch; await sleep(34); }
+      await sleep(350);
+      const dots = document.createElement('div'); dots.className = 'dots'; dots.innerHTML = '<i></i><i></i><i></i>'; msgs.appendChild(dots);
+      await sleep(900); dots.remove();
+      const ai = document.createElement('div'); ai.className = 'ai-b'; msgs.appendChild(ai);
+      for (const w of c.a.split(' ')) { const s = document.createElement('span'); s.className = 'w'; s.textContent = w + ' '; ai.appendChild(s); await sleep(55); }
+      await sleep(250);
+      const acts = document.createElement('div'); acts.className = 'acts';
+      c.acts.forEach((t, i) => { const b = document.createElement('span'); b.className = 'neo ' + (i ? 'ghost' : 'light'); b.textContent = t; acts.appendChild(b); });
+      acts.style.animation = 'fade .5s var(--ease) both'; msgs.appendChild(acts);
+      await sleep(4200);
+    }
+  }
+  new IntersectionObserver((es) => { aiOn = es[0].isIntersecting; if (aiOn && !aiStarted && !reduce) { aiStarted = true; setTimeout(talk, 2600); } }, { threshold: .35 }).observe(document.querySelector('.chat'));
+
+  /* claim your link */
+  const form = document.getElementById('claim-form'), input = document.getElementById('claim-name');
+  const url = document.getElementById('claim-url'), note = document.getElementById('claim-note');
+  const clean = (v) => v.toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 30);
+  input.addEventListener('input', () => { const v = clean(input.value); if (v !== input.value) input.value = v; url.textContent = (v || 'yourname') + '.miracleapp.live'; note.textContent = ''; });
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const v = clean(input.value);
+    note.textContent = v ? `Opening sign-in to set up ${v}.miracleapp.live…` : 'Type the name you want first.';
+    if (!v) { input.focus(); return; }
+    setTimeout(() => { location.href = 'https://collab-desk.zypocare.workers.dev/login'; }, 700);
+  });
+
+  /* buttons lean toward the cursor; a soft light follows it */
+  if (fine && !reduce) {
+    document.querySelectorAll('.mag').forEach((b) => {
+      b.addEventListener('pointermove', (e) => { const r = b.getBoundingClientRect(); b.style.transform = `translate(${(e.clientX - r.left - r.width / 2) * .18}px, ${(e.clientY - r.top - r.height / 2) * .28}px)`; });
+      b.addEventListener('pointerleave', () => { b.style.transform = ''; });
+    });
+    const cur = document.querySelector('.cursor'), cp = { x: innerWidth / 2, y: innerHeight / 2, tx: 0, ty: 0 };
+    addEventListener('pointermove', (e) => { cp.tx = e.clientX; cp.ty = e.clientY; cur.classList.add('on'); }, { passive: true });
+    const cf = () => { cp.x += (cp.tx - cp.x) * .12; cp.y += (cp.ty - cp.y) * .12; cur.style.transform = `translate3d(${cp.x}px, ${cp.y}px, 0)`; requestAnimationFrame(cf); };
+    requestAnimationFrame(cf);
+  }
+})();
+</script>
+
 </body>
 </html>
