@@ -65,7 +65,7 @@ Everything else (followers, rates, goal, app name) she can change later on the *
 
 Every email the app sends goes out from **no-reply@miracleapp.live**, a Zoho Mail mailbox on the
 domain. Nobody reads that inbox: emails to brands carry a Reply-To with her own email, so a brand
-that presses Reply reaches her. They show as "Her Name via Miracle".
+that presses Reply reaches her. Every email shows "Miracle" as the sender.
 
 1. In Zoho Mail, sign in as no-reply@miracleapp.live → **My Account → Security → App Passwords**
    → generate one named "Miracle" (needed when two-factor sign-in is on). On the free plan, send

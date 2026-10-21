@@ -109,13 +109,13 @@ Deno.serve(async (req) => {
         skipped++;
         continue;
       }
-      // Mail to anyone but her comes from "Her Name via Miracle", and their replies reach her inbox.
+      // Every mail comes from "Miracle"; replies from anyone but her reach her inbox.
       const toOwner = String(row.to_email).toLowerCase() === ownerEmail;
       await sendMail({
         to: row.to_email,
         cc: toOwner && row.kind !== 'new_device' ? teamCc : undefined,
         ...mail,
-        ...(toOwner || !ownerEmail ? {} : { replyTo: ownerEmail, fromName: `${settings.display_name} via ${settings.app_name || 'Miracle'}` }),
+        ...(toOwner || !ownerEmail ? {} : { replyTo: ownerEmail }),
       });
       await supabase.from('outbox').update({ status: 'sent', sent_at: new Date().toISOString(), last_error: null }).eq('id', row.id);
       sent++;
