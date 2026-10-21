@@ -68,8 +68,8 @@ domain. Nobody reads that inbox: emails to brands carry a Reply-To with her own 
 that presses Reply reaches her. They show as "Her Name via Miracle".
 
 1. In Zoho Mail, sign in as no-reply@miracleapp.live → **My Account → Security → App Passwords**
-   → generate one named "Miracle" (needed when two-factor sign-in is on). Zoho's free plan does not
-   allow outside apps to send (SMTP); the mailbox needs a paid plan such as Mail Lite.
+   → generate one named "Miracle" (needed when two-factor sign-in is on). On the free plan, send
+   through `smtp.zoho.in` (the `smtppro` host refuses free mailboxes with "554 Access Restricted").
 2. In the domain's DNS (GoDaddy), add the records Zoho's admin console lists under **Domains →
    miracleapp.live → Email configuration**: the MX records, the SPF record
    (`v=spf1 include:zoho.in ~all`) and the DKIM record. Without SPF and DKIM, Gmail sends the
@@ -77,7 +77,7 @@ that presses Reply reaches her. They show as "Her Name via Miracle".
 
 | Setting | Value |
 |---|---|
-| Host | `smtppro.zoho.in` (Zoho accounts on your own domain, India data centre) |
+| Host | `smtp.zoho.in` (India data centre; works on Zoho's free plan, `smtppro.zoho.in` does not) |
 | Port | `465` (SSL) |
 | User | `no-reply@miracleapp.live` |
 | Password | the Zoho app password |
@@ -101,7 +101,7 @@ These are sent by the `process-outbox` server function. Give it the same email s
 random secret (any long random text, for example from <https://www.uuidgenerator.net>):
 
 ```bash
-npx supabase secrets set SMTP_HOST=smtppro.zoho.in SMTP_PORT=465 SMTP_USER=no-reply@miracleapp.live SMTP_PASS=the-zoho-app-password "SMTP_FROM=Miracle <no-reply@miracleapp.live>" CRON_SECRET=PASTE-A-LONG-RANDOM-TEXT
+npx supabase secrets set SMTP_HOST=smtp.zoho.in SMTP_PORT=465 SMTP_USER=no-reply@miracleapp.live SMTP_PASS=the-zoho-app-password "SMTP_FROM=Miracle <no-reply@miracleapp.live>" CRON_SECRET=PASTE-A-LONG-RANDOM-TEXT
 npx supabase functions deploy
 ```
 
