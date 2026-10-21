@@ -7,6 +7,10 @@
 		"directory": "./dist",
 		"not_found_handling": "single-page-application"
 	},
-	// Cloudflare makes the DNS record and the certificate on deploy.
-	"routes": [{ "pattern": "admin.miracleapp.live", "custom_domain": true }]
+	// Cloudflare makes the DNS record and the certificate on deploy. The second, more specific route
+	// keeps the main app's "*.miracleapp.live/*" route (every creator's address) from answering here.
+	"routes": [
+		{ "pattern": "admin.miracleapp.live", "custom_domain": true },
+		{ "pattern": "admin.miracleapp.live/*", "zone_name": "miracleapp.live" }
+	]
 }
