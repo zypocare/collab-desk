@@ -1,0 +1,432 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Miracle: every collab, handled</title>
+<meta name="description" content="Miracle runs the business side of being a creator: one link for every brand, DMs turned into requests, quotes, GST invoices with a UPI QR, payment reminders and a desk AI that knows your work. No commission.">
+<meta name="theme-color" content="#110D11">
+<meta property="og:title" content="Miracle: every collab, handled">
+<meta property="og:description" content="One link for every brand. Quotes, invoices, payments and a desk AI, made for creators in India. No commission.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://miracleapp.live/">
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&amp;family=Instrument+Serif:ital@0;1&amp;family=Geist+Mono:wght@500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#110D11}
+a{color:#F4EEF2;text-decoration:none}a:hover{color:#FFAE6B}
+*{box-sizing:border-box}
+@property --a{syntax:'<angle>';initial-value:0deg;inherits:false}
+@property --n{syntax:'<integer>';initial-value:0;inherits:false}
+
+/* type */
+.eb{font:700 13px Geist,sans-serif;letter-spacing:.32em;text-transform:uppercase;color:#C9BFC6}
+.big{margin:0;font:400 128px/.95 'Instrument Serif',Georgia,serif;letter-spacing:-.015em;color:#F4EEF2;text-shadow:0 0 30px rgba(242,90,144,.35),0 0 100px rgba(156,123,255,.25)}
+.mid{margin:0;font:400 92px/.98 'Instrument Serif',Georgia,serif;letter-spacing:-.012em;color:#F4EEF2;text-shadow:0 0 26px rgba(242,90,144,.3),0 0 80px rgba(156,123,255,.2)}
+.body{margin:0;max-width:560px;font:400 20px/1.6 Geist,sans-serif;color:#A39AA1}
+.gl{font-style:italic;background:linear-gradient(90deg,#9C7BFF,#F25A90 55%,#FFAE6B);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:none;filter:drop-shadow(0 0 24px rgba(242,90,144,.45))}
+.serif{font-family:'Instrument Serif',Georgia,serif;font-weight:400}
+
+/* NeoPOP */
+.neo{position:relative;overflow:hidden;display:inline-flex;align-items:center;justify-content:center;gap:12px;border:0;border-radius:0;font:700 15px Geist,sans-serif;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;transition:transform .08s,box-shadow .08s}
+.neo:active{transform:translate(5px,5px);box-shadow:none!important}
+.shine::after{content:"";position:absolute;top:0;bottom:0;left:-60%;width:40%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.55),transparent);transform:skewX(-18deg);animation:sweep 4s ease-in-out 1s infinite}
+
+/* ambient motion */
+@keyframes sweep{0%,65%{left:-60%}100%{left:130%}}
+@keyframes rim{to{--a:360deg}}
+@keyframes breathe{0%,100%{opacity:.55;transform:scale(1)}50%{opacity:1;transform:scale(1.12)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes count{from{--n:0}to{--n:18}}
+@keyframes ask{0%{opacity:0;width:0}2%{opacity:1;width:0}22%{width:var(--w)}30%{opacity:1;width:var(--w)}33%,100%{opacity:0;width:var(--w)}}
+@keyframes streak{0%{transform:translateX(-120%) skewX(-20deg);opacity:0}20%{opacity:1}100%{transform:translateX(240%) skewX(-20deg);opacity:0}}
+.rimbox{position:relative;padding:1.5px;background:conic-gradient(from var(--a),rgba(255,255,255,.05) 0deg,rgba(255,255,255,.05) 250deg,#9C7BFF 290deg,#F25A90 320deg,#FFAE6B 345deg,rgba(255,255,255,.05) 360deg);animation:rim 5s linear infinite}
+.cnt{counter-reset:n var(--n);animation:count 2.4s cubic-bezier(.2,.8,.2,1) .4s both}
+.cnt::after{content:counter(n)}
+
+/* ===== scroll-driven scenes (like the reference: things move with your scroll) ===== */
+.hero{position:relative;height:2100px;view-timeline:--hero block}
+.feat{position:relative;height:4600px;view-timeline:--feat block}
+.ai{position:relative;height:3200px;view-timeline:--ai block}
+.stage{position:sticky;top:0;height:min(100vh,960px);display:flex;align-items:center;justify-content:center;overflow:hidden}
+.panel,.screen,.q{position:absolute}
+@supports (animation-timeline: view()){
+  /* hero: the phone lies back in the dark, then stands up and its rim lights up */
+  .h-phone{animation:h-phone linear both;animation-timeline:--hero;animation-range:contain 0% contain 70%}
+  @keyframes h-phone{from{transform:perspective(1400px) rotateX(62deg) translateY(160px) scale(.62);filter:brightness(.15) blur(4px)}60%{filter:brightness(.8) blur(0)}to{transform:none;filter:none}}
+  .h-glow{animation:h-glow linear both;animation-timeline:--hero;animation-range:contain 10% contain 80%}
+  @keyframes h-glow{from{opacity:0;transform:scale(.4)}to{opacity:1;transform:none}}
+  .h-title{animation:sharp linear both;animation-timeline:--hero;animation-range:contain 55% contain 85%}
+  .h-sub{animation:rise linear both;animation-timeline:--hero;animation-range:contain 70% contain 95%}
+  .h-cue{animation:fade linear both;animation-timeline:--hero;animation-range:contain 0% contain 15%}
+  @keyframes fade{to{opacity:0}}
+  @keyframes sharp{from{opacity:0;filter:blur(20px);transform:scale(1.08)}to{opacity:1;filter:none;transform:none}}
+  @keyframes rise{from{opacity:0;transform:translateY(40px)}to{opacity:1;transform:none}}
+
+  /* features: the phone stays, its screen and the words change with each step */
+  .panel,.screen{animation:step linear both;animation-timeline:--feat}
+  @keyframes step{0%{opacity:0;filter:blur(16px);transform:translateY(50px)}18%,82%{opacity:1;filter:none;transform:none}100%{opacity:0;filter:blur(12px);transform:translateY(-40px)}}
+  .s0{animation-range:contain 0% contain 17%}.s1{animation-range:contain 16.6% contain 33.3%}.s2{animation-range:contain 33.3% contain 50%}
+  .s3{animation-range:contain 50% contain 66.6%}.s4{animation-range:contain 66.6% contain 83.3%}.s5{animation-range:contain 83.3% contain 100%}
+  .s0{animation-name:first}.s5{animation-name:last}
+  @keyframes first{0%,82%{opacity:1;filter:none;transform:none}100%{opacity:0;filter:blur(12px);transform:translateY(-40px)}}
+  @keyframes last{0%{opacity:0;filter:blur(16px);transform:translateY(50px)}18%,100%{opacity:1;filter:none;transform:none}}
+  .f-bar i{transform-origin:left;animation:barfill linear both;animation-timeline:--feat;animation-range:contain 0% contain 100%}
+  @keyframes barfill{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+  .f-phone{animation:f-tilt linear both;animation-timeline:--feat;animation-range:contain 0% contain 100%}
+  @keyframes f-tilt{0%{transform:perspective(1400px) rotateY(-14deg) rotateX(4deg)}50%{transform:perspective(1400px) rotateY(10deg) rotateX(-2deg)}100%{transform:perspective(1400px) rotateY(-8deg) rotateX(3deg)}}
+
+  /* desk AI: the orb grows, questions arrive one by one, the answer lands */
+  .ai-orb{animation:orb linear both;animation-timeline:--ai;animation-range:contain 0% contain 45%}
+  @keyframes orb{from{transform:scale(.25);opacity:.2;filter:blur(10px)}to{transform:none;opacity:1;filter:none}}
+  .ai-title{animation:sharp linear both;animation-timeline:--ai;animation-range:contain 5% contain 30%}
+  .q{animation:qin linear both;animation-timeline:--ai}
+  @keyframes qin{from{opacity:0;transform:translate(var(--qx),var(--qy)) scale(.6);filter:blur(10px)}to{opacity:1;transform:none;filter:none}}
+  .q0{animation-range:contain 25% contain 40%}.q1{animation-range:contain 32% contain 47%}.q2{animation-range:contain 39% contain 54%}.q3{animation-range:contain 46% contain 61%}.q4{animation-range:contain 53% contain 68%}
+  .ai-ans{animation:rise linear both;animation-timeline:--ai;animation-range:contain 66% contain 86%}
+}
+@supports not (animation-timeline: view()){
+  .panel:not(.s0),.screen:not(.s0){display:none}
+}
+
+/* layout */
+.f-grid{width:min(1240px,100%);padding:0 40px;display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:60px;align-items:center}
+.claim{display:flex;width:min(620px,100%);border:1px solid #3E343E;background:#1A151A}
+.claim input{flex:1;min-width:0;height:64px;padding:0 0 0 22px;border:0;background:transparent;color:#F4EEF2;font:600 20px Geist,sans-serif;outline:0}
+.claim .dom{display:flex;align-items:center;padding:0 16px 0 2px;color:#A39AA1;font:500 20px Geist,sans-serif;white-space:nowrap}
+.foot-cols{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:30px}
+.caps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;width:min(1100px,100%)}
+@media (max-width: 900px){
+.big{font-size:68px}.mid{font-size:52px}.body{font-size:16.5px}
+.eb{font-size:11.5px;letter-spacing:.28em}
+.f-grid{grid-template-columns:minmax(0,1fr);padding:0 20px;gap:18px;align-content:center}
+.f-phone-wrap{order:2;transform:scale(.7);margin:-90px 0}
+.claim{flex-wrap:wrap}.claim .dom{font-size:16px}.claim .neo{width:100%}
+.foot-cols{grid-template-columns:repeat(2,minmax(0,1fr))}
+.caps{grid-template-columns:minmax(0,1fr)}
+.h-phone-wrap{transform:scale(.8)}
+.qs{transform:scale(.62)}
+}
+@media (prefers-reduced-motion: reduce){*{animation:none!important}}
+@media (max-width: 520px){header{padding: 16px 18px!important}header .signin{margin-right: 16px!important;font-size: 13px!important}header .neo{height: 40px!important;padding: 0 14px!important;font-size: 11px!important}}
+</style>
+</head>
+<body>
+<div style="position: relative; background: #110D11; color: #F4EEF2; font-family: Geist, system-ui, sans-serif">
+
+  <!-- Top bar -->
+  <header style="position: fixed; z-index: 20; top: 0; left: 0; right: 0; display: flex; align-items: center; padding: 24px 40px; background: linear-gradient(180deg, rgba(17,13,17,.85), transparent)">
+    <a href="#top" style="display: grid; justify-items: center; gap: 4px" aria-label="Miracle home">
+      <svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><defs><linearGradient id="mk" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#9C7BFF"></stop><stop offset=".55" stop-color="#F25A90"></stop><stop offset="1" stop-color="#FFAE6B"></stop></linearGradient></defs><path d="M16 1.5c1.2 8.2 6.3 13.3 14.5 14.5-8.2 1.2-13.3 6.3-14.5 14.5C14.8 22.3 9.7 17.2 1.5 16 9.7 14.8 14.8 9.7 16 1.5z" fill="url(#mk)"></path></svg>
+      <span style="font: 700 10.5px Geist, sans-serif; letter-spacing: .34em">MIRACLE</span>
+    </a>
+    <a class="signin" href="https://collab-desk.zypocare.workers.dev/login" style="margin-left: auto; margin-right: 22px; font: 600 14px Geist, sans-serif; color: #C9BFC6; white-space: nowrap">Sign in</a>
+    <a class="neo" href="#claim" style="white-space: nowrap; height: 46px; padding: 0 20px; font-size: 12.5px; background: #F4EEF2; color: #1E171C; box-shadow: 4px 4px 0 #F25A90">Claim your link</a>
+  </header>
+
+  <!-- ===== 1 · Hero: scroll and the phone stands up, lit ===== -->
+  <section id="top" class="hero">
+    <div class="stage" style="flex-direction: column">
+      <span aria-hidden="true" class="h-glow" style="position: absolute; left: 50%; top: 46%; width: 980px; height: 980px; margin: -490px 0 0 -490px; border-radius: 50%; background: radial-gradient(circle, rgba(156,123,255,.32), rgba(242,90,144,.16) 40%, transparent 70%); filter: blur(30px)"></span>
+      <div class="h-phone-wrap" style="position: relative">
+        <div class="h-phone rimbox" style="border-radius: 54px; box-shadow: 0 60px 160px -40px rgba(242,90,144,.6)">
+          <div style="position: relative; width: 300px; height: 600px; border-radius: 53px; overflow: hidden; background: #110D11">
+            <span aria-hidden="true" style="position: absolute; top: 0; bottom: 0; left: 0; width: 45%; background: linear-gradient(90deg, transparent, rgba(255,255,255,.14), transparent); animation: streak 6s ease-in-out 1s infinite"></span>
+            <div style="position: absolute; inset: 0; padding: 54px 18px 18px; display: flex; flex-direction: column; gap: 13px; text-align: left">
+              <span aria-hidden="true" style="position: absolute; top: 14px; left: 50%; width: 92px; height: 26px; margin-left: -46px; border-radius: 20px; background: #000"></span>
+              <span style="font: 600 9.5px Geist, sans-serif; letter-spacing: .3em; color: #A39AA1">TUESDAY · 3 NEED YOU</span>
+              <b class="serif" style="font-size: 34px; line-height: 1">Good morning, <em class="gl">Nivy</em></b>
+              <div style="border-radius: 22px; padding: 15px; background: radial-gradient(120% 90% at 0% 0%, rgba(242,90,144,.4), transparent 55%), linear-gradient(140deg, #2a1424, #160c14); display: grid; gap: 4px">
+                <small style="font: 600 8.5px Geist, sans-serif; letter-spacing: .26em; color: rgba(255,255,255,.7)">RECEIVED IN OCTOBER</small>
+                <b class="serif" style="font-size: 40px; line-height: 1">₹1,64,598</b>
+              </div>
+              
+                <div style="display: flex; align-items: center; gap: 10px; padding: 11px; border-radius: 16px; color: #fff; background: linear-gradient(135deg, #2F6F9F, color-mix(in oklab, #2F6F9F 40%, #08060a) 78%)"><span style="width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; background: rgba(255,255,255,.18); font: 800 10.5px Geist, sans-serif">GC</span><span style="flex: 1; display: grid"><b class="serif" style="font-size: 19px; font-style: italic; line-height: 1.05">Glowberry</b><small style="font: 700 8px Geist, sans-serif; letter-spacing: .16em; color: rgba(255,255,255,.75)">NEW REQUEST</small></span><b style="font: 700 13px Geist, sans-serif">₹68k</b></div>
+              
+                <div style="display: flex; align-items: center; gap: 10px; padding: 11px; border-radius: 16px; color: #fff; background: linear-gradient(135deg, #3D7F6A, color-mix(in oklab, #3D7F6A 40%, #08060a) 78%)"><span style="width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; background: rgba(255,255,255,.18); font: 800 10.5px Geist, sans-serif">KN</span><span style="flex: 1; display: grid"><b class="serif" style="font-size: 19px; font-style: italic; line-height: 1.05">Kumkum Naturals</b><small style="font: 700 8px Geist, sans-serif; letter-spacing: .16em; color: rgba(255,255,255,.75)">PAID TODAY</small></span><b style="font: 700 13px Geist, sans-serif">₹40k</b></div>
+              
+                <div style="display: flex; align-items: center; gap: 10px; padding: 11px; border-radius: 16px; color: #fff; background: linear-gradient(135deg, #A8466E, color-mix(in oklab, #A8466E 40%, #08060a) 78%)"><span style="width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; background: rgba(255,255,255,.18); font: 800 10.5px Geist, sans-serif">S</span><span style="flex: 1; display: grid"><b class="serif" style="font-size: 19px; font-style: italic; line-height: 1.05">Sorso</b><small style="font: 700 8px Geist, sans-serif; letter-spacing: .16em; color: rgba(255,255,255,.75)">DRAFT DUE FRIDAY</small></span><b style="font: 700 13px Geist, sans-serif">₹18k</b></div>
+              
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="position: relative; margin-top: 46px; display: grid; justify-items: center; gap: 20px; text-align: center; padding: 0 20px">
+        <h1 class="big h-title">Every collab,<br><span class="gl">handled.</span></h1>
+        <p class="body h-sub">Brands request from your link. Miracle reads the DMs, sends the quote and the GST invoice, and chases the payment.</p>
+      </div>
+      <span class="h-cue eb" style="position: absolute; bottom: 34px; font-size: 11px; display: grid; justify-items: center; gap: 10px">Scroll<i style="display: block; width: 1px; height: 46px; background: linear-gradient(#F25A90, transparent)"></i></span>
+    </div>
+  </section>
+
+  <!-- ===== 2 · Features: the phone stays put while each step plays ===== -->
+  <section id="features" class="feat">
+    <div class="stage">
+      <span aria-hidden="true" style="position: absolute; right: 8%; top: 50%; width: 700px; height: 700px; margin-top: -350px; border-radius: 50%; background: radial-gradient(circle, rgba(242,90,144,.18), transparent 65%); filter: blur(30px); animation: breathe 8s ease-in-out infinite"></span>
+      <div class="f-grid">
+        <div style="position: relative; height: 520px">
+          
+            <div class="panel s0" style="inset: 0; display: flex; flex-direction: column; justify-content: center; gap: 22px">
+              <span class="eb" style="color: #F25A90">01 · A link that works while you sleep</span>
+              <h2 class="mid">One link.<br><span class="gl">Every brand.</span></h2>
+              <p class="body">Your rates, packages, open weeks and past work on one page. Brands send a proper request instead of a DM.</p>
+            </div>
+          
+            <div class="panel s1" style="inset: 0; display: flex; flex-direction: column; justify-content: center; gap: 22px">
+              <span class="eb" style="color: #9C7BFF">02 · No more lost offers</span>
+              <h2 class="mid">Your DMs,<br><span class="gl">sorted.</span></h2>
+              <p class="body">Every brand message becomes a clear request, scored so you know at a glance if it is worth it.</p>
+            </div>
+          
+            <div class="panel s2" style="inset: 0; display: flex; flex-direction: column; justify-content: center; gap: 22px">
+              <span class="eb" style="color: #FFAE6B">03 · Priced in a tap</span>
+              <h2 class="mid">Quotes that<br><span class="gl">close.</span></h2>
+              <p class="body">Worked out from your rate card: the fee, usage rights, revisions and advance, sent as a clean quote.</p>
+            </div>
+          
+            <div class="panel s3" style="inset: 0; display: flex; flex-direction: column; justify-content: center; gap: 22px">
+              <span class="eb" style="color: #6FD08C">04 · GST. TDS. UPI.</span>
+              <h2 class="mid">Invoices that do<br><span class="gl">the maths.</span></h2>
+              <p class="body">A proper tax invoice with GST and TDS, and a UPI QR for the exact amount due.</p>
+            </div>
+          
+            <div class="panel s4" style="inset: 0; display: flex; flex-direction: column; justify-content: center; gap: 22px">
+              <span class="eb" style="color: #4CCFC2">05 · Stay clear of late payments</span>
+              <h2 class="mid">Get paid<br><span class="gl">on time.</span></h2>
+              <p class="body">Due dates tracked, polite reminders sent for you, and a tap on the shoulder the moment money lands.</p>
+            </div>
+          
+            <div class="panel s5" style="inset: 0; display: flex; flex-direction: column; justify-content: center; gap: 22px">
+              <span class="eb" style="color: #7EA2FF">06 · While you create</span>
+              <h2 class="mid">10 pitches<br><span class="gl">a day.</span></h2>
+              <p class="body">Miracle finds brands that suit you and pitches them from your own email. You approve each one, or let it run.</p>
+            </div>
+          
+          <div class="f-bar" aria-hidden="true" style="position: absolute; left: 0; right: 0; bottom: 0">
+            <span style="position: relative; display: block; height: 3px; background: #2E262E"><i style="position: absolute; inset: 0; display: block; background: linear-gradient(90deg, #9C7BFF, #F25A90, #FFAE6B)"></i></span>
+          </div>
+        </div>
+        <div class="f-phone-wrap" style="display: grid; place-items: center">
+          <div class="f-phone rimbox" style="border-radius: 50px; box-shadow: 0 50px 140px -40px rgba(156,123,255,.6)">
+            <div style="position: relative; width: 320px; height: 640px; border-radius: 49px; overflow: hidden; background: #110D11">
+              <span aria-hidden="true" style="position: absolute; z-index: 3; top: 14px; left: 50%; width: 92px; height: 26px; margin-left: -46px; border-radius: 20px; background: #000"></span>
+
+              <!-- screen 1: brand page -->
+              <div class="screen s0" style="inset: 0; padding: 58px 18px 18px; display: flex; flex-direction: column; gap: 14px; align-items: center; text-align: center">
+                <span style="font: 600 11px 'Geist Mono', monospace; color: #A39AA1">nivy.miracleapp.live</span>
+                <span style="width: 84px; height: 84px; border-radius: 50%; padding: 3px; background: conic-gradient(#FFAE6B, #F25A90, #9C7BFF, #FFAE6B)"><span style="display: grid; place-items: center; width: 100%; height: 100%; border-radius: 50%; border: 3px solid #110D11; background: #2B2230; font-weight: 800; font-size: 22px">ND</span></span>
+                <b class="serif" style="font-size: 32px; font-style: italic; line-height: 1">Niveditha</b>
+                <small style="font-size: 12px; color: #A39AA1">Lifestyle · Travel · Food · Bengaluru</small>
+                <div style="width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 8px">
+                  <span style="padding: 12px; border: 1px solid #2E262E; display: grid; gap: 2px"><b class="serif" style="font-size: 24px">251K</b><small style="font-size: 10px; letter-spacing: .14em; color: #A39AA1">FOLLOWERS</small></span>
+                  <span style="padding: 12px; border: 1px solid #2E262E; display: grid; gap: 2px"><b class="serif" style="font-size: 24px">₹18k</b><small style="font-size: 10px; letter-spacing: .14em; color: #A39AA1">PER REEL</small></span>
+                </div>
+                <span style="width: 100%; padding: 12px; border: 1px solid #2E262E; display: flex; justify-content: space-between; font-size: 12.5px"><span style="color: #A39AA1">This week</span><b style="color: #6FD08C">2 slots open</b></span>
+                <span class="neo" style="width: 100%; height: 48px; background: #F4EEF2; color: #1E171C; box-shadow: 3px 3px 0 #F25A90; font-size: 12px">Send a request</span>
+              </div>
+
+              <!-- screen 2: a DM becomes a request -->
+              <div class="screen s1" style="inset: 0; padding: 58px 16px 18px; display: flex; flex-direction: column; gap: 12px">
+                <span style="font: 600 9.5px Geist, sans-serif; letter-spacing: .3em; color: #A39AA1">FROM YOUR DMS</span>
+                <div style="align-self: flex-start; max-width: 85%; padding: 11px 13px; border-radius: 16px 16px 16px 4px; background: #231D23; font-size: 13px; line-height: 1.4">hi! loved ur cafe reels. can u do 1 reel for our new menu? budget around 15k</div>
+                <div style="align-self: center; display: flex; align-items: center; gap: 8px; font: 700 10px Geist, sans-serif; letter-spacing: .2em; color: #F25A90"><i style="width: 18px; height: 18px; border-radius: 50%; background: conic-gradient(#9C7BFF, #F25A90, #FFAE6B, #9C7BFF); animation: spin 3s linear infinite"></i>DESK AI READ IT</div>
+                <div style="border-radius: 18px; overflow: hidden; background: #1A151A; border: 1px solid #2E262E">
+                  <div style="display: flex; align-items: center; gap: 10px; padding: 12px; background: linear-gradient(135deg, #A8466E, color-mix(in oklab, #A8466E 40%, #08060a) 78%)"><span style="width: 32px; height: 32px; border-radius: 10px; display: grid; place-items: center; background: rgba(255,255,255,.18); font-weight: 800; font-size: 11px">S</span><span style="flex: 1; display: grid"><b class="serif" style="font-size: 21px; font-style: italic">Sorso</b><small style="font: 700 8.5px Geist, sans-serif; letter-spacing: .16em; color: rgba(255,255,255,.75)">NEW REQUEST · 1 REEL</small></span><b>₹15k</b></div>
+                  <div style="display: grid; grid-template-columns: auto 1fr; gap: 12px; align-items: center; padding: 12px; border-top: 1.5px dashed #3E343E">
+                    <span style="width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center; border: 4px solid #EFB35A; font: 400 20px 'Instrument Serif', serif">71</span>
+                    <span style="display: grid; gap: 2px"><b style="font-size: 12.5px; color: #EFB35A; letter-spacing: .12em">NEGOTIATE</b><small style="font-size: 11.5px; color: #A39AA1">Below your rate. Counter at ₹18,000.</small></span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- screen 3: quote -->
+              <div class="screen s2" style="inset: 0; padding: 58px 18px 18px; display: flex; flex-direction: column; gap: 14px">
+                <span style="font: 600 9.5px Geist, sans-serif; letter-spacing: .3em; color: #A39AA1">QUOTE · SORSO</span>
+                <b class="serif" style="font-size: 64px; line-height: 1">₹<span class="cnt"></span>,000</b>
+                <div style="display: grid; gap: 8px; font-size: 13px">
+                  <span style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #2E262E"><span style="color: #A39AA1">1 Reel</span><b>₹15,000</b></span>
+                  <span style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #2E262E"><span style="color: #A39AA1">Usage · 30 days</span><b>₹3,000</b></span>
+                  <span style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #2E262E"><span style="color: #A39AA1">Revisions</span><b>2 included</b></span>
+                  <span style="display: flex; justify-content: space-between; padding: 10px 0"><span style="color: #A39AA1">Advance</span><b>50%</b></span>
+                </div>
+                <span class="neo" style="margin-top: auto; height: 50px; background: linear-gradient(110deg, #9C7BFF, #F25A90 55%, #FFAE6B); color: #fff; box-shadow: 4px 4px 0 #5c3ea0; font-size: 12px">Send quote</span>
+              </div>
+
+              <!-- screen 4: invoice -->
+              <div class="screen s3" style="inset: 0; padding: 58px 18px 18px; display: flex; flex-direction: column; gap: 12px">
+                <span style="font: 600 9.5px Geist, sans-serif; letter-spacing: .3em; color: #A39AA1">TAX INVOICE · INV/26-27/014</span>
+                <div style="display: grid; gap: 8px; font-size: 13px">
+                  <span style="display: flex; justify-content: space-between"><span style="color: #A39AA1">Fee</span><b>₹18,000</b></span>
+                  <span style="display: flex; justify-content: space-between"><span style="color: #A39AA1">GST 18%</span><b>₹3,240</b></span>
+                  <span style="display: flex; justify-content: space-between"><span style="color: #A39AA1">TDS 10%</span><b style="color: #FF9B92">– ₹1,800</b></span>
+                </div>
+                <div style="margin-top: 6px; padding: 16px; display: grid; justify-items: center; gap: 10px; background: #F4EEF2; color: #1E171C">
+                  <span aria-hidden="true" style="width: 120px; height: 120px; display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px">
+                    <i style="display: block; background: #1E171C"></i><i style="display: block; background: #1E171C"></i><i style="display: block; background: #1E171C"></i><i style="display: block; background: transparent"></i><i style="display: block; background: #1E171C"></i><i style="display: block; background: #1E171C"></i><i style="display: block; background: #1E171C"></i><i style="display: block; background: #1E171C"></i><i style="display: block; background: transparent"></i><i style="display: block; background: transparent"></i><i style="display: block; background: transparent"></i><i style="display: block; background: #1E171C"></i><i style="display: block; background: transparent"></i><i style="display: block; background: #1E171C"></i><i style="display: block; background: #1E171C"></i><i style="display: block; background: transparent"></i><i style="display: block; background: #1E171C"></i><i style="display: block; background: transparent"></i><i style="display: block; background: #1E171C"></i><i style="display: block; background: #1E171C"></i><i style="display: block; background: #1E171C"></i><i style="display: block; background: #1E171C"></i><i style="display: block; background: #1E171C"></i><i style="display: block; background: #1E171C"></i><i style="display: block; background: transparent"></i><i style="display: block; background: #1E171C"></i><i style="display: block; background: #1E171C"></i><i style="display: block; background: transparent"></i><i style="display: block; background: transparent"></i><i style="display: block; background: #1E171C"></i><i style="display: block; background: transparent"></i><i style="display: block; background: transparent"></i><i style="display: block; background: transparent"></i><i style="display: block; background: #1E171C"></i><i style="display: block; background: #1E171C"></i><i style="display: block; background: transparent"></i><i style="display: block; background: #1E171C"></i><i style="display: block; background: #1E171C"></i><i style="display: block; background: #1E171C"></i><i style="display: block; background: transparent"></i><i style="display: block; background: #1E171C"></i><i style="display: block; background: transparent"></i><i style="display: block; background: #1E171C"></i><i style="display: block; background: #1E171C"></i><i style="display: block; background: transparent"></i><i style="display: block; background: #1E171C"></i><i style="display: block; background: #1E171C"></i><i style="display: block; background: #1E171C"></i><i style="display: block; background: transparent"></i>
+                  </span>
+                  <small style="font: 700 10px Geist, sans-serif; letter-spacing: .2em">PAY BY ANY UPI APP</small>
+                  <b class="serif" style="font-size: 38px; line-height: 1">₹19,440</b>
+                </div>
+              </div>
+
+              <!-- screen 5: payments -->
+              <div class="screen s4" style="inset: 0; padding: 58px 14px 18px; display: flex; flex-direction: column; gap: 12px">
+                <span style="font: 600 9.5px Geist, sans-serif; letter-spacing: .3em; color: #A39AA1">TODAY</span>
+                
+                  <div style="display: flex; align-items: center; gap: 10px; padding: 8px 14px 8px 8px; border-radius: 999px; background: #1A151A; box-shadow: 0 0 0 1px #3E343E"><span style="flex: none; width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; background: linear-gradient(135deg, #9C7BFF, #F25A90 60%, #FFAE6B)"><svg width="14" height="14" viewBox="0 0 32 32" aria-hidden="true"><path d="M16 1.5c1.2 8.2 6.3 13.3 14.5 14.5-8.2 1.2-13.3 6.3-14.5 14.5C14.8 22.3 9.7 17.2 1.5 16 9.7 14.8 14.8 9.7 16 1.5z" fill="#fff"></path></svg></span><span style="display: grid"><b style="font-size: 12.5px">₹40,000 just landed</b><small style="font-size: 11px; color: #A39AA1">Kumkum Naturals · INV/26-27/011</small></span></div>
+                
+                  <div style="display: flex; align-items: center; gap: 10px; padding: 8px 14px 8px 8px; border-radius: 999px; background: #1A151A; box-shadow: 0 0 0 1px #3E343E"><span style="flex: none; width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; background: linear-gradient(135deg, #9C7BFF, #F25A90 60%, #FFAE6B)"><svg width="14" height="14" viewBox="0 0 32 32" aria-hidden="true"><path d="M16 1.5c1.2 8.2 6.3 13.3 14.5 14.5-8.2 1.2-13.3 6.3-14.5 14.5C14.8 22.3 9.7 17.2 1.5 16 9.7 14.8 14.8 9.7 16 1.5z" fill="#fff"></path></svg></span><span style="display: grid"><b style="font-size: 12.5px">Reminder sent politely</b><small style="font-size: 11px; color: #A39AA1">Glowberry · due tomorrow</small></span></div>
+                
+                  <div style="display: flex; align-items: center; gap: 10px; padding: 8px 14px 8px 8px; border-radius: 999px; background: #1A151A; box-shadow: 0 0 0 1px #3E343E"><span style="flex: none; width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; background: linear-gradient(135deg, #9C7BFF, #F25A90 60%, #FFAE6B)"><svg width="14" height="14" viewBox="0 0 32 32" aria-hidden="true"><path d="M16 1.5c1.2 8.2 6.3 13.3 14.5 14.5-8.2 1.2-13.3 6.3-14.5 14.5C14.8 22.3 9.7 17.2 1.5 16 9.7 14.8 14.8 9.7 16 1.5z" fill="#fff"></path></svg></span><span style="display: grid"><b style="font-size: 12.5px">Post in 30 minutes</b><small style="font-size: 11px; color: #A39AA1">Sorso · 1 Reel at 7 PM</small></span></div>
+                
+                <div style="margin-top: 8px; border-radius: 20px; padding: 16px; background: radial-gradient(120% 90% at 0% 0%, rgba(242,90,144,.4), transparent 55%), linear-gradient(140deg, #2a1424, #160c14); display: grid; gap: 4px">
+                  <small style="font: 600 8.5px Geist, sans-serif; letter-spacing: .26em; color: rgba(255,255,255,.7)">STILL TO COME</small>
+                  <b class="serif" style="font-size: 40px; line-height: 1">₹2,99,082</b>
+                  <small style="font-size: 11.5px; color: #6FD08C">Nothing overdue</small>
+                </div>
+              </div>
+
+              <!-- screen 6: pitch autopilot -->
+              <div class="screen s5" style="inset: 0; padding: 58px 16px 18px; display: flex; flex-direction: column; gap: 10px">
+                <span style="font: 600 9.5px Geist, sans-serif; letter-spacing: .3em; color: #A39AA1">PITCH AUTOPILOT · TODAY</span>
+                
+                  <div style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid #2E262E; background: #1A151A"><span style="flex: none; width: 9px; height: 9px; border-radius: 50%; background: #6FD08C"></span><span style="flex: 1; display: grid"><b style="font-size: 13px">A coffee roaster</b><small style="font-size: 10.5px; color: #A39AA1">Coffee · fits your café reels</small></span><small style="font: 700 9px Geist, sans-serif; letter-spacing: .14em; color: #6FD08C">SENT</small></div>
+                
+                  <div style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid #2E262E; background: #1A151A"><span style="flex: none; width: 9px; height: 9px; border-radius: 50%; background: #FFAE6B"></span><span style="flex: 1; display: grid"><b style="font-size: 13px">A skincare label</b><small style="font-size: 10.5px; color: #A39AA1">Skincare · email found</small></span><small style="font: 700 9px Geist, sans-serif; letter-spacing: .14em; color: #FFAE6B">READY</small></div>
+                
+                  <div style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid #2E262E; background: #1A151A"><span style="flex: none; width: 9px; height: 9px; border-radius: 50%; background: #FFAE6B"></span><span style="flex: 1; display: grid"><b style="font-size: 13px">A streetwear brand</b><small style="font-size: 10.5px; color: #A39AA1">Fashion · email found</small></span><small style="font: 700 9px Geist, sans-serif; letter-spacing: .14em; color: #FFAE6B">READY</small></div>
+                
+                  <div style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid #2E262E; background: #1A151A"><span style="flex: none; width: 9px; height: 9px; border-radius: 50%; background: #6FD08C"></span><span style="flex: 1; display: grid"><b style="font-size: 13px">A travel gear brand</b><small style="font-size: 10.5px; color: #A39AA1">Travel · follow-up 1</small></span><small style="font: 700 9px Geist, sans-serif; letter-spacing: .14em; color: #6FD08C">SENT</small></div>
+                
+                  <div style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid #2E262E; background: #1A151A"><span style="flex: none; width: 9px; height: 9px; border-radius: 50%; background: #F25A90"></span><span style="flex: 1; display: grid"><b style="font-size: 13px">A snack brand</b><small style="font-size: 10.5px; color: #A39AA1">Food · they replied</small></span><small style="font: 700 9px Geist, sans-serif; letter-spacing: .14em; color: #F25A90">REPLIED</small></div>
+                
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 3 · Desk AI ===== -->
+  <section id="ai" class="ai">
+    <div class="stage" style="flex-direction: column">
+      <span class="eb ai-title" style="position: relative; z-index: 2">Built in · Desk AI</span>
+      <h2 class="big ai-title" style="position: relative; z-index: 2; margin-top: 18px; text-align: center">Ask your desk<br><span class="gl">anything.</span></h2>
+      <div class="qs" style="position: relative; width: 860px; height: 420px; margin-top: 10px">
+        <div class="ai-orb" style="position: absolute; left: 50%; top: 50%; width: 520px; margin: -170px 0 0 -260px; padding: 1.5px; border-radius: 30px; background: linear-gradient(140deg, rgba(156,123,255,.7), rgba(242,90,144,.5) 45%, rgba(255,174,107,.5)); box-shadow: 0 50px 120px -30px rgba(242,90,144,.55)">
+          <div style="position: relative; overflow: hidden; border-radius: 29px; padding: 26px 26px 22px; background: radial-gradient(130% 60% at 50% 0%, rgba(156,123,255,.2), transparent 70%), #161116; display: grid; gap: 16px; text-align: left">
+            <span style="display: flex; align-items: center; gap: 10px"><span aria-hidden="true" style="position: relative; width: 30px; height: 30px; flex: none"><span style="position: absolute; inset: -7px; border-radius: 50%; background: radial-gradient(circle, rgba(242,90,144,.55), transparent 65%); animation: breathe 3s ease-in-out infinite"></span><span style="position: absolute; inset: 0; border-radius: 50%; background: conic-gradient(#9C7BFF, #F25A90, #FFAE6B, #9C7BFF); animation: spin 6s linear infinite"></span><span style="position: absolute; inset: 5px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, rgba(255,255,255,.85), rgba(255,255,255,.08) 45%, transparent 60%), #161116"></span></span><span class="eb" style="font-size: 10.5px; letter-spacing: .26em">Ask your desk</span></span>
+            <b class="serif" style="font-size: 46px; line-height: 1">Hello, <em class="gl">Nivy</em></b>
+            <span style="margin-top: -10px; font-size: 18px; color: #A39AA1">How can I help today?</span>
+            <div style="display: flex; align-items: center; gap: 12px; height: 58px; padding: 0 10px 0 18px; border: 1px solid #3E343E; background: #110D11; box-shadow: 4px 4px 0 #F25A90">
+              <span style="position: relative; flex: 1; height: 24px; font: 500 16px Geist, sans-serif; color: #F4EEF2">
+                <span style="position: absolute; left: 0; top: 0; overflow: hidden; white-space: nowrap; border-right: 2px solid #F25A90; --w: 24ch; animation: ask 12s steps(23) infinite; animation-delay: 0s; opacity: 0">who hasn’t paid me yet?</span><span style="position: absolute; left: 0; top: 0; overflow: hidden; white-space: nowrap; border-right: 2px solid #F25A90; --w: 31ch; animation: ask 12s steps(30) infinite; animation-delay: 4s; opacity: 0">reply to glowberry in hinglish</span><span style="position: absolute; left: 0; top: 0; overflow: hidden; white-space: nowrap; border-right: 2px solid #F25A90; --w: 30ch; animation: ask 12s steps(29) infinite; animation-delay: 8s; opacity: 0">write a reel script for sorso</span>
+              </span>
+              <span aria-hidden="true" style="width: 40px; height: 40px; display: grid; place-items: center; background: #F4EEF2; color: #1E171C"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4z"></path></svg></span>
+            </div>
+            <small style="font-size: 12px; color: #A39AA1">English · Hinglish · ಕನ್ನಡ · हिंदी</small>
+          </div>
+        </div>
+        
+          <span class="q q0" style="left: 50%; top: 50%; margin-left: -470px; margin-top: -190px; --qx: 282px; --qy: 114px; padding: 12px 18px; border-radius: 18px 18px 18px 4px; background: #1A151A; border: 1px solid #3E343E; font: 500 16px Geist, sans-serif; color: #F4EEF2; white-space: nowrap; box-shadow: 0 20px 40px -20px rgba(0,0,0,.8)">who hasn’t paid me yet?</span>
+        
+          <span class="q q1" style="left: 50%; top: 50%; margin-left: 300px; margin-top: -200px; --qx: -180px; --qy: 120px; padding: 12px 18px; border-radius: 18px 18px 18px 4px; background: #1A151A; border: 1px solid #3E343E; font: 500 16px Geist, sans-serif; color: #F4EEF2; white-space: nowrap; box-shadow: 0 20px 40px -20px rgba(0,0,0,.8)">is ₹15k fair for 2 reels?</span>
+        
+          <span class="q q2" style="left: 50%; top: 50%; margin-left: -500px; margin-top: 60px; --qx: 300px; --qy: -36px; padding: 12px 18px; border-radius: 18px 18px 18px 4px; background: #1A151A; border: 1px solid #3E343E; font: 500 16px Geist, sans-serif; color: #F4EEF2; white-space: nowrap; box-shadow: 0 20px 40px -20px rgba(0,0,0,.8)">write a reel script for sorso</span>
+        
+          <span class="q q3" style="left: 50%; top: 50%; margin-left: 320px; margin-top: 80px; --qx: -192px; --qy: -48px; padding: 12px 18px; border-radius: 18px 18px 18px 4px; background: #1A151A; border: 1px solid #3E343E; font: 500 16px Geist, sans-serif; color: #F4EEF2; white-space: nowrap; box-shadow: 0 20px 40px -20px rgba(0,0,0,.8)">reply to glowberry in hinglish</span>
+        
+          <span class="q q4" style="left: 50%; top: 50%; margin-left: -120px; margin-top: 190px; --qx: 72px; --qy: -114px; padding: 12px 18px; border-radius: 18px 18px 18px 4px; background: #1A151A; border: 1px solid #3E343E; font: 500 16px Geist, sans-serif; color: #F4EEF2; white-space: nowrap; box-shadow: 0 20px 40px -20px rgba(0,0,0,.8)">what’s due this week?</span>
+        
+      </div>
+      <div class="ai-ans" style="position: relative; z-index: 2; width: min(620px, 92%); margin-top: 6px; padding: 1.5px; border-radius: 24px; background: linear-gradient(90deg, #9C7BFF, #F25A90, #FFAE6B)">
+        <div style="border-radius: 23px; padding: 20px 22px; background: #1A151A; display: grid; gap: 10px; text-align: left">
+          <span style="display: flex; align-items: center; gap: 10px; font: 700 10.5px Geist, sans-serif; letter-spacing: .24em; color: #F25A90"><i style="width: 18px; height: 18px; border-radius: 50%; background: conic-gradient(#9C7BFF, #F25A90, #FFAE6B, #9C7BFF); animation: spin 3s linear infinite"></i>DESK AI</span>
+          <p class="serif" style="margin: 0; font-size: 26px; line-height: 1.25">Two brands owe you <em class="gl">₹1,08,000</em>. Glowberry is 3 days late. Want me to send a polite reminder?</p>
+          <div style="display: flex; gap: 10px; flex-wrap: wrap"><span class="neo" style="height: 42px; padding: 0 16px; background: #F4EEF2; color: #1E171C; box-shadow: 3px 3px 0 #F25A90; font-size: 11.5px">Send reminder</span><span class="neo" style="height: 42px; padding: 0 16px; border: 1px solid #3E343E; background: transparent; color: #F4EEF2; box-shadow: 3px 3px 0 #3E343E; font-size: 11.5px">See invoices</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- What Desk AI does -->
+  <section style="position: relative; display: grid; justify-items: center; gap: 40px; padding: 60px 24px 140px">
+    <p class="body" style="text-align: center; max-width: 680px">Desk AI lives inside Miracle. It reads brand messages and emails in English, Hinglish, Kannada and Hindi, and knows your rates, calendar and money.</p>
+    <div class="caps">
+      
+        <div style="padding: 24px; border: 1px solid #2E262E; background: #161116; display: grid; gap: 10px; align-content: start">
+          <span style="width: 42px; height: 42px; display: grid; place-items: center; border-radius: 50%; border: 1px solid #3E343E; color: #F25A90"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"></path></svg></span>
+          <b style="font: 700 18px Geist, sans-serif">Reads your DMs</b>
+          <span style="font-size: 15px; line-height: 1.55; color: #A39AA1">Spots real offers in your Instagram DMs and emails, and adds them as collabs in a tap.</span>
+        </div>
+      
+        <div style="padding: 24px; border: 1px solid #2E262E; background: #161116; display: grid; gap: 10px; align-content: start">
+          <span style="width: 42px; height: 42px; display: grid; place-items: center; border-radius: 50%; border: 1px solid #3E343E; color: #FFAE6B"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 14l4-4M3.5 18a10 10 0 1117 0"></path></svg></span>
+          <b style="font: 700 18px Geist, sans-serif">Scores every offer</b>
+          <span style="font-size: 15px; line-height: 1.55; color: #A39AA1">Take it, negotiate or skip, with the reason: your rate, your calendar, the brand’s history.</span>
+        </div>
+      
+        <div style="padding: 24px; border: 1px solid #2E262E; background: #161116; display: grid; gap: 10px; align-content: start">
+          <span style="width: 42px; height: 42px; display: grid; place-items: center; border-radius: 50%; border: 1px solid #3E343E; color: #9C7BFF"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"></path></svg></span>
+          <b style="font: 700 18px Geist, sans-serif">Replies in your voice</b>
+          <span style="font-size: 15px; line-height: 1.55; color: #A39AA1">Drafts replies and counter-offers the way you write, in the language the brand wrote in.</span>
+        </div>
+      
+        <div style="padding: 24px; border: 1px solid #2E262E; background: #161116; display: grid; gap: 10px; align-content: start">
+          <span style="width: 42px; height: 42px; display: grid; place-items: center; border-radius: 50%; border: 1px solid #3E343E; color: #4CCFC2"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 5h18v14H3zM10 9l5 3-5 3z"></path></svg></span>
+          <b style="font: 700 18px Geist, sans-serif">Writes Reel scripts</b>
+          <span style="font-size: 15px; line-height: 1.55; color: #A39AA1">Turns a brief into hooks, scenes and a caption that covers every must-say.</span>
+        </div>
+      
+        <div style="padding: 24px; border: 1px solid #2E262E; background: #161116; display: grid; gap: 10px; align-content: start">
+          <span style="width: 42px; height: 42px; display: grid; place-items: center; border-radius: 50%; border: 1px solid #3E343E; color: #6FD08C"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"></path></svg></span>
+          <b style="font: 700 18px Geist, sans-serif">Reviews your month</b>
+          <span style="font-size: 15px; line-height: 1.55; color: #A39AA1">What went well, what to watch and three things to do next, from your own numbers.</span>
+        </div>
+      
+        <div style="padding: 24px; border: 1px solid #2E262E; background: #161116; display: grid; gap: 10px; align-content: start">
+          <span style="width: 42px; height: 42px; display: grid; place-items: center; border-radius: 50%; border: 1px solid #3E343E; color: #7EA2FF"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0112 0c0 7 3 9 3 9H3s3-2 3-9M10 21a2 2 0 004 0"></path></svg></span>
+          <b style="font: 700 18px Geist, sans-serif">Nudges you, kindly</b>
+          <span style="font-size: 15px; line-height: 1.55; color: #A39AA1">Reminders to post, reply, drink water and stretch, with a little humour.</span>
+        </div>
+      
+    </div>
+  </section>
+
+  <!-- ===== 4 · Enter ===== -->
+  <section id="claim" style="position: relative; overflow: hidden; display: flex; flex-direction: column; align-items: center; text-align: center; padding: 160px 24px 150px">
+    <span aria-hidden="true" style="position: absolute; left: 50%; top: 42%; width: 800px; height: 800px; margin: -400px 0 0 -400px; border-radius: 50%; background: radial-gradient(circle, rgba(242,90,144,.3), rgba(156,123,255,.14) 45%, transparent 70%); filter: blur(30px); animation: breathe 6s ease-in-out infinite"></span>
+    <svg width="110" height="110" viewBox="0 0 32 32" aria-hidden="true" style="position: relative; filter: drop-shadow(0 0 40px rgba(242,90,144,.7)); animation: spin 16s linear infinite"><path d="M16 1.5c1.2 8.2 6.3 13.3 14.5 14.5-8.2 1.2-13.3 6.3-14.5 14.5C14.8 22.3 9.7 17.2 1.5 16 9.7 14.8 14.8 9.7 16 1.5z" fill="url(#mk)"></path></svg>
+    <h2 class="big" style="position: relative; margin-top: 40px">Your link<br><span class="gl">is waiting.</span></h2>
+    <form class="claim" aria-label="Claim your link" action="https://collab-desk.zypocare.workers.dev/login" method="get" style="position: relative; margin-top: 50px">
+      <label for="c-name" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Your name for the link</label>
+      <input id="c-name" placeholder="yourname" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="30">
+      <span class="dom">.miracleapp.live</span>
+      <button class="neo shine" type="submit" style="height: 64px; padding: 0 26px; background: #F4EEF2; color: #1E171C; box-shadow: 6px 6px 0 #F25A90">Enter</button>
+    </form>
+    <p class="body" style="position: relative; margin-top: 26px; font-size: 16px">No commission on your deals. Brands pay you directly.</p>
+  </section>
+
+  <!-- Trust band -->
+  <section style="border-top: 1px solid #2E262E; background: #0C090C; padding: 70px 24px; text-align: center; display: grid; justify-items: center; gap: 14px">
+    <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#F25A90" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v6c0 4.5-3 7.8-7 9-4-1.2-7-4.5-7-9V6z"></path><path d="M9 12l2 2 4-4"></path></svg>
+    <b class="serif" style="font-size: 40px; letter-spacing: -.01em">Your money. Your data. No cut.</b>
+    <p style="margin: 0; max-width: 560px; font-size: 16px; line-height: 1.6; color: #A39AA1">Brands only see what you choose to share. Payments go straight to your bank or UPI. Miracle never touches your money.</p>
+  </section>
+
+  <!-- Footer -->
+  <footer style="border-top: 1px solid #2E262E; background: #09070A; padding: 56px 40px 40px; font-size: 14.5px; color: #A39AA1">
+    <div class="foot-cols" style="max-width: 1200px; margin: 0 auto">
+      <div style="display: grid; gap: 10px; align-content: start"><b style="color: #F4EEF2">Product</b><a href="#features" style="color: #A39AA1">Brand page</a><a href="#ai" style="color: #A39AA1">Desk AI</a><a href="#features" style="color: #A39AA1">Invoices</a><a href="#features" style="color: #A39AA1">Pitch autopilot</a></div>
+      <div style="display: grid; gap: 10px; align-content: start"><b style="color: #F4EEF2">For brands</b><a href="#" style="color: #A39AA1">Send a request</a><a href="#" style="color: #A39AA1">Track a collab</a></div>
+      <div style="display: grid; gap: 10px; align-content: start"><b style="color: #F4EEF2">Company</b><a href="#" style="color: #A39AA1">About</a><a href="#" style="color: #A39AA1">Contact</a></div>
+      <div style="display: grid; gap: 10px; align-content: start"><b style="color: #F4EEF2">Policy</b><a href="https://collab-desk.zypocare.workers.dev/privacy" style="color: #A39AA1">Privacy</a><a href="#" style="color: #A39AA1">Terms</a></div>
+    </div>
+    <p style="max-width: 1200px; margin: 44px auto 0; font-size: 13px">© 2026 Miracle · made for creators in India</p>
+  </footer>
+</div>
+</body>
+</html>

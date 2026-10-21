@@ -331,9 +331,9 @@
 							><linearGradient id="sideGrad" x1="0" y1="0" x2="1" y2="1"
 								><stop offset="0" style="stop-color:var(--g1)" /><stop offset=".55" style="stop-color:var(--g2)" /><stop offset="1" style="stop-color:var(--g3)" /></linearGradient
 							></defs
-						><circle cx="12" cy="16" r="8.5" fill="none" stroke="var(--ink)" stroke-width="2.6" /><circle cx="20" cy="16" r="8.5" fill="none" stroke="url(#sideGrad)" stroke-width="2.6" /></svg
+						><path d="M16 1.5c1.2 8.2 6.3 13.3 14.5 14.5-8.2 1.2-13.3 6.3-14.5 14.5C14.8 22.3 9.7 17.2 1.5 16 9.7 14.8 14.8 9.7 16 1.5z" fill="url(#sideGrad)" /></svg
 					>
-					<span>{studio.settings?.app_name ?? 'Collab Desk'}</span>
+					<span>{studio.settings?.app_name ?? 'Miracle'}</span>
 				</a>
 				<a class="side-me" href="/studio/profile" title="How brands see you">
 					<Avatar name={studio.settings?.display_name ?? ''} src={studio.ig?.connected ? studio.ig.profile_picture_url : ''} size="36px" />
@@ -386,17 +386,10 @@
 									style="stop-color:var(--g3)"
 								/></linearGradient
 							></defs
-						><circle cx="12" cy="16" r="8.5" fill="none" stroke="var(--ink)" stroke-width="2.6" /><circle
-							cx="20"
-							cy="16"
-							r="8.5"
-							fill="none"
-							stroke="url(#logoGrad)"
-							stroke-width="2.6"
-						/></svg
+						><path d="M16 1.5c1.2 8.2 6.3 13.3 14.5 14.5-8.2 1.2-13.3 6.3-14.5 14.5C14.8 22.3 9.7 17.2 1.5 16 9.7 14.8 14.8 9.7 16 1.5z" fill="url(#logoGrad)" /></svg
 					></span
 				>
-				<div class="logo-t"><b>{studio.settings?.app_name ?? 'Collab Desk'}</b><small>Creator studio</small></div>
+				<div class="logo-t"><b>{studio.settings?.app_name ?? 'Miracle'}</b><small>Creator studio</small></div>
 			</div>
 			<div class="rail-lbl">Workspace</div>
 			<div class="navs" bind:this={navs} use:cascade={{ selector: '.nav', delay: 0.1, gap: 0.06 }}>
@@ -437,7 +430,7 @@
 						<div class="m-title">{title}</div>
 						<div class="m-r">{#if path === '/studio/settings' && !sec}<a class="cs-pill" href="/?preview=1" target="_blank" rel="noopener"><Icon name="eye" />Preview</a>{/if}</div>
 					{:else}
-						<div class="m-brand" class:wordmark={path === '/studio'}>{path === '/studio' ? (studio.settings?.app_name ?? 'Collab Desk') : title}</div>
+						<div class="m-brand" class:wordmark={path === '/studio'}>{path === '/studio' ? (studio.settings?.app_name ?? 'Miracle') : title}</div>
 						<div class="m-r">
 							{#if path === '/studio' || path === '/studio/collabs' || path === '/studio/profile'}<button class="m-ib" onclick={() => (ui.newCollab = true)} aria-label="New collab"><Icon name="plus" /></button>{/if}
 							{#if path === '/studio'}<button class="m-ib m-ask" onclick={() => (ui.askOpen = true)} aria-label="Ask your desk"><Icon name="spark" /></button>{/if}

@@ -96,7 +96,7 @@
 {:else}
 
 <header class="topbar">
-	<a class="brandmark" href="/" aria-label="Collab Desk home"><Avatar {name} src={pub.data?.instagram?.profile_picture_url} /><b>{name ? `Collaborate with ${name.split(' ')[0]}` : ''}</b></a>
+	<a class="brandmark" href="/" aria-label="Miracle home"><Avatar {name} src={pub.data?.instagram?.profile_picture_url} /><b>{name ? `Collaborate with ${name.split(' ')[0]}` : ''}</b></a>
 	{#if signedIn}
 		<nav aria-label="Brand">
 			<a href="/brand" aria-current={path === '/brand' || path.startsWith('/brand/r/') ? 'page' : undefined}>My requests</a>

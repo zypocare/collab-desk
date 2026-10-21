@@ -96,7 +96,7 @@ export function downloadIcs(r: BrandRequest, creator: string, url: string) {
 			'END:VEVENT'
 		].join('\r\n')
 	);
-	const body = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Collab Desk//EN', 'CALSCALE:GREGORIAN', ...ev, 'END:VCALENDAR'].join('\r\n') + '\r\n';
+	const body = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Miracle//EN', 'CALSCALE:GREGORIAN', ...ev, 'END:VCALENDAR'].join('\r\n') + '\r\n';
 	void saveBlob(new Blob([body], { type: 'text/calendar' }), `${r.code}.ics`);
 	return items.length;
 }

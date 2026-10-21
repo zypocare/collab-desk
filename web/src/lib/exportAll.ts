@@ -1,6 +1,6 @@
 // "Export everything": one .zip with a spreadsheet (CSV) per kind of record, plus a complete
 // copy as JSON. Built in the browser from the data already loaded, so it works offline too.
-import { studio } from './studio.svelte';
+import { studio } from './studio.svelte';
 import { todayIso } from './util';
 import { toCsv } from './reports';
 import { delivText } from './util';
@@ -135,7 +135,7 @@ export function exportEverything() {
 		},
 		{
 			name: 'READ ME.txt',
-			text: 'Collab Desk export\r\n\r\nEach .csv opens in Excel or Google Sheets. everything.json is the complete copy of your data.\r\nUploaded draft videos and files stay in the app; open a collab to download them.\r\n'
+			text: 'Miracle export\r\n\r\nEach .csv opens in Excel or Google Sheets. everything.json is the complete copy of your data.\r\nUploaded draft videos and files stay in the app; open a collab to download them.\r\n'
 		}
 	];
 	const blob = zip(files);

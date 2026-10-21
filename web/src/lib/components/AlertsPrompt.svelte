@@ -58,8 +58,8 @@
 		<div>
 			<b>{iosBrowser ? 'Get alerts on your iPhone' : status === 'blocked' ? `Alerts are blocked on this ${device}` : `Get alerts on this ${device}`}</b>
 			<small>
-				{#if iosBrowser}Tap the Share button in Safari, then <b>Add to Home Screen</b>. Open Collab Desk from the home screen and turn alerts on there.
-				{:else if status === 'blocked'}Open the phone's Settings → Apps → Collab Desk (or Chrome) → Notifications, allow them, then come back.
+				{#if iosBrowser}Tap the Share button in Safari, then <b>Add to Home Screen</b>. Open Miracle from the home screen and turn alerts on there.
+				{:else if status === 'blocked'}Open the phone's Settings → Apps → Miracle (or Chrome) → Notifications, allow them, then come back.
 				{:else}New requests, brand messages, approvals, payments and time-to-post, the moment they happen.{/if}
 			</small>
 		</div>

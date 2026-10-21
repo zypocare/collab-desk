@@ -66,7 +66,7 @@ export async function brandPage(req: Request, env: PageEnv, url: URL, ctx: Ctx):
 	const meta = [
 		['description', desc],
 		['og:type', 'website'],
-		['og:site_name', p.app_name || 'Collab Desk'],
+		['og:site_name', p.app_name || 'Miracle'],
 		['og:title', title],
 		['og:description', desc],
 		['og:url', `${url.origin}/`],

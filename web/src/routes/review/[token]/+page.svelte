@@ -40,7 +40,7 @@
 <svelte:head><title>Leave a review</title></svelte:head>
 
 <header class="topbar">
-	<a class="brandmark" href="/" aria-label="Collab Desk home"><span class="ring"><span></span></span><b>{info?.creator ? `Collaborate with ${creator}` : ''}</b></a>
+	<a class="brandmark" href="/" aria-label="Miracle home"><span class="ring"><span></span></span><b>{info?.creator ? `Collaborate with ${creator}` : ''}</b></a>
 </header>
 
 <div class="auth-wrap">

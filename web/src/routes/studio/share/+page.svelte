@@ -4,7 +4,7 @@
 	import { onMount } from 'svelte';
 	import { ui } from '#lib/ui.svelte.ts';
 
-	// Android "Share → Collab Desk": the shared message or screenshot opens in Add collab, already read.
+	// Android "Share → Miracle": the shared message or screenshot opens in Add collab, already read.
 	onMount(async () => {
 		const q = page.url.searchParams;
 		if (q.has('shared')) {

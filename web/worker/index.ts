@@ -620,7 +620,7 @@ Return ONLY JSON with exactly these keys: {"hooks": [], "idea": "", "scenes": [{
 // ---------- 6. "Should I take it?": what a request really involves ----------
 // The AI reads the request (store visit? where? what outfit and makeup? red flags?), then free
 // OpenStreetMap services work out the drive from her home area. The app scores it from these facts.
-const UA = { 'user-agent': 'CollabDesk/1.0 (collab-desk.zypocare.workers.dev)', 'accept-language': 'en' };
+const UA = { 'user-agent': 'Miracle/1.0 (collab-desk.zypocare.workers.dev)', 'accept-language': 'en' };
 
 async function geocode(q: string): Promise<{ lat: number; lng: number; name: string } | null> {
 	if (!q.trim()) return null;

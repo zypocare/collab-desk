@@ -5,7 +5,7 @@
 	const missing = $derived(page.status === 404);
 </script>
 
-<svelte:head><title>{missing ? 'Page not found' : 'Something went wrong'} · Collab Desk</title></svelte:head>
+<svelte:head><title>{missing ? 'Page not found' : 'Something went wrong'} · Miracle</title></svelte:head>
 
 <main class="auth-wrap">
 	<div class="auth-card">

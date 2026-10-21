@@ -209,7 +209,7 @@ async function siteEmail(website: string): Promise<string> {
 }
 async function get(u: string): Promise<string> {
   try {
-    const r = await fetch(u, { headers: { 'user-agent': 'Mozilla/5.0 (compatible; CollabDesk/1.0; +creator pitch)', accept: 'text/html' }, redirect: 'follow', signal: AbortSignal.timeout(7000) });
+    const r = await fetch(u, { headers: { 'user-agent': 'Mozilla/5.0 (compatible; Miracle/1.0; +creator pitch)', accept: 'text/html' }, redirect: 'follow', signal: AbortSignal.timeout(7000) });
     if (!r.ok || !(r.headers.get('content-type') ?? '').includes('html')) return '';
     return (await r.text()).slice(0, 800_000);
   } catch {

@@ -4,7 +4,7 @@
 
 export function gmailScript(functionsUrl: string, token: string) {
 	return `/**
- * Collab Desk: Gmail watcher. Every 10 minutes it sends two kinds of email to your studio:
+ * Miracle: Gmail watcher. Every 10 minutes it sends two kinds of email to your studio:
  *   1. Brand emails you give the label "collab-desk" (by hand, or with a Gmail filter):
  *      new ones become requests, replies go into that collab's messages.
  *   2. "Money credited" alerts from your bank: the matching invoice is marked paid.

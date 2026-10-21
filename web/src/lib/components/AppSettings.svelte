@@ -55,7 +55,7 @@
 			<b>Install on your phone</b>
 			<small>
 				{#if pwa.installed}Installed. Open it from your home screen.
-				{:else if pwa.installEvent}Adds Collab Desk to your home screen. It opens full screen, like an app.
+				{:else if pwa.installEvent}Adds Miracle to your home screen. It opens full screen, like an app.
 				{:else if ios}On iPhone: tap the Share button in Safari, then <b>Add to Home Screen</b>.
 				{:else}Open this page on your phone in Chrome, then use the browser menu → <b>Install app</b> (or Add to Home screen).{/if}
 			</small>

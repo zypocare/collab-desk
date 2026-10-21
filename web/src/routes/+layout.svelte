@@ -59,7 +59,7 @@
 </script>
 
 <svelte:head>
-	<title>Collab Desk</title>
+	<title>Miracle</title>
 </svelte:head>
 
 <div class="aurora" aria-hidden="true"><i></i><i></i><i></i></div>

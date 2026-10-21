@@ -115,7 +115,7 @@ export async function summaryPdf(r: BrandRequest, brand: string, creator: { name
 		});
 	}
 
-	text(`Generated from Collab Desk on ${fmtLong(todayIso())}. The accepted quote is the agreement; see the agreement page for the full terms.`, M, M - 10, 7.5, reg, MUTED);
+	text(`Generated from Miracle on ${fmtLong(todayIso())}. The accepted quote is the agreement; see the agreement page for the full terms.`, M, M - 10, 7.5, reg, MUTED);
 	return doc.save();
 }
 

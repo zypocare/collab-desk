@@ -7,7 +7,7 @@
 		if (!pub.data) loadPublicPage();
 	});
 	const who = $derived(pub.data?.display_name || 'the creator');
-	const app = $derived(pub.data?.app_name || 'Collab Desk');
+	const app = $derived(pub.data?.app_name || 'Miracle');
 </script>
 
 <svelte:head><title>Privacy policy · {app}</title></svelte:head>

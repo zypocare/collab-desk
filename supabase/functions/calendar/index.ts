@@ -63,7 +63,7 @@ Deno.serve(async (req) => {
   }
 
   const body = [
-    'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Collab Desk//EN', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH',
+    'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Miracle//EN', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH',
     fold(`X-WR-CALNAME:${icsText(`${s.app_name} · ${s.display_name}`)}`), 'X-WR-TIMEZONE:Asia/Kolkata',
     'REFRESH-INTERVAL;VALUE=DURATION:PT1H', 'X-PUBLISHED-TTL:PT1H',
     ...events, 'END:VCALENDAR',

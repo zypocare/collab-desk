@@ -34,7 +34,7 @@ sw.addEventListener('activate', (e) =>
 	)
 );
 
-// Android "Share → Collab Desk" with a screenshot: keep it for a moment and open the share screen,
+// Android "Share → Miracle" with a screenshot: keep it for a moment and open the share screen,
 // which hands it to Add collab.
 async function shared(req: Request) {
 	try {
@@ -78,7 +78,7 @@ sw.addEventListener('push', (e) => {
 		data = { body: e.data?.text() };
 	}
 	e.waitUntil(
-		sw.registration.showNotification(data.title || 'Collab Desk', {
+		sw.registration.showNotification(data.title || 'Miracle', {
 			body: data.body || '',
 			icon: '/icon-192.png',
 			// Android shows the small icon as a one-colour silhouette: the logo's rings in white.
