@@ -73,7 +73,7 @@
 
 <div class="toasts" aria-live="polite">
 	{#each ui.toasts as t (t.id)}
-		<div class="toast" class:out={t.out}><span class="ti"><Icon name={t.icon} /></span><span>{t.msg}</span></div>
+		<div class="toast" class:out={t.out} class:bad={t.icon === 'alert'} role={t.icon === 'alert' ? 'alert' : 'status'}><span class="ti"><Icon name={t.icon} /></span><span class="toast-msg">{t.msg}</span><i class="tbar" aria-hidden="true"></i></div>
 	{/each}
 </div>
 <ConfirmDialog />

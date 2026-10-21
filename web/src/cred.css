@@ -1974,3 +1974,38 @@
   [data-side="studio"] .drawer .date-sug:not(.brief-gap) { grid-template-columns: auto minmax(0, 1fr); padding: 16px; }
   [data-side="studio"] .drawer .date-sug:not(.brief-gap) .btn { grid-column: 2; justify-self: start; }
 }
+
+/* ===== Toasts in the CRED look (phone and laptop): a solid block with the NeoPOP edge, the icon on a
+   gradient tile, and a thin line that runs down while it shows. Alerts get a red tile and edge. ===== */
+@media all {
+  [data-side] .toasts { gap: 10px; }
+  [data-side] .toasts .toast.toast { position: relative; overflow: hidden; display: flex; align-items: center; gap: 12px; min-height: 52px; padding: 10px 18px 12px 10px; border: 0; border-radius: 0; background: var(--ink); color: var(--bg); box-shadow: 4px 4px 0 var(--g2); -webkit-backdrop-filter: none; backdrop-filter: none; font: 600 14.5px/1.35 var(--f-body, inherit); letter-spacing: -.005em; animation: cr-toast-in .45s cubic-bezier(.2, 1.3, .35, 1) both; }
+  [data-side] .toasts .toast .ti { flex: none; width: 32px; height: 32px; border-radius: 0; display: grid; place-items: center; background: linear-gradient(135deg, var(--g1), var(--g2) 60%, var(--g3)); color: #fff; }
+  [data-side] .toasts .toast .ti .ic { width: 16px; height: 16px; stroke-width: 2.4; }
+  [data-side] .toasts .toast .toast-msg { flex: 1; min-width: 0; color: inherit; font: inherit; opacity: 1; }
+  [data-side] .toasts .toast .tbar { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: linear-gradient(90deg, var(--g1), var(--g2), var(--g3)); transform-origin: left; animation: cr-toast-time 3.2s linear forwards; }
+  [data-side] .toasts .toast.bad { box-shadow: 4px 4px 0 var(--bad); }
+  [data-side] .toasts .toast.bad .ti { background: var(--bad); }
+  [data-side] .toasts .toast.bad .tbar { background: var(--bad); }
+  [data-side] .toasts .toast.out { animation: cr-toast-out .28s ease forwards; }
+  @keyframes cr-toast-in { from { opacity: 0; transform: translateY(24px) scale(.96); } }
+  @keyframes cr-toast-out { to { opacity: 0; transform: translateY(14px) scale(.97); } }
+  @keyframes cr-toast-time { to { transform: scaleX(0); } }
+}
+@media (max-width: 760px) {
+  /* Phone: the way phones show it. A small dark capsule drops in at the top, under the status bar,
+     and slips back up. No blocks, edges or bars: just the icon and a few words. */
+  [data-side] .toasts { top: calc(env(safe-area-inset-top, 0px) + 10px); bottom: auto; left: 50%; right: auto; width: max-content; max-width: calc(100% - 32px); transform: translateX(-50%); align-items: center; gap: 8px; }
+  [data-side] .toasts .toast.toast { min-height: 44px; padding: 6px 18px 6px 6px; gap: 10px; border-radius: 999px; background: rgba(24, 19, 24, .92); color: #fff; -webkit-backdrop-filter: blur(18px) saturate(1.4); backdrop-filter: blur(18px) saturate(1.4); box-shadow: 0 12px 32px -8px rgba(0, 0, 0, .45), 0 0 0 1px rgba(255, 255, 255, .08); font: 600 14px/1.3 var(--f-body, inherit); animation: cr-pill-in .5s cubic-bezier(.2, 1.4, .35, 1) both; }
+  [data-side] .toasts .toast.bad { box-shadow: 0 12px 32px -8px rgba(0, 0, 0, .45), 0 0 0 1px rgba(255, 123, 112, .35); }
+  [data-side] .toasts .toast .ti { width: 32px; height: 32px; border-radius: 50%; }
+  [data-side] .toasts .toast .ti .ic { width: 15px; height: 15px; }
+  [data-side] .toasts .toast .toast-msg { overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+  [data-side] .toasts .toast .tbar { display: none; }
+  [data-side] .toasts .toast.out { animation: cr-pill-out .3s ease forwards; }
+  @keyframes cr-pill-in { from { opacity: 0; transform: translateY(-140%) scale(.85); } }
+  @keyframes cr-pill-out { to { opacity: 0; transform: translateY(-120%) scale(.9); } }
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-side] .toasts .toast.toast, [data-side] .toasts .toast .tbar { animation: none; }
+}
