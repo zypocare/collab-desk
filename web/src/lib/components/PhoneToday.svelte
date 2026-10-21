@@ -151,13 +151,17 @@
 	<a class="ht-orb" href={ig ? '/insights' : '/studio/payments'} target={ig ? '_blank' : undefined} rel="noopener" aria-label={ig ? 'Your Instagram insights' : `${monthName} goal`}>
 		<span class="orb-ring" aria-hidden="true"></span>
 		<span class="orb-in">
-			{#if ig}
+			{#if ig?.profile_picture_url}
+				<!-- Her photo in the ring, with the follower count on a badge. -->
+				<img class="orb-pic" src={ig.profile_picture_url} alt="" />
+			{:else if ig}
 				<b>{compact(ig.followers ?? 0)}</b><small>followers</small>
 				{#if ig.engagement_rate}<i>{ig.engagement_rate.toFixed(1)}% eng.</i>{/if}
 			{:else}
 				<b>{Math.round(pct * 100)}%</b><small>of {monthName} goal</small>
 			{/if}
 		</span>
+		{#if ig?.profile_picture_url}<span class="orb-badge"><b>{compact(ig.followers ?? 0)}</b> followers{#if ig.engagement_rate}<i>{ig.engagement_rate.toFixed(1)}%</i>{/if}</span>{/if}
 		<span class="orb-spark s1" aria-hidden="true"></span><span class="orb-spark s2" aria-hidden="true"></span><span class="orb-spark s3" aria-hidden="true"></span>
 	</a>
 	<p class="ht-date">{T.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
