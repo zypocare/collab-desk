@@ -1,6 +1,8 @@
 // Polite payment reminders to brands: 2 days before the due date, on the day, then 3, 7 and 14 days late.
 // Runs every morning at 10:00 IST from the database cron job, protected by the shared secret.
+// It runs once for every active creator, each with her own invoices and website address.
 import { admin, cronAllowed, daysBetween, todayIST } from '../_shared/admin.ts';
+import { activeCreators, type Settings } from '../_shared/creators.ts';
 
 const STEPS = [-2, 0, 3, 7, 14];
 
@@ -8,16 +10,36 @@ Deno.serve(async (req) => {
   if (!cronAllowed(req)) return new Response('Forbidden', { status: 403 });
   const db = admin();
 
-  const { data: s } = await db.from('creator_settings').select('reminders_enabled, site_url').eq('id', 1).single();
-  if (!s?.reminders_enabled) return Response.json({ skipped: 'reminders are turned off' });
+  let creators: Settings[];
+  try {
+    creators = await activeCreators(db);
+  } catch (e) {
+    return Response.json({ error: e instanceof Error ? e.message : String(e) }, { status: 500 });
+  }
+  const results = [];
+  for (const s of creators) {
+    try {
+      results.push({ creator: s.id, ...(await remindFor(db, s)) });
+    } catch (e) {
+      console.error(`[payment-reminders] creator ${s.id}:`, e);
+      results.push({ creator: s.id, error: e instanceof Error ? e.message : String(e) });
+    }
+  }
+  return Response.json({ creators: results });
+});
+
+/** One creator's reminders: queues the ones that are due and notes them on the invoice. */
+async function remindFor(db: ReturnType<typeof admin>, s: Settings) {
+  if (!s.reminders_enabled) return { skipped: 'reminders are turned off' };
 
   const { data: invoices, error } = await db
     .from('invoices')
     .select('id, collab_id, number, public_token, due_date, total, payable, amount_received, tds_deducted, reminders_sent, send_to, collab:collabs(code, contact_name, contact_email, stage)')
+    .eq('creator_id', s.id)
     .in('status', ['sent', 'partly_paid'])
     .eq('auto_remind', true)
     .not('due_date', 'is', null);
-  if (error) return Response.json({ error: error.message }, { status: 500 });
+  if (error) throw new Error(error.message);
 
   const today = todayIST();
   let queued = 0;
@@ -37,13 +59,13 @@ Deno.serve(async (req) => {
       code: collab.code, number: inv.number, contact: collab.contact_name, due: inv.due_date, days_late: daysLate,
       due_amount: dueAmount, link: `${String(s.site_url).replace(/\/$/, '')}/invoice/${inv.public_token}`,
     };
-    await db.from('outbox').insert(recipients.map((to) => ({ kind: 'payment_reminder', to_email: to, payload })));
+    await db.from('outbox').insert(recipients.map((to) => ({ creator_id: s.id, kind: 'payment_reminder', to_email: to, payload })));
     await db.from('invoices').update({ reminders_sent: [...(inv.reminders_sent ?? []), step], last_reminded_at: new Date().toISOString() }).eq('id', inv.id);
     await db.from('collab_events').insert({
-      collab_id: inv.collab_id,
+      creator_id: s.id, collab_id: inv.collab_id,
       kind: 'reminder', text: `Payment reminder sent for ${inv.number}`, visible_to_brand: true,
     });
     queued++;
   }
-  return Response.json({ checked: invoices?.length ?? 0, reminders: queued });
-});
+  return { checked: invoices?.length ?? 0, reminders: queued };
+}

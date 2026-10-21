@@ -1,9 +1,11 @@
 // Posts approved Reels (and photos) to Instagram at the time she picked, with the brand added as a
-// collaborator. Called every 5 minutes by the database while something is due, or by her ("Post now").
+// collaborator. Called every 5 minutes by the database while something is due (for every creator who
+// connected Instagram), or by a creator ("Post now").
 // Instagram prepares a video first (a "container"); when it's ready it is published.
 // deno-lint-ignore-file no-explicit-any
-import { createClient } from 'npm:@supabase/supabase-js@2';
 import { admin, cronAllowed } from '../_shared/admin.ts';
+import { creatorOfCaller } from '../_shared/creators.ts';
+import { connectedCreators } from '../_shared/igsync.ts';
 
 const GRAPH = 'https://graph.instagram.com/v21.0';
 const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-cron-secret' };
@@ -18,23 +20,13 @@ async function call(token: string, path: string, params: Record<string, string>,
   return j;
 }
 
-Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
-  if (!cronAllowed(req)) {
-    const asUser = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_ANON_KEY')!, {
-      global: { headers: { Authorization: req.headers.get('Authorization') ?? '' } },
-      auth: { persistSession: false },
-    });
-    const { data: isCreator } = await asUser.rpc('is_creator');
-    if (isCreator !== true) return reply({ error: 'Only the creator can do this.' }, 403);
-  }
-  const db = admin();
-  const { data: tok } = await db.from('ig_token').select('access_token, permissions').eq('id', 1).maybeSingle();
-  if (!tok?.access_token) return reply({ error: 'Connect Instagram first.' }, 400);
+/** One creator's due posts (or just the one she asked for), with her token. */
+async function publishDue(db: ReturnType<typeof admin>, creator: number, only?: string): Promise<{ error: string } | { done: Record<string, string> }> {
+  const { data: tok } = await db.from('ig_token').select('access_token, permissions').eq('id', creator).maybeSingle();
+  if (!tok?.access_token) return { error: 'Connect Instagram first.' };
   const canPost = String(tok.permissions ?? '').includes('instagram_business_content_publish');
-  const { only } = await req.json().catch(() => ({}));
 
-  let q = db.from('scheduled_posts').select('*').in('status', ['scheduled', 'publishing']);
+  let q = db.from('scheduled_posts').select('*').eq('creator_id', creator).in('status', ['scheduled', 'publishing']);
   q = only ? q.eq('id', only) : q.lte('publish_at', new Date(Date.now() + 2 * 60e3).toISOString());
   const { data: due } = await q;
   const done: Record<string, string> = {};
@@ -80,5 +72,32 @@ Deno.serve(async (req) => {
       done[p.id] = `failed: ${msg}`;
     }
   }
-  return reply({ ok: true, done });
+  return { done };
+}
+
+Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
+  const db = admin();
+  const { only } = await req.json().catch(() => ({}));
+
+  // The timed run: each creator in turn; one creator's failure doesn't stop the others.
+  if (cronAllowed(req)) {
+    const done: Record<string, string> = {};
+    try {
+      for (const creator of await connectedCreators(db)) {
+        const r = await publishDue(db, creator).catch((e) => ({ error: e instanceof Error ? e.message : String(e) }));
+        if ('error' in r) console.error(`[instagram-publish] creator ${creator}: ${r.error}`);
+        else Object.assign(done, r.done);
+      }
+    } catch (e) {
+      return reply({ error: e instanceof Error ? e.message : String(e) }, 500);
+    }
+    return reply({ ok: true, done });
+  }
+
+  const creator = await creatorOfCaller(req);
+  if (!creator) return reply({ error: 'Only the creator can do this.' }, 403);
+  const r = await publishDue(db, creator, typeof only === 'string' ? only : undefined);
+  if ('error' in r) return reply(r, 400);
+  return reply({ ok: true, done: r.done });
 });

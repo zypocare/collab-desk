@@ -10,12 +10,12 @@ if (pushConfigured) webpush.setVapidDetails(SUBJECT, PUBLIC, PRIVATE);
 
 export type Push = { title: string; body: string; url: string; tag?: string; /** Buttons on the notification (Android, Windows, Mac Chrome). */ actions?: { action: string; title: string; url: string }[]; /** Her name only, without her line under each alert (for the light, friendly nudges). */ nameOnly?: boolean; /** Exactly as written: no name in front, no line under it. */ plain?: boolean };
 
-/** Sends to every device she turned alerts on for; forgets devices the browser says are gone. */
-export async function pushToCreator(db: SupabaseClient, msg: Push) {
+/** Sends to every device the creator's team turned alerts on for; forgets devices the browser says are gone. */
+export async function pushToCreator(db: SupabaseClient, creator: number, msg: Push) {
   if (!pushConfigured) return { sent: 0, skipped: 'push not configured' };
-  const { data: subs } = await db.from('push_subscriptions').select('id, endpoint, p256dh, auth, device');
+  const { data: subs } = await db.from('push_subscriptions').select('id, endpoint, p256dh, auth, device').eq('creator_id', creator);
   // Her own greeting, if she set one in My page > Alerts.
-  const { data: me } = await db.from('creator_settings').select('alert_name, alert_line').eq('id', 1).maybeSingle();
+  const { data: me } = await db.from('creator_settings').select('alert_name, alert_line').eq('id', creator).maybeSingle();
   const name = String(me?.alert_name ?? '').trim();
   const line = String(me?.alert_line ?? '').trim();
   if (name && !msg.plain) msg = { ...msg, title: `Hey ${name}! ${msg.title}` };

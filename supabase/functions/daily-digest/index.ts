@@ -1,8 +1,10 @@
 // 9 AM summary for the creator: what needs her today, by email and Telegram.
 // Called by the database cron job (see migration ..._brand_actions.sql) with the shared secret.
+// It runs once for every active creator, each with her own collabs, address and team.
 import { admin, cronAllowed, daysBetween, esc, inr, todayIST } from '../_shared/admin.ts';
 import { mailConfigured, sendMail } from '../_shared/mailer.ts';
 import { sendTelegram, telegramConfigured } from '../_shared/telegram.ts';
+import { activeCreators, teamCopies, type Settings } from '../_shared/creators.ts';
 
 type Row = {
   id: string; code: string; stage: string; type: string; fee: number; pay_received: number; pay_status: string;
@@ -19,14 +21,32 @@ Deno.serve(async (req) => {
   const db = admin();
   const force = new URL(req.url).searchParams.get('force') === '1';
 
-  const { data: s, error: se } = await db.from('creator_settings').select('*').eq('id', 1).single();
-  if (se) return Response.json({ error: se.message }, { status: 500 });
+  let creators: Settings[];
+  try {
+    creators = await activeCreators(db);
+  } catch (e) {
+    return Response.json({ error: e instanceof Error ? e.message : String(e) }, { status: 500 });
+  }
+  const results = [];
+  for (const s of creators) {
+    try {
+      results.push({ creator: s.id, ...(await digestFor(db, s, force)) });
+    } catch (e) {
+      console.error(`[daily-digest] creator ${s.id}:`, e);
+      results.push({ creator: s.id, error: e instanceof Error ? e.message : String(e) });
+    }
+  }
+  return Response.json({ creators: results });
+});
 
+/** One creator's morning summary, by email and Telegram. */
+async function digestFor(db: ReturnType<typeof admin>, s: Settings, force: boolean) {
   const { data, error } = await db
     .from('collabs')
     .select('*, brand:brands(name), deliverables(kind, qty, done), quotes(version, status), drafts(round, status, feedback)')
+    .eq('creator_id', s.id)
     .not('stage', 'in', '(wrapped,declined,paused,cancelled)');
-  if (error) return Response.json({ error: error.message }, { status: 500 });
+  if (error) throw new Error(error.message);
 
   const today = todayIST();
   const rel = (d: string) => daysBetween(today, d);
@@ -59,7 +79,7 @@ Deno.serve(async (req) => {
   }
 
   const result: Record<string, unknown> = { items: items.length };
-  if (!items.length && !force) return Response.json({ ...result, skipped: 'nothing to report' });
+  if (!items.length && !force) return { ...result, skipped: 'nothing to report' };
 
   const first = String(s.display_name).split(' ')[0];
   const groups = [...new Set(items.map((i) => i.group))];
@@ -85,8 +105,7 @@ ${listHtml}
 </td></tr></table></td></tr></table></body></html>`;
     const text = items.map((i) => `- ${i.text} (${i.when})`).join('\n');
     try {
-      const { data: copies } = await db.rpc('team_copy_emails');
-      const cc = ((copies as string[] | null) ?? []).filter((e) => e !== String(s.creator_email).toLowerCase());
+      const cc = (await teamCopies(db, s.id)).filter((e) => e.toLowerCase() !== String(s.creator_email).toLowerCase());
       await sendMail({ to: s.creator_email, cc, subject: `Today: ${items.length} thing${items.length === 1 ? '' : 's'} need you`, html, text });
       result.email = 'sent';
     } catch (e) {
@@ -107,5 +126,5 @@ ${listHtml}
     }
   }
 
-  return Response.json(result);
-});
+  return result;
+}

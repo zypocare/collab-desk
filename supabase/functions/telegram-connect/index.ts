@@ -1,7 +1,9 @@
 // Connects the creator's Telegram to the bot, or sends a test message.
-// Called from the studio settings page by the signed-in creator.
+// Called from the studio settings page by the signed-in creator; it changes only the row of the
+// creator they are working for (never one named in the request).
 import { createClient } from 'npm:@supabase/supabase-js@2';
 import { admin } from '../_shared/admin.ts';
+import { creatorOfCaller } from '../_shared/creators.ts';
 import { botUsername, findChatByCode, sendTelegram, telegramConfigured } from '../_shared/telegram.ts';
 
 const cors = {
@@ -20,6 +22,8 @@ Deno.serve(async (req) => {
   });
   const { data: isCreator } = await asUser.rpc('is_creator');
   if (isCreator !== true) return reply({ error: 'Only the creator can do this.' }, 403);
+  const creator = await creatorOfCaller(req);
+  if (!creator) return reply({ error: 'Only the creator can do this.' }, 403);
 
   const { action, code } = await req.json().catch(() => ({}));
   if (!telegramConfigured) {
@@ -38,18 +42,18 @@ Deno.serve(async (req) => {
       if (!/^\d{6}$/.test(String(code ?? ''))) return reply({ error: 'Missing connection code.' }, 400);
       const chatId = await findChatByCode(String(code));
       if (!chatId) return reply({ error: `We didn't see "/start ${code}" yet. Send it to the bot, wait a few seconds and try again.` }, 404);
-      await db.from('creator_settings').update({ telegram_chat_id: chatId }).eq('id', 1);
+      await db.from('creator_settings').update({ telegram_chat_id: chatId }).eq('id', creator);
       await sendTelegram(chatId, '<b>Connected!</b> You will get your 9 AM summary here.');
       return reply({ ok: true });
     }
     if (action === 'test') {
-      const { data: s } = await db.from('creator_settings').select('telegram_chat_id').eq('id', 1).single();
+      const { data: s } = await db.from('creator_settings').select('telegram_chat_id').eq('id', creator).maybeSingle();
       if (!s?.telegram_chat_id) return reply({ error: 'Telegram is not connected yet.' }, 400);
       await sendTelegram(s.telegram_chat_id, 'Test message from your collab studio. Notifications work.');
       return reply({ ok: true });
     }
     if (action === 'disconnect') {
-      await db.from('creator_settings').update({ telegram_chat_id: '' }).eq('id', 1);
+      await db.from('creator_settings').update({ telegram_chat_id: '' }).eq('id', creator);
       return reply({ ok: true });
     }
     return reply({ error: 'Unknown action.' }, 400);
