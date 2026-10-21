@@ -6,3 +6,4 @@ The admin panel at **admin.miracleapp.live**: see how Miracle is doing, approve 
 - **Check:** `npm run check` and `npm run build`.
 - **Deploy:** from this folder, `npm run build` then `npx wrangler deploy` (it serves `dist/` as the `miracle-admin` Worker on admin.miracleapp.live). Or connect the repo in Cloudflare Workers Builds with root directory `admin`, build command `npm run build`, deploy command `npx wrangler deploy`, and set `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` (and `VITE_TURNSTILE_SITE_KEY` if sign-in needs the check) as build variables.
 - Add more admins by inserting their email into `public.app_admins`.
+- Live: Cloudflare Workers Builds deploys it from `main` (root directory `admin`) on every push.
