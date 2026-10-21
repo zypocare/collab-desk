@@ -8,6 +8,9 @@
 	import Select from './Select.svelte';
 
 	const s = $derived(studio.settings!);
+	// The evening fun nudge is about her own hobby ("yoga", "the gym"), or a stretch if she named none.
+	const hobby = $derived(String(s.fun_hobby ?? '').trim());
+	const hobbyLabel = $derived(hobby ? hobby.charAt(0).toUpperCase() + hobby.slice(1) : 'Stretch break');
 	const calUrl = $derived(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/calendar?token=${s.calendar_token}`);
 
 	let bot = $state('');
@@ -118,14 +121,15 @@
 	{/if}
 
 	<div class="switch-row">
-		<div><b>Fun nudges through the day</b><small>A funny, useful note every hour: your work in between water and food, yoga in the evening and a wind-down at night. Written fresh from your real day, never the same line twice. Phone alerts must be on (above).</small></div>
+		<div><b>Fun nudges through the day</b><small>A funny, useful note every hour: your work in between water and food, {hobby || 'a stretch break'} in the evening and a wind-down at night. Written fresh from your real day, never the same line twice. Phone alerts must be on (above).</small></div>
 		<input type="checkbox" class="tgl" checked={s.fun_nudges ?? true} aria-label="Fun nudges through the day" onchange={(e) => saveSettings({ fun_nudges: (e.currentTarget as HTMLInputElement).checked })} />
 	</div>
 	{#if s.fun_nudges ?? true}
 		<div class="fun-set">
 			<div class="f"><label for="fun-from">From</label><Select id="fun-from" value={s.fun_from ?? 11} options={FUN_HOURS.filter((h) => h <= (s.fun_to ?? 23)).map((h) => ({ value: h, label: hourLabel(h) }))} onchange={(v) => saveSettings({ fun_from: v })} /></div>
 			<div class="f"><label for="fun-to">Until</label><Select id="fun-to" value={s.fun_to ?? 23} options={FUN_HOURS.filter((h) => h >= (s.fun_from ?? 11)).map((h) => ({ value: h, label: hourLabel(h) }))} onchange={(v) => saveSettings({ fun_to: v })} /></div>
-			<div class="f"><label for="fun-yoga">Yoga</label><Select id="fun-yoga" value={s.fun_yoga_hour ?? 18} options={[{ value: 0, label: 'No yoga reminder' }, ...FUN_HOURS.map((h) => ({ value: h, label: hourLabel(h) }))]} onchange={(v) => saveSettings({ fun_yoga_hour: v })} /></div>
+			<div class="f"><label for="fun-yoga">{hobbyLabel}</label><Select id="fun-yoga" value={s.fun_yoga_hour ?? 18} options={[{ value: 0, label: `No ${hobby || 'stretch'} reminder` }, ...FUN_HOURS.map((h) => ({ value: h, label: hourLabel(h) }))]} onchange={(v) => saveSettings({ fun_yoga_hour: v })} /></div>
+			<div class="f span3"><label for="fun-hobby">How you switch off in the evening <span class="hint">(optional)</span></label><input class="inp" id="fun-hobby" maxlength="40" placeholder="e.g. yoga, the gym, a walk, dance class" value={s.fun_hobby ?? ''} onchange={(e) => saveSettings({ fun_hobby: (e.currentTarget as HTMLInputElement).value.trim() })} /></div>
 		</div>
 		<div class="switch-row">
 			<div><b>Food and water</b><small>Water, lunch, chai and dinner reminders between the work ones.</small></div>
@@ -186,5 +190,6 @@
 	.pay-h.on { border-color: transparent; background: var(--ink); color: var(--surface); }
 	.pay-hours small { font-size: 12.5px; color: var(--ink-3); margin-left: 4px; }
 	.fun-set { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; padding: 0 18px 14px; }
+	.fun-set .span3 { grid-column: 1 / -1; }
 	@media (max-width: 760px) { .fun-set { gap: 12px; padding: 0 16px 10px; } }
 </style>

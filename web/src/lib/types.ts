@@ -313,11 +313,13 @@ export type Settings = {
 	/** Phone reminders about money still to come in, at these hours (India time). */
 	pay_alerts?: boolean;
 	pay_alert_hours?: number[];
-	/** Fun nudges through the day (India time hours; yoga 0 = off). */
+	/** Fun nudges through the day (India time hours; the evening slot, her hobby, 0 = off). */
 	fun_nudges?: boolean;
 	fun_from?: number;
 	fun_to?: number;
 	fun_yoga_hour?: number;
+	/** What the evening slot is about ("yoga", "the gym", "a walk"); '' = a stretch break. */
+	fun_hobby?: string;
 	fun_food?: boolean;
 	/** Pitch autopilot: on, how pitches go out, how many new brands a day (1 to 10). */
 	pitch_auto?: boolean;
@@ -448,8 +450,23 @@ export type PublicPage = {
 	} | null;
 };
 
+/** A creator's request to join Miracle, while it waits for approval (or after it was declined). */
+export type CreatorRequest = {
+	id: number;
+	slug: string;
+	status: 'pending' | 'declined';
+	name: string;
+	handle: string;
+	niche: string;
+	city: string;
+	note: string;
+	requested_at: string | null;
+};
+
 export type Account =
 	| { role: 'creator'; email: string }
+	/** Asked to join as a creator and not approved yet. */
+	| { role: 'pending'; email: string; request: CreatorRequest | null }
 	| {
 			role: 'brand';
 			email: string;

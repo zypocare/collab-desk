@@ -498,6 +498,56 @@ export function render(kind: string, p: Payload, s: Settings): Omit<Mail, 'to'> 
     };
   }
 
+  // Creator sign-ups: a new request for the people who run Miracle, then a welcome or a kind no.
+  if (kind === 'creator_request') {
+    const where = [p.niche, p.city].map((x) => String(x ?? '').trim()).filter(Boolean).join(' · ');
+    const admin = 'https://admin.miracleapp.live';
+    return {
+      subject: `New creator: ${p.name} wants ${p.slug}.miracleapp.live`,
+      html: layout(
+        s,
+        `${esc(p.name)} wants to join`,
+        `${P(`<b>${esc(p.name)}</b> (@${esc(p.handle)}) asked for <b>${esc(p.slug)}.miracleapp.live</b>.`)}
+         ${where ? P(esc(where)) : ''}
+         ${p.note ? P(`"${esc(p.note)}"`) : ''}
+         ${P(`Their email: ${esc(p.email)}`)}`,
+        { label: 'Open the approval queue', href: admin },
+        { to: 'creator', preheader: `${p.name} (@${p.handle}) asked for ${p.slug}.miracleapp.live.`, next: ['Check their Instagram.', 'Approve or decline in the admin panel.'] },
+      ),
+      text: `${p.name} (@${p.handle}) asked for ${p.slug}.miracleapp.live.${where ? `\n${where}` : ''}${p.note ? `\n"${p.note}"` : ''}\nTheir email: ${p.email}\n\nApprove or decline: ${admin}`,
+    };
+  }
+
+  if (kind === 'creator_approved') {
+    return {
+      subject: `You're in: ${p.slug}.miracleapp.live is yours`,
+      html: layout(
+        s,
+        `Welcome to Miracle, ${esc(firstOf(p.name))}`,
+        `${P(`Your link <b>${esc(p.slug)}.miracleapp.live</b> is live. Brands can see your page and send you proper collab requests there.`)}
+         ${P(`Sign in with this email address. There's no password: you'll get a 6-digit code each time.`)}`,
+        { label: 'Open your studio', href: String(p.url) },
+        { to: 'creator', preheader: `${p.slug}.miracleapp.live is live.`, next: ['Add your rates and packages.', 'Connect Instagram so your numbers show on your page.', 'Add your bank or UPI details for invoices.', 'Put your link in your Instagram bio.'] },
+      ),
+      text: `Welcome to Miracle, ${firstOf(p.name)}. Your link ${p.slug}.miracleapp.live is live. Sign in with this email (you'll get a 6-digit code): ${p.url}`,
+    };
+  }
+
+  if (kind === 'creator_declined') {
+    return {
+      subject: `About your Miracle request`,
+      html: layout(
+        s,
+        `Thanks for asking, ${esc(firstOf(p.name))}`,
+        `${P(`We can't open ${esc(p.slug)}.miracleapp.live for you just now. Miracle is taking a small number of creators while it grows.`)}
+         ${P(`You can send your request again later from the same link, and we'll take another look.`)}`,
+        undefined,
+        { to: 'creator', preheader: `About ${p.slug}.miracleapp.live.` },
+      ),
+      text: `Thanks for asking, ${firstOf(p.name)}. We can't open ${p.slug}.miracleapp.live for you just now. You can send your request again later from the same link.`,
+    };
+  }
+
   if (kind === 'new_device') {
     const ua = String(p.agent || '');
     const browser = /Edg\//.test(ua) ? 'Edge' : /SamsungBrowser/.test(ua) ? 'Samsung Internet' : /Chrome\//.test(ua) ? 'Chrome' : /Firefox\//.test(ua) ? 'Firefox' : /Safari\//.test(ua) ? 'Safari' : 'a browser';

@@ -105,7 +105,7 @@
 			return (codeErr = 'That code is wrong or has expired. Check the latest email or send a new code.');
 		}
 		const account = await refreshAccount();
-		if (account?.role === 'creator') {
+		if (account?.role === 'creator' || account?.role === 'pending') {
 			// Not a brand: sign that out again here (the form stays as it was) and say why.
 			await supabase.auth.signOut({ scope: 'local' });
 			auth.session = null;
@@ -113,7 +113,7 @@
 			ui.holdRedirect = false;
 			codeBusy = false;
 			codeStep = false;
-			return (gErr = "This is the creator's email. Use your brand's work email to send a request.");
+			return (gErr = account.role === 'pending' ? "This email is waiting to join Miracle as a creator. Use your brand's work email to send a request." : "This is the creator's email. Use your brand's work email to send a request.");
 		}
 		ui.holdRedirect = false;
 		// This email already belongs to a company: the request goes there; say so.

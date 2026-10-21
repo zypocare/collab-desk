@@ -161,7 +161,7 @@ async function findFor(db: ReturnType<typeof admin>, s: Settings, opt: { manual:
     const subject = w?.subject?.trim() || `Content idea for ${b.name}`;
     const body =
       (w?.body?.trim() ||
-        `Hi there,\n\nI'm ${s.display_name} (@${s.handle}), a ${s.niche || 'lifestyle'} creator from ${s.city || 'India'}. I love what ${b.name} is doing and would really enjoy creating content for you.\n\nMy rates, past work and live Instagram numbers are all here: ${page}\n\nWould you be open to a quick chat?\n\nThanks,\n${s.display_name}`) +
+        `Hi there,\n\nI'm ${s.display_name} (@${s.handle}), a ${s.niche || 'content'} creator from ${s.city || 'India'}. I love what ${b.name} is doing and would really enjoy creating content for you.\n\nMy rates, past work and live Instagram numbers are all here: ${page}\n\nWould you be open to a quick chat?\n\nThanks,\n${s.display_name}`) +
       `\n\nNot the right fit right now? Just reply "no" and I won't write again.`;
     rows.push({
       creator_id: s.id, brand_name: b.name, instagram: b.instagram, category: b.category, email: b.email, website: b.website, subject, body,

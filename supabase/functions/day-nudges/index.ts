@@ -1,6 +1,7 @@
 // Fun nudges through the day. Runs every hour on the hour (India time) from the database cron job.
-// From 11 AM to 11 PM to start: work lines built on her real day, water and food in between, yoga at
-// 6 PM and a wind-down at the end. The free AI writes each one fresh (shown the recent ones so it
+// From 11 AM to 11 PM to start: work lines built on her real day, water and food in between, her
+// evening hobby at 6 PM (the "yoga" slot: yoga, the gym, a walk; a stretch if she named none) and a
+// wind-down at the end. The free AI writes each one fresh (shown the recent ones so it
 // doesn't echo them); near-copies are dropped and written again; if the day's free AI is used up,
 // a hand-written line that has never been sent goes instead. Every line sent is kept, so none repeats.
 //   ?dry=1         work out and show the message, send nothing
@@ -16,7 +17,7 @@ type Kind = 'work' | 'water' | 'food' | 'yoga' | 'night';
 type Fact = { topic: string; text: string; url: string; prio: number; vars: Record<string, string> };
 type Written = Line & { by: string };
 
-// The day: work and wellbeing take turns; yoga at her yoga hour; wind down at 11 PM.
+// The day: work and wellbeing take turns; her hobby at its hour (fun_yoga_hour); wind down at 11 PM.
 const PLAN: Record<number, Kind> = { 11: 'work', 12: 'water', 13: 'food', 14: 'work', 15: 'water', 16: 'work', 17: 'food', 18: 'yoga', 19: 'work', 20: 'water', 21: 'food', 22: 'work', 23: 'night' };
 const meal = (h: number) => (h < 11 ? 'breakfast' : h < 16 ? 'lunch' : h < 19 ? 'evening chai and a snack' : 'dinner');
 const rupees = (n: number) => '₹' + Math.round(n).toLocaleString('en-IN');
@@ -101,20 +102,21 @@ async function nudgeFor(db: ReturnType<typeof admin>, s: Settings, url: URL, dry
 
   const name = String(s.alert_name || String(s.display_name ?? '').split(' ')[0] || '').trim();
   const when = `${new Date(today + 'T00:00:00Z').toLocaleDateString('en-IN', { weekday: 'long', timeZone: 'UTC' })}, ${hourLabel(hour)}`;
-  const vars = { meal: meal(hour), ...(fact?.vars ?? {}) };
+  const hobby = String(s.fun_hobby ?? '').trim();
+  const vars = { meal: meal(hour), hobby, ...(fact?.vars ?? {}) };
 
   // 1. The free AI writes it (three goes at a fresh one).
   let line: Line | null = null, source = 'ai';
   const site = String(url.searchParams.get('site') || s.site_url || 'https://collab-desk.zypocare.workers.dev').replace(/\/$/, '');
   for (let attempt = 0; attempt < 3 && !line; attempt++) {
-    const l = await aiLine(db, s.id, site, { kind, meal: kind === 'food' ? meal(hour) : '', name, when, fact: fact?.text ?? 'none', attempt, recent: past.slice(0, 40).map((p) => `${p.title} — ${p.body}`) });
+    const l = await aiLine(db, s.id, site, { kind, meal: kind === 'food' ? meal(hour) : '', name, city: s.city ?? '', niche: s.niche ?? '', hobby, when, fact: fact?.text ?? 'none', attempt, recent: past.slice(0, 40).map((p) => `${p.title} — ${p.body}`) });
     if (!l) break;
     if (!tooClose(l, past)) ((line = l), (source = l.by));
   }
   // 2. A hand-written one that has never gone out.
   if (!line) {
     source = 'lib';
-    line = pickWritten(kind, fact, vars, past);
+    line = pickWritten(kind, fact, vars, past, hobby, String(s.city ?? ''));
   }
   if (!line) return { skipped: 'nothing new to say' };
 
@@ -140,13 +142,17 @@ async function aiLine(db: ReturnType<typeof admin>, creator: number, site: strin
   return title && body && title.length <= 60 && body.length <= 180 ? { title, body, by: j?.by || 'ai' } : null;
 }
 
-/** A hand-written line never sent before; when the list runs out, a new pairing of opener and closer. */
-function pickWritten(kind: Kind, fact: Fact | null, vars: Record<string, string>, past: Line[]): Line | null {
-  const pool = kind === 'work' ? WORK[fact?.topic ?? 'clear'] ?? WORK.clear : LINES[kind] ?? [];
+/** A hand-written line never sent before; when the list runs out, a new pairing of opener and closer.
+ *  The evening slot uses her hobby's lines (yoga has its own), or stretch lines if she named none;
+ *  lines about one city only go to creators there. */
+function pickWritten(kind: Kind, fact: Fact | null, vars: Record<string, string>, past: Line[], hobby: string, city: string): Line | null {
+  const set = kind === 'yoga' ? (!hobby ? 'stretch' : /yoga/i.test(hobby) ? 'yoga' : 'hobby') : kind;
+  const here = (l: Line) => !l.city || city.toLowerCase().includes(l.city.toLowerCase()) || (l.city === 'Bengaluru' && /bangalore/i.test(city));
+  const pool = (kind === 'work' ? WORK[fact?.topic ?? 'clear'] ?? WORK.clear : LINES[set] ?? []).filter(here);
   const shuffled = [...pool].sort(() => Math.random() - 0.5).map((l) => ({ title: fill(l.title, vars), body: fill(l.body, vars) }));
   const fresh = shuffled.find((l) => !tooSame(l, past));
   if (fresh) return fresh;
-  const parts = PARTS[kind];
+  const parts = PARTS[set];
   const v = { ...vars, fact: fact?.text ?? '' };
   for (const o of [...parts.open].sort(() => Math.random() - 0.5))
     for (const c of [...parts.close].sort(() => Math.random() - 0.5)) {

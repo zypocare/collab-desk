@@ -164,6 +164,7 @@
 	const SHORT: Record<string, string> = { request: 'New', negotiating: 'Talks', confirmed: 'Agreed', creating: 'Creating', live: 'Live' };
 	const pipe = $derived(STAGES.slice(0, 5).map((st) => ({ st, n: list.filter((c) => c.stage === st.id).length })));
 	const pipeMax = $derived(Math.max(1, ...pipe.map((p) => p.n)));
+	import SetupChecklist from '#lib/components/SetupChecklist.svelte';
 </script>
 
 <div class="lt">
@@ -178,6 +179,9 @@
 		</button>
 		<button class="l-neo l-grad l-shine l-new" onclick={() => (ui.newCollab = true)}><Icon name="plus" />New collab</button>
 	</header>
+
+	<!-- A new creator's first steps (gone once they're done). -->
+	<SetupChecklist />
 
 	<!-- Story rings -->
 	<nav class="l-rings" aria-label="Collabs that need you">

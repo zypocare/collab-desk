@@ -1,5 +1,5 @@
 // A chime and a spoken line when something important arrives while the app is open on her screen
-// ("Hey Nivy! You might have a new collab. Check your collab app."). Phones only allow sound after
+// ("Hey <the name she set>! You might have a new collab. Check your collab app."). Phones only allow sound after
 // a first tap, so the first touch in the app quietly unlocks it.
 let ctx: AudioContext | null = null;
 let unlocked = false;

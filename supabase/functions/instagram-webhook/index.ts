@@ -39,12 +39,13 @@ async function verdict(db: ReturnType<typeof admin>, creator: number, text: stri
   // Their side of the chat only: her own words ("my rates are…") don't make it an offer.
   const rule = ruleCheck(chat.split('\n').filter((l) => l.startsWith('Them:')).join('\n'));
   if (rule === 'scam') return none;
-  const { data: s } = await db.from('creator_settings').select('site_url').eq('id', creator).single();
+  // Her niche, city and languages go with the chat, so the AI knows whose DMs it is reading.
+  const { data: s } = await db.from('creator_settings').select('site_url, niche, city, content_languages').eq('id', creator).single();
   const site = String(s?.site_url || 'https://collab-desk.zypocare.workers.dev').replace(/\/$/, '');
   const ticket = crypto.randomUUID() + crypto.randomUUID();
   await db.from('ai_tickets').insert({ token: ticket, creator_id: creator });
   const anon = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
-  const r = await fetch(`${site}/api/ai/classify`, { method: 'POST', headers: { 'content-type': 'application/json', 'x-ai-ticket': ticket, apikey: anon }, body: JSON.stringify({ text: chat }) }).catch(() => null);
+  const r = await fetch(`${site}/api/ai/classify`, { method: 'POST', headers: { 'content-type': 'application/json', 'x-ai-ticket': ticket, apikey: anon }, body: JSON.stringify({ text: chat, niche: s?.niche ?? '', city: s?.city ?? '', languages: s?.content_languages ?? [] }) }).catch(() => null);
   const j = (await r?.json().catch(() => null)) as { collab?: string; kind?: string; brand?: string; summary?: string } | null;
   const ai: Ai = j && (j.collab === 'likely' || j.collab === 'maybe' || j.collab === 'no') ? { collab: j.collab, kind: j.kind } : null;
   const flag = decide(rule, ai);

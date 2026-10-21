@@ -183,7 +183,7 @@ const mock = {
   configured: true,
   exchangeCode: async (_c: string, _r: string) => ({ token: 'mock-token', expiresIn: 5184000 }),
   refresh: async (_t: string) => ({ token: 'mock-token', expiresIn: 5184000 }),
-  profile: async (_t: string): Promise<Profile> => ({ user_id: '1784000000', username: 'nicks_universe_it_is', name: 'Niveditha', profile_picture_url: '', followers_count: 251340, follows_count: 812, media_count: 642 }),
+  profile: async (_t: string): Promise<Profile> => ({ user_id: '1784000000', username: 'demo.creator', name: 'Demo Creator', profile_picture_url: '', followers_count: 251340, follows_count: 812, media_count: 642 }),
   media: async (_t: string) => MOCK_MEDIA,
   insights: async (_t: string, id: string): Promise<Insights> => {
     const seed = id.charCodeAt(1) * 7919;

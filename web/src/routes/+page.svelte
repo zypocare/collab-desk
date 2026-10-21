@@ -24,6 +24,8 @@
 	// The creator works in the studio; this page is for brands (the creator can still preview it).
 	$effect(() => {
 		if (auth.account?.role === 'creator' && !preview) goto('/studio', { replaceState: true });
+		// Waiting to be approved: she sees where her request stands.
+		else if (auth.account?.role === 'pending') goto('/join', { replaceState: true });
 	});
 
 	// Shared insights (null when they're off): the 30-day reach goes in the stats, plus a link.
@@ -114,7 +116,7 @@
 		<div class="wrap">
 			<div class="err-box">
 				<b>{pageSlug ? `${pageSlug}.miracleapp.live` : 'This page'} isn't anyone's page yet.</b>
-				<p>Creators get their own link on Miracle. <a href="https://miracleapp.live/#claim">Claim this one</a></p>
+				<p>Creators get their own link on Miracle. <a href={pageSlug ? '/join' : 'https://miracleapp.live/#claim'}>Claim this one</a></p>
 			</div>
 		</div>
 	{:else if p}

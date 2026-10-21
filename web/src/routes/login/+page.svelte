@@ -152,6 +152,7 @@
 	function targetFor(account: Account | null) {
 		const home = homeFor(account);
 		if (!next || !next.startsWith('/') || next.startsWith('//')) return home;
+		if (account?.role === 'pending') return home;
 		if (account?.role === 'creator' && next.startsWith('/brand')) return home;
 		if (account?.role === 'brand' && next.startsWith('/studio')) return home;
 		return next;

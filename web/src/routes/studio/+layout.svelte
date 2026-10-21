@@ -6,7 +6,7 @@
 	import { onMount, tick, untrack } from 'svelte';
 	import { watchVoiceUnlock } from '#lib/voice.ts';
 	import type { LayoutProps } from './$types';
-	import { auth, signOut } from '#lib/auth.svelte.ts';
+	import { auth, homeFor, signOut } from '#lib/auth.svelte.ts';
 	import { byId, catchUp, loadStudio, studio, stopWatching, watchStudio } from '#lib/studio.svelte.ts';
 	import { ensurePageCard } from '#lib/pageCard.ts';
 	import { indexDesk } from '#lib/desk.ts';
@@ -78,7 +78,7 @@
 	// Only the creator may be here.
 	$effect(() => {
 		if (!auth.session) goto(`/login?next=${encodeURIComponent(page.url.pathname + page.url.search)}`, { replaceState: true });
-		else if (auth.account && auth.account.role !== 'creator') goto('/brand', { replaceState: true });
+		else if (auth.account && auth.account.role !== 'creator') goto(homeFor(auth.account), { replaceState: true });
 	});
 
 	onMount(() => {
