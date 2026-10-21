@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { afterNavigate, goto } from '$app/navigation';
+	import Logo from '#lib/components/Logo.svelte';
 	import { edgeSwipeBack, goBackOr } from '#lib/back.ts';
 	import { page } from '$app/state';
 	import { onMount, tick, untrack } from 'svelte';
@@ -326,13 +327,7 @@
 		{#if !phone.on}
 			<nav class="side" aria-label="Main">
 				<a class="side-logo" href="/studio">
-					<svg viewBox="0 0 32 32" aria-hidden="true"
-						><defs
-							><linearGradient id="sideGrad" x1="0" y1="0" x2="1" y2="1"
-								><stop offset="0" style="stop-color:var(--g1)" /><stop offset=".55" style="stop-color:var(--g2)" /><stop offset="1" style="stop-color:var(--g3)" /></linearGradient
-							></defs
-						><path d="M16 1.5c1.2 8.2 6.3 13.3 14.5 14.5-8.2 1.2-13.3 6.3-14.5 14.5C14.8 22.3 9.7 17.2 1.5 16 9.7 14.8 14.8 9.7 16 1.5z" fill="url(#sideGrad)" /></svg
-					>
+					<Logo />
 					<span>{studio.settings?.app_name ?? 'Miracle'}</span>
 				</a>
 				<a class="side-me" href="/studio/profile" title="How brands see you">
@@ -378,16 +373,7 @@
 		<nav class="rail" aria-label="Main">
 			<div class="logo">
 				<span class="logo-mark"
-					><svg viewBox="0 0 32 32" aria-hidden="true"
-						><defs
-							><linearGradient id="logoGrad" x1="0" y1="0" x2="1" y2="1"
-								><stop offset="0" style="stop-color:var(--g1)" /><stop offset=".55" style="stop-color:var(--g2)" /><stop
-									offset="1"
-									style="stop-color:var(--g3)"
-								/></linearGradient
-							></defs
-						><path d="M16 1.5c1.2 8.2 6.3 13.3 14.5 14.5-8.2 1.2-13.3 6.3-14.5 14.5C14.8 22.3 9.7 17.2 1.5 16 9.7 14.8 14.8 9.7 16 1.5z" fill="url(#logoGrad)" /></svg
-					></span
+					><Logo /></span
 				>
 				<div class="logo-t"><b>{studio.settings?.app_name ?? 'Miracle'}</b><small>Creator studio</small></div>
 			</div>

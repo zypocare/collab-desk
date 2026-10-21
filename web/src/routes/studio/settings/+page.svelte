@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { ask } from '#lib/confirm.svelte.ts';
+	import Logo from '#lib/components/Logo.svelte';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { onMount } from 'svelte';
@@ -322,7 +323,7 @@
 			</div>
 			<button class="cs-logout" onclick={async () => (await signOut(), goto('/login', { replaceState: true }))}><Icon name="logout" /><span>Log out</span><small>@{s.handle}</small></button>
 			<footer class="cs-foot">
-				<svg width="26" height="26" viewBox="0 0 512 512" aria-hidden="true"><defs><linearGradient id="cs-lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#9C7BFF"></stop><stop offset=".52" stop-color="#F25A90"></stop><stop offset="1" stop-color="#FFAE6B"></stop></linearGradient></defs><circle cx="200" cy="256" r="118" fill="none" stroke="url(#cs-lg)" stroke-width="56"></circle><circle cx="312" cy="256" r="118" fill="none" stroke="currentColor" stroke-width="56"></circle></svg>
+				<Logo size={26} />
 				<b>{s.app_name || 'Miracle'}</b>
 				<span>Made for creators</span>
 				<small>Version {APP_VERSION} · build {BUILD_LABEL}</small>
