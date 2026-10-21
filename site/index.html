@@ -112,9 +112,32 @@ a{color:#F4EEF2;text-decoration:none}a:hover{color:#FFAE6B}
 .claim{flex-wrap:wrap}.claim .dom{font-size:16px}.claim .neo{width:100%}
 .foot-cols{grid-template-columns:repeat(2,minmax(0,1fr))}
 .caps{grid-template-columns:minmax(0,1fr)}
-.h-phone-wrap{transform:scale(.8)}
 .qs{transform:scale(.62)}
 }
+/* hero: header room on top, then phone, title and line, all on one screen */
+/* Desk AI the same way: the question area zooms with the screen height */
+.hero .stage,.ai .stage{padding:96px 0 26px}
+.ai .big{font-size:clamp(56px,10vh,112px)}
+@media (max-height: 899px){.qs{zoom:.86}}
+@media (max-height: 799px){.qs{zoom:.7}}
+@media (max-height: 699px){.qs{zoom:.58}}
+.stage{top:max(0px,calc(50vh - 480px))}
+.h-phone-wrap{zoom:.8}
+.h-words{margin-top:max(22px,3.6vh)}
+.hero .big{font-size:clamp(56px,10vh,112px)}
+.hero .body{font-size:min(20px,2.1vh + 2px)}
+@media (max-height: 959px){.h-phone-wrap{zoom:.78}}
+@media (max-height: 899px){.h-phone-wrap{zoom:.66}}
+@media (max-height: 799px){.h-phone-wrap{zoom:.52}}
+@media (max-height: 699px){.h-phone-wrap{zoom:.42}}
+@media (max-width: 900px){
+.hero .stage,.ai .stage{padding:84px 0 22px}
+.qs{zoom:.62}
+.hero .big,.ai .big{font-size:min(68px,8vh)}.hero .body{font-size:16px}
+.h-phone-wrap{zoom:.68}
+}
+@media (max-width: 900px) and (max-height: 799px){.h-phone-wrap{zoom:.56}}
+@media (max-width: 900px) and (max-height: 699px){.h-phone-wrap{zoom:.46}.qs{zoom:.5}}
 @media (prefers-reduced-motion: reduce){*{animation:none!important}}
 @media (max-width: 520px){header{padding: 16px 18px!important}header .signin{margin-right: 16px!important;font-size: 13px!important}header .neo{height: 40px!important;padding: 0 14px!important;font-size: 11px!important}}
 </style>
@@ -160,7 +183,7 @@ a{color:#F4EEF2;text-decoration:none}a:hover{color:#FFAE6B}
           </div>
         </div>
       </div>
-      <div style="position: relative; margin-top: 46px; display: grid; justify-items: center; gap: 20px; text-align: center; padding: 0 20px">
+      <div class="h-words" style="position: relative; display: grid; justify-items: center; gap: 20px; text-align: center; padding: 0 20px">
         <h1 class="big h-title">Every collab,<br><span class="gl">handled.</span></h1>
         <p class="body h-sub">Brands request from your link. Miracle reads the DMs, sends the quote and the GST invoice, and chases the payment.</p>
       </div>
