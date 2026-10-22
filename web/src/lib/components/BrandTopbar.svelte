@@ -51,6 +51,28 @@
 		}
 	}
 
+	// Phones: the same section tabs as the creator's studio (NeoPOP strip under the bar).
+	const BUSINESS = [
+		{ href: '/brand/business/money', label: 'Money' },
+		{ href: '/brand/business/content', label: 'Content' },
+		{ href: '/brand/business/calendar', label: 'Calendar' },
+		{ href: '/brand/business/shipping', label: 'Shipping' },
+		{ href: '/brand/business/team', label: 'Team' },
+		{ href: '/brand/details', label: 'Company' }
+	];
+	const CREATORS = [
+		{ href: '/brand/creators', label: 'Yours', key: '' },
+		{ href: '/brand/creators?tab=pools', label: 'Pools', key: 'pools' },
+		{ href: '/brand/creators?tab=discover', label: 'Discover', key: 'discover' }
+	];
+	const segs = $derived(
+		path.startsWith('/brand/business/') || (path === '/brand/details' && page.url.searchParams.get('new') !== '1')
+			? BUSINESS.map((t) => ({ ...t, on: t.href === path }))
+			: path === '/brand/creators' && !page.url.searchParams.get('pool')
+				? CREATORS.map((t) => ({ ...t, on: (page.url.searchParams.get('tab') ?? '') === t.key }))
+				: null
+	);
+
 	async function logout() {
 		await signOut();
 		goto('/', { replaceState: true });
@@ -106,16 +128,16 @@
 			<div class="m-title">{title}</div>
 			<div class="m-r"></div>
 		{:else}
-			{#if signedIn && creators.length}
-				<button class="b-who bt-who bt-pick" onclick={() => (picking = true)} aria-haspopup="dialog" aria-label="Switch creator">
-					<span class="bt-logo"><Logo size={30} /></span><span><b>{title}</b>{#if sub}<small>{sub}<Icon name="chevD" /></small>{/if}</span>
-				</button>
-			{:else}
-				<a class="b-who bt-who" href="/"><span class="bt-logo"><Logo size={30} /></span><span><b>{title}</b>{#if sub}<small>{sub}</small>{/if}</span></a>
-			{/if}
+			<!-- The same bar as the creator's studio: a serif title (the wordmark at home), actions on the right. -->
+			<div class="m-brand" class:wordmark={path === '/brand'}>{title}</div>
 			<div class="m-r">
 				{#if signedIn && (path === '/brand' || path === '/brand/requests') && pub.data?.accepting !== false}<a class="m-ib" href="/brand/new" aria-label="New request"><Icon name="plus" /></a>{/if}
 				{#if !signedIn}<button class="m-ib" onclick={toggleTheme} aria-label="Switch light or dark mode"><Icon name={theme.value === 'dark' ? 'sun' : 'moon'} /></button>{/if}
+				{#if signedIn && creators.length}
+					<button class="m-ib b-cr" onclick={() => (picking = true)} aria-haspopup="dialog" aria-label={name ? `Working with ${name}. Switch creator` : 'Pick a creator'}>
+						<Avatar name={name || 'Creators'} src={pub.data?.instagram?.profile_picture_url} size="30px" />
+					</button>
+				{/if}
 				{#if auth.account?.role === 'creator'}
 					<a class="b-pill" href="/studio">Studio</a>
 				{:else if !signedIn}
@@ -124,6 +146,11 @@
 			</div>
 		{/if}
 	</header>
+	{#if segs && signedIn}
+		<nav class="m-seg b-seg" class:many={segs.length > 4} aria-label="Sections" style="--n:{segs.length};--i:{Math.max(0, segs.findIndex((t) => t.on))}">
+			{#each segs as t (t.href)}<a href={t.href} aria-current={t.on ? 'page' : undefined}>{t.label}</a>{/each}
+		</nav>
+	{/if}
 {:else}
 
 <!-- Laptops: Miracle on the left (like her page), then whose page this is. -->
@@ -466,24 +493,6 @@
 		line-height: 1.45;
 		color: var(--ink-3);
 	}
-	.bt-pick {
-		border: 0;
-		background: transparent;
-		padding: 0;
-		font: inherit;
-		color: inherit;
-		text-align: left;
-		cursor: pointer;
-	}
-	.bt-pick small {
-		display: inline-flex;
-		align-items: center;
-		gap: 4px;
-	}
-	.bt-pick small :global(.ic) {
-		width: 13px;
-		height: 13px;
-	}
 	.bt-scrim {
 		position: fixed;
 		inset: 0;
@@ -543,24 +552,5 @@
 		width: 18px;
 		height: 18px;
 		color: var(--ink-3);
-	}
-	/* Phones: Miracle's mark where her photo was. */
-	.bt-logo {
-		display: grid;
-		place-items: center;
-		flex: none;
-		width: 38px;
-		height: 38px;
-		border-radius: 12px;
-		background: color-mix(in oklab, var(--ink) 6%, transparent);
-		box-shadow: inset 0 0 0 1px var(--line);
-		color: var(--ink);
-	}
-	.bt-who b {
-		font-family: var(--f-serif);
-		font-style: italic;
-		font-weight: 400;
-		font-size: 22px;
-		letter-spacing: -0.01em;
 	}
 </style>

@@ -4,7 +4,8 @@
 	import { brandHome, loadDashboard } from '#lib/brand.svelte.ts';
 	import { addressFor, isAppHost } from '#lib/creatorHost.ts';
 	import { pageSlug } from '#lib/supabase.ts';
-	import { compact, firstName, fmt, inr } from '#lib/util.ts';
+	import { compact, firstName, fmt, inr, inrS } from '#lib/util.ts';
+	import Ticket from '#lib/components/Ticket.svelte';
 	import type { BrandCreator } from '#lib/types.ts';
 	import Avatar from '#lib/components/Avatar.svelte';
 	import CompanyStep from '#lib/components/CompanyStep.svelte';
@@ -92,12 +93,22 @@
 		</div>
 		<h2 class="bd-h">Waiting on you</h2>
 		{#if waiting.length}
-			<div class="bd-list">
-				{#each waiting as w (w.kind + w.code + (w.round ?? ''))}
-					<a class="bd-row" href={at(w.slug, `/brand/r/${w.code}`)}>
-						<i></i>
-						<span><b>{w.kind === 'quote' ? `Review ${firstName(w.creator)}'s quote` : `Approve ${firstName(w.creator)}'s draft`}</b><small>{w.code}{w.kind === 'quote' && w.amount ? ` · ${inr(w.amount)}` : ''}{w.kind === 'draft' && w.live_date ? ` · goes live ${fmt(w.live_date)}` : ''}</small></span>
-					</a>
+			<!-- The same tickets as the creator's phone: the creator on a band, a torn line, then what to do. -->
+			<div class="tks">
+				{#each waiting as w, i (w.kind + w.code + (w.round ?? ''))}
+					<Ticket
+						name={w.creator}
+						sub={w.code}
+						money={w.kind === 'quote' && w.amount ? inrS(w.amount) : ''}
+						moneySub={w.kind === 'quote' ? 'quote' : ''}
+						task={w.kind === 'quote' ? `Review ${firstName(w.creator)}'s quote` : `Approve ${firstName(w.creator)}'s draft`}
+						status={w.kind === 'draft' && w.live_date ? `Goes live ${fmt(w.live_date)}` : 'Waiting on you'}
+						tone="hot"
+						href={at(w.slug, `/brand/r/${w.code}`)}
+						{i}
+					>
+						<a class="btn primary" href={at(w.slug, `/brand/r/${w.code}`)}>{w.kind === 'quote' ? 'Review' : 'Approve'}</a>
+					</Ticket>
 				{/each}
 			</div>
 		{:else}

@@ -68,7 +68,7 @@
 	</header>
 	<CompanyStep {creator} />
 {:else if acc}
-	<header class="ph rv">
+	<header class="ph rv rq-head">
 		<div>
 			<div class="eb">{acc.brand?.name}</div>
 			<h1>Your <em>requests</em></h1>

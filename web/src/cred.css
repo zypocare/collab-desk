@@ -2009,3 +2009,32 @@
 @media (prefers-reduced-motion: reduce) {
   [data-side] .toasts .toast.toast, [data-side] .toasts .toast .tbar { animation: none; }
 }
+
+/* ===== PHONE, brand side: the studio's pieces, so both sides feel like one app.
+   The bar carries the title (no second heading in the page), sections use the studio's NeoPOP tab
+   strip, filters are its square chips, the bottom bar marks the current tab the same way, and the
+   website-style footer stays on laptops. ===== */
+@media (max-width: 760px) {
+  [data-side="brand"] .b-seg { margin: 6px 16px 16px; }
+  [data-side="brand"] .b-seg.many { display: flex; overflow-x: auto; scrollbar-width: none; }
+  [data-side="brand"] .b-seg.many::-webkit-scrollbar { display: none; }
+  [data-side="brand"] .b-seg.many a { flex: 1 0 auto; padding: 0 16px; }
+  [data-side="brand"] .b-cr { padding: 0; }
+  [data-side="brand"] .b-cr > * { box-shadow: 0 0 0 1.5px var(--line-strong); border-radius: 50%; }
+
+  /* The bar already names the screen. */
+  [data-side="brand"] :is(.bz-h, .cr-h > h1, .cr-tabs, .cp-h h1, .cp-h p, .ap-h h1, .rq-head) { display: none; }
+  [data-side="brand"] .cr-h, [data-side="brand"] .cp-h { margin-top: 0; }
+
+  /* Filters: square chips, ink with a pink edge when picked (as on Collabs). */
+  :root[data-side="brand"] :is(.mn-chips, .ct-chips, .cr-niches) { display: flex; flex-wrap: nowrap; gap: 8px; overflow-x: auto; scrollbar-width: none; padding: 0 20px 10px 0; }
+  :root[data-side="brand"] :is(.mn-chips, .ct-chips, .cr-niches) button { flex: none; height: 40px; padding: 0 14px; border: 1px solid var(--line-strong); border-radius: 0; background: transparent; box-shadow: none; color: var(--ink); font-size: 11.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; transition: transform .12s, box-shadow .12s, background .2s; }
+  :root[data-side="brand"] :is(.mn-chips, .ct-chips, .cr-niches) button.on { background: var(--ink); color: var(--bg); border-color: var(--ink); box-shadow: 3px 3px 0 var(--accent); }
+  :root[data-side="brand"] :is(.mn-chips, .ct-chips, .cr-niches) button:active { transform: translate(2px, 2px); box-shadow: none; }
+
+  /* Bottom bar: the current tab is bright with the gradient tick, no tinted pill (as in the studio). */
+  [data-side="brand"] .brand-tabs a[aria-current="page"] .bt-ic { background: none; color: inherit; }
+
+  /* The website-style footer is for laptops; on phones the bottom bar ends the page. */
+  [data-side="brand"] .bf { display: none; }
+}
