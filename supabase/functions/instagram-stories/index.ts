@@ -4,7 +4,7 @@ import { admin, cronAllowed } from '../_shared/admin.ts';
 import { creatorOfCaller } from '../_shared/creators.ts';
 import { connectedCreators, runStorySync } from '../_shared/igsync.ts';
 
-const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-cron-secret' };
+const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-creator, x-cron-secret' };
 const reply = (body: unknown, status = 200) => Response.json(body, { status, headers: cors });
 const errText = (e: unknown) => (e instanceof Error ? e.message : String(e));
 

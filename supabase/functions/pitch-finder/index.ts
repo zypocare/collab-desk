@@ -10,7 +10,7 @@ import { admin, cronAllowed, todayIST } from '../_shared/admin.ts';
 import { activeCreators, creatorOfCaller, settingsOf, type Settings } from '../_shared/creators.ts';
 import { pushToCreator } from '../_shared/push.ts';
 
-const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type' };
+const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-creator' };
 type Brand = { name: string; website: string; instagram: string; category: string; why: string };
 type Found = Brand & { email: string; domain: string };
 

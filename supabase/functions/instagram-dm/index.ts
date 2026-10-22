@@ -4,7 +4,7 @@ import { admin } from '../_shared/admin.ts';
 import { creatorOfCaller } from '../_shared/creators.ts';
 
 const GRAPH = 'https://graph.instagram.com/v21.0';
-const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type' };
+const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-creator' };
 const reply = (body: unknown, status = 200) => Response.json(body, { status, headers: cors });
 
 Deno.serve(async (req) => {

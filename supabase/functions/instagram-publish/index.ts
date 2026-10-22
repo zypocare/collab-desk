@@ -8,7 +8,7 @@ import { creatorOfCaller } from '../_shared/creators.ts';
 import { connectedCreators } from '../_shared/igsync.ts';
 
 const GRAPH = 'https://graph.instagram.com/v21.0';
-const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-cron-secret' };
+const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-creator, x-cron-secret' };
 const reply = (body: unknown, status = 200) => Response.json(body, { status, headers: cors });
 
 async function call(token: string, path: string, params: Record<string, string>, method = 'POST') {

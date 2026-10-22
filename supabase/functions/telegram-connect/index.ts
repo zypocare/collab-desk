@@ -8,7 +8,7 @@ import { botUsername, findChatByCode, sendTelegram, telegramConfigured } from '.
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-creator',
 };
 const reply = (body: unknown, status = 200) => Response.json(body, { status, headers: cors });
 

@@ -32,7 +32,8 @@ export async function creatorOfCaller(req: Request): Promise<number | null> {
   if (!auth.startsWith('Bearer ')) return null;
   const r = await fetch(`${Deno.env.get('SUPABASE_URL')}/rest/v1/rpc/current_creator`, {
     method: 'POST',
-    headers: { authorization: auth, apikey: Deno.env.get('SUPABASE_ANON_KEY') ?? '', 'content-type': 'application/json' },
+    // The page the person is on (name.miracleapp.live) picks the creator when they work for several.
+    headers: { authorization: auth, apikey: Deno.env.get('SUPABASE_ANON_KEY') ?? '', 'content-type': 'application/json', ...(req.headers.get('x-creator') ? { 'x-creator': req.headers.get('x-creator')! } : {}) },
     body: '{}'
   }).catch(() => null);
   const id = r?.ok ? Number(await r.json().catch(() => null)) : NaN;

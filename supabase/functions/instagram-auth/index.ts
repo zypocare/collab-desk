@@ -11,7 +11,7 @@ import { creatorOfCaller, settingsOf } from '../_shared/creators.ts';
 import { authorizeUrl, ensureMessages, ig } from '../_shared/instagram.ts';
 import { runSync } from '../_shared/igsync.ts';
 
-const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type' };
+const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-creator' };
 const reply = (body: unknown, status = 200) => Response.json(body, { status, headers: cors });
 
 // Where Instagram sends her back when the connection starts here (add it in the Meta app's redirect addresses).
