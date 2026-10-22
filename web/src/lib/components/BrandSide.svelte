@@ -1,6 +1,7 @@
 <script lang="ts">
+	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
-	import { auth } from '../auth.svelte';
+	import { auth, signOut } from '../auth.svelte';
 	import { addressFor, isAppHost } from '../creatorHost';
 	import { pub } from '../publicPage.svelte';
 	import { pageSlug } from '../supabase';
@@ -68,9 +69,12 @@
 		{:else}
 			<a class="side-ask" href="/brand/creators?tab=discover"><Icon name="users" />Find creators</a>
 		{/if}
-		<a class="side-who" href="/brand/settings" title="Settings">
-			<span class="side-av"><Avatar name={company} src={brandIg.data?.picture ?? ''} size="36px" /></span>
-			<span><b>{company}</b><small>{brandIg.data ? `@${brandIg.data.username} ✓` : (acct?.email ?? '')}</small></span>
-		</a>
+		<div class="side-acct">
+			<a class="side-who" href="/brand/settings" title="Settings">
+				<span class="side-av"><Avatar name={company} src={brandIg.data?.picture ?? ''} size="36px" /></span>
+				<span><b>{company}</b><small>{brandIg.data ? `@${brandIg.data.username} ✓` : (acct?.email ?? '')}</small></span>
+			</a>
+			<button class="side-out" onclick={async () => (await signOut(), goto('/login', { replaceState: true }))} aria-label="Log out" title="Log out"><Icon name="logout" /></button>
+		</div>
 	</div>
 </nav>

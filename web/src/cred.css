@@ -2067,3 +2067,12 @@
   [data-desk] .clear-acts { display: flex; justify-content: center; gap: 14px; width: auto; margin-top: 16px; padding-right: 4px; }
   [data-desk] .clear-acts .glass-chip { flex: none; min-width: 190px; padding: 0 20px; }
 }
+
+/* ===== LAPTOP: log out from the side menu, beside who's signed in (studio and brand). ===== */
+@media (min-width: 761px) {
+  [data-desk] .side-acct { display: flex; align-items: center; gap: 8px; padding-top: 14px; border-top: 1px solid #1f191f; }
+  [data-desk] .side-acct .side-who { flex: 1; min-width: 0; padding-top: 0; border-top: 0; }
+  [data-desk] .side-out { flex: none; width: 38px; height: 38px; display: grid; place-items: center; border: 1px solid #2E262E; border-radius: 10px; background: none; color: #A39AA1; cursor: pointer; transition: color .15s, background .15s, border-color .15s; }
+  [data-desk] .side-out:hover { color: #FF7B70; border-color: #4a2a2a; background: #1D181D; }
+  [data-desk] .side-out .ic { width: 17px; height: 17px; }
+}
