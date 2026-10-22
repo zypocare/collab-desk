@@ -133,7 +133,7 @@
 		{#if turnstileSiteKey}<div bind:this={tsBox}></div>{/if}
 		{#if error}<p class="su-err" role="alert">{error}</p>{/if}
 		<button class="su-neo su-go su-block" disabled={busy}>{busy ? 'Sending…' : 'Send my code'}</button>
-		<span class="su-terms">By continuing you agree to Miracle's <a href="https://www.miracleapp.live/privacy" target="_blank" rel="noopener">privacy policy</a>.</span>
+		<span class="su-terms">By continuing you agree to Miracle's <a href="https://www.miracleapp.live/terms" target="_blank" rel="noopener">Terms</a> and <a href="https://www.miracleapp.live/privacy" target="_blank" rel="noopener">Privacy policy</a>.</span>
 	</form>
 {:else}
 	<form class="su-card" onsubmit={verify} novalidate>

@@ -32,6 +32,8 @@ export const ICONS: Record<string, string> = {
 	bell: '<path d="M6 9.5a6 6 0 0 1 12 0c0 5.5 2.5 7 2.5 7h-17S6 15 6 9.5"/><path d="M10 20a2 2 0 0 0 4 0"/>',
 	clock: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
 	alert: '<path d="M12 4 2.8 19.5h18.4z"/><path d="M12 10v4.2M12 17h.01"/>',
+	ban: '<circle cx="12" cy="12" r="8.5"/><path d="m6 6 12 12"/>',
+	flag: '<path d="M5 21V4M5 4h11l-2 4 2 4H5"/>',
 	gift: '<rect x="3.5" y="8" width="17" height="4.5" rx="1"/><path d="M5 12.5V20h14v-7.5M12 8v12M12 8s-1.5-4-4-4a2 2 0 0 0 0 4M12 8s1.5-4 4-4a2 2 0 0 1 0 4"/>',
 	plus: '<path d="M12 5v14M5 12h14"/>',
 	arrow: '<path d="M5 12h14M13 6l6 6-6 6"/>',

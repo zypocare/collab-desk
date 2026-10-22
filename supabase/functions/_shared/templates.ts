@@ -6,7 +6,7 @@ import type { Mail } from './mailer.ts';
 
 export type Settings = { app_name: string; display_name: string; site_url: string; reply_time: string; handle?: string; city?: string };
 type Payload = Record<string, unknown>;
-type To = 'brand' | 'creator';
+type To = 'brand' | 'creator' | 'app';
 
 const esc = (v: unknown) =>
   String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
@@ -32,7 +32,8 @@ function layout(
   opts: { to?: To; next?: string[]; code?: string; preheader?: string; /** To a brand, but from the app itself (open briefs), not from her. */ fromApp?: boolean; /** Why it came, for the footer of an app email to a brand. */ why?: string } = {},
 ) {
   const to = opts.to ?? 'brand';
-  const app = to === 'brand' && opts.fromApp === true;
+  // From Miracle itself: to a brand about open briefs, or to anyone about their account.
+  const app = (to === 'brand' && opts.fromApp === true) || to === 'app';
   const me = first(s.display_name);
   const handle = String(s.handle ?? '').replace(/^@/, '');
   const steps = opts.next?.filter(Boolean) ?? [];
@@ -45,7 +46,7 @@ ${pre ? `<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:t
 <tr><td style="padding:0 6px 16px">
   <table role="presentation" cellpadding="0" cellspacing="0"><tr>
     <td style="vertical-align:middle"><img src="${esc(url(s, '/icon-192.png'))}" width="40" height="40" alt="${esc(s.app_name)}" style="display:block;width:40px;height:40px;border-radius:11px;border:0"></td>
-    <td style="vertical-align:middle;padding-left:12px"><div style="font-size:16px;font-weight:700;letter-spacing:-.2px;color:${INK}">${esc(s.app_name)}</div><div style="font-size:12.5px;color:${MUTED}">${app ? `Creators for your brand` : to === 'brand' ? `Collaborations with ${esc(s.display_name)}` : `Your creator studio`}</div></td>
+    <td style="vertical-align:middle;padding-left:12px"><div style="font-size:16px;font-weight:700;letter-spacing:-.2px;color:${INK}">${esc(s.app_name)}</div><div style="font-size:12.5px;color:${MUTED}">${to === 'app' ? `Miracle` : app ? `Creators for your brand` : to === 'brand' ? `Collaborations with ${esc(s.display_name)}` : `Your creator studio`}</div></td>
   </tr></table>
 </td></tr>
 <tr><td style="background:#ffffff;border-radius:22px;border:1px solid ${LINE};overflow:hidden">
@@ -70,7 +71,7 @@ ${pre ? `<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:t
 </td></tr>
 <tr><td style="padding:18px 16px 0;font-size:12px;line-height:1.6;color:${MUTED};text-align:center">
   ${app
-    ? `Sent to you by ${esc(s.app_name)}${opts.why ? ` because ${esc(opts.why)}` : ''}. Change which alerts you get in Settings.`
+    ? `Sent to you by ${esc(s.app_name)}${opts.why ? ` because ${esc(opts.why)}` : ''}.${to === 'app' ? '' : ' Change which alerts you get in Settings.'}`
     : to === 'brand'
     ? `You're receiving this because of your collaboration${opts.code ? ` <b>${esc(opts.code)}</b>` : ''} with ${esc(s.display_name)}. Questions? Just reply to this email and it reaches ${esc(me)} directly.`
     : `Sent to you by ${esc(s.app_name)}. Change which emails you get in My page → Alerts.`}
@@ -1046,6 +1047,89 @@ Open the collab: ${studio()}`,
         { fromApp: true, why: `your brief ${p.campaign} is open for applications`, preheader: `They ask ${range}. ${num(p.total)} so far.` },
       ),
       text: `Your open brief ${p.campaign} got ${apps} today. They ask ${range}. Applications so far: ${num(p.total)}.\n\nSee them: ${href}\n\nThe ${s.app_name} team`,
+    };
+  }
+
+  // ---------------------------------------------------------------- leaving, and safety
+  if (kind === 'collab_closed') {
+    // To a brand: the creator closed her page (from her), or Miracle closed it (from the app).
+    const byApp = p.why === 'closed';
+    const who = byApp ? String(p.creator ?? 'The creator') : s.display_name;
+    return {
+      subject: `Request ${code} is cancelled`,
+      html: layout(
+        s,
+        `Request ${code} is cancelled`,
+        `${hi(p.contact)}${P(byApp ? `${esc(who)}'s page on ${esc(s.app_name)} has been closed, so your request <b>${esc(code)}</b> is cancelled.` : `I've closed my page on ${esc(s.app_name)}, so your request <b>${esc(code)}</b> is cancelled. Thank you for thinking of me.`)}
+         ${table(row('Reference', code), row('Brand', brand))}
+         ${P(`Invoices that were already sent still stand. Nothing else is owed for work that wasn't done.`)}`,
+        undefined,
+        byApp ? { to: 'app', why: `you sent a request to ${who}` } : { code },
+      ),
+      text: `${byApp ? `${who}'s page on ${s.app_name} has been closed` : `I've closed my page on ${s.app_name}`}, so your request ${code} is cancelled. Invoices that were already sent still stand.${byApp ? `\n\nThe ${s.app_name} team` : sign}`,
+    };
+  }
+
+  if (kind === 'collab_closed_creator') {
+    const closed = p.why === 'closed';
+    return {
+      subject: closed ? `${brand}'s account was closed` : `${brand} left Miracle`,
+      html: layout(
+        s,
+        closed ? `We closed ${brand}'s account` : `${brand} closed their account`,
+        closed
+          ? `${P(`After reports from creators, we closed <b>${esc(brand)}</b>'s account. Any request from them is cancelled.`)}${P(`If they asked you to pay a fee to get work, please don't pay. Real brands never ask creators for money.`)}`
+          : `${P(`<b>${esc(brand)}</b> closed their account on ${esc(s.app_name)}, so their running request${code ? ` <b>${esc(code)}</b>` : ''} is cancelled.`)}${P(`Invoices you already sent still stand; your copies stay in Money.`)}`,
+        { label: 'Open your collabs', href: url(s, '/studio/collabs') },
+        { to: 'creator', preheader: closed ? `Their requests are cancelled.` : `Request ${code} is cancelled.` },
+      ),
+      text: closed
+        ? `After reports from creators, we closed ${brand}'s account. Any request from them is cancelled. If they asked you to pay a fee, please don't pay.`
+        : `${brand} closed their account on ${s.app_name}, so request ${code} is cancelled. Invoices you already sent still stand.`,
+    };
+  }
+
+  if (kind === 'report_update') {
+    const name = String(p.name ?? '');
+    const line = p.outcome === 'close'
+      ? `We looked into your report and closed <b>${esc(name)}</b>'s account. Thank you for telling us; it keeps everyone on ${esc(s.app_name)} safer.`
+      : p.outcome === 'keep'
+        ? `We've paused <b>${esc(name)}</b>'s account while we look further. They can't send requests or messages until we're done.`
+        : `We looked into your report about <b>${esc(name)}</b> and didn't find a reason to act this time. If anything else happens, report it again and we'll look again.`;
+    const to: To = p.app ? 'app' : 'creator';
+    return {
+      subject: `About your report on ${name}`,
+      html: layout(s, `About your report on ${name}`, P(line), undefined, { to, why: 'you sent us a report' }),
+      text: line.replace(/<[^>]+>/g, ''),
+    };
+  }
+
+  if (kind === 'account_paused' || kind === 'account_closed') {
+    const closed = kind === 'account_closed';
+    const to: To = p.side === 'creator' ? 'creator' : 'app';
+    const body = closed
+      ? `${P(`We've closed <b>${esc(p.name)}</b>'s account on ${esc(s.app_name)} because it broke our terms, after reports from people who worked with you.`)}${P(`Running requests are cancelled and the people involved have been told. If you think this is a mistake, reply to this email.`)}`
+      : `${P(`<b>${esc(p.name)}</b>'s account on ${esc(s.app_name)} is paused while we look into reports about it. You can still sign in, but you can't send requests or messages for now.`)}${P(`If there's anything we should know, reply to this email. We usually decide within a day.`)}`;
+    return {
+      subject: closed ? `Your ${s.app_name} account is closed` : `Your ${s.app_name} account is paused`,
+      html: layout(s, closed ? `Your account is closed` : `Your account is paused`, body, undefined, { to, why: 'it is about your account' }),
+      text: body.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim(),
+    };
+  }
+
+  if (kind === 'problem_new') {
+    const href = 'https://admin.miracleapp.live/#problems';
+    const head = p.back ? `A fixed problem is back` : `New problem in ${String(p.source) === 'jobs' ? 'emails & jobs' : String(p.source) === 'server' ? 'the server' : 'the app'}`;
+    return {
+      subject: `${head}: ${String(p.message ?? '').slice(0, 70)}`,
+      html: layout(
+        s,
+        head,
+        `${quoteBox('What broke', p.message)}${table(row('Where', p.place), row('Seen in', p.source))}`,
+        { label: 'Open Problems', href },
+        { to: 'app', why: `you're a ${s.app_name} admin` },
+      ),
+      text: `${head}\n\n${p.message}\nWhere: ${p.place}\n\n${href}`,
     };
   }
 

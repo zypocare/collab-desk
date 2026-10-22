@@ -13,7 +13,7 @@
 	import '../today.css';
 	import type { LayoutProps } from './$types';
 	import { onMount } from 'svelte';
-	import { onNavigate } from '$app/navigation';
+	import { afterNavigate, onNavigate } from '$app/navigation';
 	import { isIOS } from '#lib/back.ts';
 	import { page } from '$app/state';
 	import { startReveal } from '#lib/reveal.ts';
@@ -22,10 +22,13 @@
 	import { watchInstall } from '#lib/pwa.svelte.ts';
 	import Icon from '#lib/components/Icon.svelte';
 	import { PHONE_Q, depth } from '#lib/phone.svelte.ts';
+	import { initProblems, step } from '#lib/problems.ts';
+	import ClosingScreen from '#lib/components/ClosingScreen.svelte';
 
 	let { children }: LayoutProps = $props();
 
 	onMount(() => {
+		initProblems();
 		initTheme();
 		initAuth();
 		watchInstall();
@@ -43,6 +46,12 @@
 		if (desk) el.dataset.desk = desk;
 		else delete el.dataset.desk;
 	});
+	// What the person did before a crash: the pages they opened.
+	afterNavigate((nav) => step(`Opened ${nav.to?.route.id ?? nav.to?.url.pathname ?? ''}`));
+	// An account on its way out (deleted, or closed by Miracle) sees that instead of the app.
+	const closing = $derived(
+		auth.account?.closing && auth.account.closing.state !== 'paused' && (page.url.pathname.startsWith('/studio') || page.url.pathname.startsWith('/brand')) ? auth.account.closing : null
+	);
 	// A soft cross-fade between pages where the browser supports it.
 	onNavigate((nav) => {
 		const d = document as Document & { startViewTransition?: (cb: () => Promise<void>) => unknown };
@@ -72,7 +81,9 @@
 <div class="aurora" aria-hidden="true"><i></i><i></i><i></i></div>
 <div class="grain" aria-hidden="true"></div>
 
-{#if auth.ready}
+{#if auth.ready && closing}
+	<ClosingScreen {closing} />
+{:else if auth.ready}
 	{@render children()}
 {:else}
 	<div class="loader" aria-label="Loading"><span class="ring"><span></span></span></div>

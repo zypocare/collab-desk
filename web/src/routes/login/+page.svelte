@@ -270,7 +270,7 @@
 				</form>
 			{/if}
 		</div>
-		<p class="lg-terms">By signing in you agree to Miracle's <a href="/privacy">privacy policy</a>.</p>
+		<p class="lg-terms">By continuing you agree to Miracle's <a href="/terms">Terms</a> and <a href="/privacy">Privacy policy</a>.</p>
 	</main>
 </div>
 

@@ -73,6 +73,12 @@ export const perView = (fees: number, views: number) => (fees > 0 && views > 0 ?
 /** Everything in one .xlsx: Summary, Requests, Invoices, Content, Campaigns, Creators, Shipping. */
 export async function downloadExcel(company: string) {
 	const r = range(reports.period);
+	await saveBlob(await reportsWorkbook(company), `miracle-report-${r.from}-to-${r.to}.xlsx`);
+}
+
+/** The Reports workbook for the period picked (also part of the brand's "Download all our data"). */
+export async function reportsWorkbook(company: string, p: Period = reports.period): Promise<Blob> {
+	const r = range(p);
 	const [rep, money, content, ship] = await Promise.all([
 		call<Report>('brand_reports', { p_from: r.from, p_to: r.to }),
 		call<Money>('brand_money').catch(() => null),
@@ -160,5 +166,5 @@ export async function downloadExcel(company: string) {
 			]
 		}
 	]);
-	await saveBlob(blob, `miracle-report-${r.from}-to-${r.to}.xlsx`);
+	return blob;
 }

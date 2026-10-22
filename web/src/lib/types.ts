@@ -483,7 +483,10 @@ export type BrandProfile = {
 	gstin: string;
 };
 
-export type Account =
+/** An account on its way out: deleted and waiting 30 days, closed by Miracle, or paused after reports. */
+export type Closing = { kind: 'creator' | 'brand'; state: 'deleting' | 'closed' | 'paused'; name: string; erase_after?: string; owner: boolean };
+
+export type Account = (
 	/** needs_link: approved, but hasn't picked name.miracleapp.live yet. */
 	| { role: 'creator'; email: string; slug?: string | null; needs_link?: boolean; name?: string; handle?: string }
 	/** Asked to join as a creator and not approved yet. */
@@ -502,7 +505,8 @@ export type Account =
 			profile?: BrandProfile | null;
 			/** Every creator this login works with. */
 			creators?: BrandCreator[];
-	  };
+	  }
+) & { closing?: Closing | null };
 
 /** A creator as a brand sees them: public page facts, plus how much is going on together. */
 export type BrandCreator = {

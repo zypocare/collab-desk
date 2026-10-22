@@ -107,10 +107,22 @@ export default {
 		} catch (e) {
 			const m = String((e as Error)?.message ?? e);
 			if (m === 'USED_UP') return json({ error: USED_UP }, 429);
+			// Something broke on our side (not a message meant for the person): the admin panel hears about it.
+			if (!m.startsWith('!')) ctx.waitUntil(reportProblem(env, `ai/${url.pathname.slice('/api/ai/'.length)}: ${m}`, url.pathname, String((e as Error)?.stack ?? '')));
 			return json({ error: m.startsWith('!') ? m.slice(1) : `The AI couldn't answer just now (${m.slice(0, 160)}). Try again in a minute.` }, 502);
 		}
 	}
 };
+
+/** Adds a crash to the admin panel's Problems tab (never throws). */
+async function reportProblem(env: Env, message: string, place: string, stack: string) {
+	if (!env.SUPABASE_ANON_KEY) return;
+	await fetch(`${env.SUPABASE_URL}/rest/v1/rpc/problem_report`, {
+		method: 'POST',
+		headers: { apikey: env.SUPABASE_ANON_KEY, authorization: `Bearer ${env.SUPABASE_ANON_KEY}`, 'content-type': 'application/json' },
+		body: JSON.stringify({ p: { source: 'server', message: message.slice(0, 300), place, stack: stack.slice(0, 4000) } })
+	}).catch(() => null);
+}
 
 // Readings that give the same answer for the same input (kept two weeks).
 const CACHED = ['dm', 'summary', 'fit', 'embed'];

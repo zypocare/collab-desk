@@ -40,6 +40,7 @@
 	import CampaignTimeline from '#lib/components/CampaignTimeline.svelte';
 	import CampaignDocs from '#lib/components/CampaignDocs.svelte';
 	import DraftChecklist from '#lib/components/DraftChecklist.svelte';
+	import ReportMenu from '#lib/components/ReportMenu.svelte';
 
 	const r = $derived(brandData.requests.find((x) => x.code.toUpperCase() === (page.params.code ?? '').toUpperCase()));
 	// Not in this list: the request is with another creator (open it on their address; the sign-in is
@@ -199,6 +200,7 @@
 			<span class="chip tint st-{r.stage === 'declined' ? 'request' : r.stage}" style={r.stage === 'declined' ? '--hue:var(--bad)' : ''}>{r.stage_label}</span>
 			{#if pub.data?.whatsapp}<a class="btn wa" href={waLink(pub.data.whatsapp, `Hi ${creator}, about my request ${r.code}: `)} target="_blank" rel="noopener"><Icon name="send" />WhatsApp</a>{/if}
 			{#if (r.stage === 'live' || r.stage === 'wrapped') && pub.data?.accepting !== false}<a class="btn grad" href="/brand/new?again={r.code}"><Icon name="refresh" />Book again</a>{/if}
+			<ReportMenu name={pub.data?.display_name || 'this creator'} target={{ collab_id: r.id }} />
 		</div>
 	</header>
 

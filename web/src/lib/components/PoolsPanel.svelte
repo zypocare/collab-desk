@@ -10,6 +10,7 @@
 	import Ticket from './Ticket.svelte';
 	import Icon from './Icon.svelte';
 	import InviteCreator from './InviteCreator.svelte';
+	import { blockedCreators, blocks, loadBlocks } from '../safety.svelte';
 
 	// Pools: the brand's own saved groups of creators, with private notes and tags.
 	const picked = $derived(page.url.searchParams.get('pool') ?? '');
@@ -21,7 +22,13 @@
 	let note = $state('');
 	let tags = $state('');
 
+	// Creators the brand blocked don't show in its pools.
+	const vis = (p: { members: PoolMember[] }) => {
+		const b = blocks.loaded ? blockedCreators() : new Set<number>();
+		return p.members.filter((m) => !(m.creator && b.has(m.creator.id)));
+	};
 	onMount(() => {
+		if (!blocks.loaded) loadBlocks();
 		loadPools().catch((e) => toast(errMessage(e), 'alert'));
 	});
 	const open = (id: string) => goto(`?tab=pools&pool=${id}`, { replaceState: true });
@@ -81,7 +88,7 @@
 {:else}
 	<div class="m-stages" role="tablist" aria-label="Your pools">
 		{#each pools.list as p, k (p.id)}
-			<button role="tab" aria-selected={pool?.id === p.id} class:on={pool?.id === p.id} onclick={() => open(p.id)}><i class="dt" style="--hue:var(--m{(k % 6) + 1})"></i>{p.name}<span>{p.members.length}</span></button>
+			<button role="tab" aria-selected={pool?.id === p.id} class:on={pool?.id === p.id} onclick={() => open(p.id)}><i class="dt" style="--hue:var(--m{(k % 6) + 1})"></i>{p.name}<span>{vis(p).length}</span></button>
 		{/each}
 		<button onclick={() => (naming = true)}><i class="dt" style="--hue:var(--accent)"></i>+ New pool</button>
 	</div>
@@ -108,8 +115,8 @@
 					<span class="hc-eb">{pool.name}</span>
 					<button class="glass-chip" onclick={rename}><Icon name="edit" />Rename</button>
 				</div>
-				<div class="hc-val">{pool.members.length}</div>
-				<div class="hc-sub">creator{pool.members.length === 1 ? '' : 's'} in this pool{pool.members.some((m) => !m.creator) ? ` · ${pool.members.filter((m) => !m.creator).length} not on Miracle yet` : ''} · only you see it</div>
+				<div class="hc-val">{vis(pool).length}</div>
+				<div class="hc-sub">creator{vis(pool).length === 1 ? '' : 's'} in this pool{vis(pool).some((m) => !m.creator) ? ` · ${vis(pool).filter((m) => !m.creator).length} not on Miracle yet` : ''} · only you see it</div>
 				<div class="hc-foot">
 					<a href="?tab=discover&pool={pool.id}"><small><span class="dt" style="--hue:var(--g2)"></span>Add</small><b>Creators</b></a>
 					<button onclick={() => (inviting = true)}><small><span class="dt" style="--hue:var(--g1)"></span>Invite</small><b>@handle</b></button>
@@ -118,7 +125,7 @@
 			</div>
 		</section>
 		<div class="tks m-plist">
-			{#each pool.members as m, i (m.id)}
+			{#each vis(pool) as m, i (m.id)}
 				<div class="pl-one">
 					<Ticket
 						name={label(m)}

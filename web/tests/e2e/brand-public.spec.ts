@@ -3,7 +3,7 @@ import { signIn, watchErrors } from './helpers';
 
 test('public pages load', async ({ page }) => {
 	const noErrors = watchErrors(page);
-	for (const path of ['/', '/privacy', '/data-deletion']) {
+	for (const path of ['/', '/privacy', '/terms', '/data-deletion']) {
 		await page.goto(path);
 		await page.waitForLoadState('networkidle');
 		await expect(page.locator('h1').first()).toBeVisible();
@@ -14,7 +14,7 @@ test('public pages load', async ({ page }) => {
 test('a new brand can sign in and reach the request form', async ({ page }) => {
 	const noErrors = watchErrors(page);
 	await signIn(page, `brand${Date.now()}@example.test`);
-	for (const path of ['/brand', '/brand/requests', '/brand/creators', '/brand/creators?tab=discover', '/brand/creators?tab=pools', '/brand/campaigns', '/brand/campaigns/new', '/brand/autopilots', '/brand/business', '/brand/business/money', '/brand/business/content', '/brand/business/calendar', '/brand/business/shipping', '/brand/business/team', '/brand/settings', '/brand/reports', '/brand/creator/1', '/brand/settings?s=billing', '/brand/settings?s=brands', '/brand/settings?s=account', '/brand/details']) {
+	for (const path of ['/brand', '/brand/requests', '/brand/creators', '/brand/creators?tab=discover', '/brand/creators?tab=pools', '/brand/campaigns', '/brand/campaigns/new', '/brand/autopilots', '/brand/business', '/brand/business/money', '/brand/business/content', '/brand/business/calendar', '/brand/business/shipping', '/brand/business/team', '/brand/settings', '/brand/reports', '/brand/creator/1', '/brand/settings?s=billing', '/brand/settings?s=brands', '/brand/settings?s=account', '/brand/settings?s=blocked', '/brand/inbox', '/brand/details']) {
 		await page.goto(path);
 		await page.waitForLoadState('networkidle');
 	}

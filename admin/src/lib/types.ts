@@ -51,3 +51,46 @@ export type Brand = {
 	last_collab: string | null;
 	created_at: string | null;
 };
+
+export type Problem = {
+	id: number;
+	source: 'app' | 'server' | 'jobs';
+	message: string;
+	place: string;
+	status: 'open' | 'fixed' | 'ignored';
+	release: string;
+	first_seen: string;
+	last_seen: string;
+	new: boolean;
+	device: string | null;
+	times: number;
+	people: number;
+	/** How many times each of the last 7 days, oldest first. */
+	days: number[];
+};
+export type Problems = { release: string | null; new_today: number; open: number; fixed: number; ignored: number; people: number; visits: number; list: Problem[] };
+export type ProblemDetail = Omit<Problem, 'new' | 'device' | 'people' | 'days'> & {
+	sample: { stack?: string; steps?: string[]; device?: string; place?: string; ref?: string };
+	events: { ref: string; at: string; who: string; device: string; place: string; release: string; note: string }[];
+	notes: { ref: string; at: string; who: string; device: string; note: string }[];
+};
+
+export type SafetyTarget = {
+	key: string;
+	kind: 'brand' | 'creator';
+	name: string;
+	open: boolean;
+	last: string;
+	reports: number;
+	people: number;
+	reason: string;
+	auto_paused: boolean;
+	state: string | null;
+	about: { email?: string; joined?: string; instagram?: boolean; requests_2d?: number; slug?: string } | null;
+	items: { id: string; by: string; side: string; reason: string; details: string; at: string; status: string; outcome: string }[];
+};
+export type Safety = {
+	targets: SafetyTarget[];
+	hits: { kind: string; who: string; n: number; last: string }[];
+	limits: { key: string; new: number; trusted: number | null }[];
+};

@@ -1,6 +1,8 @@
 <script lang="ts">
 	import BrandTeam from '#lib/components/BrandTeam.svelte';
 	import BrandAlerts from '#lib/components/BrandAlerts.svelte';
+	import BrandAccount from '#lib/components/BrandAccount.svelte';
+	import BlockedList from '#lib/components/BlockedList.svelte';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { onMount } from 'svelte';
@@ -26,7 +28,7 @@
 	const company = $derived(acct?.brand?.name || acct?.profile?.name || 'Your brand');
 	const gstin = $derived(acct?.profile?.gstin ?? '');
 
-	type Sec = 'company' | 'billing' | 'team' | 'brands' | 'alerts' | 'account';
+	type Sec = 'company' | 'billing' | 'team' | 'brands' | 'alerts' | 'blocked' | 'account';
 	const sections = $derived<{ id: Sec; label: string; icon: string; sub: string; warn?: string; href?: string }[]>([
 		{
 			id: 'company',
@@ -39,7 +41,8 @@
 		{ id: 'team', label: 'Team & approvals', icon: 'users', sub: 'Colleagues, agencies and approvals' },
 		{ id: 'brands', label: 'Brands you manage', icon: 'layers', sub: (acct?.brands?.length ?? 0) > 1 ? `${acct?.brands.length} brands` : 'For agencies with several brands' },
 		{ id: 'alerts', label: 'Emails & alerts', icon: 'bell', sub: 'Phone alerts, quotes, drafts and invoices' },
-		{ id: 'account', label: 'Sign-in & account', icon: 'gear', sub: 'Email, look, sign out' }
+		{ id: 'blocked', label: 'Blocked', icon: 'ban', sub: 'Creators you blocked' },
+		{ id: 'account', label: 'Sign-in & account', icon: 'gear', sub: 'Your data, sign out, delete' }
 	]);
 
 	let narrow = $state(false);
@@ -101,7 +104,7 @@
 	const GROUPS: { label: string; ids: Sec[] }[] = [
 		{ label: 'Your brand', ids: ['company', 'billing'] },
 		{ label: 'Working together', ids: ['team', 'brands'] },
-		{ label: 'Account', ids: ['alerts', 'account'] }
+		{ label: 'Account', ids: ['alerts', 'blocked', 'account'] }
 	];
 	const byId = (id: Sec) => sections.find((x) => x.id === id)!;
 	onMount(() => {
@@ -343,15 +346,10 @@
 							<p class="hint" style="margin:0 0 10px">Miracle emails <b>{acct?.email}</b> when a creator sends a quote, a draft to approve, or an invoice, and when a post goes live.</p>
 							<p class="hint" style="margin:0">Invoices also go to the accounts email in <a class="lnk" href="?s=billing" onclick={(e) => (e.preventDefault(), open('billing'))}>Billing & GST</a>. Colleagues on your <a class="lnk" href="?s=team" onclick={(e) => (e.preventDefault(), open('team'))}>team</a> get the emails for what they approve.</p>
 						</section>
+					{:else if active === 'blocked'}
+						<BlockedList side="brand" />
 					{:else if active === 'account'}
-						<section class="panel rv" style="--i:1">
-							<div class="panel-h"><h2>Sign-in & account</h2></div>
-							<div class="bs-rows">
-								<div class="bs-row"><span class="bs-plus"><Icon name="mail" /></span><span><b>Signed in as</b><small>{acct?.email}</small></span></div>
-								<button class="bs-row" onclick={toggleTheme}><span class="bs-plus"><Icon name={theme.value === 'dark' ? 'sun' : 'moon'} /></span><span><b>{theme.value === 'dark' ? 'Light look' : 'Dark look'}</b><small>How the app looks on this {phone.on ? 'phone' : 'computer'}</small></span></button>
-								<button class="bs-row bs-bye" onclick={async () => (await signOut(), goto('/login', { replace: true }))}><span class="bs-plus"><Icon name="logout" /></span><span><b>Sign out</b><small>{acct?.email}</small></span></button>
-							</div>
-						</section>
+						<BrandAccount {company} />
 					{/if}
 				</div>
 			{/key}
@@ -644,9 +642,6 @@
 	.bs-plus :global(.ic) {
 		width: 17px;
 		height: 17px;
-	}
-	.bs-bye b {
-		color: var(--bad, #d6453d);
 	}
 	@media (max-width: 760px) {
 		.bs-connect {

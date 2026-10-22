@@ -37,6 +37,8 @@
 	import AppSettings from '#lib/components/AppSettings.svelte';
 	import AutopilotSettings from '#lib/components/AutopilotSettings.svelte';
 	import TeamSettings from '#lib/components/TeamSettings.svelte';
+	import DeleteAccount from '#lib/components/DeleteAccount.svelte';
+	import BlockedList from '#lib/components/BlockedList.svelte';
 	import EmailInbox from '#lib/components/EmailInbox.svelte';
 	import SavedReplies from '#lib/components/SavedReplies.svelte';
 	import ResetData from '#lib/components/ResetData.svelte';
@@ -159,7 +161,7 @@
 
 	// Settings are split into a few sections and only the one she picks is shown.
 	// On phones the menu is its own screen: tap a section, and "All settings" (or Back) returns.
-	type Sec = 'profile' | 'rates' | 'bookings' | 'offers' | 'autopilot' | 'payments' | 'reviews' | 'alerts' | 'team' | 'account';
+	type Sec = 'profile' | 'rates' | 'bookings' | 'offers' | 'autopilot' | 'payments' | 'reviews' | 'alerts' | 'team' | 'blocked' | 'account';
 	const autoOn = $derived([s.autopilot_packages, s.autopilot_counter, s.autopilot_nudge, s.autopilot_brief, s.autopilot_review].filter(Boolean).length);
 	const hasPay = $derived(!!(s.upi_id || s.bank_details));
 	const sections = $derived<{ id: Sec; label: string; icon: string; sub: string; warn?: string }[]>([
@@ -195,6 +197,7 @@
 		{ id: 'reviews', label: 'Results & reviews', icon: 'chart', sub: s.show_results ? 'Shown on your page' : 'Hidden from your page' },
 		{ id: 'alerts', label: 'Inbox, replies & alerts', icon: 'bell', sub: `${(s.saved_replies ?? []).length} saved replies · ${s.digest_enabled ? '9 AM summary on' : '9 AM summary off'}` },
 		{ id: 'team', label: 'Team', icon: 'users', sub: studio.me?.team_role && studio.me.team_role !== 'owner' ? `You are ${studio.me.team_role === 'accountant' ? 'the accountant' : studio.me.team_role === 'assistant' ? 'an assistant' : 'a manager'}` : 'Managers, assistants and an accountant' },
+		{ id: 'blocked', label: 'Blocked', icon: 'ban', sub: 'Brands that can’t send you requests' },
 		{
 			id: 'account',
 			label: 'Sign-in, devices & account',
@@ -222,7 +225,7 @@
 		{ label: 'Your page', ids: ['profile', 'rates', 'reviews'] },
 		{ label: 'Bookings & money', ids: ['bookings', 'offers', 'payments'] },
 		{ label: 'How your desk works', ids: ['autopilot', 'alerts', 'team'] },
-		{ label: 'Account', ids: ['account'] }
+		{ label: 'Account', ids: ['blocked', 'account'] }
 	];
 	const byId = (id: Sec) => sections.find((x) => x.id === id)!;
 	const since = $derived(studio.collabs.reduce((m, c) => (c.received_on && c.received_on < m ? c.received_on : m), '9999').slice(0, 4));
@@ -507,6 +510,9 @@
 							</div>
 						</section>
 						<ResetData />
+						<DeleteAccount />
+					{:else if active === 'blocked'}
+						<BlockedList side="creator" />
 					{/if}
 				</div>
 			{/key}

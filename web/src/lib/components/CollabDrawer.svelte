@@ -89,6 +89,9 @@
 	import InvoiceDialog from './InvoiceDialog.svelte';
 	import PaymentDialog from './PaymentDialog.svelte';
 	import BrandVerified from './BrandVerified.svelte';
+	import ReportDialog from './ReportDialog.svelte';
+	import { portal } from '../portal';
+	import { asksToPay, block } from '../safety.svelte';
 
 	// page: shown as its own full page (/studio/c/CODE) instead of a side drawer.
 	// Full-page jump bar: only for sections this collab actually shows.
@@ -109,6 +112,22 @@
 	};
 	let showAll = $state(false);
 	let scriptOpen = $state(false);
+	// Report or block the brand (the ⋯ menu), and a warning when a new request asks her to pay.
+	let moreOpen = $state(false);
+	let moreAt = $state({ top: 0, right: 0 });
+	function openMore(e: MouseEvent) {
+		const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+		moreAt = { top: r.bottom + 6, right: Math.max(8, innerWidth - r.right) };
+		moreOpen = !moreOpen;
+	}
+	let reportOpen = $state(false);
+	async function blockBrand() {
+		moreOpen = false;
+		if (!c) return;
+		const name = c.brand.name;
+		if (!(await ask({ title: `Block ${name}?`, body: 'They can’t send you requests or messages. An open request moves to Declined. Unblock any time in Settings › Blocked.', ok: 'Block', danger: true }))) return;
+		if (await block({ brand_id: c.brand_id }, name)) await reloadCollabs();
+	}
 	// Decline, with an optional note the brand sees in the email and on their request page.
 	async function declineIt() {
 		if (!c) return;
@@ -168,6 +187,7 @@
 		tick().then(() => (present = JUMPS.map(([id]) => id).filter((id) => document.getElementById(id)?.offsetParent)));
 	});
 	const c = $derived(byId(ui.openCollab));
+	const scam = $derived(!!c && ['request', 'negotiating'].includes(c.stage) && asksToPay(c.brief, JSON.stringify(c.brief_details ?? {}), c.note_for_brand));
 	// Phones: short stage names so the six labels fit side by side.
 	const SHORT_STAGE: Record<string, string> = { request: 'New', negotiating: 'Talks', confirmed: 'Agreed', creating: 'Creating', live: 'Live', wrapped: 'Done' };
 	const clashList = $derived(c ? clashes(c, studio.collabs, studio.settings?.competitor_window_days ?? 14, studio.notes) : []);
@@ -384,10 +404,18 @@
 				<div class="dr-sub"><span class="id">{c.code}</span> · {TYPE_LABEL[c.type]} · received {fmt(c.received_on)}{#if c.referred_by && studio.brands.find((b) => b.id === c.referred_by)} · <span class="ref-by"><Icon name="users" />Referred by {studio.brands.find((b) => b.id === c.referred_by)?.name}</span>{/if}</div>
 				<BrandVerified brandId={c.brand_id} />
 			</div>
+			<button class="icon-btn dr-more-btn" onclick={openMore} aria-label="More" aria-expanded={moreOpen}><Icon name="more" /></button>
 			<button class="icon-btn" onclick={close} aria-label={page ? 'Back' : 'Close'} bind:this={closeBtn}><Icon name={page ? 'back' : 'x'} /></button>
 		</header>
 
 		<div class="dr-b">
+			{#if scam}
+				<div class="dr-scam" role="alert">
+					<Icon name="alert" />
+					<span><b>This brand is asking you to pay</b><small>Real brands never ask creators for a fee to get work. Don't pay. Report them so we can check.</small></span>
+					<button class="btn sm" onclick={() => (reportOpen = true)}>Report</button>
+				</div>
+			{/if}
 			{#if page}
 				<!-- Full page: jump straight to a part of the collab. -->
 				<nav class="cx-nav" aria-label="Jump to">
@@ -867,6 +895,14 @@
 </aside>
 
 {#if c && scriptOpen}<ScriptSheet {c} onclose={() => (scriptOpen = false)} />{/if}
+{#if c && moreOpen}
+	<div class="more-scrim" role="presentation" use:portal onclick={() => (moreOpen = false)}></div>
+	<div class="more-menu" role="menu" use:portal style="top:{moreAt.top}px;right:{moreAt.right}px">
+		<button role="menuitem" onclick={() => ((moreOpen = false), (reportOpen = true))}><Icon name="flag" />Report {c.brand.name}</button>
+		<button role="menuitem" onclick={blockBrand}><Icon name="ban" />Block {c.brand.name}</button>
+	</div>
+{/if}
+{#if c && reportOpen}<ReportDialog side="creator" name={c.brand.name} target={{ collab_id: c.id }} onclose={() => (reportOpen = false)} ondone={(b) => b && reloadCollabs()} />{/if}
 {#if c && quoteOpen}
 	<QuoteDialog {c} base={quoteOpen.base} editing={quoteOpen.editing} onclose={() => (quoteOpen = null)} />
 {/if}

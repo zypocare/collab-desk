@@ -1,16 +1,21 @@
 <script lang="ts">
 	import { page } from '$app/state';
+	import ProblemScreen from '#lib/components/ProblemScreen.svelte';
 
-	// Public pages: a friendly "not found" instead of a bare 404.
+	// Public pages: a friendly "not found", or the "Something broke" screen with its reference.
 	const missing = $derived(page.status === 404);
 </script>
 
 <svelte:head><title>{missing ? 'Page not found' : 'Something went wrong'} · Miracle</title></svelte:head>
 
-<main class="auth-wrap">
-	<div class="auth-card">
-		<h1>{missing ? 'This page doesn’t exist' : 'Something went wrong'}</h1>
-		<p class="lead">{missing ? 'The link may be old or mistyped.' : 'Try again in a moment.'}</p>
-		<a class="btn primary" href="/">Go to the home page</a>
-	</div>
-</main>
+{#if missing}
+	<main class="auth-wrap">
+		<div class="auth-card">
+			<h1>This page doesn’t exist</h1>
+			<p class="lead">The link may be old or mistyped.</p>
+			<a class="btn primary" href="/">Go to the home page</a>
+		</div>
+	</main>
+{:else}
+	<ProblemScreen ref={page.error?.ref} full home="/" homeLabel="Go to the home page" />
+{/if}

@@ -339,9 +339,20 @@ export function errMessage(e: unknown): string {
 	// No connection: say so plainly instead of "TypeError: Failed to fetch".
 	if (typeof navigator !== 'undefined' && (!navigator.onLine || /failed to fetch|networkerror|load failed/i.test(String((e as { message?: unknown })?.message ?? ''))))
 		return "You're offline. Try again when you're connected.";
-	if (typeof e === 'object' && e && 'message' in e) return String((e as { message: unknown }).message);
+	if (typeof e === 'object' && e && 'message' in e) {
+		// A spam limit (LIMIT:key:text): the person sees the text, the Safety tab hears it was hit.
+		const m = String((e as { message: unknown }).message);
+		const lim = /^LIMIT:([a-z_]+):/.exec(m);
+		if (lim) {
+			limitHook?.(lim[1]);
+			return m.slice(lim[0].length);
+		}
+		return m;
+	}
 	return 'Something went wrong.';
 }
+let limitHook: ((key: string) => void) | null = null;
+export const onLimit = (f: (key: string) => void) => (limitHook = f);
 
 // ---- quotes ----
 export const latestQuote = (c: { quotes?: Quote[] }) => [...(c.quotes ?? [])].sort((a, b) => b.version - a.version)[0];

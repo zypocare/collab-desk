@@ -27,7 +27,7 @@ export async function initAuth() {
 }
 
 export async function refreshAccount() {
-	const { data, error } = await supabase.rpc('my_account');
+	const [{ data, error }, closing] = await Promise.all([supabase.rpc('my_account'), supabase.rpc('account_closing')]);
 	const uid = auth.session?.user.id ?? '';
 	if (error) {
 		// Offline: who this is was saved last time.
@@ -46,7 +46,7 @@ export async function refreshAccount() {
 		auth.account = null;
 		return null;
 	}
-	auth.account = data as Account | null;
+	auth.account = data ? ({ ...(data as Account), closing: (closing.data as Account['closing']) ?? null } as Account) : null;
 	// A phone that still has a studio's alerts from an earlier sign-in: stop them for anyone who isn't a creator.
 	if (auth.account?.role === 'brand') keepOnlyBrandPush();
 	else if (auth.account && auth.account.role !== 'creator') dropPush(false);

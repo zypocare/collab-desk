@@ -2,22 +2,26 @@
 	import Logo from './Logo.svelte';
 	import { onMount } from 'svelte';
 	import { errMessage, supabase } from './supabase.ts';
-	import type { Creator, Overview, Status } from './types.ts';
+	import type { Creator, Overview, Problems, Safety, Status } from './types.ts';
 	import { ask, toast } from './ui.svelte.ts';
 	import Icon from './Icon.svelte';
 	import OverviewTab from './OverviewTab.svelte';
 	import RequestsTab from './RequestsTab.svelte';
 	import CreatorsTab from './CreatorsTab.svelte';
 	import BrandsTab from './BrandsTab.svelte';
+	import ProblemsTab from './ProblemsTab.svelte';
+	import SafetyTab from './SafetyTab.svelte';
 
 	let { email, onsignout }: { email: string; onsignout: () => void } = $props();
 
-	type Tab = 'overview' | 'requests' | 'creators' | 'brands';
+	type Tab = 'overview' | 'requests' | 'creators' | 'brands' | 'problems' | 'safety';
 	const TABS: { id: Tab; label: string; icon: string }[] = [
 		{ id: 'overview', label: 'Overview', icon: 'chart' },
 		{ id: 'requests', label: 'Requests', icon: 'inbox' },
 		{ id: 'creators', label: 'Creators', icon: 'users' },
-		{ id: 'brands', label: 'Brands', icon: 'board' }
+		{ id: 'brands', label: 'Brands', icon: 'board' },
+		{ id: 'problems', label: 'Problems', icon: 'alert' },
+		{ id: 'safety', label: 'Safety', icon: 'shield' }
 	];
 	const fromHash = (): Tab => (TABS.find((t) => '#' + t.id === location.hash)?.id ?? 'overview');
 	let tab = $state<Tab>(fromHash());
@@ -27,11 +31,21 @@
 	}
 
 	let overview = $state<Overview | null>(null);
+	// Badges: new problems today, and accounts with open reports.
+	let newProblems = $state(0);
+	let openReports = $state(0);
+	async function loadBadges() {
+		const [p, s] = await Promise.all([supabase.rpc('admin_problems'), supabase.rpc('admin_safety')]);
+		if (!p.error) newProblems = (p.data as Problems).new_today;
+		if (!s.error) openReports = (s.data as Safety).targets.filter((t) => t.open).length;
+	}
 	let creators = $state<Creator[] | null>(null);
 	let loadErr = $state('');
 	let refreshing = $state(false);
 
+	let refreshKey = $state(0);
 	async function load() {
+		refreshKey++;
 		refreshing = true;
 		const [o, c] = await Promise.all([supabase.rpc('admin_overview'), supabase.rpc('admin_creators')]);
 		refreshing = false;
@@ -41,6 +55,7 @@
 	}
 	onMount(() => {
 		load();
+		loadBadges();
 		const onHash = () => (tab = fromHash());
 		addEventListener('hashchange', onHash);
 		return () => removeEventListener('hashchange', onHash);
@@ -90,12 +105,14 @@
 				<button class="tab" aria-current={tab === t.id ? 'page' : undefined} onclick={() => go(t.id)}>
 					<Icon name={t.icon} /><span>{t.label}</span>
 					{#if t.id === 'requests' && pending}<i class="badge" aria-label="{pending} waiting">{pending}</i>{/if}
+					{#if t.id === 'problems' && newProblems}<i class="badge" aria-label="{newProblems} new">{newProblems} new</i>{/if}
+					{#if t.id === 'safety' && openReports}<i class="badge warn" aria-label="{openReports} to look at">{openReports}</i>{/if}
 				</button>
 			{/each}
 		</nav>
 		<div class="me">
 			<span class="who" title={email}>{email}</span>
-			<button class="neo dark sm" onclick={onsignout} aria-label="Sign out"><Icon name="logout" /><span class="so">Sign out</span></button>
+			<button class="neo dark sm" onclick={onsignout} aria-label="Sign out" title={email}><Icon name="logout" /><span class="so">Sign out</span></button>
 		</div>
 	</div>
 </header>
@@ -108,6 +125,8 @@
 				{#if tab === 'overview'}How Miracle is <em class="gt">doing</em>
 				{:else if tab === 'requests'}Waiting for <em class="gt">you</em>
 				{:else if tab === 'creators'}Every <em class="gt">creator</em>
+				{:else if tab === 'problems'}What <em class="gt">broke</em>
+				{:else if tab === 'safety'}Keeping it <em class="gt">safe</em>
 				{:else}Every <em class="gt">brand</em>{/if}
 			</h1>
 		</div>
@@ -122,6 +141,10 @@
 		<RequestsTab {creators} {busyId} onset={setStatus} />
 	{:else if tab === 'creators'}
 		<CreatorsTab {creators} {busyId} onset={setStatus} />
+	{:else if tab === 'problems'}
+		{#key refreshKey}<ProblemsTab onload={(p) => (newProblems = p.new_today)} />{/key}
+	{:else if tab === 'safety'}
+		{#key refreshKey}<SafetyTab onload={(s) => (openReports = s.targets.filter((t) => t.open).length)} />{/key}
 	{:else}
 		<BrandsTab />
 	{/if}
@@ -138,6 +161,7 @@
 	.tab:hover { color: var(--ink); }
 	.tab[aria-current='page'] { color: var(--ink); background: var(--surface); border-color: var(--line-strong); box-shadow: 3px 3px 0 var(--g2); }
 	.tab :global(.ic) { width: 17px; height: 17px; }
+	.badge.warn { background: var(--warn); }
 	.badge { min-width: 20px; height: 20px; padding: 0 6px; display: inline-grid; place-items: center; border-radius: 999px; background: var(--bad); color: #1c0912; font: 800 11.5px var(--f-body); font-style: normal; }
 	.me { display: flex; align-items: center; gap: 12px; min-width: 0; flex: none; }
 	.who { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13.5px; color: var(--ink-3); }
@@ -148,6 +172,8 @@
 	.ph h1 { font-family: var(--f-serif); font-weight: 400; font-size: clamp(38px, 4.6vw, 56px); line-height: 1.02; letter-spacing: -.01em; }
 	.err-box { padding: 14px 16px; margin-bottom: 18px; border: 1px solid color-mix(in oklab, var(--bad) 40%, var(--line)); background: color-mix(in oklab, var(--bad) 8%, var(--surface)); color: color-mix(in oklab, var(--bad) 80%, var(--ink)); }
 
+	/* Six tabs: the signed-in email makes room below wide screens (it's on the Sign out button's title). */
+	@media (max-width: 1500px) { .who { display: none; } }
 	/* Phone: the tabs move under the top line and scroll sideways. */
 	@media (max-width: 760px) {
 		.bar-in { flex-wrap: wrap; gap: 10px 12px; padding-block: 10px 0; }

@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import { auth } from '../auth.svelte';
 	import { discover, loadDiscover } from '../brand.svelte';
+	import { blockedCreators, blocks, loadBlocks } from '../safety.svelte';
 	import { addressFor } from '../creatorHost';
 	import { audienceLine, fit, NO_FILTERS, passes, reelRate, type FitFilters } from '../fit';
 	import { phone } from '../phone.svelte';
@@ -22,6 +23,7 @@
 	const at = (slug: string, path: string) => (slug === pageSlug ? path : addressFor(slug, path));
 	onMount(() => {
 		if (!discover.loaded) loadDiscover();
+		if (!blocks.loaded) loadBlocks();
 	});
 
 	const NICHES = ['Beauty', 'Skincare', 'Fashion', 'Food', 'Travel', 'Fitness', 'Wellness', 'Lifestyle', 'Tech', 'Parenting'];
@@ -45,8 +47,9 @@
 
 	const shown = $derived.by(() => {
 		const words = q.trim().toLowerCase();
+		const blocked = blockedCreators();
 		return discover.list
-			.filter((c) => c.listed || c.with_me.collabs)
+			.filter((c) => (c.listed || c.with_me.collabs) && !blocked.has(c.id))
 			.filter((c) => !words || [c.name, c.niche, c.city, c.handle].join(' ').toLowerCase().includes(words))
 			.filter((c) => passes(c, f))
 			.map((c) => ({ c, fit: fit(c, f, category), rate: reelRate(c) }))

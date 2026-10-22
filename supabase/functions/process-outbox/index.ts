@@ -6,6 +6,7 @@ import { mailConfigured, sendMail } from '../_shared/mailer.ts';
 import { render, type Settings as MailSettings } from '../_shared/templates.ts';
 import { pushFor, pushForBrand, pushToBrandUser, pushToCreator } from '../_shared/push.ts';
 import { settingsOf, teamCopies, type Settings } from '../_shared/creators.ts';
+import { reportProblem } from '../_shared/problems.ts';
 
 // Alerts only: a brand opening her insights link.
 const PUSH_ONLY = new Set(['insights_viewed', 'ig_dm', 'ig_collab', 'month_summary']);
@@ -37,7 +38,8 @@ Deno.serve(async (req) => {
   let sent = 0, failed = 0, skipped = 0;
   for (const row of rows ?? []) {
     if (row.status === 'skipped') { skipped++; continue; }
-    const creator = await creatorOf(Number(row.creator_id));
+    // From Miracle itself (account, safety and admin mails): no creator, replies reach Miracle's admin.
+    const creator = row.creator_id == null ? await appSender(supabase) : await creatorOf(Number(row.creator_id));
     if (!creator) {
       console.error(`[outbox] #${row.id}: no creator ${row.creator_id}`);
       await supabase.from('outbox').update({ status: row.attempts >= 5 ? 'failed' : 'pending', last_error: 'Creator not found' }).eq('id', row.id);
@@ -128,13 +130,14 @@ Deno.serve(async (req) => {
         to: row.to_email,
         cc: toOwner && row.kind !== 'new_device' ? teamCc : undefined,
         ...mail,
-        ...(toOwner || !ownerEmail || FROM_APP.has(row.kind) ? {} : { replyTo: ownerEmail }),
+        ...(row.creator_id == null ? (creator.replyTo ? { replyTo: creator.replyTo } : {}) : toOwner || !ownerEmail || FROM_APP.has(row.kind) ? {} : { replyTo: ownerEmail }),
       });
       await supabase.from('outbox').update({ status: 'sent', sent_at: new Date().toISOString(), last_error: null }).eq('id', row.id);
       sent++;
     } catch (e) {
       const message = e instanceof Error ? e.message : String(e);
       console.error(`[outbox] #${row.id} failed: ${message}`);
+      await reportProblem(supabase, 'jobs', `process-outbox: ${message}`, row.kind);
       await supabase
         .from('outbox')
         .update({ status: row.attempts >= 5 ? 'failed' : 'pending', last_error: message.slice(0, 500) })
@@ -165,7 +168,19 @@ async function pushBrand(db: SupabaseClient, kind: string, payload: Record<strin
   await pushToBrandUser(db, target.user_id, alert.msg);
 }
 
-type Creator = { settings: Settings & MailSettings; ownerEmail: string; teamCc: string[] };
+type Creator = { settings: Settings & MailSettings; ownerEmail: string; teamCc: string[]; replyTo?: string };
+
+/** Mails from Miracle itself: the app's name and address, replies to its first admin. */
+let app: Promise<Creator> | null = null;
+function appSender(db: SupabaseClient): Promise<Creator> {
+  app ??= (async () => {
+    const { data } = await db.from('app_admins').select('email').order('added_at').limit(1).maybeSingle();
+    const site = Deno.env.get('APP_URL') ?? 'https://app.miracleapp.live';
+    const settings = { id: 0, slug: '', app_name: 'Miracle', display_name: 'Miracle', creator_email: '', site_url: site, reply_time: '' } as Settings & MailSettings;
+    return { settings, ownerEmail: '', teamCc: [], replyTo: (data as { email?: string } | null)?.email ?? '' };
+  })();
+  return app;
+}
 
 /** A creator's settings, her own email, and the team members who get copies of what is sent to her. */
 async function loadCreator(db: SupabaseClient, id: number): Promise<Creator | null> {

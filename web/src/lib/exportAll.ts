@@ -21,7 +21,7 @@ function crc32(b: Uint8Array) {
 	for (let i = 0; i < b.length; i++) c = CRC[(c ^ b[i]) & 0xff] ^ (c >>> 8);
 	return (c ^ 0xffffffff) >>> 0;
 }
-export function zip(files: { name: string; text: string }[]): Blob {
+export function zip(files: { name: string; text?: string; data?: Uint8Array }[]): Blob {
 	const enc = new TextEncoder();
 	const parts: Uint8Array[] = [];
 	const central: Uint8Array[] = [];
@@ -31,7 +31,7 @@ export function zip(files: { name: string; text: string }[]): Blob {
 	const date = ((now.getFullYear() - 1980) << 9) | ((now.getMonth() + 1) << 5) | now.getDate();
 	for (const f of files) {
 		const name = enc.encode(f.name);
-		const data = enc.encode(f.text);
+		const data = f.data ?? enc.encode(f.text ?? '');
 		const crc = crc32(data);
 		const local = new DataView(new ArrayBuffer(30));
 		local.setUint32(0, 0x04034b50, true);

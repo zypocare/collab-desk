@@ -16,6 +16,8 @@
 	import Donut from '#lib/components/charts/Donut.svelte';
 	import HBars from '#lib/components/charts/HBars.svelte';
 	import Gauge from '#lib/components/charts/Gauge.svelte';
+	import ReportMenu from '#lib/components/ReportMenu.svelte';
+	import { goto } from '$app/navigation';
 
 	// One creator, from the brand's side: how well they fit, who their audience is, what they did with
 	// you, your team's private rating, and creators like them. Laid out with the app's dashboard cards.
@@ -99,6 +101,7 @@
 			<AddToPool creator={c.id} name={c.name} />
 			<a class="btn" href={at(c.slug, '/')} target="_blank" rel="noopener"><Icon name="eye" />Their page</a>
 			{#if c.accepting !== false}<a class="btn grad" href={at(c.slug, '/brand/new')}><Icon name="send" />Send a request</a>{/if}
+			<ReportMenu name={c.name} target={{ creator_id: c.id }} onblocked={() => goto('/brand/creators?tab=discover')} />
 		</div>
 	</header>
 
