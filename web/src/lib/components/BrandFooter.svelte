@@ -14,7 +14,7 @@
 
 	async function logout() {
 		await signOut();
-		goto('/', { replaceState: true });
+		goto('/login', { replaceState: true });
 	}
 </script>
 

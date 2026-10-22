@@ -59,7 +59,8 @@
 
 	async function logout() {
 		await signOut();
-		goto('/', { replaceState: true });
+		// Like the studio: signing out lands on the sign-in screen, never on the creator's public page.
+		goto('/login', { replaceState: true });
 	}
 
 	// ---------- Phones: an app bar with the screen's title, Back on screens opened from a tab ----------

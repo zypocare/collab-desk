@@ -204,7 +204,7 @@
 				<a href="/brand/business/money"><small>Paid this month</small><b>{inr(d?.spent_month ?? 0)}</b><span>See payments →</span></a>
 				<a href="/brand/creators"><small>Collabs done</small><b>{doneN}</b><span>See creators →</span></a>
 			</div>
-			<button class="cs-logout" onclick={async () => (await signOut(), goto('/', { replace: true }))}><Icon name="logout" /><span>Log out</span><small>{acct?.email ?? ''}</small></button>
+			<button class="cs-logout" onclick={async () => (await signOut(), goto('/login', { replace: true }))}><Icon name="logout" /><span>Log out</span><small>{acct?.email ?? ''}</small></button>
 			<footer class="cs-foot">
 				<Logo size={26} />
 				<b>Miracle</b>
@@ -344,7 +344,7 @@
 							<div class="bs-rows">
 								<div class="bs-row"><span class="bs-plus"><Icon name="mail" /></span><span><b>Signed in as</b><small>{acct?.email}</small></span></div>
 								<button class="bs-row" onclick={toggleTheme}><span class="bs-plus"><Icon name={theme.value === 'dark' ? 'sun' : 'moon'} /></span><span><b>{theme.value === 'dark' ? 'Light look' : 'Dark look'}</b><small>How the app looks on this {phone.on ? 'phone' : 'computer'}</small></span></button>
-								<button class="bs-row bs-bye" onclick={async () => (await signOut(), goto('/', { replace: true }))}><span class="bs-plus"><Icon name="logout" /></span><span><b>Sign out</b><small>{acct?.email}</small></span></button>
+								<button class="bs-row bs-bye" onclick={async () => (await signOut(), goto('/login', { replace: true }))}><span class="bs-plus"><Icon name="logout" /></span><span><b>Sign out</b><small>{acct?.email}</small></span></button>
 							</div>
 						</section>
 					{/if}
