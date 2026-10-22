@@ -1,15 +1,17 @@
 <script lang="ts">
 	import { portal } from '../portal';
 	import { onMount, untrack } from 'svelte';
-	import { saveQuote, studio } from '../studio.svelte';
+	import { WAIT_LINE, saveQuote, studio } from '../studio.svelte';
 	import type { Collab, Quote, QuoteItem } from '../types';
-	import { KINDS, USAGE, inr, usageOption, payTerms, plural, quoteTotal, rel } from '../util';
+	import { KINDS, USAGE, fmt, inr, iso, parse, usageOption, payTerms, plural, quoteTotal, rel } from '../util';
 	import Icon from './Icon.svelte';
 	import { quoteOptions, suggestTerms, usageFee as usageFeeFor, type QuoteOption } from '../suggest';
 	import Select from './Select.svelte';
 	import { CURRENCIES, fromInr, money, rateToday, signOf, type Currency } from '../currency';
 
-	let { c, base, editing = false, onclose }: { c: Collab; base?: Quote; editing?: boolean; onclose: () => void } = $props();
+	// preset: terms to start from (an offer check's asks, or "Quote with 50% advance" for a new brand).
+	type Preset = Partial<{ advance_pct: number | null; pay_days: number | null; usage: string | null; exclusivity_days: number | null; revision_rounds: number | null; wait_advance: boolean }>;
+	let { c, base, editing = false, preset, onclose }: { c: Collab; base?: Quote; editing?: boolean; preset?: Preset; onclose: () => void } = $props();
 
 	const rates = studio.settings?.rates ?? {};
 	// The form starts from a copy of the previous version (or the deliverables priced with her rate card).
@@ -21,17 +23,19 @@
 	);
 	// Suggestions (new quotes only): three ready options and the terms she usually agrees with this brand.
 	const options = start.base ? [] : quoteOptions(start.c, studio.settings!, studio.packages);
-	const terms = suggestTerms(start.c, studio.collabs);
+	const terms = suggestTerms(start.c, studio.collabs, studio.settings);
+	const pre = untrack(() => preset ?? {});
 	let picked = $state<QuoteOption['key'] | ''>('');
 	let cur = $state<Currency>(((start.base?.currency ?? start.c.brand.currency) || 'INR') as Currency);
 	let fx = $state(start.base?.inr_rate ?? 1);
-	let usage = $state(start.base?.usage ?? start.c.usage ?? 'Organic only');
+	let usage = $state(pre.usage ?? start.base?.usage ?? start.c.usage ?? 'Organic only');
 	let usageFee = $state(start.base?.usage_fee ?? 0);
 	let discount = $state(start.base?.discount ?? 0);
-	let advance = $state(start.base?.advance_pct ?? terms.advance_pct);
-	let payDays = $state(start.base?.pay_days ?? terms.pay_days);
-	let rounds = $state(start.base?.revision_rounds ?? terms.revision_rounds);
-	let exclusivity = $state(start.base?.exclusivity_days ?? terms.exclusivity_days);
+	let advance = $state(pre.advance_pct ?? start.base?.advance_pct ?? terms.advance_pct);
+	let payDays = $state(pre.pay_days ?? start.base?.pay_days ?? terms.pay_days);
+	let rounds = $state(pre.revision_rounds ?? start.base?.revision_rounds ?? terms.revision_rounds);
+	let exclusivity = $state(pre.exclusivity_days ?? start.base?.exclusivity_days ?? terms.exclusivity_days);
+	let waitAdvance = $state(pre.wait_advance ?? start.base?.wait_advance ?? studio.settings?.terms_wait_advance ?? false);
 
 	// A returning brand (from her "Book again" offer): their % comes off every option.
 	const loyaltyPct = untrack(() => start.c.loyalty_pct ?? 0);
@@ -47,7 +51,11 @@
 	}
 	// Start from the option that fits best: the brand's budget if they gave one, else the rate card.
 	const first0 = options.find((o) => o.key === 'budget') ?? options.find((o) => o.key === 'rate');
-	if (first0) untrack(() => pick(first0));
+	if (first0)
+		untrack(() => {
+			pick(first0);
+			if (pre.usage) usage = pre.usage;
+		});
 	let validDays = $state(14);
 	// Let the brand choose: they see the ready options side by side (the middle one marked most
 	// popular) and pick one; the quote becomes that option when they accept.
@@ -68,7 +76,7 @@
 			};
 		})
 	);
-	let notes = $state(start.base?.notes ?? '');
+	let notes = $state((start.base?.notes ?? '').replace(WAIT_LINE, '').trim());
 	let busy = $state(false);
 	let first = $state<HTMLElement>();
 
@@ -106,6 +114,24 @@
 		discount = fromInr(discount * old, n);
 	}
 	const total = $derived(quoteTotal(items, usageFee, discount));
+	// What the brand pays and when, with GST when she charges it (Indian brands).
+	const gstK = $derived(studio.settings?.gst_registered && !foreign ? 1 + (studio.settings?.gst_rate || 18) / 100 : 1);
+	const advAmt = $derived(Math.round(((total * Math.min(100, advance)) / 100) * gstK));
+	const restAmt = $derived(Math.round(total * gstK) - advAmt);
+	const golive = $derived(c.live_date ?? c.preferred_live ?? null);
+	const restBy = $derived.by(() => {
+		if (!golive) return '';
+		const d = parse(golive);
+		d.setDate(d.getDate() + (Number(payDays) || 0));
+		return iso(d);
+	});
+	const share = $derived(advance === 50 ? 'half' : `${advance}%`);
+	const ADV = [
+		{ v: 0, l: 'None' },
+		{ v: 30, l: '30%' },
+		{ v: 50, l: '50%' },
+		{ v: 100, l: 'All' }
+	];
 	const itemsSubtotal = $derived(items.reduce((a, i) => a + i.qty * i.rate, 0));
 	const brandBudget = $derived(c.fee);
 	onMount(() => first?.querySelector('input')?.focus());
@@ -130,6 +156,7 @@
 				pay_days: Number(payDays) || 0,
 				revision_rounds: Number(rounds) || 0,
 				exclusivity_days: Number(exclusivity) || 0,
+				wait_advance: waitAdvance && Number(advance) > 0,
 				valid_until: validDays > 0 ? rel(validDays) : null,
 				notes,
 				currency: cur,
@@ -193,15 +220,6 @@
 			<div class="f"><label for="q-ufee">Usage fee</label><div class="pre"><span>{sign}</span><input class="inp num" id="q-ufee" type="number" min="0" bind:value={usageFee} /></div></div>
 			<div class="f"><label for="q-disc">Discount</label><div class="pre"><span>{sign}</span><input class="inp num" id="q-disc" type="number" min="0" bind:value={discount} /></div></div>
 			<div class="f">
-				<label for="q-adv">Advance</label>
-				<Select id="q-adv" bind:value={advance} options={[{ value: 0, label: 'No advance' }, { value: 30, label: '30% advance' }, { value: 50, label: '50% advance' }, { value: 100, label: '100% upfront' }]} />
-				{#if !base && advance === terms.advance_pct}<small class="hint sug-why">{terms.why}</small>{/if}
-			</div>
-			<div class="f">
-				<label for="q-days">Balance due</label>
-				<Select id="q-days" bind:value={payDays} disabled={advance >= 100} options={[0, 7, 15, 30, 45].map((d) => ({ value: d, label: d ? `${d} days after going live` : 'On the day it goes live' }))} />
-			</div>
-			<div class="f">
 				<label for="q-rounds">Draft revisions included</label>
 				<Select id="q-rounds" bind:value={rounds} options={[0, 1, 2, 3].map((r) => ({ value: r, label: r === 0 ? 'None' : `${r} round${r > 1 ? 's' : ''}` }))} />
 			</div>
@@ -216,9 +234,45 @@
 			<div class="f span2"><label for="q-notes">Notes for the brand <span class="hint">(optional)</span></label><textarea class="inp" id="q-notes" rows="2" placeholder="e.g. Raw footage not included. One reshoot if the product changes." bind:value={notes}></textarea></div>
 		</div>
 
+		<section class="q-pay" aria-labelledby="q-pay-t">
+			<span class="lbl-t" id="q-pay-t">How they pay</span>
+			<div class="q-pay-g">
+				<small>Before the shoot</small>
+				<div class="q-seg" role="radiogroup" aria-label="Advance">
+					{#each ADV as a (a.v)}<button type="button" role="radio" aria-checked={advance === a.v} class:on={advance === a.v} onclick={() => (advance = a.v)}>{a.l}</button>{/each}
+				</div>
+				{#if !base && preset?.advance_pct == null && advance === terms.advance_pct}<small class="hint sug-why">{terms.why}</small>{/if}
+			</div>
+			{#if advance < 100}
+				<div class="q-pay-g">
+					<label for="q-days">{advance > 0 ? 'The rest' : 'When they pay'}</label>
+					<Select id="q-days" bind:value={payDays} options={[0, 7, 15, 30, 45, 60].map((d) => ({ value: d, label: d ? `Within ${d} days of going live` : 'On the day it goes live' }))} />
+				</div>
+			{/if}
+			{#if advance > 0}
+				<div class="switch-row q-wait">
+					<div><b>Don't start until the advance arrives</b><small>The shoot date waits; {c.brand.name} sees why</small></div>
+					<input type="checkbox" class="tgl" bind:checked={waitAdvance} aria-label="Don't start until the advance arrives" />
+				</div>
+			{/if}
+			{#if total > 0}
+				<div class="q-pay-sum">
+					{#if advance >= 100}
+						<span>{c.brand.name} pays <b>{money(advAmt, cur)}</b> before the shoot{gstK > 1 ? ', with GST' : ''}.</span>
+					{:else if advance > 0}
+						<span>{c.brand.name} pays <b>{money(advAmt, cur)}</b> before the shoot ({share}{gstK > 1 ? ', with GST' : ''})</span>
+						<span>and <b>{money(restAmt, cur)}</b> {restBy ? `by ${fmt(restBy)}, if it goes live on ${fmt(golive)}` : `within ${payDays} days of going live`}.</span>
+					{:else}
+						<span>{c.brand.name} pays <b>{money(restAmt, cur)}</b>{gstK > 1 ? ' with GST' : ''} {restBy ? `by ${fmt(restBy)}, if it goes live on ${fmt(golive)}` : payDays ? `within ${payDays} days of going live` : 'on the day it goes live'}.</span>
+					{/if}
+				</div>
+			{/if}
+			<small class="hint">These become part of the agreement {c.brand.name} accepts. Your usual terms are in <a href="/studio/settings?s=payments">Settings › Invoices &amp; payments</a>.</small>
+		</section>
+
 		<div class="q-total">
 			<div><span class="lbl">Total</span><b class="num">{money(total, cur)}</b>{#if foreign}<small> ≈ {inr(total * fx)}</small>{/if}</div>
-			<small>{payTerms({ advance_pct: advance, pay_days: payDays })}{exclusivity ? ` · ${exclusivity} days exclusivity` : ''}</small>
+			<small>{payTerms({ advance_pct: advance, pay_days: payDays })}{waitAdvance && advance > 0 ? ' · work starts once it arrives' : ''}{exclusivity ? ` · ${exclusivity} days exclusivity` : ''}</small>
 		</div>
 		{#if !c.contact_email}<p class="err">Add the brand's email in the panel first, so they can receive and accept the quote.</p>{/if}
 

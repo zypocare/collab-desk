@@ -54,6 +54,8 @@ export type Quote = {
 	pay_days: number;
 	revision_rounds: number;
 	exclusivity_days: number;
+	/** Work doesn't start until the advance arrives. */
+	wait_advance?: boolean;
 	valid_until: string | null;
 	notes: string;
 	status: QuoteStatus;
@@ -367,6 +369,12 @@ export type Settings = {
 	ship_phone: string;
 	draft_days_after_product: number;
 	usage_ext_pct: number;
+	/** Her usual payment terms for new quotes (Settings › Invoices & payments). */
+	terms_advance_pct?: number;
+	terms_pay_days?: number;
+	terms_wait_advance?: boolean;
+	/** Udyam (MSME) registration: late buyers then owe interest after 45 days. */
+	udyam_no?: string;
 	weekly_capacity: number;
 	/** For the "Should I take it?" report: home area (travel time only, never shown to brands). */
 	home_area: string;
@@ -700,6 +708,8 @@ export type DiscoverCreator = BrandCreator & {
 	rates: Record<string, number> | null;
 	with_me: { collabs: number; wrapped: number; fees: number; views: number };
 	rating: CreatorRating | null;
+	/** Her record on Miracle: paid deals, posts on time, how fast she answers. */
+	trust?: { deals: number; posted: number; on_time: number; reply_hours: number | null } | null;
 };
 /** The brand's private rating of a creator (creators never see it). */
 export type CreatorRating = { on_time: number; quality: number; results: number; note: string; updated_at: string };

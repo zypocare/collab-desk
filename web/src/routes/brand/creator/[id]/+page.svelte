@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { creatorChips } from '#lib/trust.svelte.ts';
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
 	import { auth } from '#lib/auth.svelte.ts';
@@ -65,6 +66,7 @@
 			saving = false;
 		}
 	}
+	let explain = $state(false);
 	const ROWS = [
 		{ key: 'onTime', label: 'On time' },
 		{ key: 'quality', label: 'Quality' },
@@ -95,6 +97,10 @@
 				<div class="eb">{[c.niche?.split(',')[0]?.trim(), c.city, c.handle ? `@${c.handle.replace(/^@+/, '')}` : ''].filter(Boolean).join(' · ')}</div>
 				<h1>{c.name}</h1>
 				<p>{c.followers != null ? `${compact(c.followers)} followers` : 'Instagram not linked'}{c.engagement != null ? ` · ${Number(c.engagement).toFixed(2)}% engagement` : ''}{rate ? ` · Reels from ${inrS(rate)}` : ''}</p>
+				<div class="cp-trust">{#each creatorChips(c.trust) as ch (ch.text)}<span class="cp-chip {ch.tone}">{ch.text}</span>{/each}<button class="lnk hint" onclick={() => (explain = !explain)} aria-expanded={explain}>What these mean</button></div>
+				{#if explain}
+					<p class="hint cp-explain"><b>Verified deals:</b> collabs done through Miracle and paid in full against a Miracle invoice. <b>On time:</b> the post went live on or before the agreed date, by Instagram's own time. <b>Replies in:</b> how fast they usually answer a new request. Worked out by Miracle; creators can't edit them.</p>
+				{/if}
 			</div>
 		</div>
 		<div class="acts">
@@ -211,6 +217,36 @@
 {/if}
 
 <style>
+	.cp-trust {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 6px;
+		margin-top: 8px;
+	}
+	.cp-chip {
+		padding: 5px 10px;
+		border-radius: 99px;
+		font-size: 12px;
+		font-weight: 600;
+	}
+	.cp-chip.ok {
+		background: color-mix(in oklab, var(--ok) 15%, transparent);
+		color: var(--ok);
+	}
+	.cp-chip.warn {
+		background: color-mix(in oklab, var(--warn) 15%, transparent);
+		color: var(--warn);
+	}
+	.cp-chip.info {
+		background: var(--surface-2);
+		color: var(--ink-2);
+	}
+	.cp-explain {
+		max-width: 60ch;
+		margin: 8px 0 0;
+		line-height: 1.5;
+	}
 	.cp-fit {
 		display: grid;
 		grid-template-columns: auto minmax(0, 1fr);

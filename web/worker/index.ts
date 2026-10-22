@@ -9,7 +9,11 @@ import { brandPage, qrScan } from './page';
 
 type Env = {
 	ASSETS: { fetch: (req: Request) => Promise<Response> };
-	AI: { run: (model: string, input: Record<string, unknown>) => Promise<unknown> };
+	AI: {
+		run: (model: string, input: Record<string, unknown>) => Promise<unknown>;
+		/** Cloudflare's document reader: PDFs (and images) to plain text. */
+		toMarkdown?: (docs: { name: string; blob: Blob }[]) => Promise<{ name: string; data?: string; format?: string; error?: string }[]>;
+	};
 	SUPABASE_URL: string;
 	SUPABASE_ANON_KEY?: string;
 	GEMINI_API_KEY?: string;
@@ -18,7 +22,7 @@ type Env = {
 type Run = { env: Env; gemini: boolean; neurons: number };
 
 // Expected size of each job in Cloudflare neurons (reserved before, corrected after).
-const COST: Record<string, number> = { dm: 160, reply: 110, caption: 110, pitch: 140, fit: 230, classify: 40, summary: 220, negotiate: 210, script: 330, nudge: 120, ask: 260, voice: 60, embed: 8, cheer: 60, reelcheck: 260, growplan: 200, checkup: 420 };
+const COST: Record<string, number> = { dm: 160, reply: 110, caption: 110, pitch: 140, fit: 230, classify: 40, summary: 220, negotiate: 210, script: 330, nudge: 120, ask: 260, voice: 60, embed: 8, cheer: 60, reelcheck: 260, growplan: 200, checkup: 420, offercheck: 700 };
 // Cloudflare's price list in neurons per token (Llama 3.3 70B fast; Llama 3.2 11B vision).
 const PER_TOKEN = { text: [0.0267, 0.2048], vision: [0.0045, 0.0615] };
 const USED_UP = "Today's free AI is used up. It's back at 5:30 am.";
@@ -39,10 +43,10 @@ export default {
 		try {
 			const kind = url.pathname.slice('/api/ai/'.length);
 			if (kind === 'status') return json(await status(req, env));
-			if (!['dm', 'reply', 'caption', 'pitch', 'classify', 'fit', 'summary', 'negotiate', 'script', 'nudge', 'ask', 'voice', 'embed', 'cheer', 'scout', 'reelcheck', 'growplan', 'checkup'].includes(kind)) return json({ error: 'Unknown.' }, 404);
+			if (!['dm', 'reply', 'caption', 'pitch', 'classify', 'fit', 'summary', 'negotiate', 'script', 'nudge', 'ask', 'voice', 'embed', 'cheer', 'scout', 'reelcheck', 'growplan', 'checkup', 'offercheck'].includes(kind)) return json({ error: 'Unknown.' }, 404);
 			const body = (await req.json()) as Record<string, unknown>;
 			const job = (x: Run) =>
-				kind === 'cheer' ? cheer(x, body) : kind === 'scout' ? scout(x, body) : kind === 'dm' ? readDm(x, body) : kind === 'reply' ? replies(x, body) : kind === 'pitch' ? pitch(x, body) : kind === 'classify' ? classify(x, body) : kind === 'fit' ? fit(x, body) : kind === 'summary' ? summary(x, body) : kind === 'negotiate' ? creatorOf(req, env).then((me) => negotiate(x, body, me)) : kind === 'script' ? script(x, body) : kind === 'nudge' ? nudge(x, body) : kind === 'ask' ? creatorOf(req, env).then((me) => ask(x, body, me)) : kind === 'voice' ? voice(x, body) : kind === 'embed' ? embed(x, body) : kind === 'reelcheck' ? reelCheck(x, body) : kind === 'growplan' ? growPlan(x, body) : kind === 'checkup' ? checkup(x, body) : creatorOf(req, env).then((me) => caption(x, body, me));
+				kind === 'cheer' ? cheer(x, body) : kind === 'scout' ? scout(x, body) : kind === 'dm' ? readDm(x, body) : kind === 'reply' ? replies(x, body) : kind === 'pitch' ? pitch(x, body) : kind === 'classify' ? classify(x, body) : kind === 'fit' ? fit(x, body) : kind === 'summary' ? summary(x, body) : kind === 'negotiate' ? creatorOf(req, env).then((me) => negotiate(x, body, me)) : kind === 'script' ? script(x, body) : kind === 'nudge' ? nudge(x, body) : kind === 'ask' ? creatorOf(req, env).then((me) => ask(x, body, me)) : kind === 'voice' ? voice(x, body) : kind === 'embed' ? embed(x, body) : kind === 'reelcheck' ? reelCheck(x, body) : kind === 'growplan' ? growPlan(x, body) : kind === 'checkup' ? checkup(x, body) : kind === 'offercheck' ? offerCheck(x, body) : creatorOf(req, env).then((me) => caption(x, body, me));
 
 			// Checking an incoming Instagram DM comes from the DM webhook with a single-use pass, and the
 			// hourly fun nudge from its job the same way. DMs stay on Cloudflare (never sent to Google);
@@ -727,6 +731,103 @@ Rules: 3 to 6 topics; every reel id in exactly one topic; put reels that fit not
 		ideal: { gender: ['women', 'men'].includes(g) ? g : 'everyone', age_from: Math.max(13, Math.min(60, Number(ideal.age_from) || 18)), age_to: Math.max(18, Math.min(65, Number(ideal.age_to) || 40)), city: String(ideal.city ?? '').slice(0, 40) },
 		bio: String(j.bio ?? '').trim().slice(0, 80),
 		repeat: String(j.repeat ?? '').trim().slice(0, 200)
+	};
+}
+
+// Checking a brand's offer: the agreement (pasted, a PDF, or photos of its pages) with their brief and
+// messages, against her rate card and usual terms. Says what to push back on, quotes the clause, and
+// writes her reply. Not legal advice; the app says so.
+async function offerCheck(x: Run, b: Record<string, unknown>) {
+	let text = String(b.text ?? '').slice(0, 14000);
+	let pages = 0;
+	const file = String(b.file ?? '');
+	if (file.startsWith('data:application/pdf')) {
+		if (!x.env.AI.toMarkdown) throw new Error("!Reading PDFs isn't available just now. Paste the agreement's text instead.");
+		const bytes = Uint8Array.from(atob(file.split(',')[1] ?? ''), (c) => c.charCodeAt(0));
+		const [doc] = await x.env.AI.toMarkdown([{ name: String(b.name ?? 'agreement.pdf').slice(0, 80), blob: new Blob([bytes], { type: 'application/pdf' }) }]);
+		const read = String(doc?.data ?? '').replace(/\n{3,}/g, '\n\n').trim();
+		if (!read) throw new Error('!That PDF has no text in it (it may be a scan). Send photos of its pages instead.');
+		pages = Math.max(1, (read.match(/^#+ ?Page \d+/gim) ?? []).length);
+		text = `${read.slice(0, 14000)}\n${text}`.trim();
+		x.neurons += read.length / 40;
+	}
+	const photos = (Array.isArray(b.photos) ? b.photos : []).map(String).filter((p) => p.startsWith('data:image/')).slice(0, 4);
+	for (const photo of photos) {
+		if (x.gemini) throw new Error("!Reading photos is used up for today. Paste the agreement's text instead; it's back at 5:30 am.");
+		const ask = {
+			messages: [
+				{ role: 'system', content: 'You read photos and screenshots of contracts and brand agreements. Write out all the text exactly as shown, in order, keeping clause numbers, amounts, dates and durations exactly. No comments.' },
+				{ role: 'user', content: 'Transcribe this page.' }
+			],
+			image: [...Uint8Array.from(atob(photo.split(',')[1] ?? ''), (c) => c.charCodeAt(0))],
+			max_tokens: 1200
+		};
+		let r: unknown;
+		try {
+			r = await x.env.AI.run(VISION, ask);
+		} catch (e) {
+			if (/agree|licen/i.test(String((e as Error)?.message))) {
+				await x.env.AI.run(VISION, { prompt: 'agree', max_tokens: 5 });
+				r = await x.env.AI.run(VISION, ask);
+			} else throw e;
+		}
+		meter(x, r, 'vision', '', 1600);
+		text += `\n${out(r)}`;
+		pages++;
+	}
+	const brief = String(b.brief ?? '').slice(0, 2500);
+	const messages = (Array.isArray(b.messages) ? b.messages : []).map((m) => String(m ?? '').slice(0, 400)).slice(-12);
+	if (!text.trim() && !brief.trim() && !messages.length) return { error: 'Nothing to read. Paste the offer or add the agreement.' };
+	const facts = {
+		brand: String(b.brand ?? ''),
+		contact: String(b.contact ?? ''),
+		deliverables: String(b.deliverables ?? ''),
+		offered_fee: Number(b.fee) || 0,
+		rate_card_total: Number(b.rate_total) || 0,
+		paid_ads_rate_pct_per_30_days: Number(b.usage_ext_pct) || 20,
+		her_usual_advance_pct: Number(b.advance_pct) || 0,
+		her_usual_balance_days: Number(b.pay_days) || 15,
+		gst_registered: b.gst === true
+	};
+	const reply = await chat(
+		x,
+		`You help an Indian Instagram creator check a brand's collaboration offer before she signs. You are not a lawyer: point out what creators usually push back on, plainly, and suggest fair asks. Return ONLY JSON:
+{"score": 0-100 (how fair the offer is to her; 85+ fine to sign, 60-84 ask for changes, under 60 several problems),
+ "headline": "short advice, like 'Ask for 3 changes before you sign' or 'Fair offer: fine to sign'",
+ "flags": [{"level": "red" | "amber", "title": "the problem in under 8 words, like 'They can use your reel forever'", "quote": "the exact words from the agreement, under 25 words, or '' if not in the text", "ask": "what to ask for instead, one or two sentences, using her numbers"}],
+ "fine": [{"title": "under 7 words, like 'Fee matches your rate card'", "sub": "under 12 words"}],
+ "terms": {"advance_pct": 0 | 30 | 50 | 100 | null, "pay_days": number or null, "usage": "Organic only" | "Paid usage 30 days" | "Paid usage 90 days" | null, "exclusivity_days": number or null, "revision_rounds": number or null},
+ "reply": "her reply to the brand's contact by first name: friendly, short, agrees to go ahead and lists the changes she asks for; ends asking if she should send the updated quote"}
+What to look for (red = serious, amber = worth asking): usage in perpetuity, forever, or ownership/assignment of her content or likeness (red; ask for 3 months on their page, paid ads at her rate per 30 days); paid ads or whitelisting with no extra fee (red); payment more than 30 days after posting or no date (amber; ask for her usual advance before the shoot and the rest within her usual days); no advance from a new brand (amber); exclusivity over 30 days or a whole industry (amber; limit to the product's category, 30 days, or charge); unlimited revisions or reshoots (red; 2 rounds); payment only "on approval" or "on results"/sales targets (red); they can cancel without paying for work done (red); fines or penalties on her, broad indemnity (amber); content she must keep up forever or can never delete (amber); no #ad / paid-partnership disclosure, which ASCI requires in India (amber); the fee below her rate card total (amber, say by how much); TDS is normal (fine, not a flag). Use only what the text says; never invent clauses. A gap that matters, like no payment date, may be an amber flag with an empty quote. "terms" are the values to put in her updated quote (null to keep). Keep "flags" to the 5 that matter most, red first; "fine" up to 4.`,
+		JSON.stringify({ facts, agreement: text.slice(0, 14000), brief, messages }),
+		1300
+	);
+	const j = firstJson(reply) ?? {};
+	const clip = (v: unknown, n: number) => String(v ?? '').replace(/\s+/g, ' ').trim().slice(0, n);
+	const flags = (Array.isArray(j.flags) ? (j.flags as Record<string, unknown>[]) : [])
+		.map((f) => ({ level: f.level === 'red' ? 'red' : 'amber', title: clip(f.title, 80), quote: clip(f.quote, 220).replace(/^["“]+|["”]+$/g, ''), ask: clip(f.ask, 320) }))
+		.filter((f) => f.title)
+		.sort((a, c) => (a.level === c.level ? 0 : a.level === 'red' ? -1 : 1))
+		.slice(0, 6);
+	const fine = (Array.isArray(j.fine) ? (j.fine as Record<string, unknown>[]) : []).map((f) => ({ title: clip(f.title, 70), sub: clip(f.sub, 120) })).filter((f) => f.title).slice(0, 4);
+	const t = (j.terms ?? {}) as Record<string, unknown>;
+	const n = (v: unknown, ok: (k: number) => boolean) => (v === null || v === undefined || v === '' || !ok(Number(v)) ? null : Number(v));
+	const usage = ['Organic only', 'Paid usage 30 days', 'Paid usage 90 days'].includes(String(t.usage)) ? String(t.usage) : null;
+	const score = Math.max(0, Math.min(100, Math.round(Number(j.score) || (flags.length ? 70 - flags.length * 6 : 88))));
+	return {
+		score,
+		headline: clip(j.headline, 80) || (flags.length ? `Ask for ${flags.length} change${flags.length === 1 ? '' : 's'} before you sign` : 'Fair offer: fine to sign'),
+		flags,
+		fine,
+		terms: {
+			advance_pct: n(t.advance_pct, (k) => [0, 30, 50, 100].includes(k)),
+			pay_days: n(t.pay_days, (k) => k >= 0 && k <= 90),
+			usage,
+			exclusivity_days: n(t.exclusivity_days, (k) => k >= 0 && k <= 365),
+			revision_rounds: n(t.revision_rounds, (k) => k >= 0 && k <= 5)
+		},
+		reply: String(j.reply ?? '').trim().slice(0, 1200),
+		read: { pages, chars: text.length }
 	};
 }
 

@@ -19,6 +19,7 @@
 		leaving = false,
 		hue = '',
 		mark = '',
+		chips = [],
 		children
 	}: {
 		/** The brand: picks the colour and the initials. */
@@ -38,6 +39,8 @@
 		hue?: string;
 		/** What the tile shows instead of the initials. */
 		mark?: string;
+		/** Small badges under the task (a creator's record, a brand's payments). */
+		chips?: { text: string; tone: 'ok' | 'warn' | 'bad' | 'info' }[];
 		children?: Snippet;
 	} = $props();
 </script>
@@ -55,6 +58,7 @@
 		<span class="tk-task">
 			{#if task}<b>{task}</b>{/if}
 			{#if status}<small class={tone}><i></i>{status}</small>{/if}
+			{#if chips.length}<span class="tk-chips">{#each chips as ch (ch.text)}<em class={ch.tone}>{ch.text}</em>{/each}</span>{/if}
 		</span>
 		{@render children?.()}
 	</div>

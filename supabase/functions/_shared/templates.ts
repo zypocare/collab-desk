@@ -432,8 +432,40 @@ export function render(kind: string, p: Payload, s: Settings): Omit<Mail, 'to'> 
     };
   }
 
+  if (kind === 'payment_demand') {
+    const letter = String(p.letter ?? '').split(/\n{2,}/).map((t) => t.trim()).filter(Boolean);
+    return {
+      subject: `Payment demand: invoice ${p.number} (${inr(p.due_amount)}), final date ${fmtDate(p.final_date)}`,
+      html: layout(
+        s,
+        'Formal payment demand',
+        `${letter.map((t) => P(esc(t).replace(/\n/g, '<br>'))).join('')}
+         ${table(row('Invoice', p.number), row('Amount due', inr(p.due_amount)), row('Was due', fmtDate(p.due)), row('Final date', fmtDate(p.final_date)))}`,
+        { label: 'View and pay the invoice', href: String(p.link) },
+        { code, preheader: `Invoice ${p.number} (${inr(p.due_amount)}) is ${p.days_late} days overdue. Final date ${fmtDate(p.final_date)}.` },
+      ),
+      text: `${letter.join('\n\n')}\n\nInvoice ${p.number} · ${inr(p.due_amount)} · final date ${fmtDate(p.final_date)}\nView and pay: ${p.link}${sign}`,
+    };
+  }
+
   if (kind === 'payment_reminder') {
     const late = Number(p.days_late) || 0;
+    // From a week late: the firm reminder, with a date to pay by.
+    if (late >= 7 && p.pay_by) {
+      return {
+        subject: `Second reminder: invoice ${p.number} is ${late} days overdue`,
+        html: layout(
+          s,
+          'Your invoice is overdue',
+          `${hi(p.contact)}${P(`Invoice <b>${esc(p.number)}</b> for <b>${esc(code)}</b> was due on ${esc(fmtDate(p.due))}, ${late} days ago, and I haven't received the payment yet.`)}
+           ${table(row('Invoice', p.number), row('Amount due', inr(p.due_amount)), row('Please pay by', fmtDate(p.pay_by)))}
+           ${P(`Please pay by <b>${esc(fmtDate(p.pay_by))}</b> by UPI or bank transfer from the invoice page. If there's a problem with the invoice, reply and let me know so we can sort it out.`)}`,
+          { label: 'View and pay the invoice', href: String(p.link) },
+          { code, preheader: `Invoice ${p.number} (${inr(p.due_amount)}) is ${late} days overdue. Please pay by ${fmtDate(p.pay_by)}.` },
+        ),
+        text: `Hi ${firstOf(p.contact)},\n\nInvoice ${p.number} (${inr(p.due_amount)}) for ${code} was due on ${fmtDate(p.due)}, ${late} days ago. Please pay by ${fmtDate(p.pay_by)}: ${p.link}\n\nIf there's a problem with the invoice, reply and let me know.${sign}`,
+      };
+    }
     const when = late > 0 ? `was due on ${fmtDate(p.due)}, ${late} day${late > 1 ? 's' : ''} ago` : late === 0 ? 'is due today' : `is due on ${fmtDate(p.due)}`;
     return {
       subject: late > 0 ? `Reminder: invoice ${p.number} is overdue` : `Reminder: invoice ${p.number} ${late === 0 ? 'is due today' : 'is due soon'}`,

@@ -613,11 +613,17 @@ export async function saveBrandNotes(brandId: string, patch: Partial<Omit<BrandP
 export type QuoteInput = Pick<
 	Quote,
 	'items' | 'usage' | 'usage_fee' | 'discount' | 'advance_pct' | 'pay_days' | 'revision_rounds' | 'exclusivity_days' | 'valid_until' | 'notes' | 'currency' | 'inr_rate'
-> & { options?: Quote['options'] };
+> & { options?: Quote['options']; wait_advance?: boolean };
+
+/** The line the brand reads when work waits for the advance (kept in the quote's notes, which every
+ *  brand page and the agreement show). */
+export const WAIT_LINE = 'Work starts once the advance arrives.';
 
 /** Saves a quote. Editing a draft updates it; anything else becomes a new version. */
 export async function saveQuote(c: Collab, input: QuoteInput, send: boolean, editId?: string) {
-	const row = { ...input, status: send ? 'sent' : 'draft' };
+	const plain = input.notes.replace(WAIT_LINE, '').trim();
+	const wait = !!input.wait_advance && input.advance_pct > 0;
+	const row = { ...input, wait_advance: wait, notes: wait ? `${WAIT_LINE}${plain ? `\n${plain}` : ''}` : plain, status: send ? 'sent' : 'draft' };
 	const { error } = editId
 		? await supabase.from('quotes').update(row).eq('id', editId)
 		: await supabase.from('quotes').insert({ ...row, collab_id: c.id });

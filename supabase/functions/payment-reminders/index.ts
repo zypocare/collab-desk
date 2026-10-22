@@ -2,6 +2,12 @@
 // Runs every morning at 10:00 IST from the database cron job, protected by the shared secret.
 // It runs once for every active creator, each with her own invoices and website address.
 import { admin, cronAllowed, daysBetween, todayIST } from '../_shared/admin.ts';
+
+const addDays = (isoDay: string, n: number) => {
+  const d = new Date(`${isoDay}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
+};
 import { activeCreators, type Settings } from '../_shared/creators.ts';
 
 const STEPS = [-2, 0, 3, 7, 14];
@@ -58,6 +64,8 @@ async function remindFor(db: ReturnType<typeof admin>, s: Settings) {
     const payload = {
       code: collab.code, number: inv.number, contact: collab.contact_name, due: inv.due_date, days_late: daysLate,
       due_amount: dueAmount, link: `${String(s.site_url).replace(/\/$/, '')}/invoice/${inv.public_token}`,
+      // The firm reminder (a week late or more) gives a date to pay by: a week from today.
+      ...(daysLate >= 7 ? { pay_by: addDays(today, 7) } : {}),
     };
     await db.from('outbox').insert(recipients.map((to) => ({ creator_id: s.id, kind: 'payment_reminder', to_email: to, payload })));
     await db.from('invoices').update({ reminders_sent: [...(inv.reminders_sent ?? []), step], last_reminded_at: new Date().toISOString() }).eq('id', inv.id);

@@ -484,6 +484,11 @@
   .tk-task small { display: inline-flex; align-items: center; gap: 8px; font-size: 10.5px; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; color: var(--warn); }
   .tk-task small i { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
   .tk-task small.hot { color: var(--bad); }
+  .tk-chips { display: flex; flex-wrap: wrap; gap: 5px; }
+  .tk-chips em { padding: 3px 8px; border-radius: 99px; font-style: normal; font-size: 11.5px; font-weight: 600; background: var(--surface-2); color: var(--ink-2); }
+  .tk-chips em.ok { background: color-mix(in oklab, var(--ok) 15%, transparent); color: var(--ok); }
+  .tk-chips em.warn { background: color-mix(in oklab, var(--warn) 15%, transparent); color: var(--warn); }
+  .tk-chips em.bad { background: color-mix(in oklab, var(--bad) 15%, transparent); color: var(--bad); }
   .tk-task small.hot i { animation: tk-pulse 1.6s ease-out infinite; }
   @keyframes tk-pulse { 0% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--bad) 60%, transparent); } 100% { box-shadow: 0 0 0 9px transparent; } }
   [data-side] .tk-foot .btn { flex: none; height: 44px; padding: 0 18px; font-size: 14.5px; font-weight: 700; }

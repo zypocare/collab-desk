@@ -854,6 +854,15 @@ a{color:inherit}
 .q-row .inp{height:38px}
 .q-kind{font-weight:600;font-size:16.5px}
 .q-row b{text-align:right;font-size:16.5px}
+.q-pay{display:grid;gap:14px;margin-top:16px;padding:16px;border-radius:20px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line-strong)}
+.q-pay-g{display:grid;gap:8px}
+.q-pay-g>small,.q-pay-g>label{font-size:13px;color:var(--ink-2)}
+.q-seg{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--line-strong);font-size:13px;font-weight:700}
+.q-seg button{height:40px;border:0;background:none;color:var(--ink-2);font:inherit;cursor:pointer}
+.q-seg button+button{border-left:1px solid var(--line-strong)}
+.q-seg button.on{background:var(--ink);color:var(--bg)}
+.q-wait{border-top:0;padding:0}
+.q-pay-sum{display:grid;gap:4px;padding:12px 14px;border-radius:14px;background:var(--surface-2);font-size:13.5px;line-height:1.5}
 .q-total{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-top:18px;padding:14px 16px;border-radius:16px;background:var(--hero);color:var(--hero-ink)}
 .q-total .lbl{color:color-mix(in oklab,var(--hero-ink) 65%,transparent);display:block}
 .q-total b{font-family:var(--f-display);font-size:28px;letter-spacing:-.03em}

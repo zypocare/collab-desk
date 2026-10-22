@@ -71,6 +71,27 @@
 			<div class="f"><label for="bl-sac">SAC code <span class="hint">(ask your accountant)</span></label><input class="inp" id="bl-sac" value={s.sac_code} onchange={(e) => set('sac_code', val(e))} /></div>
 		</div>
 	{/if}
+	<div class="form-b terms-b">
+		<h3 class="span2">Your usual payment terms</h3>
+		<p class="hint span2">New quotes start with these. A brand with no payment history on Miracle gets at least 50% upfront.</p>
+		<div class="f">
+			<label for="bl-adv">Before the shoot</label>
+			<Select id="bl-adv" value={s.terms_advance_pct ?? 0} options={[{ value: 0, label: 'No advance' }, { value: 30, label: '30% advance' }, { value: 50, label: '50% advance' }, { value: 100, label: 'All upfront' }]} onchange={(v) => saveSettings({ terms_advance_pct: v })} />
+		</div>
+		<div class="f">
+			<label for="bl-days">The rest</label>
+			<Select id="bl-days" value={s.terms_pay_days ?? 15} options={[0, 7, 15, 30, 45].map((d) => ({ value: d, label: d ? `Within ${d} days of going live` : 'On the day it goes live' }))} onchange={(v) => saveSettings({ terms_pay_days: v })} />
+		</div>
+		<div class="switch-row span2" style="padding-inline:0">
+			<div><b>Don't start until the advance arrives</b><small>On by default in new quotes with an advance. Brands see it in the agreement.</small></div>
+			<input type="checkbox" class="tgl" checked={!!s.terms_wait_advance} aria-label="Don't start until the advance arrives" onchange={(e) => saveSettings({ terms_wait_advance: (e.currentTarget as HTMLInputElement).checked })} />
+		</div>
+		<div class="f span2">
+			<label for="bl-udyam">Udyam (MSME) registration number <span class="hint">(optional)</span></label>
+			<input class="inp" id="bl-udyam" value={s.udyam_no ?? ''} placeholder="UDYAM-KR-03-0012345" onchange={(e) => saveSettings({ udyam_no: val(e).trim().toUpperCase().slice(0, 40) })} />
+			<p class="hint" style="margin-top:5px">Registered micro enterprises must be paid within 45 days, with interest after that. If a brand pays very late, Miracle prepares an MSME Samadhaan complaint for you. Registration is free at udyamregistration.gov.in.</p>
+		</div>
+	</div>
 	<div class="switch-row">
 		<div><b>Payment reminders</b><small>Polite emails to brands 2 days before the due date, on the day, then 3, 7 and 14 days late. You can turn them off per invoice.</small></div>
 		<input type="checkbox" class="tgl" checked={s.reminders_enabled} aria-label="Payment reminders" onchange={(e) => { const on = (e.currentTarget as HTMLInputElement).checked; saveSettings({ reminders_enabled: on }); toast(on ? 'Payment reminders on' : 'Payment reminders off'); }} />

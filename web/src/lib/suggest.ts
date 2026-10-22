@@ -14,18 +14,20 @@ const itemsSum = (items: QuoteItem[]) => items.reduce((a, i) => a + i.qty * i.ra
 // ---------------------------------------------------------------------------
 export type Terms = { advance_pct: number; pay_days: number; revision_rounds: number; exclusivity_days: number; why: string };
 
-export function suggestTerms(c: Collab, all: Collab[]): Terms {
+export function suggestTerms(c: Collab, all: Collab[], usual?: { terms_advance_pct?: number; terms_pay_days?: number } | null): Terms {
 	const history = all.filter((x) => x.brand_id === c.brand_id && x.id !== c.id);
 	const lastQuote = history.flatMap((x) => x.quotes).find((q) => q.status === 'accepted') ?? history.flatMap((x) => x.quotes)[0];
 	const sameCat = all.filter((x) => x.id !== c.id && x.brand.category === c.brand.category).flatMap((x) => x.quotes).find((q) => q.status === 'accepted');
 	const paidOnTime = history.filter((x) => x.pay_status === 'paid' && x.paid_on && x.pay_due && x.paid_on <= x.pay_due).length;
 	const late = history.some(overdue) || history.some((x) => x.pay_status === 'paid' && x.paid_on && x.pay_due && x.paid_on > x.pay_due);
 
-	const advance = late ? 100 : paidOnTime ? 0 : 50;
-	const why = late ? 'They paid late before, so full payment upfront' : paidOnTime ? 'They have paid on time before, so no advance' : 'New brand, so 50% advance';
+	// Her usual terms (Settings › Invoices & payments) for brands that paid on time; more upfront otherwise.
+	const own = usual?.terms_advance_pct ?? 0;
+	const advance = late ? 100 : paidOnTime ? own : Math.max(own, 50);
+	const why = late ? 'They paid late before, so full payment upfront' : paidOnTime ? (own ? 'Your usual advance' : 'They have paid on time before, so no advance') : 'New brand, so 50% advance';
 	return {
 		advance_pct: advance,
-		pay_days: lastQuote?.pay_days ?? sameCat?.pay_days ?? 15,
+		pay_days: lastQuote?.pay_days ?? usual?.terms_pay_days ?? sameCat?.pay_days ?? 15,
 		revision_rounds: lastQuote?.revision_rounds ?? sameCat?.revision_rounds ?? 2,
 		exclusivity_days: lastQuote?.exclusivity_days ?? sameCat?.exclusivity_days ?? 0,
 		why

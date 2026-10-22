@@ -163,6 +163,9 @@
   [data-side="studio"] .q-row.head{font-size:13.5px;text-transform:none;letter-spacing:normal}
   [data-side="studio"] .q-kind{font-size:15px}
   [data-side="studio"] .q-row b{font-size:15px}
+  [data-side="studio"] .q-pay-g>small,[data-side="studio"] .q-pay-g>label{font-size:12.5px}
+  [data-side="studio"] .q-seg{font-size:12.5px}
+  [data-side="studio"] .q-pay-sum{font-size:13.5px}
   [data-side="studio"] .q-total b{font-size:22px;letter-spacing:normal}
   [data-side="studio"] .q-total small{font-size:13.5px}
   [data-side="studio"] .qv-line{font-size:15px}

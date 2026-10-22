@@ -13,6 +13,7 @@
 	import Segmented from './Segmented.svelte';
 	import Select from './Select.svelte';
 	import Ticket from './Ticket.svelte';
+	import { creatorChips } from '../trust.svelte';
 
 	// Discover: every listed creator, filtered by niche, their audience (from what they share from
 	// Instagram), size, price and language, and sorted by how well they fit this brand.
@@ -157,6 +158,7 @@
 					task={audienceLine(c, f)}
 					status={phone.on ? `${ft.label}${rate ? ` · from ${inrS(rate)}` : ''}` : `${rate ? `Reels from ${inrS(rate)} · ` : ''}${ft.label}${c.with_me.collabs ? ' · you worked together' : ''}`}
 					tone={ft.tone}
+					chips={creatorChips(c.trust)}
 					href="/brand/creator/{c.id}"
 					{i}
 				>

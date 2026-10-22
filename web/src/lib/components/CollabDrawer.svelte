@@ -88,7 +88,7 @@
 	import { INVOICE_STATUS, KIND_LABEL, balanceDue, type Invoice } from '../invoice';
 	import InvoiceDialog from './InvoiceDialog.svelte';
 	import PaymentDialog from './PaymentDialog.svelte';
-	import BrandVerified from './BrandVerified.svelte';
+	import BrandTrust from './BrandTrust.svelte';
 	import ReportDialog from './ReportDialog.svelte';
 	import { portal } from '../portal';
 	import { asksToPay, block } from '../safety.svelte';
@@ -197,7 +197,17 @@
 	const roundsIncluded = $derived(agreed?.revision_rounds ?? null);
 	const capCheck = $derived(c && lastDraft?.caption ? captionCheck(lastDraft.caption, c.brand.instagram) : null);
 
-	let quoteOpen = $state<{ base?: Quote; editing: boolean } | null>(null);
+	// An accepted quote with an advance and no advance invoice yet: ask for it (with GST when she charges it).
+	const advanceDue = $derived.by(() => {
+		const q = c ? [...c.quotes].sort((a, b) => b.version - a.version)[0] : undefined;
+		if (!c || !q || q.status !== 'accepted' || q.advance_pct <= 0 || q.advance_pct >= 100) return 0;
+		if (c.invoices.some((i) => i.status !== 'cancelled' && i.status !== 'draft') || ['advance', 'paid'].includes(c.pay_status)) return 0;
+		if (c.stage === 'live' || c.stage === 'wrapped') return 0;
+		const k = studio.settings?.gst_registered && (q.currency ?? 'INR') === 'INR' ? 1 + (studio.settings?.gst_rate || 18) / 100 : 1;
+		return Math.round((((c.fee || q.total) * q.advance_pct) / 100) * k);
+	});
+	const advanceWaiting = $derived(!!c && !['advance', 'paid'].includes(c.pay_status) && !c.invoices.some((i) => i.kind === 'advance' && i.status === 'paid'));
+	let quoteOpen = $state<{ base?: Quote; editing: boolean; preset?: { advance_pct: number } } | null>(null);
 	let invoiceOpen = $state<{ editing?: Invoice } | null>(null);
 	let paymentOpen = $state<Invoice | null>(null);
 	const issuedInvoices = $derived(c ? c.invoices.filter((i) => i.status !== 'draft' && i.status !== 'cancelled') : []);
@@ -402,7 +412,7 @@
 					}}
 				/>
 				<div class="dr-sub"><span class="id">{c.code}</span> · {TYPE_LABEL[c.type]} · received {fmt(c.received_on)}{#if c.referred_by && studio.brands.find((b) => b.id === c.referred_by)} · <span class="ref-by"><Icon name="users" />Referred by {studio.brands.find((b) => b.id === c.referred_by)?.name}</span>{/if}</div>
-				<BrandVerified brandId={c.brand_id} />
+				<BrandTrust {c} onquote={() => (quoteOpen = { base: quote, editing: false, preset: { advance_pct: 50 } })} />
 			</div>
 			<button class="icon-btn dr-more-btn" onclick={openMore} aria-label="More" aria-expanded={moreOpen}><Icon name="more" /></button>
 			<button class="icon-btn" onclick={close} aria-label={page ? 'Back' : 'Close'} bind:this={closeBtn}><Icon name={page ? 'back' : 'x'} /></button>
@@ -541,6 +551,9 @@
 
 			<section class="sec" hidden={!sh('quote')}>
 				<h3>Quote &amp; agreement {#if quote}<span class="pill tint {QUOTE_STATUS[quote.status].k}">{QUOTE_STATUS[quote.status].label}</span>{/if}</h3>
+				{#if c.stage === 'request' || c.stage === 'negotiating'}
+					<a class="of-entry" href="/studio/offer/{c.code}"><Icon name="shield" /><span><b>Check the offer</b><small>What to push back on before you agree, from their agreement, brief and messages</small></span><Icon name="chevR" /></a>
+				{/if}
 				{#if !quote}
 					<p class="hint" style="margin:0 0 12px">No quote yet. Build one from your rate card; the brand accepts it online and it becomes the agreement.</p>
 					<button class="btn sm primary" onclick={() => (quoteOpen = { editing: false })}><Icon name="rupee" />Build quote</button>
@@ -553,6 +566,15 @@
 						<div class="hint">{payTerms(quote)} · {quote.revision_rounds} revision round{quote.revision_rounds === 1 ? '' : 's'}{quote.exclusivity_days ? ` · ${quote.exclusivity_days} days exclusivity` : ''}</div>
 						{#if quote.status === 'changes' && quote.response_note}
 							<blockquote class="note" style="margin:12px 0 0"><span>The brand asked</span><p>{quote.response_note}</p></blockquote>
+						{/if}
+						{#if quote.status === 'accepted' && advanceDue}
+							<div class="adv-card">
+								<b>Ask for the {inr(advanceDue)} advance</b>
+								<small>Sends {c.brand.name} an advance invoice with your UPI QR and bank details. When it lands in your bank, Miracle marks it paid{quote.wait_advance ? ' and the shoot is on' : ''}.</small>
+								<button class="btn primary" onclick={() => (invoiceOpen = {})}>Send the advance invoice</button>
+							</div>
+						{:else if quote.status === 'accepted' && quote.wait_advance && advanceWaiting}
+							<p class="hint adv-wait"><Icon name="clock" />The shoot waits until the advance arrives. {c.brand.name} sees why.</p>
 						{/if}
 						{#if quote.status === 'accepted'}
 							<p class="hint" style="margin-top:8px">Accepted by {quote.accepted_name} ({quote.accepted_email}) on {quote.responded_at ? fmtTime(quote.responded_at) : ''}</p>
@@ -735,6 +757,7 @@
 									<button class="btn sm ghost" onclick={() => copyText(`${location.origin}/invoice/${inv.public_token}`, 'Invoice link copied')}><Icon name="copy" />Link</button>
 									{#if inv.status === 'sent' || inv.status === 'partly_paid'}
 										<button class="btn sm primary" onclick={() => (paymentOpen = inv)}><Icon name="wallet" />Record payment</button>
+										{#if inv.due_date && inv.due_date < todayIso()}<a class="btn sm" href="/studio/payments/late/{inv.id}"><Icon name="alert" />Late: next steps</a>{/if}
 										<button class="btn sm ghost danger" onclick={async () => (await ask({ title: `Cancel invoice ${inv.number}?`, body: 'It is marked cancelled (the number is kept for your records) and payment reminders stop.', ok: 'Cancel invoice', cancel: 'Keep it', danger: true })) && cancelInvoice(inv)}>Cancel</button>
 									{/if}
 									{#if inv.status === 'paid' && inv.tds_deducted > 0}
@@ -904,7 +927,7 @@
 {/if}
 {#if c && reportOpen}<ReportDialog side="creator" name={c.brand.name} target={{ collab_id: c.id }} onclose={() => (reportOpen = false)} ondone={(b) => b && reloadCollabs()} />{/if}
 {#if c && quoteOpen}
-	<QuoteDialog {c} base={quoteOpen.base} editing={quoteOpen.editing} onclose={() => (quoteOpen = null)} />
+	<QuoteDialog {c} base={quoteOpen.base} editing={quoteOpen.editing} preset={quoteOpen.preset} onclose={() => (quoteOpen = null)} />
 {/if}
 {#if c && invoiceOpen}
 	<InvoiceDialog {c} editing={invoiceOpen.editing} onclose={() => (invoiceOpen = null)} />

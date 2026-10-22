@@ -143,6 +143,8 @@ export function pushForBrand(kind: string, p: Record<string, unknown>, creatorNa
       const late = Number(p.days_late) || 0;
       return { pref: 'invoices', msg: { title: late > 0 ? `Invoice overdue · ${who}` : `Invoice due · ${who}`, body: `${inr(p.due_amount)} · ${p.number}${late > 0 ? `, ${late} day${late > 1 ? 's' : ''} late` : late === 0 ? ', due today' : p.due ? `, due ${dayMon(p.due)}` : ''}`, url: request, tag: `inv-${p.number}` } };
     }
+    case 'payment_demand':
+      return { pref: 'invoices', msg: { title: `Payment demand · ${who}`, body: `${inr(p.due_amount)} · ${p.number}, final date ${dayMon(p.final_date)}`, url: request, tag: `inv-${p.number}` } };
     // Live and results. (post_detected and report_ready mails go to her; the brand's own ones are the
     // "Live" stage update and the shared results report.)
     case 'post_detected':
