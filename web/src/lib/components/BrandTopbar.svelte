@@ -67,7 +67,7 @@
 	const first = $derived(name.split(' ')[0] || 'Creator');
 	const isNew = $derived(path === '/brand/details' && page.url.searchParams.get('new') === '1');
 	const sec = $derived(path === '/brand/settings' ? page.url.searchParams.get('s') : null);
-	const SECTIONS: Record<string, string> = { company: 'Company & Instagram', billing: 'Billing & GST', brands: 'Brands you manage', alerts: 'Emails & alerts', account: 'Sign-in & account' };
+	const SECTIONS: Record<string, string> = { company: 'Company & Instagram', billing: 'Billing & GST', team: 'Team & approvals', brands: 'Brands you manage', alerts: 'Emails & alerts', account: 'Sign-in & account' };
 	const TITLES: Record<string, string> = {
 		'/brand': 'Miracle',
 		'/brand/requests': 'Requests',

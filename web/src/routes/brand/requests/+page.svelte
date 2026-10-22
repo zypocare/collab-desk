@@ -65,7 +65,7 @@
 	<header class="ph rv">
 		<div>
 			<div class="eb">Welcome</div>
-			<h1>Tell us about your <em>brand</em></h1>
+			<h1>Your <em>brand</em></h1>
 			<p>We'll use this on every request you send{creator ? ` to ${creator}` : ''}.</p>
 		</div>
 	</header>

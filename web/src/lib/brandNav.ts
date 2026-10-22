@@ -59,3 +59,22 @@ export function tabOn(t: BrandTab, url: { pathname: string; searchParams: { get(
 	const want = new URLSearchParams(q ?? '').get('tab') ?? '';
 	return (url.searchParams.get('tab') ?? '') === want;
 }
+
+/**
+ * Laptop tabs over the page. The side menu already lists Calendar, Content, Money and Reports, so
+ * (as in the studio) the tabs only hold pages the side menu doesn't: a section's own sub-pages.
+ */
+export function deskTabs(onApp: boolean, url: { pathname: string; searchParams: { get(k: string): string | null } }): BrandTab[] | null {
+	const sets: BrandTab[][] = [
+		brandGroups(onApp)[1].tabs ?? [],
+		[
+			{ href: '/brand/campaigns', label: 'Campaigns' },
+			{ href: '/brand/autopilots', label: 'Autopilots' }
+		],
+		[
+			{ href: '/brand/business/money', label: 'Payments' },
+			{ href: '/brand/business/shipping', label: 'Shipping' }
+		]
+	];
+	return sets.find((tabs) => tabs.some((t) => tabOn(t, url))) ?? null;
+}

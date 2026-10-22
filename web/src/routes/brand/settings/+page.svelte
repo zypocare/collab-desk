@@ -1,4 +1,5 @@
 <script lang="ts">
+	import BrandTeam from '#lib/components/BrandTeam.svelte';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { onMount } from 'svelte';
@@ -34,7 +35,7 @@
 			warn: brandIg.loaded && !brandIg.data ? 'Instagram not connected' : undefined
 		},
 		{ id: 'billing', label: 'Billing & GST', icon: 'rupee', sub: gstin ? `GSTIN ${gstin.slice(0, 6)}…` : 'GSTIN, address and accounts email' },
-		{ id: 'team', label: 'Team & approvals', icon: 'users', sub: 'Colleagues, agencies and approvals', href: '/brand/business/team' },
+		{ id: 'team', label: 'Team & approvals', icon: 'users', sub: 'Colleagues, agencies and approvals' },
 		{ id: 'brands', label: 'Brands you manage', icon: 'layers', sub: (acct?.brands?.length ?? 0) > 1 ? `${acct?.brands.length} brands` : 'For agencies with several brands' },
 		{ id: 'alerts', label: 'Emails & alerts', icon: 'bell', sub: 'Quotes, drafts and invoices' },
 		{ id: 'account', label: 'Sign-in & account', icon: 'gear', sub: 'Email, look, sign out' }
@@ -332,11 +333,13 @@
 								<a class="bs-row" href="/brand/details?new=1"><span class="bs-plus"><Icon name="plus" /></span><span><b>Add another brand</b><small>For agencies working for several brands</small></span><Icon name="chevR" /></a>
 							</div>
 						</section>
+					{:else if active === 'team'}
+						<BrandTeam />
 					{:else if active === 'alerts'}
 						<section class="panel rv" style="--i:1;padding:22px">
 							<div class="panel-h" style="padding:0 0 10px"><h2>Emails & alerts</h2></div>
 							<p class="hint" style="margin:0 0 10px">Miracle emails <b>{acct?.email}</b> when a creator sends a quote, a draft to approve, or an invoice, and when a post goes live.</p>
-							<p class="hint" style="margin:0">Invoices also go to the accounts email in <a class="lnk" href="?s=billing" onclick={(e) => (e.preventDefault(), open('billing'))}>Billing & GST</a>. Colleagues on your <a class="lnk" href="/brand/business/team">team</a> get the emails for what they approve.</p>
+							<p class="hint" style="margin:0">Invoices also go to the accounts email in <a class="lnk" href="?s=billing" onclick={(e) => (e.preventDefault(), open('billing'))}>Billing & GST</a>. Colleagues on your <a class="lnk" href="?s=team" onclick={(e) => (e.preventDefault(), open('team'))}>team</a> get the emails for what they approve.</p>
 						</section>
 					{:else if active === 'account'}
 						<section class="panel rv" style="--i:1">

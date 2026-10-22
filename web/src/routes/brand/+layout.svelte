@@ -6,7 +6,7 @@
 	import { auth } from '#lib/auth.svelte.ts';
 	import { ui } from '#lib/ui.svelte.ts';
 	import { brandData, loadRequests } from '#lib/brand.svelte.ts';
-	import { brandGroups, groupOf, tabOn } from '#lib/brandNav.ts';
+	import { brandGroups, deskTabs, groupOf, tabOn } from '#lib/brandNav.ts';
 	import Avatar from '#lib/components/Avatar.svelte';
 	import Icon from '#lib/components/Icon.svelte';
 	import { brandIg } from '#lib/brandIg.svelte.ts';
@@ -73,7 +73,8 @@
 	const path = $derived(page.url.pathname);
 	const groups = brandGroups(onApp);
 	const group = $derived(groupOf(groups, path));
-	const tabs = $derived(group?.tabs?.some((t) => tabOn(t, page.url)) ? group.tabs : null);
+	// Laptop: only the section's own sub-pages (the side menu lists the rest).
+	const tabs = $derived(deskTabs(onApp, page.url));
 	// A single request, a new request or a new campaign is a screen of its own: no bottom bar.
 	const detail = $derived(path.startsWith('/brand/r/') || path === '/brand/new' || path.startsWith('/brand/campaigns/'));
 	const unread = $derived(Object.values(brandData.unread ?? {}).reduce((a, n) => a + n, 0));
