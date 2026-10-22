@@ -448,6 +448,10 @@ verify_jwt = false
 [functions.pitch-finder]
 verify_jwt = false
 
+# The growth check-up: the daily job (cron secret) and the creator's "Run it again" (her sign-in).
+[functions.growth-checkup]
+verify_jwt = false
+
 # Called by the Gmail watcher script, protected by the private inbox token.
 [functions.bank-alert]
 verify_jwt = false

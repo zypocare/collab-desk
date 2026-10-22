@@ -1050,6 +1050,29 @@ Open the collab: ${studio()}`,
     };
   }
 
+  // ---------------------------------------------------------------- the growth check-up
+  if (kind === 'checkup_ready') {
+    const href = url(s, '/studio/grow/checkup');
+    const n = Number(p.count) || 0;
+    const head = p.first ? 'Your growth check-up is ready' : 'Your new growth check-up is ready';
+    return {
+      subject: n ? `${head}: ${n} thing${n === 1 ? '' : 's'} holding you back` : head,
+      html: layout(
+        s,
+        head,
+        `${quoteBox('In one line', p.verdict)}${n ? P(`Biggest: <b>${esc(String(p.biggest ?? '').toLowerCase())}</b>. The check-up shows what's working, what to change, and ${p.first ? 'how to tell it is working' : 'what moved since the last one'}.`) : P(`Nothing big is holding you back. See what's working and what to do more of.`)}`,
+        { label: 'See your check-up', href },
+        { to: 'creator', preheader: String(p.verdict ?? ''), next: ['Read the one line and what holds you back.', 'Tick off the changes, one by one.', 'A new check-up comes in two weeks, with what moved.'] },
+      ),
+      text: `${head}.
+
+${p.verdict}${n ? `
+Biggest: ${String(p.biggest ?? '').toLowerCase()}.` : ''}
+
+${href}`,
+    };
+  }
+
   // ---------------------------------------------------------------- collab reels (creator to creator)
   if (kind === 'collab_reel_invite') {
     const href = url(s, '/studio/grow#collab');

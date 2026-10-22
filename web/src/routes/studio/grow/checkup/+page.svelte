@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { boostText, checkups, enoughReels, latest, loadCheckups, planMoments, planWeekly, runCheckup, setDone, type Action, type Run } from '#lib/checkup.svelte.ts';
+	import { boostText, checkups, enoughReels, latest, loadCheckups, markSeen, planMoments, planWeekly, runCheckup, setDone, type Action, type Run } from '#lib/checkup.svelte.ts';
 	import { setMode } from '#lib/grow.svelte.ts';
 	import { loadInstagram, studio } from '#lib/studio.svelte.ts';
 	import { copyText } from '#lib/ui.svelte.ts';
@@ -10,7 +10,8 @@
 	onMount(async () => {
 		if (!studio.media.length) await loadInstagram();
 		await loadCheckups();
-		if (!latest() && studio.ig?.connected && enoughReels()) runCheckup();
+		if (latest()) markSeen();
+		else if (studio.ig?.connected && enoughReels()) runCheckup();
 	});
 	const run = $derived(latest());
 	const prev = $derived(checkups.list[1] ?? null);

@@ -49,7 +49,7 @@ export default {
 			// the fun nudges are written by Gemini first (wittier), Cloudflare if Gemini can't.
 			// The daily pitch finder comes the same way for finding brands (Gemini with Google Search) and
 			// writing their pitches (Gemini first).
-			if (kind === 'classify' || kind === 'cheer' || kind === 'scout' || (kind === 'pitch' && req.headers.get('x-ai-ticket'))) {
+			if (kind === 'classify' || kind === 'cheer' || kind === 'scout' || ((kind === 'pitch' || kind === 'checkup') && req.headers.get('x-ai-ticket'))) {
 				const allowed = await takeTicket(req, env, kind);
 				if (allowed !== true) return json({ error: allowed }, 403);
 				let why = env.GEMINI_API_KEY ? '' : 'no Gemini key';

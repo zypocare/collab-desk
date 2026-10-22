@@ -144,6 +144,7 @@
 	// Beside the greeting: live Instagram numbers, or this month's goal when Instagram isn't connected.
 	const ig = $derived(studio.ig?.connected ? studio.ig : null);
 	import SetupChecklist from '#lib/components/SetupChecklist.svelte';
+	import CheckupCard from '#lib/components/CheckupCard.svelte';
 </script>
 
 <section class="ht" style="--sy:{sy}">
@@ -175,6 +176,7 @@
 <Stories />
 
 <!-- A new creator's first steps (gone once they're done). -->
+<CheckupCard phone />
 <SetupChecklist phone />
 {#if ticker.length > 1}
 	<div class="cr-ticker cr-tk" aria-label="Today in numbers"><div>{#each [0, 1] as k (k)}{#each ticker as f, j (j)}<span aria-hidden={k === 1}><b>{f.b}</b>{f.t}</span><i aria-hidden="true">✦</i>{/each}{/each}</div></div>

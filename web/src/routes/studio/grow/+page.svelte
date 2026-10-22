@@ -6,7 +6,7 @@
 	import { copyText, countUp } from '#lib/ui.svelte.ts';
 	import { compact, firstName } from '#lib/util.ts';
 	import Avatar from '#lib/components/Avatar.svelte';
-	import { checkups, enoughReels, latest, loadCheckups, runCheckup } from '#lib/checkup.svelte.ts';
+	import { checkups, latest, loadCheckups } from '#lib/checkup.svelte.ts';
 	import Icon from '#lib/components/Icon.svelte';
 
 	// Grow: real followers and views from what already works for her. Her numbers, what's working, this
@@ -15,9 +15,6 @@
 		if (!studio.media.length) await loadInstagram();
 		await Promise.all([loadGrow(), loadCheckups()]);
 		if (studio.ig?.connected) planWeek();
-		// The check-up runs again every two weeks, when she opens Grow.
-		const last = latest();
-		if (studio.ig?.connected && enoughReels() && last && Date.now() - Date.parse(last.created_at) > 14 * 864e5) runCheckup();
 	});
 	const connected = $derived(!!studio.ig?.connected);
 	const st = $derived(stats(studio.media, studio.followersHistory, studio.ig));

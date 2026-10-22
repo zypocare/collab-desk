@@ -165,6 +165,7 @@
 	const pipe = $derived(STAGES.slice(0, 5).map((st) => ({ st, n: list.filter((c) => c.stage === st.id).length })));
 	const pipeMax = $derived(Math.max(1, ...pipe.map((p) => p.n)));
 	import SetupChecklist from '#lib/components/SetupChecklist.svelte';
+	import CheckupCard from '#lib/components/CheckupCard.svelte';
 </script>
 
 <div class="lt">
@@ -181,6 +182,7 @@
 	</header>
 
 	<!-- A new creator's first steps (gone once they're done). -->
+	<CheckupCard />
 	<SetupChecklist />
 
 	<!-- Story rings -->

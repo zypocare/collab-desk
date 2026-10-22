@@ -102,6 +102,8 @@ export function pushFor(kind: string, p: Record<string, unknown>): Push | null {
       const closes = p.open_until ? ` Closes ${dayMon(p.open_until)}.` : '';
       return { title: 'A brief that fits you', body: `${brand} wants ${String(p.deliverables ?? '') || 'content'}, ${money}.${closes}`, url: '/studio/pitches', tag: `brief-${String(p.campaign ?? '')}` };
     }
+    case 'checkup_ready':
+      return { title: p.first ? 'Your growth check-up is ready' : 'Your new growth check-up is ready', body: Number(p.count) ? `${Number(p.count)} thing${Number(p.count) === 1 ? '' : 's'} holding you back. Biggest: ${String(p.biggest ?? '').toLowerCase()}.` : 'Nothing big holding you back. See what moved.', url: '/studio/grow/checkup', tag: 'growth-checkup' };
     case 'collab_reel_invite':
       return { title: `${String(p.from ?? 'A creator')} wants to make a collab reel`, body: String(p.idea ?? '').slice(0, 120), url: '/studio/grow#collab', tag: `collab-reel-${String(p.id ?? '')}` };
     case 'collab_reel_answer':
