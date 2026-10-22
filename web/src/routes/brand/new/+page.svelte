@@ -389,7 +389,7 @@
 			{#if acc}
 				<div class="eb">Sending as {acc.brand?.name} · {acc.full_name}</div>
 				<h1>New <em>request</em></h1>
-				<p>Tell {creator || 'us'} what you have in mind. <a class="lnk" href="/brand/details">Edit company details</a></p>
+				<p>Tell {creator || 'us'} what you have in mind. <a class="lnk" href="/brand/settings">Edit company details</a></p>
 			{:else}
 				<div class="eb">No account needed</div>
 				<h1>Work with <em>{creator || 'us'}</em></h1>

@@ -12,10 +12,12 @@
 	const acc = auth.account?.role === 'brand' ? auth.account : null;
 	// Starting values only (the page re-creates the form when switching to "add a brand").
 	const start = untrack(() => (isNew ? null : acc?.brand));
-	let name = $state(start?.name ?? '');
-	let instagram = $state(start?.instagram ?? '');
-	let website = $state(start?.website ?? '');
-	let category = $state(start?.category ?? 'Beauty');
+	// Miracle's own address, before the first creator: the company given at sign-up.
+	const prof = untrack(() => (isNew || acc?.brand ? null : (acc?.profile ?? null)));
+	let name = $state(start?.name ?? prof?.name ?? '');
+	let instagram = $state(start?.instagram ?? prof?.instagram ?? '');
+	let website = $state(start?.website ?? prof?.website ?? '');
+	let category = $state(start?.category ?? prof?.category ?? 'Beauty');
 	let fullName = $state(acc?.full_name ?? '');
 	let phone = $state(acc?.phone ?? '');
 	let busy = $state(false);
@@ -29,15 +31,29 @@
 		if (!phoneOk(phone)) return (error = 'That phone number doesn’t look right. Use digits, like +91 98450 00000, or leave it empty.');
 		if (website.trim() && !/^(https?:\/\/)?[^\s/.]+\.[^\s]{2,}$/.test(website.trim())) return (error = 'That website doesn’t look right. Use something like brand.com, or leave it empty.');
 		busy = true;
-		const { error: err } = await supabase.rpc('register_brand', {
-			p_name: name,
-			p_instagram: instagram,
-			p_website: website,
-			p_category: category,
-			p_full_name: fullName,
-			p_phone: phone,
-			p_new: isNew
-		});
+		const { error: err } = prof
+			? await supabase.rpc('brand_signup', {
+					p_name: name,
+					p_category: category,
+					p_website: website,
+					p_instagram: instagram,
+					p_full_name: fullName,
+					p_role: prof.role,
+					p_phone: phone,
+					p_city: prof.city,
+					p_goals: prof.goals,
+					p_legal_name: prof.legal_name,
+					p_gstin: prof.gstin
+				})
+			: await supabase.rpc('register_brand', {
+					p_name: name,
+					p_instagram: instagram,
+					p_website: website,
+					p_category: category,
+					p_full_name: fullName,
+					p_phone: phone,
+					p_new: isNew
+				});
 		if (err) {
 			busy = false;
 			error = errMessage(err);

@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { auth } from '#lib/auth.svelte.ts';
-	import { brandHome, loadDashboard } from '#lib/brand.svelte.ts';
+	import { brandHome, discoverCreators, loadDashboard } from '#lib/brand.svelte.ts';
+	import { brandIg } from '#lib/brandIg.svelte.ts';
 	import { addressFor, isAppHost } from '#lib/creatorHost.ts';
 	import { pageSlug } from '#lib/supabase.ts';
 	import { compact, firstName, fmt, inr, inrS } from '#lib/util.ts';
@@ -34,40 +35,70 @@
 		[c.followers != null ? `${compact(c.followers)} followers` : '', c.open ? `${c.open} open` : c.done ? `${c.done} done` : ''].filter(Boolean).join(' · ');
 	// Miracle's own address (app.miracleapp.live): no creator here, so the first step is finding one.
 	const onApp = isAppHost(location.hostname);
+	// A brand that just signed up: what's left to set up, and a few creators to start with.
+	let starters = $state<BrandCreator[]>([]);
+	$effect(() => {
+		if (onApp && brandHome.dash && !brandHome.dash.creators?.length && !starters.length) discoverCreators().then((l) => (starters = l.slice(0, 2))).catch(() => {});
+	});
+	const setup = $derived([
+		{ done: !!(acc?.profile || acc?.brand), title: 'Company details', note: 'Name, category and your role', href: '/brand/settings', cta: 'Edit' },
+		{ done: !!brandIg.data, title: "Connect your brand's Instagram", note: "Creators see you're the real brand", href: '/brand/settings', cta: 'Connect' },
+		{ done: !!acc?.profile?.gstin, title: 'Billing details', note: 'GSTIN and address, for GST you can claim', href: '/brand/settings?s=billing', cta: 'Add' },
+		{ done: false, title: 'Send your first request', note: 'To one creator, or a campaign to a pool', href: '/brand/creators?tab=discover', cta: 'Find' }
+	]);
+	const setupDone = $derived(setup.filter((x) => x.done).length);
 	const chip = (c: BrandCreator) => (c.waiting ? 'Your turn' : c.open ? 'In progress' : '');
 </script>
 
 <svelte:head><title>Dashboard · Miracle</title></svelte:head>
 
 {#if acc && onApp && !d?.creators?.length && brandHome.dash}
-	<!-- Just signed up: no creators yet. -->
-	<section class="bd-welcome rv">
-		<span class="bd-date">Welcome to Miracle</span>
-		<h1>Let's find your first <em>creator</em>{who ? `, ${who}` : ''}.</h1>
-		<p>Browse reviewed creators by niche, city and language with their live Instagram numbers. Add the ones you like to a pool, then send one brief to all of them.</p>
-		<div class="bd-wa">
-			<a class="bd-neo bd-grad" href="/brand/creators?tab=discover">Discover creators</a>
-			<a class="bd-neo bd-ghost" href="/brand/campaigns/new">Start a campaign</a>
+	<!-- Just signed up: no creators yet. Set-up first, then creators to start with. -->
+	<header class="bl-h rv">
+		<div>
+			<span class="bl-eb">Welcome to Miracle</span>
+			<h1>Let's find your first <em>creator.</em></h1>
 		</div>
-		<ol class="bd-wsteps">
-			<li><b>Discover</b><span>Filter by niche, city and language.</span></li>
-			<li><b>Pool</b><span>Save the creators you like in groups.</span></li>
-			<li><b>Brief</b><span>Send one campaign to the whole pool and compare quotes.</span></li>
-		</ol>
+	</header>
+	<section class="bw-setup rv" style="--i:1">
+		<div class="bw-top"><b>Get set up{who ? ', ' : ''}<em>{who}</em></b><small>{setupDone} of {setup.length} done</small></div>
+		<div class="bw-bar">{#each setup as x, i (i)}<i class:on={x.done}></i>{/each}</div>
+		<div class="bw-list">
+			{#each setup as x (x.title)}
+				<div class="bw-it" class:done={x.done}>
+					<span class="bw-dot" aria-hidden="true">{x.done ? '✓' : ''}</span>
+					<span class="bw-t"><b>{x.title}</b><small>{x.note}</small></span>
+					{#if !x.done}<a class="bw-go" href={x.href}>{x.cta} ›</a>{/if}
+				</div>
+			{/each}
+		</div>
+	</section>
+	<section class="bw-cr rv" style="--i:2">
+		<div class="bw-hh"><span class="bl-eb">Creators on Miracle</span><a href="/brand/creators?tab=discover">See all</a></div>
+		<div class="bw-cards">
+			{#each starters as c (c.id)}
+				<article class="bw-card">
+					<div class="bw-who"><Avatar name={c.name} src={c.photo} size="48px" /><span><b>{firstName(c.name)}</b><small>{[c.niche, c.city].filter(Boolean).join(' · ')}</small></span></div>
+					{#if c.followers != null}<span class="bw-n">{compact(c.followers)} followers{c.engagement != null ? ` · ${c.engagement}% engagement` : ''}</span>{/if}
+					<div class="bw-acts"><a class="bw-go" href={at(c.slug, '/brand/new')}>Send request</a><a class="bw-ghost" href="/brand/creators?tab=discover">+ Pool</a></div>
+				</article>
+			{/each}
+			<article class="bw-card bw-more">More creators join every week. Filter by niche, city and language in Creators.</article>
+		</div>
 	</section>
 {:else if acc && !d?.creators?.length && !acc.brand && brandHome.dash}
 	<!-- A brand that hasn't sent anything yet: set up the company for this creator first. -->
 	<header class="ph rv"><div><div class="eb">Welcome</div><h1>Tell us about your <em>brand</em></h1><p>We'll use this on every request you send.</p></div></header>
 	<CompanyStep creator={firstName(pub.data?.display_name ?? '')} />
 {:else}
-	<header class="bd-hero rv">
+	{#if phone.on}<header class="bd-hero rv">
 		<div>
 			<span class="bd-date">{T.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}</span>
 			<h1>{greet},{#if who}<br /><em>{who}</em>{/if}</h1>
 			{#if d}<p class="bd-sum"><i class:calm={!waiting.length}></i>{waiting.length ? `${waiting.length} waiting on you` : 'Nothing waiting on you'} · {d.open} open request{d.open === 1 ? '' : 's'}</p>{/if}
 		</div>
 		{#if onApp}<a class="bd-neo bd-grad" href="/brand/creators?tab=discover">Find creators</a>{:else if pub.data?.accepting !== false}<a class="bd-neo bd-grad" href="/brand/new">+ New request</a>{/if}
-	</header>
+	</header>{/if}
 
 	{#if brandHome.error}<div class="err-box">{brandHome.error}</div>{/if}
 	{#if apWaiting}<a class="bd-ap rv" href="/brand/autopilots#inbox"><span class="bd-ap-tag">Autopilots</span><b>{apWaiting} waiting for your OK</b><span aria-hidden="true">›</span></a>{/if}
@@ -116,46 +147,60 @@
 		{/if}
 		<a class="bd-c bd-more" style="margin-top:16px" href="/brand/creators?tab=discover"><span class="bd-plus" aria-hidden="true">+</span><span><b>Find more creators</b><small>Creators on Miracle open to brands</small></span></a>
 	{:else if d}
-		<div class="bd-stats rv" style="--i:1">
-			<div class="bd-stat"><span>Open requests</span><b>{d.open}</b><small>{creatorsOpen ? `with ${creatorsOpen} creator${creatorsOpen === 1 ? '' : 's'}` : 'none right now'}</small></div>
-			<div class="bd-stat" class:hot={waiting.length > 0}><span>Waiting on you</span><b>{waiting.length}</b><small>{waiting.length ? [waiting.filter((w) => w.kind === 'quote').length && 'quotes', waiting.filter((w) => w.kind === 'draft').length && 'drafts'].filter(Boolean).join(' and ') : 'all clear'}</small></div>
-			<div class="bd-stat"><span>Spent in {month}</span><b>{inr(d.spent_month)}</b><small>{d.to_pay ? `${inr(d.to_pay)} still to pay` : 'nothing to pay'}</small></div>
-			<div class="bd-stat"><span>Going live soon</span><b>{d.live_soon.length}</b><small>{d.live_soon[0] ? `${firstName(d.live_soon[0].creator)} · ${fmt(d.live_soon[0].live_date)}` : 'in the next 7 days'}</small></div>
-		</div>
+		<!-- Laptops: the studio's Today, for a brand. -->
+		<header class="bl-h rv">
+			<div>
+				<span class="bl-eb">{T.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}{waiting.length ? ` · ${waiting.length} waiting on you` : ''}</span>
+				<h1>{greet}{#if who}, <em>{who}</em>{/if}</h1>
+			</div>
+			<div class="bl-acts">
+				<a class="bl-neo bl-ghost" href="/brand/creators?tab=discover">Find creators</a>
+				{#if onApp}<a class="bl-neo bl-grad" href="/brand/campaigns/new">+ New campaign</a>{:else if pub.data?.accepting !== false}<a class="bl-neo bl-grad" href="/brand/new">+ New request</a>{/if}
+			</div>
+		</header>
 
-		<div class="bd-grid">
-			<section class="rv" style="--i:2" aria-label="Waiting on you">
-				<h2 class="bd-h">Waiting on you</h2>
+		<!-- Creators as rings, like the studio's brands. -->
+		<section class="bl-rings rv" style="--i:1" aria-label="Your creators">
+			<a class="bl-ring bl-add" href="/brand/creators?tab=discover"><span>+</span><small>Find creators</small></a>
+			{#each d.creators as c (c.id)}
+				<a class="bl-ring" class:hot={!!c.waiting} href={at(c.slug, '/brand/requests')} title={line(c)}><span><Avatar name={c.name} src={c.photo} size="56px" /></span><small>{firstName(c.name)}</small></a>
+			{/each}
+		</section>
+
+		<div class="bl-grid">
+			<section class="bl-money rv" style="--i:2">
+				<span class="bl-eb">Spent in {month}</span>
+				<b class="bl-big">{inr(d.spent_month)}</b>
+				<span class="bl-sub">{d.to_pay ? `${inr(d.to_pay)} still to pay` : 'Nothing to pay right now'}</span>
+				<div class="bl-mini">
+					<div><small>Open requests</small><b>{d.open}</b></div>
+					<div><small>Going live</small><b>{d.live_soon[0] ? fmt(d.live_soon[0].live_date) : '—'}</b></div>
+					<div><small>Creators</small><b>{d.creators.length}</b></div>
+				</div>
+			</section>
+			<section class="bl-wait rv" style="--i:3" aria-label="Waiting on you">
+				<span class="bl-eb">Waiting on you · {waiting.length}</span>
 				{#if waiting.length}
-					<div class="bd-list">
-						{#each waiting as w (w.kind + w.code + (w.round ?? ''))}
-							<a class="bd-row" href={at(w.slug, `/brand/r/${w.code}`)}>
-								<i></i>
-								<span><b>{w.kind === 'quote' ? `Quote ready from ${firstName(w.creator)}` : `Draft to approve from ${firstName(w.creator)}`}</b><small>{w.code}{w.kind === 'quote' && w.amount ? ` · ${inr(w.amount)}` : ''}{w.kind === 'draft' && w.live_date ? ` · goes live ${fmt(w.live_date)}` : ''}</small></span>
-								<em>Review</em>
-							</a>
+					<div class="tks">
+						{#each waiting as w, i (w.kind + w.code + (w.round ?? ''))}
+							<Ticket
+								name={w.creator}
+								sub={w.code}
+								money={w.kind === 'quote' && w.amount ? inrS(w.amount) : ''}
+								moneySub={w.kind === 'quote' ? 'quote' : ''}
+								task={w.kind === 'quote' ? `Review ${firstName(w.creator)}'s quote` : `Approve ${firstName(w.creator)}'s draft`}
+								status={w.kind === 'draft' && w.live_date ? `Goes live ${fmt(w.live_date)}` : 'Waiting on you'}
+								tone="hot"
+								href={at(w.slug, `/brand/r/${w.code}`)}
+								{i}
+							>
+								<a class="btn primary" href={at(w.slug, `/brand/r/${w.code}`)}>{w.kind === 'quote' ? 'Review' : 'Approve'}</a>
+							</Ticket>
 						{/each}
 					</div>
 				{:else}
 					<p class="bd-none">Nothing needs you right now. Quotes and drafts to approve show up here.</p>
 				{/if}
-			</section>
-
-			<section class="rv" style="--i:3" aria-label="Your creators">
-				<div class="bd-hh"><h2 class="bd-h">Your creators</h2><a href="/brand/creators">See all</a></div>
-				<div class="bd-cr">
-					{#each d.creators as c (c.id)}
-						<a class="bd-c" href={at(c.slug, '/brand/requests')}>
-							<Avatar name={c.name} src={c.photo} size="44px" />
-							<span><b>{firstName(c.name)}</b><small>{line(c)}</small></span>
-							{#if chip(c)}<em class:hot={!!c.waiting}>{chip(c)}</em>{/if}
-						</a>
-					{/each}
-					<a class="bd-c bd-more" href="/brand/creators?tab=discover">
-						<span class="bd-plus" aria-hidden="true">+</span>
-						<span><b>Find more creators</b><small>Creators on Miracle who are open to brands</small></span>
-					</a>
-				</div>
 			</section>
 		</div>
 	{:else if !brandHome.error}
@@ -164,68 +209,318 @@
 {/if}
 
 <style>
-	.bd-welcome {
+	.bw-setup {
 		display: grid;
 		gap: 16px;
-		max-width: 820px;
-		padding: 30px;
-		border-radius: 24px;
-		background:
-			radial-gradient(120% 120% at 0% 0%, color-mix(in oklab, var(--g1) 16%, transparent), transparent 55%),
-			var(--surface);
+		padding: 22px 24px;
+		border-radius: 22px;
+		background: var(--surface);
 		box-shadow: inset 0 0 0 1px var(--line-strong);
+		margin-bottom: 26px;
 	}
-	.bd-welcome h1 {
-		margin: 0;
-		font-size: clamp(32px, 5vw, 48px);
-		line-height: 1.02;
-		letter-spacing: -0.02em;
-	}
-	.bd-welcome h1 em {
-		font-family: var(--f-serif);
-		font-weight: 400;
-	}
-	.bd-welcome p {
-		margin: 0;
-		max-width: 60ch;
-		color: var(--ink-2);
-		font-size: 16px;
-		line-height: 1.55;
-	}
-	.bd-wa {
+	.bw-top {
 		display: flex;
-		flex-wrap: wrap;
+		align-items: baseline;
+		justify-content: space-between;
 		gap: 12px;
 	}
-	.bd-ghost {
-		background: transparent;
+	.bw-top b {
+		font-family: var(--f-serif, Georgia, serif);
+		font-weight: 400;
+		font-size: 26px;
+	}
+	.bw-top em {
+		color: var(--g2);
+	}
+	.bw-top small {
+		font-size: 11px;
+		font-weight: 700;
+		letter-spacing: 0.2em;
+		text-transform: uppercase;
+		color: var(--ink-3);
+	}
+	.bw-bar {
+		display: flex;
+		gap: 6px;
+	}
+	.bw-bar i {
+		flex: 1;
+		height: 4px;
+		background: var(--line-strong);
+	}
+	.bw-bar i.on {
+		background: var(--g2);
+	}
+	.bw-list {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
+		gap: 14px 28px;
+	}
+	.bw-it {
+		display: flex;
+		align-items: center;
+		gap: 14px;
+	}
+	.bw-dot {
+		flex: none;
+		width: 26px;
+		height: 26px;
+		border-radius: 50%;
+		display: grid;
+		place-items: center;
+		box-shadow: inset 0 0 0 1.5px var(--line-strong);
+		font-size: 13px;
+		color: #fff;
+	}
+	.bw-it.done .bw-dot {
+		background: var(--g2);
+		box-shadow: none;
+	}
+	.bw-t {
+		flex: 1;
+		min-width: 0;
+		display: grid;
+	}
+	.bw-t b {
+		font-size: 15px;
+	}
+	.bw-it.done .bw-t b {
+		color: var(--ink-3);
+		text-decoration: line-through;
+	}
+	.bw-t small {
+		font-size: 12.5px;
+		color: var(--ink-3);
+	}
+	.bw-go {
+		flex: none;
+		display: inline-grid;
+		place-items: center;
+		height: 36px;
+		padding: 0 12px;
+		background: var(--ink);
+		color: var(--bg);
+		font: 700 13px/1 var(--f-body);
+		text-decoration: none;
+		box-shadow: 3px 3px 0 var(--g2);
+	}
+	.bw-ghost {
+		display: inline-grid;
+		place-items: center;
+		height: 36px;
+		padding: 0 12px;
 		color: var(--ink);
+		font: 700 13px/1 var(--f-body);
+		text-decoration: none;
 		box-shadow: inset 0 0 0 1.5px var(--ink-3);
 	}
-	.bd-wsteps {
-		margin: 6px 0 0;
-		padding: 0;
-		list-style: none;
-		counter-reset: w;
+	.bw-cr {
 		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
 		gap: 12px;
 	}
-	.bd-wsteps li {
-		counter-increment: w;
+	.bw-hh {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+	}
+	.bw-hh a {
+		font-size: 13px;
+		color: var(--ink-2);
+	}
+	.bw-cards {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
+		gap: 14px;
+	}
+	.bw-card {
+		display: grid;
+		align-content: start;
+		gap: 10px;
+		padding: 18px;
+		border-radius: 18px;
+		background: var(--surface);
+		box-shadow: inset 0 0 0 1px var(--line-strong);
+	}
+	.bw-who {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+	}
+	.bw-who span {
+		display: grid;
+		min-width: 0;
+	}
+	.bw-who b {
+		font-family: var(--f-serif, Georgia, serif);
+		font-style: italic;
+		font-weight: 400;
+		font-size: 22px;
+	}
+	.bw-who small,
+	.bw-n {
+		font-size: 13px;
+		color: var(--ink-3);
+	}
+	.bw-acts {
+		display: flex;
+		gap: 8px;
+	}
+	.bw-more {
+		place-items: center;
+		text-align: center;
+		color: var(--ink-3);
+		font-size: 14px;
+		background: none;
+		box-shadow: inset 0 0 0 1.5px var(--line-strong);
+		border: 0;
+	}
+	.bl-h {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: flex-end;
+		justify-content: space-between;
+		gap: 16px 24px;
+		margin-bottom: 26px;
+	}
+	.bl-h h1 {
+		margin: 6px 0 0;
+		font-family: var(--f-serif, Georgia, serif);
+		font-weight: 400;
+		font-size: clamp(38px, 4vw, 50px);
+		line-height: 1.04;
+		letter-spacing: -0.01em;
+	}
+	.bl-h h1 em {
+		font-style: italic;
+		background: linear-gradient(90deg, var(--g1), var(--g2) 60%, var(--g3));
+		-webkit-background-clip: text;
+		background-clip: text;
+		color: transparent;
+		padding-right: 4px;
+	}
+	.bl-eb {
+		font-size: 11px;
+		font-weight: 700;
+		letter-spacing: 0.17em;
+		text-transform: uppercase;
+		color: var(--ink-3);
+	}
+	.bl-acts {
+		display: flex;
+		gap: 12px;
+	}
+	.bl-neo {
+		display: inline-grid;
+		place-items: center;
+		height: 46px;
+		padding: 0 20px;
+		font: 700 14px/1 var(--f-body);
+		text-decoration: none;
+	}
+	.bl-grad {
+		background: var(--grad);
+		color: var(--on-grad);
+		box-shadow: 4px 4px 0 color-mix(in oklab, var(--g1) 70%, black);
+	}
+	.bl-ghost {
+		background: var(--ink);
+		color: var(--bg);
+		box-shadow: 4px 4px 0 var(--g2);
+	}
+	.bl-rings {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 18px;
+		margin-bottom: 26px;
+	}
+	.bl-ring {
+		display: grid;
+		justify-items: center;
+		gap: 6px;
+		width: 76px;
+		color: var(--ink-2);
+		text-decoration: none;
+	}
+	.bl-ring > span {
+		width: 64px;
+		height: 64px;
+		border-radius: 50%;
+		padding: 3px;
+		background: var(--line-strong);
+		display: grid;
+		place-items: center;
+	}
+	.bl-ring.hot > span {
+		background: conic-gradient(var(--g1), var(--g2), var(--g3), var(--g1));
+	}
+	.bl-add > span {
+		background: none;
+		border: 1.5px dashed var(--line-strong);
+		font-size: 24px;
+	}
+	.bl-ring small {
+		font-size: 12px;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		max-width: 100%;
+	}
+	.bl-grid {
+		display: grid;
+		grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+		gap: 22px;
+		align-items: start;
+	}
+	.bl-money {
+		display: grid;
+		gap: 12px;
+		padding: 26px;
+		border-radius: 24px;
+		background: radial-gradient(120% 120% at 0% 0%, color-mix(in oklab, var(--g2) 18%, transparent), transparent 55%), var(--surface);
+		box-shadow: inset 0 0 0 1px var(--line-strong);
+	}
+	.bl-big {
+		font-family: var(--f-serif, Georgia, serif);
+		font-weight: 400;
+		font-size: 64px;
+		line-height: 1;
+	}
+	.bl-sub {
+		font-size: 14px;
+		color: var(--ink-2);
+	}
+	.bl-mini {
+		display: grid;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		gap: 10px;
+		margin-top: 6px;
+	}
+	.bl-mini div {
 		display: grid;
 		gap: 4px;
 		padding: 14px;
 		border-radius: 14px;
+		background: var(--bg);
 		box-shadow: inset 0 0 0 1px var(--line);
 	}
-	.bd-wsteps b::before {
-		content: counter(w) '  ';
-		color: var(--g2);
-	}
-	.bd-wsteps span {
-		font-size: 14px;
+	.bl-mini small {
+		font-size: 12px;
 		color: var(--ink-3);
+	}
+	.bl-mini b {
+		font-family: var(--f-serif, Georgia, serif);
+		font-weight: 400;
+		font-size: 30px;
+		line-height: 1.1;
+	}
+	.bl-wait {
+		display: grid;
+		gap: 12px;
+	}
+	@media (max-width: 1100px) {
+		.bl-grid {
+			grid-template-columns: minmax(0, 1fr);
+		}
 	}
 	.bd-hero {
 		display: flex;
@@ -340,19 +635,9 @@
 		background: var(--surface);
 		box-shadow: inset 0 0 0 1px var(--line);
 	}
-	.bd-stat.hot {
-		background:
-			radial-gradient(120% 90% at 0% 0%, color-mix(in oklab, var(--g3) 16%, transparent), transparent 60%),
-			var(--surface);
-		box-shadow: inset 0 0 0 1px var(--line-strong);
-	}
 	.bd-stat span {
 		font-size: 13px;
 		color: var(--ink-3);
-	}
-	.bd-stat.hot span {
-		color: var(--g3);
-		font-weight: 600;
 	}
 	.bd-stat b {
 		font-family: var(--f-serif);
@@ -366,11 +651,6 @@
 	.bd-stat small {
 		font-size: 12.5px;
 		color: var(--ink-3);
-	}
-	.bd-grid {
-		display: grid;
-		grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
-		gap: 24px;
 	}
 	.bd-h {
 		margin: 0 0 12px;
@@ -390,58 +670,6 @@
 		color: var(--ink-2);
 		text-decoration: none;
 	}
-	.bd-list {
-		display: grid;
-		border-radius: 18px;
-		background: var(--surface);
-		box-shadow: inset 0 0 0 1px var(--line);
-		overflow: hidden;
-	}
-	.bd-row {
-		display: flex;
-		align-items: center;
-		gap: 14px;
-		padding: 16px 18px;
-		color: var(--ink);
-		text-decoration: none;
-	}
-	.bd-row + .bd-row {
-		border-top: 1px solid var(--line);
-	}
-	.bd-row:hover {
-		background: color-mix(in oklab, var(--ink) 4%, transparent);
-	}
-	.bd-row i {
-		width: 4px;
-		height: 36px;
-		border-radius: 4px;
-		background: var(--g3);
-		flex: none;
-	}
-	.bd-row span {
-		flex: 1;
-		min-width: 0;
-		display: grid;
-		gap: 2px;
-	}
-	.bd-row b {
-		font-weight: 600;
-	}
-	.bd-row small {
-		font-size: 13px;
-		color: var(--ink-3);
-	}
-	.bd-row em {
-		font-style: normal;
-		font-size: 12px;
-		font-weight: 700;
-		letter-spacing: 0.12em;
-		text-transform: uppercase;
-		padding: 10px 14px;
-		color: var(--bg);
-		background: var(--ink);
-		box-shadow: 3px 3px 0 var(--g2);
-	}
 	.bd-none {
 		margin: 0;
 		padding: 18px;
@@ -449,10 +677,6 @@
 		box-shadow: inset 0 0 0 1px var(--line);
 		color: var(--ink-3);
 		font-size: 14px;
-	}
-	.bd-cr {
-		display: grid;
-		gap: 10px;
 	}
 	.bd-c {
 		display: flex;
@@ -484,20 +708,6 @@
 	.bd-c small {
 		font-size: 12.5px;
 		color: var(--ink-3);
-	}
-	.bd-c em {
-		font-style: normal;
-		font-size: 11px;
-		font-weight: 700;
-		padding: 4px 8px;
-		border-radius: 99px;
-		background: color-mix(in oklab, var(--ink) 8%, transparent);
-		color: var(--ink-2);
-		white-space: nowrap;
-	}
-	.bd-c em.hot {
-		background: color-mix(in oklab, var(--g3) 16%, transparent);
-		color: var(--g3);
 	}
 	.bd-more {
 		background: transparent;
@@ -628,9 +838,6 @@
 	@media (max-width: 900px) {
 		.bd-stats {
 			grid-template-columns: repeat(2, minmax(0, 1fr));
-		}
-		.bd-grid {
-			grid-template-columns: minmax(0, 1fr);
 		}
 		.bd-hero .bd-neo {
 			display: none;

@@ -11,6 +11,9 @@
 	import { loadPublicPage, pub } from '#lib/publicPage.svelte.ts';
 	import BrandTopbar from '#lib/components/BrandTopbar.svelte';
 	import BrandFooter from '#lib/components/BrandFooter.svelte';
+	import BrandSide from '#lib/components/BrandSide.svelte';
+	import { loadBrandIg } from '#lib/brandIg.svelte.ts';
+	import { PHONE_Q, phone } from '#lib/phone.svelte.ts';
 
 	let { children }: LayoutProps = $props();
 	// Anyone can start a request (they confirm their email when sending); everything else needs sign-in.
@@ -49,10 +52,30 @@
 		if (!pub.data) loadPublicPage();
 		if (auth.account?.role === 'brand') loadRequests();
 	});
+	$effect(() => {
+		if (auth.account?.role === 'brand') loadBrandIg();
+	});
+	// Laptops: the creator studio's frame (side menu + page). Phones and signed-out visitors keep the bar.
+	// The phone bar starts the phone behaviours, but on a laptop it isn't shown, so the width is watched here too.
+	const mq = matchMedia(PHONE_Q);
+	phone.on = mq.matches;
+	onMount(() => {
+		const on = () => (phone.on = mq.matches);
+		mq.addEventListener('change', on);
+		return () => mq.removeEventListener('change', on);
+	});
+	const desk = $derived(!phone.on && auth.account?.role === 'brand');
 </script>
 
 {#if allowed}
-	<BrandTopbar />
-	<div class="page"><div class="wrap">{@render children()}</div></div>
-	<BrandFooter />
+	{#if desk}
+		<div class="app at brand-desk">
+			<BrandSide />
+			<main class="main"><div class="pg">{@render children()}</div></main>
+		</div>
+	{:else}
+		<BrandTopbar />
+		<div class="page"><div class="wrap">{@render children()}</div></div>
+		<BrandFooter />
+	{/if}
 {/if}

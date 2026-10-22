@@ -17,6 +17,7 @@
 	import PayPill from '#lib/components/PayPill.svelte';
 	import CollabRow from '#lib/components/CollabRow.svelte';
 	import { phone } from '#lib/phone.svelte.ts';
+	import BrandVerified from '#lib/components/BrandVerified.svelte';
 	import { hueOf, initials, inrS } from '#lib/util.ts';
 
 	const brand = $derived(studio.brands.find((b) => b.id === page.params.id));
@@ -96,6 +97,7 @@
 			<div>
 				<div class="eb">{brand.category}{brand.instagram ? ` · @${brand.instagram}` : ''}</div>
 				<h1>{brand.name}</h1>
+				<BrandVerified brandId={brand.id} />
 				{#if referred.length}<p class="ref-by"><Icon name="users" />Recommended you to {referred.length} brand{referred.length === 1 ? '' : 's'}: {[...new Set(referred.map((x) => x.brand.name))].join(', ')}</p>{/if}
 			</div>
 		</div>

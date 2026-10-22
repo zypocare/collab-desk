@@ -58,7 +58,7 @@
 		{ href: '/brand/business/calendar', label: 'Calendar' },
 		{ href: '/brand/business/shipping', label: 'Shipping' },
 		{ href: '/brand/business/team', label: 'Team' },
-		{ href: '/brand/details', label: 'Company' }
+		{ href: '/brand/settings', label: 'Settings' }
 	];
 	const CREATORS = [
 		{ href: '/brand/creators', label: 'Yours', key: '' },
@@ -66,7 +66,7 @@
 		{ href: '/brand/creators?tab=discover', label: 'Discover', key: 'discover' }
 	];
 	const segs = $derived(
-		path.startsWith('/brand/business/') || (path === '/brand/details' && page.url.searchParams.get('new') !== '1')
+		path.startsWith('/brand/business/') || path === '/brand/settings'
 			? BUSINESS.map((t) => ({ ...t, on: t.href === path }))
 			: path === '/brand/creators' && !page.url.searchParams.get('pool')
 				? CREATORS.map((t) => ({ ...t, on: (page.url.searchParams.get('tab') ?? '') === t.key }))
@@ -92,18 +92,18 @@
 		: path.startsWith('/brand/campaigns/') ? 'Campaign'
 		: path === '/brand/new' ? 'New request'
 		: isNew ? 'Add a brand'
-		: path === '/brand/details' ? 'Business'
+		: path === '/brand/details' || path === '/brand/settings' ? 'Settings'
 		: path.startsWith('/brand/business/') ? 'Business'
 		: path.startsWith('/brand/r/') ? path.split('/')[3]
 		: path.startsWith('/insights') ? 'Insights'
 		: ''
 	);
-	const sub = $derived(path === '/' ? 'Brand collaborations' : signedIn && name && path !== '/brand' && !path.startsWith('/brand/creators') && !path.startsWith('/brand/campaigns') && !path.startsWith('/brand/business') && path !== '/brand/details' && path !== '/brand/autopilots' ? `with ${first}` : '');
+	const sub = $derived(path === '/' ? 'Brand collaborations' : signedIn && name && path !== '/brand' && !path.startsWith('/brand/creators') && !path.startsWith('/brand/campaigns') && !path.startsWith('/brand/business') && path !== '/brand/details' && path !== '/brand/settings' && path !== '/brand/autopilots' ? `with ${first}` : '');
 	const back = $derived(
 		path.startsWith('/brand/r/') ? '/brand/requests'
 		: path.startsWith('/brand/campaigns/') ? '/brand/campaigns'
 		: path === '/brand/autopilots' ? '/brand'
-		: isNew ? '/brand/details'
+		: isNew ? '/brand/settings'
 		: path.startsWith('/insights') ? '/'
 		: path === '/brand/new' ? (signedIn ? '/brand/requests' : '/')
 		: ''
@@ -240,7 +240,7 @@
 		<a href="/brand/creators" aria-current={path === '/brand/creators' ? 'page' : undefined}><span class="bt-ic"><Icon name="users" /></span><span>Creators</span></a>
 		<a href="/brand/campaigns" aria-current={path.startsWith('/brand/campaigns') ? 'page' : undefined}><span class="bt-ic"><Icon name="send" /></span><span>Campaigns</span></a>
 		{#if !onApp}<a href="/brand/requests" aria-current={path === '/brand/requests' || path.startsWith('/brand/r/') ? 'page' : undefined}><span class="bt-ic"><Icon name="inbox" />{#if unread}<i class="bt-n">{unread}</i>{/if}</span><span>Requests</span></a>{/if}
-		<a href="/brand/business/money" aria-current={path.startsWith('/brand/business') || path.startsWith('/brand/details') ? 'page' : undefined}><span class="bt-ic"><Icon name="box" /></span><span>Business</span></a>
+		<a href="/brand/business/money" aria-current={path.startsWith('/brand/business') || path.startsWith('/brand/details') || path === '/brand/settings' ? 'page' : undefined}><span class="bt-ic"><Icon name="box" /></span><span>Business</span></a>
 	</nav>
 {/if}
 

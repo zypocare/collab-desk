@@ -88,6 +88,7 @@
 	import { INVOICE_STATUS, KIND_LABEL, balanceDue, type Invoice } from '../invoice';
 	import InvoiceDialog from './InvoiceDialog.svelte';
 	import PaymentDialog from './PaymentDialog.svelte';
+	import BrandVerified from './BrandVerified.svelte';
 
 	// page: shown as its own full page (/studio/c/CODE) instead of a side drawer.
 	// Full-page jump bar: only for sections this collab actually shows.
@@ -381,6 +382,7 @@
 					}}
 				/>
 				<div class="dr-sub"><span class="id">{c.code}</span> · {TYPE_LABEL[c.type]} · received {fmt(c.received_on)}{#if c.referred_by && studio.brands.find((b) => b.id === c.referred_by)} · <span class="ref-by"><Icon name="users" />Referred by {studio.brands.find((b) => b.id === c.referred_by)?.name}</span>{/if}</div>
+				<BrandVerified brandId={c.brand_id} />
 			</div>
 			<button class="icon-btn" onclick={close} aria-label={page ? 'Back' : 'Close'} bind:this={closeBtn}><Icon name={page ? 'back' : 'x'} /></button>
 		</header>

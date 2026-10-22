@@ -2038,3 +2038,65 @@
   /* The website-style footer is for laptops; on phones the bottom bar ends the page. */
   [data-side="brand"] .bf { display: none; }
 }
+
+/* ==========================================================================================
+   Brand side on laptops: the creator studio's frame, exactly. The same side menu (copied from
+   the studio's rules above), Geist type, a serif page title over a small spaced-capital line,
+   and no website footer; signed-out visitors keep the simple top bar.
+   ========================================================================================== */
+@media (min-width: 761px) {
+  [data-side="brand"] {
+    --f-body: 'Geist', 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --f-display: var(--f-body);
+    --at-rail: #FFFFFF; --at-2: #F5F0F0; --at-raise: #EFE8E9; --at-line: #EAE2E2; --at-line-2: #DCD2D2; --at-ink-3: #71676E;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"])[data-side="brand"] { --at-rail: #0C090C; --at-2: #221C22; --at-raise: #2A232A; --at-line: #2C242C; --at-line-2: #3B313B; --at-ink-3: #9D939B; }
+  }
+  :root[data-theme="dark"][data-side="brand"] { --at-rail: #0C090C; --at-2: #221C22; --at-raise: #2A232A; --at-line: #2C242C; --at-line-2: #3B313B; --at-ink-3: #9D939B; }
+
+  [data-side="brand"] .app.at { display: grid; grid-template-columns: 248px minmax(0, 1fr); background: none; min-height: 100vh; }
+  [data-side="brand"] .app.at > .main { min-width: 0; padding: 0 40px 64px; max-width: none; background: radial-gradient(900px 420px at 85% -10%, rgba(156, 123, 255, .14), transparent 60%), radial-gradient(700px 380px at 20% -10%, rgba(242, 90, 144, .12), transparent 60%); }
+  [data-side="brand"] .app.at .pg { padding-top: 30px; }
+  [data-side="brand"] .app.at .side-av { width: 40px; height: 40px; flex: none; display: grid; place-items: center; }
+  [data-side="brand"] .side { padding: 26px 16px 22px; gap: 6px; background: #09070A; border-right: 1px solid #1f191f; color: #F4EEF2; }
+  [data-side="brand"] .side-logo { gap: 10px; padding: 0 8px 22px; color: #F4EEF2; }
+  [data-side="brand"] .side-logo svg { width: 30px; height: 30px; }
+  [data-side="brand"] .side-logo span { font: italic 400 26px var(--f-serif, Georgia, serif); letter-spacing: -.01em; }
+  [data-side="brand"] .side-logo circle[stroke="var(--ink)"] { stroke: #fff; }
+  [data-side="brand"] .side-nav { gap: 6px; }
+  [data-side="brand"] .side-it { position: relative; height: 44px; gap: 14px; padding: 0 12px; border-radius: 0; color: rgba(255, 255, 255, .5); font-size: 11.5px; font-weight: 700; letter-spacing: .13em; text-transform: uppercase; box-shadow: none; background: none; }
+  [data-side="brand"] .side-it .ic { width: 19px; height: 19px; }
+  [data-side="brand"] .side-it:hover { background: rgba(255, 255, 255, .04); color: rgba(255, 255, 255, .8); }
+  [data-side="brand"] .side-it[aria-current="page"] { background: rgba(255, 255, 255, .06); color: #fff; box-shadow: none; }
+  [data-side="brand"] .side-it[aria-current="page"]::before { content: ''; position: absolute; left: -16px; top: 10px; bottom: 10px; width: 3px; border-radius: 0 3px 3px 0; background: linear-gradient(180deg, #9C7BFF, #F25A90, #FFAE6B); }
+  [data-side="brand"] .side-badge { min-width: 20px; height: 20px; padding: 0 6px; box-sizing: border-box; border-radius: 999px; background: #FF7B70; color: #1C0912; font: 800 11px/20px var(--f-body, inherit); letter-spacing: 0; text-align: center; }
+  [data-side="brand"] .side-end { margin-top: auto; display: flex; flex-direction: column; gap: 16px; padding: 0 4px; }
+  [data-side="brand"] .side-ask { position: relative; overflow: hidden; height: 48px; border: 0; border-radius: 0; background: #F4EEF2; color: #1E171C; font: 700 14.5px var(--f-body, inherit); display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 4px 4px 0 #F25A90; text-decoration: none; cursor: pointer; transition: transform .07s, box-shadow .07s; }
+  [data-side="brand"] .side-ask .ic { width: 17px; height: 17px; color: #C8255E; }
+  [data-side="brand"] .side-ask:active { transform: translate(3px, 3px); box-shadow: none; }
+  [data-side="brand"] .side-ask::after { content: ''; position: absolute; top: 0; bottom: 0; left: -60%; width: 45%; background: linear-gradient(100deg, transparent, rgba(255, 255, 255, .55), transparent); transform: skewX(-18deg); animation: cr-sweep 5s ease-in-out 1s infinite; }
+  [data-side="brand"] .side-who { display: flex; align-items: center; gap: 10px; padding-top: 14px; border-top: 1px solid #1f191f; color: #F4EEF2; text-decoration: none; }
+  [data-side="brand"] .side-who > span:last-child { display: grid; gap: 2px; min-width: 0; }
+  [data-side="brand"] .side-who b { font-size: 14px; }
+  [data-side="brand"] .side-who small { font-size: 12px; color: #A39AA1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  [data-side="brand"] .side-av { width: 40px; height: 40px; flex: none; display: grid; place-items: center; }
+
+  /* The creator you're working with, under the logo. */
+  [data-side="brand"] .side-cr { display: flex; align-items: center; gap: 10px; margin: 0 0 14px; padding: 10px 12px; border: 1px solid #2E262E; border-radius: 12px; background: #161116; color: #F4EEF2; font: inherit; text-align: left; cursor: pointer; }
+  [data-side="brand"] .side-cr:hover { border-color: #3E343E; }
+  [data-side="brand"] .side-cr > span:nth-child(2) { flex: 1; display: grid; min-width: 0; }
+  [data-side="brand"] .side-cr small { font-size: 10.5px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: #A39AA1; }
+  [data-side="brand"] .side-cr b { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  [data-side="brand"] .side-cr .ic { width: 14px; height: 14px; color: #A39AA1; }
+  [data-side="brand"] .side-menu { position: absolute; left: 16px; right: 16px; z-index: 60; display: grid; gap: 2px; padding: 6px; border-radius: 14px; background: #1A151A; box-shadow: 0 0 0 1px #3E343E, 0 24px 60px -20px #000; }
+  [data-side="brand"] .side-menu button, [data-side="brand"] .side-menu a { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border: 0; border-radius: 10px; background: none; color: #F4EEF2; font: 500 14px var(--f-body); text-align: left; text-decoration: none; cursor: pointer; }
+  [data-side="brand"] .side-menu :is(button, a):hover { background: #221B22; }
+  [data-side="brand"] .side-menu small { margin-left: auto; font-size: 12px; color: #A39AA1; }
+
+  /* Page titles as in the studio: serif, with a small spaced-capital line above. */
+  [data-side="brand"] .app.at :is(.ph, .cr-h, .cp-h, .ap-h, .bz-h) h1 { margin: 0; font-family: var(--f-serif, Georgia, serif); font-weight: 400; font-size: 52px; line-height: 1.02; letter-spacing: -.01em; }
+  [data-side="brand"] .app.at :is(.ph, .cr-h, .cp-h, .ap-h, .bz-h) h1 em { font-style: italic; background: linear-gradient(90deg, var(--g1), var(--g2) 60%, var(--g3)); -webkit-background-clip: text; background-clip: text; color: transparent; padding-right: 4px; }
+  [data-side="brand"] .app.at .ph .eb { margin-bottom: 6px; font-size: 11px; font-weight: 700; letter-spacing: .17em; text-transform: uppercase; color: var(--ink-3); }
+  [data-side="brand"] .app.at :is(.ph, .cp-h, .ap-h) p { font-size: 14.5px; color: var(--ink-3); }
+}

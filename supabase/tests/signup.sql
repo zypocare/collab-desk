@@ -86,6 +86,29 @@ reset role;
 insert into results select 'The creator sees Orbit Snacks', exists (select 1 from public.brands where name = 'Orbit Snacks' and creator_id = 1), null;
 select set_config('request.headers', '{}', true);
 
+-- The brand connects its own Instagram (the server function writes these rows); creators see it as verified
+insert into public.brand_ig (owner, ig_user_id, username, name, followers) values (:'k_uid', 'ig-orbit-1', 'orbitsnacks', 'Orbit Snacks', 12400);
+insert into public.brand_ig_token (owner, access_token) values (:'k_uid', 'test-token');
+select set_config('request.jwt.claims', json_build_object('email', 'campaignbrand@test.dev', 'sub', :'k_uid', 'role', 'authenticated')::text, true);
+set local role authenticated;
+insert into results select 'The brand sees its Instagram', (public.brand_ig_get() ->> 'username') = 'orbitsnacks', public.brand_ig_get()::text;
+insert into results select 'The brand admin may connect', public.brand_ig_owner() = :'k_uid'::uuid, null;
+insert into results select 'Nobody signed in reads the token', not has_table_privilege('authenticated', 'public.brand_ig_token', 'select'), null;
+reset role;
+select creator_email as cr_email from public.creator_settings where id = 1 \gset
+select id as orbit_id from public.brands where name = 'Orbit Snacks' and creator_id = 1 \gset
+select set_config('request.jwt.claims', json_build_object('email', lower(:'cr_email'), 'sub', gen_random_uuid(), 'role', 'authenticated')::text, true);
+set local role authenticated;
+insert into results select 'The creator sees the brand as verified', (public.brand_verified(:'orbit_id') ->> 'username') = 'orbitsnacks', coalesce(public.brand_verified(:'orbit_id')::text, 'null');
+insert into results select 'A creator gets no brand Instagram of their own', public.brand_ig_get() is null and public.brand_ig_owner() is null, null;
+reset role;
+select set_config('request.jwt.claims', json_build_object('email', 'campaignbrand@test.dev', 'sub', :'k_uid', 'role', 'authenticated')::text, true);
+set local role authenticated;
+select public.brand_ig_disconnect() is null as gone \gset
+insert into results select 'Disconnecting removes it', public.brand_ig_get() is null, null;
+reset role;
+insert into results select 'and the token with it', not exists (select 1 from public.brand_ig_token where owner = :'k_uid'), null;
+
 -- Anyone signed out can't sign up
 select set_config('request.jwt.claims', '', true);
 set local role anon;

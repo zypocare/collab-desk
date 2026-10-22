@@ -6,6 +6,9 @@
 // send her straight back to this function (GET, with the code and that state), which checks the
 // state, saves the token for that creator and sends her on to her own site. The studio's own
 // callback page (POST with the code) still works: there the signed-in person says who she is.
+//
+// Brands connect too (Settings, Company & Instagram): only their profile is read, to show creators the
+// brand's real handle, photo and followers as "Verified on Instagram". Their state carries "b:<team owner>".
 import { admin } from '../_shared/admin.ts';
 import { creatorOfCaller, settingsOf } from '../_shared/creators.ts';
 import { authorizeUrl, ensureMessages, ig } from '../_shared/instagram.ts';
@@ -20,6 +23,9 @@ const STATE_SECRET = Deno.env.get('INSTAGRAM_APP_SECRET') ?? '';
 const STATE_LIFE = 15 * 60; // seconds
 const BASIC = ['instagram_business_basic', 'instagram_business_manage_insights'];
 const EXTRA = ['instagram_business_manage_messages', 'instagram_business_content_publish'];
+const BRAND = ['instagram_business_basic'];
+// Where a brand lands after connecting (Miracle's own address; the sign-in is shared across miracleapp.live).
+const BRAND_SETTINGS = Deno.env.get('BRAND_SETTINGS_URL') ?? 'https://app.miracleapp.live/brand/settings';
 
 const b64url = (bytes: Uint8Array) => btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 
@@ -28,24 +34,58 @@ async function sign(text: string) {
   return b64url(new Uint8Array(await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(`ig-connect:${text}`))));
 }
 
-/** "creator.expires.nonce.signature" */
-async function makeState(creator: number) {
-  const body = `${creator}.${Math.floor(Date.now() / 1000) + STATE_LIFE}.${crypto.randomUUID().replace(/-/g, '').slice(0, 12)}`;
+/** "who.expires.nonce.signature": who is a creator's id, or "b:" and a brand team's owner. */
+async function makeState(who: number | string) {
+  const body = `${who}.${Math.floor(Date.now() / 1000) + STATE_LIFE}.${crypto.randomUUID().replace(/-/g, '').slice(0, 12)}`;
   return `${body}.${await sign(body)}`;
 }
 
-/** The creator a state was made for, or null if it is forged, changed or out of date. */
-async function readState(state: string): Promise<number | null> {
+/** Who a state was made for, or null if it is forged, changed or out of date. */
+async function readWho(state: string): Promise<{ creator?: number; brand?: string } | null> {
   const parts = state.split('.');
   if (parts.length !== 4 || !STATE_SECRET) return null;
-  const [creator, expires, nonce, signature] = parts;
-  const expected = await sign(`${creator}.${expires}.${nonce}`);
+  const [who, expires, nonce, signature] = parts;
+  const expected = await sign(`${who}.${expires}.${nonce}`);
   // Compared in full every time, so the answer doesn't leak how much of it matched.
   let diff = expected.length ^ signature.length;
   for (let i = 0; i < expected.length; i++) diff |= expected.charCodeAt(i) ^ (signature.charCodeAt(i) || 0);
   if (diff !== 0 || Number(expires) * 1000 < Date.now()) return null;
-  const id = Number(creator);
-  return Number.isInteger(id) && id > 0 ? id : null;
+  if (who.startsWith('b:')) return /^[0-9a-f-]{36}$/.test(who.slice(2)) ? { brand: who.slice(2) } : null;
+  const id = Number(who);
+  return Number.isInteger(id) && id > 0 ? { creator: id } : null;
+}
+
+/** The creator a state was made for (creator states only). */
+async function readState(state: string): Promise<number | null> {
+  return (await readWho(state))?.creator ?? null;
+}
+
+/** The brand team owner the signed-in person connects for (the team's Admin), or null. */
+async function brandOfCaller(req: Request): Promise<string | null> {
+  const auth = req.headers.get('authorization') ?? '';
+  if (!auth.startsWith('Bearer ')) return null;
+  const r = await fetch(`${Deno.env.get('SUPABASE_URL')}/rest/v1/rpc/brand_ig_owner`, {
+    method: 'POST',
+    headers: { authorization: auth, apikey: Deno.env.get('SUPABASE_ANON_KEY') ?? '', 'content-type': 'application/json', ...(req.headers.get('x-creator') ? { 'x-creator': req.headers.get('x-creator')! } : {}) },
+    body: '{}'
+  }).catch(() => null);
+  const id = r?.ok ? await r.json().catch(() => null) : null;
+  return typeof id === 'string' && /^[0-9a-f-]{36}$/.test(id) ? id : null;
+}
+
+/** Saves a brand's account (profile only) and its token; one Instagram account belongs to one brand. */
+async function saveBrand(db: ReturnType<typeof admin>, owner: string, token: string, expiresIn: number) {
+  const p = await ig.profile(token);
+  const { data: other } = await db.from('brand_ig').select('owner').eq('ig_user_id', p.user_id).neq('owner', owner).limit(1);
+  if (other?.length) throw new Error(`@${p.username} is already connected to another brand on Miracle.`);
+  const now = new Date().toISOString();
+  const { error } = await db.from('brand_ig').upsert({ owner, ig_user_id: p.user_id, username: p.username, name: p.name ?? '', picture: p.profile_picture_url ?? '', followers: p.followers_count ?? null, media_count: p.media_count ?? null, synced_at: now });
+  if (error) throw new Error(error.message);
+  const { error: tokErr } = await db.from('brand_ig_token').upsert({ owner, access_token: token, expires_at: new Date(Date.now() + expiresIn * 1000).toISOString() });
+  if (tokErr) console.error('[brand token]', tokErr.message);
+  // The handle on the brand's sign-up company, where none was typed.
+  await db.from('brand_profiles').update({ instagram: p.username }).eq('owner', owner).eq('instagram', '');
+  return p;
 }
 
 /** Swaps the code, saves the token as this creator's, starts her DMs and runs the first sync. */
@@ -66,10 +106,28 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
   const db = admin();
 
-  // Instagram sending her back here: the signed state says which creator is connecting.
+  // Instagram sending her back here: the signed state says which creator (or brand) is connecting.
   if (req.method === 'GET') {
     const q = new URL(req.url).searchParams;
-    const creator = await readState(q.get('state') ?? '');
+    const who = await readWho(q.get('state') ?? '');
+    if (who?.brand) {
+      const to = (params: Record<string, string>) => {
+        const u = new URL(BRAND_SETTINGS);
+        for (const [k, v] of Object.entries(params)) u.searchParams.set(k, v);
+        return Response.redirect(u.toString(), 302);
+      };
+      if (q.get('error')) return to({ ig_error: q.get('error_description') || 'Instagram sign-in was cancelled.' });
+      const code = (q.get('code') ?? '').replace(/#_$/, '');
+      if (!code) return to({ ig_error: 'Instagram did not send a sign-in code. Try again.' });
+      try {
+        const t = await ig.exchangeCode(code, CALLBACK);
+        await saveBrand(db, who.brand, t.token, t.expiresIn);
+        return to({ ig: 'connected' });
+      } catch (e) {
+        return to({ ig_error: (e instanceof Error ? e.message : String(e)).slice(0, 300) });
+      }
+    }
+    const creator = who?.creator ?? null;
     if (!creator) return new Response("This sign-in link isn't valid any more. Start again from My page.", { status: 400 });
     const site = String((await settingsOf(db, creator))?.site_url ?? '').replace(/\/$/, '');
     const back = (path: string, params: Record<string, string> = {}) => {
@@ -90,9 +148,33 @@ Deno.serve(async (req) => {
     }
   }
 
+  const { action, code, redirect_uri, state, extra, as } = await req.json().catch(() => ({}));
+
+  // A brand: start the connection, or refresh the profile it shows creators.
+  if (as === 'brand') {
+    const owner = await brandOfCaller(req);
+    if (!owner) return reply({ error: "Only your team's Admin can connect the brand's Instagram." }, 403);
+    if (!ig.configured) return reply({ error: 'Instagram is not set up on the server yet.' }, 400);
+    if (action === 'start') {
+      if (!STATE_SECRET) return reply({ error: 'INSTAGRAM_APP_SECRET is not set on the server.' }, 400);
+      const signed = await makeState(`b:${owner}`);
+      return reply({ url: authorizeUrl(CALLBACK, BRAND.join(','), signed) });
+    }
+    if (action === 'refresh') {
+      const { data: t } = await db.from('brand_ig_token').select('access_token').eq('owner', owner).maybeSingle();
+      if (!t?.access_token) return reply({ error: 'Connect Instagram first.' }, 400);
+      try {
+        const p = await saveBrand(db, owner, t.access_token, 60 * 24 * 3600);
+        return reply({ ok: true, username: p.username });
+      } catch (e) {
+        return reply({ error: e instanceof Error ? e.message : String(e) }, 400);
+      }
+    }
+    return reply({ error: 'Unknown action.' }, 400);
+  }
+
   const creator = await creatorOfCaller(req);
   if (!creator) return reply({ error: 'Only the creator can connect Instagram.' }, 403);
-  const { action, code, redirect_uri, state, extra } = await req.json().catch(() => ({}));
 
   if (action === 'disconnect') {
     await db.from('ig_token').delete().eq('id', creator);
