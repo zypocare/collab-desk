@@ -18,7 +18,7 @@
 
 <header class="cp-h rv">
 	<div><h1>Campaigns</h1><p>One brief to many creators. Each gets their own request and replies with their own quote.</p></div>
-	<a class="cp-neo cp-grad" href="/brand/campaigns/new">+ New campaign</a>
+	<div class="cp-acts"><a class="cp-link" href="/brand/autopilots">Autopilots</a><a class="cp-neo cp-grad" href="/brand/campaigns/new">+ New campaign</a></div>
 </header>
 
 {#if !campaigns.loaded}
@@ -56,6 +56,16 @@
 		margin: 6px 0 0;
 		color: var(--ink-3);
 		font-size: 14.5px;
+	}
+	.cp-acts {
+		display: flex;
+		align-items: center;
+		gap: 18px;
+	}
+	.cp-link {
+		color: var(--ink-2);
+		font-size: 14px;
+		font-weight: 600;
 	}
 	.cp-neo {
 		height: 50px;

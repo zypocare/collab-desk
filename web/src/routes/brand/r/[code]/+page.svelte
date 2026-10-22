@@ -39,6 +39,7 @@
 	import { addressFor } from '#lib/creatorHost.ts';
 	import CampaignTimeline from '#lib/components/CampaignTimeline.svelte';
 	import CampaignDocs from '#lib/components/CampaignDocs.svelte';
+	import DraftChecklist from '#lib/components/DraftChecklist.svelte';
 
 	const r = $derived(brandData.requests.find((x) => x.code.toUpperCase() === (page.params.code ?? '').toUpperCase()));
 	// Not in this list: the request is with another creator (open it on their address; the sign-in is
@@ -286,6 +287,7 @@
 				{/if}
 				{#if pendingDraft.link}<a class="btn" href={pendingDraft.link} target="_blank" rel="noopener"><Icon name="eye" />Open the draft</a>{/if}
 				{#if pendingDraft.caption}<div class="f" style="margin-top:14px"><span class="lbl-t">Caption</span><p class="draft-cap">{pendingDraft.caption}</p></div>{/if}
+				<DraftChecklist draft={pendingDraft.id} onask={(m) => ((feedback = m), (draftMode = 'changes'))} />
 				{#if pendingDraft.note}<blockquote class="note" style="margin-top:14px"><span>Note from {creator}</span><p>{pendingDraft.note}</p></blockquote>{/if}
 				{#if accepted}<p class="hint" style="margin-top:10px">{accepted.revision_rounds} revision round{accepted.revision_rounds === 1 ? '' : 's'} included. This is round {pendingDraft.round}.</p>{/if}
 			</div>

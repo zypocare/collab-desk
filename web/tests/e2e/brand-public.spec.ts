@@ -14,7 +14,7 @@ test('public pages load', async ({ page }) => {
 test('a new brand can sign in and reach the request form', async ({ page }) => {
 	const noErrors = watchErrors(page);
 	await signIn(page, `brand${Date.now()}@example.test`);
-	for (const path of ['/brand', '/brand/requests', '/brand/creators', '/brand/creators?tab=discover', '/brand/creators?tab=pools', '/brand/campaigns', '/brand/campaigns/new']) {
+	for (const path of ['/brand', '/brand/requests', '/brand/creators', '/brand/creators?tab=discover', '/brand/creators?tab=pools', '/brand/campaigns', '/brand/campaigns/new', '/brand/autopilots']) {
 		await page.goto(path);
 		await page.waitForLoadState('networkidle');
 	}

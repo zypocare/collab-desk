@@ -63,6 +63,7 @@
 		: path === '/brand/requests' ? 'Requests'
 		: path === '/brand/creators' ? 'Creators'
 		: path === '/brand/campaigns' ? 'Campaigns'
+		: path === '/brand/autopilots' ? 'Autopilots'
 		: path === '/brand/campaigns/new' ? 'New campaign'
 		: path.startsWith('/brand/campaigns/') ? 'Campaign'
 		: path === '/brand/new' ? 'New request'
@@ -76,6 +77,7 @@
 	const back = $derived(
 		path.startsWith('/brand/r/') ? '/brand/requests'
 		: path.startsWith('/brand/campaigns/') ? '/brand/campaigns'
+		: path === '/brand/autopilots' ? '/brand'
 		: isNew ? '/brand/details'
 		: path.startsWith('/insights') ? '/'
 		: path === '/brand/new' ? (signedIn ? '/brand/requests' : '/')
@@ -153,6 +155,7 @@
 			<a href="/brand" aria-current={path === '/brand' ? 'page' : undefined}>Dashboard</a>
 			<a href="/brand/creators" aria-current={path === '/brand/creators' ? 'page' : undefined}>Creators</a>
 			<a href="/brand/campaigns" aria-current={path.startsWith('/brand/campaigns') ? 'page' : undefined}>Campaigns</a>
+			<a href="/brand/autopilots" aria-current={path === '/brand/autopilots' ? 'page' : undefined}>Autopilots</a>
 			<a href="/brand/requests" aria-current={path === '/brand/requests' || path.startsWith('/brand/r/') || path === '/brand/new' ? 'page' : undefined}>Requests</a>
 			<a href="/brand/details" aria-current={path === '/brand/details' ? 'page' : undefined}>Company</a>
 		</nav>

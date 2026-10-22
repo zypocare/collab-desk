@@ -89,7 +89,7 @@ insert into results select 'Brand on A''s page acts as its A company', (public.m
 insert into results select 'Brand on A''s page sees none of B''s requests', not exists (select 1 from jsonb_array_elements(public.my_requests()) x where x ->> 'code' like 'BB%'), null;
 insert into results select 'Brand on A''s page can''t read B''s collab', not public.is_my_collab((select id from public.collabs where code = :'b_code')), null;
 reset role;
-select set_config('request.headers', '', true);
+select set_config('request.headers', '{}', true);
 
 -- Pools and campaigns: the brand login's own, sent as one ordinary request per creator
 select set_config('request.jwt.claims', json_build_object('email', 'shopper@test.dev', 'sub', :'brand_uid', 'role', 'authenticated')::text, true);
@@ -106,7 +106,7 @@ reset role;
 insert into results select 'Campaign sends B an ordinary request, tagged B', (select k.creator_id = :b_id and k.code like 'BB%' from public.campaign_creators x join public.collabs k on k.id = x.collab_id where x.campaign_id = :'camp_id' and x.creator_id = :b_id), (select status || ' ' || note from public.campaign_creators where campaign_id = :'camp_id' and creator_id = :b_id);
 insert into results select 'Campaign request uses the brand''s B company', (select b.creator_id = :b_id and b.id = :'b_brand' from public.campaign_creators x join public.collabs k on k.id = x.collab_id join public.brands b on b.id = k.brand_id where x.campaign_id = :'camp_id' and x.creator_id = :b_id), null;
 -- creator B sees the request but nothing about the campaign or the pool
-select set_config('request.headers', '', true);
+select set_config('request.headers', '{}', true);
 select set_config('request.jwt.claims', json_build_object('email', 'creator-b@test.dev', 'sub', gen_random_uuid(), 'role', 'authenticated')::text, true);
 set local role authenticated;
 insert into results select 'B sees the campaign request as a normal collab', exists (select 1 from public.collabs where brief = 'Campaign test'), null;
@@ -117,6 +117,29 @@ do $$ begin perform public.send_campaign((select id from public.brand_campaigns 
 reset role;
 select set_config('request.jwt.claims', '', true);
 update results set ok = (select count(*) from public.campaign_creators where campaign_id = :'camp_id' and status = 'sent') = 1 where check_name = 'B can''t send someone else''s campaign';
+
+-- Autopilots: the negotiator accepts a campaign quote within budget, the draft checker finds what's missing
+select collab_id as camp_collab from public.campaign_creators where campaign_id = :'camp_id' and creator_id = :b_id \gset
+insert into public.brand_autopilots (owner, negotiate, signer, draftcheck) values (:'brand_uid', 'auto', 'Test Signer', 'ask')
+on conflict (owner) do update set negotiate = 'auto', signer = 'Test Signer', draftcheck = 'ask';
+insert into public.quotes (creator_id, collab_id, version, items, total, status)
+values (:b_id, :'camp_collab', 1, '[{"kind":"Reel","qty":1,"rate":4000}]', 4000, 'sent');
+update public.collabs set brief_details = '{"hashtags":["kora"],"promo":"KORA10"}' where id = :'camp_collab';
+insert into public.drafts (creator_id, collab_id, round, status, caption) values (:b_id, :'camp_collab', 1, 'pending', 'Loving this #kora');
+select private.brand_autopilots_for(:'brand_uid');
+select set_config('request.jwt.claims', '', true);
+select private.act_for(null);
+insert into results select 'Negotiator accepts a quote within budget, on Auto', (select q.status = 'accepted' from public.quotes q where q.collab_id = :'camp_collab' order by q.version desc limit 1), (select string_agg(kind || ':' || status || coalesce(' ' || nullif(note, ''), ''), ', ') from public.brand_autopilot_items where owner = :'brand_uid');
+insert into results select 'Draft checker finds the missing promo code and #ad', (select status = 'pending' and title like '2 things missing%' from public.brand_autopilot_items where owner = :'brand_uid' and kind = 'draft'), (select title from public.brand_autopilot_items where owner = :'brand_uid' and kind = 'draft');
+-- creator B sees none of it, and can't act on the brand's items
+select set_config('request.jwt.claims', json_build_object('email', 'creator-b@test.dev', 'sub', gen_random_uuid(), 'role', 'authenticated')::text, true);
+set local role authenticated;
+insert into results select 'B sees no brand autopilots', not exists (select 1 from public.brand_autopilot_items) and not exists (select 1 from public.brand_autopilots), null;
+insert into results select 'B can''t act on a brand''s autopilot item', false, null;
+do $$ begin perform public.autopilot_act((select id from public.brand_autopilot_items limit 1), 'approve', null); exception when others then update results set ok = true, detail = sqlerrm where check_name = 'B can''t act on a brand''s autopilot item'; end $$;
+reset role;
+select set_config('request.jwt.claims', '', true);
+update results set ok = ok and (select count(*) from public.brand_autopilot_items where kind = 'draft' and status = 'pending') = 1 where check_name = 'B can''t act on a brand''s autopilot item';
 
 -- A collab can't be given another creator's company
 insert into results select 'A collab can''t take another creator''s brand', false, null;

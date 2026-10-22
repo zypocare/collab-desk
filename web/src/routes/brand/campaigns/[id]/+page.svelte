@@ -11,6 +11,7 @@
 	import { compact, delivText, errMessage, firstName, fmt, inr } from '#lib/util.ts';
 	import type { CampaignBoard, CampaignRow } from '#lib/types.ts';
 	import Avatar from '#lib/components/Avatar.svelte';
+	import { shortlistFor, type Suggestion } from '#lib/autopilots.svelte.ts';
 	import { auth } from '#lib/auth.svelte.ts';
 
 	// One campaign: where each creator's request stands (Board), the quotes side by side, and the brief.
@@ -29,6 +30,25 @@
 		}
 	}
 	onMount(load);
+	// The shortlist autopilot's suggestions (from "See them"): more creators who fit, to send to as well.
+	let sugs = $state<Suggestion[]>([]);
+	let sugPick = $state<Record<number, boolean>>({});
+	const showSug = $derived(page.url.searchParams.get('suggest') === '1');
+	$effect(() => {
+		if (!showSug || !id) return;
+		shortlistFor(id, null, 8).then((s) => (sugs = s)).catch(() => (sugs = []));
+	});
+	async function sendMore() {
+		const ids = sugs.filter((s) => sugPick[s.id]).map((s) => s.id);
+		if (!ids.length) return toast('Tick the creators first.', 'alert');
+		try {
+			board = await sendCampaign(id, ids, []);
+			sugs = sugs.filter((s) => !ids.includes(s.id));
+			toast(`Sent to ${ids.length} more`, 'check');
+		} catch (e) {
+			toast(errMessage(e), 'alert');
+		}
+	}
 
 	const c = $derived(board?.campaign);
 	const rows = $derived(board?.rows ?? []);
@@ -158,6 +178,19 @@
 			<div class="cb-s"><span>Budget used</span><b>{inr(used)}</b><small>{c.budget_total ? `of ${inr(c.budget_total)}` : 'agreed so far'}{quoted ? ` · ${inr(quoted)} quoted` : ''}</small></div>
 			<div class="cb-s"><span>Not replied</span><b>{notReplied}</b><small>{notReplied ? 'waiting for their quote' : 'everyone has answered'}</small></div>
 		</div>
+		{#if showSug && sugs.length}
+			<section class="cb-sug rv">
+				<div class="cb-sug-h"><span class="cb-tag">Shortlist</span><b>Suggested for this brief</b><button class="cb-neo cb-light" onclick={sendMore}>Send to {Object.values(sugPick).filter(Boolean).length || ''} more</button></div>
+				{#each sugs as s (s.id)}
+					<label class="cb-sr">
+						<input type="checkbox" bind:checked={sugPick[s.id]} />
+						<Avatar name={s.name} src={s.photo} size="36px" />
+						<span><b>{s.name}</b><small>{[s.niche?.split(',')[0]?.trim(), s.city, ...s.why].filter(Boolean).join(' · ')}</small></span>
+						<em>{s.score}</em>
+					</label>
+				{/each}
+			</section>
+		{/if}
 		{#if waitingQuotes.length && phone.on}<button class="cb-neo cb-light cb-wide" onclick={() => setTab('quotes')}>Compare {waitingQuotes.length} quote{waitingQuotes.length === 1 ? '' : 's'}</button>{/if}
 
 		<div class="cb-rows" class:cb-tix={phone.on}>
@@ -328,6 +361,64 @@
 	.cb-s small {
 		font-size: 12px;
 		color: var(--ink-3);
+	}
+	.cb-sug {
+		display: grid;
+		gap: 8px;
+		margin-bottom: 18px;
+		padding: 16px;
+		border-radius: 18px;
+		background: radial-gradient(120% 70% at 0% 0%, color-mix(in oklab, var(--g2) 12%, transparent), transparent 60%), var(--surface);
+		box-shadow: inset 0 0 0 1px var(--line-strong);
+	}
+	.cb-sug-h {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 10px;
+	}
+	.cb-sug-h b {
+		flex: 1;
+	}
+	.cb-tag {
+		font-size: 11px;
+		font-weight: 700;
+		letter-spacing: 0.18em;
+		text-transform: uppercase;
+		padding: 5px 10px;
+		border-radius: 99px;
+		background: color-mix(in oklab, var(--g2) 16%, transparent);
+		color: var(--g2);
+	}
+	.cb-sr {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		min-height: 56px;
+		padding: 8px 12px;
+		border-radius: 12px;
+		background: color-mix(in oklab, var(--ink) 4%, transparent);
+		cursor: pointer;
+	}
+	.cb-sr input {
+		width: 18px;
+		height: 18px;
+		accent-color: var(--g2);
+	}
+	.cb-sr > span {
+		flex: 1;
+		min-width: 0;
+		display: grid;
+	}
+	.cb-sr small {
+		font-size: 12.5px;
+		color: var(--ink-3);
+	}
+	.cb-sr em {
+		font-style: normal;
+		font-family: var(--f-serif);
+		font-size: 24px;
+		color: var(--ok);
 	}
 	.cb-rows {
 		display: grid;

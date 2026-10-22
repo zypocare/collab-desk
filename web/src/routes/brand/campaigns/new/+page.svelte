@@ -14,6 +14,8 @@
 	import CompanyStep from '#lib/components/CompanyStep.svelte';
 	import DatePicker from '#lib/components/DatePicker.svelte';
 	import Select from '#lib/components/Select.svelte';
+	import { autopilots, shortlistFor, type Suggestion } from '#lib/autopilots.svelte.ts';
+	import { supabase } from '#lib/supabase.ts';
 
 	// A new campaign: 1 the brief, 2 the creators (from a pool, or ones you work with), 3 review and send.
 	const acc = $derived(auth.account?.role === 'brand' ? auth.account : null);
@@ -41,6 +43,7 @@
 
 	onMount(async () => {
 		loadPools().catch(() => {});
+		if (!autopilots.settings) supabase.rpc('autopilots_get').then(({ data }) => data && (autopilots.settings = data as never));
 		if (!brandHome.dash) loadDashboard();
 		if (draftId) {
 			const b = await campaignBoard(draftId).catch(() => null);
@@ -91,12 +94,22 @@
 	}
 	function next() {
 		err = briefProblem();
-		if (!err) step = 2;
+		if (!err) {
+			step = 2;
+			suggest();
+		}
+	}
+	// The shortlist autopilot: creators who fit this brief (ticked for you on Auto).
+	let sugs = $state<Suggestion[]>([]);
+	async function suggest() {
+		const st = autopilots.settings;
+		if (st?.shortlist === 'off') return (sugs = []);
+		sugs = await shortlistFor(null, payload, st?.shortlist_max ?? 8).catch(() => []);
 	}
 
 	// Step 2: the creators. From the chosen pool, plus everyone you already work with.
 	const pool = $derived(pools.list.find((p) => p.id === poolId) ?? null);
-	type Pick = { key: string; creator: BrandCreator | null; handle: string; from: string };
+	type Pick = { key: string; creator: BrandCreator | null; handle: string; from: string; score?: number; why?: string[] };
 	const options = $derived.by<Pick[]>(() => {
 		const out: Pick[] = [];
 		const seen = new Set<number>();
@@ -105,6 +118,7 @@
 			out.push({ key: m.creator ? `c${m.creator.id}` : `h${m.handle}`, creator: m.creator, handle: m.handle, from: pool!.name });
 		}
 		for (const c of brandHome.dash?.creators ?? []) if (!seen.has(c.id)) out.push({ key: `c${c.id}`, creator: c, handle: '', from: 'Your creators' });
+		for (const c of sugs) if (!out.some((o) => o.creator?.id === c.id)) out.push({ key: `c${c.id}`, creator: c, handle: '', from: 'Suggested', score: c.score, why: c.why });
 		return out;
 	});
 	// Everyone who can take it is ticked to start with (once per pool).
@@ -114,7 +128,8 @@
 		if (tickedFor === k || !options.length) return;
 		tickedFor = k;
 		const next: Record<string, boolean> = {};
-		for (const o of options) next[o.key] = o.from !== 'Your creators' && (!o.creator || fitFor(o.creator, kinds).ok);
+		for (const o of options)
+			next[o.key] = o.from === 'Suggested' ? autopilots.settings?.shortlist === 'auto' : o.from !== 'Your creators' && (!o.creator || fitFor(o.creator, kinds).ok);
 		picked = next;
 	});
 	const chosen = $derived(options.filter((o) => picked[o.key]));
@@ -207,11 +222,24 @@
 	{:else if step === 2}
 		<section class="panel nc-f rv">
 			<div class="f"><label for="nc-pool">Pool</label><Select id="nc-pool" bind:value={poolId} options={[{ value: '', label: 'No pool: your creators only' }, ...pools.list.map((p) => ({ value: p.id, label: `${p.name} · ${p.members.length}` }))]} /><p class="hint">Make and fill pools in <a href="/brand/creators?tab=pools">Creators</a>.</p></div>
-			{#if !options.length}
+			{#if options.some((o) => o.from === 'Suggested')}
+				<div class="nc-sug">
+					<div class="nc-sug-h"><span class="nc-tag">Shortlist</span><b>Suggested for this brief</b><button class="nc-link" onclick={() => { for (const o of options) if (o.from === 'Suggested') picked[o.key] = true; }}>Tick all</button></div>
+					{#each options.filter((o) => o.from === 'Suggested') as o (o.key)}
+						<label class="nc-row">
+							<input type="checkbox" bind:checked={picked[o.key]} />
+							<Avatar name={o.creator!.name} src={o.creator!.photo} size="36px" />
+							<span class="nc-who"><b>{o.creator!.name}</b><small>{[o.creator!.niche?.split(',')[0]?.trim(), o.creator!.city, ...(o.why ?? [])].filter(Boolean).join(' · ')}</small></span>
+							<span class="nc-score" class:hi={(o.score ?? 0) >= 75}><b>{o.score}</b><small>fit</small></span>
+						</label>
+					{/each}
+				</div>
+			{/if}
+			{#if !options.some((o) => o.from !== 'Suggested')}
 				<p class="nc-none">No creators yet. Add some to a pool from Discover, or invite them by their Instagram handle.</p>
 			{:else}
 				<div class="nc-pick">
-					{#each options as o (o.key)}
+					{#each options.filter((o) => o.from !== 'Suggested') as o (o.key)}
 						{@const fit = fitFor(o.creator, kinds)}
 						<label class="nc-row" class:off={o.creator && !fit.ok}>
 							<input type="checkbox" bind:checked={picked[o.key]} disabled={!!o.creator && !fit.ok} />
@@ -454,6 +482,51 @@
 		margin: 0;
 		color: var(--ink-3);
 		font-size: 14px;
+	}
+	.nc-sug {
+		display: grid;
+		gap: 8px;
+		padding: 16px;
+		border-radius: 18px;
+		background: radial-gradient(120% 70% at 0% 0%, color-mix(in oklab, var(--g2) 12%, transparent), transparent 60%);
+		box-shadow: inset 0 0 0 1px var(--line-strong);
+	}
+	.nc-sug-h {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 10px;
+	}
+	.nc-sug-h b {
+		flex: 1;
+	}
+	.nc-tag {
+		font-size: 11px;
+		font-weight: 700;
+		letter-spacing: 0.18em;
+		text-transform: uppercase;
+		padding: 5px 10px;
+		border-radius: 99px;
+		background: color-mix(in oklab, var(--g2) 16%, transparent);
+		color: var(--g2);
+	}
+	.nc-score {
+		display: grid;
+		justify-items: end;
+		line-height: 1;
+	}
+	.nc-score b {
+		font-family: var(--f-serif);
+		font-weight: 400;
+		font-size: 26px;
+		color: var(--g3);
+	}
+	.nc-score.hi b {
+		color: var(--ok);
+	}
+	.nc-score small {
+		font-size: 11px;
+		color: var(--ink-3);
 	}
 	.nc-pick {
 		display: grid;

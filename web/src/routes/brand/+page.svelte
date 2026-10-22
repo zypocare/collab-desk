@@ -10,13 +10,17 @@
 	import CompanyStep from '#lib/components/CompanyStep.svelte';
 	import { pub } from '#lib/publicPage.svelte.ts';
 	import { phone } from '#lib/phone.svelte.ts';
+	import { autopilots } from '#lib/autopilots.svelte.ts';
+	import { supabase } from '#lib/supabase.ts';
 
 	// The brand dashboard: everything across every creator this login works with.
 	const acc = $derived(auth.account?.role === 'brand' ? auth.account : null);
 	const d = $derived(brandHome.dash);
 	onMount(() => {
 		loadDashboard();
+		supabase.rpc('autopilots_get').then(({ data }) => data && (autopilots.settings = data as never));
 	});
+	const apWaiting = $derived(autopilots.settings?.waiting ?? 0);
 	// A request or creator on another creator's address opens there (the sign-in is shared).
 	const at = (slug: string, path: string) => (slug === pageSlug ? path : addressFor(slug, path));
 	const T = new Date();
@@ -47,6 +51,7 @@
 	</header>
 
 	{#if brandHome.error}<div class="err-box">{brandHome.error}</div>{/if}
+	{#if apWaiting}<a class="bd-ap rv" href="/brand/autopilots#inbox"><span class="bd-ap-tag">Autopilots</span><b>{apWaiting} waiting for your OK</b><span aria-hidden="true">›</span></a>{/if}
 
 	{#if d && phone.on}
 		<!-- Phones: creators as tickets, two numbers, then what's waiting. -->
@@ -200,6 +205,34 @@
 	.bd-neo:active {
 		transform: translate(5px, 5px);
 		box-shadow: none;
+	}
+	.bd-ap {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		margin-bottom: 18px;
+		padding: 14px 18px;
+		border-radius: 16px;
+		background:
+			radial-gradient(120% 90% at 0% 0%, color-mix(in oklab, var(--g3) 16%, transparent), transparent 60%),
+			var(--surface);
+		box-shadow: inset 0 0 0 1px var(--line-strong);
+		color: var(--ink);
+		text-decoration: none;
+	}
+	.bd-ap b {
+		flex: 1;
+		font-size: 15px;
+	}
+	.bd-ap-tag {
+		font-size: 11px;
+		font-weight: 700;
+		letter-spacing: 0.18em;
+		text-transform: uppercase;
+		padding: 5px 10px;
+		border-radius: 99px;
+		background: color-mix(in oklab, var(--g2) 16%, transparent);
+		color: var(--g2);
 	}
 	.bd-stats {
 		display: grid;
