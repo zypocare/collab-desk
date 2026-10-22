@@ -17,6 +17,7 @@
 	import Avatar from './Avatar.svelte';
 	import Logo from './Logo.svelte';
 	import { addressFor, isAppHost } from '../creatorHost';
+	import { brandGroups, groupOf, tabOn } from '../brandNav';
 	import { pageSlug } from '../supabase';
 	// Miracle's own address (app.miracleapp.live): no creator here, so no per-creator requests list.
 	const onApp = isAppHost(location.hostname);
@@ -51,27 +52,10 @@
 		}
 	}
 
-	// Phones: the same section tabs as the creator's studio (NeoPOP strip under the bar).
-	const BUSINESS = [
-		{ href: '/brand/business/money', label: 'Money' },
-		{ href: '/brand/business/content', label: 'Content' },
-		{ href: '/brand/business/calendar', label: 'Calendar' },
-		{ href: '/brand/business/shipping', label: 'Shipping' },
-		{ href: '/brand/business/team', label: 'Team' },
-		{ href: '/brand/settings', label: 'Settings' }
-	];
-	const CREATORS = [
-		{ href: '/brand/creators', label: 'Yours', key: '' },
-		{ href: '/brand/creators?tab=pools', label: 'Pools', key: 'pools' },
-		{ href: '/brand/creators?tab=discover', label: 'Discover', key: 'discover' }
-	];
-	const segs = $derived(
-		path.startsWith('/brand/business/') || path === '/brand/settings'
-			? BUSINESS.map((t) => ({ ...t, on: t.href === path }))
-			: path === '/brand/creators' && !page.url.searchParams.get('pool')
-				? CREATORS.map((t) => ({ ...t, on: (page.url.searchParams.get('tab') ?? '') === t.key }))
-				: null
-	);
+	// Phones: the section's pages as the studio's tab strip under the bar.
+	const groups = brandGroups(onApp);
+	const group = $derived(groupOf(groups, path));
+	const segs = $derived(group?.tabs?.some((t) => tabOn(t, page.url)) ? group.tabs.map((t) => ({ ...t, on: tabOn(t, page.url) })) : null);
 
 	async function logout() {
 		await signOut();
@@ -81,29 +65,37 @@
 	// ---------- Phones: an app bar with the screen's title, Back on screens opened from a tab ----------
 	const first = $derived(name.split(' ')[0] || 'Creator');
 	const isNew = $derived(path === '/brand/details' && page.url.searchParams.get('new') === '1');
+	const sec = $derived(path === '/brand/settings' ? page.url.searchParams.get('s') : null);
+	const SECTIONS: Record<string, string> = { company: 'Company & Instagram', billing: 'Billing & GST', brands: 'Brands you manage', alerts: 'Emails & alerts', account: 'Sign-in & account' };
+	const TITLES: Record<string, string> = {
+		'/brand': 'Miracle',
+		'/brand/requests': 'Requests',
+		'/brand/creators': 'Creators',
+		'/brand/campaigns': 'Campaigns',
+		'/brand/autopilots': 'Autopilots',
+		'/brand/campaigns/new': 'New campaign',
+		'/brand/new': 'New request',
+		'/brand/settings': 'Your brand',
+		'/brand/business/money': 'Payments',
+		'/brand/business/content': 'Content',
+		'/brand/business/calendar': 'Calendar',
+		'/brand/business/shipping': 'Shipping',
+		'/brand/business/team': 'Team'
+	};
 	const title = $derived(
 		path === '/' ? name
-		: path === '/brand' ? 'Miracle'
-		: path === '/brand/requests' ? 'Requests'
-		: path === '/brand/creators' ? 'Creators'
-		: path === '/brand/campaigns' ? 'Campaigns'
-		: path === '/brand/autopilots' ? 'Autopilots'
-		: path === '/brand/campaigns/new' ? 'New campaign'
-		: path.startsWith('/brand/campaigns/') ? 'Campaign'
-		: path === '/brand/new' ? 'New request'
+		: sec ? (SECTIONS[sec] ?? 'Settings')
 		: isNew ? 'Add a brand'
-		: path === '/brand/details' || path === '/brand/settings' ? 'Settings'
-		: path.startsWith('/brand/business/') ? 'Business'
+		: path.startsWith('/brand/campaigns/') && path !== '/brand/campaigns/new' ? 'Campaign'
 		: path.startsWith('/brand/r/') ? path.split('/')[3]
 		: path.startsWith('/insights') ? 'Insights'
-		: ''
+		: (TITLES[path] ?? '')
 	);
-	const sub = $derived(path === '/' ? 'Brand collaborations' : signedIn && name && path !== '/brand' && !path.startsWith('/brand/creators') && !path.startsWith('/brand/campaigns') && !path.startsWith('/brand/business') && path !== '/brand/details' && path !== '/brand/settings' && path !== '/brand/autopilots' ? `with ${first}` : '');
 	const back = $derived(
 		path.startsWith('/brand/r/') ? '/brand/requests'
 		: path.startsWith('/brand/campaigns/') ? '/brand/campaigns'
-		: path === '/brand/autopilots' ? '/brand'
-		: isNew ? '/brand/settings'
+		: sec ? '/brand/settings'
+		: isNew || path === '/brand/business/team' ? '/brand/settings'
 		: path.startsWith('/insights') ? '/'
 		: path === '/brand/new' ? (signedIn ? '/brand/requests' : '/')
 		: ''
@@ -122,22 +114,30 @@
 </script>
 
 {#if phone.on}
-	<header class="m-bar b-bar" class:scrolled={phone.scrolled} class:sub={!!back}>
+	<header class="m-bar b-bar" class:scrolled={phone.scrolled} class:sub={!!back} class:cs={path === '/brand/settings'} class:cs-sub={!!sec}>
 		{#if back}
-			<button class="m-ib m-back" onclick={goBack} aria-label="Back"><Icon name="chevL" /></button>
+			<button class="m-ib m-back" onclick={goBack} aria-label="Back"><Icon name={sec ? 'back' : 'chevL'} /></button>
 			<div class="m-title">{title}</div>
 			<div class="m-r"></div>
 		{:else}
-			<!-- The same bar as the creator's studio: a serif title (the wordmark at home), actions on the right. -->
+			<!-- The creator studio's bar: a serif title (the wordmark at home), round actions on the right. -->
 			<div class="m-brand" class:wordmark={path === '/brand'}>{title}</div>
 			<div class="m-r">
-				{#if signedIn && (path === '/brand' || path === '/brand/requests') && pub.data?.accepting !== false}<a class="m-ib" href="/brand/new" aria-label="New request"><Icon name="plus" /></a>{/if}
-				{#if !signedIn}<button class="m-ib" onclick={toggleTheme} aria-label="Switch light or dark mode"><Icon name={theme.value === 'dark' ? 'sun' : 'moon'} /></button>{/if}
-				{#if signedIn && creators.length}
-					<button class="m-ib b-cr" onclick={() => (picking = true)} aria-haspopup="dialog" aria-label={name ? `Working with ${name}. Switch creator` : 'Pick a creator'}>
-						<Avatar name={name || 'Creators'} src={pub.data?.instagram?.profile_picture_url} size="30px" />
-					</button>
+				{#if signedIn && path === '/brand'}
+					<a class="m-ib" href={creators.length ? '/brand/campaigns/new' : '/brand/creators?tab=discover'} aria-label="New campaign"><Icon name="plus" /></a>
+					<a class="m-ib" href="/brand/creators?tab=discover" aria-label="Find creators"><Icon name="search" /></a>
+					{#if !onApp}<a class="m-ib" href="/brand/requests" aria-label="Requests{unread ? `, ${unread} unread` : ''}"><Icon name="send" />{#if unread}<span class="m-badge">{unread}</span>{/if}</a>{/if}
+				{:else if signedIn && path === '/brand/requests'}
+					{#if pub.data?.accepting !== false}<a class="m-ib" href="/brand/new" aria-label="New request"><Icon name="plus" /></a>{/if}
+					{#if creators.length}
+						<button class="m-ib b-cr" onclick={() => (picking = true)} aria-haspopup="dialog" aria-label={name ? `Working with ${name}. Switch creator` : 'Pick a creator'}>
+							<Avatar name={name || 'Creators'} src={pub.data?.instagram?.profile_picture_url} size="30px" />
+						</button>
+					{/if}
+				{:else if signedIn && path === '/brand/campaigns'}
+					<a class="m-ib" href={creators.length ? '/brand/campaigns/new' : '/brand/creators?tab=discover'} aria-label="New campaign"><Icon name="plus" /></a>
 				{/if}
+				{#if !signedIn}<button class="m-ib" onclick={toggleTheme} aria-label="Switch light or dark mode"><Icon name={theme.value === 'dark' ? 'sun' : 'moon'} /></button>{/if}
 				{#if auth.account?.role === 'creator'}
 					<a class="b-pill" href="/studio">Studio</a>
 				{:else if !signedIn}
@@ -147,11 +147,11 @@
 		{/if}
 	</header>
 	{#if segs && signedIn}
-		<nav class="m-seg b-seg" class:many={segs.length > 4} aria-label="Sections" style="--n:{segs.length};--i:{Math.max(0, segs.findIndex((t) => t.on))}">
+		<nav class="m-seg" aria-label="{group?.label} pages" style="--n:{segs.length};--i:{Math.max(0, segs.findIndex((t) => t.on))}">
 			{#each segs as t (t.href)}<a href={t.href} aria-current={t.on ? 'page' : undefined}>{t.label}</a>{/each}
 		</nav>
 	{/if}
-{:else}
+{:else if !signedIn}
 
 <!-- Laptops: Miracle on the left (like her page), then whose page this is. -->
 <header class="topbar bt-top">
@@ -232,17 +232,6 @@
 {/if}
 
 <svelte:window onkeydown={(e) => e.key === 'Escape' && (picking = false)} onclick={(e) => picking && !phone.on && !(e.target as HTMLElement).closest?.('.bt-for-wrap') && (picking = false)} />
-
-{#if signedIn}
-	<!-- Phones and tablets: the brand menu moves to a tab bar at the bottom. -->
-	<nav class="brand-tabs" style="grid-template-columns:repeat({onApp ? 4 : 5},minmax(0,1fr))" class:hide-tabs={phone.on && (path.startsWith('/brand/r/') || path === '/brand/new' || path === '/brand/campaigns/new')} aria-label="Brand">
-		<a href="/brand" aria-current={path === '/brand' ? 'page' : undefined}><span class="bt-ic"><Icon name="home" /></span><span>Home</span></a>
-		<a href="/brand/creators" aria-current={path === '/brand/creators' ? 'page' : undefined}><span class="bt-ic"><Icon name="users" /></span><span>Creators</span></a>
-		<a href="/brand/campaigns" aria-current={path.startsWith('/brand/campaigns') ? 'page' : undefined}><span class="bt-ic"><Icon name="send" /></span><span>Campaigns</span></a>
-		{#if !onApp}<a href="/brand/requests" aria-current={path === '/brand/requests' || path.startsWith('/brand/r/') ? 'page' : undefined}><span class="bt-ic"><Icon name="inbox" />{#if unread}<i class="bt-n">{unread}</i>{/if}</span><span>Requests</span></a>{/if}
-		<a href="/brand/business/money" aria-current={path.startsWith('/brand/business') || path.startsWith('/brand/details') || path === '/brand/settings' ? 'page' : undefined}><span class="bt-ic"><Icon name="box" /></span><span>Business</span></a>
-	</nav>
-{/if}
 
 <style>
 	/* Miracle's bar, in the look of her page's header: the serif italic name, quiet links, NeoPOP buttons. */

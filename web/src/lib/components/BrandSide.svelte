@@ -18,17 +18,17 @@
 	const here = $derived(pub.data?.display_name ?? '');
 	const company = $derived(acct?.brand?.name || acct?.profile?.name || acct?.full_name || 'Your brand');
 
-	const NAV = $derived(
-		[
-			{ href: '/brand', label: 'Dashboard', icon: 'home', on: path === '/brand' },
-			{ href: '/brand/creators', label: 'Creators', icon: 'users', on: path.startsWith('/brand/creators') },
-			{ href: '/brand/campaigns', label: 'Campaigns', icon: 'send', on: path.startsWith('/brand/campaigns') },
-			{ href: '/brand/autopilots', label: 'Autopilots', icon: 'spark', on: path === '/brand/autopilots' },
-			...(onApp ? [] : [{ href: '/brand/requests', label: 'Requests', icon: 'inbox', on: path === '/brand/requests' || path === '/brand/new' || path.startsWith('/brand/r/') }]),
-			{ href: '/brand/business/money', label: 'Business', icon: 'box', on: path.startsWith('/brand/business') },
-			{ href: '/brand/settings', label: 'Settings', icon: 'gear', on: path === '/brand/settings' || path === '/brand/details' }
-		]
-	);
+	// The studio's places, in the brand's words: Today, Collabs, Calendar, Content, Money and Settings.
+	const on = (...h: string[]) => h.some((x) => path === x || path.startsWith(x + '/'));
+	const NAV = $derived([
+		{ href: '/brand', label: 'Today', icon: 'home', on: path === '/brand' },
+		{ href: onApp ? '/brand/creators' : '/brand/requests', label: 'Collabs', icon: 'board', on: on('/brand/requests', '/brand/creators', '/brand/r', '/brand/new') },
+		{ href: '/brand/campaigns', label: 'Campaigns', icon: 'send', on: on('/brand/campaigns', '/brand/autopilots') },
+		{ href: '/brand/business/calendar', label: 'Calendar', icon: 'cal', on: on('/brand/business/calendar') },
+		{ href: '/brand/business/content', label: 'Content', icon: 'film', on: on('/brand/business/content') },
+		{ href: '/brand/business/money', label: 'Money', icon: 'wallet', on: on('/brand/business/money', '/brand/business/shipping') },
+		{ href: '/brand/settings', label: 'Settings', icon: 'gear', on: on('/brand/settings', '/brand/details', '/brand/business/team') }
+	]);
 
 	// Pick the creator to work with: the same screen on their address (the sign-in is shared).
 	let picking = $state(false);

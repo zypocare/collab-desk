@@ -169,21 +169,23 @@
 	<header class="ph rv"><div><div class="eb">First</div><h1>About your <em>brand</em></h1><p>Campaigns are sent as your company.</p></div></header>
 	<CompanyStep />
 {:else}
-	<header class="nc-h rv">
-		<span class="nc-eb">New campaign</span>
-		<h1>{name.trim() || 'Untitled'} <em>campaign</em></h1>
-		<ol class="nc-steps" aria-label="Steps">
-			<li class:done={step > 1} class:on={step === 1}><button onclick={() => (step = 1)}>1 · Brief</button></li>
-			<li class:done={step > 2} class:on={step === 2}><button onclick={() => step > 1 && (step = 2)} disabled={step < 2}>2 · Creators</button></li>
-			<li class:on={step === 3}><button onclick={() => step > 2 && (step = 3)} disabled={step < 3}>3 · Review and send</button></li>
-		</ol>
+	<header class="ph rv">
+		<div>
+			<div class="eb">New campaign</div>
+			<h1>{name.trim() || 'Untitled'} <em>campaign</em></h1>
+		</div>
 	</header>
+	<div class="m-stages" role="tablist" aria-label="Steps">
+		<button role="tab" aria-selected={step === 1} class:on={step === 1} onclick={() => (step = 1)}><i class="dt" style="--hue:{step > 1 ? 'var(--ok)' : 'var(--accent)'}"></i>1 · Brief</button>
+		<button role="tab" aria-selected={step === 2} class:on={step === 2} onclick={() => step > 1 && (step = 2)} disabled={step < 2}><i class="dt" style="--hue:{step > 2 ? 'var(--ok)' : 'var(--accent)'}"></i>2 · Creators</button>
+		<button role="tab" aria-selected={step === 3} class:on={step === 3} onclick={() => step > 2 && (step = 3)} disabled={step < 3}><i class="dt" style="--hue:var(--accent)"></i>3 · Review and send</button>
+	</div>
 
 	{#if err}<div class="err-box" role="alert">{err}</div>{/if}
 
 	{#if step === 1}
 		<section class="panel nc-f rv">
-			<div class="f"><label for="nc-name">Campaign name</label><input id="nc-name" bind:value={name} maxlength="80" placeholder="e.g. Diwali glow edit" /></div>
+			<div class="f"><label for="nc-name">Campaign name</label><input class="inp" id="nc-name" bind:value={name} maxlength="80" placeholder="e.g. Diwali glow edit" /></div>
 			<div class="f"><span class="lbl">Type</span><div class="nc-seg">{#each TYPES as t (t.value)}<button class:on={type === t.value} onclick={() => (type = t.value)}>{t.label}</button>{/each}</div></div>
 			<div class="f"><span class="lbl">Content from each creator</span>
 				<div class="nc-kinds">
@@ -199,14 +201,14 @@
 			</div>
 			{#if type !== 'barter'}
 				<div class="nc-2">
-					<div class="f"><label for="nc-fee">Budget per creator (₹)</label><input id="nc-fee" inputmode="numeric" bind:value={fee} disabled={askQuote} placeholder="e.g. 20000" /><label class="nc-chk"><input type="checkbox" bind:checked={askQuote} /> Ask each creator for a quote instead</label></div>
-					<div class="f"><label for="nc-budget">Total budget (₹, optional)</label><input id="nc-budget" inputmode="numeric" bind:value={budget} placeholder="e.g. 120000" /><p class="hint">Only you see it. The board shows how much of it is used.</p></div>
+					<div class="f"><label for="nc-fee">Budget per creator (₹)</label><input class="inp" id="nc-fee" inputmode="numeric" bind:value={fee} disabled={askQuote} placeholder="e.g. 20000" /><label class="nc-chk"><input type="checkbox" bind:checked={askQuote} /> Ask each creator for a quote instead</label></div>
+					<div class="f"><label for="nc-budget">Total budget (₹, optional)</label><input class="inp" id="nc-budget" inputmode="numeric" bind:value={budget} placeholder="e.g. 120000" /><p class="hint">Only you see it. The board shows how much of it is used.</p></div>
 				</div>
 			{/if}
 			{#if type !== 'paid'}
 				<div class="nc-2">
-					<div class="f"><label for="nc-prod">{barterKind === 'experience' ? 'What you offer' : 'Product you send'}</label><input id="nc-prod" bind:value={product} placeholder={barterKind === 'experience' ? 'A stay, a meal, an event' : 'e.g. Diwali glow kit'} /></div>
-					<div class="f"><label for="nc-pv">Its value (₹)</label><input id="nc-pv" inputmode="numeric" bind:value={productValue} placeholder="e.g. 2400" /></div>
+					<div class="f"><label for="nc-prod">{barterKind === 'experience' ? 'What you offer' : 'Product you send'}</label><input class="inp" id="nc-prod" bind:value={product} placeholder={barterKind === 'experience' ? 'A stay, a meal, an event' : 'e.g. Diwali glow kit'} /></div>
+					<div class="f"><label for="nc-pv">Its value (₹)</label><input class="inp" id="nc-pv" inputmode="numeric" bind:value={productValue} placeholder="e.g. 2400" /></div>
 				</div>
 				<div class="f"><div class="nc-seg"><button class:on={barterKind === 'product'} onclick={() => (barterKind = 'product')}>A product</button><button class:on={barterKind === 'experience'} onclick={() => (barterKind = 'experience')}>An experience</button></div></div>
 			{/if}
@@ -286,57 +288,6 @@
 {/if}
 
 <style>
-	.nc-h {
-		display: grid;
-		gap: 8px;
-		margin-bottom: 20px;
-	}
-	.nc-eb {
-		font-size: 12px;
-		font-weight: 700;
-		letter-spacing: 0.24em;
-		text-transform: uppercase;
-		color: var(--g1);
-	}
-	.nc-h h1 {
-		margin: 0;
-		font-size: clamp(32px, 4.4vw, 44px);
-		font-weight: 700;
-		line-height: 1.05;
-	}
-	.nc-h h1 em {
-		font-family: var(--f-serif);
-		font-style: italic;
-		font-weight: 400;
-	}
-	.nc-steps {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 8px;
-		margin: 6px 0 0;
-		padding: 0;
-		list-style: none;
-	}
-	.nc-steps button {
-		height: 38px;
-		padding: 0 14px;
-		border: 0;
-		border-radius: 99px;
-		background: var(--surface);
-		box-shadow: inset 0 0 0 1px var(--line);
-		color: var(--ink-3);
-		font: 600 13.5px/1 var(--f-body);
-		cursor: pointer;
-	}
-	.nc-steps .done button {
-		background: color-mix(in oklab, var(--ok) 14%, transparent);
-		box-shadow: none;
-		color: var(--ok);
-	}
-	.nc-steps .on button {
-		box-shadow: inset 0 0 0 1.5px var(--g2);
-		color: var(--ink);
-	}
 	.nc-f {
 		display: grid;
 		gap: 18px;

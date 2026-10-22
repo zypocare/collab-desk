@@ -49,12 +49,12 @@
 </script>
 
 {#if target}
-	<button class="ap-one" class:in={!!memberIn(target.id)} onclick={() => toggle(target.id)}>
+	<button class="btn ap-one" class:in={!!memberIn(target.id)} onclick={() => toggle(target.id)}>
 		{#if memberIn(target.id)}<Icon name="check" />In {target.name}{:else}<Icon name="plus" />Add to {target.name}{/if}
 	</button>
 {:else}
 	<div class="ap" bind:this={wrap}>
-		<button class="ap-btn" onclick={() => (open = !open)} aria-expanded={open} aria-haspopup="menu" aria-label="Add {name} to a pool"><Icon name="plus" />Pool</button>
+		<button class="btn ap-btn" onclick={() => (open = !open)} aria-expanded={open} aria-haspopup="menu" aria-label="Add {name} to a pool"><Icon name="plus" />Pool</button>
 		{#if open}
 			<div class="ap-menu" role="menu">
 				{#each pools.list as p (p.id)}
@@ -72,7 +72,11 @@
 	.ap {
 		position: relative;
 	}
+	/* The app's own button (.btn), like every other button on a ticket. */
 	.ap-btn,
+	.ap-one {
+		white-space: nowrap;
+	}
 	.ap-one {
 		height: 44px;
 		display: inline-flex;
@@ -96,7 +100,6 @@
 		justify-content: center;
 	}
 	.ap-one.in {
-		box-shadow: inset 0 0 0 1.5px var(--ok);
 		color: var(--ok);
 	}
 	.ap-btn :global(.ic),

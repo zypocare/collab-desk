@@ -108,8 +108,8 @@
 	.bp-url { font: 600 clamp(26px, 2.6vw, 36px) var(--f-mono, monospace); letter-spacing: -.03em; color: var(--hero-ink); overflow-wrap: anywhere; }
 	.bp-main p { margin: 0; max-width: 620px; font-size: 15.5px; color: color-mix(in oklab, var(--hero-ink) 70%, transparent); }
 	.bp-acts { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
-	:global([data-side='studio']) .bp-acts .btn:not(.grad) { background: color-mix(in oklab, var(--hero-ink) 9%, transparent); color: var(--hero-ink); border-color: color-mix(in oklab, var(--hero-ink) 16%, transparent); }
-	:global([data-side='studio']) .bp-acts .btn:not(.grad):hover { background: color-mix(in oklab, var(--hero-ink) 15%, transparent); }
+	:global([data-desk]) .bp-acts .btn:not(.grad) { background: color-mix(in oklab, var(--hero-ink) 9%, transparent); color: var(--hero-ink); border-color: color-mix(in oklab, var(--hero-ink) 16%, transparent); }
+	:global([data-desk]) .bp-acts .btn:not(.grad):hover { background: color-mix(in oklab, var(--hero-ink) 15%, transparent); }
 	.bp-status { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
 	.bp-reply { font-size: 14px; color: color-mix(in oklab, var(--hero-ink) 66%, transparent); }
 

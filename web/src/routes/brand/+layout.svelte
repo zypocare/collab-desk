@@ -1,11 +1,15 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
-	import { onMount } from 'svelte';
+	import { onMount, tick } from 'svelte';
 	import type { LayoutProps } from './$types';
 	import { auth } from '#lib/auth.svelte.ts';
 	import { ui } from '#lib/ui.svelte.ts';
-	import { loadRequests } from '#lib/brand.svelte.ts';
+	import { brandData, loadRequests } from '#lib/brand.svelte.ts';
+	import { brandGroups, groupOf, tabOn } from '#lib/brandNav.ts';
+	import Avatar from '#lib/components/Avatar.svelte';
+	import Icon from '#lib/components/Icon.svelte';
+	import { brandIg } from '#lib/brandIg.svelte.ts';
 	import { joinTeam } from '#lib/business.svelte.ts';
 	import { appAddress, isAppHost } from '#lib/creatorHost.ts';
 	import { loadPublicPage, pub } from '#lib/publicPage.svelte.ts';
@@ -55,8 +59,9 @@
 	$effect(() => {
 		if (auth.account?.role === 'brand') loadBrandIg();
 	});
-	// Laptops: the creator studio's frame (side menu + page). Phones and signed-out visitors keep the bar.
-	// The phone bar starts the phone behaviours, but on a laptop it isn't shown, so the width is watched here too.
+	// Signed in, a brand gets the creator studio's frame, piece for piece: the bottom bar on a phone,
+	// the side menu on a laptop, the section's pages as tabs. Signed-out visitors keep the simple bar.
+	// The phone bar starts the phone behaviours, but the width is watched here too (it isn't always shown).
 	const mq = matchMedia(PHONE_Q);
 	phone.on = mq.matches;
 	onMount(() => {
@@ -64,14 +69,87 @@
 		mq.addEventListener('change', on);
 		return () => mq.removeEventListener('change', on);
 	});
-	const desk = $derived(!phone.on && auth.account?.role === 'brand');
+	const app = $derived(auth.account?.role === 'brand');
+	const path = $derived(page.url.pathname);
+	const groups = brandGroups(onApp);
+	const group = $derived(groupOf(groups, path));
+	const tabs = $derived(group?.tabs?.some((t) => tabOn(t, page.url)) ? group.tabs : null);
+	// A single request, a new request or a new campaign is a screen of its own: no bottom bar.
+	const detail = $derived(path.startsWith('/brand/r/') || path === '/brand/new' || path.startsWith('/brand/campaigns/'));
+	const unread = $derived(Object.values(brandData.unread ?? {}).reduce((a, n) => a + n, 0));
+	const acct = $derived(auth.account?.role === 'brand' ? auth.account : null);
+	const company = $derived(acct?.brand?.name || acct?.profile?.name || acct?.full_name || 'Brand');
+	const hasCreators = $derived((acct?.creators?.length ?? 0) > 0);
+
+	// The sliding highlight behind the open item, as in the studio.
+	let navs = $state<HTMLElement>();
+	let ind = $state<HTMLElement>();
+	const ready = new WeakSet<HTMLElement>();
+	function slide() {
+		const b = navs?.querySelector<HTMLElement>('[aria-current="page"]');
+		const el = ind;
+		if (!b || !el || !b.offsetWidth) return;
+		const first = !ready.has(el);
+		if (first) el.style.transition = 'none';
+		el.style.width = b.offsetWidth + 'px';
+		el.style.height = b.offsetHeight + 'px';
+		el.style.transform = `translate(${b.offsetLeft}px,${b.offsetTop}px)`;
+		el.style.opacity = '1';
+		if (first) {
+			void el.offsetWidth;
+			el.style.transition = '';
+			ready.add(el);
+		}
+	}
+	$effect(() => {
+		void group;
+		void phone.on;
+		tick().then(slide);
+	});
+	onMount(() => {
+		addEventListener('resize', slide);
+		return () => removeEventListener('resize', slide);
+	});
 </script>
 
 {#if allowed}
-	{#if desk}
-		<div class="app at brand-desk">
-			<BrandSide />
-			<main class="main"><div class="pg">{@render children()}</div></main>
+	{#if app}
+		<div class="app" class:at={!phone.on} class:m-detail={detail}>
+			{#if !phone.on}
+				<BrandSide />
+			{:else}
+				<nav class="rail" aria-label="Brand">
+					<div class="navs" bind:this={navs}>
+						<span class="nav-ind" bind:this={ind}></span>
+						{#each groups as n (n.href)}
+							<a class="nav" href={n.href} aria-current={group?.href === n.href ? 'page' : undefined} aria-label={n.me ? 'Your brand' : undefined}
+								><span class="nav-ic">{#if n.me}<Avatar name={company} src={brandIg.data?.picture ?? ''} size="28px" />{:else}<Icon name={n.icon} />{/if}</span><span class="nav-t">{n.label}</span>{#if n.label === 'Collabs' && unread}<span class="badge" aria-label="{unread} unread">{unread}</span>{/if}</a
+							>
+						{/each}
+					</div>
+				</nav>
+			{/if}
+			<main class="main">
+				{#if phone.on}<BrandTopbar />{/if}
+				{#if phone.on}
+					{@render children()}
+				{:else}
+					<div class="pg">
+						<div class="at-bar" class:at-flow={detail} hidden={path === '/brand'}>
+							{#if tabs && !detail}
+								<nav class="subtabs at-tabs" aria-label="{group?.label} pages">
+									{#each tabs as t (t.href)}<a href={t.href} aria-current={tabOn(t, page.url) ? 'page' : undefined}>{t.label}</a>{/each}
+								</nav>
+							{/if}
+							{#if !detail}
+								<a class="btn at-ask" href="/brand/creators?tab=discover"><Icon name="search" />Find creators</a>
+								<a class="btn grad at-new" href={hasCreators ? '/brand/campaigns/new' : '/brand/creators?tab=discover'}><Icon name="plus" />New campaign</a>
+							{/if}
+						</div>
+						{@render children()}
+					</div>
+				{/if}
+			</main>
 		</div>
 	{:else}
 		<BrandTopbar />

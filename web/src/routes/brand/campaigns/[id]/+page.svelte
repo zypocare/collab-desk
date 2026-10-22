@@ -159,17 +159,17 @@
 {:else if !c}
 	<div class="loader" style="min-height:30vh"><span class="ring"><span></span></span></div>
 {:else}
-	<header class="cb-h rv">
+	<header class="ph rv">
 		<div>
-			<span class="cb-eb">Campaign{c.brief.preferred_live ? ` · go live by ${fmt(c.brief.preferred_live)}` : ''}</span>
+			<div class="eb">Campaign{c.brief.preferred_live ? ` · go live by ${fmt(c.brief.preferred_live)}` : ''}</div>
 			<h1>{c.name}</h1>
 		</div>
-		<div class="cb-tabs" role="tablist" aria-label="Campaign">
-			<button role="tab" aria-selected={tab === 'board'} class:on={tab === 'board'} onclick={() => setTab('board')}>Board</button>
-			<button role="tab" aria-selected={tab === 'quotes'} class:on={tab === 'quotes'} onclick={() => setTab('quotes')}>Quotes{waitingQuotes.length ? ` · ${waitingQuotes.length}` : ''}</button>
-			<button role="tab" aria-selected={tab === 'brief'} class:on={tab === 'brief'} onclick={() => setTab('brief')}>Brief</button>
-		</div>
 	</header>
+	<div class="m-stages" role="tablist" aria-label="Campaign">
+		<button role="tab" aria-selected={tab === 'board'} class:on={tab === 'board'} onclick={() => setTab('board')}><i class="dt" style="--hue:var(--accent)"></i>Board</button>
+		<button role="tab" aria-selected={tab === 'quotes'} class:on={tab === 'quotes'} onclick={() => setTab('quotes')}><i class="dt" style="--hue:var(--bad)"></i>Quotes{#if waitingQuotes.length}<span>{waitingQuotes.length}</span>{/if}</button>
+		<button role="tab" aria-selected={tab === 'brief'} class:on={tab === 'brief'} onclick={() => setTab('brief')}><i class="dt" style="--hue:var(--ok)"></i>Brief</button>
+	</div>
 
 	{#if tab === 'board'}
 		<div class="cb-stats rv" style="--i:1">
@@ -277,52 +277,6 @@
 {/if}
 
 <style>
-	.cb-h {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: flex-end;
-		justify-content: space-between;
-		gap: 16px;
-		margin-bottom: 20px;
-	}
-	.cb-eb {
-		font-size: 12px;
-		font-weight: 700;
-		letter-spacing: 0.24em;
-		text-transform: uppercase;
-		color: var(--ink-3);
-	}
-	.cb-h h1 {
-		margin: 6px 0 0;
-		font-family: var(--f-serif);
-		font-style: italic;
-		font-weight: 400;
-		font-size: clamp(36px, 4.6vw, 52px);
-		line-height: 1;
-	}
-	.cb-tabs {
-		display: flex;
-		gap: 4px;
-		padding: 4px;
-		border-radius: 14px;
-		background: color-mix(in oklab, var(--ink) 5%, var(--bg));
-		box-shadow: inset 0 0 0 1px var(--line-strong);
-	}
-	.cb-tabs button {
-		height: 40px;
-		padding: 0 16px;
-		border: 0;
-		border-radius: 10px;
-		background: transparent;
-		color: var(--ink-2);
-		font: 600 14px/1 var(--f-body);
-		cursor: pointer;
-	}
-	.cb-tabs button.on {
-		background: var(--surface);
-		color: var(--ink);
-		box-shadow: inset 0 0 0 1.5px var(--g2);
-	}
 	.cb-stats {
 		display: grid;
 		grid-template-columns: repeat(4, minmax(0, 1fr));

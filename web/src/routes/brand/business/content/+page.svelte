@@ -61,10 +61,10 @@
 {#if !items}
 	<div class="loader" style="min-height:30vh"><span class="ring"><span></span></span></div>
 {:else}
-	<div class="ct-chips" role="group" aria-label="Show">
-		<button class:on={show === 'all'} onclick={() => (show = 'all')}>All · {items.length}</button>
-		<button class:on={show === 'ending'} onclick={() => (show = 'ending')}>Usage ending soon · {items.filter(ending).length}</button>
-		<button class:on={show === 'ads'} onclick={() => (show = 'ads')}>Ads allowed · {items.filter(ads).length}</button>
+	<div class="m-stages" role="tablist" aria-label="Show">
+		{#each [['all', 'All', items.length, 'var(--accent)'], ['ending', 'Ad rights ending', items.filter(ending).length, 'var(--warn,#e0a23a)'], ['ads', 'Ads allowed', items.filter(ads).length, 'var(--ok)']] as const as [k, label, n, hue] (k)}
+			<button role="tab" aria-selected={show === k} class:on={show === k} onclick={() => (show = k)}><i class="dt" style="--hue:{hue}"></i>{label}<span>{n}</span></button>
+		{/each}
 	</div>
 	<div class="ct-grid">
 			{#each list as c (c.collab_id)}
@@ -94,28 +94,6 @@
 {/if}
 
 <style>
-	.ct-chips {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 8px;
-		margin-bottom: 16px;
-	}
-	.ct-chips button {
-		height: 36px;
-		padding: 0 14px;
-		border: 0;
-		border-radius: 99px;
-		background: transparent;
-		box-shadow: inset 0 0 0 1px var(--line-strong);
-		color: var(--ink-2);
-		font: 600 13px/1 var(--f-body);
-		cursor: pointer;
-	}
-	.ct-chips button.on {
-		background: color-mix(in oklab, var(--g2) 16%, transparent);
-		box-shadow: none;
-		color: var(--g2);
-	}
 	.ct-none {
 		margin: 0;
 		display: grid;

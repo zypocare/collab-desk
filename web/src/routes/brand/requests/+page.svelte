@@ -2,61 +2,64 @@
 	import { auth } from '#lib/auth.svelte.ts';
 	import { brandData } from '#lib/brand.svelte.ts';
 	import { pub } from '#lib/publicPage.svelte.ts';
-	import { STAGES, compact, delivText, firstName, fmt, inr, inrS, stageIndex } from '#lib/util.ts';
+	import { STAGES, HELD_STAGES, delivText, firstName, fmt, inr, inrS, stageIndex } from '#lib/util.ts';
 	import { milestones } from '#lib/campaign.ts';
-	import { money } from '#lib/roi.ts';
 	import CompanyStep from '#lib/components/CompanyStep.svelte';
+	import BrandRequestRow from '#lib/components/BrandRequestRow.svelte';
 	import Icon from '#lib/components/Icon.svelte';
+	import Ticket from '#lib/components/Ticket.svelte';
 	import { onMount } from 'svelte';
 	import { supabase } from '#lib/supabase.ts';
-	import { copyText } from '#lib/ui.svelte.ts';
+	import { copyText, countUp } from '#lib/ui.svelte.ts';
 	import { phone } from '#lib/phone.svelte.ts';
-	import BrandRequestCard from '#lib/components/BrandRequestCard.svelte';
-	import Mono from '#lib/components/Mono.svelte';
-	import Ticket from '#lib/components/Ticket.svelte';
+	import { rollHints } from '#lib/lively.ts';
+	import type { BrandRequest, Stage } from '#lib/types.ts';
 
+	// A brand's requests to this creator, laid out like the creator's own Collabs board: the pipeline
+	// card, stage chips, then each request (wallet cards on a phone, tickets on a laptop).
 	const acc = $derived(auth.account?.role === 'brand' ? auth.account : null);
-	// Their own link for recommending her to other brands.
+	const creator = $derived(firstName(pub.data?.display_name ?? ''));
+	const all = $derived(brandData.requests);
+	// Their own link for recommending the creator to other brands.
 	let refCode = $state('');
 	onMount(() => {
 		supabase.rpc('my_ref_code').then(({ data }) => (refCode = (data as string | null) ?? ''));
 	});
 	const refLink = $derived(refCode ? `${location.origin}/?ref=${refCode}` : '');
-	const creator = $derived(firstName(pub.data?.display_name ?? ''));
-	// Finished collabs: a quick summary and one-tap repeats.
-	const done = $derived(brandData.requests.filter((r) => r.stage === 'live' || r.stage === 'wrapped'));
-	const spent = $derived(done.reduce((a, r) => a + (r.type === 'barter' ? 0 : r.fee), 0));
-	const lastLive = $derived(done.map((r) => r.live_date).filter(Boolean).sort().at(-1) ?? null);
-	// Results across every collab with her, and what it cost per view.
-	const views = $derived(done.reduce((a, r) => a + (Number(r.results?.views) || 0), 0));
-	const engaged = $derived(done.reduce((a, r) => a + (Number(r.results?.interactions) || 0), 0));
-	const paidViews = $derived(done.filter((r) => r.type !== 'barter').reduce((a, r) => a + (Number(r.results?.views) || 0), 0));
-	const cpv = $derived(spent && paidViews ? spent / paidViews : null);
-	// Everything waiting on the brand, across requests.
-	const todo = $derived(
-		brandData.requests.flatMap((r) => milestones(r, creator || 'the creator').filter((m) => m.who === 'you').map((m) => ({ r, m })))
+
+	const ACTIVE: Stage[] = ['request', 'negotiating', 'confirmed', 'creating', 'live'];
+	let q = $state('');
+	let stage = $state<'active' | Stage>('active');
+	const mineTodo = (r: BrandRequest) => milestones(r, creator || 'the creator').some((m) => m.who === 'you');
+	const found = $derived(q.trim() ? all.filter((r) => `${r.code} ${delivText(r.deliverables)} ${r.stage_label} ${r.brief}`.toLowerCase().includes(q.trim().toLowerCase())) : all);
+	const activeList = $derived(found.filter((r) => ACTIVE.includes(r.stage)));
+	const pipeValue = $derived(activeList.reduce((a, r) => a + (r.type === 'barter' ? 0 : Number(r.fee) || 0), 0));
+	const pipeProducts = $derived(activeList.reduce((a, r) => a + (r.type === 'paid' ? 0 : Number(r.product_value) || 0), 0));
+	const waiting = $derived(found.filter(mineTodo).length);
+	const pipeStages = $derived(ACTIVE.map((id) => ({ id, n: activeList.filter((r) => r.stage === id).length })));
+	const PIPE_TILES: [Stage, string][] = [['request', 'Sent'], ['negotiating', 'In talks'], ['live', 'Live']];
+	const ALL_STAGES = [...STAGES, ...HELD_STAGES, { id: 'declined' as Stage, label: 'Declined' }];
+	const tabs = $derived(
+		[{ id: 'active' as const, label: 'Active', n: activeList.length }, ...ALL_STAGES.map((s) => ({ id: s.id, label: s.label, n: found.filter((r) => r.stage === s.id).length }))].filter(
+			(t) => t.id === 'active' || t.n || t.id === stage
+		)
 	);
-	// Laptop: filter the list.
-	let show = $state<'all' | 'active' | 'done' | 'declined' | 'paused' | 'cancelled'>('all');
-	const groups = $derived({
-		all: brandData.requests,
-		active: brandData.requests.filter((r) => !['declined', 'wrapped', 'paused', 'cancelled'].includes(r.stage) && !(r.stage === 'live' && r.deliverables.every((d) => d.done) && (r.type === 'barter' || r.pay_status === 'paid'))),
-		// Completed: wrapped, or live with nothing left to settle.
-		done: brandData.requests.filter((r) => r.stage === 'wrapped' || (r.stage === 'live' && r.deliverables.every((d) => d.done) && (r.type === 'barter' || r.pay_status === 'paid'))),
-		paused: brandData.requests.filter((r) => r.stage === 'paused'),
-		cancelled: brandData.requests.filter((r) => r.stage === 'cancelled'),
-		declined: brandData.requests.filter((r) => r.stage === 'declined')
-	});
-	const ig = $derived(pub.data?.instagram ?? null);
+	const groups = $derived(
+		ALL_STAGES.map((s) => ({ s, rs: found.filter((r) => r.stage === s.id) }))
+			.map((g) => ({ ...g, sum: g.rs.reduce((a, r) => a + r.fee + r.product_value, 0) }))
+			.filter((g) => g.rs.length && (stage === 'active' ? ACTIVE.includes(g.s.id) : g.s.id === stage))
+	);
+	const shown = $derived(groups.flatMap((g) => g.rs));
 	const toPay = $derived(
-		brandData.requests.reduce((a, r) => a + (r.invoices ?? []).filter((i) => (i.status === 'sent' || i.status === 'partly_paid') && !i.claimed).reduce((x, i) => x + Number(i.payable), 0), 0)
+		all.reduce((a, r) => a + (r.invoices ?? []).filter((i) => (i.status === 'sent' || i.status === 'partly_paid') && !i.claimed).reduce((x, i) => x + Number(i.payable), 0), 0)
 	);
-	// Phone: each request a ticket, its band in the colour of where it stands.
+	// Finished collabs, to book again in one tap.
+	const done = $derived(all.filter((r) => r.stage === 'live' || r.stage === 'wrapped'));
 	const STAGE_HUE: Record<string, string> = { request: 'var(--h-request)', negotiating: 'var(--h-nego)', confirmed: 'var(--h-confirmed)', creating: 'var(--h-creating)', live: 'var(--h-live)', wrapped: 'var(--h-wrapped)', declined: 'var(--bad)' };
-	const needsAnswer = (r: (typeof brandData.requests)[number]) => !['paused', 'cancelled'].includes(r.stage) && (r.quotes?.[0]?.status === 'sent' || !!r.drafts?.some((d) => d.status === 'pending'));
+	const nextOf = (r: BrandRequest) => milestones(r, creator || 'the creator').find((m) => m.who !== 'done');
 </script>
 
-<svelte:head><title>My requests</title></svelte:head>
+<svelte:head><title>Requests · Miracle</title></svelte:head>
 
 {#if acc && !acc.brand}
 	<header class="ph rv">
@@ -68,136 +71,150 @@
 	</header>
 	<CompanyStep {creator} />
 {:else if acc}
-	<header class="ph rv rq-head">
+	<header class="ph rv">
 		<div>
-			<div class="eb">{acc.brand?.name}</div>
+			<div class="eb">{creator ? `With ${creator}` : 'Pipeline'}</div>
 			<h1>Your <em>requests</em></h1>
-			<p>Everything you've sent{creator ? ` to ${creator}` : ''}, and where each one stands.</p>
+			<p>{activeList.length} active, {waiting} waiting for your answer{toPay ? ` · ${inr(toPay)} to pay` : ''}.</p>
 		</div>
-		<div class="acts">{#if pub.data?.accepting !== false}<a class="btn grad" href="/brand/new"><Icon name="send" />New request</a>{/if}</div>
 	</header>
-
 	{#if brandData.error}<div class="err-box">{brandData.error}</div>{/if}
-
-	<div class="bd-grid"><div class="bd-main">
-
-	{#if done.length}
-		<section class="again rv" style="--i:1">
-			<div class="again-stats">
-				<div><b>{done.length}</b><small>collab{done.length === 1 ? '' : 's'} with {creator || 'the creator'}</small></div>
-				{#if spent}<div><b>{inr(spent)}</b><small>invested</small></div>{/if}
-				{#if views}<div><b>{compact(views)}</b><small>views</small></div>{/if}
-				{#if engaged}<div><b>{compact(engaged)}</b><small>likes, comments, saves</small></div>{/if}
-				{#if cpv}<div><b>{money(cpv)}</b><small>avg. cost per view</small></div>{/if}
-				{#if lastLive}<div><b>{fmt(lastLive)}</b><small>last went live</small></div>{/if}
-			</div>
-			{#if pub.data?.accepting !== false}
-				<div class="again-list">
-					<span class="lbl-t">Book again</span>
-					{#each done.slice(0, 3) as r (r.id)}
-						<a class="again-chip" href="/brand/new?again={r.code}"><Icon name="refresh" /><span>{delivText(r.deliverables)}</span><small>{r.code}</small></a>
-					{/each}
-				</div>
-			{/if}
-		</section>
-	{/if}
-
-	{#if done.length && refLink}
-		<section class="panel rv recommend" style="--i:2">
-			<div class="rec-in">
-				<span class="rec-ic"><Icon name="users" /></span>
-				<div><b>Know a brand that would like {creator || 'this creator'}?</b><small>Share your link. They'll see your recommendation, and {creator || 'the creator'} will know it came from you.</small></div>
-			</div>
-			<div class="rec-acts">
-				<button class="btn" onclick={() => copyText(refLink, 'Link copied')}><Icon name="copy" />Copy link</button>
-				<a class="btn" href={`https://wa.me/?text=${encodeURIComponent(`Worth working with ${pub.data?.display_name ?? ''}: ${refLink}`)}`} target="_blank" rel="noopener"><Icon name="send" />WhatsApp</a>
-			</div>
-		</section>
-	{/if}
-
-	{#if todo.length || toPay}
-		<section class="panel rv needs-you" style="--i:2">
-			<div class="panel-h"><h2>Needs you</h2>{#if toPay}<small>{inr(toPay)} to pay</small>{/if}</div>
-			{#if phone.on}
-				<div class="tks">
-					{#each todo as t, i (t.r.code + t.m.key)}
-						<Ticket name={t.r.code} title={delivText(t.r.deliverables)} sub={`${t.r.code} · ${t.r.stage_label}`} money={t.r.fee ? inrS(t.r.fee) : ''} moneySub={t.r.fee ? 'fee' : ''} hue={STAGE_HUE[t.r.stage] ?? ''} mark={String(stageIndex(t.r.stage) + 1)} task={t.m.title} status={t.m.note || 'Waiting on you'} tone="hot" href="/brand/r/{t.r.code}" {i}>
-							<a class="btn primary" href="/brand/r/{t.r.code}">Open</a>
-						</Ticket>
-					{/each}
-				</div>
-			{:else}
-			{#each todo as t (t.r.code + t.m.key)}
-				<a class="prod-row" href="/brand/r/{t.r.code}" style="text-decoration:none"><div><b>{t.m.title}</b><small>{t.r.code} · {delivText(t.r.deliverables)}{t.m.note ? ` · ${t.m.note}` : ''}</small></div><Icon name="chevR" /></a>
-			{/each}
-			{/if}
-		</section>
-	{/if}
 
 	{#if !brandData.loaded}
 		<div class="loader" style="min-height:30vh"><span class="ring"><span></span></span></div>
-	{:else if brandData.requests.length === 0}
-		<div class="empty-card rv" style="--i:1">
-			<h2>No requests yet</h2>
-			<p>Send your first collaboration request. You'll be able to follow it here.</p>
-			<a class="btn grad lg" href="/brand/new"><Icon name="send" />Send a request</a>
-		</div>
-	{:else if !phone.on}
-		<div class="brq-tabs" role="tablist">
-			{#each [['all', 'All'], ['active', 'Active'], ['done', 'Completed'], ['paused', 'Paused'], ['cancelled', 'Cancelled'], ['declined', 'Not going ahead']] as [k, label] (k)}
-				{#if k === 'all' || groups[k as 'active'].length}
-					<button role="tab" aria-selected={show === k} class:on={show === k} onclick={() => (show = k as typeof show)}>{label}<span>{groups[k as 'all'].length}</span></button>
-				{/if}
-			{/each}
-		</div>
-		<div class="brq-list">
-			{#each groups[show] as r (r.id)}
-				<BrandRequestCard {r} {creator} unread={brandData.unread[r.code] ?? 0} />
-			{:else}
-				<p class="hint">Nothing here.</p>
-			{/each}
+	{:else if !all.length}
+		<div class="clear hero-card glow m-none">
+			<div class="mesh" aria-hidden="true"></div>
+			<span class="clear-ic"><Icon name="send" /></span>
+			<b>No requests yet</b>
+			<small>Send {creator || 'this creator'} your first request. You'll follow it here, step by step.</small>
+			{#if pub.data?.accepting !== false}<div class="clear-acts"><a class="glass-chip" href="/brand/new"><Icon name="plus" />New request</a></div>{/if}
 		</div>
 	{:else}
-		<div class="hs-h br-h"><h2>Your requests</h2><span class="hs-n">{brandData.requests.length}</span></div>
-		<div class="tks">
-			{#each brandData.requests as r, i (r.id)}
-				{@const ask = needsAnswer(r)}
-				<Ticket
-					name={r.code}
-					title={delivText(r.deliverables)}
-					sub={r.code}
-					money={r.fee ? inrS(r.fee) : r.product_value ? inrS(r.product_value) : ''}
-					moneySub={r.stage_label}
-					hue={STAGE_HUE[r.stage] ?? ''}
-					mark={r.stage === 'declined' ? '×' : String(stageIndex(r.stage) + 1)}
-					task={ask ? 'Needs your answer' : brandData.unread[r.code] ? `${brandData.unread[r.code]} new message${brandData.unread[r.code] === 1 ? '' : 's'}` : r.note_for_brand || `Sent ${fmt(r.received_on)}`}
-					status={r.live_date ? `Go-live ${fmt(r.live_date)}` : r.stage_label}
-					tone={ask ? 'hot' : r.stage === 'declined' ? 'calm' : r.stage === 'wrapped' ? 'ok' : 'warn'}
-					href="/brand/r/{r.code}"
-					{i}
-				>
-					<a class={ask ? 'btn primary' : 'btn'} href="/brand/r/{r.code}">{ask ? 'Answer' : 'Open'}</a>
-				</Ticket>
+		{#if phone.on}
+			<section class="hero-card glow m-hero m-pipe" aria-label="Your pipeline">
+				<div class="mesh" aria-hidden="true"></div>
+				<div class="hc-in">
+					<div class="hc-top">
+						<span class="hc-eb">With {creator || 'this creator'}</span>
+						{#if waiting}<span class="glass-chip"><Icon name="inbox" />{waiting} waiting for you</span>{/if}
+					</div>
+					<div class="hc-val" use:countUp={{ value: pipeValue, money: true }}>{inr(pipeValue)}</div>
+					<div class="hc-sub">in {activeList.length} active request{activeList.length === 1 ? '' : 's'}{pipeProducts ? ` · + ${inrS(pipeProducts)} in products` : ''}</div>
+					{#if activeList.length}
+						<div class="pipe-bar" aria-hidden="true">{#each pipeStages as st (st.id)}{#if st.n}<i class="st-{st.id}" style="flex:{st.n}"></i>{/if}{/each}</div>
+					{/if}
+					<div class="hc-foot">
+						{#each PIPE_TILES as [id, label] (id)}
+							<button class:on={stage === id} onclick={() => (stage = stage === id ? 'active' : id)}><small><span class="dt st-{id}"></span>{label}</small><b>{found.filter((r) => r.stage === id).length}</b></button>
+						{/each}
+					</div>
+				</div>
+			</section>
+			<label class="search m-search" use:rollHints={all.slice(0, 6).map((r) => r.code)}><Icon name="search" /><span class="sr">Search requests</span><input type="search" placeholder="Search code, content or stage" bind:value={q} autocomplete="off" /></label>
+		{:else}
+			<section class="cb-hero rv" aria-label="Your pipeline">
+				<div class="mesh" aria-hidden="true"></div>
+				<div class="cb-main">
+					<span class="bx-eb">With {creator || 'this creator'}</span>
+					<b class="cb-val num" use:countUp={{ value: pipeValue, money: true }}>{inr(pipeValue)}</b>
+					<span class="cb-sub">in {activeList.length} active request{activeList.length === 1 ? '' : 's'}{pipeProducts ? ` · + ${inrS(pipeProducts)} in products` : ''}{waiting ? ` · ${waiting} waiting for your answer` : ''}</span>
+					{#if activeList.length}<div class="cb-bar" aria-hidden="true">{#each pipeStages as st (st.id)}{#if st.n}<i class="st-{st.id}" style="flex:{st.n}"></i>{/if}{/each}</div>{/if}
+				</div>
+				<div class="cb-tiles">
+					{#each pipeStages as st (st.id)}
+						<button class="cb-tile st-{st.id}" class:on={stage === st.id} onclick={() => (stage = stage === st.id ? 'active' : st.id)}>
+							<small><span class="dt"></span>{STAGES.find((x) => x.id === st.id)?.label}</small>
+							<b class="num">{st.n}</b>
+							<span class="num">{inrS(activeList.filter((r) => r.stage === st.id).reduce((a, r) => a + r.fee, 0)) || '—'}</span>
+						</button>
+					{/each}
+				</div>
+			</section>
+			<div class="toolbar rv" style="--i:1">
+				<label class="search"><Icon name="search" /><span class="sr">Search requests</span><input type="search" placeholder="Search code, content or stage" bind:value={q} autocomplete="off" /></label>
+			</div>
+		{/if}
+
+		<div class="m-stages" role="tablist" aria-label="Stage">
+			{#each tabs as t (t.id)}
+				<button role="tab" aria-selected={stage === t.id} class:on={stage === t.id} class="st-{t.id}" onclick={() => (stage = t.id)}><i class="dt"></i>{t.label}<span>{t.n}</span></button>
 			{/each}
 		</div>
+
+		{#if phone.on}
+			{#each groups as g (g.s.id)}
+				<section class="m-group st-{g.s.id}">
+					<header class="m-gh"><span class="dt"></span><h2>{g.s.label}</h2><span class="m-gn">{g.rs.length}</span>{#if g.sum}<small>{inrS(g.sum)}</small>{/if}</header>
+					<div class="m-list m-wallet">
+						{#each g.rs as r, i (r.id)}<BrandRequestRow {r} {creator} unread={brandData.unread[r.code] ?? 0} {i} />{/each}
+					</div>
+				</section>
+			{:else}
+				<div class="clear hero-card glow m-none">
+					<div class="mesh" aria-hidden="true"></div>
+					<span class="clear-ic"><Icon name={q ? 'search' : 'board'} /></span>
+					<b>{q ? 'No matches' : 'Nothing at this stage'}</b>
+					<small>{q ? 'Try another code or word.' : 'Requests show up here as they move along.'}</small>
+					<div class="clear-acts">{#if q}<button class="glass-chip" onclick={() => (q = '')}><Icon name="x" />Clear search</button>{:else}<button class="glass-chip" onclick={() => (stage = 'active')}><Icon name="board" />All active</button>{/if}</div>
+				</div>
+			{/each}
+		{:else}
+			<!-- Laptop: each request a ticket, its band in the colour of where it stands. -->
+			<div class="tks m-plist">
+				{#each shown as r, i (r.id)}
+					{@const n = nextOf(r)}
+					{@const ask = n?.who === 'you'}
+					<Ticket
+						name={r.code}
+						title={delivText(r.deliverables) || 'New request'}
+						sub={r.code}
+						money={r.fee ? inrS(r.fee) : r.product_value ? inrS(r.product_value) : ''}
+						moneySub={r.stage_label}
+						hue={STAGE_HUE[r.stage] ?? ''}
+						mark={r.stage === 'declined' ? '×' : String(stageIndex(r.stage) + 1)}
+						task={ask ? n!.title : brandData.unread[r.code] ? `${brandData.unread[r.code]} new message${brandData.unread[r.code] === 1 ? '' : 's'}` : n ? `${creator || 'Creator'}: ${n.title}` : `Sent ${fmt(r.received_on)}`}
+						status={r.live_date ? `Go-live ${fmt(r.live_date)}` : r.stage_label}
+						tone={ask ? 'hot' : r.stage === 'declined' ? 'calm' : r.stage === 'wrapped' ? 'ok' : 'warn'}
+						href="/brand/r/{r.code}"
+						{i}
+					>
+						<a class={ask ? 'btn primary' : 'btn'} href="/brand/r/{r.code}">{ask ? 'Answer' : 'Open'}</a>
+					</Ticket>
+				{:else}
+					<div class="clear hero-card glow m-none">
+						<div class="mesh" aria-hidden="true"></div>
+						<span class="clear-ic"><Icon name="board" /></span>
+						<b>{q ? 'No matches' : 'Nothing at this stage'}</b>
+						<small>Requests show up here as they move along.</small>
+					</div>
+				{/each}
+			</div>
+		{/if}
+
+		{#if done.length && pub.data?.accepting !== false}
+			<section class="hs">
+				<header class="hs-h"><h2>Book again</h2><span class="m-gn">{done.length}</span></header>
+				<div class="tks">
+					{#each done.slice(0, 3) as r, i (r.id)}
+						<Ticket name={r.code} title={delivText(r.deliverables) || 'Collab'} sub={r.code} money={r.fee ? inrS(r.fee) : ''} moneySub={r.fee ? 'last time' : ''} hue="var(--h-wrapped)" mark="↻" task={r.live_date ? `Went live ${fmt(r.live_date)}` : 'Done'} status="Same brief, one tap" tone="ok" href="/brand/new?again={r.code}" {i}>
+							<a class="btn primary" href="/brand/new?again={r.code}">Book again</a>
+						</Ticket>
+					{/each}
+				</div>
+			</section>
+		{/if}
+		{#if done.length && refLink}
+			<div class="clear hero-card glow">
+				<div class="mesh" aria-hidden="true"></div>
+				<span class="clear-ic"><Icon name="users" /></span>
+				<b>Know a brand that would like {creator || 'this creator'}?</b>
+				<small>Share your link. They'll see your recommendation, and {creator || 'the creator'} will know it came from you.</small>
+				<div class="clear-acts">
+					<button class="glass-chip" onclick={() => copyText(refLink, 'Link copied')}><Icon name="copy" />Copy link</button>
+					<a class="glass-chip" href={`https://wa.me/?text=${encodeURIComponent(`Worth working with ${pub.data?.display_name ?? ''}: ${refLink}`)}`} target="_blank" rel="noopener"><Icon name="send" />WhatsApp</a>
+				</div>
+			</div>
+		{/if}
 	{/if}
-	</div>
-	<aside class="bd-side">
-		<section class="bd-creator">
-			<div class="bdc-head">
-				{#if ig?.profile_picture_url}<img src={ig.profile_picture_url} alt="" referrerpolicy="no-referrer" />{:else}<Mono name={pub.data?.display_name ?? 'C'} />{/if}
-				<div><b>{pub.data?.display_name ?? ''}</b><small>@{pub.data?.handle ?? ''}{pub.data?.city ? ` · ${pub.data.city}` : ''}</small></div>
-			</div>
-			{#if pub.data?.niche}<p class="bdc-niche">{pub.data.niche}</p>{/if}
-			<div class="bdc-stats">
-				<div><b>{ig?.followers ? compact(ig.followers) : pub.data?.followers || '—'}</b><small>followers</small></div>
-				<div><b>{ig?.engagement_rate ? `${ig.engagement_rate}%` : pub.data?.engagement || '—'}</b><small>engagement</small></div>
-				<div><b>{ig?.avg_views ? compact(ig.avg_views) : '—'}</b><small>avg. views</small></div>
-			</div>
-			<p class="bdc-reply"><span class="dt" style="--hue:var(--ok)"></span>Usually replies within {pub.data?.reply_time ?? 'a few days'}</p>
-			{#if pub.data?.accepting !== false}<a class="btn grad bdc-cta" href="/brand/new"><Icon name="send" />New request</a>{/if}
-			<a class="btn bdc-cta" href="/insights"><Icon name="chart" />See audience insights</a>
-		</section>
-	</aside>
-	</div>
 {/if}

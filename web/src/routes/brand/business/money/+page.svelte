@@ -3,15 +3,18 @@
 	import { call, loadTeam, team, type Money, type MoneyInvoice } from '#lib/business.svelte.ts';
 	import { askNote } from '#lib/confirm.svelte.ts';
 	import { addressFor } from '#lib/creatorHost.ts';
-	import { phone } from '#lib/phone.svelte.ts';
 	import { pageSlug } from '#lib/supabase.ts';
 	import { toast } from '#lib/ui.svelte.ts';
-	import { errMessage, firstName, fmt, inr, todayIso } from '#lib/util.ts';
+	import { errMessage, firstName, fmt, inr, inrS, todayIso } from '#lib/util.ts';
+	import { countUp } from '#lib/ui.svelte.ts';
+	import Icon from '#lib/components/Icon.svelte';
+	import Ticket from '#lib/components/Ticket.svelte';
 	import { auth } from '#lib/auth.svelte.ts';
 
 	// Money: every invoice from every creator, what's due, and the GST and TDS for the year.
 	let m = $state<Money | null>(null);
-	let show = $state<'due' | 'paid' | 'all'>('due');
+	let show = $state<'all' | 'due' | 'overdue' | 'paid'>('all');
+	let fan = $state(false);
 	async function load() {
 		try {
 			m = await call<Money>('brand_money');
@@ -25,9 +28,16 @@
 	});
 	const canPay = $derived(!team.data || team.data.role !== 'member');
 	const open = (i: MoneyInvoice) => i.status === 'sent' || i.status === 'partly_paid';
-	const list = $derived((m?.invoices ?? []).filter((i) => (show === 'all' ? true : show === 'paid' ? i.status === 'paid' : open(i))));
-	const month = new Date().toLocaleDateString('en-IN', { month: 'long' });
 	const today = todayIso();
+	const late = (i: MoneyInvoice) => open(i) && !!i.due_date && i.due_date < today;
+	const pick = (i: MoneyInvoice, k: typeof show) => (k === 'all' ? true : k === 'paid' ? i.status === 'paid' : k === 'overdue' ? late(i) : open(i) && !late(i));
+	const list = $derived((m?.invoices ?? []).filter((i) => pick(i, show)));
+	const counts = $derived(Object.fromEntries((['all', 'due', 'overdue', 'paid'] as const).map((k) => [k, (m?.invoices ?? []).filter((i) => pick(i, k)).length])) as Record<typeof show, number>);
+	const HUE = { paid: 'var(--ok)', due: 'var(--warn,#e0a23a)', overdue: 'var(--bad)' } as const;
+	const paidSum = $derived((m?.invoices ?? []).filter((i) => i.status === 'paid').reduce((a, i) => a + Number(i.payable), 0));
+	const dueSum = $derived((m?.invoices ?? []).filter((i) => open(i) && !late(i)).reduce((a, i) => a + Number(i.due), 0));
+	const odSum = $derived(m?.overdue ?? 0);
+	const next = $derived((m?.invoices ?? []).filter((i) => open(i) && i.due_date).sort((a, b) => (a.due_date ?? '').localeCompare(b.due_date ?? ''))[0]);
 	const when = (i: MoneyInvoice) => {
 		if (i.status === 'paid') return { text: i.paid_on ? `Paid ${fmt(i.paid_on)}` : 'Paid', tone: 'ok' };
 		if (i.claimed) return { text: 'Marked paid · waiting for the creator', tone: '' };
@@ -68,254 +78,63 @@
 {#if !m}
 	<div class="loader" style="min-height:30vh"><span class="ring"><span></span></span></div>
 {:else}
-	<div class="mn-stats rv">
-		<div class="mn-s" class:hot={m.to_pay > 0}><span>To pay</span><b>{inr(m.to_pay)}</b><small>{m.to_pay_count} invoice{m.to_pay_count === 1 ? '' : 's'}{m.overdue ? ` · ${inr(m.overdue)} overdue` : ''}</small></div>
-		<div class="mn-s"><span>Paid in {month}</span><b>{inr(m.paid_month)}</b><small>{m.paid_month_creators ? `to ${m.paid_month_creators} creator${m.paid_month_creators === 1 ? '' : 's'}` : 'nothing yet'}</small></div>
-		{#if !phone.on}
-			<div class="mn-s"><span>GST · this year</span><b>{inr(m.gst_fy)}</b><small>input credit you can claim</small></div>
-			<div class="mn-s"><span>TDS deducted · this year</span><b>{inr(m.tds_fy)}</b><small>for your TDS returns</small></div>
-		{/if}
-	</div>
-
-	<div class="mn-bar">
-		<div class="mn-chips" role="group" aria-label="Show">
-			<button class:on={show === 'due'} onclick={() => (show = 'due')}>To pay · {m.invoices.filter(open).length}</button>
-			<button class:on={show === 'paid'} onclick={() => (show = 'paid')}>Paid</button>
-			<button class:on={show === 'all'} onclick={() => (show = 'all')}>All</button>
-		</div>
-		{#if m.invoices.length}<button class="mn-neo mn-ghost" onclick={exportCsv}>Export for your accountant</button>{/if}
-	</div>
-
-	{#if !list.length}
-		<p class="mn-none">{show === 'due' ? 'Nothing to pay right now.' : 'No invoices here yet.'} Creators' invoices show up here when they send them.</p>
-	{:else}
-		<div class="mn-t" class:cards={phone.on}>
-			{#if !phone.on}<div class="mn-r mn-th"><span>Invoice</span><span>Creator</span><span>To pay</span><span>GST</span><span>TDS</span><span>Due</span><span></span></div>{/if}
-			{#each list as i (i.token)}
-				{@const w = when(i)}
-				<div class="mn-r">
-					<span class="mn-num"><a href={invoiceUrl(i)} target="_blank" rel="noopener">{i.number}</a></span>
-					<span class="mn-cr">{i.creator}</span>
-					<span class="mn-amt">{inr(i.status === 'paid' ? i.payable : i.due)}</span>
-					<span class="mn-sm">{i.gst ? inr(i.gst) : '—'}{#if phone.on} GST{/if}</span>
-					<span class="mn-sm">{i.tds ? inr(i.tds) : '—'}{#if phone.on} TDS{/if}</span>
-					<span class="mn-w {w.tone}">{w.text}</span>
-					<span class="mn-a">
-						{#if open(i) && !i.claimed && canPay}<button class="mn-neo mn-light" onclick={() => markPaid(i)}>Mark paid</button>{:else if open(i) && !i.claimed}<small>Finance marks it paid</small>{/if}
-					</span>
+	<!-- The creator's Payments, from the other side: what's still to pay, then each invoice as a ticket. -->
+	<section class="hero-card glow m-hero m-pipe" aria-label="Still to pay">
+		<div class="mesh" aria-hidden="true"></div>
+		<div class="hc-in">
+			<div class="hc-top">
+				<span class="hc-eb">Still to pay</span>
+				{#if counts.overdue}<button class="glass-chip" onclick={() => (show = 'overdue')}><Icon name="alert" />{counts.overdue} overdue</button>{/if}
+				{#if m.invoices.length}<button class="glass-chip" onclick={exportCsv}><Icon name="download" />Export</button>{/if}
+			</div>
+			<div class="hc-val" use:countUp={{ value: m.to_pay, money: true }}>{inr(m.to_pay)}</div>
+			<div class="hc-sub">{next ? `Next: ${next.creator} · ${fmt(next.due_date)}` : m.to_pay > 0 ? `${m.to_pay_count} invoice${m.to_pay_count === 1 ? '' : 's'} to pay` : 'Nothing waiting to be paid'}{m.gst_fy ? ` · ${inrS(m.gst_fy)} GST to claim this year` : ''}</div>
+			{#if paidSum + dueSum + odSum > 0}
+				<div class="pipe-bar" aria-hidden="true">
+					{#if paidSum}<i style="flex:{paidSum};--hue:var(--ok)"></i>{/if}
+					{#if dueSum}<i style="flex:{dueSum};--hue:var(--warn,#e0a23a)"></i>{/if}
+					{#if odSum}<i style="flex:{odSum};--hue:var(--bad)"></i>{/if}
 				</div>
-			{/each}
+			{/if}
+			<div class="hc-foot">
+				{#each [['paid', 'Paid', paidSum], ['due', 'Due', dueSum], ['overdue', 'Overdue', odSum]] as const as [k, label, v] (k)}
+					<button class:on={show === k} onclick={() => (show = k)}><small><span class="dt" style="--hue:{HUE[k]}"></span>{label}</small><b>{inrS(v)}</b></button>
+				{/each}
+			</div>
 		</div>
-	{/if}
-	<p class="mn-note">Pay creators directly (bank or UPI on each invoice), then mark it paid with your payment reference. The creator gets a note to confirm.</p>
+	</section>
+	<div class="m-stages" role="tablist" aria-label="Filter invoices">
+		{#each [['all', 'All'], ['due', 'Due'], ['overdue', 'Overdue'], ['paid', 'Paid']] as const as [k, label] (k)}
+			<button role="tab" aria-selected={show === k} class:on={show === k} onclick={() => (show = k)}><i class="dt" style="--hue:{k === 'all' ? 'var(--accent)' : HUE[k]}"></i>{label}<span>{counts[k]}</span></button>
+		{/each}
+	</div>
+	<!-- Each invoice a ticket (like the creator's Payments): three, the edge of the rest, "+N more". -->
+	<div class="tks m-plist">
+		{#each fan ? list : list.slice(0, 3) as i, k (i.token)}
+			{@const w = when(i)}
+			<Ticket
+				name={i.creator}
+				sub={i.code}
+				money={inrS(i.status === 'paid' ? i.payable : i.due)}
+				moneySub={i.status === 'paid' ? 'paid' : late(i) ? 'overdue' : i.status === 'partly_paid' ? 'left to pay' : 'due'}
+				task={`Invoice ${i.number}${i.gst ? ` · ${inrS(i.gst)} GST` : ''}${i.tds ? ` · ${inrS(i.tds)} TDS` : ''}`}
+				status={w.text}
+				tone={i.status === 'paid' ? 'ok' : late(i) ? 'hot' : i.claimed ? 'calm' : 'warn'}
+				href={invoiceUrl(i)}
+				i={k}
+			>
+				{#if open(i) && !i.claimed && canPay}<button class="btn primary" onclick={() => markPaid(i)} aria-label="Mark {i.number} paid">Paid?</button>{:else}<a class="btn" href={invoiceUrl(i)} target="_blank" rel="noopener">Open</a>{/if}
+			</Ticket>
+		{:else}
+			<div class="clear hero-card glow m-none">
+				<div class="mesh" aria-hidden="true"></div>
+				<span class="clear-ic"><Icon name="wallet" /></span>
+				<b>{show === 'overdue' ? 'Nothing overdue' : show === 'paid' ? 'Nothing paid yet' : 'Nothing to pay'}</b>
+				<small>Creators' invoices show up here when they send them.</small>
+			</div>
+		{/each}
+		{#if !fan && list.length > 3}<span class="cr-edge tk-edge" aria-hidden="true"></span>{/if}
+	</div>
+	{#if list.length > 3}<button class="cr-more" onclick={() => (fan = !fan)}>{fan ? 'Show less' : `+${list.length - 3} more`}</button>{/if}
+	<p class="hint" style="margin:14px 4px 0">Pay creators directly (bank or UPI on each invoice), then mark it paid with your payment reference. The creator gets a note to confirm.{m.tds_fy ? ` TDS deducted this year: ${inr(m.tds_fy)}.` : ''}</p>
 {/if}
-
-<style>
-	.mn-stats {
-		display: grid;
-		grid-template-columns: repeat(4, minmax(0, 1fr));
-		gap: 12px;
-		margin-bottom: 18px;
-	}
-	.mn-s {
-		display: grid;
-		gap: 4px;
-		padding: 16px 18px;
-		border-radius: 16px;
-		background: var(--surface);
-		box-shadow: inset 0 0 0 1px var(--line);
-	}
-	.mn-s.hot {
-		background:
-			radial-gradient(120% 90% at 0% 0%, color-mix(in oklab, var(--g3) 16%, transparent), transparent 60%),
-			var(--surface);
-		box-shadow: inset 0 0 0 1px var(--line-strong);
-	}
-	.mn-s span {
-		font-size: 12.5px;
-		color: var(--ink-3);
-	}
-	.mn-s.hot span {
-		color: var(--g3);
-		font-weight: 600;
-	}
-	.mn-s b {
-		font-family: var(--f-serif);
-		font-weight: 400;
-		font-size: 32px;
-		line-height: 1;
-	}
-	.mn-s small {
-		font-size: 12px;
-		color: var(--ink-3);
-	}
-	.mn-bar {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		justify-content: space-between;
-		gap: 10px;
-		margin-bottom: 14px;
-	}
-	.mn-chips {
-		display: flex;
-		gap: 8px;
-	}
-	.mn-chips button {
-		height: 36px;
-		padding: 0 14px;
-		border: 0;
-		border-radius: 99px;
-		background: transparent;
-		box-shadow: inset 0 0 0 1px var(--line-strong);
-		color: var(--ink-2);
-		font: 600 13px/1 var(--f-body);
-		cursor: pointer;
-	}
-	.mn-chips button.on {
-		background: color-mix(in oklab, var(--g2) 16%, transparent);
-		box-shadow: none;
-		color: var(--g2);
-	}
-	.mn-neo {
-		height: 42px;
-		padding: 0 14px;
-		border: 0;
-		cursor: pointer;
-		font: 700 11.5px/1 var(--f-body);
-		letter-spacing: 0.12em;
-		text-transform: uppercase;
-		transition: transform 0.12s, box-shadow 0.12s;
-	}
-	.mn-light {
-		background: var(--ink);
-		color: var(--bg);
-		box-shadow: 3px 3px 0 var(--g2);
-	}
-	.mn-ghost {
-		background: transparent;
-		color: var(--ink);
-		box-shadow:
-			inset 0 0 0 1.5px var(--ink-3),
-			4px 4px 0 var(--line);
-	}
-	.mn-neo:hover {
-		transform: translate(-2px, -2px);
-	}
-	.mn-neo:active {
-		transform: translate(3px, 3px);
-		box-shadow: none;
-	}
-	.mn-none,
-	.mn-note {
-		margin: 0;
-		color: var(--ink-3);
-		font-size: 13.5px;
-	}
-	.mn-none {
-		padding: 18px;
-		border-radius: 18px;
-		box-shadow: inset 0 0 0 1px var(--line);
-	}
-	.mn-note {
-		margin-top: 14px;
-	}
-	.mn-t {
-		display: grid;
-		border-radius: 18px;
-		background: var(--surface);
-		box-shadow: inset 0 0 0 1px var(--line);
-		overflow: hidden;
-	}
-	.mn-r {
-		display: grid;
-		grid-template-columns: 1.4fr 1.3fr 1fr 0.8fr 0.8fr 1.1fr 1.1fr;
-		gap: 12px;
-		align-items: center;
-		padding: 14px 18px;
-		font-size: 14px;
-	}
-	.mn-r + .mn-r {
-		border-top: 1px solid var(--line);
-	}
-	.mn-th {
-		font-size: 11px;
-		font-weight: 700;
-		letter-spacing: 0.16em;
-		text-transform: uppercase;
-		color: var(--ink-3);
-	}
-	.mn-num a {
-		color: var(--ink);
-		font-weight: 600;
-	}
-	.mn-amt {
-		font-weight: 700;
-	}
-	.mn-w.bad {
-		color: var(--bad);
-		font-weight: 600;
-	}
-	.mn-w.warn {
-		color: var(--g3);
-		font-weight: 600;
-	}
-	.mn-w.ok {
-		color: var(--ok);
-	}
-	.mn-a {
-		justify-self: end;
-	}
-	.mn-a small {
-		color: var(--ink-3);
-		font-size: 12px;
-	}
-	/* Phones: each invoice a card. */
-	.mn-t.cards {
-		background: none;
-		box-shadow: none;
-		gap: 12px;
-	}
-	.cards .mn-r {
-		grid-template-columns: minmax(0, 1fr) auto;
-		gap: 6px 12px;
-		padding: 14px 16px;
-		border-radius: 18px;
-		background: var(--surface);
-		box-shadow: inset 0 0 0 1px var(--line-strong);
-	}
-	.cards .mn-r + .mn-r {
-		border-top: 0;
-	}
-	.cards .mn-cr {
-		grid-row: 1;
-		font-family: var(--f-serif);
-		font-style: italic;
-		font-size: 21px;
-	}
-	.cards .mn-amt {
-		grid-row: 1;
-		justify-self: end;
-	}
-	.cards .mn-num,
-	.cards .mn-sm {
-		font-size: 12.5px;
-		color: var(--ink-3);
-	}
-	.cards .mn-a {
-		grid-column: 1 / -1;
-		justify-self: stretch;
-	}
-	.cards .mn-a .mn-neo {
-		width: 100%;
-		height: 44px;
-	}
-	@media (max-width: 900px) {
-		.mn-stats {
-			grid-template-columns: repeat(2, minmax(0, 1fr));
-		}
-		.mn-s b {
-			font-size: 26px;
-		}
-	}
-</style>

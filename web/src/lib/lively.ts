@@ -118,7 +118,7 @@ export function lively() {
 		let queued = 0;
 		const scan = () => {
 			queued = 0;
-			if (!io || !onPhone() || document.documentElement.dataset.side !== 'studio') return;
+			if (!io || !onPhone() || !document.documentElement.dataset.desk) return;
 			for (const el of document.querySelectorAll<HTMLElement>(RISE)) {
 				if (seen.has(el)) continue;
 				seen.add(el);

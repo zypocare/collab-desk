@@ -75,12 +75,12 @@
 
 <svelte:head><title>Autopilots · Miracle</title></svelte:head>
 
-<header class="ap-h rv">
+<header class="ph rv">
 	<div>
+		<div class="eb">Plan{st && pending.length ? ` · ${pending.length} waiting for your OK` : ''}</div>
 		<h1>Your <em>autopilots</em></h1>
 		<p>Each one works on your campaigns every day. Ask me: it prepares the step and waits for your OK. Auto: it does it and tells you.</p>
 	</div>
-	{#if st}<a class="ap-wait" href="#inbox"><b>{pending.length}</b><span>waiting for your OK</span></a>{/if}
 </header>
 
 {#if !autopilots.loaded || !st}
@@ -113,7 +113,7 @@
 		</div>
 
 		<section class="ap-inbox" id="inbox" aria-label="Waiting for your OK">
-			<h2 class="ap-ih">Waiting for <em>your OK</em>{pending.length ? ` · ${pending.length}` : ''}</h2>
+			<header class="hs-h"><h2>Waiting for your OK</h2>{#if pending.length}<span class="hs-n">{pending.length}</span>{/if}</header>
 			<p class="ap-isub">What your autopilots prepared. Nothing goes out until you approve it.</p>
 			{#if !pending.length}
 				<p class="ap-none">All clear. New items show up here as quotes, drafts and quiet requests come in.</p>
@@ -135,16 +135,16 @@
 					{/if}
 					{#if i.note}<p class="ap-note">Couldn't do it on Auto: {i.note}</p>{/if}
 					<div class="ap-acts">
-						{#if primary(i)}<button class="ap-neo ap-grad" disabled={busy === i.id} onclick={() => act(i, 'approve')}>{primary(i)}</button>{/if}
-						{#if i.kind === 'draft' && i.payload.action === 'changes'}<button class="ap-neo ap-ghost" disabled={busy === i.id} onclick={() => act(i, 'alt')}>Approve anyway</button>{/if}
-						{#if i.kind === 'shortlist' && i.campaign_id}<a class="ap-neo ap-light" href="/brand/campaigns/{i.campaign_id}?suggest=1" onclick={() => actOn(i.id, 'approve')}>See them</a>{/if}
-						{#if i.code}<a class="ap-neo ap-ghost" href={at(i.slug, `/brand/r/${i.code}`)}>Open the request</a>{/if}
-						<button class="ap-skip" disabled={busy === i.id} onclick={() => act(i, 'skip')}>Skip</button>
+						{#if primary(i)}<button class="btn grad" disabled={busy === i.id} onclick={() => act(i, 'approve')}>{primary(i)}</button>{/if}
+						{#if i.kind === 'draft' && i.payload.action === 'changes'}<button class="btn" disabled={busy === i.id} onclick={() => act(i, 'alt')}>Approve anyway</button>{/if}
+						{#if i.kind === 'shortlist' && i.campaign_id}<a class="btn primary" href="/brand/campaigns/{i.campaign_id}?suggest=1" onclick={() => actOn(i.id, 'approve')}>See them</a>{/if}
+						{#if i.code}<a class="btn" href={at(i.slug, `/brand/r/${i.code}`)}>Open the request</a>{/if}
+						<button class="btn ghost" disabled={busy === i.id} onclick={() => act(i, 'skip')}>Skip</button>
 					</div>
 				</article>
 			{/each}
 			{#if lately.length}
-				<h3 class="ap-lh">Lately</h3>
+				<header class="hs-h"><h2>Lately</h2></header>
 				<div class="ap-lately">
 					{#each lately as i (i.id)}<div><span class="ap-tag k-{i.kind}">{KIND_LABEL[i.kind]}</span><span class="ap-lt">{i.title}</span><small>{statusText(i)} · {fmt((i.acted_at ?? i.created_at).slice(0, 10))}</small></div>{/each}
 				</div>
@@ -154,51 +154,6 @@
 {/if}
 
 <style>
-	.ap-h {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: flex-end;
-		justify-content: space-between;
-		gap: 16px;
-		margin-bottom: 22px;
-	}
-	.ap-h h1 {
-		margin: 0;
-		font-size: clamp(34px, 4.4vw, 46px);
-		font-weight: 700;
-		letter-spacing: -0.02em;
-	}
-	.ap-h h1 em,
-	.ap-ih em {
-		font-family: var(--f-serif);
-		font-style: italic;
-		font-weight: 400;
-	}
-	.ap-h p {
-		margin: 6px 0 0;
-		max-width: 720px;
-		color: var(--ink-3);
-		font-size: 14.5px;
-	}
-	.ap-wait {
-		display: flex;
-		align-items: center;
-		gap: 10px;
-		padding: 12px 16px;
-		border-radius: 14px;
-		background:
-			radial-gradient(120% 90% at 0% 0%, color-mix(in oklab, var(--g3) 18%, transparent), transparent 60%),
-			var(--surface);
-		box-shadow: inset 0 0 0 1px var(--line-strong);
-		color: var(--ink);
-		text-decoration: none;
-	}
-	.ap-wait b {
-		font-family: var(--f-serif);
-		font-weight: 400;
-		font-size: 28px;
-		color: var(--g3);
-	}
 	.ap-wrap {
 		display: grid;
 		gap: 30px;
@@ -302,11 +257,6 @@
 		display: grid;
 		gap: 14px;
 		scroll-margin-top: 90px;
-	}
-	.ap-ih {
-		margin: 0;
-		font-size: 30px;
-		font-weight: 700;
 	}
 	.ap-isub {
 		margin: -6px 0 0;
@@ -426,63 +376,6 @@
 		align-items: center;
 		gap: 10px;
 	}
-	.ap-neo {
-		height: 44px;
-		display: inline-grid;
-		place-items: center;
-		padding: 0 18px;
-		border: 0;
-		cursor: pointer;
-		text-decoration: none;
-		font: 700 12px/1 var(--f-body);
-		letter-spacing: 0.12em;
-		text-transform: uppercase;
-		transition: transform 0.12s, box-shadow 0.12s;
-	}
-	.ap-grad {
-		background: var(--grad);
-		color: #fff;
-		box-shadow: 4px 4px 0 #6a4bc9;
-	}
-	.ap-light {
-		background: var(--ink);
-		color: var(--bg);
-		box-shadow: 4px 4px 0 var(--g2);
-	}
-	.ap-ghost {
-		background: transparent;
-		color: var(--ink);
-		box-shadow:
-			inset 0 0 0 1.5px var(--ink-3),
-			4px 4px 0 var(--line);
-	}
-	.ap-neo:hover:not(:disabled) {
-		transform: translate(-2px, -2px);
-	}
-	.ap-neo:active:not(:disabled) {
-		transform: translate(4px, 4px);
-		box-shadow: none;
-	}
-	.ap-neo:disabled {
-		opacity: 0.6;
-	}
-	.ap-skip {
-		min-height: 44px;
-		padding: 0 12px;
-		border: 0;
-		background: none;
-		color: var(--ink-3);
-		font: 600 13px/1 var(--f-body);
-		cursor: pointer;
-	}
-	.ap-lh {
-		margin: 10px 0 0;
-		font-size: 11px;
-		font-weight: 700;
-		letter-spacing: 0.24em;
-		text-transform: uppercase;
-		color: var(--ink-3);
-	}
 	.ap-lately {
 		display: grid;
 		border-radius: 16px;
@@ -514,9 +407,6 @@
 		}
 		.ap-grid {
 			grid-template-columns: minmax(0, 1fr);
-		}
-		.ap-neo {
-			flex: 1 1 auto;
 		}
 	}
 </style>

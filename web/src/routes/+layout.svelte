@@ -10,6 +10,7 @@
 	import '../atelier.css';
 	import '../dash.css';
 	import '../cred.css';
+	import '../today.css';
 	import type { LayoutProps } from './$types';
 	import { onMount } from 'svelte';
 	import { onNavigate } from '$app/navigation';
@@ -32,9 +33,15 @@
 		keepReferral(new URL(location.href));
 		keepQr(new URL(location.href));
 	});
-	// Brand pages get their own look (brand.css); the studio keeps its own.
+	// Public pages get their own look (brand.css). The creator's studio and a signed-in brand's app share
+	// one app look: every app style keys on data-desk, data-side tells the two apart.
 	$effect(() => {
-		document.documentElement.dataset.side = page.url.pathname.startsWith('/studio') ? 'studio' : 'brand';
+		const path = page.url.pathname;
+		const el = document.documentElement;
+		el.dataset.side = path.startsWith('/studio') ? 'studio' : 'brand';
+		const desk = path.startsWith('/studio') ? 'studio' : path.startsWith('/brand') && auth.account?.role === 'brand' ? 'brand' : '';
+		if (desk) el.dataset.desk = desk;
+		else delete el.dataset.desk;
 	});
 	// A soft cross-fade between pages where the browser supports it.
 	onNavigate((nav) => {

@@ -6,13 +6,18 @@
 	import BrandBillingForm from '#lib/components/BrandBillingForm.svelte';
 	import BrandDetailsForm from '#lib/components/BrandDetailsForm.svelte';
 	import Icon from '#lib/components/Icon.svelte';
+	import Logo from '#lib/components/Logo.svelte';
+	import Ticket from '#lib/components/Ticket.svelte';
+	import { APP_VERSION, BUILD_LABEL } from '#lib/appVersion.ts';
+	import { brandHome, loadDashboard } from '#lib/brand.svelte.ts';
+	import { copyText } from '#lib/ui.svelte.ts';
 	import { auth, refreshAccount, signOut, switchBrand } from '#lib/auth.svelte.ts';
 	import { loadRequests } from '#lib/brand.svelte.ts';
 	import { brandIg, connectBrandIg, disconnectBrandIg, loadBrandIg, refreshBrandIg } from '#lib/brandIg.svelte.ts';
 	import { phone } from '#lib/phone.svelte.ts';
 	import { supabase } from '#lib/supabase.ts';
 	import { theme, toggleTheme, toast } from '#lib/ui.svelte.ts';
-	import { compact, errMessage, fmt } from '#lib/util.ts';
+	import { compact, errMessage, fmt, inr } from '#lib/util.ts';
 
 	// A brand's settings, laid out like the creator studio's: the sections on the left, the open one on the right.
 	const acct = $derived(auth.account?.role === 'brand' ? auth.account : null);
@@ -89,6 +94,31 @@
 		}
 	}
 
+	// Phone: the creator's My page hub, for a brand. Who you are, a few swipe cards, the ticket creators
+	// see on your requests, the sections in small groups and what you've done together at the bottom.
+	const GROUPS: { label: string; ids: Sec[] }[] = [
+		{ label: 'Your brand', ids: ['company', 'billing'] },
+		{ label: 'Working together', ids: ['team', 'brands'] },
+		{ label: 'Account', ids: ['alerts', 'account'] }
+	];
+	const byId = (id: Sec) => sections.find((x) => x.id === id)!;
+	onMount(() => {
+		if (!brandHome.dash) loadDashboard();
+	});
+	const d = $derived(brandHome.dash);
+	const doneN = $derived((d?.creators ?? []).reduce((a, c) => a + (c.done ?? 0), 0));
+	let cardsEl = $state<HTMLElement>();
+	let cardI = $state(0);
+	const onCards = () => cardsEl && (cardI = Math.round(cardsEl.scrollLeft / Math.max(1, cardsEl.clientWidth * 0.86)));
+	const cards = $derived([
+		brandIg.data
+			? { icon: 'shield', eb: 'Instagram', text: `Verified as @${brandIg.data.username}`, act: 'Open', run: () => open('company') }
+			: { icon: 'shield', eb: 'Instagram', text: "Show creators you're the real brand", act: 'Connect', run: () => ig('connect') },
+		{ icon: 'search', eb: 'Creators', text: 'Find creators open to brands', act: 'Discover', run: () => goto('/brand/creators?tab=discover') },
+		{ icon: 'send', eb: 'Campaigns', text: 'One brief to a whole pool', act: 'Start', run: () => goto('/brand/campaigns/new') },
+		...(acct?.email ? [{ icon: 'copy', eb: 'Your sign-in', text: acct.email, act: 'Copy', run: () => copyText(acct.email, 'Email copied') }] : [])
+	]);
+
 	// Miracle's own address: the company is the signed-up profile, so billing saves there too.
 	let legal = $state(auth.account?.role === 'brand' ? (auth.account.profile?.legal_name ?? '') : '');
 	let gstIn = $state(auth.account?.role === 'brand' ? (auth.account.profile?.gstin ?? '') : '');
@@ -131,7 +161,60 @@
 </div>
 
 <div class="set-shell" class:sec-open={!!active}>
-	<nav class="set-menu rv" style="--i:1" aria-label="Settings sections">
+	{#if phone.on && !active}
+		<div class="cs-hub">
+			<header class="cs-me">
+				<a class="cs-av" href="?s=company" onclick={(e) => (e.preventDefault(), open('company'))} aria-label="Company and Instagram"><Avatar name={company} src={brandIg.data?.picture ?? ''} size="64px" /><span class="cs-qr"><Icon name="shield" /></span></a>
+				<div class="cs-who"><b>{company}</b><small><Icon name="shield" />{brandIg.data ? `@${brandIg.data.username} · verified` : (acct?.email ?? '')}</small></div>
+				<button class="cs-edit" onclick={() => open('company')} aria-label="Edit company"><Icon name="edit" /></button>
+			</header>
+			<div class="cs-cards" bind:this={cardsEl} onscroll={onCards}>
+				{#each cards as k (k.eb)}
+					<div class="cs-card"><span class="cs-eb"><span class="cs-ci"><Icon name={k.icon} /></span>{k.eb}</span><p>{k.text}</p><button class="cs-cb" onclick={k.run} disabled={k.act === 'Connect' && !!igBusy}>{#if k.act === 'Connect' && igBusy === 'connect'}<span class="spinner"></span>{:else}{k.act}{/if}</button></div>
+				{/each}
+			</div>
+			<div class="cs-dots" aria-hidden="true">{#each cards as k, i (k.eb)}<i class:on={i === cardI}></i>{/each}</div>
+			<!-- What creators see on your requests, as a ticket like the creator's own. -->
+			<div class="tks cs-tk">
+				<Ticket
+					name={company}
+					title={brandIg.data ? 'Verified on Instagram' : 'Not verified yet'}
+					sub="What creators see"
+					money={brandIg.data?.followers != null ? compact(brandIg.data.followers) : ''}
+					moneySub={brandIg.data?.followers != null ? 'followers' : ''}
+					hue="var(--g1)"
+					task={brandIg.data ? `@${brandIg.data.username}` : 'Connect Instagram to show your logo and handle'}
+					status={brandIg.data ? 'Creators can trust your requests' : 'Creators see your name only'}
+					tone={brandIg.data ? 'ok' : 'warn'}
+					onopen={() => open('company')}
+				>
+					<button class="btn primary" onclick={() => open('company')}>{brandIg.data ? 'Open' : 'Connect'}</button>
+				</Ticket>
+			</div>
+			{#each GROUPS as g (g.label)}
+				<div class="cs-h">{g.label}</div>
+				{#each g.ids.map(byId) as x (x.id)}
+					<a class="cs-row" href={x.href ?? `?s=${x.id}`} onclick={(e) => { if (x.href) return; e.preventDefault(); open(x.id); }}><Icon name={x.icon} /><span>{x.label}</span>{#if x.warn}<i class="cs-dot" title={x.warn}></i>{/if}</a>
+				{/each}
+			{/each}
+			<a class="cs-row" href="/brand/details?new=1"><Icon name="plus" /><span>Add another brand</span></a>
+			<button class="cs-row" onclick={toggleTheme}><Icon name={theme.value === 'dark' ? 'sun' : 'moon'} /><span>{theme.value === 'dark' ? 'Light look' : 'Dark look'}</span></button>
+			<!-- What you've done on Miracle, in two big numbers. -->
+			<div class="cs-wins">
+				<a href="/brand/business/money"><small>Paid this month</small><b>{inr(d?.spent_month ?? 0)}</b><span>See payments →</span></a>
+				<a href="/brand/creators"><small>Collabs done</small><b>{doneN}</b><span>See creators →</span></a>
+			</div>
+			<button class="cs-logout" onclick={async () => (await signOut(), goto('/', { replace: true }))}><Icon name="logout" /><span>Log out</span><small>{acct?.email ?? ''}</small></button>
+			<footer class="cs-foot">
+				<Logo size={26} />
+				<b>Miracle</b>
+				<span>Made for brands</span>
+				<small>Version {APP_VERSION} · build {BUILD_LABEL}</small>
+			</footer>
+		</div>
+	{/if}
+	{#if active && current && phone.on}<h1 class="cs-title">{current.label}</h1>{/if}
+	<nav class="set-menu rv" style="--i:1" aria-label="Settings sections" hidden={phone.on && !active}>
 		{#each sections as x (x.id)}
 			<a
 				class="set-item"
