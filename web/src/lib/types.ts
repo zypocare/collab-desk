@@ -553,6 +553,11 @@ export type CampaignSummary = {
 	creators: number;
 	agreed: number;
 	waiting: number;
+	/** Open to applications right now, until open_until. */
+	open?: boolean;
+	open_until?: string | null;
+	applications?: number;
+	new_applications?: number;
 };
 export type CampaignQuote = { id: string; total: number; currency: string; status: 'sent' | 'accepted' | 'changes'; items: { kind: string; qty: number; rate: number }[]; version: number };
 export type CampaignRow = {
@@ -573,7 +578,23 @@ export type CampaignRow = {
 	draft_pending: boolean;
 };
 export type CampaignBoard = {
-	campaign: { id: string; name: string; status: 'draft' | 'sent'; pool_id: string | null; brief: Partial<CampaignBrief>; budget_total: number; created_at: string; sent_at: string | null; company: string | null };
+	campaign: {
+		id: string;
+		name: string;
+		status: 'draft' | 'sent';
+		pool_id: string | null;
+		brief: Partial<CampaignBrief>;
+		budget_total: number;
+		created_at: string;
+		sent_at: string | null;
+		company: string | null;
+		/** Open brief: listed creators can apply until open_until, within budget_min to budget_max per creator. */
+		open?: boolean;
+		open_until?: string | null;
+		budget_min?: number;
+		budget_max?: number;
+		applications?: number;
+	};
 	rows: CampaignRow[];
 };
 
@@ -655,4 +676,45 @@ export type QrCode = {
 	scans: number;
 	last_scan_at: string | null;
 	created_at: string;
+};
+
+/** A creator's audience as shares (from what they share from Instagram). */
+export type Audience = { women: number | null; age: Record<string, number>; cities: { name: string; pct: number }[] };
+
+/** A creator as Discover sees them: the card, their audience, rates and history with this brand. */
+export type DiscoverCreator = BrandCreator & {
+	listed: boolean;
+	audience: Audience | null;
+	rates: Record<string, number> | null;
+	with_me: { collabs: number; wrapped: number; fees: number; views: number };
+	rating: CreatorRating | null;
+};
+/** The brand's private rating of a creator (creators never see it). */
+export type CreatorRating = { on_time: number; quality: number; results: number; note: string; updated_at: string };
+
+/** One creator's application to an open brief, as the brand sees it. */
+export type CampaignApplication = BrandCreator & {
+	application: string;
+	rate: number;
+	note: string;
+	status: 'new' | 'shortlist' | 'no' | 'sent';
+	applied_at: string;
+	audience: Audience | null;
+	rates: Record<string, number> | null;
+};
+
+/** An open brief, as a creator sees it. */
+export type OpenBrief = {
+	id: string;
+	name: string;
+	brand: string;
+	category: string;
+	instagram: string;
+	verified: boolean;
+	brief: Partial<CampaignBrief>;
+	budget_min: number;
+	budget_max: number;
+	open_until: string;
+	applied: number;
+	mine: { id: string; rate: number; note: string; status: 'new' | 'shortlist' | 'sent' } | null;
 };

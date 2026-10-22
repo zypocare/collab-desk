@@ -22,11 +22,12 @@
 	const on = (...h: string[]) => h.some((x) => path === x || path.startsWith(x + '/'));
 	const NAV = $derived([
 		{ href: '/brand', label: 'Today', icon: 'home', on: path === '/brand' },
-		{ href: onApp ? '/brand/creators' : '/brand/requests', label: 'Collabs', icon: 'board', on: on('/brand/requests', '/brand/creators', '/brand/r', '/brand/new') },
+		{ href: onApp ? '/brand/creators' : '/brand/requests', label: 'Collabs', icon: 'board', on: on('/brand/requests', '/brand/creators', '/brand/creator', '/brand/r', '/brand/new') },
 		{ href: '/brand/campaigns', label: 'Campaigns', icon: 'send', on: on('/brand/campaigns', '/brand/autopilots') },
 		{ href: '/brand/business/calendar', label: 'Calendar', icon: 'cal', on: on('/brand/business/calendar') },
 		{ href: '/brand/business/content', label: 'Content', icon: 'film', on: on('/brand/business/content') },
 		{ href: '/brand/business/money', label: 'Money', icon: 'wallet', on: on('/brand/business/money', '/brand/business/shipping') },
+		{ href: '/brand/reports', label: 'Reports', icon: 'chart', on: on('/brand/reports') },
 		{ href: '/brand/settings', label: 'Settings', icon: 'gear', on: on('/brand/settings', '/brand/details', '/brand/business/team') }
 	]);
 

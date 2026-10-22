@@ -17,7 +17,7 @@ export function brandGroups(onApp: boolean): BrandGroup[] {
 				{ href: '/brand/creators?tab=pools', label: 'Pools' },
 				{ href: '/brand/creators?tab=discover', label: 'Discover' }
 			],
-			also: ['/brand/requests', '/brand/creators', '/brand/r/', '/brand/new']
+			also: ['/brand/requests', '/brand/creators', '/brand/creator/', '/brand/r/', '/brand/new']
 		},
 		{
 			href: '/brand/campaigns',
@@ -32,14 +32,16 @@ export function brandGroups(onApp: boolean): BrandGroup[] {
 			also: ['/brand/campaigns', '/brand/business/calendar', '/brand/business/content', '/brand/autopilots']
 		},
 		{
-			href: '/brand/business/money',
+			// Like the creator's Money: the overview (Reports) first, then Payments and Shipping.
+			href: '/brand/reports',
 			label: 'Money',
 			icon: 'wallet',
 			tabs: [
+				{ href: '/brand/reports', label: 'Reports' },
 				{ href: '/brand/business/money', label: 'Payments' },
 				{ href: '/brand/business/shipping', label: 'Shipping' }
 			],
-			also: ['/brand/business/money', '/brand/business/shipping']
+			also: ['/brand/reports', '/brand/business/money', '/brand/business/shipping']
 		},
 		{ href: '/brand/settings', label: 'Brand', icon: 'gear', me: true, also: ['/brand/settings', '/brand/details', '/brand/business/team'] }
 	];

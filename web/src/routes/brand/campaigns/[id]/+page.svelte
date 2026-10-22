@@ -2,15 +2,18 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
-	import { campaignBoard, inviteText, respondQuotes, sendCampaign } from '#lib/campaigns.svelte.ts';
+	import { campaignBoard, inviteText, openCampaign, respondQuotes, sendCampaign } from '#lib/campaigns.svelte.ts';
 	import { askNote } from '#lib/confirm.svelte.ts';
 	import { addressFor } from '#lib/creatorHost.ts';
 	import { phone } from '#lib/phone.svelte.ts';
 	import { pageSlug } from '#lib/supabase.ts';
 	import { copyText, toast } from '#lib/ui.svelte.ts';
-	import { compact, delivText, errMessage, firstName, fmt, inr } from '#lib/util.ts';
-	import type { CampaignBoard, CampaignRow } from '#lib/types.ts';
+	import { compact, delivText, errMessage, firstName, fmt, inr, inrS, rel, todayIso } from '#lib/util.ts';
+	import type { CampaignApplication, CampaignBoard, CampaignRow } from '#lib/types.ts';
 	import Avatar from '#lib/components/Avatar.svelte';
+	import CampaignApplications from '#lib/components/CampaignApplications.svelte';
+	import DatePicker from '#lib/components/DatePicker.svelte';
+	import Icon from '#lib/components/Icon.svelte';
 	import { shortlistFor, type Suggestion } from '#lib/autopilots.svelte.ts';
 	import { auth } from '#lib/auth.svelte.ts';
 
@@ -19,7 +22,7 @@
 	let board = $state<CampaignBoard | null>(null);
 	let missing = $state(false);
 	const id = $derived(page.params.id ?? '');
-	const tab = $derived(({ quotes: 'quotes', brief: 'brief' } as const)[page.url.searchParams.get('tab') ?? ''] ?? 'board');
+	const tab = $derived(({ quotes: 'quotes', brief: 'brief', applications: 'applications' } as const)[page.url.searchParams.get('tab') ?? ''] ?? 'board');
 	const setTab = (t: string) => goto(t === 'board' ? '?' : `?tab=${t}`, { replaceState: true });
 	async function load() {
 		try {
@@ -148,6 +151,46 @@
 			busy = false;
 		}
 	}
+
+	// Open brief: listed creators who fit can apply with their own rate until the closing date.
+	const isOpen = $derived(!!c?.open && !!c.open_until && c.open_until >= todayIso());
+	let until = $state(rel(14));
+	let minRate = $state('');
+	let maxRate = $state('');
+	let seeded = '';
+	// The budget starts from the brief's fee (half of it to all of it), once per campaign.
+	$effect(() => {
+		if (!c || seeded === c.id) return;
+		seeded = c.id;
+		const fee = Number(c.brief.fee) || 0;
+		if (c.budget_max) {
+			minRate = String(c.budget_min || '');
+			maxRate = String(c.budget_max);
+		} else if (fee) {
+			minRate = String(Math.round(fee / 2000) * 1000);
+			maxRate = String(fee);
+		}
+	});
+	// "20,000" and "₹20000" both read as 20000.
+	const num = (v: string) => Number(String(v).replace(/[^0-9.]/g, '')) || 0;
+	let opening = $state(false);
+	async function setOpen(open: boolean) {
+		opening = true;
+		try {
+			const b = open ? await openCampaign(id, true, until || null, num(minRate), num(maxRate)) : await openCampaign(id, false, null, 0, 0);
+			if (b) board = b;
+			toast(open ? 'Your brief is open. Creators who fit can apply.' : 'Applications closed', 'check');
+		} catch (e) {
+			toast(errMessage(e), 'alert');
+		} finally {
+			opening = false;
+		}
+	}
+	let apps = $state<CampaignApplication[]>([]);
+	let appShow = $state<'new' | 'shortlist' | 'no' | 'sent'>('new');
+	const shortlisted = $derived(apps.filter((a) => a.status === 'shortlist').length);
+	const avgAsk = $derived(apps.length ? apps.reduce((a, x) => a + (Number(x.rate) || 0), 0) / apps.length : 0);
+	const range = (lo?: number, hi?: number) => (hi ? (lo && lo < hi ? `${inrS(lo)}–${inrS(hi)} per creator` : `up to ${inrS(hi)} per creator`) : 'each creator asks their own rate');
 </script>
 
 <svelte:head><title>{c?.name ?? 'Campaign'} · Miracle</title></svelte:head>
@@ -161,13 +204,14 @@
 {:else}
 	<header class="ph rv">
 		<div>
-			<div class="eb">Campaign{c.brief.preferred_live ? ` · go live by ${fmt(c.brief.preferred_live)}` : ''}</div>
+			<div class="eb">Campaign{isOpen ? ' · open to applications' : ''}{c.brief.preferred_live ? ` · go live by ${fmt(c.brief.preferred_live)}` : ''}</div>
 			<h1>{c.name}</h1>
 		</div>
 	</header>
 	<div class="m-stages" role="tablist" aria-label="Campaign">
 		<button role="tab" aria-selected={tab === 'board'} class:on={tab === 'board'} onclick={() => setTab('board')}><i class="dt" style="--hue:var(--accent)"></i>Board</button>
 		<button role="tab" aria-selected={tab === 'quotes'} class:on={tab === 'quotes'} onclick={() => setTab('quotes')}><i class="dt" style="--hue:var(--bad)"></i>Quotes{#if waitingQuotes.length}<span>{waitingQuotes.length}</span>{/if}</button>
+		<button role="tab" aria-selected={tab === 'applications'} class:on={tab === 'applications'} onclick={() => setTab('applications')}><i class="dt" style="--hue:var(--g2)"></i>Applications{#if c.applications}<span>{c.applications}</span>{/if}</button>
 		<button role="tab" aria-selected={tab === 'brief'} class:on={tab === 'brief'} onclick={() => setTab('brief')}><i class="dt" style="--hue:var(--ok)"></i>Brief</button>
 	</div>
 
@@ -255,6 +299,39 @@
 				<button class="cb-neo cb-ghost" disabled={busy || !picks.length} onclick={() => answer(false)}>Ask for changes</button>
 				<button class="cb-neo cb-grad" disabled={busy || !picks.length} onclick={() => answer(true)}>Accept {picks.length || ''} quote{picks.length === 1 ? '' : 's'}</button>
 			</div>
+		{/if}
+	{:else if tab === 'applications'}
+		{#if isOpen}
+			<section class="hero-card glow m-hero m-pipe" aria-label="Open brief">
+				<div class="mesh" aria-hidden="true"></div>
+				<div class="hc-in">
+					<div class="hc-top">
+						<span class="hc-eb">Open brief · closes {fmt(c.open_until)}</span>
+						<button class="glass-chip" onclick={() => setOpen(false)} disabled={opening}><Icon name="x" />Close applications</button>
+					</div>
+					<div class="hc-val ob-brief">{c.brief.brief || c.name}</div>
+					<div class="hc-sub">{[`Budget ${range(c.budget_min, c.budget_max)}`, c.brief.deliverables?.length ? `${delivText(c.brief.deliverables)} each` : '', c.brief.usage].filter(Boolean).join(' · ')}</div>
+					<div class="hc-foot">
+						<button class:on={appShow === 'new'} onclick={() => (appShow = 'new')}><small><span class="dt" style="--hue:var(--bad)"></span>Applied</small><b>{apps.length}</b></button>
+						<button class:on={appShow === 'shortlist'} onclick={() => (appShow = 'shortlist')}><small><span class="dt" style="--hue:var(--ok)"></span>Shortlisted</small><b>{shortlisted}</b></button>
+						<button onclick={() => (appShow = 'new')}><small><span class="dt" style="--hue:var(--g2)"></span>Avg. ask</small><b>{avgAsk ? inrS(Math.round(avgAsk)) : '—'}</b></button>
+					</div>
+				</div>
+			</section>
+		{:else}
+			<section class="panel ob-open rv">
+				<div class="panel-h"><h2>{c.open && c.open_until ? `Applications closed ${fmt(c.open_until)}` : 'Open to applications'}</h2></div>
+				<p class="ob-p">Let listed creators who fit apply with their own rate. You pick who gets a request.</p>
+				<div class="fields">
+					<div class="f span2"><label for="ob-until">Applications close on</label><DatePicker id="ob-until" min={rel(0)} bind:value={until} clearable={false} /><p class="hint">Up to 60 days from today.</p></div>
+					<div class="f"><label for="ob-min">Budget per creator, from (₹)</label><input class="inp" id="ob-min" inputmode="numeric" bind:value={minRate} placeholder="e.g. 10000" /></div>
+					<div class="f"><label for="ob-max">Up to (₹)</label><input class="inp" id="ob-max" inputmode="numeric" bind:value={maxRate} placeholder="e.g. 30000" /></div>
+				</div>
+				<div class="ob-go"><button class="btn grad" disabled={opening} onclick={() => setOpen(true)}>{#if opening}<span class="spinner"></span>{:else}<Icon name="send" />{/if}Open brief</button></div>
+			</section>
+		{/if}
+		{#if isOpen || c.applications}
+			<CampaignApplications {id} max={Number(c.budget_max) || 0} until={c.open_until ?? ''} bind:apps bind:show={appShow} onsent={(b) => b && (board = b)} />
 		{/if}
 	{:else}
 		<section class="panel cb-brief rv">
@@ -690,6 +767,37 @@
 	}
 	.cb-fail small {
 		color: var(--bad);
+	}
+	/* Open brief: the brief itself in serif on the glowing card, smaller than a total. */
+	.hero-card .hc-val.ob-brief {
+		font-family: var(--f-serif);
+		font-weight: 400;
+		font-size: clamp(22px, 2.4vw, 30px);
+		letter-spacing: normal;
+		line-height: 1.2;
+		display: -webkit-box;
+		-webkit-line-clamp: 3;
+		line-clamp: 3;
+		-webkit-box-orient: vertical;
+		overflow: hidden;
+		white-space: pre-line;
+	}
+	.ob-open {
+		display: grid;
+		gap: 14px;
+		padding-bottom: 20px;
+		margin-bottom: 18px;
+	}
+	.ob-open > :not(.panel-h) {
+		margin: 0 20px;
+	}
+	.ob-p {
+		color: var(--ink-2);
+		line-height: 1.5;
+	}
+	.ob-go {
+		display: flex;
+		justify-content: flex-end;
 	}
 	@media (max-width: 900px) {
 		.cb-stats {

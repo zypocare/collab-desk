@@ -11,6 +11,9 @@
 	import Mono from '#lib/components/Mono.svelte';
 	import Segmented from '#lib/components/Segmented.svelte';
 	import Ticket from '#lib/components/Ticket.svelte';
+	import OpenBriefs from '#lib/components/OpenBriefs.svelte';
+	import { openBriefs } from '#lib/campaigns.svelte.ts';
+	import type { OpenBrief } from '#lib/types.ts';
 	import { phone } from '#lib/phone.svelte.ts';
 
 	// Brands she'd like to work with: a wishlist, a pitch from her own email, polite follow-ups.
@@ -31,6 +34,16 @@
 		loaded = true;
 	}
 	onMount(load);
+
+	// Two lists here: open briefs from brands, and her own pitches. Opens on the briefs only when there are some.
+	let briefs = $state<OpenBrief[] | null>(null);
+	let tab = $state<'briefs' | 'pitches' | null>(null);
+	onMount(() => {
+		openBriefs()
+			.then((b) => (briefs = b ?? []))
+			.catch(() => (briefs = []));
+	});
+	const view = $derived(tab ?? (briefs === null ? null : briefs.length ? 'briefs' : 'pitches'));
 
 	const s = $derived(studio.settings!);
 	const link = $derived((s.site_url || location.origin).replace(/\/$/, ''));
@@ -80,7 +93,8 @@
 		};
 	}
 	function newPitch() {
-		open = { brand_name: '', instagram: '', category: '', contact_name: '', email: '', subject: '', body: '', auto_follow: true };
+		tab = 'pitches';
+		open ={ brand_name: '', instagram: '', category: '', contact_name: '', email: '', subject: '', body: '', auto_follow: true };
 	}
 	async function writeAi() {
 		if (!open?.brand_name?.trim()) return toast('Add the brand name first', 'alert');
@@ -157,6 +171,16 @@
 	<div class="acts"><button class="btn grad" onclick={newPitch}><Icon name="plus" />New pitch</button></div>
 </header>
 
+<div class="m-stages" role="tablist" aria-label="Show">
+	<button role="tab" aria-selected={view === 'briefs'} class:on={view === 'briefs'} onclick={() => (tab = 'briefs')}><i class="dt" style="--hue:var(--accent)"></i>Open briefs<span>{briefs?.length ?? 0}</span></button>
+	<button role="tab" aria-selected={view === 'pitches'} class:on={view === 'pitches'} onclick={() => (tab = 'pitches')}><i class="dt" style="--hue:var(--ok)"></i>Your pitches<span>{shown.length + ready.length}</span></button>
+</div>
+
+{#if view === null}
+	<div class="empty"><span class="spinner"></span></div>
+{:else if view === 'briefs' && briefs}
+	<OpenBriefs bind:briefs />
+{:else}
 <!-- Pitch autopilot: new brands every morning, pitched from her email. -->
 <section class="panel rv pa" style="--i:1">
 	<div class="switch-row" style="border-top:0">
@@ -248,6 +272,7 @@
 		</div>
 	{/each}
 </section>
+{/if}
 {/if}
 
 {#if open}

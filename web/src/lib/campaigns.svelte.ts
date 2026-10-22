@@ -1,7 +1,7 @@
 // A brand's pools (saved groups of creators) and campaigns (one brief sent to many creators, each as an
 // ordinary request of their own). All through database functions that only touch this login's own.
 import { supabase } from './supabase';
-import type { BrandCreator, CampaignBoard, CampaignSummary, Pool } from './types';
+import type { BrandCreator, CampaignApplication, CampaignBoard, CampaignSummary, OpenBrief, Pool } from './types';
 import { errMessage } from './util';
 
 export const pools = $state<{ list: Pool[]; loaded: boolean }>({ list: [], loaded: false });
@@ -71,3 +71,14 @@ export function fitFor(c: BrandCreator | null, kinds: string[]): { ok: boolean; 
 /** The message a brand sends from its own Instagram or WhatsApp to a creator who isn't on Miracle. */
 export const inviteText = (company: string, handle: string, campaign = '') =>
 	`Hi! We're ${company || 'a brand'} and we'd love to work with you${campaign ? ` on our ${campaign} campaign` : ''}. We send briefs and quotes through Miracle (free for creators, no commission). Join here and you'll get our brief once you're set up: https://app.miracleapp.live/signup?as=creator`;
+
+// Open briefs: the brand opens a campaign for applications, creators apply with their own rate.
+export const openCampaign = (id: string, open: boolean, until: string | null, min: number, max: number) =>
+	call<CampaignBoard | null>('campaign_open', { p_id: id, p_open: open, p_until: until, p_min: min, p_max: max });
+export const listApplications = (campaign: string) => call<CampaignApplication[]>('campaign_applications_list', { p_campaign: campaign });
+export const setApplication = (id: string, status: 'new' | 'shortlist' | 'no') => call<null>('application_set', { p_id: id, p_status: status });
+export const sendApplications = (campaign: string) => call<CampaignBoard | null>('applications_send', { p_campaign: campaign });
+// Creator side.
+export const openBriefs = () => call<OpenBrief[]>('open_briefs');
+export const applyToBrief = (campaign: string, rate: number, note: string) => call<OpenBrief[]>('brief_apply', { p_campaign: campaign, p_rate: rate, p_note: note });
+export const withdrawFromBrief = (campaign: string) => call<OpenBrief[]>('brief_withdraw', { p_campaign: campaign });

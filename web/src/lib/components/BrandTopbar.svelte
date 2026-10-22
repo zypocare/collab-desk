@@ -78,6 +78,7 @@
 		'/brand/new': 'New request',
 		'/brand/settings': 'Your brand',
 		'/brand/business/money': 'Payments',
+		'/brand/reports': 'Reports',
 		'/brand/business/content': 'Content',
 		'/brand/business/calendar': 'Calendar',
 		'/brand/business/shipping': 'Shipping',
@@ -89,11 +90,13 @@
 		: isNew ? 'Add a brand'
 		: path.startsWith('/brand/campaigns/') && path !== '/brand/campaigns/new' ? 'Campaign'
 		: path.startsWith('/brand/r/') ? path.split('/')[3]
+		: path.startsWith('/brand/creator/') ? 'Creator'
 		: path.startsWith('/insights') ? 'Insights'
 		: (TITLES[path] ?? '')
 	);
 	const back = $derived(
 		path.startsWith('/brand/r/') ? '/brand/requests'
+		: path.startsWith('/brand/creator/') ? '/brand/creators?tab=discover'
 		: path.startsWith('/brand/campaigns/') ? '/brand/campaigns'
 		: sec ? '/brand/settings'
 		: isNew || path === '/brand/business/team' ? '/brand/settings'
