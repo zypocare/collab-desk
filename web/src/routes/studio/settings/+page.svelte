@@ -39,6 +39,7 @@
 	import TeamSettings from '#lib/components/TeamSettings.svelte';
 	import DeleteAccount from '#lib/components/DeleteAccount.svelte';
 	import BlockedList from '#lib/components/BlockedList.svelte';
+	import CollabInviteSetting from '#lib/components/CollabInviteSetting.svelte';
 	import EmailInbox from '#lib/components/EmailInbox.svelte';
 	import SavedReplies from '#lib/components/SavedReplies.svelte';
 	import ResetData from '#lib/components/ResetData.svelte';
@@ -477,6 +478,7 @@
 						<EmailInbox />
 						<SavedReplies />
 						<NotificationSettings />
+						<CollabInviteSetting />
 					{:else if active === 'team'}
 						<TeamSettings />
 					{:else if active === 'account'}

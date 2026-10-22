@@ -33,10 +33,13 @@ async function publishDue(db: ReturnType<typeof admin>, creator: number, only?: 
 
   for (const p of (due ?? []) as any[]) {
     try {
-      const { data: collab } = await db.from('collabs').select('stage').eq('id', p.collab_id).single();
-      if (!collab || ['paused', 'cancelled'].includes(collab.stage)) {
-        done[p.id] = 'on hold';
-        continue;
+      // A brand collab's draft waits while the collab is on hold; her own reels (no collab) just go.
+      if (p.collab_id) {
+        const { data: collab } = await db.from('collabs').select('stage').eq('id', p.collab_id).single();
+        if (!collab || ['paused', 'cancelled'].includes(collab.stage)) {
+          done[p.id] = 'on hold';
+          continue;
+        }
       }
       if (!canPost) throw new Error('Allow posting first: My page > Profile & Instagram > Allow DMs and posting.');
       let container = p.container_id as string | null;
@@ -64,7 +67,8 @@ async function publishDue(db: ReturnType<typeof admin>, creator: number, only?: 
       const pub = await call(tok.access_token, '/me/media_publish', { creation_id: container });
       const media = await call(tok.access_token, `/${pub.id}`, { fields: 'permalink' }, 'GET').catch(() => ({}));
       await db.from('scheduled_posts').update({ status: 'published', ig_media_id: String(pub.id), permalink: media.permalink ?? '', error: '' }).eq('id', p.id);
-      await db.from('collab_events').insert({ collab_id: p.collab_id, kind: 'note', text: 'Posted to Instagram from the app.', visible_to_brand: false });
+      if (p.collab_id) await db.from('collab_events').insert({ collab_id: p.collab_id, kind: 'note', text: 'Posted to Instagram from the app.', visible_to_brand: false });
+      else await db.from('content_plans').update({ status: 'posted' }).eq('scheduled_post_id', p.id);
       done[p.id] = 'published';
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);

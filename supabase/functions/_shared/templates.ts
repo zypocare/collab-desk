@@ -1050,6 +1050,48 @@ Open the collab: ${studio()}`,
     };
   }
 
+  // ---------------------------------------------------------------- collab reels (creator to creator)
+  if (kind === 'collab_reel_invite') {
+    const href = url(s, '/studio/grow#collab');
+    const when = p.post_at ? new Date(String(p.post_at)).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Kolkata' }) : '';
+    const who = p.handle ? `${p.from} (@${String(p.handle).replace(/^@/, '')})` : String(p.from);
+    return {
+      subject: `${p.from} wants to make a collab reel with you`,
+      html: layout(
+        s,
+        `${p.from} wants to make a collab reel with you`,
+        `${P(`<b>${esc(who)}</b> invited you to a collab reel on Miracle: one reel, posted on both your accounts, so it shows to both your audiences.`)}
+         ${quoteBox('The idea', p.idea)}
+         ${table(row('Who posts it', p.they_post ? 'You, with them as collaborator' : 'They do, with you as collaborator'), row('Post on', when))}`,
+        { label: 'Answer the invite', href },
+        { to: 'creator', preheader: String(p.idea ?? '').slice(0, 90), next: ['Say yes or no in Grow.', 'If yes, it goes in both your Calendars.', 'The one who posts adds the other as collaborator; the other taps Accept in Instagram.'] },
+      ),
+      text: `${who} invited you to a collab reel: ${p.idea}${when ? `
+Post on: ${when}` : ''}
+
+Answer: ${href}`,
+    };
+  }
+
+  if (kind === 'collab_reel_answer') {
+    const href = url(s, '/studio/grow#collab');
+    return {
+      subject: p.yes ? `${p.from} said yes to your collab reel` : `${p.from} can't do the collab reel`,
+      html: layout(
+        s,
+        p.yes ? `${p.from} said yes` : `${p.from} can't do it this time`,
+        p.yes ? `${P(`Your collab reel with <b>${esc(p.from)}</b> is on. It's in both your Calendars.`)}${quoteBox('The idea', p.idea)}` : `${P(`<b>${esc(p.from)}</b> can't do this collab reel. Try another creator from Grow.`)}`,
+        { label: 'Open Grow', href },
+        { to: 'creator' },
+      ),
+      text: p.yes ? `${p.from} said yes to your collab reel: ${p.idea}. It's in your Calendar.
+
+${href}` : `${p.from} can't do the collab reel this time.
+
+${href}`,
+    };
+  }
+
   // ---------------------------------------------------------------- leaving, and safety
   if (kind === 'collab_closed') {
     // To a brand: the creator closed her page (from her), or Miracle closed it (from the app).

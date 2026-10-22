@@ -18,7 +18,7 @@ type Env = {
 type Run = { env: Env; gemini: boolean; neurons: number };
 
 // Expected size of each job in Cloudflare neurons (reserved before, corrected after).
-const COST: Record<string, number> = { dm: 160, reply: 110, caption: 110, pitch: 140, fit: 230, classify: 40, summary: 220, negotiate: 210, script: 330, nudge: 120, ask: 260, voice: 60, embed: 8, cheer: 60 };
+const COST: Record<string, number> = { dm: 160, reply: 110, caption: 110, pitch: 140, fit: 230, classify: 40, summary: 220, negotiate: 210, script: 330, nudge: 120, ask: 260, voice: 60, embed: 8, cheer: 60, reelcheck: 260, growplan: 200 };
 // Cloudflare's price list in neurons per token (Llama 3.3 70B fast; Llama 3.2 11B vision).
 const PER_TOKEN = { text: [0.0267, 0.2048], vision: [0.0045, 0.0615] };
 const USED_UP = "Today's free AI is used up. It's back at 5:30 am.";
@@ -39,10 +39,10 @@ export default {
 		try {
 			const kind = url.pathname.slice('/api/ai/'.length);
 			if (kind === 'status') return json(await status(req, env));
-			if (!['dm', 'reply', 'caption', 'pitch', 'classify', 'fit', 'summary', 'negotiate', 'script', 'nudge', 'ask', 'voice', 'embed', 'cheer', 'scout'].includes(kind)) return json({ error: 'Unknown.' }, 404);
+			if (!['dm', 'reply', 'caption', 'pitch', 'classify', 'fit', 'summary', 'negotiate', 'script', 'nudge', 'ask', 'voice', 'embed', 'cheer', 'scout', 'reelcheck', 'growplan'].includes(kind)) return json({ error: 'Unknown.' }, 404);
 			const body = (await req.json()) as Record<string, unknown>;
 			const job = (x: Run) =>
-				kind === 'cheer' ? cheer(x, body) : kind === 'scout' ? scout(x, body) : kind === 'dm' ? readDm(x, body) : kind === 'reply' ? replies(x, body) : kind === 'pitch' ? pitch(x, body) : kind === 'classify' ? classify(x, body) : kind === 'fit' ? fit(x, body) : kind === 'summary' ? summary(x, body) : kind === 'negotiate' ? creatorOf(req, env).then((me) => negotiate(x, body, me)) : kind === 'script' ? script(x, body) : kind === 'nudge' ? nudge(x, body) : kind === 'ask' ? creatorOf(req, env).then((me) => ask(x, body, me)) : kind === 'voice' ? voice(x, body) : kind === 'embed' ? embed(x, body) : creatorOf(req, env).then((me) => caption(x, body, me));
+				kind === 'cheer' ? cheer(x, body) : kind === 'scout' ? scout(x, body) : kind === 'dm' ? readDm(x, body) : kind === 'reply' ? replies(x, body) : kind === 'pitch' ? pitch(x, body) : kind === 'classify' ? classify(x, body) : kind === 'fit' ? fit(x, body) : kind === 'summary' ? summary(x, body) : kind === 'negotiate' ? creatorOf(req, env).then((me) => negotiate(x, body, me)) : kind === 'script' ? script(x, body) : kind === 'nudge' ? nudge(x, body) : kind === 'ask' ? creatorOf(req, env).then((me) => ask(x, body, me)) : kind === 'voice' ? voice(x, body) : kind === 'embed' ? embed(x, body) : kind === 'reelcheck' ? reelCheck(x, body) : kind === 'growplan' ? growPlan(x, body) : creatorOf(req, env).then((me) => caption(x, body, me));
 
 			// Checking an incoming Instagram DM comes from the DM webhook with a single-use pass, and the
 			// hourly fun nudge from its job the same way. DMs stay on Cloudflare (never sent to Google);
@@ -634,6 +634,69 @@ ${sources.length ? `Messages, emails, briefs and notes that may answer the quest
 }
 
 // ---------- 5c. Brief to Reel script: hooks, scenes, must-says, caption ----------
+// ---------- Grow: check a reel before it goes up ----------
+// The first frame (a small JPEG) is read by the vision model; the length, caption and her own numbers
+// (how long people watch her reels, which formats work) decide the rest. Advice only, never a promise of views.
+async function reelCheck(x: Run, b: Record<string, unknown>) {
+	const facts = { seconds: Number(b.seconds) || 0, caption: String(b.caption ?? '').slice(0, 600), avg_watch_s: Number(b.avg_watch_s) || 0, best_formats: b.best_formats ?? [], best_time: String(b.best_time ?? ''), niche: String(b.niche ?? '') };
+	let frame = '';
+	const image = String(b.frame ?? '');
+	if (image.startsWith('data:image/') && !x.gemini) {
+		const bytes = [...Uint8Array.from(atob(image.split(',')[1] ?? ''), (c) => c.charCodeAt(0))];
+		const ask = {
+			messages: [
+				{ role: 'system', content: 'You look at the first frame of an Instagram Reel. In two short sentences say what a viewer sees in the first second: is there a face, a product, on-screen text (quote it), and is it clear what the reel is about? Also say if any text sits in the bottom fifth or the right edge, where Instagram covers it. No advice.' },
+				{ role: 'user', content: 'Describe the first frame.' }
+			],
+			image: bytes,
+			max_tokens: 160
+		};
+		let r: unknown;
+		try {
+			r = await x.env.AI.run(VISION, ask);
+		} catch (e) {
+			if (/agree|licen/i.test(String((e as Error)?.message))) {
+				await x.env.AI.run(VISION, { prompt: 'agree', max_tokens: 5 });
+				r = await x.env.AI.run(VISION, ask);
+			} else throw e;
+		}
+		meter(x, r, 'vision', '', 300);
+		frame = out(r).trim().slice(0, 500);
+	}
+	const reply = await chat(
+		x,
+		`You are a short-video coach for an Indian Instagram creator. Check one Reel before she posts it, using ONLY these facts and the first-frame description. Compare with HER numbers (avg_watch_s = how long people watch her reels on average; best_formats = formats that get her the most shares/saves). Be specific and kind, plain English. Never promise views or followers.
+Return ONLY JSON: {"score": 0-100, "verdict": "short line like 'Good, fix 2 things first'", "checks": [{"ok": true|false, "title": "under 8 words", "detail": "one or two sentences"}], "line": "a scroll-stopping first caption line under 14 words, in her voice, matching the reel"}.
+Give 3 to 5 checks covering: length versus her avg watch time (a reel much longer than people watch loses them; if seconds is 0 skip it), the first second (from the frame), text covered by Instagram's buttons, the caption's first line, and whether it matches a format that works for her. Score lower for each real problem.`,
+		JSON.stringify({ ...facts, first_frame: frame || 'not available' }),
+		600
+	);
+	const j = firstJson(reply) ?? {};
+	const checks = (Array.isArray(j.checks) ? (j.checks as Record<string, unknown>[]) : [])
+		.map((c) => ({ ok: c.ok === true, title: String(c.title ?? '').trim().slice(0, 80), detail: String(c.detail ?? '').trim().slice(0, 300) }))
+		.filter((c) => c.title)
+		.slice(0, 5);
+	return { score: Math.max(0, Math.min(100, Math.round(Number(j.score) || 0))), verdict: String(j.verdict ?? '').slice(0, 80), checks, line: String(j.line ?? '').trim().slice(0, 160), frame };
+}
+
+// ---------- Grow: this week's three reel ideas ----------
+async function growPlan(x: Run, b: Record<string, unknown>) {
+	const reply = await chat(
+		x,
+		`You plan next week's Instagram Reels for an Indian creator, from what already works for HER (her top reels with their views, shares and saves, her niche, her best posting times). Suggest exactly 3 reels she can shoot easily, each like one of her proven formats but fresh (new angle, new product type, a seasonal hook for India this time of year). No fake claims, no buying engagement, no trends you can't name confidently.
+Return ONLY JSON: {"ideas": [{"title": "under 9 words, the reel itself", "why": "under 12 words: which of her reels or numbers it builds on"}]}`,
+		JSON.stringify(b).slice(0, 3500),
+		500
+	);
+	const j = firstJson(reply) ?? {};
+	const ideas = (Array.isArray(j.ideas) ? (j.ideas as Record<string, unknown>[]) : [])
+		.map((i) => ({ title: String(i.title ?? '').trim().slice(0, 120), why: String(i.why ?? '').trim().slice(0, 160) }))
+		.filter((i) => i.title)
+		.slice(0, 3);
+	if (!ideas.length) throw new Error('!The AI had no ideas this time. Try again.');
+	return { ideas };
+}
+
 async function script(x: Run, b: Record<string, unknown>) {
 	const reply = await chat(
 		x,

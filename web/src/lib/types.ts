@@ -246,6 +246,8 @@ export type IgMedia = {
 	views: number | null;
 	interactions: number | null;
 	insights_at: string | null;
+	/** How long people watch a reel on average (ms). */
+	avg_watch_ms?: number | null;
 };
 
 export type IgAccount = {
@@ -407,6 +409,10 @@ export type Settings = {
 	show_insights: boolean;
 	/** Alerts when a brand opens a brief that fits her (Pitches > Open briefs). */
 	brief_alerts?: boolean;
+	/** Growth autopilot: ask before adding the week's reel ideas to the Calendar, or add them straight away. */
+	grow_mode?: 'ask' | 'auto';
+	/** Other creators can invite her to a collab reel. */
+	collab_invites?: boolean;
 	/** Stories on the insights page, and her own Story averages to use instead of the app's. */
 	insights_stories: boolean;
 	story_stats: { avg_views?: number; avg_reach?: number; avg_interactions?: number };

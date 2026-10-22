@@ -37,7 +37,7 @@
 		{ href: '/studio', label: 'Today', icon: 'home' },
 		{ href: '/studio/collabs', label: 'Collabs', icon: 'board', tabs: [{ href: '/studio/collabs', label: 'Board' }, { href: '/studio/brands', label: 'Brands' }, { href: '/studio/pitches', label: 'Pitches' }], also: ['/studio/c/', '/studio/import'] },
 		{ href: '/studio/inbox', label: 'Messages', icon: 'inbox', desk: true },
-		{ href: '/studio/content', label: 'Plan', icon: 'cal', tabs: [{ href: '/studio/content', label: 'Content' }, { href: '/studio/calendar', label: 'Calendar' }] },
+		{ href: '/studio/content', label: 'Plan', icon: 'cal', tabs: [{ href: '/studio/content', label: 'Content' }, { href: '/studio/calendar', label: 'Calendar' }, { href: '/studio/grow', label: 'Grow' }], also: ['/studio/grow/'] },
 		{ href: '/studio/money', label: 'Money', icon: 'wallet', tabs: [{ href: '/studio/money', label: 'Overview' }, { href: '/studio/payments', label: 'Payments' }, { href: '/studio/reports', label: 'Reports' }] },
 		{ href: '/studio/settings', label: 'My page', short: 'Page', icon: 'link', also: ['/studio/profile'] }
 	];
@@ -174,7 +174,9 @@
 		'/studio/inbox': 'Messages',
 		'/studio/import': 'Import collabs',
 		'/studio/instagram': 'Instagram',
-		'/studio/share': 'Add from a share'
+		'/studio/share': 'Add from a share',
+		'/studio/grow': 'Grow',
+		'/studio/grow/check': 'Check a reel'
 	};
 	const SECTIONS: Record<string, string> = {
 		profile: 'Edit profile',
@@ -198,6 +200,7 @@
 		: openC ? openC.brand.name
 		: sec ? (SECTIONS[sec] ?? '')
 		: brandId ? (studio.brands.find((b) => b.id === brandId)?.name ?? 'Brand')
+		: path.startsWith('/studio/grow/collab/') ? 'Collab reel'
 		: (TITLES[path] ?? group?.label ?? '')
 	);
 	const back = $derived(
@@ -207,6 +210,7 @@
 		: path === '/studio/inbox' ? '/studio'
 		: brandId ? '/studio/brands'
 		: path.startsWith('/studio/instagram') ? '/studio/content'
+		: path.startsWith('/studio/grow/') ? '/studio/grow'
 		: /^\/studio\/(import|share)/.test(path) ? '/studio/collabs'
 		: ''
 	);
@@ -285,6 +289,7 @@
 		{ href: '/studio/collabs', label: 'Collabs', icon: 'board', on: ['/studio/collabs', '/studio/brands', '/studio/pitches', '/studio/c/', '/studio/import', '/studio/share'] },
 		{ href: '/studio/calendar', label: 'Calendar', icon: 'cal', on: ['/studio/calendar'] },
 		{ href: '/studio/content', label: 'Content', icon: 'film', on: ['/studio/content', '/studio/instagram'] },
+		{ href: '/studio/grow', label: 'Grow', icon: 'spark', on: ['/studio/grow'] },
 		{ href: '/studio/money', label: 'Money', icon: 'wallet', on: ['/studio/money', '/studio/payments', '/studio/reports'] },
 		{ href: '/studio/page', label: 'Brand page', icon: 'link', on: ['/studio/page', '/studio/profile', '/studio/qr'] },
 		{ href: '/studio/settings', label: 'Settings', icon: 'gear', on: ['/studio/settings'] }

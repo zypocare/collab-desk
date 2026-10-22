@@ -102,6 +102,10 @@ export function pushFor(kind: string, p: Record<string, unknown>): Push | null {
       const closes = p.open_until ? ` Closes ${dayMon(p.open_until)}.` : '';
       return { title: 'A brief that fits you', body: `${brand} wants ${String(p.deliverables ?? '') || 'content'}, ${money}.${closes}`, url: '/studio/pitches', tag: `brief-${String(p.campaign ?? '')}` };
     }
+    case 'collab_reel_invite':
+      return { title: `${String(p.from ?? 'A creator')} wants to make a collab reel`, body: String(p.idea ?? '').slice(0, 120), url: '/studio/grow#collab', tag: `collab-reel-${String(p.id ?? '')}` };
+    case 'collab_reel_answer':
+      return { title: p.yes ? `${String(p.from ?? 'They')} said yes to your collab reel` : `${String(p.from ?? 'They')} can't do the collab reel`, body: p.yes ? 'It’s in your Calendar.' : String(p.idea ?? '').slice(0, 120), url: '/studio/grow#collab', tag: `collab-reel-answer-${String(p.from ?? '')}` };
     case 'brief_shortlisted':
       return { title: `You're shortlisted for ${String(p.campaign ?? 'a brief')}`, body: `${brand} picked you. If they go ahead, a request${Number(p.rate) ? ` at ${inr(p.rate)}` : ''} comes next.`, url: '/studio/pitches', tag: `shortlist-${String(p.campaign ?? '')}` };
     default:

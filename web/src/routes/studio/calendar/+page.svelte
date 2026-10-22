@@ -7,17 +7,31 @@
 	import { phone } from '#lib/phone.svelte.ts';
 	import { delivText, diff, events, inr, iso, outstanding, stageIndex, today, type CalEvent } from '#lib/util.ts';
 	import Icon from '#lib/components/Icon.svelte';
+	import { onMount } from 'svelte';
+	import { goto } from '$app/navigation';
+	import { grow, loadGrow, setPlan, type Plan } from '#lib/grow.svelte.ts';
 
-	type Kind = CalEvent['kind'];
+	// Her own reels (from Grow) sit beside the collab dates.
+	type Ev = CalEvent | { date: string; kind: 'reel'; plan: Plan; label?: string };
+	type Kind = Ev['kind'];
+	onMount(() => {
+		if (!grow.loaded) loadGrow();
+	});
+	const istDay = (at: string) => new Date(Date.parse(at) + 330 * 60e3).toISOString().slice(0, 10);
+	const istTime = (at: string) => new Date(at).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Kolkata' });
+	const reels = $derived<Ev[]>(grow.plans.filter((p) => p.post_at && (p.status === 'planned' || p.status === 'posted')).map((p) => ({ date: istDay(p.post_at!), kind: 'reel' as const, plan: p })));
+	const keyOf = (e: Ev) => (e.kind === 'reel' ? e.plan.id : e.c.id + e.kind);
+	const nameOf = (e: Ev) => (e.kind === 'reel' ? (e.plan.source === 'collab' ? 'Collab reel' : 'Your reel') : e.c.brand.name);
 	const KIND: Record<Kind, { label: string; plural: string; color: string }> = {
 		shoot: { label: 'Shoot', plural: 'Shoots', color: '#FFAE6B' },
 		draft: { label: 'Draft due', plural: 'Drafts', color: '#9C7BFF' },
 		live: { label: 'Goes live', plural: 'Go-lives', color: '#4CCFC2' },
 		follow: { label: 'Follow-up', plural: 'Follow-ups', color: '#7EA2FF' },
 		pay: { label: 'Payment', plural: 'Payments', color: '#6FD08C' },
-		product: { label: 'Product', plural: 'Products', color: '#F25A90' }
+		product: { label: 'Product', plural: 'Products', color: '#F25A90' },
+		reel: { label: 'Your reel', plural: 'Your reels', color: '#FFD166' }
 	};
-	const ORDER: Kind[] = ['shoot', 'draft', 'live', 'follow', 'pay', 'product'];
+	const ORDER: Kind[] = ['shoot', 'draft', 'live', 'follow', 'pay', 'product', 'reel'];
 
 	const T = today();
 	const todayIso = iso(T);
@@ -26,10 +40,10 @@
 	let show = $state<'all' | Kind>('all');
 	let flip = $state(0);
 
-	const all = $derived(events(studio.collabs).sort((a, b) => ORDER.indexOf(a.kind) - ORDER.indexOf(b.kind)));
+	const all = $derived<Ev[]>([...events(studio.collabs), ...reels].sort((a, b) => ORDER.indexOf(a.kind) - ORDER.indexOf(b.kind)));
 	const shown = $derived(show === 'all' ? all : all.filter((e) => e.kind === show));
 	const byDay = $derived.by(() => {
-		const map: Record<string, CalEvent[]> = {};
+		const map: Record<string, Ev[]> = {};
 		for (const e of shown) (map[e.date] ||= []).push(e);
 		return map;
 	});
@@ -94,25 +108,27 @@
 				live: n === 1 ? 'One goes live.' : `${count(n)} go live.`,
 				follow: n === 1 ? 'A follow-up.' : `${count(n)} follow-ups.`,
 				pay: n === 1 ? 'A payment is due.' : `${count(n)} payments due.`,
-				product: n === 1 ? 'A product arrives.' : `${count(n)} products arrive.`
+				product: n === 1 ? 'A product arrives.' : `${count(n)} products arrive.`,
+				reel: n === 1 ? 'Your reel goes up.' : `${count(n)} of your reels.`
 			}[k];
 			return { t, color: KIND[k].color };
 		}
 		return { t: `${count(l.length)} things.`, color: 'var(--g3)' };
 	});
-	const sub = (e: CalEvent) =>
-		e.label || (e.kind === 'follow' ? e.c.follow_note || 'Check in with the brand' : e.kind === 'pay' ? `${inr(outstanding(e.c))} · ${e.c.invoice_no || 'invoice'}` : delivText(e.c.deliverables));
+	const sub = (e: Ev) =>
+		e.kind === 'reel' ? `${istTime(e.plan.post_at!)} · ${e.plan.title}${e.plan.status === 'posted' ? ' · posted' : e.plan.scheduled_post_id ? ' · posts by itself' : ''}` : e.label || (e.kind === 'follow' ? e.c.follow_note || 'Check in with the brand' : e.kind === 'pay' ? `${inr(outstanding(e.c))} · ${e.c.invoice_no || 'invoice'}` : delivText(e.c.deliverables));
 	// The next step, when there is one to take from here; otherwise open the collab.
-	function step(e: CalEvent): { label: string; run: () => unknown } | null {
-		if (['paused', 'cancelled'].includes(e.c.stage)) return null;
+	function step(e: Ev): { label: string; run: () => unknown } | null {
 		const due = diff(e.date) <= 0;
+		if (e.kind === 'reel') return due && e.plan.status === 'planned' && !e.plan.scheduled_post_id ? { label: 'Posted', run: () => setPlan(e.plan, { status: 'posted' }) } : null;
+		if (['paused', 'cancelled'].includes(e.c.stage)) return null;
 		if (e.kind === 'live' && due && stageIndex(e.c.stage) < 4) return { label: 'Posted', run: () => setStage(e.c, 'live') };
 		if (e.kind === 'pay' && due) return { label: 'Paid?', run: () => markPaid(e.c) };
 		if (e.kind === 'follow' && due) return { label: 'Done', run: () => completeFollow(e.c) };
 		if (e.kind === 'product' && due && !e.c.product_received_at) return { label: 'Got it', run: () => markReceived(e.c) };
 		return null;
 	}
-	const open = (e: CalEvent) => (ui.openCollab = e.c.id);
+	const open = (e: Ev) => (e.kind === 'reel' ? goto('/studio/grow') : (ui.openCollab = e.c.id));
 
 	// The coming week, from today.
 	const week = $derived(
@@ -163,13 +179,13 @@
 			<h3>{dayNum(sel)} {selDate.toLocaleDateString('en-IN', { month: 'long' })}. <em style="color: {daySay.color}">{daySay.t}</em></h3>
 		</div>
 		<div class="cl-items">
-			{#each selList as e (e.c.id + e.kind)}
+			{#each selList as e (keyOf(e))}
 				{@const st = step(e)}
 				<div class="cl-item">
 					<span class="cl-node" style="--k: {KIND[e.kind].color}"></span>
 					<button class="cl-it" onclick={() => open(e)}>
 						<span class="cl-k" style="color: {KIND[e.kind].color}">{e.kind === 'live' && stageIndex(e.c.stage) >= 4 ? 'Went live' : KIND[e.kind].label}</span>
-						<b>{e.c.brand.name}</b>
+						<b>{nameOf(e)}</b>
 						<span>{sub(e)}</span>
 					</button>
 					{#if st}
@@ -196,10 +212,10 @@
 		{/each}
 	</div>
 	<div class="cl-next">
-		{#each next as e (e.c.id + e.kind + e.date)}
+		{#each next as e (keyOf(e) + e.date)}
 			<button onclick={() => pick(e.date)}>
 				<span class="cl-nd"><b>{dayNum(e.date)}</b><small>{wdShort(e.date)}</small></span>
-				<span class="cl-nt"><span style="color: {KIND[e.kind].color}">{KIND[e.kind].label}</span><b>{e.c.brand.name} · {e.kind === 'pay' ? inr(outstanding(e.c)) : delivText(e.c.deliverables)}</b></span>
+				<span class="cl-nt"><span style="color: {KIND[e.kind].color}">{KIND[e.kind].label}</span><b>{nameOf(e)} · {e.kind === 'reel' ? e.plan.title : e.kind === 'pay' ? inr(outstanding(e.c)) : delivText(e.c.deliverables)}</b></span>
 				{#if phone.on}<Icon name="chevR" />{/if}
 			</button>
 		{:else}
@@ -249,7 +265,7 @@
 							<button class="cl-cell" class:out={c.out} class:wknd={c.weekend} class:today={c.ds === todayIso} class:sel={c.ds === sel && c.ds !== todayIso} onclick={() => pick(c.ds)}>
 								<span class="cl-n">{c.d}</span>
 								<span class="cl-evs">
-									{#each c.list.slice(0, 3) as e (e.c.id + e.kind)}<span class="cl-ev" style="--k: {KIND[e.kind].color}"><i></i><span>{e.c.brand.name}</span></span>{/each}
+									{#each c.list.slice(0, 3) as e (keyOf(e))}<span class="cl-ev" style="--k: {KIND[e.kind].color}"><i></i><span>{nameOf(e)}</span></span>{/each}
 									{#if c.list.length > 3}<span class="cl-more">+{c.list.length - 3} more</span>{/if}
 								</span>
 							</button>
