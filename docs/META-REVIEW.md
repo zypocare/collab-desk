@@ -1,108 +1,169 @@
-# Letting any creator connect Instagram (Meta review)
+# Letting any creator connect Instagram (Meta App Review)
 
-Right now the Meta app is in **Development** mode. Only Instagram accounts that have a role on the
-app (testers) can connect. For any creator to connect, Meta needs three things:
+Until Meta approves the app, only Instagram accounts with a role on it (testers) can connect.
+App Review grants **Advanced Access**, so any creator with a professional account can connect.
 
-1. **Business Verification**: Meta confirms who runs Miracle.
-2. **App Review**: Meta checks how Miracle uses each Instagram permission, then grants Advanced Access.
-3. **Live mode**: you switch the app from Development to Live.
+Where things stand (22 Oct 2026):
 
-All of it is free. Verification takes a few days to a couple of weeks. Review usually takes days,
-and a first submission is often sent back once. Start Business Verification first, because it takes
-the longest.
+| Step | Status |
+| --- | --- |
+| Business portfolio: Zyposoft Technologies Private Limited | Done |
+| Business verification | **Verified** |
+| App attached to the portfolio, renamed **Miracle**, new icon | Done |
+| Privacy and data-deletion pages name Zyposoft | Done (www.miracleapp.live) |
+| Return address `https://qzsfuvcxpqaavmwkxutt.supabase.co/functions/v1/instagram-auth` | Added |
+| Demo creator `demo.miracleapp.live` with @memes_unlimited_official connected | Done |
+| App Review request with 5 permissions | **To submit** |
 
----
-
-## Until then: add each new creator as a tester
-
-1. developers.facebook.com → your app → **App roles → Roles** → **Add people** → **Instagram Tester** →
-   type their Instagram username.
-2. The creator opens Instagram → **Settings → Website permissions (Apps and websites) → Tester invites**
-   and accepts.
-3. They can then connect from their studio (My page → Connect Instagram).
+Until approval, add each new creator as a tester: developers.facebook.com → your app → **App roles →
+Roles → Add people → Instagram Tester**. The creator accepts at instagram.com → **Settings → Apps and
+websites → Tester invites**, then connects from their studio.
 
 ---
 
-## Step 1. Settings in the Meta app (once)
+## 1. Before recording: get the demo account ready
 
-**App settings → Basic**
-- App icon: `docs/miracle-icon-1024.png` (1024 × 1024, the current logo).
-- Privacy policy URL: `https://miracleapp.live/privacy`
-- User data deletion: choose **Data deletion instructions URL** → `https://miracleapp.live/data-deletion`
-- Category: Business. App domains: `miracleapp.live`. Contact email: `contact@miracleapp.live`.
+**a. A reviewer login.** Meta's reviewers can't receive email codes, so they sign in with a password
+at `/login?pw=1`.
 
-**Instagram → API setup with Instagram login → Business login settings**
-- OAuth redirect URIs: add
-  `https://qzsfuvcxpqaavmwkxutt.supabase.co/functions/v1/instagram-auth`
-  This is the one address every creator now comes back to after allowing access. Add it **before**
-  anyone reconnects. You can leave the old `…/studio/instagram` addresses there.
+1. Supabase dashboard → **Authentication → Users → Add user → Create new user**.
+   Email `review@miracleapp.live`, a strong password you type yourself, tick **Auto confirm user**.
+2. Sign in to `https://demo.miracleapp.live` as the demo creator (no-reply@miracleapp.live) →
+   **Settings → Team** → invite `review@miracleapp.live` as **Manager**.
+3. Check it works: in a private window open `https://demo.miracleapp.live/login?pw=1` and sign in with
+   the review email and password. It should open the demo studio.
 
-**Instagram → Webhooks**: already set up for `messages` (see `docs/SETUP.md`). Nothing new.
+**b. Allow DMs and posting.** Demo studio → **Settings → Profile & Instagram → Allow DMs and
+posting**, and accept on Instagram's screen. Without this, the messages and publishing parts can't
+be shown.
 
-## Step 2. Business Verification
+**c. A collab with an approved draft**, for the publishing scene. In the demo studio: **Collabs → add
+one** (a brand name and a Reel), open it, **upload a draft with an image or video file**, and have it
+approved. You can approve it from the brand's link, or ask Claude to mark it approved. An approved
+draft with a file shows **Schedule** in the collab.
 
-1. App settings → Basic → **Verification** → **Start verification** → choose or create a business
-   portfolio (for example "Miracle").
-2. In business.facebook.com → **Settings → Security Center → Start verification**. Enter the legal
-   business name, address, phone and website (`miracleapp.live`) **exactly** as they appear on your
-   documents.
-3. Upload a document with that legal name. In India, people commonly use a GST certificate, a
-   Udyam (MSME) registration certificate, or a PAN or bank statement in the business name. Meta's
-   list changes, so check the options it shows you.
-4. Confirm by email or phone. An email at your own domain (contact@miracleapp.live) helps.
-   Optional: verify the domain in **Brand safety → Domains** (a DNS TXT record on miracleapp.live in
-   Cloudflare).
-5. Back in App settings → Basic, check that the app shows as connected to a **verified** business.
+**d. A second Instagram account to send a DM from**, for example your personal one.
 
-## Step 3. A test setup for the reviewer
+Important: Miracle only keeps DMs that look like a **brand collaboration**. Other messages are checked
+and dropped. So the test DM must read like a real brand enquiry (see scene 3).
 
-Meta's reviewers sign in and try every permission themselves. If they can't get in, the whole
-submission is rejected. Miracle signs people in with email codes, which a reviewer can't receive, so
-there is a password sign-in that only appears at `/login?pw=1`.
+---
 
-1. Supabase dashboard → **Authentication → Users → Add user → Create new user**: email
-   `review@miracleapp.live`, a strong password you type yourself (never paste it into a chat), and tick
-   **Auto confirm user**.
-2. Sign in at `https://demo.miracleapp.live/login?pw=1` with that email and password.
-3. Open `https://demo.miracleapp.live/join` (you're already signed in), claim **demo**, and send the request.
-4. Approve it in the admin panel (admin.miracleapp.live), then sign in again at the step 2 address. It
-   now opens the demo studio.
-5. Fill the demo studio with a little sample data: rates, a couple of collabs.
-6. Make a test Instagram **professional** (Creator or Business) account the reviewer can use, add it as
-   an Instagram Tester (see above), and connect it to the demo studio once to check it works.
+## 2. The recording
 
-## Step 4. Submit App Review
+One screen recording, about 3–4 minutes, English UI, no sound needed. Add short captions with any
+editor (Clipchamp on Windows works) where a step isn't obvious. Upload the same video to each
+permission, or cut it into one clip per permission.
 
-Instagram → API setup with Instagram login → **Complete app review** → **Continue to app review** →
-App Review → Requests → **Edit**.
+**Scene 1. Sign in and connect** (instagram_business_basic, public_profile)
+1. Open `https://demo.miracleapp.live/login?pw=1`, sign in with the review login.
+2. **Settings → Profile & Instagram → Connect Instagram** (Disconnect first if it is already connected).
+3. Instagram's allow screen shows "Miracle" and the permissions → **Allow**.
+4. Back in Miracle: name, profile photo, followers and recent posts appear.
 
-Ask only for what Miracle uses (asking for more gets the submission refused):
+**Scene 2. Insights** (instagram_business_manage_insights)
+1. Open **Brand page** (or `demo.miracleapp.live/insights`): reach, views, engagement, audience by age
+   and city.
+2. Open **Content**: each post with its views and reach.
 
-| Permission | What to write | What the screencast shows |
-| --- | --- | --- |
-| `instagram_business_basic` | Creators connect their own professional account so Miracle shows their profile and follower numbers on their page and media kit. | Sign in at demo.miracleapp.live → My page → Connect Instagram → Instagram's allow screen → back in Miracle with name, photo and followers. |
-| `instagram_business_manage_insights` | Miracle shows the creator's reach, views and audience to brands they choose to share it with, and in results reports. | The insights page and a collab's results report filling with real numbers. |
-| `instagram_business_manage_messages` | Creators read brand-collaboration DMs and reply from Miracle. Non-collaboration messages are not stored. | From a second account, send a brand-style DM → it appears in Miracle's inbox → reply from Miracle → the reply shows in Instagram. |
-| `instagram_business_content_publish` | Creators schedule approved collaboration posts and Miracle publishes them to their own account. | Schedule a post in Miracle → it appears on the Instagram account. |
+**Scene 3. Messages** (instagram_business_manage_messages)
+1. On a phone, from the second Instagram account, send @memes_unlimited_official:
+   *"Hi! I'm Riya from Kora Botanicals. We'd love a paid Reel collaboration for our new face oil next
+   month. What are your rates?"*
+2. In Miracle, open **Inbox**: the message appears as a collab enquiry. Open it.
+3. Type a reply in Miracle and send it: *"Thanks Riya! My rates are on my page, happy to share a quote."*
+4. Show the reply arriving in Instagram on the phone.
 
-For each one: a short description, a screencast of just that permission (English UI, captions where a
-step isn't obvious), and agree to the allowed use.
+**Scene 4. Publishing** (instagram_business_content_publish)
+1. **Collabs** → the collab with the approved draft → **Schedule** → pick "now" or a time a minute
+   ahead → confirm.
+2. When it shows **Published**, click **View on Instagram**: the post is on @memes_unlimited_official.
+   (You can delete the test post afterwards.)
 
-**Reviewer instructions** (paste in the testing section):
-1. Open `https://demo.miracleapp.live/login?pw=1`, sign in with the review email and password.
-2. My page → Connect Instagram, and sign in with the test Instagram account below.
-3. Then the steps for each permission, as in the table.
+---
 
-Also fill in the data handling questions: data is processed by Supabase, Cloudflare, Vercel and an
-email delivery service (see the privacy policy).
+## 3. Text to paste into the review form
 
-## Step 5. After approval
+### instagram_business_basic
 
-1. Switch the app to **Live** (the toggle at the top of the App Dashboard).
-2. Any creator with a professional Instagram account can now connect. Personal accounts can't; they
-   switch for free in Instagram → Settings → Account type and tools → Switch to professional account.
-3. You no longer need to add testers.
+> Miracle (miracleapp.live) is a business tool for Instagram creators who work with brands. A creator
+> connects their own Instagram professional account in Miracle's settings. We use
+> instagram_business_basic to read the creator's username, name, profile picture, follower count and
+> their own posts. This is shown on the creator's Miracle page and media kit so brands can see who they
+> are working with, and it lets Miracle find the post a creator made for a brand collaboration so the
+> collaboration can be marked as live. We only read the account of the creator who connected it, and
+> the creator can disconnect at any time.
 
-Sources: Meta's [App Review for Instagram](https://developers.facebook.com/docs/instagram-platform/app-review)
-and [Business Verification](https://developers.facebook.com/docs/development/release/business-verification)
-pages. Menu names in Meta's dashboard change from time to time; the steps stay the same.
+### instagram_business_manage_insights
+
+> Creators use Miracle to share their real performance with brands instead of screenshots. We use
+> instagram_business_manage_insights to read reach, views, engagement and audience breakdowns (age,
+> gender, city, country) for the creator's own account and posts. Miracle shows these to the creator,
+> on an insights page the creator chooses to share with brands, and in results reports for the
+> specific posts a creator made for a brand. Numbers are only shown where the creator turns sharing on.
+
+### instagram_business_manage_messages
+
+> Brands usually start collaborations by sending a creator an Instagram DM. We use
+> instagram_business_manage_messages so the creator sees these brand enquiries in Miracle's inbox next
+> to the deal they belong to, and can reply from Miracle. Miracle only keeps messages that are about a
+> brand collaboration; other messages are checked automatically and not stored, and the creator can
+> mark any chat as "not a collab". Replies are sent only by the creator, by hand, within Instagram's
+> 24-hour messaging window. Miracle never sends automated or bulk messages.
+
+### instagram_business_content_publish
+
+> When a brand approves a creator's draft for a paid collaboration in Miracle, the creator can schedule
+> that approved post to go live on their own Instagram account at the agreed time, optionally adding
+> the brand as a collaborator. We use instagram_business_content_publish only for this: publishing a
+> post the creator chose, from their own approved draft, to their own account, when they press
+> Schedule. Miracle never posts without the creator's action.
+
+### public_profile
+
+> Used only for the standard sign-in with Instagram. We don't use it for anything else.
+
+### Reviewer instructions (the "testing" box)
+
+> 1. Open https://demo.miracleapp.live/login?pw=1 and sign in with:
+>    Email: review@miracleapp.live
+>    Password: (type it here in Meta's form)
+> 2. Go to Settings → Profile & Instagram → Connect Instagram, and sign in with the test Instagram
+>    account: @memes_unlimited_official, password: (type it here in Meta's form). This account is a
+>    tester on the app.
+> 3. instagram_business_basic: after connecting, the profile, followers and posts appear on the
+>    Settings and Brand page screens.
+> 4. instagram_business_manage_insights: open Brand page or demo.miracleapp.live/insights for reach,
+>    views and audience.
+> 5. instagram_business_manage_messages: send a brand-style DM to @memes_unlimited_official from any
+>    Instagram account (for example: "Hi, we're a skincare brand and would like a paid Reel
+>    collaboration. What are your rates?"). It appears in Miracle's Inbox; open it and reply.
+> 6. instagram_business_content_publish: Collabs → the collab with an approved draft → Schedule. The
+>    post is published to @memes_unlimited_official.
+
+The Instagram password goes only into Meta's form, never into a chat. If Instagram asks for a login
+code when the reviewer signs in, Meta's reviewers usually contact you; keep the phone on that account
+nearby for a few days.
+
+### Data handling questions
+
+- **Who processes the data for you:** Supabase (database, sign-in, files), Cloudflare (runs the app
+  and optional AI features), Google Gemini (backup for optional AI features; incoming Instagram
+  messages are never sent to it), Vercel (website), an email delivery service, Meta.
+  This matches the privacy policy.
+- **Company:** Zyposoft Technologies Private Limited, India.
+- **Do you sell or share data with third parties for advertising?** No.
+- **Data deletion:** `https://www.miracleapp.live/data-deletion`; requests to contact@miracleapp.live.
+- **Privacy policy:** `https://www.miracleapp.live/privacy`.
+
+---
+
+## 4. After approval
+
+1. Check **Publish** still shows the app as Published (live).
+2. Any creator with a professional Instagram account can connect. Personal accounts switch for free:
+   Instagram → Settings → Account type and tools → Switch to professional account.
+3. No more testers needed.
+
+If Meta sends it back, the message names the permission and the reason, usually "the video doesn't
+show the permission being used". Fix that part and resubmit; the approved permissions stay approved.
