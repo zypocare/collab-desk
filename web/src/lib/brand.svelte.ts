@@ -1,6 +1,6 @@
 // The signed-in brand's own requests (via the my_requests() database function).
 import { supabase } from './supabase';
-import type { BrandCreator, BrandDashboard, BrandRequest, CreatorRating, DiscoverCreator } from './types';
+import type { BrandCreator, BrandDashboard, BrandRequest, BrandRow, CreatorRating, DiscoverCreator } from './types';
 import { errMessage } from './util';
 
 export const brandData = $state<{ loaded: boolean; error: string; requests: BrandRequest[]; unread: Record<string, number> }>({
@@ -51,6 +51,18 @@ export async function rateCreator(id: number, onTime: number, quality: number, r
 	const c = discover.list.find((x) => x.id === id);
 	if (c) c.rating = data as CreatorRating;
 	return data as CreatorRating;
+}
+
+/** Every request of this login across all creators: the Requests list and the inbox. */
+export const allRequests = $state<{ list: BrandRow[]; loaded: boolean; error: string }>({ list: [], loaded: false, error: '' });
+export async function loadAllRequests() {
+	const { data, error } = await supabase.rpc('brand_requests_all');
+	if (error) allRequests.error = errMessage(error);
+	else {
+		allRequests.list = ((data as BrandRow[]) ?? []).map((r) => ({ ...r, fee: Number(r.fee) || 0, product_value: Number(r.product_value) || 0 }));
+		allRequests.error = '';
+	}
+	allRequests.loaded = true;
 }
 
 /** Unread messages from the creator, by request code. */

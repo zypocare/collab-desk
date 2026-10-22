@@ -96,7 +96,88 @@ export function pushFor(kind: string, p: Record<string, unknown>): Push | null {
       return { title: 'Payment received', body: `${inr(p.amount)}${p.brand ? ` from ${brand}` : ''}`, url: '/studio/payments' };
     case 'post_detected':
       return { title: `Your ${brand} post is live`, body: p.missing_ad ? 'Add #ad to the first line of the caption.' : 'The brand has been told.', url: open(code), tag: code };
+    case 'brief_fit': {
+      const min = Number(p.budget_min) || 0, max = Number(p.budget_max) || 0;
+      const money = max ? (min && min < max ? `${inr(min)}-${num(max)}` : `up to ${inr(max)}`) : 'barter-friendly';
+      const closes = p.open_until ? ` Closes ${dayMon(p.open_until)}.` : '';
+      return { title: 'A brief that fits you', body: `${brand} wants ${String(p.deliverables ?? '') || 'content'}, ${money}.${closes}`, url: '/studio/pitches', tag: `brief-${String(p.campaign ?? '')}` };
+    }
+    case 'brief_shortlisted':
+      return { title: `You're shortlisted for ${String(p.campaign ?? 'a brief')}`, body: `${brand} picked you. If they go ahead, a request${Number(p.rate) ? ` at ${inr(p.rate)}` : ''} comes next.`, url: '/studio/pitches', tag: `shortlist-${String(p.campaign ?? '')}` };
     default:
       return null;
   }
+}
+
+const num = (n: unknown) => Math.round(Number(n) || 0).toLocaleString('en-IN');
+const dayMon = (d: unknown) => new Date(String(d).slice(0, 10) + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+
+/** What a brand login can turn alerts on and off for (Settings on the brand side). */
+export type BrandPref = 'quotes' | 'drafts' | 'messages' | 'invoices' | 'live' | 'briefs';
+
+/** The phone alert for an email that went to a brand, and which of its alert settings covers it. */
+export function pushForBrand(kind: string, p: Record<string, unknown>, creatorName: string): { msg: Push; pref: BrandPref } | null {
+  CUR = typeof p.currency === 'string' && p.currency ? p.currency : 'INR';
+  const who = String(creatorName ?? '').trim() || 'Your creator';
+  const code = String(p.code ?? '');
+  const request = code ? `/brand/r/${encodeURIComponent(code)}` : '/brand';
+  const applications = `/brand/campaigns/${encodeURIComponent(String(p.campaign_id ?? ''))}?tab=applications`;
+  switch (kind) {
+    case 'quote_sent':
+      return { pref: 'quotes', msg: { title: `${who} sent a quote`, body: `${Number(p.choices) > 1 ? `${p.choices} options from ${inr(p.from)}` : inr(p.total)}${code ? ` · ${code}` : ''}`, url: request, tag: `quote-${code}` } };
+    case 'draft_ready':
+      return { pref: 'drafts', msg: { title: `Draft to approve · ${who}`, body: `Draft ${p.round} for ${code} is ready for your review.`, url: request, tag: `draft-${code}` } };
+    case 'draft_nudge':
+      return { pref: 'drafts', msg: { title: `Draft to approve · ${who}`, body: `Draft ${p.round} for ${code} is still waiting for you.`, url: request, tag: `draft-${code}` } };
+    case 'message_to_brand':
+      return { pref: 'messages', msg: { title: `${who} sent a message`, body: String(p.body ?? '').slice(0, 140), url: `/brand/inbox?c=${encodeURIComponent(code)}`, tag: `msg-${code}` } };
+    case 'invoice_sent':
+      return { pref: 'invoices', msg: { title: `Invoice from ${who}`, body: `${inr(p.payable)}${p.due ? ` due ${dayMon(p.due)}` : ''} · ${p.number}`, url: request, tag: `inv-${p.number}` } };
+    case 'payment_reminder': {
+      const late = Number(p.days_late) || 0;
+      return { pref: 'invoices', msg: { title: late > 0 ? `Invoice overdue · ${who}` : `Invoice due · ${who}`, body: `${inr(p.due_amount)} · ${p.number}${late > 0 ? `, ${late} day${late > 1 ? 's' : ''} late` : late === 0 ? ', due today' : p.due ? `, due ${dayMon(p.due)}` : ''}`, url: request, tag: `inv-${p.number}` } };
+    }
+    // Live and results. (post_detected and report_ready mails go to her; the brand's own ones are the
+    // "Live" stage update and the shared results report.)
+    case 'post_detected':
+      return { pref: 'live', msg: { title: `${who}'s post is live`, body: `${code} is on Instagram.`, url: request, tag: `live-${code}` } };
+    case 'stage_changed':
+      return p.stage === 'live' ? { pref: 'live', msg: { title: `${who}'s post is live`, body: `${code} is on Instagram.`, url: request, tag: `live-${code}` } } : null;
+    case 'report_ready':
+    case 'brand_report':
+      return { pref: 'live', msg: { title: `Results from ${who}`, body: `${Number(p.views) ? `${num(p.views)} views · ` : ''}${code}`, url: request, tag: `report-${code}` } };
+    case 'brief_application': {
+      const max = Number(p.budget_max) || 0;
+      const over = max > 0 && Number(p.rate) > max;
+      return { pref: 'briefs', msg: { title: `${String(p.creator ?? '') || who} applied`, body: `${p.campaign} · asks ${inr(p.rate)}${over ? ', above your budget' : ''}`, url: applications, tag: `apply-${p.campaign_id}-${p.creator}` } };
+    }
+    case 'brief_digest': {
+      const n = Number(p.count) || 0;
+      const range = Number(p.low) === Number(p.high) ? inr(p.low) : `${inr(p.low)}-${num(p.high)}`;
+      return { pref: 'briefs', msg: { title: `${n} new application${n === 1 ? '' : 's'}`, body: `${p.campaign} · they ask ${range}`, url: applications, tag: `digest-${p.campaign_id}` } };
+    }
+    default:
+      return null;
+  }
+}
+
+/** Sends to every device a brand login turned alerts on for; forgets devices the browser says are gone. */
+export async function pushToBrandUser(db: SupabaseClient, userId: string, msg: Push) {
+  if (!pushConfigured) return { sent: 0, skipped: 'push not configured' };
+  const { data: subs } = await db.from('brand_push_subscriptions').select('id, endpoint, p256dh, auth, device').eq('user_id', userId);
+  let sent = 0;
+  const failed: { device: string; code: number | null; error: string }[] = [];
+  for (const s of subs ?? []) {
+    try {
+      await webpush.sendNotification({ endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } }, JSON.stringify(msg), { TTL: 60 * 60 * 24, urgency: 'high' });
+      sent++;
+    } catch (e) {
+      const code = (e as { statusCode?: number }).statusCode;
+      const body = String((e as { body?: string }).body ?? (e as Error).message ?? '').slice(0, 200);
+      failed.push({ device: s.device || 'device', code: code ?? null, error: body });
+      if (code === 404 || code === 410) await db.from('brand_push_subscriptions').delete().eq('id', s.id);
+      else console.error('[push brand]', code, body);
+    }
+  }
+  return { sent, devices: subs?.length ?? 0, failed };
 }

@@ -3,6 +3,7 @@
 	import { ask } from '#lib/confirm.svelte.ts';
 	import { portal } from '#lib/portal.ts';
 	import { studio } from '#lib/studio.svelte.ts';
+	import { supabase } from '#lib/supabase.ts';
 	import type { OpenBrief } from '#lib/types.ts';
 	import { toast } from '#lib/ui.svelte.ts';
 	import { delivText, diff, errMessage, fmt, inr, usageDaysOf } from '#lib/util.ts';
@@ -12,6 +13,15 @@
 	// Open briefs: brands looking for creators. She applies with her own rate and a short note;
 	// the brand sends a request if they pick her. Nothing is booked until then.
 	let { briefs = $bindable() }: { briefs: OpenBrief[] } = $props();
+
+	// Alerts when a brief that fits her opens (at most 3 a week).
+	const alertsOn = $derived(studio.settings?.brief_alerts !== false);
+	async function setAlerts(v: boolean) {
+		const { error } = await supabase.rpc('brief_alerts_set', { p_on: v });
+		if (error) return toast(errMessage(error), 'alert');
+		if (studio.settings) studio.settings.brief_alerts = v;
+		toast(v ? "You'll hear about briefs that fit you" : 'Brief alerts off', v ? 'bell' : 'check');
+	}
 
 	// The sheet: one brief, either read (her application) or the apply form.
 	let open = $state<{ b: OpenBrief; edit: boolean } | null>(null);
@@ -115,6 +125,12 @@
 
 <svelte:window onkeydown={(e) => e.key === 'Escape' && open && (open = null)} />
 
+<div class="panel" style="margin-bottom:14px">
+	<div class="switch-row" style="border-top:0">
+		<div><b>Tell me when a brief fits me</b><small>An alert when a brand opens a brief for your niche, content and rates. At most 3 a week.</small></div>
+		<input type="checkbox" class="tgl" checked={alertsOn} aria-label="Brief alerts" onchange={(e) => setAlerts((e.currentTarget as HTMLInputElement).checked)} />
+	</div>
+</div>
 {#if briefs.length}
 	<p class="hint">Brands looking for creators like you. Apply with your own rate; the brand sends a request if they pick you.</p>
 	<section class="tks pt-tks">

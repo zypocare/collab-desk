@@ -107,8 +107,60 @@ export async function dropPush(serverToo: boolean) {
 		const reg = await navigator.serviceWorker.getRegistration();
 		const sub = await reg?.pushManager?.getSubscription();
 		if (!sub) return;
-		if (serverToo) await supabase.from('push_subscriptions').delete().eq('endpoint', sub.endpoint);
+		if (serverToo) {
+			await supabase.from('push_subscriptions').delete().eq('endpoint', sub.endpoint);
+			await supabase.from('brand_push_subscriptions').delete().eq('endpoint', sub.endpoint);
+		}
 		await sub.unsubscribe();
 	})().catch(() => {});
 	await Promise.race([work, new Promise((r) => setTimeout(r, 3000))]);
+}
+
+/** Brands: alerts on this phone go to this brand login (Settings > Emails & alerts). */
+export async function enableBrandPush() {
+	const perm = await Notification.requestPermission();
+	if (perm !== 'granted') throw new Error(perm === 'denied' ? 'Notifications are blocked for this site. Allow them in the browser settings.' : 'Notifications were not allowed.');
+	const { data: key, error } = await supabase.rpc('push_public_key');
+	if (error || !key) throw new Error('Notifications are not set up on the server yet.');
+	const reg = await worker();
+	let sub = await reg.pushManager.getSubscription();
+	if (sub && sub.options.applicationServerKey && bytesToB64(sub.options.applicationServerKey) !== String(key).replace(/=+$/, '')) {
+		await sub.unsubscribe();
+		sub = null;
+	}
+	sub ??= await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToBytes(key as string) });
+	const device = /android/i.test(navigator.userAgent) ? 'Android' : isIos() ? 'iPhone / iPad' : /mac/i.test(navigator.userAgent) ? 'Mac' : /windows/i.test(navigator.userAgent) ? 'Windows' : 'This device';
+	const { error: e2 } = await supabase
+		.from('brand_push_subscriptions')
+		.upsert({ endpoint: sub.endpoint, p256dh: bytesToB64(sub.getKey('p256dh')), auth: bytesToB64(sub.getKey('auth')), device }, { onConflict: 'endpoint' });
+	if (e2) throw new Error(e2.message);
+}
+
+export async function disableBrandPush() {
+	const reg = await navigator.serviceWorker.getRegistration();
+	const sub = await reg?.pushManager.getSubscription();
+	if (sub) {
+		await supabase.from('brand_push_subscriptions').delete().eq('endpoint', sub.endpoint);
+		await sub.unsubscribe();
+	}
+}
+
+/** Is this phone getting this brand's alerts? */
+export async function brandPushOn(): Promise<boolean> {
+	if (!pushSupported()) return false;
+	const reg = await navigator.serviceWorker.getRegistration();
+	const sub = await reg?.pushManager.getSubscription();
+	if (!sub) return false;
+	const { data } = await supabase.from('brand_push_subscriptions').select('id').eq('endpoint', sub.endpoint).maybeSingle();
+	return !!data;
+}
+
+/** A brand signed in: keep its own alerts on this phone, drop any left from someone else's sign-in. */
+export async function keepOnlyBrandPush() {
+	if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return;
+	try {
+		if (!(await brandPushOn())) await dropPush(false);
+	} catch {
+		/* nothing to do */
+	}
 }

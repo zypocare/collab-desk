@@ -1,5 +1,6 @@
 <script lang="ts">
 	import BrandTeam from '#lib/components/BrandTeam.svelte';
+	import BrandAlerts from '#lib/components/BrandAlerts.svelte';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { onMount } from 'svelte';
@@ -37,7 +38,7 @@
 		{ id: 'billing', label: 'Billing & GST', icon: 'rupee', sub: gstin ? `GSTIN ${gstin.slice(0, 6)}…` : 'GSTIN, address and accounts email' },
 		{ id: 'team', label: 'Team & approvals', icon: 'users', sub: 'Colleagues, agencies and approvals' },
 		{ id: 'brands', label: 'Brands you manage', icon: 'layers', sub: (acct?.brands?.length ?? 0) > 1 ? `${acct?.brands.length} brands` : 'For agencies with several brands' },
-		{ id: 'alerts', label: 'Emails & alerts', icon: 'bell', sub: 'Quotes, drafts and invoices' },
+		{ id: 'alerts', label: 'Emails & alerts', icon: 'bell', sub: 'Phone alerts, quotes, drafts and invoices' },
 		{ id: 'account', label: 'Sign-in & account', icon: 'gear', sub: 'Email, look, sign out' }
 	]);
 
@@ -336,8 +337,9 @@
 					{:else if active === 'team'}
 						<BrandTeam />
 					{:else if active === 'alerts'}
-						<section class="panel rv" style="--i:1;padding:22px">
-							<div class="panel-h" style="padding:0 0 10px"><h2>Emails & alerts</h2></div>
+						<BrandAlerts />
+						<section class="panel rv" style="--i:4;padding:22px">
+							<div class="panel-h" style="padding:0 0 10px"><h2>Emails</h2></div>
 							<p class="hint" style="margin:0 0 10px">Miracle emails <b>{acct?.email}</b> when a creator sends a quote, a draft to approve, or an invoice, and when a post goes live.</p>
 							<p class="hint" style="margin:0">Invoices also go to the accounts email in <a class="lnk" href="?s=billing" onclick={(e) => (e.preventDefault(), open('billing'))}>Billing & GST</a>. Colleagues on your <a class="lnk" href="?s=team" onclick={(e) => (e.preventDefault(), open('team'))}>team</a> get the emails for what they approve.</p>
 						</section>

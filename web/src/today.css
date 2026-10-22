@@ -502,3 +502,71 @@
 
 /* The brand app's calendar links where the creator's has buttons: no underlines. */
 .cl a.cl-it, .cl a.cl-act { text-decoration: none; }
+
+/* ===== InboxList.svelte: shared by the creator studio and the brand app (moved from the component). ===== */
+.ib.ib { display: flex; flex-direction: column; min-height: 0; height: 100%; }
+	.ib .ib-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 22px 22px 12px; }
+	.ib .ib-me { display: inline-flex; align-items: center; gap: 6px; color: var(--ink); text-decoration: none; min-width: 0; }
+	.ib .ib-me b { font-size: 20px; font-weight: 700; letter-spacing: -.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+	.ib .ib-me .ic { width: 16px; height: 16px; }
+	.ib .ib-new { width: 40px; height: 40px; border: 0; border-radius: 50%; background: none; color: var(--ink); display: grid; place-items: center; cursor: pointer; }
+	.ib .ib-new:hover { background: color-mix(in oklab, var(--ink) 7%, transparent); }
+	.ib .ib-new .ic { width: 24px; height: 24px; }
+	.ib .ib-tabs { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid color-mix(in oklab, var(--ink) 12%, transparent); }
+	.ib .ib-tabs button { position: relative; height: 46px; border: 0; background: none; font: 600 15px var(--f-body, inherit); color: var(--ink-3); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+	.ib .ib-tabs button.on { color: var(--ink); }
+	.ib .ib-tabs button.on::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; background: var(--ink); }
+	.ib .ib-tabs span { font-size: 11.5px; font-weight: 700; color: #fff; background: var(--g2); border-radius: 99px; padding: 0 7px; line-height: 18px; }
+	.ib .ib-search { display: flex; align-items: center; gap: 10px; height: 44px; margin: 14px 18px 6px; padding: 0 16px; border-radius: 999px; background: color-mix(in oklab, var(--ink) 7%, transparent); color: var(--ink-3); }
+	.ib .ib-search .ic { width: 18px; height: 18px; flex: none; }
+	.ib .ib-search input { flex: 1; min-width: 0; border: 0; outline: 0; background: none; color: var(--ink); font: 400 16px var(--f-body, inherit); }
+	.ib .ib-scroll { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: thin; padding-bottom: 12px; }
+	.ib .ib-notes { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding: 34px 18px 8px; }
+	.ib .ib-notes::-webkit-scrollbar { display: none; }
+	.ib .ib-note { position: relative; flex: none; width: 88px; display: flex; flex-direction: column; align-items: center; gap: 6px; color: var(--ink); text-decoration: none; }
+	.ib .ib-note small { max-width: 100%; font-size: 12.5px; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+	.ib .ib-bubble { position: absolute; top: -26px; left: 50%; transform: translateX(-50%); z-index: 1; max-width: 96px; padding: 5px 10px; border-radius: 14px; background: var(--surface-2, #222); box-shadow: 0 2px 10px rgba(0, 0, 0, .25); font-size: 11.5px; font-weight: 600; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+	.ib .ib-nav { width: 68px; height: 68px; border-radius: 50%; padding: 3px; background: conic-gradient(from 210deg, var(--g3), var(--g2), var(--g1), var(--g3)); display: grid; }
+	.ib .ib-nav .mono { width: 100%; height: 100%; border-radius: 50%; font-size: 20px; border: 3px solid var(--bg); }
+	.ib .ib-h { display: flex; align-items: center; justify-content: space-between; padding: 14px 22px 6px; }
+	.ib .ib-h b { font-size: 16px; font-weight: 700; }
+	.ib .ib-h span { font-size: 14px; color: var(--ink-3); }
+	.ib .ib-row { display: flex; align-items: center; gap: 14px; padding: 9px 22px; color: inherit; text-decoration: none; transition: background .12s; }
+	.ib .ib-row:hover { background: color-mix(in oklab, var(--ink) 5%, transparent); }
+	.ib .ib-row.on { background: color-mix(in oklab, var(--ink) 9%, transparent); }
+	.ib .ib-av { flex: none; width: 58px; height: 58px; border-radius: 50%; padding: 2.5px; display: grid; }
+	.ib .ib-av.ring { background: conic-gradient(from 210deg, var(--g3), var(--g2), var(--g1), var(--g3)); }
+	.ib .ib-av .mono, .ib .ib-av img { width: 100%; height: 100%; border-radius: 50%; font-size: 18px; border: 2.5px solid var(--bg); object-fit: cover; box-sizing: border-box; }
+	.ib .ib-b { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+	.ib .ib-b b { font-size: 15.5px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+	.ib .ib-p { display: flex; min-width: 0; font-size: 14px; color: var(--ink-3); }
+	.ib .ib-t { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+	.ib .ib-ago { flex: none; white-space: nowrap; }
+	.ib .ib-row.unread b, .ib .ib-row.unread .ib-p { font-weight: 700; color: var(--ink); }
+	.ib .ib-collab { gap: 5px; align-items: center; color: var(--g2); font-weight: 600; }
+	.ib .ib-collab .ic { width: 13px; height: 13px; flex: none; }
+	.ib .ib-dot { flex: none; width: 9px; height: 9px; border-radius: 50%; background: var(--g2); }
+	.ib .ib-empty { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 40px 28px; text-align: center; color: var(--ink-3); font-size: 14px; }
+	.ib .ib-empty .ic { width: 30px; height: 30px; }
+	.ib .ib-empty b { color: var(--ink); font-size: 16px; }
+	.ib .ib-filter { display: inline-flex; align-items: center; gap: 6px; margin: 10px 22px 4px; height: 32px; padding: 0 14px; border-radius: 999px; border: 1px solid color-mix(in oklab, var(--g2) 40%, transparent); background: none; color: var(--g2); font: 600 13px var(--f-body, inherit); cursor: pointer; }
+	.ib .ib-filter.on { background: var(--g2); color: #fff; }
+	.ib .ib-filter .ic { width: 14px; height: 14px; }
+	.ib .ib-private { display: flex; gap: 6px; align-items: center; margin: 12px 22px 0; font-size: 12.5px; color: var(--ink-3); }
+	.ib .ib-private .ic { width: 14px; height: 14px; flex: none; }
+	.ib .ib-old { display: flex; align-items: center; gap: 12px; margin: 12px 22px 0; padding: 12px 14px; border-radius: 14px; background: color-mix(in oklab, var(--ink) 5%, transparent); }
+	.ib .ib-old span { flex: 1; display: flex; flex-direction: column; font-size: 13px; }
+	.ib .ib-old small { color: var(--ink-3); }
+	@media (max-width: 760px) {
+		.ib .ib-top { display: none; }
+		.ib .ib-row { padding: 8px 16px; }
+		.ib .ib-h { padding: 12px 16px 6px; }
+		.ib .ib-search { margin: 10px 16px 4px; height: 40px; }
+		.ib .ib-notes { padding: 34px 12px 8px; }
+		.ib .ib-scroll { overflow: visible; }
+	}
+
+/* ===== +layout.svelte: shared by the creator studio and the brand app (moved from the component). ===== */
+.ibx.ibx { display: grid; grid-template-columns: minmax(340px, 400px) minmax(0, 1fr); height: 100vh; position: sticky; top: 0; margin: 0 calc(-1 * var(--sx-gut, 40px)) -64px; border-left: 1px solid color-mix(in oklab, var(--ink) 9%, transparent); background: color-mix(in oklab, var(--bg) 88%, transparent); }
+	.ibx .ibx-list { min-height: 0; border-right: 1px solid color-mix(in oklab, var(--ink) 12%, transparent); }
+	.ibx .ibx-pane { min-width: 0; min-height: 0; display: flex; flex-direction: column; }

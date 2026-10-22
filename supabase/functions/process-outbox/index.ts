@@ -4,11 +4,13 @@
 import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2';
 import { mailConfigured, sendMail } from '../_shared/mailer.ts';
 import { render, type Settings as MailSettings } from '../_shared/templates.ts';
-import { pushFor, pushToCreator } from '../_shared/push.ts';
+import { pushFor, pushForBrand, pushToBrandUser, pushToCreator } from '../_shared/push.ts';
 import { settingsOf, teamCopies, type Settings } from '../_shared/creators.ts';
 
 // Alerts only: a brand opening her insights link.
 const PUSH_ONLY = new Set(['insights_viewed', 'ig_dm', 'ig_collab', 'month_summary']);
+// Mails to a brand that come from the app itself, so replies don't go to the creator.
+const FROM_APP = new Set(['brief_application', 'brief_digest']);
 
 const CRON_SECRET = Deno.env.get('CRON_SECRET') ?? '';
 
@@ -101,6 +103,10 @@ Deno.serve(async (req) => {
     // Phone alert for things that need her (independent of the email going out).
     const alert = pushFor(row.kind, row.payload ?? {});
     if (alert) await pushToCreator(supabase, settings.id, alert).catch((e) => console.error('[push]', e));
+    // And for the brand login it went to, if it has alerts on for this (never her own address).
+    if (String(row.to_email ?? '').toLowerCase() !== ownerEmail) {
+      await pushBrand(supabase, row.kind, row.payload ?? {}, String(row.to_email ?? ''), String(settings.display_name ?? '')).catch((e) => console.error('[push brand]', e));
+    }
     // Some things are worth a phone alert but not an email.
     if (PUSH_ONLY.has(row.kind)) {
       await supabase.from('outbox').update({ status: 'sent', sent_at: new Date().toISOString(), last_error: null }).eq('id', row.id);
@@ -115,13 +121,14 @@ Deno.serve(async (req) => {
         skipped++;
         continue;
       }
-      // Every mail comes from "Miracle"; replies from anyone but her reach her inbox.
+      // Every mail comes from "Miracle"; replies from anyone but her reach her inbox
+      // (not the open-brief mails to a brand: those are from the app, not from the creator who applied).
       const toOwner = String(row.to_email).toLowerCase() === ownerEmail;
       await sendMail({
         to: row.to_email,
         cc: toOwner && row.kind !== 'new_device' ? teamCc : undefined,
         ...mail,
-        ...(toOwner || !ownerEmail ? {} : { replyTo: ownerEmail }),
+        ...(toOwner || !ownerEmail || FROM_APP.has(row.kind) ? {} : { replyTo: ownerEmail }),
       });
       await supabase.from('outbox').update({ status: 'sent', sent_at: new Date().toISOString(), last_error: null }).eq('id', row.id);
       sent++;
@@ -138,6 +145,25 @@ Deno.serve(async (req) => {
 
   return Response.json({ sent, failed, skipped });
 });
+
+type BrandTarget = { user_id: string; prefs: { quotes?: boolean; drafts?: boolean; messages?: boolean; invoices?: boolean; live?: boolean; briefs?: 'each' | 'digest' | 'off'; quiet?: boolean } };
+
+/** A phone alert to the brand login an email went to: only kinds it can hear about, only if it has
+ *  devices, only if that kind is switched on, and not at night when it asked for quiet hours. */
+async function pushBrand(db: SupabaseClient, kind: string, payload: Record<string, unknown>, email: string, creatorName: string) {
+  const alert = pushForBrand(kind, payload, creatorName);
+  if (!alert || !email.trim()) return;
+  const { data, error } = await db.rpc('brand_push_target', { p_email: email });
+  if (error) return console.error('[push brand]', error.message);
+  const target = data as BrandTarget | null;
+  if (!target?.user_id) return;
+  const prefs = target.prefs ?? {};
+  if (alert.pref === 'briefs' ? prefs.briefs === 'off' : prefs[alert.pref] === false) return;
+  // Quiet hours: 10 pm to 8 am in India.
+  const hour = new Date(Date.now() + 330 * 60_000).getUTCHours();
+  if (prefs.quiet && (hour >= 22 || hour < 8)) return;
+  await pushToBrandUser(db, target.user_id, alert.msg);
+}
 
 type Creator = { settings: Settings & MailSettings; ownerEmail: string; teamCc: string[] };
 

@@ -29,9 +29,10 @@ function layout(
   heading: string,
   bodyHtml: string,
   button?: { label: string; href: string },
-  opts: { to?: To; next?: string[]; code?: string; preheader?: string } = {},
+  opts: { to?: To; next?: string[]; code?: string; preheader?: string; /** To a brand, but from the app itself (open briefs), not from her. */ fromApp?: boolean; /** Why it came, for the footer of an app email to a brand. */ why?: string } = {},
 ) {
   const to = opts.to ?? 'brand';
+  const app = to === 'brand' && opts.fromApp === true;
   const me = first(s.display_name);
   const handle = String(s.handle ?? '').replace(/^@/, '');
   const steps = opts.next?.filter(Boolean) ?? [];
@@ -44,7 +45,7 @@ ${pre ? `<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:t
 <tr><td style="padding:0 6px 16px">
   <table role="presentation" cellpadding="0" cellspacing="0"><tr>
     <td style="vertical-align:middle"><img src="${esc(url(s, '/icon-192.png'))}" width="40" height="40" alt="${esc(s.app_name)}" style="display:block;width:40px;height:40px;border-radius:11px;border:0"></td>
-    <td style="vertical-align:middle;padding-left:12px"><div style="font-size:16px;font-weight:700;letter-spacing:-.2px;color:${INK}">${esc(s.app_name)}</div><div style="font-size:12.5px;color:${MUTED}">${to === 'brand' ? `Collaborations with ${esc(s.display_name)}` : `Your creator studio`}</div></td>
+    <td style="vertical-align:middle;padding-left:12px"><div style="font-size:16px;font-weight:700;letter-spacing:-.2px;color:${INK}">${esc(s.app_name)}</div><div style="font-size:12.5px;color:${MUTED}">${app ? `Creators for your brand` : to === 'brand' ? `Collaborations with ${esc(s.display_name)}` : `Your creator studio`}</div></td>
   </tr></table>
 </td></tr>
 <tr><td style="background:#ffffff;border-radius:22px;border:1px solid ${LINE};overflow:hidden">
@@ -59,14 +60,18 @@ ${pre ? `<div style="display:none;max-height:0;overflow:hidden;opacity:0;color:t
     .join('')}</div></td></tr>` : ''}
   ${button ? `<tr><td style="padding:20px 34px 6px"><a href="${esc(button.href)}" style="display:inline-block;background:${INK};color:#ffffff;text-decoration:none;font-weight:600;font-size:15px;padding:13px 22px;border-radius:12px">${esc(button.label)} &rarr;</a></td></tr>` : ''}
   <tr><td style="padding:24px 34px 30px">
-    ${to === 'brand'
+    ${app
+      ? `<div style="font-size:15px;line-height:1.6;color:${BODY}">Warm regards,<br><b style="color:${INK}">The ${esc(s.app_name)} team</b></div>`
+      : to === 'brand'
       ? `<div style="font-size:15px;line-height:1.6;color:${BODY}">Warm regards,<br><b style="color:${INK}">${esc(s.display_name)}</b>${handle ? `<br><span style="font-size:13.5px;color:${MUTED}">@${esc(handle)} on Instagram${s.city ? ` · ${esc(s.city)}` : ''}</span>` : ''}</div>`
       : `<div style="font-size:13.5px;line-height:1.6;color:${MUTED}">${esc(s.app_name)} · keeping your collaborations moving</div>`}
   </td></tr>
   </table>
 </td></tr>
 <tr><td style="padding:18px 16px 0;font-size:12px;line-height:1.6;color:${MUTED};text-align:center">
-  ${to === 'brand'
+  ${app
+    ? `Sent to you by ${esc(s.app_name)}${opts.why ? ` because ${esc(opts.why)}` : ''}. Change which alerts you get in Settings.`
+    : to === 'brand'
     ? `You're receiving this because of your collaboration${opts.code ? ` <b>${esc(opts.code)}</b>` : ''} with ${esc(s.display_name)}. Questions? Just reply to this email and it reaches ${esc(me)} directly.`
     : `Sent to you by ${esc(s.app_name)}. Change which emails you get in My page → Alerts.`}
   <br><a href="${esc(url(s, to === 'brand' ? '/brand' : '/studio'))}" style="color:${MUTED}">${esc(s.site_url.replace(/^https?:\/\//, '').replace(/\/$/, ''))}</a>
@@ -959,6 +964,88 @@ Open the collab: ${studio()}`,
         { preheader: `${p.by} added you to ${brand}.` },
       ),
       text: `${p.by} added you to ${brand} for collaborations with ${s.display_name}. Sign in with this email: ${url(s, '/login?next=/brand')}`,
+    };
+  }
+
+  // ---------------------------------------------------------------- open briefs
+  // Mails to the brand come from the app, not from her: she's only the creator who applied.
+  if (kind === 'brief_fit') {
+    const lo = Number(p.budget_min) || 0, max = Number(p.budget_max) || 0;
+    const budget = max ? (lo && lo < max ? `${inr(lo)} to ${inr(max)}` : `Up to ${inr(max)}`) : lo ? `From ${inr(lo)}` : 'Barter-friendly';
+    const closes = fmtDate(p.open_until);
+    const href = url(s, '/studio/pitches');
+    return {
+      subject: `A brief that fits you: ${brand}`,
+      html: layout(
+        s,
+        `${brand} is looking for creators like you`,
+        `${P(`<b>${esc(brand)}</b> opened a brief, and your content and rates fit what they're asking for.`)}
+         ${table(row('Brief', p.campaign), row('Brand', `${brand}${p.verified ? ' · Instagram verified' : ''}`), row('Content', p.deliverables), row('Budget', budget), row('Applications close', closes))}
+         ${P(`Apply with your own rate and a short note. The brand picks who to work with.`)}
+         ${small(`You get at most 3 of these a week. You can turn them off in Pitches → Open briefs.`)}`,
+        { label: 'See the brief and apply', href },
+        { to: 'creator', preheader: [p.deliverables, budget, closes ? `closes ${closes}` : ''].filter(Boolean).join(' · '), next: [`Check the brief and the budget.`, `Apply with your rate and a one-line note.`, `If ${esc(brand)} shortlists you, they can send you a request at your rate.`] },
+      ),
+      text: `${brand} opened a brief that fits you: ${p.campaign}.\n${[p.deliverables, budget, closes ? `Closes ${closes}` : ''].filter(Boolean).join(' · ')}\n\nSee it and apply: ${href}\n\nYou can turn these off in Pitches → Open briefs.`,
+    };
+  }
+
+  if (kind === 'brief_shortlisted') {
+    const href = url(s, '/studio/pitches');
+    const rate = Number(p.rate) ? ` at your rate of <b>${esc(inr(p.rate))}</b>` : '';
+    return {
+      subject: `You're shortlisted for ${p.campaign}`,
+      html: layout(
+        s,
+        `${brand} shortlisted you`,
+        `${P(`Good news: <b>${esc(brand)}</b> picked you for <b>${esc(p.campaign)}</b>.`)}
+         ${P(`If they go ahead, they send you a request${rate}. It comes in like any other request, ready for you to confirm.`)}`,
+        { label: 'Open Pitches', href },
+        { to: 'creator', preheader: `${brand} picked you for ${p.campaign}.`, next: [`Watch for the request from ${esc(brand)}.`, `Confirm it, then plan the content as usual.`] },
+      ),
+      text: `Good news: ${brand} shortlisted you for ${p.campaign}. If they go ahead, a request${Number(p.rate) ? ` at your rate of ${inr(p.rate)}` : ''} comes next.\n\n${href}`,
+    };
+  }
+
+  if (kind === 'brief_application') {
+    const max = Number(p.budget_max) || 0;
+    const over = max > 0 && Number(p.rate) > max;
+    const href = url(s, `/brand/campaigns/${encodeURIComponent(String(p.campaign_id ?? ''))}?tab=applications`);
+    const asks = `${inr(p.rate)}${over ? ` (above your ${inr(max)} budget)` : ''}`;
+    return {
+      subject: `${p.creator} applied to ${p.campaign}`,
+      html: layout(
+        s,
+        `${p.creator} applied to ${p.campaign}`,
+        `${P(`<b>${esc(p.creator)}</b> applied to your open brief <b>${esc(p.campaign)}</b>.`)}
+         ${table(row('Creator', p.creator), row('Their rate', asks))}
+         ${quoteBox('Their note', p.note)}
+         ${P(`See their page, numbers and fit next to the other applications, then shortlist the ones you'd like to work with.`)}`,
+        { label: 'See the applications', href },
+        { fromApp: true, why: `your brief ${p.campaign} is open for applications`, preheader: `Asks ${asks}.` },
+      ),
+      text: `${p.creator} applied to your open brief ${p.campaign}, asking ${asks}.${p.note ? `\n\nTheir note: ${p.note}` : ''}\n\nSee the applications: ${href}\n\nThe ${s.app_name} team`,
+    };
+  }
+
+  if (kind === 'brief_digest') {
+    const n = Number(p.count) || 0;
+    const max = Number(p.budget_max) || 0;
+    const range = Number(p.low) === Number(p.high) ? inr(p.low) : `${inr(p.low)} to ${inr(p.high)}`;
+    const href = url(s, `/brand/campaigns/${encodeURIComponent(String(p.campaign_id ?? ''))}?tab=applications`);
+    const apps = `${n} new application${n === 1 ? '' : 's'}`;
+    return {
+      subject: `${apps} to ${p.campaign}`,
+      html: layout(
+        s,
+        `${apps} to ${p.campaign}`,
+        `${P(`Your open brief <b>${esc(p.campaign)}</b> got <b>${esc(apps)}</b> today.`)}
+         ${table(row(n === 1 ? 'They ask' : 'They ask between', range), row('Your budget', max ? `Up to ${inr(max)}` : ''), row('Applications so far', num(p.total)))}
+         ${P(`Compare them side by side, then shortlist the ones you'd like to work with.`)}`,
+        { label: 'See the applications', href },
+        { fromApp: true, why: `your brief ${p.campaign} is open for applications`, preheader: `They ask ${range}. ${num(p.total)} so far.` },
+      ),
+      text: `Your open brief ${p.campaign} got ${apps} today. They ask ${range}. Applications so far: ${num(p.total)}.\n\nSee them: ${href}\n\nThe ${s.app_name} team`,
     };
   }
 

@@ -8,11 +8,11 @@ export function brandGroups(onApp: boolean): BrandGroup[] {
 	return [
 		{ href: '/brand', label: 'Today', icon: 'home' },
 		{
-			href: onApp ? '/brand/creators' : '/brand/requests',
+			href: '/brand/requests',
 			label: 'Collabs',
 			icon: 'board',
 			tabs: [
-				...(onApp ? [] : [{ href: '/brand/requests', label: 'Requests' }]),
+				{ href: '/brand/requests', label: 'Requests' },
 				{ href: '/brand/creators', label: 'Creators' },
 				{ href: '/brand/creators?tab=pools', label: 'Pools' },
 				{ href: '/brand/creators?tab=discover', label: 'Discover' }

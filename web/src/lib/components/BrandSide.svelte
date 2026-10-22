@@ -2,11 +2,9 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { auth, signOut } from '../auth.svelte';
-	import { addressFor, isAppHost } from '../creatorHost';
-	import { pub } from '../publicPage.svelte';
-	import { pageSlug } from '../supabase';
+	import { isAppHost } from '../creatorHost';
 	import { brandIg } from '../brandIg.svelte';
-	import { firstName } from '../util';
+	import { allRequests } from '../brand.svelte';
 	import Avatar from './Avatar.svelte';
 	import Icon from './Icon.svelte';
 	import Logo from './Logo.svelte';
@@ -16,14 +14,14 @@
 	const acct = $derived(auth.account?.role === 'brand' ? auth.account : null);
 	const onApp = isAppHost(location.hostname);
 	const creators = $derived(acct?.creators ?? []);
-	const here = $derived(pub.data?.display_name ?? '');
 	const company = $derived(acct?.brand?.name || acct?.profile?.name || acct?.full_name || 'Your brand');
 
 	// The studio's places, in the brand's words: Today, Collabs, Calendar, Content, Money and Settings.
 	const on = (...h: string[]) => h.some((x) => path === x || path.startsWith(x + '/'));
 	const NAV = $derived([
 		{ href: '/brand', label: 'Today', icon: 'home', on: path === '/brand' },
-		{ href: onApp ? '/brand/creators' : '/brand/requests', label: 'Collabs', icon: 'board', on: on('/brand/requests', '/brand/creators', '/brand/creator', '/brand/r', '/brand/new') },
+		{ href: '/brand/inbox', label: 'Inbox', icon: 'inbox', on: on('/brand/inbox') },
+		{ href: '/brand/requests', label: 'Collabs', icon: 'board', on: on('/brand/requests', '/brand/creators', '/brand/creator', '/brand/r', '/brand/new') },
 		{ href: '/brand/campaigns', label: 'Campaigns', icon: 'send', on: on('/brand/campaigns', '/brand/autopilots') },
 		{ href: '/brand/business/calendar', label: 'Calendar', icon: 'cal', on: on('/brand/business/calendar') },
 		{ href: '/brand/business/content', label: 'Content', icon: 'film', on: on('/brand/business/content') },
@@ -32,35 +30,16 @@
 		{ href: '/brand/settings', label: 'Settings', icon: 'gear', on: on('/brand/settings', '/brand/details', '/brand/business/team') }
 	]);
 
-	// Pick the creator to work with: the same screen on their address (the sign-in is shared).
-	let picking = $state(false);
-	function goCreator(slug: string) {
-		picking = false;
-		if (slug === pageSlug) return;
-		location.href = addressFor(slug, path.startsWith('/brand/r/') || path === '/brand/new' ? '/brand/requests' : path);
-	}
+	const unread = $derived(allRequests.list.reduce((a, r) => a + r.unread, 0));
+
 </script>
 
 <nav class="side" aria-label="Brand">
 	<a class="side-logo" href="/brand"><Logo /><span>Miracle</span></a>
-	{#if creators.length}
-		<button class="side-cr" onclick={() => (picking = !picking)} aria-haspopup="menu" aria-expanded={picking}>
-			<Avatar name={here || 'Creators'} src={pub.data?.instagram?.profile_picture_url} size="30px" />
-			<span><small>Working with</small><b>{here ? firstName(here) : 'Pick a creator'}</b></span>
-			<Icon name="chevD" />
-		</button>
-		{#if picking}
-			<div class="side-menu" role="menu">
-				{#each creators as c (c.slug)}
-					<button role="menuitem" onclick={() => goCreator(c.slug)}><Avatar name={c.name} src={c.photo ?? undefined} size="26px" />{firstName(c.name)}{#if c.waiting}<small>{c.waiting} waiting</small>{:else if c.slug === pageSlug}<small>now</small>{/if}</button>
-				{/each}
-				<a role="menuitem" href="/brand/creators?tab=discover" onclick={() => (picking = false)}><Icon name="plus" />Find more creators</a>
-			</div>
-		{/if}
-	{/if}
+	<!-- No creator switch: requests, messages and money cover every creator. -->
 	<div class="side-nav">
 		{#each NAV as n (n.href)}
-			<a class="side-it" href={n.href} aria-current={n.on ? 'page' : undefined}><Icon name={n.icon} /><span class="side-t">{n.label}</span></a>
+			<a class="side-it" href={n.href} aria-current={n.on ? 'page' : undefined}><Icon name={n.icon} /><span class="side-t">{n.label}</span>{#if n.href === '/brand/inbox' && unread}<span class="side-badge" aria-label="{unread} unread">{unread}</span>{/if}</a>
 		{/each}
 	</div>
 	<div class="side-end">

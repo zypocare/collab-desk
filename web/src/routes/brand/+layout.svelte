@@ -5,7 +5,7 @@
 	import type { LayoutProps } from './$types';
 	import { auth } from '#lib/auth.svelte.ts';
 	import { ui } from '#lib/ui.svelte.ts';
-	import { brandData, loadRequests } from '#lib/brand.svelte.ts';
+	import { allRequests, brandData, loadAllRequests, loadRequests } from '#lib/brand.svelte.ts';
 	import { brandGroups, deskTabs, groupOf, tabOn } from '#lib/brandNav.ts';
 	import Avatar from '#lib/components/Avatar.svelte';
 	import Icon from '#lib/components/Icon.svelte';
@@ -44,7 +44,6 @@
 		const path = page.url.pathname;
 		if (a?.role === 'brand' && !(a.profile || a.brand || a.companies?.length || a.creators?.length)) goto('/signup?as=brand', { replaceState: true });
 		else if (path === '/brand/new') goto('/brand/creators?tab=discover', { replaceState: true });
-		else if (path === '/brand/requests') goto('/brand', { replaceState: true });
 	});
 
 	// Invited to a company's team: join it on the first visit after signing in.
@@ -57,7 +56,10 @@
 		if (auth.account?.role === 'brand') loadRequests();
 	});
 	$effect(() => {
-		if (auth.account?.role === 'brand') loadBrandIg();
+		if (auth.account?.role === 'brand') {
+			loadBrandIg();
+			loadAllRequests();
+		}
 	});
 	// Signed in, a brand gets the creator studio's frame, piece for piece: the bottom bar on a phone,
 	// the side menu on a laptop, the section's pages as tabs. Signed-out visitors keep the simple bar.
@@ -76,8 +78,9 @@
 	// Laptop: only the section's own sub-pages (the side menu lists the rest).
 	const tabs = $derived(deskTabs(onApp, page.url));
 	// A single request, a new request or a new campaign is a screen of its own: no bottom bar.
-	const detail = $derived(path.startsWith('/brand/r/') || path === '/brand/new' || path.startsWith('/brand/campaigns/'));
-	const unread = $derived(Object.values(brandData.unread ?? {}).reduce((a, n) => a + n, 0));
+	const detail = $derived(path.startsWith('/brand/r/') || path === '/brand/new' || path.startsWith('/brand/campaigns/') || (path === '/brand/inbox' && !!page.url.searchParams.get('c') && phone.on));
+	// Unread messages from every creator (the inbox).
+	const unread = $derived(allRequests.list.reduce((a, r) => a + r.unread, 0));
 	const acct = $derived(auth.account?.role === 'brand' ? auth.account : null);
 	const company = $derived(acct?.brand?.name || acct?.profile?.name || acct?.full_name || 'Brand');
 	const hasCreators = $derived((acct?.creators?.length ?? 0) > 0);
@@ -136,7 +139,7 @@
 					{@render children()}
 				{:else}
 					<div class="pg">
-						<div class="at-bar" class:at-flow={detail} hidden={path === '/brand'}>
+						<div class="at-bar" class:at-flow={detail} hidden={path === '/brand' || path === '/brand/inbox'}>
 							{#if tabs && !detail}
 								<nav class="subtabs at-tabs" aria-label="{group?.label} pages">
 									{#each tabs as t (t.href)}<a href={t.href} aria-current={tabOn(t, page.url) ? 'page' : undefined}>{t.label}</a>{/each}

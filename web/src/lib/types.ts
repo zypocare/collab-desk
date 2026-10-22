@@ -405,6 +405,8 @@ export type Settings = {
 	nudge_days: number;
 	autopilot_brief: boolean;
 	show_insights: boolean;
+	/** Alerts when a brand opens a brief that fits her (Pitches > Open briefs). */
+	brief_alerts?: boolean;
 	/** Stories on the insights page, and her own Story averages to use instead of the app's. */
 	insights_stories: boolean;
 	story_stats: { avg_views?: number; avg_reach?: number; avg_interactions?: number };
@@ -717,4 +719,28 @@ export type OpenBrief = {
 	open_until: string;
 	applied: number;
 	mine: { id: string; rate: number; note: string; status: 'new' | 'shortlist' | 'sent' } | null;
+};
+
+/** One request in the brand's list across every creator (and its inbox row). */
+export type BrandRow = {
+	id: string;
+	code: string;
+	stage: Stage;
+	stage_label: string;
+	type: CollabType;
+	fee: number;
+	product_value: number;
+	received_on: string;
+	live_date: string | null;
+	pay_status: PayStatus;
+	deliverables: string | null;
+	creator: { id: number; name: string; slug: string; photo: string | null };
+	/** What waits on the brand: a quote to answer, a draft to approve, an invoice to pay. */
+	needs: 'quote' | 'draft' | 'pay' | null;
+	quote_total: number | null;
+	quote_currency: string | null;
+	invoice_due: string | null;
+	invoice_amount: number | null;
+	unread: number;
+	last: { body: string; sender: 'brand' | 'creator'; at: string } | null;
 };

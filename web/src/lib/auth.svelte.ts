@@ -2,7 +2,7 @@ import type { Session } from '@supabase/supabase-js';
 import { supabase } from './supabase';
 import type { Account } from './types';
 import { forgetAll, isNetworkError } from './offline.svelte';
-import { dropPush } from './pwa.svelte';
+import { dropPush, keepOnlyBrandPush } from './pwa.svelte';
 
 export const auth = $state<{ ready: boolean; session: Session | null; account: Account | null }>({
 	ready: false,
@@ -48,7 +48,8 @@ export async function refreshAccount() {
 	}
 	auth.account = data as Account | null;
 	// A phone that still has a studio's alerts from an earlier sign-in: stop them for anyone who isn't a creator.
-	if (auth.account && auth.account.role !== 'creator') dropPush(false);
+	if (auth.account?.role === 'brand') keepOnlyBrandPush();
+	else if (auth.account && auth.account.role !== 'creator') dropPush(false);
 	try {
 		localStorage.setItem('cd-account', JSON.stringify({ uid, account: auth.account }));
 	} catch {

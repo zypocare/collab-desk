@@ -75,7 +75,19 @@ select set_config('request.headers', json_build_object('x-creator', 'creatorb'):
 set local role authenticated;
 insert into results select 'Brand on B''s page acts as its B company', (public.my_account() -> 'brand' ->> 'id')::uuid = :'b_brand', (public.my_account() -> 'brand' ->> 'id')::uuid::text;
 insert into results select 'Brand on B''s page sees only B''s requests', (select coalesce(bool_and(x ->> 'code' like 'BB%'), true) and count(*) >= 1 from jsonb_array_elements(public.my_requests()) x), public.my_requests()::text;
-insert into results select 'Brand on B''s page can''t read A''s collab messages', not public.is_my_collab(:'a_collab'), null;
+-- One inbox: a brand reads its own messages with A from any page; a brand outside A's company never does.
+insert into results select 'Brand on B''s page reads its own A messages (one inbox)', public.is_my_collab(:'a_collab'), null;
+reset role;
+select gen_random_uuid() as other_uid \gset
+insert into auth.users (id, email, aud, role) values (:'other_uid', 'outsider@test.dev', 'authenticated', 'authenticated');
+insert into public.profiles (id, email) values (:'other_uid', 'outsider@test.dev') on conflict do nothing;
+insert into public.brand_members (profile_id, brand_id) values (:'other_uid', :'b_brand') on conflict do nothing;
+select set_config('request.jwt.claims', json_build_object('email', 'outsider@test.dev', 'sub', :'other_uid', 'role', 'authenticated')::text, true);
+set local role authenticated;
+insert into results select 'A brand outside A''s company can''t read A''s collab messages', not public.is_my_collab(:'a_collab') and not exists (select 1 from public.collab_messages where collab_id = :'a_collab'), null;
+reset role;
+select set_config('request.jwt.claims', json_build_object('email', 'shopper@test.dev', 'sub', :'brand_uid', 'role', 'authenticated')::text, true);
+set local role authenticated;
 insert into results select 'Brand account lists both creators', jsonb_array_length(public.my_account() -> 'creators') = 2, (public.my_account() -> 'creators')::text;
 insert into results select 'Brand account offers only B''s companies here', (select bool_and((x ->> 'id')::uuid = :'b_brand') from jsonb_array_elements(public.my_account() -> 'brands') x), null;
 insert into results select 'Brand can''t switch to A''s company on B''s page', false, null;

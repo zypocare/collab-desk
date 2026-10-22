@@ -4,7 +4,7 @@
 	import { page } from '$app/state';
 	import { onMount } from 'svelte';
 	import { auth, signOut, switchBrand } from '../auth.svelte';
-	import { brandData, loadRequests } from '../brand.svelte';
+	import { allRequests, brandData, loadRequests } from '../brand.svelte';
 	import { phone, startPhone } from '../phone.svelte';
 	import { loadPublicPage } from '../publicPage.svelte';
 	import { toast } from '../ui.svelte';
@@ -71,6 +71,7 @@
 	const TITLES: Record<string, string> = {
 		'/brand': 'Miracle',
 		'/brand/requests': 'Requests',
+		'/brand/inbox': 'Messages',
 		'/brand/creators': 'Creators',
 		'/brand/campaigns': 'Campaigns',
 		'/brand/autopilots': 'Autopilots',
@@ -96,6 +97,7 @@
 	);
 	const back = $derived(
 		path.startsWith('/brand/r/') ? '/brand/requests'
+		: path === '/brand/inbox' ? (page.url.searchParams.get('c') ? '/brand/inbox' : '/brand')
 		: path.startsWith('/brand/creator/') ? '/brand/creators?tab=discover'
 		: path.startsWith('/brand/campaigns/') ? '/brand/campaigns'
 		: sec ? '/brand/settings'
@@ -104,7 +106,8 @@
 		: path === '/brand/new' ? (signedIn ? '/brand/requests' : '/')
 		: ''
 	);
-	const unread = $derived(Object.values(brandData.unread ?? {}).reduce((a, n) => a + n, 0));
+	// Unread messages from every creator (the inbox).
+	const unread = $derived(allRequests.list.reduce((a, r) => a + r.unread, 0));
 	let inApp = false;
 	onMount(() => {
 		inApp = history.length > 1 && document.referrer.startsWith(location.origin);
@@ -130,14 +133,10 @@
 				{#if signedIn && path === '/brand'}
 					<a class="m-ib" href={creators.length ? '/brand/campaigns/new' : '/brand/creators?tab=discover'} aria-label="New campaign"><Icon name="plus" /></a>
 					<a class="m-ib" href="/brand/creators?tab=discover" aria-label="Find creators"><Icon name="search" /></a>
-					{#if !onApp}<a class="m-ib" href="/brand/requests" aria-label="Requests{unread ? `, ${unread} unread` : ''}"><Icon name="send" />{#if unread}<span class="m-badge">{unread}</span>{/if}</a>{/if}
+					<a class="m-ib" href="/brand/inbox" aria-label="Messages{unread ? `, ${unread} unread` : ''}"><Icon name="send" />{#if unread}<span class="m-badge">{unread}</span>{/if}</a>
 				{:else if signedIn && path === '/brand/requests'}
-					{#if pub.data?.accepting !== false}<a class="m-ib" href="/brand/new" aria-label="New request"><Icon name="plus" /></a>{/if}
-					{#if creators.length}
-						<button class="m-ib b-cr" onclick={() => (picking = true)} aria-haspopup="dialog" aria-label={name ? `Working with ${name}. Switch creator` : 'Pick a creator'}>
-							<Avatar name={name || 'Creators'} src={pub.data?.instagram?.profile_picture_url} size="30px" />
-						</button>
-					{/if}
+					<a class="m-ib" href="/brand/creators?tab=discover" aria-label="Find creators"><Icon name="plus" /></a>
+					<a class="m-ib" href="/brand/inbox" aria-label="Messages{unread ? `, ${unread} unread` : ''}"><Icon name="send" />{#if unread}<span class="m-badge">{unread}</span>{/if}</a>
 				{:else if signedIn && path === '/brand/campaigns'}
 					<a class="m-ib" href={creators.length ? '/brand/campaigns/new' : '/brand/creators?tab=discover'} aria-label="New campaign"><Icon name="plus" /></a>
 				{/if}
