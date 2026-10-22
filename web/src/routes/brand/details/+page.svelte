@@ -6,7 +6,7 @@
 	import { auth } from '#lib/auth.svelte.ts';
 	import { page } from '$app/state';
 	import { loadRequests } from '#lib/brand.svelte.ts';
-	import BrandTeam from '#lib/components/BrandTeam.svelte';
+	import BusinessTabs from '#lib/components/BusinessTabs.svelte';
 	import { signOut, switchBrand } from '#lib/auth.svelte.ts';
 	import { phone } from '#lib/phone.svelte.ts';
 	import { theme, toggleTheme, toast } from '#lib/ui.svelte.ts';
@@ -28,19 +28,19 @@
 
 <svelte:head><title>Company details</title></svelte:head>
 
-<a class="back" href="/brand/requests"><Icon name="back" />My requests</a>
-<header class="ph rv">
-	<div>
-		<div class="eb">Your account</div>
-		{#if isNew}
+{#if isNew}
+	<a class="back" href="/brand/business/money"><Icon name="back" />Business</a>
+	<header class="ph rv">
+		<div>
+			<div class="eb">Your account</div>
 			<h1>Add a <em>brand</em></h1>
 			<p>Manage several brands from one login, for example as an agency. Switch between them from the top bar.</p>
-		{:else}
-			<h1>Company <em>details</em></h1>
-			<p>Used on every request you send.</p>
-		{/if}
-	</div>
-</header>
+		</div>
+	</header>
+{:else}
+	<BusinessTabs />
+	<p class="hint" style="margin:-8px 4px 14px">Company details, used on every request you send.</p>
+{/if}
 {#key isNew}
 	<section class="panel rv" style="--i:1;padding:22px"><BrandDetailsForm {isNew} submitLabel={isNew ? 'Add brand' : 'Save details'} onsaved={() => (loadRequests(), goto('/brand/requests'))} /></section>
 {/key}
@@ -51,7 +51,7 @@
 		<p class="hint" style="margin-bottom:16px">Printed on the invoices you receive. Add your GSTIN if you want to claim GST input credit.</p>
 		<BrandBillingForm />
 	</section>
-	<BrandTeam />
+	<p class="hint" style="margin:14px 4px 0">Colleagues and agencies who work on your requests: <a class="lnk" href="/brand/business/team">Business, Team</a></p>
 {/if}
 {#if phone.on && !isNew && acct}
 	<!-- Phone: account settings live here, like an app's settings screen. -->

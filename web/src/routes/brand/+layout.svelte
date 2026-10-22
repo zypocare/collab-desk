@@ -6,6 +6,7 @@
 	import { auth } from '#lib/auth.svelte.ts';
 	import { ui } from '#lib/ui.svelte.ts';
 	import { loadRequests } from '#lib/brand.svelte.ts';
+	import { joinTeam } from '#lib/business.svelte.ts';
 	import { loadPublicPage, pub } from '#lib/publicPage.svelte.ts';
 	import BrandTopbar from '#lib/components/BrandTopbar.svelte';
 	import BrandFooter from '#lib/components/BrandFooter.svelte';
@@ -24,6 +25,11 @@
 		else if (auth.account?.role === 'creator' && !ui.holdRedirect) goto('/studio', { replaceState: true });
 		// Waiting to be approved as a creator: her request's status is on /join.
 		else if (auth.account?.role === 'pending' && !ui.holdRedirect) goto('/join', { replaceState: true });
+	});
+
+	// Invited to a company's team: join it on the first visit after signing in.
+	$effect(() => {
+		if (auth.account?.role === 'brand') joinTeam();
 	});
 
 	onMount(() => {

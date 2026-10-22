@@ -68,12 +68,13 @@
 		: path.startsWith('/brand/campaigns/') ? 'Campaign'
 		: path === '/brand/new' ? 'New request'
 		: isNew ? 'Add a brand'
-		: path === '/brand/details' ? 'Company'
+		: path === '/brand/details' ? 'Business'
+		: path.startsWith('/brand/business/') ? 'Business'
 		: path.startsWith('/brand/r/') ? path.split('/')[3]
 		: path.startsWith('/insights') ? 'Insights'
 		: ''
 	);
-	const sub = $derived(path === '/' ? 'Brand collaborations' : signedIn && name && path !== '/brand' && !path.startsWith('/brand/creators') && !path.startsWith('/brand/campaigns') ? `with ${first}` : '');
+	const sub = $derived(path === '/' ? 'Brand collaborations' : signedIn && name && path !== '/brand' && !path.startsWith('/brand/creators') && !path.startsWith('/brand/campaigns') && !path.startsWith('/brand/business') && path !== '/brand/details' && path !== '/brand/autopilots' ? `with ${first}` : '');
 	const back = $derived(
 		path.startsWith('/brand/r/') ? '/brand/requests'
 		: path.startsWith('/brand/campaigns/') ? '/brand/campaigns'
@@ -157,7 +158,7 @@
 			<a href="/brand/campaigns" aria-current={path.startsWith('/brand/campaigns') ? 'page' : undefined}>Campaigns</a>
 			<a href="/brand/autopilots" aria-current={path === '/brand/autopilots' ? 'page' : undefined}>Autopilots</a>
 			<a href="/brand/requests" aria-current={path === '/brand/requests' || path.startsWith('/brand/r/') || path === '/brand/new' ? 'page' : undefined}>Requests</a>
-			<a href="/brand/details" aria-current={path === '/brand/details' ? 'page' : undefined}>Company</a>
+			<a href="/brand/business/money" aria-current={path.startsWith('/brand/business') || (path === '/brand/details' && !isNew) ? 'page' : undefined}>Business</a>
 		</nav>
 	{/if}
 	<button class="theme-btn" onclick={toggleTheme} aria-label="Switch light or dark mode"><Icon name={theme.value === 'dark' ? 'sun' : 'moon'} /></button>
@@ -210,7 +211,7 @@
 		<a href="/brand/creators" aria-current={path === '/brand/creators' ? 'page' : undefined}><span class="bt-ic"><Icon name="users" /></span><span>Creators</span></a>
 		<a href="/brand/campaigns" aria-current={path.startsWith('/brand/campaigns') ? 'page' : undefined}><span class="bt-ic"><Icon name="send" /></span><span>Campaigns</span></a>
 		<a href="/brand/requests" aria-current={path === '/brand/requests' || path.startsWith('/brand/r/') ? 'page' : undefined}><span class="bt-ic"><Icon name="inbox" />{#if unread}<i class="bt-n">{unread}</i>{/if}</span><span>Requests</span></a>
-		<a href="/brand/details" aria-current={path.startsWith('/brand/details') ? 'page' : undefined}><span class="bt-ic"><Icon name="box" /></span><span>Company</span></a>
+		<a href="/brand/business/money" aria-current={path.startsWith('/brand/business') || path.startsWith('/brand/details') ? 'page' : undefined}><span class="bt-ic"><Icon name="box" /></span><span>Business</span></a>
 	</nav>
 {/if}
 

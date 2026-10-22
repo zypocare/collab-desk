@@ -141,6 +141,49 @@ reset role;
 select set_config('request.jwt.claims', '', true);
 update results set ok = ok and (select count(*) from public.brand_autopilot_items where kind = 'draft' and status = 'pending') = 1 where check_name = 'B can''t act on a brand''s autopilot item';
 
+-- Teams: a teammate shares the team's pools; a quote over the approval limit waits for an Admin
+select gen_random_uuid() as mate_uid \gset
+insert into auth.users (id, email, aud, role) values (:'mate_uid', 'mate@test.dev', 'authenticated', 'authenticated');
+insert into public.profiles (id, email) values (:'mate_uid', 'mate@test.dev') on conflict do nothing;
+select coalesce(max(version), 0) + 1 as qv from public.quotes where collab_id = :'a_collab' \gset
+insert into public.quotes (creator_id, collab_id, version, items, total, status) values (1, :'a_collab', :qv, '[{"kind":"Reel","qty":1,"rate":5000}]', 5000, 'sent');
+select id as big_quote from public.quotes where collab_id = :'a_collab' and version = :qv \gset
+select set_config('request.jwt.claims', json_build_object('email', 'shopper@test.dev', 'sub', :'brand_uid', 'role', 'authenticated')::text, true);
+select set_config('request.headers', json_build_object('x-creator', :'a_slug')::text, true);
+set local role authenticated;
+select public.team_settings(true, 3000) is not null as ok_settings \gset
+select public.team_invite('mate@test.dev', 'Mate', 'member') is not null as ok_invite \gset
+insert into results select 'Admin sees the teammate joined', (select bool_or((x ->> 'joined')::boolean) from jsonb_array_elements(public.team_get() -> 'members') x), (public.team_get() -> 'members')::text;
+reset role;
+-- as the teammate
+select set_config('request.jwt.claims', json_build_object('email', 'mate@test.dev', 'sub', :'mate_uid', 'role', 'authenticated')::text, true);
+set local role authenticated;
+insert into results select 'Teammate works in the admin''s team', public.brand_owner() = :'brand_uid', public.brand_owner()::text;
+insert into results select 'Teammate sees the team''s pool', (select bool_or(x ->> 'name' = 'Test pool') from jsonb_array_elements(public.pools_list()) x), null;
+insert into results select 'Teammate''s acceptance over the limit waits for approval', (public.respond_quote(:'big_quote', true, 'Mate', '', null) ->> 'approval')::boolean, null;
+insert into results select 'Teammate can''t invite people', false, null;
+do $$ begin perform public.team_invite('x@test.dev', '', 'member'); exception when others then update results set ok = true, detail = sqlerrm where check_name = 'Teammate can''t invite people'; end $$;
+insert into results select 'Teammate can''t approve', false, null;
+do $$ begin perform public.approval_decide((select id from public.brand_approvals limit 1), true); exception when others then update results set ok = true, detail = sqlerrm where check_name = 'Teammate can''t approve'; end $$;
+reset role;
+insert into results select 'The quote is still waiting', (select status::text = 'sent' from public.quotes where id = :'big_quote'), null;
+-- the admin approves
+select set_config('request.jwt.claims', json_build_object('email', 'shopper@test.dev', 'sub', :'brand_uid', 'role', 'authenticated')::text, true);
+set local role authenticated;
+select public.approval_decide((select (x ->> 'id')::uuid from jsonb_array_elements(public.team_get() -> 'approvals') x limit 1), true) is not null as ok_decide \gset
+insert into results select 'Brand money, content, calendar and shipping load', public.brand_money() is not null and public.brand_content() is not null
+  and public.brand_calendar(current_date - 30, current_date + 30) is not null and public.brand_shipping() is not null, null;
+reset role;
+insert into results select 'Admin''s approval accepts the quote', (select status::text = 'accepted' from public.quotes where id = :'big_quote'), (select status::text from public.quotes where id = :'big_quote');
+-- creator B: none of the brand's money, and no team powers
+select set_config('request.jwt.claims', json_build_object('email', 'creator-b@test.dev', 'sub', gen_random_uuid(), 'role', 'authenticated')::text, true);
+set local role authenticated;
+insert into results select 'B sees no brand invoices', jsonb_array_length(public.brand_money() -> 'invoices') = 0, null;
+insert into results select 'B sees no brand teams or approvals', not exists (select 1 from public.brand_team_members) and not exists (select 1 from public.brand_approvals), null;
+reset role;
+select set_config('request.jwt.claims', '', true);
+select set_config('request.headers', '{}', true);
+
 -- A collab can't be given another creator's company
 insert into results select 'A collab can''t take another creator''s brand', false, null;
 do $$ begin update public.collabs set brand_id = (select id from public.brands where creator_id = 1 limit 1) where brief = 'Collab of B'; exception when others then update results set ok = true, detail = sqlerrm where check_name = 'A collab can''t take another creator''s brand'; end $$;

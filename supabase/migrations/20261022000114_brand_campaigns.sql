@@ -6,6 +6,15 @@
 -- sees them. Brands can only add creators who are listed in Discover or whom they already work with;
 -- anyone else is invited by their Instagram handle and joins the pool once they are on Miracle.
 
+-- 0. Whose pools and campaigns these are: the brand's team (its owner login). Until teams exist
+--    (migration 116) that is simply the signed-in login.
+create or replace function public.brand_owner()
+returns uuid
+language sql stable security definer
+set search_path = public
+as $$ select auth.uid() $$;
+grant execute on function public.brand_owner() to authenticated;
+
 -- 1. Who a brand may reach -------------------------------------------------------------------------------
 create or replace function private.brand_can_reach(p_creator integer)
 returns boolean
@@ -87,10 +96,10 @@ create index if not exists brand_pool_members_creator_idx on public.brand_pool_m
 alter table public.brand_pools enable row level security;
 alter table public.brand_pool_members enable row level security;
 drop policy if exists "brand reads own pools" on public.brand_pools;
-create policy "brand reads own pools" on public.brand_pools for select to authenticated using (owner = (select auth.uid()));
+create policy "brand reads own pools" on public.brand_pools for select to authenticated using (owner = (select public.brand_owner()));
 drop policy if exists "brand reads own pool members" on public.brand_pool_members;
 create policy "brand reads own pool members" on public.brand_pool_members for select to authenticated
-  using (exists (select 1 from public.brand_pools p where p.id = pool_id and p.owner = (select auth.uid())));
+  using (exists (select 1 from public.brand_pools p where p.id = pool_id and p.owner = (select public.brand_owner())));
 
 -- Every pool of this login, with its creators (and invited handles, resolved once they join).
 create or replace function public.pools_list()
@@ -109,7 +118,7 @@ as $$
       where m.pool_id = p.id), '[]'::jsonb))
     order by p.created_at), '[]'::jsonb)
   from public.brand_pools p
-  where p.owner = auth.uid();
+  where p.owner = public.brand_owner();
 $$;
 
 create or replace function public.pool_save(p_id uuid, p_name text)
@@ -127,12 +136,12 @@ begin
     raise exception 'Give the pool a name (up to 80 letters).';
   end if;
   if p_id is null then
-    if (select count(*) from public.brand_pools where owner = auth.uid()) >= 50 then
+    if (select count(*) from public.brand_pools where owner = public.brand_owner()) >= 50 then
       raise exception 'That''s 50 pools. Delete one you no longer use first.';
     end if;
-    insert into public.brand_pools (owner, name) values (auth.uid(), v_name) returning id into p_id;
+    insert into public.brand_pools (owner, name) values (public.brand_owner(), v_name) returning id into p_id;
   else
-    update public.brand_pools set name = v_name where id = p_id and owner = auth.uid();
+    update public.brand_pools set name = v_name where id = p_id and owner = public.brand_owner();
     if not found then raise exception 'Pool not found.'; end if;
   end if;
   return jsonb_build_object('id', p_id, 'pools', public.pools_list());
@@ -145,7 +154,7 @@ language plpgsql security definer
 set search_path = public
 as $$
 begin
-  delete from public.brand_pools where id = p_id and owner = auth.uid();
+  delete from public.brand_pools where id = p_id and owner = public.brand_owner();
   return public.pools_list();
 end;
 $$;
@@ -161,7 +170,7 @@ declare
   v_h text;
   v_skipped integer := 0;
 begin
-  if not exists (select 1 from public.brand_pools where id = p_pool and owner = auth.uid()) then
+  if not exists (select 1 from public.brand_pools where id = p_pool and owner = public.brand_owner()) then
     raise exception 'Pool not found.';
   end if;
   if (select count(*) from public.brand_pool_members where pool_id = p_pool) + coalesce(cardinality(p_creators), 0) + coalesce(cardinality(p_handles), 0) > 200 then
@@ -202,7 +211,7 @@ begin
     note = left(btrim(coalesce(p_note, '')), 300),
     tags = (select coalesce(array_agg(distinct left(lower(btrim(t)), 30)), '{}') from unnest(coalesce(p_tags, '{}')) t where btrim(t) <> '')
   from public.brand_pools p
-  where m.id = p_member and p.id = m.pool_id and p.owner = auth.uid();
+  where m.id = p_member and p.id = m.pool_id and p.owner = public.brand_owner();
   if not found then raise exception 'Not found.'; end if;
   return public.pools_list();
 end;
@@ -215,7 +224,7 @@ set search_path = public
 as $$
 begin
   delete from public.brand_pool_members m using public.brand_pools p
-  where m.id = p_member and p.id = m.pool_id and p.owner = auth.uid();
+  where m.id = p_member and p.id = m.pool_id and p.owner = public.brand_owner();
   return public.pools_list();
 end;
 $$;
@@ -256,10 +265,10 @@ create index if not exists campaign_creators_collab_idx on public.campaign_creat
 alter table public.brand_campaigns enable row level security;
 alter table public.campaign_creators enable row level security;
 drop policy if exists "brand reads own campaigns" on public.brand_campaigns;
-create policy "brand reads own campaigns" on public.brand_campaigns for select to authenticated using (owner = (select auth.uid()));
+create policy "brand reads own campaigns" on public.brand_campaigns for select to authenticated using (owner = (select public.brand_owner()));
 drop policy if exists "brand reads own campaign creators" on public.campaign_creators;
 create policy "brand reads own campaign creators" on public.campaign_creators for select to authenticated
-  using (exists (select 1 from public.brand_campaigns c where c.id = campaign_id and c.owner = (select auth.uid())));
+  using (exists (select 1 from public.brand_campaigns c where c.id = campaign_id and c.owner = (select public.brand_owner())));
 
 -- Create or update a campaign that hasn't been sent: { id?, name, pool_id, brief, budget_total }.
 create or replace function public.campaign_save(p jsonb)
@@ -279,7 +288,7 @@ begin
   if v_name = '' or char_length(v_name) > 80 then
     raise exception 'Give the campaign a name (up to 80 letters).';
   end if;
-  if v_pool is not null and not exists (select 1 from public.brand_pools where id = v_pool and owner = auth.uid()) then
+  if v_pool is not null and not exists (select 1 from public.brand_pools where id = v_pool and owner = public.brand_owner()) then
     v_pool := null;
   end if;
   -- Sent as the company in use (else the first this login has).
@@ -289,16 +298,16 @@ begin
     raise exception 'Add your company details first.';
   end if;
   if v_id is null then
-    if (select count(*) from public.brand_campaigns where owner = auth.uid() and created_at > now() - interval '1 day') >= 20 then
+    if (select count(*) from public.brand_campaigns where owner = public.brand_owner() and created_at > now() - interval '1 day') >= 20 then
       raise exception 'That''s 20 campaigns today. Please try again tomorrow.';
     end if;
     insert into public.brand_campaigns (owner, name, pool_id, brand_from, brief, budget_total)
-    values (auth.uid(), v_name, v_pool, v_from, coalesce(p -> 'brief', '{}'), greatest(0, coalesce(nullif(p ->> 'budget_total', '')::numeric, 0)))
+    values (public.brand_owner(), v_name, v_pool, v_from, coalesce(p -> 'brief', '{}'), greatest(0, coalesce(nullif(p ->> 'budget_total', '')::numeric, 0)))
     returning id into v_id;
   else
     update public.brand_campaigns set name = v_name, pool_id = v_pool,
       brief = coalesce(p -> 'brief', brief), budget_total = greatest(0, coalesce(nullif(p ->> 'budget_total', '')::numeric, budget_total))
-    where id = v_id and owner = auth.uid();
+    where id = v_id and owner = public.brand_owner();
     if not found then raise exception 'Campaign not found.'; end if;
   end if;
   return v_id;
@@ -310,7 +319,7 @@ returns void
 language sql security definer
 set search_path = public
 as $$
-  delete from public.brand_campaigns where id = p_id and owner = auth.uid();
+  delete from public.brand_campaigns where id = p_id and owner = public.brand_owner();
 $$;
 
 -- Send the campaign to these creators (and invite these handles). Each creator gets their own request,
@@ -332,7 +341,7 @@ declare
   v_res jsonb;
   v_sent integer;
 begin
-  select * into c from public.brand_campaigns where id = p_campaign and owner = auth.uid();
+  select * into c from public.brand_campaigns where id = p_campaign and owner = public.brand_owner();
   if c.id is null then
     raise exception 'Campaign not found.';
   end if;
@@ -345,7 +354,7 @@ begin
     raise exception 'Add your company details first.';
   end if;
   select count(*) into v_sent from public.campaign_creators x join public.brand_campaigns y on y.id = x.campaign_id
-  where y.owner = auth.uid() and x.status = 'sent' and x.created_at > now() - interval '1 day';
+  where y.owner = public.brand_owner() and x.status = 'sent' and x.created_at > now() - interval '1 day';
   if v_sent + coalesce(cardinality(p_creators), 0) > 40 then
     raise exception 'Campaigns can reach up to 40 creators a day. Send to fewer, or try again tomorrow.';
   end if;
@@ -444,7 +453,7 @@ as $$
       left join public.collabs k on k.id = x.collab_id
       where x.campaign_id = c.id), '[]'::jsonb))
   from public.brand_campaigns c
-  where c.id = p_campaign and c.owner = auth.uid();
+  where c.id = p_campaign and c.owner = public.brand_owner();
 $$;
 
 create or replace function public.campaigns_list()
@@ -462,7 +471,7 @@ as $$
                     or exists (select 1 from public.drafts d where d.collab_id = k.id and d.status = 'pending'))))
     order by c.created_at desc), '[]'::jsonb)
   from public.brand_campaigns c
-  where c.owner = auth.uid();
+  where c.owner = public.brand_owner();
 $$;
 
 -- Accept several quotes at once (or ask for changes on them, with one note). Accepting signs each
@@ -478,6 +487,7 @@ declare
   k public.collabs;
   v_done integer := 0;
   v_failed jsonb := '[]'::jsonb;
+  v_r jsonb;
 begin
   if auth.uid() is null then
     raise exception 'Please sign in first.';
@@ -494,8 +504,12 @@ begin
       end if;
       perform private.act_for(k.creator_id);
       update public.profiles set brand_id = k.brand_id where id = auth.uid();
-      perform public.respond_quote(v_q, p_accept, coalesce(p_name, ''), coalesce(p_note, ''), null);
-      v_done := v_done + 1;
+      v_r := public.respond_quote(v_q, p_accept, coalesce(p_name, ''), coalesce(p_note, ''), null);
+      if v_r ? 'approval' then
+        v_failed := v_failed || jsonb_build_object('quote', v_q, 'error', 'Over your approval limit: sent to your approvers.');
+      else
+        v_done := v_done + 1;
+      end if;
     exception when others then
       v_failed := v_failed || jsonb_build_object('quote', v_q, 'error', left(sqlerrm, 200));
     end;

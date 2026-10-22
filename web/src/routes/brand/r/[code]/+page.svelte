@@ -129,13 +129,15 @@
 		if (!openQuote) return;
 		error = '';
 		busy = true;
-		const { error: err } = await supabase.rpc('respond_quote', { p_quote: openQuote.id, p_accept: accept, p_name: signName, p_note: note, p_option: opts && accept ? choice : null });
+		const { data, error: err } = await supabase.rpc('respond_quote', { p_quote: openQuote.id, p_accept: accept, p_name: signName, p_note: note, p_option: opts && accept ? choice : null });
 		busy = false;
 		if (err) return (error = errMessage(err));
 		mode = '';
 		note = '';
 		await loadRequests();
-		if (accept) {
+		// Over the team's limit: it waits for an Admin or Approver (Business, Team).
+		if (accept && (data as { approval?: boolean } | null)?.approval) toast('Sent to your approvers. It is accepted once one of them says yes.');
+		else if (accept) {
 			confetti();
 			toast('Quote accepted. The agreement is saved.');
 		} else toast(`Sent to ${creator}`);

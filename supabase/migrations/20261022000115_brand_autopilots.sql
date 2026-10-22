@@ -46,9 +46,9 @@ create unique index if not exists brand_autopilot_items_once on public.brand_aut
 alter table public.brand_autopilots enable row level security;
 alter table public.brand_autopilot_items enable row level security;
 drop policy if exists "brand reads own autopilots" on public.brand_autopilots;
-create policy "brand reads own autopilots" on public.brand_autopilots for select to authenticated using (owner = (select auth.uid()));
+create policy "brand reads own autopilots" on public.brand_autopilots for select to authenticated using (owner = (select public.brand_owner()));
 drop policy if exists "brand reads own autopilot items" on public.brand_autopilot_items;
-create policy "brand reads own autopilot items" on public.brand_autopilot_items for select to authenticated using (owner = (select auth.uid()));
+create policy "brand reads own autopilot items" on public.brand_autopilot_items for select to authenticated using (owner = (select public.brand_owner()));
 
 -- A brand that starts campaigns gets the autopilots with their starting settings.
 create or replace function private.campaign_autopilots()
@@ -159,7 +159,7 @@ begin
   if p_campaign is not null then
     select coalesce(v_brief, c.brief), b.category into v_brief, v_cat
     from public.brand_campaigns c left join public.brands b on b.id = c.brand_from
-    where c.id = p_campaign and c.owner = auth.uid();
+    where c.id = p_campaign and c.owner = public.brand_owner();
     if v_brief is null then return '[]'::jsonb; end if;
   end if;
   v_brief := coalesce(v_brief, '{}'::jsonb);
@@ -278,6 +278,9 @@ begin
     select coalesce(nullif(btrim(signer), ''), (select p.full_name from public.profiles p where p.id = i.owner), '') into v_signer
     from public.brand_autopilots where owner = i.owner;
     if i.payload ->> 'action' = 'accept' then
+      if not private.may_accept((i.payload ->> 'total')::numeric) then
+        raise exception 'Over your approval limit: an Admin or Approver has to accept this one.';
+      end if;
       perform public.respond_quote(i.ref::uuid, true, coalesce(v_signer, ''), '', null);
     elsif i.payload ->> 'action' = 'counter' then
       perform public.respond_quote(i.ref::uuid, false, '', v_body, null);
@@ -298,7 +301,7 @@ as $$
 declare
   i public.brand_autopilot_items;
 begin
-  select * into i from public.brand_autopilot_items where id = p_item and owner = auth.uid() and status = 'pending';
+  select * into i from public.brand_autopilot_items where id = p_item and owner = public.brand_owner() and status = 'pending';
   if i.id is null then
     raise exception 'That has already been dealt with.';
   end if;
@@ -532,14 +535,14 @@ begin
   if auth.uid() is null or public.is_creator() then
     raise exception 'Sign in with your brand email first.';
   end if;
-  insert into public.brand_autopilots (owner) values (auth.uid()) on conflict do nothing;
-  select * into st from public.brand_autopilots where owner = auth.uid();
+  insert into public.brand_autopilots (owner) values (public.brand_owner()) on conflict do nothing;
+  select * into st from public.brand_autopilots where owner = public.brand_owner();
   return to_jsonb(st) - 'owner' || jsonb_build_object(
-    'waiting', (select count(*) from public.brand_autopilot_items where owner = auth.uid() and status = 'pending'),
+    'waiting', (select count(*) from public.brand_autopilot_items where owner = public.brand_owner() and status = 'pending'),
     'lately', coalesce((
       select jsonb_object_agg(x.kind, jsonb_build_object('title', x.title, 'status', x.status, 'at', x.created_at))
       from (select distinct on (kind) kind, title, status, created_at from public.brand_autopilot_items
-            where owner = auth.uid() order by kind, created_at desc) x), '{}'::jsonb));
+            where owner = public.brand_owner() order by kind, created_at desc) x), '{}'::jsonb));
 end;
 $$;
 
@@ -552,7 +555,7 @@ begin
   if auth.uid() is null or public.is_creator() then
     raise exception 'Sign in with your brand email first.';
   end if;
-  insert into public.brand_autopilots (owner) values (auth.uid()) on conflict do nothing;
+  insert into public.brand_autopilots (owner) values (public.brand_owner()) on conflict do nothing;
   update public.brand_autopilots set
     shortlist = coalesce(p ->> 'shortlist', shortlist),
     shortlist_max = coalesce(nullif(p ->> 'shortlist_max', '')::integer, shortlist_max),
@@ -564,7 +567,7 @@ begin
     signer = coalesce(left(btrim(p ->> 'signer'), 120), signer),
     rebook = coalesce(p ->> 'rebook', rebook),
     updated_at = now()
-  where owner = auth.uid();
+  where owner = public.brand_owner();
   return public.autopilots_get();
 end;
 $$;
@@ -583,7 +586,7 @@ as $$
   left join public.brand_campaigns c on c.id = i.campaign_id
   left join public.collabs k on k.id = i.collab_id
   left join public.creator_settings s on s.id = k.creator_id
-  where i.owner = auth.uid() and (i.status = 'pending' or i.created_at > now() - interval '14 days');
+  where i.owner = public.brand_owner() and (i.status = 'pending' or i.created_at > now() - interval '14 days');
 $$;
 
 -- Run this login's autopilots now (the Autopilots page does, so it opens up to date).
@@ -598,8 +601,8 @@ begin
   if auth.uid() is null or public.is_creator() then
     raise exception 'Sign in with your brand email first.';
   end if;
-  insert into public.brand_autopilots (owner) values (auth.uid()) on conflict do nothing;
-  perform private.brand_autopilots_for(auth.uid());
+  insert into public.brand_autopilots (owner) values (public.brand_owner()) on conflict do nothing;
+  perform private.brand_autopilots_for(public.brand_owner());
   perform set_config('request.jwt.claims', v_claims, true);
   return public.autopilot_items();
 end;
