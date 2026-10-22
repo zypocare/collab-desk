@@ -2054,3 +2054,16 @@
   [data-side="brand"] .side-menu :is(button, a):hover { background: #221B22; }
   [data-side="brand"] .side-menu small { margin-left: auto; font-size: 12px; color: #A39AA1; }
 }
+
+/* ===== LAPTOP: empty cards ("No campaigns yet", "Nothing to pay"). They only had phone rules, so on a
+   laptop the text ran inline in one narrow grid cell. Now a centred card across the whole row. ===== */
+@media (min-width: 761px) {
+  [data-desk] .clear { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 44px 28px 36px; border-radius: 26px; text-align: center; }
+  [data-desk] .clear.hero-card { position: relative; isolation: isolate; overflow: hidden; color: var(--hero-ink); background: var(--hero); border: 1px solid color-mix(in oklab, var(--hero-ink) 10%, transparent); }
+  [data-desk] .clear.hero-card > :not(.mesh) { position: relative; z-index: 1; }
+  [data-desk] .clear > b { font-size: 34px !important; line-height: 1.1; }
+  [data-desk] .clear > small { max-width: 52ch; font-size: 14.5px; line-height: 1.5; color: color-mix(in oklab, var(--hero-ink, var(--ink)) 72%, transparent); }
+  [data-desk] :is(.tks, .m-plist, .bk-tks) > .clear { grid-column: 1 / -1; }
+  [data-desk] .clear-acts { display: flex; justify-content: center; gap: 14px; width: auto; margin-top: 16px; padding-right: 4px; }
+  [data-desk] .clear-acts .glass-chip { flex: none; min-width: 190px; padding: 0 20px; }
+}
