@@ -12,7 +12,6 @@
 	import { onMount } from 'svelte';
 	import { supabase } from '../supabase';
 
-	const appId = (import.meta.env.VITE_INSTAGRAM_APP_ID as string) || '';
 	const ig = $derived(studio.ig);
 	const s = $derived(studio.settings!);
 	let busy = $state(false);
@@ -78,11 +77,11 @@
 				<b>DMs and posting from the app</b>
 				<small>{dmsOn || postOn ? `On: ${[dmsOn && 'Instagram DMs show in Messages', postOn && 'approved Reels can be scheduled to post'].filter(Boolean).join(', ')}.` : 'See Instagram DMs in Messages and reply there, and schedule approved Reels to post with the brand tagged. Instagram asks you to allow it once.'}</small>
 			</div>
-			{#if appId && !(dmsOn && postOn)}<button class="btn sm" disabled={starting} onclick={() => connect(true)}><Icon name="send" />Allow DMs and posting</button>{/if}
+			{#if !(dmsOn && postOn)}<button class="btn sm" disabled={starting} onclick={() => connect(true)}><Icon name="send" />Allow DMs and posting</button>{/if}
 		</div>
 		<div class="row-btns">
 			<button class="btn sm primary" disabled={busy} onclick={sync}>{#if busy}<span class="spinner"></span>{:else}<Icon name="refresh" />{/if}Sync now</button>
-			{#if appId}<button class="btn sm" disabled={starting} onclick={() => connect()}>Reconnect</button>{/if}
+			<button class="btn sm" disabled={starting} onclick={() => connect()}>Reconnect</button>
 			<button class="btn sm ghost danger" onclick={async () => (await ask({ title: 'Disconnect Instagram?', body: 'Live stats, post matching and brand reports stop until you connect again.', ok: 'Disconnect', danger: true })) && igDisconnect()}>Disconnect</button>
 		</div>
 	{:else}
@@ -90,11 +89,7 @@
 			<p class="hint" style="margin-bottom:14px">
 				Connect your Instagram (a Creator or Business account) to show live follower numbers and audience on your brand page, spot collab posts automatically, and send brands their results.
 			</p>
-			{#if appId}
-				<button class="btn grad" disabled={starting} onclick={() => connect()}><Icon name="link" />Connect Instagram</button>
-			{:else}
-				<p class="hint warn-text">The Instagram app isn't set up yet. Follow "Instagram" in the setup guide, then add VITE_INSTAGRAM_APP_ID to the website settings.</p>
-			{/if}
+			<button class="btn grad" disabled={starting} onclick={() => connect()}><Icon name="link" />Connect Instagram</button>
 			{#if ig?.last_error}<p class="err" style="margin-top:10px">{ig.last_error}</p>{/if}
 		</div>
 	{/if}

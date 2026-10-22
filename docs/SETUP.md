@@ -174,8 +174,7 @@ Do this after the website is online (step 5): Instagram only sends people back t
    npx supabase functions deploy
    ```
 
-6. In Cloudflare Pages, add the environment variable `VITE_INSTAGRAM_APP_ID` with the same app ID, and redeploy.
-7. In the app: **My page → Instagram → Connect Instagram**, sign in, allow access. Done.
+6. In the app: **My page → Instagram → Connect Instagram**, sign in, allow access. Done.
 
 From then on, every morning at 6:
 - her follower count, engagement and average views update on the brand page, with the audience (age, gender, top cities) once she has 100+ followers;
@@ -207,7 +206,6 @@ The 60-day Instagram access renews itself. If Instagram ever refuses it (for exa
    | `VITE_SUPABASE_URL` | Project URL from step 2 |
    | `VITE_SUPABASE_ANON_KEY` | anon / publishable key |
    | `VITE_TURNSTILE_SITE_KEY` | Turnstile site key |
-   | `VITE_INSTAGRAM_APP_ID` | Instagram app ID (step 3e, can be added later) |
    | `NODE_VERSION` | `22` |
 
 4. **Save and deploy.** You'll get an address like `collab-desk.pages.dev`.
