@@ -94,3 +94,21 @@ export async function disablePush() {
 		await sub.unsubscribe();
 	}
 }
+
+/**
+ * This phone stops getting a studio's alerts: on sign-out (the next person to sign in here may not be
+ * her), and when someone who isn't a creator signs in on a phone that still has one. With `serverToo`
+ * the device is also taken off the studio's list (only possible while she is still signed in); without
+ * it, the next alert finds the device gone and the server drops it then. Never holds up signing out.
+ */
+export async function dropPush(serverToo: boolean) {
+	if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return;
+	const work = (async () => {
+		const reg = await navigator.serviceWorker.getRegistration();
+		const sub = await reg?.pushManager?.getSubscription();
+		if (!sub) return;
+		if (serverToo) await supabase.from('push_subscriptions').delete().eq('endpoint', sub.endpoint);
+		await sub.unsubscribe();
+	})().catch(() => {});
+	await Promise.race([work, new Promise((r) => setTimeout(r, 3000))]);
+}
