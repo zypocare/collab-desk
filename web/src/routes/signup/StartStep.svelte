@@ -142,8 +142,8 @@
 			<p class="su-lead">We sent a 6-digit code to <b>{email}</b>.</p>
 		</div>
 		<div class="su-f">
-			<label for="su-code">Code</label>
-			<input class="su-in su-code" id="su-code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" bind:value={code} bind:this={codeInput} />
+			<label for="su-code">6-digit code</label>
+			<input class="su-in su-code" id="su-code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="······" bind:value={code} bind:this={codeInput} />
 		</div>
 		{#if error}<p class="su-err" role="alert">{error}</p>{/if}
 		<button class="su-neo su-go su-block" disabled={busy}>{busy ? 'Checking…' : 'Continue'}</button>
