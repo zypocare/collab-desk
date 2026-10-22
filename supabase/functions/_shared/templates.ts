@@ -502,19 +502,39 @@ export function render(kind: string, p: Payload, s: Settings): Omit<Mail, 'to'> 
   if (kind === 'creator_request') {
     const where = [p.niche, p.city].map((x) => String(x ?? '').trim()).filter(Boolean).join(' · ');
     const admin = 'https://admin.miracleapp.live';
+    // Signed up at app.miracleapp.live: no link yet (they pick it once approved).
+    const asked = p.slug ? `asked for <b>${esc(p.slug)}.miracleapp.live</b>` : 'signed up as a creator';
+    const askedText = p.slug ? `asked for ${p.slug}.miracleapp.live` : 'signed up as a creator';
+    const size = [p.followers ? `${p.followers} followers` : '', p.collabs ? `paid collabs: ${p.collabs}` : ''].filter(Boolean).join(' · ');
     return {
-      subject: `New creator: ${p.name} wants ${p.slug}.miracleapp.live`,
+      subject: p.slug ? `New creator: ${p.name} wants ${p.slug}.miracleapp.live` : `New creator: ${p.name} (@${p.handle}) signed up`,
       html: layout(
         s,
         `${esc(p.name)} wants to join`,
-        `${P(`<b>${esc(p.name)}</b> (@${esc(p.handle)}) asked for <b>${esc(p.slug)}.miracleapp.live</b>.`)}
+        `${P(`<b>${esc(p.name)}</b> (@${esc(p.handle)}) ${asked}.`)}
          ${where ? P(esc(where)) : ''}
+         ${size ? P(esc(size)) : ''}
          ${p.note ? P(`"${esc(p.note)}"`) : ''}
          ${P(`Their email: ${esc(p.email)}`)}`,
         { label: 'Open the approval queue', href: admin },
-        { to: 'creator', preheader: `${p.name} (@${p.handle}) asked for ${p.slug}.miracleapp.live.`, next: ['Check their Instagram.', 'Approve or decline in the admin panel.'] },
+        { to: 'creator', preheader: `${p.name} (@${p.handle}) ${askedText}.`, next: ['Check their Instagram.', 'Approve or decline in the admin panel.'] },
       ),
-      text: `${p.name} (@${p.handle}) asked for ${p.slug}.miracleapp.live.${where ? `\n${where}` : ''}${p.note ? `\n"${p.note}"` : ''}\nTheir email: ${p.email}\n\nApprove or decline: ${admin}`,
+      text: `${p.name} (@${p.handle}) ${askedText}.${where ? `\n${where}` : ''}${p.note ? `\n"${p.note}"` : ''}\nTheir email: ${p.email}\n\nApprove or decline: ${admin}`,
+    };
+  }
+
+  if (kind === 'creator_approved' && !p.slug) {
+    return {
+      subject: `You're in. Pick your Miracle link`,
+      html: layout(
+        s,
+        `Welcome to Miracle, ${esc(firstOf(p.name))}`,
+        `${P(`Your profile is approved. One last step: pick your link, like <b>yourname.miracleapp.live</b>. It's the page brands open to see your work and send you requests.`)}
+         ${P(`Sign in with this email address. There's no password: you'll get a 6-digit code each time.`)}`,
+        { label: 'Pick my link', href: String(p.url) },
+        { to: 'creator', preheader: 'Your profile is approved. Pick your link.', next: ['Pick your link.', 'Connect Instagram so your numbers show on your page.', 'Add your rates and packages.', 'Put your link in your Instagram bio.'] },
+      ),
+      text: `Welcome to Miracle, ${firstOf(p.name)}. Your profile is approved. Pick your link (sign in with this email, you'll get a 6-digit code): ${p.url}`,
     };
   }
 
@@ -539,12 +559,14 @@ export function render(kind: string, p: Payload, s: Settings): Omit<Mail, 'to'> 
       html: layout(
         s,
         `Thanks for asking, ${esc(firstOf(p.name))}`,
-        `${P(`We can't open ${esc(p.slug)}.miracleapp.live for you just now. Miracle is taking a small number of creators while it grows.`)}
-         ${P(`You can send your request again later from the same link, and we'll take another look.`)}`,
+        `${P(p.slug ? `We can't open ${esc(p.slug)}.miracleapp.live for you just now. Miracle is taking a small number of creators while it grows.` : `We can't open a Miracle studio for you just now. Miracle is taking a small number of creators while it grows.`)}
+         ${P(p.slug ? `You can send your request again later from the same link, and we'll take another look.` : `You can send your request again later at app.miracleapp.live/signup, and we'll take another look.`)}`,
         undefined,
-        { to: 'creator', preheader: `About ${p.slug}.miracleapp.live.` },
+        { to: 'creator', preheader: p.slug ? `About ${p.slug}.miracleapp.live.` : 'About your Miracle request.' },
       ),
-      text: `Thanks for asking, ${firstOf(p.name)}. We can't open ${p.slug}.miracleapp.live for you just now. You can send your request again later from the same link.`,
+      text: p.slug
+        ? `Thanks for asking, ${firstOf(p.name)}. We can't open ${p.slug}.miracleapp.live for you just now. You can send your request again later from the same link.`
+        : `Thanks for asking, ${firstOf(p.name)}. We can't open a Miracle studio for you just now. You can send your request again later at https://app.miracleapp.live/signup`,
     };
   }
 

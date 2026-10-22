@@ -70,4 +70,4 @@ export function fitFor(c: BrandCreator | null, kinds: string[]): { ok: boolean; 
 
 /** The message a brand sends from its own Instagram or WhatsApp to a creator who isn't on Miracle. */
 export const inviteText = (company: string, handle: string, campaign = '') =>
-	`Hi! We're ${company || 'a brand'} and we'd love to work with you${campaign ? ` on our ${campaign} campaign` : ''}. We send briefs and quotes through Miracle (free for creators, no commission). Claim your page here and you'll get our brief straight away: https://miracleapp.live/?claim=${encodeURIComponent(handle.replace(/[^a-z0-9-]/gi, '').toLowerCase())}#claim`;
+	`Hi! We're ${company || 'a brand'} and we'd love to work with you${campaign ? ` on our ${campaign} campaign` : ''}. We send briefs and quotes through Miracle (free for creators, no commission). Join here and you'll get our brief once you're set up: https://app.miracleapp.live/signup?as=creator`;

@@ -15,7 +15,8 @@ export type Overview = {
 
 export type Creator = {
 	id: number;
-	slug: string;
+	/** null: signed up at app.miracleapp.live and picks a link after approval. */
+	slug: string | null;
 	name: string;
 	handle: string;
 	niche: string;
@@ -32,6 +33,9 @@ export type Creator = {
 	team: number;
 	instagram: boolean;
 	last_active: string | null;
+	whatsapp?: string;
+	languages?: string[];
+	signup?: { followers?: string; collabs?: string; heard?: string };
 };
 
 export type Brand = {

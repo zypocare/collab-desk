@@ -4,7 +4,7 @@ import { expect, type Page } from '@playwright/test';
 const MAIL = process.env.MAIL_URL ?? 'http://127.0.0.1:54324';
 export const CREATOR = 'creator@example.test';
 
-async function codeFor(email: string, after: Date) {
+export async function codeFor(email: string, after: Date) {
 	for (let i = 0; i < 40; i++) {
 		const list = (await (await fetch(`${MAIL}/api/v1/messages?limit=20`)).json()) as { messages: { ID: string; To: { Address: string }[]; Created: string }[] };
 		const m = list.messages.find((x) => x.To.some((t) => t.Address === email) && new Date(x.Created) > after);

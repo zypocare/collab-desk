@@ -463,10 +463,27 @@ export type CreatorRequest = {
 	city: string;
 	note: string;
 	requested_at: string | null;
+	whatsapp?: string;
+	languages?: string[];
+	signup?: { followers?: string; collabs?: string; heard?: string; niches?: string[] };
+};
+
+/** The company a brand gave at sign-up, before working with any creator. */
+export type BrandProfile = {
+	name: string;
+	category: string;
+	website: string;
+	instagram: string;
+	role: string;
+	city: string;
+	goals: string[];
+	legal_name: string;
+	gstin: string;
 };
 
 export type Account =
-	| { role: 'creator'; email: string; slug?: string }
+	/** needs_link: approved, but hasn't picked name.miracleapp.live yet. */
+	| { role: 'creator'; email: string; slug?: string | null; needs_link?: boolean; name?: string; handle?: string }
 	/** Asked to join as a creator and not approved yet. */
 	| { role: 'pending'; email: string; request: CreatorRequest | null }
 	| {
@@ -479,6 +496,8 @@ export type Account =
 			brands: { id: string; name: string }[];
 			/** Companies this login has with other creators, to reuse on a first request here. */
 			companies?: { id: string; name: string }[];
+			/** The company given at sign-up (app.miracleapp.live/signup). */
+			profile?: BrandProfile | null;
 			/** Every creator this login works with. */
 			creators?: BrandCreator[];
 	  };

@@ -7,7 +7,7 @@
 	import { watchVoiceUnlock } from '#lib/voice.ts';
 	import type { LayoutProps } from './$types';
 	import { pageSlug } from '#lib/supabase.ts';
-	import { addressFor } from '#lib/creatorHost.ts';
+	import { addressFor, appAddress, isAppHost } from '#lib/creatorHost.ts';
 	import { auth, homeFor, signOut } from '#lib/auth.svelte.ts';
 	import { byId, catchUp, loadStudio, studio, stopWatching, watchStudio } from '#lib/studio.svelte.ts';
 	import { ensurePageCard } from '#lib/pageCard.ts';
@@ -99,7 +99,10 @@
 	// is taken to her own studio.
 	$effect(() => {
 		const a = auth.account;
-		if (a?.role === 'creator' && a.slug && pageSlug && pageSlug !== a.slug) location.replace(addressFor(a.slug, page.url.pathname + page.url.search));
+		if (a?.role !== 'creator') return;
+		// Approved but no link yet: pick it first (on Miracle's own address).
+		if (a.needs_link) location.replace(appAddress('/signup'));
+		else if (a.slug && (pageSlug ? pageSlug !== a.slug : isAppHost(location.hostname))) location.replace(addressFor(a.slug, page.url.pathname + page.url.search));
 	});
 	// Load and listen once she is signed in (also when the session is restored a moment after this screen opens).
 	$effect(() => {

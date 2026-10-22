@@ -39,7 +39,7 @@
 						<tr>
 							<td class="who">
 								<b>{c.name || '—'}</b>
-								<a href={siteOf(c.slug)} target="_blank" rel="noopener">{c.slug}.{ROOT}</a>
+								{#if c.slug}<a href={siteOf(c.slug)} target="_blank" rel="noopener">{c.slug}.{ROOT}</a>{:else}<small>Picking a link</small>{/if}
 								{#if c.handle}<a class="h" href={igOf(c.handle)} target="_blank" rel="noopener">@{c.handle}</a>{/if}
 							</td>
 							<td data-l="Status"><span class="pill {c.status}">{STATUS_LABEL[c.status] ?? c.status}</span></td>

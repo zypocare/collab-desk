@@ -8,6 +8,7 @@
 	import { errMessage, firstName, hueOf, inr, offeredKinds, packageOffered, plural, waLink } from '#lib/util.ts';
 	import { downloadMediaKit } from '#lib/mediaKitPdf.ts';
 	import { pageSlug, supabase } from '#lib/supabase.ts';
+	import { appAddress } from '#lib/creatorHost.ts';
 	import type { PublicPage } from '#lib/types.ts';
 	import Logo from '#lib/components/Logo.svelte';
 
@@ -21,7 +22,7 @@
 	$effect(() => {
 		if (auth.account?.role === 'creator' && !preview) goto('/studio', { replaceState: true });
 		// Waiting to be approved: she sees where her request stands.
-		else if (auth.account?.role === 'pending') goto('/join', { replaceState: true });
+		else if (auth.account?.role === 'pending') location.replace(appAddress('/signup'));
 	});
 
 	// The page keeps its own dark look whatever the app's theme; the app's background art steps aside.
@@ -576,7 +577,7 @@
 					{:else}
 						<!-- An address nobody has yet. -->
 						<h3>{pageSlug ? `${pageSlug}.miracleapp.live` : 'This page'} isn't anyone's page yet.</h3>
-						<p>Creators get their own link on Miracle. <a href={pageSlug ? '/join' : 'https://miracleapp.live/#claim'}>Claim this one</a></p>
+						<p>Creators get their own link on Miracle. <a href={appAddress('/signup?as=creator')}>Join Miracle</a></p>
 					{/if}
 				</div>
 			</div>
@@ -920,7 +921,7 @@
 				{:else if !isCreator}
 					<a class="mp-me" href="/login" style="color:var(--ink-2)">Sign in</a>
 				{/if}
-				<a href="https://miracleapp.live/#claim" style="color:var(--ink-2)">Are you a creator? Get your own page</a>
+				<a href={appAddress('/signup?as=creator')} style="color:var(--ink-2)">Are you a creator? Get your own page</a>
 			</div>
 		</footer>
 	{:else}

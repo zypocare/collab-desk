@@ -2,12 +2,15 @@
 	import { goto } from '$app/navigation';
 	import { auth, signOut } from '../auth.svelte';
 	import { pub } from '../publicPage.svelte';
+	import { appAddress, isAppHost } from '../creatorHost';
 	import Logo from './Logo.svelte';
 
 	// The foot of every brand-side page, like her page's: Miracle, who gets paid, the way back, and sign-in.
 	const name = $derived(pub.data?.display_name ?? '');
 	const first = $derived(name.split(' ')[0] || 'the creator');
 	const brand = $derived(auth.account?.role === 'brand' ? auth.account : null);
+	// Miracle's own address belongs to no creator.
+	const onApp = isAppHost(location.hostname);
 
 	async function logout() {
 		await signOut();
@@ -18,8 +21,8 @@
 <footer class="bf">
 	<div class="bf-in">
 		<a class="bf-made" href="https://miracleapp.live" aria-label="Made with Miracle"><Logo size={28} /><span>Made with <b>Miracle</b></span></a>
-		<span>Brands pay {first} directly. Miracle never takes a cut.</span>
-		<a href="/">{name ? `${first}'s page` : 'Her page'}</a>
+		<span>Brands pay {onApp ? 'creators' : first} directly. Miracle never takes a cut.</span>
+		{#if !onApp}<a href="/">{name ? `${first}'s page` : 'Her page'}</a>{/if}
 		{#if brand}
 			<span class="bf-me"><span class="bf-mail">{brand.email}</span> · <button onclick={logout}>Sign out</button></span>
 		{:else if auth.account?.role === 'creator'}
@@ -27,7 +30,7 @@
 		{:else}
 			<a href="/login">Sign in</a>
 		{/if}
-		<a href="https://miracleapp.live/#claim">Are you a creator? Get your own page</a>
+		<a href={appAddress('/signup?as=creator')}>Are you a creator? Get your own page</a>
 	</div>
 </footer>
 

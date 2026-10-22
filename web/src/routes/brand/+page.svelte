@@ -2,7 +2,7 @@
 	import { onMount } from 'svelte';
 	import { auth } from '#lib/auth.svelte.ts';
 	import { brandHome, loadDashboard } from '#lib/brand.svelte.ts';
-	import { addressFor } from '#lib/creatorHost.ts';
+	import { addressFor, isAppHost } from '#lib/creatorHost.ts';
 	import { pageSlug } from '#lib/supabase.ts';
 	import { compact, firstName, fmt, inr } from '#lib/util.ts';
 	import type { BrandCreator } from '#lib/types.ts';
@@ -31,12 +31,30 @@
 	const creatorsOpen = $derived((d?.creators ?? []).filter((c) => (c.open ?? 0) > 0).length);
 	const line = (c: BrandCreator) =>
 		[c.followers != null ? `${compact(c.followers)} followers` : '', c.open ? `${c.open} open` : c.done ? `${c.done} done` : ''].filter(Boolean).join(' · ');
+	// Miracle's own address (app.miracleapp.live): no creator here, so the first step is finding one.
+	const onApp = isAppHost(location.hostname);
 	const chip = (c: BrandCreator) => (c.waiting ? 'Your turn' : c.open ? 'In progress' : '');
 </script>
 
 <svelte:head><title>Dashboard · Miracle</title></svelte:head>
 
-{#if acc && !d?.creators?.length && !acc.brand && brandHome.dash}
+{#if acc && onApp && !d?.creators?.length && brandHome.dash}
+	<!-- Just signed up: no creators yet. -->
+	<section class="bd-welcome rv">
+		<span class="bd-date">Welcome to Miracle</span>
+		<h1>Let's find your first <em>creator</em>{who ? `, ${who}` : ''}.</h1>
+		<p>Browse reviewed creators by niche, city and language with their live Instagram numbers. Add the ones you like to a pool, then send one brief to all of them.</p>
+		<div class="bd-wa">
+			<a class="bd-neo bd-grad" href="/brand/creators?tab=discover">Discover creators</a>
+			<a class="bd-neo bd-ghost" href="/brand/campaigns/new">Start a campaign</a>
+		</div>
+		<ol class="bd-wsteps">
+			<li><b>Discover</b><span>Filter by niche, city and language.</span></li>
+			<li><b>Pool</b><span>Save the creators you like in groups.</span></li>
+			<li><b>Brief</b><span>Send one campaign to the whole pool and compare quotes.</span></li>
+		</ol>
+	</section>
+{:else if acc && !d?.creators?.length && !acc.brand && brandHome.dash}
 	<!-- A brand that hasn't sent anything yet: set up the company for this creator first. -->
 	<header class="ph rv"><div><div class="eb">Welcome</div><h1>Tell us about your <em>brand</em></h1><p>We'll use this on every request you send.</p></div></header>
 	<CompanyStep creator={firstName(pub.data?.display_name ?? '')} />
@@ -47,7 +65,7 @@
 			<h1>{greet},{#if who}<br /><em>{who}</em>{/if}</h1>
 			{#if d}<p class="bd-sum"><i class:calm={!waiting.length}></i>{waiting.length ? `${waiting.length} waiting on you` : 'Nothing waiting on you'} · {d.open} open request{d.open === 1 ? '' : 's'}</p>{/if}
 		</div>
-		{#if pub.data?.accepting !== false}<a class="bd-neo bd-grad" href="/brand/new">+ New request</a>{/if}
+		{#if onApp}<a class="bd-neo bd-grad" href="/brand/creators?tab=discover">Find creators</a>{:else if pub.data?.accepting !== false}<a class="bd-neo bd-grad" href="/brand/new">+ New request</a>{/if}
 	</header>
 
 	{#if brandHome.error}<div class="err-box">{brandHome.error}</div>{/if}
@@ -135,6 +153,69 @@
 {/if}
 
 <style>
+	.bd-welcome {
+		display: grid;
+		gap: 16px;
+		max-width: 820px;
+		padding: 30px;
+		border-radius: 24px;
+		background:
+			radial-gradient(120% 120% at 0% 0%, color-mix(in oklab, var(--g1) 16%, transparent), transparent 55%),
+			var(--surface);
+		box-shadow: inset 0 0 0 1px var(--line-strong);
+	}
+	.bd-welcome h1 {
+		margin: 0;
+		font-size: clamp(32px, 5vw, 48px);
+		line-height: 1.02;
+		letter-spacing: -0.02em;
+	}
+	.bd-welcome h1 em {
+		font-family: var(--f-serif);
+		font-weight: 400;
+	}
+	.bd-welcome p {
+		margin: 0;
+		max-width: 60ch;
+		color: var(--ink-2);
+		font-size: 16px;
+		line-height: 1.55;
+	}
+	.bd-wa {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 12px;
+	}
+	.bd-ghost {
+		background: transparent;
+		color: var(--ink);
+		box-shadow: inset 0 0 0 1.5px var(--ink-3);
+	}
+	.bd-wsteps {
+		margin: 6px 0 0;
+		padding: 0;
+		list-style: none;
+		counter-reset: w;
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
+		gap: 12px;
+	}
+	.bd-wsteps li {
+		counter-increment: w;
+		display: grid;
+		gap: 4px;
+		padding: 14px;
+		border-radius: 14px;
+		box-shadow: inset 0 0 0 1px var(--line);
+	}
+	.bd-wsteps b::before {
+		content: counter(w) '  ';
+		color: var(--g2);
+	}
+	.bd-wsteps span {
+		font-size: 14px;
+		color: var(--ink-3);
+	}
 	.bd-hero {
 		display: flex;
 		align-items: flex-end;

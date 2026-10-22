@@ -19,7 +19,7 @@
 
 	// A new campaign: 1 the brief, 2 the creators (from a pool, or ones you work with), 3 review and send.
 	const acc = $derived(auth.account?.role === 'brand' ? auth.account : null);
-	const hasCompany = $derived(!!acc?.brand || !!acc?.companies?.length || !!acc?.brands?.length);
+	const hasCompany = $derived(!!acc?.brand || !!acc?.companies?.length || !!acc?.brands?.length || !!acc?.profile);
 	let step = $state<1 | 2 | 3>(1);
 	let draftId = $state<string | null>(page.url.searchParams.get('id'));
 	let name = $state('');

@@ -16,8 +16,10 @@
 	import Select from './Select.svelte';
 	import Avatar from './Avatar.svelte';
 	import Logo from './Logo.svelte';
-	import { addressFor } from '../creatorHost';
+	import { addressFor, isAppHost } from '../creatorHost';
 	import { pageSlug } from '../supabase';
+	// Miracle's own address (app.miracleapp.live): no creator here, so no per-creator requests list.
+	const onApp = isAppHost(location.hostname);
 
 	const name = $derived(pub.data?.display_name ?? '');
 	const signedIn = $derived(!!auth.session && auth.account?.role === 'brand');
@@ -157,7 +159,7 @@
 			<a href="/brand/creators" aria-current={path === '/brand/creators' ? 'page' : undefined}>Creators</a>
 			<a href="/brand/campaigns" aria-current={path.startsWith('/brand/campaigns') ? 'page' : undefined}>Campaigns</a>
 			<a href="/brand/autopilots" aria-current={path === '/brand/autopilots' ? 'page' : undefined}>Autopilots</a>
-			<a href="/brand/requests" aria-current={path === '/brand/requests' || path.startsWith('/brand/r/') || path === '/brand/new' ? 'page' : undefined}>Requests</a>
+			{#if !onApp}<a href="/brand/requests" aria-current={path === '/brand/requests' || path.startsWith('/brand/r/') || path === '/brand/new' ? 'page' : undefined}>Requests</a>{/if}
 			<a href="/brand/business/money" aria-current={path.startsWith('/brand/business') || (path === '/brand/details' && !isNew) ? 'page' : undefined}>Business</a>
 		</nav>
 	{/if}
@@ -206,11 +208,11 @@
 
 {#if signedIn}
 	<!-- Phones and tablets: the brand menu moves to a tab bar at the bottom. -->
-	<nav class="brand-tabs" style="grid-template-columns:repeat(5,minmax(0,1fr))" class:hide-tabs={phone.on && (path.startsWith('/brand/r/') || path === '/brand/new' || path === '/brand/campaigns/new')} aria-label="Brand">
+	<nav class="brand-tabs" style="grid-template-columns:repeat({onApp ? 4 : 5},minmax(0,1fr))" class:hide-tabs={phone.on && (path.startsWith('/brand/r/') || path === '/brand/new' || path === '/brand/campaigns/new')} aria-label="Brand">
 		<a href="/brand" aria-current={path === '/brand' ? 'page' : undefined}><span class="bt-ic"><Icon name="home" /></span><span>Home</span></a>
 		<a href="/brand/creators" aria-current={path === '/brand/creators' ? 'page' : undefined}><span class="bt-ic"><Icon name="users" /></span><span>Creators</span></a>
 		<a href="/brand/campaigns" aria-current={path.startsWith('/brand/campaigns') ? 'page' : undefined}><span class="bt-ic"><Icon name="send" /></span><span>Campaigns</span></a>
-		<a href="/brand/requests" aria-current={path === '/brand/requests' || path.startsWith('/brand/r/') ? 'page' : undefined}><span class="bt-ic"><Icon name="inbox" />{#if unread}<i class="bt-n">{unread}</i>{/if}</span><span>Requests</span></a>
+		{#if !onApp}<a href="/brand/requests" aria-current={path === '/brand/requests' || path.startsWith('/brand/r/') ? 'page' : undefined}><span class="bt-ic"><Icon name="inbox" />{#if unread}<i class="bt-n">{unread}</i>{/if}</span><span>Requests</span></a>{/if}
 		<a href="/brand/business/money" aria-current={path.startsWith('/brand/business') || path.startsWith('/brand/details') ? 'page' : undefined}><span class="bt-ic"><Icon name="box" /></span><span>Business</span></a>
 	</nav>
 {/if}

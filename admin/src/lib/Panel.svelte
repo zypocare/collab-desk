@@ -51,15 +51,16 @@
 	// Approve, decline, pause or bring back a creator. The function hands back the fresh list.
 	let busyId = $state<number | null>(null);
 	async function setStatus(c: Creator, to: Status) {
-		const who = c.name || c.slug;
+		const who = c.name || c.slug || c.email;
+		const at = c.slug ? `${c.slug}.miracleapp.live` : 'Their page';
 		const q =
 			to === 'active' && c.status === 'paused'
-				? { title: `Bring back ${who}?`, body: `${c.slug}.miracleapp.live opens for brands again and the studio works as before.`, ok: 'Resume' }
+				? { title: `Bring back ${who}?`, body: `${at} opens for brands again and the studio works as before.`, ok: 'Resume' }
 				: to === 'active'
-					? { title: `Approve ${who}?`, body: `${c.slug}.miracleapp.live goes live and ${c.email} gets the welcome email with a link to the studio.`, ok: 'Approve' }
+					? { title: `Approve ${who}?`, body: c.slug ? `${c.slug}.miracleapp.live goes live and ${c.email} gets the welcome email with a link to the studio.` : `${c.email} gets the welcome email and picks their link, then their page goes live.`, ok: 'Approve' }
 					: to === 'declined'
 						? { title: `Decline ${who}?`, body: `${c.email} gets a kind email saying it isn't approved for now. They can send the request again.`, ok: 'Decline', danger: true }
-						: { title: `Pause ${who}?`, body: `${c.slug}.miracleapp.live stops taking requests. Their data stays; you can resume any time.`, ok: 'Pause', danger: true };
+						: { title: `Pause ${who}?`, body: `${at} stops taking requests. Their data stays; you can resume any time.`, ok: 'Pause', danger: true };
 		if (!(await ask(q))) return;
 		busyId = c.id;
 		// A declined request is approved the same way as a new one, so the welcome email still goes out.

@@ -63,9 +63,9 @@ export async function brandPage(req: Request, env: PageEnv, url: URL, ctx: Ctx):
 	const host = hostOf(req, url);
 	const slug = slugFromHost(host);
 	const boot = await bootData(env, `${url.protocol}//${host}`, slug, ctx).catch(() => null);
-	// A name nobody has yet: send them to claim it on the Miracle website.
+	// A name nobody has yet: creators sign up on Miracle's own address (they pick a link once approved).
 	if (boot && !boot.owner && slug && host.endsWith('.miracleapp.live')) {
-		return new Response(null, { status: 302, headers: { location: `https://miracleapp.live/?claim=${encodeURIComponent(slug)}#claim`, 'cache-control': 'no-store' } });
+		return new Response(null, { status: 302, headers: { location: 'https://app.miracleapp.live/signup?as=creator', 'cache-control': 'no-store' } });
 	}
 	if (!boot?.page) return res;
 

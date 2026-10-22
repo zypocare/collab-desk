@@ -11,12 +11,18 @@
 	// that company (its details are copied over); otherwise, or by choice, it fills the details in.
 	let { creator = '', submitLabel = 'Continue' }: { creator?: string; submitLabel?: string } = $props();
 	const companies = $derived(auth.account?.role === 'brand' ? (auth.account.companies ?? []) : []);
+	// The company given at sign-up (app.miracleapp.live), when it isn't already one of the above.
+	const profile = $derived.by(() => {
+		const p = auth.account?.role === 'brand' ? auth.account.profile : null;
+		return p && !companies.some((c) => c.name.toLowerCase() === p.name.toLowerCase()) ? p : null;
+	});
+	const choices = $derived([...companies.map((c) => ({ id: c.id, name: c.name })), ...(profile ? [{ id: 'profile', name: profile.name }] : [])]);
 	let fresh = $state(false);
 	let busy = $state('');
 
 	async function use(id: string, name: string) {
 		busy = id;
-		const { data, error } = await supabase.rpc('copy_brand', { p_from: id });
+		const { data, error } = id === 'profile' ? await supabase.rpc('brand_from_profile') : await supabase.rpc('copy_brand', { p_from: id });
 		busy = '';
 		if (error) return toast(errMessage(error), 'alert');
 		auth.account = data as Account;
@@ -25,17 +31,17 @@
 	}
 </script>
 
-{#if companies.length && !fresh}
+{#if choices.length && !fresh}
 	<section class="cs rv" style="--i:1">
 		<span class="cs-eb">Your company</span>
-		{#if companies.length === 1}
-			<h2>Send this as <em>{companies[0].name}</em>?</h2>
+		{#if choices.length === 1}
+			<h2>Send this as <em>{choices[0].name}</em>?</h2>
 		{:else}
 			<h2>Which company is <em>this</em> for?</h2>
 		{/if}
-		<p>We'll copy your company details from your other requests: name, Instagram, website, GST and billing address.{creator ? ` ${creator} only sees what you send them.` : ''}</p>
+		<p>{companies.length ? "We'll copy your company details from your other requests: name, Instagram, website, GST and billing address." : "We'll use the company details you gave when you signed up."}{creator ? ` ${creator} only sees what you send them.` : ''}</p>
 		<div class="cs-acts">
-			{#each companies as c (c.id)}
+			{#each choices as c (c.id)}
 				<button class="cs-neo cs-grad" disabled={!!busy} onclick={() => use(c.id, c.name)}>{busy === c.id ? 'One moment…' : `Use ${c.name}`}</button>
 			{/each}
 			<button class="cs-neo cs-ghost" disabled={!!busy} onclick={() => (fresh = true)}>A different company</button>

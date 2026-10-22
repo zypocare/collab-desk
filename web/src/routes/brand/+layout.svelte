@@ -7,6 +7,7 @@
 	import { ui } from '#lib/ui.svelte.ts';
 	import { loadRequests } from '#lib/brand.svelte.ts';
 	import { joinTeam } from '#lib/business.svelte.ts';
+	import { appAddress, isAppHost } from '#lib/creatorHost.ts';
 	import { loadPublicPage, pub } from '#lib/publicPage.svelte.ts';
 	import BrandTopbar from '#lib/components/BrandTopbar.svelte';
 	import BrandFooter from '#lib/components/BrandFooter.svelte';
@@ -24,7 +25,19 @@
 		if (!auth.session && page.url.pathname !== '/brand/new') goto(`/login?next=${encodeURIComponent(page.url.pathname + page.url.search)}`, { replaceState: true });
 		else if (auth.account?.role === 'creator' && !ui.holdRedirect) goto('/studio', { replaceState: true });
 		// Waiting to be approved as a creator: her request's status is on /join.
-		else if (auth.account?.role === 'pending' && !ui.holdRedirect) goto('/join', { replaceState: true });
+		else if (auth.account?.role === 'pending' && !ui.holdRedirect) location.replace(appAddress('/signup'));
+	});
+
+	// Miracle's own address has no creator: a brand that hasn't signed up finishes sign-up first, and
+	// requests (which belong to a creator's address) are reached from the dashboard instead.
+	const onApp = isAppHost(location.hostname);
+	$effect(() => {
+		if (!onApp) return;
+		const a = auth.account;
+		const path = page.url.pathname;
+		if (a?.role === 'brand' && !(a.profile || a.brand || a.companies?.length || a.creators?.length)) goto('/signup?as=brand', { replaceState: true });
+		else if (path === '/brand/new') goto('/brand/creators?tab=discover', { replaceState: true });
+		else if (path === '/brand/requests') goto('/brand', { replaceState: true });
 	});
 
 	// Invited to a company's team: join it on the first visit after signing in.

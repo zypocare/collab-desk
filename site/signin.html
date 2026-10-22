@@ -87,14 +87,11 @@ form{display:grid;grid-template-columns:minmax(0,1fr);gap:12px}
     <h1>Welcome <em>back.</em></h1>
     <div class="seg" role="radiogroup" aria-label="Sign in as">
       <label><input type="radio" name="as" value="creator" checked><b>I'm a creator</b><small>Open my studio</small></label>
-      <label><input type="radio" name="as" value="brand"><b>I'm a brand</b><small>Track my requests</small></label>
+      <label><input type="radio" name="as" value="brand"><b>I'm a brand</b><small>My dashboard</small></label>
     </div>
     <form id="f" novalidate>
-      <label class="l" for="slug" id="slug-l">Your Miracle link</label>
-      <div class="field"><input id="slug" name="slug" placeholder="yourname" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="30" inputmode="url"><span>.miracleapp.live</span></div>
-      <p class="hint" id="hint">The name you claimed. New to Miracle? <a href="/#claim">Claim your link</a>.</p>
-      <p class="err" id="err" role="alert" hidden></p>
       <button class="neo" type="submit" id="go">Continue</button>
+      <p class="hint" id="hint">New to Miracle? <a id="join" href="https://app.miracleapp.live/signup?as=creator">Join as a creator</a>.</p>
     </form>
     <p class="foot">You'll get a 6-digit code by email. No password needed.</p>
   </div>
@@ -102,46 +99,23 @@ form{display:grid;grid-template-columns:minmax(0,1fr);gap:12px}
 
 <script>
 (() => {
-  // The page name is the address; each creator's page has its own sign-in (brands land on their requests).
-  const SUPA = 'https://qzsfuvcxpqaavmwkxutt.supabase.co';
-  const KEY = 'sb_publishable_UaW1ryl2S-gvm7worjrHJw_Hjr9k3wj';
-  const RE = /^[a-z0-9]([a-z0-9-]{0,28}[a-z0-9])?$/;
-  const f = document.getElementById('f'), input = document.getElementById('slug'), err = document.getElementById('err');
-  const label = document.getElementById('slug-l'), hint = document.getElementById('hint'), go = document.getElementById('go');
-  const COPY = {
-    creator: { label: 'Your Miracle link', hint: 'The name you claimed. New to Miracle? <a href="/#claim">Claim your link</a>.', ph: 'yourname' },
-    brand: { label: 'Creator you work with', hint: "Their Miracle link, from their Instagram bio or an email they sent you. You'll see every request you sent them.", ph: 'creatorname' }
-  };
+  // Everyone signs in on Miracle's own address; a creator then lands in their studio, a brand on its dashboard.
+  const APP = 'https://app.miracleapp.live';
+  const join = document.getElementById('join');
   const store = (k, v) => { try { v === undefined ? (v = localStorage.getItem(k)) : localStorage.setItem(k, v); } catch { v = null; } return v; };
   const role = () => document.querySelector('input[name="as"]:checked').value;
   function show() {
-    const c = COPY[role()];
-    label.textContent = c.label; hint.innerHTML = c.hint; input.placeholder = c.ph;
-    input.value = store('mc-signin-' + role()) || '';
-    err.hidden = true;
+    const brand = role() === 'brand';
+    join.textContent = brand ? 'Join as a brand' : 'Join as a creator';
+    join.href = `${APP}/signup?as=${brand ? 'brand' : 'creator'}`;
   }
   const asked = new URLSearchParams(location.search).get('as') || store('mc-signin-as');
   if (asked === 'brand') document.querySelector('input[value="brand"]').checked = true;
   document.querySelectorAll('input[name="as"]').forEach((r) => r.addEventListener('change', show));
-  input.addEventListener('input', () => {
-    const v = input.value.toLowerCase().replace(/\.miracleapp\.live.*$/, '').replace(/^https?:\/\//, '').replace(/[^a-z0-9-]/g, '');
-    if (v !== input.value) input.value = v;
-    err.hidden = true;
-  });
-  const fail = (m) => { err.textContent = m; err.hidden = false; go.disabled = false; go.textContent = 'Continue'; input.focus(); };
-  f.addEventListener('submit', async (e) => {
+  document.getElementById('f').addEventListener('submit', (e) => {
     e.preventDefault();
-    const s = input.value.trim();
-    if (!s) return fail(role() === 'creator' ? 'Type the name of your Miracle link.' : "Type the creator's Miracle link.");
-    if (!RE.test(s)) return fail('Use letters and numbers (a dash in the middle is fine).');
-    go.disabled = true; go.textContent = 'Checking…';
-    // A name nobody has claimed has no page to sign in to. (If the check can't run, just go.)
-    try {
-      const r = await fetch(SUPA + '/rest/v1/rpc/slug_free', { method: 'POST', headers: { apikey: KEY, 'content-type': 'application/json' }, body: JSON.stringify({ p_slug: s }) });
-      if (r.ok && (await r.json()) === true) return fail(`There's no Miracle page at ${s}.miracleapp.live. Check the spelling.`);
-    } catch {}
-    store('mc-signin-as', role()); store('mc-signin-' + role(), s);
-    location.href = `https://${s}.miracleapp.live/login` + (role() === 'brand' ? '?next=%2Fbrand' : '');
+    store('mc-signin-as', role());
+    location.href = `${APP}/login` + (role() === 'brand' ? '?next=%2Fbrand' : '');
   });
   show();
 })();

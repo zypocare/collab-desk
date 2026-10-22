@@ -62,7 +62,8 @@ export async function switchBrand(id: string) {
 }
 
 // The creator works in the studio, a creator waiting for approval sees her request, brands track theirs.
-export const homeFor = (a: Account | null) => (a?.role === 'creator' ? '/studio' : a?.role === 'pending' ? '/join' : '/brand');
+export const homeFor = (a: Account | null) =>
+	a?.role === 'creator' ? (a.needs_link ? '/signup' : '/studio') : a?.role === 'pending' ? '/signup' : '/brand';
 
 export async function signOut() {
 	await forgetAll();

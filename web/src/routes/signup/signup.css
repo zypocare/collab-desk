@@ -1,0 +1,399 @@
+/* Sign-up at app.miracleapp.live: one card per step, the website's night look in the app's tokens. */
+.su {
+	min-height: 100vh;
+	min-height: 100dvh;
+	display: flex;
+	flex-direction: column;
+	background:
+		radial-gradient(50% 45% at 12% 0%, color-mix(in oklab, var(--g1) 16%, transparent), transparent 70%),
+		radial-gradient(45% 45% at 92% 100%, color-mix(in oklab, var(--g2) 13%, transparent), transparent 70%),
+		var(--bg);
+	color: var(--ink);
+}
+.su-top {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 18px max(20px, env(safe-area-inset-left, 0px)) 8px max(20px, env(safe-area-inset-right, 0px));
+}
+.su-brand {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	flex: 1;
+	color: var(--ink);
+	text-decoration: none;
+}
+.su-brand b {
+	font: italic 400 27px/1 var(--f-serif);
+}
+.su-top small {
+	font-size: 14px;
+	color: var(--ink-3);
+}
+.su-top small a,
+.su-top button.su-link {
+	color: var(--ink);
+	font-weight: 600;
+}
+.su-main {
+	flex: 1;
+	display: flex;
+	justify-content: center;
+	align-items: flex-start;
+	padding: 24px max(16px, env(safe-area-inset-left, 0px)) 56px max(16px, env(safe-area-inset-right, 0px));
+}
+.su-card {
+	width: min(620px, 100%);
+	display: grid;
+	gap: 22px;
+	padding: 32px;
+	border-radius: 24px;
+	background: var(--surface);
+	box-shadow: inset 0 0 0 1px var(--line-strong);
+}
+.su-wide {
+	width: min(880px, 100%);
+}
+.su-plain {
+	width: min(880px, 100%);
+	display: grid;
+	gap: 22px;
+}
+.su-h1 {
+	margin: 0;
+	font: 700 clamp(34px, 6vw, 46px) / 1.02 var(--f-body);
+	letter-spacing: -0.02em;
+	text-wrap: balance;
+}
+.su-h1 em {
+	font: italic 400 1.04em/1 var(--f-serif);
+}
+.su-big {
+	font-size: clamp(42px, 8vw, 72px);
+	line-height: 0.95;
+}
+.su-grad {
+	background: var(--grad);
+	-webkit-background-clip: text;
+	background-clip: text;
+	color: transparent;
+	padding-right: 0.06em;
+}
+.su-lead {
+	margin: 0;
+	font-size: 16.5px;
+	line-height: 1.55;
+	color: var(--ink-2);
+}
+.su-eb {
+	font: 700 12px/1 var(--f-body);
+	letter-spacing: 0.22em;
+	text-transform: uppercase;
+	color: var(--ink-3);
+}
+.su-ok {
+	color: var(--ok);
+}
+
+/* creator or brand */
+.su-as {
+	margin: 0;
+	padding: 0;
+	border: 0;
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 12px;
+}
+.su-as label {
+	position: relative;
+	display: grid;
+	gap: 6px;
+	padding: 18px;
+	border-radius: 16px;
+	box-shadow: inset 0 0 0 1.5px var(--line-strong);
+	cursor: pointer;
+	transition: box-shadow 0.2s, background 0.2s;
+}
+.su-as label:has(input:checked) {
+	background: color-mix(in oklab, var(--c) 11%, transparent);
+	box-shadow: inset 0 0 0 2px var(--c);
+}
+.su-as label:has(input:focus-visible) {
+	outline: 2px solid var(--g3);
+	outline-offset: 2px;
+}
+.su-as input {
+	position: absolute;
+	top: 18px;
+	right: 18px;
+	width: 20px;
+	height: 20px;
+	accent-color: var(--c);
+}
+.su-as b {
+	font-size: 18px;
+}
+.su-as span {
+	font-size: 14px;
+	line-height: 1.45;
+	color: var(--ink-2);
+	padding-right: 24px;
+}
+
+/* fields */
+.su-f {
+	display: grid;
+	gap: 7px;
+	min-width: 0;
+}
+.su-f > label,
+.su-f > legend,
+.su-lbl {
+	font-size: 13px;
+	font-weight: 600;
+	color: var(--ink-2);
+	padding: 0;
+}
+.su-f small,
+.su-hint {
+	font-size: 13px;
+	color: var(--ink-3);
+}
+.su-f small.su-ok {
+	color: var(--ok);
+	font-weight: 600;
+}
+.su-f small.su-no {
+	color: var(--bad);
+	font-weight: 600;
+}
+.su-in {
+	width: 100%;
+	height: 52px;
+	padding: 0 14px;
+	border: 0;
+	border-radius: 12px;
+	background: var(--bg);
+	box-shadow: inset 0 0 0 1.5px var(--line-strong);
+	color: var(--ink);
+	font: 400 16px var(--f-body);
+}
+textarea.su-in {
+	height: auto;
+	padding: 12px 14px;
+	resize: vertical;
+	line-height: 1.5;
+}
+.su-in:focus {
+	outline: 0;
+	box-shadow: inset 0 0 0 2px var(--g2);
+}
+.su-code {
+	height: 60px;
+	font: 600 26px var(--f-mono);
+	letter-spacing: 0.4em;
+	text-align: center;
+}
+.su-grid {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 18px 20px;
+}
+.su-full {
+	grid-column: 1 / -1;
+}
+.su-pre {
+	display: flex;
+	align-items: center;
+	border-radius: 12px;
+	background: var(--bg);
+	box-shadow: inset 0 0 0 1.5px var(--line-strong);
+}
+.su-pre:focus-within {
+	box-shadow: inset 0 0 0 2px var(--g2);
+}
+.su-pre > span {
+	padding-left: 14px;
+	color: var(--ink-3);
+	font-size: 16px;
+}
+.su-pre .su-in {
+	box-shadow: none;
+	background: transparent;
+	padding-left: 4px;
+}
+.su-chips {
+	margin: 0;
+	padding: 0;
+	border: 0;
+	display: grid;
+	gap: 9px;
+}
+.su-chips > div {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+.su-chip {
+	min-height: 40px;
+	padding: 0 14px;
+	border: 0;
+	border-radius: 99px;
+	background: transparent;
+	box-shadow: inset 0 0 0 1px var(--line-strong);
+	color: var(--ink-2);
+	font: 600 14px var(--f-body);
+	cursor: pointer;
+}
+.su-chip[aria-pressed='true'] {
+	background: color-mix(in oklab, var(--c, var(--g2)) 16%, transparent);
+	box-shadow: none;
+	color: var(--c, var(--g2));
+}
+.su-chip:disabled {
+	opacity: 0.45;
+	cursor: default;
+}
+
+/* steps */
+.su-steps {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	font-size: 13px;
+	font-weight: 600;
+}
+.su-steps li {
+	padding: 8px 14px;
+	border-radius: 99px;
+	box-shadow: inset 0 0 0 1px var(--line-strong);
+	color: var(--ink-3);
+}
+.su-steps li.done {
+	box-shadow: none;
+	background: color-mix(in oklab, var(--ok) 16%, transparent);
+	color: var(--ok);
+}
+.su-steps li.on {
+	box-shadow: none;
+	background: color-mix(in oklab, var(--c, var(--g2)) 16%, transparent);
+	color: var(--c, var(--g2));
+}
+
+/* buttons */
+.su-row {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 14px 18px;
+}
+.su-neo {
+	display: inline-grid;
+	place-items: center;
+	min-height: 54px;
+	padding: 0 28px;
+	border: 0;
+	cursor: pointer;
+	text-decoration: none;
+	font: 700 13px/1 var(--f-body);
+	letter-spacing: 0.14em;
+	text-transform: uppercase;
+}
+.su-neo:disabled {
+	opacity: 0.55;
+	cursor: default;
+}
+.su-go {
+	background: var(--grad);
+	color: var(--on-grad);
+	box-shadow: 4px 4px 0 color-mix(in oklab, var(--g1) 70%, black);
+}
+.su-light {
+	background: var(--ink);
+	color: var(--bg);
+	box-shadow: 4px 4px 0 var(--g1);
+}
+.su-block {
+	width: 100%;
+}
+.su-link {
+	border: 0;
+	background: none;
+	padding: 0;
+	color: var(--ink-2);
+	font: 600 14px var(--f-body);
+	text-decoration: underline;
+	text-underline-offset: 3px;
+	cursor: pointer;
+}
+.su-err {
+	margin: 0;
+	padding: 12px 14px;
+	border-radius: 12px;
+	background: color-mix(in oklab, var(--bad) 12%, transparent);
+	color: var(--bad);
+	font-size: 14px;
+	font-weight: 600;
+}
+.su-note {
+	display: flex;
+	align-items: flex-start;
+	gap: 12px;
+	padding: 14px 16px;
+	border-radius: 14px;
+	background: color-mix(in oklab, var(--g3) 12%, transparent);
+	font-size: 14.5px;
+	line-height: 1.5;
+}
+.su-note b {
+	color: var(--ink);
+}
+.su-terms {
+	font-size: 12.5px;
+	line-height: 1.5;
+	color: var(--ink-3);
+}
+.su-terms a {
+	color: var(--ink-2);
+}
+.su-load {
+	min-height: 50vh;
+	display: grid;
+	place-items: center;
+}
+details.su-more {
+	border-top: 1px solid var(--line);
+	padding-top: 14px;
+}
+details.su-more summary {
+	cursor: pointer;
+	font-size: 15px;
+	font-weight: 600;
+}
+details.su-more summary span {
+	font-weight: 400;
+	color: var(--ink-3);
+}
+details.su-more .su-grid {
+	margin-top: 14px;
+}
+
+@media (max-width: 640px) {
+	.su-card {
+		padding: 22px 18px;
+		border-radius: 20px;
+	}
+	.su-grid {
+		grid-template-columns: minmax(0, 1fr);
+	}
+	.su-as {
+		grid-template-columns: minmax(0, 1fr);
+	}
+	.su-neo {
+		width: 100%;
+	}
+}

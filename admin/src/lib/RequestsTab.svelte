@@ -28,9 +28,14 @@
 				</header>
 				<i class="tk-cut" aria-hidden="true"></i>
 				<dl>
-					<div><dt>Address</dt><dd><a href={siteOf(c.slug)} target="_blank" rel="noopener">{c.slug}.{ROOT}</a></dd></div>
+					<div><dt>Address</dt><dd>{#if c.slug}<a href={siteOf(c.slug)} target="_blank" rel="noopener">{c.slug}.{ROOT}</a>{:else}Picks a link after approval{/if}</dd></div>
 					<div><dt>Work</dt><dd>{[c.niche, c.city].filter(Boolean).join(' · ') || '—'}</dd></div>
+					{#if c.signup?.followers}<div><dt>Followers</dt><dd>{c.signup.followers}</dd></div>{/if}
+					{#if c.signup?.collabs}<div><dt>Paid collabs</dt><dd>{c.signup.collabs}</dd></div>{/if}
+					{#if c.languages?.length}<div><dt>Languages</dt><dd>{c.languages.join(', ')}</dd></div>{/if}
 					<div><dt>Email</dt><dd><a href="mailto:{c.email}">{c.email}</a></dd></div>
+					{#if c.whatsapp}<div><dt>WhatsApp</dt><dd>{c.whatsapp}</dd></div>{/if}
+					{#if c.signup?.heard}<div><dt>Heard from</dt><dd>{c.signup.heard}</dd></div>{/if}
 				</dl>
 				{#if c.note}<blockquote>{c.note}</blockquote>{/if}
 				<footer>

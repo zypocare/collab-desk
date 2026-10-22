@@ -13,13 +13,23 @@ export function addressFor(slug: string, path = '/'): string {
 	return known ? `${location.protocol}//${slug}.${root}${path}` : `https://${slug}.${ROOT_DOMAIN}${path}`;
 }
 
+/** Miracle's own address (app.miracleapp.live, or app.localhost while testing): sign-up and brands, no creator. */
+export const APP_NAME = 'app';
+export function isAppHost(hostname: string): boolean {
+	const host = hostname.toLowerCase().replace(/:\d+$/, '');
+	return host === `${APP_NAME}.${ROOT_DOMAIN}` || host === `${APP_NAME}.localhost`;
+}
+
+/** A page on Miracle's own address (sign-up, a brand's home). */
+export const appAddress = (path = '/') => addressFor(APP_NAME, path);
+
 export function slugFromHost(hostname: string): string {
 	const host = hostname.toLowerCase().replace(/:\d+$/, '');
 	if (LEGACY[host]) return LEGACY[host];
 	for (const root of [ROOT_DOMAIN, 'localhost']) {
 		if (host.endsWith('.' + root)) {
 			const name = host.slice(0, -(root.length + 1));
-			return /^[a-z0-9]([a-z0-9-]{0,28}[a-z0-9])?$/.test(name) ? name : '';
+			return name !== APP_NAME && /^[a-z0-9]([a-z0-9-]{0,28}[a-z0-9])?$/.test(name) ? name : '';
 		}
 	}
 	return '';
