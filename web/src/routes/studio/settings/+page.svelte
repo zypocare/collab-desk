@@ -36,6 +36,7 @@
 	import ReviewsSettings from '#lib/components/ReviewsSettings.svelte';
 	import AppSettings from '#lib/components/AppSettings.svelte';
 	import AutopilotSettings from '#lib/components/AutopilotSettings.svelte';
+	import CommentDmSettings from '#lib/components/CommentDmSettings.svelte';
 	import TeamSettings from '#lib/components/TeamSettings.svelte';
 	import DeleteAccount from '#lib/components/DeleteAccount.svelte';
 	import BlockedList from '#lib/components/BlockedList.svelte';
@@ -463,6 +464,7 @@
 						<OffersSettings />
 					{:else if active === 'autopilot'}
 						<AutopilotSettings />
+						<CommentDmSettings />
 					{:else if active === 'payments'}
 						<section class="panel rv" style="--i:1">
 							<div class="panel-h"><h2>Income goal</h2><small>tracked on Today</small></div>

@@ -230,9 +230,9 @@ export function authorizeUrl(redirectUri: string, scope: string, state: string) 
  * Ask Instagram to send this account's DMs to the app's webhook. Meta only delivers messages for
  * accounts subscribed like this, once they've allowed messages; it's safe to repeat.
  */
-export async function subscribeMessages(token: string) {
+export async function subscribeMessages(token: string, comments = false) {
   const u = new URL(GRAPH + '/me/subscribed_apps');
-  u.searchParams.set('subscribed_fields', 'messages');
+  u.searchParams.set('subscribed_fields', comments ? 'messages,comments' : 'messages');
   u.searchParams.set('access_token', token);
   const res = await fetch(u, { method: 'POST' });
   const json = await res.json().catch(() => ({}));
@@ -244,5 +244,29 @@ export async function subscribeMessages(token: string) {
 export async function ensureMessages(db: any, creator: number) {
   const { data: t } = await db.from('ig_token').select('access_token, permissions').eq('id', creator).maybeSingle();
   if (!t?.access_token || !String(t.permissions ?? '').includes('instagram_business_manage_messages')) return { skipped: 'DMs not allowed yet' };
-  return await subscribeMessages(t.access_token);
+  return await subscribeMessages(t.access_token, String(t.permissions ?? '').includes('instagram_business_manage_comments'));
 }
+
+/**
+ * A private reply: one DM to the person who left a comment (Instagram allows one per comment, within
+ * 7 days of it). Needs the messages and comments permissions.
+ */
+export async function privateReply(token: string, commentId: string, text: string) {
+  const res = await fetch(GRAPH + '/me/messages', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` },
+    body: JSON.stringify({ recipient: { comment_id: commentId }, message: { text: text.slice(0, 1000) } }),
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok || json.error) throw new IgError(json.error?.message ?? "Instagram didn't accept the message", json.error?.code);
+  return json as { message_id?: string };
+}
+
+/** The keyword rule a comment matches ("COLLAB" in "collab please!"), or null. */
+export function matchRule<T extends { keyword: string }>(rules: T[], text: string): T | null {
+  const t = ` ${text.toLowerCase().replace(/[^\p{L}\p{N}#@]+/gu, ' ')} `;
+  return rules.find((r) => t.includes(` ${r.keyword.trim().toLowerCase().replace(/^#/, '')} `) || t.includes(` #${r.keyword.trim().toLowerCase().replace(/^#/, '')} `)) ?? null;
+}
+
+/** The reply with her page link filled in. */
+export const fillReply = (reply: string, link: string) => reply.replace(/\{link\}/gi, link);

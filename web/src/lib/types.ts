@@ -16,6 +16,9 @@ export type Brand = {
 	accounts_email: string;
 	country: string;
 	currency: string;
+	/** For TDS: the brand's PAN and TAN (on Form 16A and in her 26AS). */
+	pan?: string;
+	tan?: string;
 	created_at: string;
 };
 
@@ -375,6 +378,9 @@ export type Settings = {
 	terms_wait_advance?: boolean;
 	/** Udyam (MSME) registration: late buyers then owe interest after 45 days. */
 	udyam_no?: string;
+	/** Her "about" line on her page and in link previews. */
+	bio?: string;
+	comment_dm_mode?: 'off' | 'ask' | 'auto';
 	weekly_capacity: number;
 	/** For the "Should I take it?" report: home area (travel time only, never shown to brands). */
 	home_area: string;
@@ -454,6 +460,8 @@ export type PublicPage = {
 	away_until?: string | null;
 	/** Package prices are multiplied by this when her coming weeks are nearly full. */
 	demand_factor?: number;
+	/** Her "about" line. */
+	bio?: string | null;
 	barter: { mode: 'open' | 'selective' | 'closed'; min_value: number; reply_time: string; slots_left: number | null } | null;
 	worked_with: string[];
 	instagram: {

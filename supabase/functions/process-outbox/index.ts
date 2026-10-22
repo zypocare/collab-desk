@@ -9,7 +9,7 @@ import { settingsOf, teamCopies, type Settings } from '../_shared/creators.ts';
 import { reportProblem } from '../_shared/problems.ts';
 
 // Alerts only: a brand opening her insights link.
-const PUSH_ONLY = new Set(['insights_viewed', 'ig_dm', 'ig_collab', 'month_summary']);
+const PUSH_ONLY = new Set(['insights_viewed', 'ig_dm', 'ig_collab', 'month_summary', 'comment_dm']);
 // Mails to a brand that come from the app itself, so replies don't go to the creator.
 const FROM_APP = new Set(['brief_application', 'brief_digest']);
 

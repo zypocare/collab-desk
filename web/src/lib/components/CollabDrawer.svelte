@@ -83,12 +83,13 @@
 		waLink
 	} from '../util';
 	import { DRAFT_MAX_MB, cancelInvoice, recordPayment, reloadCollabs, setChecklist, setInvoiceFlags, shareDraft, releaseDraft, withdrawQuote, type DraftProgress } from '../studio.svelte';
-	import { emailOk, errMessage, todayIso } from '../util';
+	import { emailOk, errMessage, todayIso, waShare } from '../util';
 	import type { Quote } from '../types';
 	import { INVOICE_STATUS, KIND_LABEL, balanceDue, type Invoice } from '../invoice';
 	import InvoiceDialog from './InvoiceDialog.svelte';
 	import PaymentDialog from './PaymentDialog.svelte';
 	import BrandTrust from './BrandTrust.svelte';
+	import DraftPrecheck from './DraftPrecheck.svelte';
 	import ReportDialog from './ReportDialog.svelte';
 	import { portal } from '../portal';
 	import { asksToPay, block } from '../safety.svelte';
@@ -584,6 +585,7 @@
 								<button class="btn sm primary" onclick={() => (quoteOpen = { base: quote, editing: true })}><Icon name="edit" />Edit and send</button>
 							{:else if quote.status === 'sent'}
 								<button class="btn sm" onclick={() => (quoteOpen = { base: quote, editing: false })}><Icon name="edit" />New version</button>
+								<a class="btn sm ghost wa" href={waShare(c.contact_phone, `Hi ${c.contact_name ? c.contact_name.split(' ')[0] : ''}, I've sent the quote for ${c.code}: ${money(quote.total, quote.currency)}, ${payTerms(quote).toLowerCase()}. It's in your email${c.contact_email ? ` (${c.contact_email})` : ''}; you can accept it there in a minute, or here: ${location.origin}/brand/r/${c.code}`)} target="_blank" rel="noopener"><Icon name="send" />WhatsApp</a>
 								<button class="btn sm ghost" onclick={async () => quote && (await ask({ title: `Withdraw quote v${quote.version}?`, body: 'The brand can no longer accept it. You can send a new version any time.', ok: 'Withdraw', danger: true })) && withdrawQuote(quote)}>Withdraw</button>
 							{:else if quote.status === 'changes' || quote.status === 'withdrawn'}
 								<button class="btn sm primary" onclick={() => (quoteOpen = { base: quote, editing: false })}><Icon name="edit" />Revise quote</button>
@@ -687,6 +689,7 @@
 								<div class="cap-check" aria-live="polite">
 									{#each bc.items as it (it.label)}<span class:ok={it.ok}><Icon name={it.ok ? 'check' : 'x'} />{it.label}</span>{/each}
 								</div>
+								<DraftPrecheck {c} caption={draftForm.caption} file={draftFile} />
 							{/if}
 						</div>
 						<div class="f"><label for="dr-note">Note for the brand <span class="hint">(optional)</span></label><input class="inp" id="dr-note" bind:value={draftForm.note} /></div>
@@ -755,6 +758,10 @@
 								{:else}
 									<a class="btn sm" href="/invoice/{inv.public_token}" target="_blank" rel="noopener"><Icon name="eye" />View / PDF</a>
 									<button class="btn sm ghost" onclick={() => copyText(`${location.origin}/invoice/${inv.public_token}`, 'Invoice link copied')}><Icon name="copy" />Link</button>
+									{#if inv.status === 'sent' || inv.status === 'partly_paid'}
+										{@const late = !!inv.due_date && inv.due_date < todayIso()}
+										<a class="btn sm ghost wa" href={waShare(c.contact_phone, `Hi ${c.contact_name ? c.contact_name.split(' ')[0] : ''}, ${late ? `a reminder: invoice ${inv.number} for ${inr(balanceDue(inv))} was due on ${fmt(inv.due_date)}` : `here's invoice ${inv.number} for ${inr(balanceDue(inv))}${inv.due_date ? `, due ${fmt(inv.due_date)}` : ''}`}. You can pay by UPI or bank transfer here: ${location.origin}/invoice/${inv.public_token}`)} target="_blank" rel="noopener"><Icon name="send" />WhatsApp</a>
+									{/if}
 									{#if inv.status === 'sent' || inv.status === 'partly_paid'}
 										<button class="btn sm primary" onclick={() => (paymentOpen = inv)}><Icon name="wallet" />Record payment</button>
 										{#if inv.due_date && inv.due_date < todayIso()}<a class="btn sm" href="/studio/payments/late/{inv.id}"><Icon name="alert" />Late: next steps</a>{/if}

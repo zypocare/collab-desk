@@ -23,6 +23,8 @@ const STATE_SECRET = Deno.env.get('INSTAGRAM_APP_SECRET') ?? '';
 const STATE_LIFE = 15 * 60; // seconds
 const BASIC = ['instagram_business_basic', 'instagram_business_manage_insights'];
 const EXTRA = ['instagram_business_manage_messages', 'instagram_business_content_publish'];
+// Comment-to-DM: asked for only when she turns it on, so connecting stays the same for everyone else.
+const COMMENTS = ['instagram_business_manage_comments'];
 const BRAND = ['instagram_business_basic'];
 // Where a brand lands after connecting (Miracle's own address; the sign-in is shared across miracleapp.live).
 const BRAND_SETTINGS = Deno.env.get('BRAND_SETTINGS_URL') ?? 'https://app.miracleapp.live/brand/settings';
@@ -148,7 +150,7 @@ Deno.serve(async (req) => {
     }
   }
 
-  const { action, code, redirect_uri, state, extra, as } = await req.json().catch(() => ({}));
+  const { action, code, redirect_uri, state, extra, comments, as } = await req.json().catch(() => ({}));
 
   // A brand: start the connection, or refresh the profile it shows creators.
   if (as === 'brand') {
@@ -188,7 +190,7 @@ Deno.serve(async (req) => {
   if (action === 'start') {
     if (!STATE_SECRET) return reply({ error: 'INSTAGRAM_APP_SECRET is not set on the server.' }, 400);
     const signed = await makeState(creator);
-    const scope = [...BASIC, ...(extra ? EXTRA : [])].join(',');
+    const scope = [...BASIC, ...(extra || comments ? EXTRA : []), ...(comments ? COMMENTS : [])].join(',');
     return reply({ state: signed, redirect_uri: CALLBACK, url: authorizeUrl(CALLBACK, scope, signed) });
   }
 

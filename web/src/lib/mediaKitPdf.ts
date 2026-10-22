@@ -67,6 +67,7 @@ export async function mediaKitPdf(p: PublicPage, link: string, ins: PublicInsigh
 	doc.setAuthor(p.display_name);
 	if (ins) {
 		await insightsPages(doc, p, ins, link, reg, bold, new Set(hide));
+		if (!hide.includes('rates')) aboutPage(doc, p, link, reg, bold);
 		return doc.save();
 	}
 
@@ -521,4 +522,62 @@ export async function downloadMediaKit(p: PublicPage, link: string, hide: string
 function savePdf(bytes: Uint8Array, name: string) {
 	const blob = new Blob([bytes as BlobPart], { type: 'application/pdf' });
 	void saveBlob(blob, name);
+}
+
+/** The last page: who she is (her "about" line), what she offers and her rates and packages, when she
+ *  shows them on her page. Left out when there's nothing to say. */
+function aboutPage(doc: PDFDocument, p: PublicPage, link: string, reg: PDFFont, bold: PDFFont) {
+	const rates = Object.entries(p.rates ?? {}).filter(([, v]) => Number(v) > 0);
+	const packs = p.packages ?? [];
+	const bio = String(p.bio ?? '').trim();
+	if (!bio && !rates.length && !packs.length) return;
+	const W = 595.28, H = 841.89, M = 40, CW = W - 2 * M;
+	const page = doc.addPage([W, H]);
+	const text = (t: string, x: number, y: number, size = 9.5, font: PDFFont = reg, color: RGB = INK) => page.drawText(t, { x, y, size, font, color });
+	const money = (n: number) => '₹' + Math.round(n).toLocaleString('en-IN');
+	let y = H - M - 10;
+	text('ABOUT AND RATES', M, y, 8, bold, G2);
+	y -= 28;
+	text(p.display_name, M, y, 22, bold);
+	y -= 22;
+	for (const l of wrap(bio || [p.niche, p.city].filter(Boolean).join(' · '), reg, 11, CW)) {
+		text(l, M, y, 11, reg, MUTED);
+		y -= 16;
+	}
+	if (p.content_languages?.length) {
+		y -= 4;
+		text(`Creates in ${p.content_languages.join(', ')}`, M, y, 9.5, reg, MUTED);
+		y -= 16;
+	}
+	if (rates.length) {
+		y -= 18;
+		text('RATES', M, y, 7.5, bold, MUTED);
+		y -= 8;
+		for (const [kind, v] of rates) {
+			y -= 22;
+			page.drawLine({ start: { x: M, y: y - 7 }, end: { x: W - M, y: y - 7 }, thickness: 0.6, color: LINE });
+			text(kind, M, y, 11);
+			const t = money(Number(v));
+			text(t, W - M - bold.widthOfTextAtSize(t, 11), y, 11, bold);
+		}
+	}
+	if (packs.length) {
+		y -= 34;
+		text('PACKAGES', M, y, 7.5, bold, MUTED);
+		y -= 10;
+		for (const k of packs.slice(0, 6)) {
+			const lines = wrap(k.description || k.items.map((i) => `${i.qty} ${i.kind}`).join(' + '), reg, 9.5, CW - 140).slice(0, 3);
+			const h = 34 + lines.length * 12;
+			if (y - h < M + 40) break;
+			page.drawRectangle({ x: M, y: y - h, width: CW, height: h, color: SOFT });
+			page.drawRectangle({ x: M, y: y - h, width: 3, height: h, color: G2 });
+			text(k.name, M + 14, y - 20, 12, bold);
+			const t = money(k.price);
+			text(t, W - M - 14 - bold.widthOfTextAtSize(t, 13), y - 20, 13, bold, G2);
+			lines.forEach((l, i) => text(l, M + 14, y - 36 - i * 12, 9.5, reg, MUTED));
+			y -= h + 10;
+		}
+	}
+	const site = link.replace(/^https?:\/\//, '').replace(/\/$/, '');
+	text(`Prices in rupees, plus GST where it applies. Send a request at ${site}`, M, M, 9, reg, MUTED);
 }

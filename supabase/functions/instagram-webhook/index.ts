@@ -13,6 +13,7 @@ const SECRET = Deno.env.get('INSTAGRAM_APP_SECRET') ?? '';
 const VERIFY = Deno.env.get('IG_VERIFY_TOKEN') ?? '';
 
 import { decide, ruleCheck, transcript, worthChecking, type Ai } from '../_shared/collabCheck.ts';
+import { fillReply, matchRule, privateReply } from '../_shared/instagram.ts';
 
 /** A one-line summary from the message itself (used when the AI doesn't give one). */
 function ruleHint(text: string, username: string) {
@@ -89,6 +90,14 @@ Deno.serve(async (req) => {
   };
 
   for (const entry of body.entry ?? []) {
+    // Comment-to-DM: a comment with one of her keywords gets a DM with what they asked for.
+    for (const ch of entry.changes ?? []) {
+      if (ch.field !== 'comments' || !ch.value?.id) continue;
+      const owner = await ownerOf(String(entry.id ?? ''));
+      if (!owner) continue;
+      const job = commentToDm(db, owner, ch.value).catch((e) => console.error('[comment-to-dm]', e));
+      (globalThis as unknown as { EdgeRuntime?: { waitUntil: (p: Promise<unknown>) => void } }).EdgeRuntime?.waitUntil(job);
+    }
     for (const ev of entry.messaging ?? []) {
       const m = ev.message;
       if (!m?.mid || m.is_deleted) continue;
@@ -149,3 +158,32 @@ Deno.serve(async (req) => {
   }
   return new Response('ok');
 });
+
+// A comment on her post. Off: nothing. Ask: kept for her to send from the app. Auto: sent now.
+// Her own comments, comments with no keyword and repeats are skipped; at most 200 a day go out.
+async function commentToDm(db: ReturnType<typeof admin>, owner: { creator: number; me: string; token: string }, v: { id: string; text?: string; from?: { id?: string; username?: string }; media?: { id?: string } }) {
+  if (!v.text || String(v.from?.id ?? '') === owner.me) return;
+  const { data: s } = await db.from('creator_settings').select('comment_dm_mode, site_url').eq('id', owner.creator).maybeSingle();
+  if (!s || s.comment_dm_mode === 'off') return;
+  const { data: rules } = await db.from('dm_rules').select('id, keyword, reply, uses').eq('creator_id', owner.creator).eq('active', true);
+  const rule = matchRule(rules ?? [], v.text);
+  if (!rule) return;
+  const reply = fillReply(rule.reply, String(s.site_url ?? '').replace(/\/$/, ''));
+  const row = { creator_id: owner.creator, comment_id: String(v.id), media_id: String(v.media?.id ?? ''), from_username: String(v.from?.username ?? ''), text: String(v.text).slice(0, 500), rule_id: rule.id, reply };
+  const { data: log, error } = await db.from('dm_auto_log').insert({ ...row, status: 'pending' }).select('id').maybeSingle();
+  if (error || !log) return; // a repeat delivery of the same comment
+  if (s.comment_dm_mode !== 'auto' || !owner.token) {
+    await db.from('outbox').insert({ creator_id: owner.creator, kind: 'comment_dm', to_email: '', payload: { from: row.from_username || 'Someone', keyword: rule.keyword, text: row.text.slice(0, 140) } });
+    return;
+  }
+  const since = new Date(Date.now() - 864e5).toISOString();
+  const { count } = await db.from('dm_auto_log').select('id', { count: 'exact', head: true }).eq('creator_id', owner.creator).eq('status', 'sent').gte('sent_at', since);
+  if ((count ?? 0) >= 200) return void (await db.from('dm_auto_log').update({ status: 'skipped', error: 'Daily limit of 200 reached' }).eq('id', log.id));
+  try {
+    await privateReply(owner.token, row.comment_id, reply);
+    await db.from('dm_auto_log').update({ status: 'sent', sent_at: new Date().toISOString() }).eq('id', log.id);
+    await db.from('dm_rules').update({ uses: (rule.uses ?? 0) + 1 }).eq('id', rule.id);
+  } catch (e) {
+    await db.from('dm_auto_log').update({ status: 'failed', error: String((e as Error)?.message ?? e).slice(0, 300) }).eq('id', log.id);
+  }
+}

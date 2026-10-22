@@ -30,7 +30,7 @@
 	async function connect(extra = false) {
 		starting = true;
 		try {
-			location.href = await igStart(extra || dmsOn || postOn);
+			location.href = await igStart(extra || dmsOn || postOn, perms.includes('instagram_business_manage_comments'));
 		} catch (e) {
 			toast(errMessage(e), 'alert');
 			starting = false;

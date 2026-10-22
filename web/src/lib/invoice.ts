@@ -26,6 +26,8 @@ export type InvoiceView = {
 	igst: number;
 	total: number;
 	tds_rate: number;
+	tds_section?: '194J' | '194C';
+	tds_seen_at?: string | null;
 	tds_amount: number;
 	payable: number;
 	amount_received: number;

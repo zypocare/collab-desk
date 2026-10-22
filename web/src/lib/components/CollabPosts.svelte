@@ -48,6 +48,21 @@
 		await igSync(c.id);
 		busy = false;
 	}
+	// The evidence pack: what was posted, when, and how it was disclosed, kept in case ASCI or a brand asks.
+	async function disclosureRecord(c: Collab, m: Collab['posts'][number]['media']) {
+		const { lintDisclosure } = await import('../asci');
+		const { letterPdf } = await import('../demand');
+		const lint = lintDisclosure(m.caption ?? '', { type: c.type, format: m.media_type === 'VIDEO' || m.product_type === 'REELS' ? 'reel' : 'post', category: c.brand.category });
+		const when = new Date(m.posted_at).toLocaleString('en-IN', { dateStyle: 'long', timeStyle: 'short' });
+		const body = [
+			`Collaboration ${c.code} with ${c.brand.name}${c.type === 'barter' ? ' (gifted product)' : ' (paid)'}.`,
+			`Posted on Instagram on ${when}: ${m.permalink}`,
+			`Caption as posted:\n${m.caption || '(no caption)'}`,
+			`Disclosure checks (ASCI guidelines for influencer advertising):\n${lint.map((l) => `${l.level === 'ok' ? 'OK' : l.level === 'bad' ? 'FIX' : 'NOTE'}: ${l.title}${l.fix ? `. ${l.fix}` : ''}`).join('\n')}`,
+			`Record made by Miracle on ${new Date().toLocaleString('en-IN', { dateStyle: 'long', timeStyle: 'short' })}. Keep it with the agreement and the invoice.`
+		].join('\n\n');
+		await letterPdf(`Disclosure record · ${c.code}`, body, `Disclosure-${c.code}.pdf`);
+	}
 </script>
 
 {#if ig?.connected && ['confirmed', 'creating', 'live', 'wrapped'].includes(c.stage)}
@@ -71,6 +86,7 @@
 					<div><b>{compact(m.shares)}</b><small>shares</small></div>
 				</div>
 				{#if m.caption}<p class="hint post-cap">{m.caption}</p>{/if}
+				<button class="lnk hint" onclick={() => disclosureRecord(c, m)}><Icon name="shield" />Disclosure record (PDF)</button>
 			</div>
 		{:else}
 			<p class="hint" style="margin:0 0 10px">No post linked yet. When you post and @mention @{c.brand.instagram || 'the brand'}, it's linked automatically at the next sync.</p>

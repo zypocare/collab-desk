@@ -22,7 +22,7 @@ type Env = {
 type Run = { env: Env; gemini: boolean; neurons: number };
 
 // Expected size of each job in Cloudflare neurons (reserved before, corrected after).
-const COST: Record<string, number> = { dm: 160, reply: 110, caption: 110, pitch: 140, fit: 230, classify: 40, summary: 220, negotiate: 210, script: 330, nudge: 120, ask: 260, voice: 60, embed: 8, cheer: 60, reelcheck: 260, growplan: 200, checkup: 420, offercheck: 700 };
+const COST: Record<string, number> = { dm: 160, reply: 110, caption: 110, pitch: 140, fit: 230, classify: 40, summary: 220, negotiate: 210, script: 330, nudge: 120, ask: 260, voice: 60, embed: 8, cheer: 60, reelcheck: 260, growplan: 200, checkup: 420, offercheck: 700, precheck: 220, getfound: 180 };
 // Cloudflare's price list in neurons per token (Llama 3.3 70B fast; Llama 3.2 11B vision).
 const PER_TOKEN = { text: [0.0267, 0.2048], vision: [0.0045, 0.0615] };
 const USED_UP = "Today's free AI is used up. It's back at 5:30 am.";
@@ -43,10 +43,10 @@ export default {
 		try {
 			const kind = url.pathname.slice('/api/ai/'.length);
 			if (kind === 'status') return json(await status(req, env));
-			if (!['dm', 'reply', 'caption', 'pitch', 'classify', 'fit', 'summary', 'negotiate', 'script', 'nudge', 'ask', 'voice', 'embed', 'cheer', 'scout', 'reelcheck', 'growplan', 'checkup', 'offercheck'].includes(kind)) return json({ error: 'Unknown.' }, 404);
+			if (!['dm', 'reply', 'caption', 'pitch', 'classify', 'fit', 'summary', 'negotiate', 'script', 'nudge', 'ask', 'voice', 'embed', 'cheer', 'scout', 'reelcheck', 'growplan', 'checkup', 'offercheck', 'precheck', 'getfound'].includes(kind)) return json({ error: 'Unknown.' }, 404);
 			const body = (await req.json()) as Record<string, unknown>;
 			const job = (x: Run) =>
-				kind === 'cheer' ? cheer(x, body) : kind === 'scout' ? scout(x, body) : kind === 'dm' ? readDm(x, body) : kind === 'reply' ? replies(x, body) : kind === 'pitch' ? pitch(x, body) : kind === 'classify' ? classify(x, body) : kind === 'fit' ? fit(x, body) : kind === 'summary' ? summary(x, body) : kind === 'negotiate' ? creatorOf(req, env).then((me) => negotiate(x, body, me)) : kind === 'script' ? script(x, body) : kind === 'nudge' ? nudge(x, body) : kind === 'ask' ? creatorOf(req, env).then((me) => ask(x, body, me)) : kind === 'voice' ? voice(x, body) : kind === 'embed' ? embed(x, body) : kind === 'reelcheck' ? reelCheck(x, body) : kind === 'growplan' ? growPlan(x, body) : kind === 'checkup' ? checkup(x, body) : kind === 'offercheck' ? offerCheck(x, body) : creatorOf(req, env).then((me) => caption(x, body, me));
+				kind === 'cheer' ? cheer(x, body) : kind === 'scout' ? scout(x, body) : kind === 'dm' ? readDm(x, body) : kind === 'reply' ? replies(x, body) : kind === 'pitch' ? pitch(x, body) : kind === 'classify' ? classify(x, body) : kind === 'fit' ? fit(x, body) : kind === 'summary' ? summary(x, body) : kind === 'negotiate' ? creatorOf(req, env).then((me) => negotiate(x, body, me)) : kind === 'script' ? script(x, body) : kind === 'nudge' ? nudge(x, body) : kind === 'ask' ? creatorOf(req, env).then((me) => ask(x, body, me)) : kind === 'voice' ? voice(x, body) : kind === 'embed' ? embed(x, body) : kind === 'reelcheck' ? reelCheck(x, body) : kind === 'growplan' ? growPlan(x, body) : kind === 'checkup' ? checkup(x, body) : kind === 'offercheck' ? offerCheck(x, body) : kind === 'precheck' ? preCheck(x, body) : kind === 'getfound' ? getFound(x, body) : creatorOf(req, env).then((me) => caption(x, body, me));
 
 			// Checking an incoming Instagram DM comes from the DM webhook with a single-use pass, and the
 			// hourly fun nudge from its job the same way. DMs stay on Cloudflare (never sent to Google);
@@ -829,6 +829,63 @@ What to look for (red = serious, amber = worth asking): usage in perpetuity, for
 		reply: String(j.reply ?? '').trim().slice(0, 1200),
 		read: { pages, chars: text.length }
 	};
+}
+
+// Before the brand sees a draft: her caption and script against the brief's key message, must-says
+// and don'ts. The tags, code and #ad are checked by the app itself (exact matches, no AI needed).
+async function preCheck(x: Run, b: Record<string, unknown>) {
+	const clip = (v: unknown, n: number) => String(v ?? '').replace(/\s+/g, ' ').trim().slice(0, n);
+	const caption = String(b.caption ?? '').slice(0, 2200);
+	const script = String(b.script ?? '').slice(0, 3000);
+	const brief = String(b.brief ?? '').slice(0, 2500);
+	if (!brief.trim()) return { items: [], summary: 'The brief has no talking points to check against.' };
+	if (!caption.trim() && !script.trim()) return { error: 'Add the caption (or the script) first.' };
+	const reply = await chat(
+		x,
+		`You check an Indian Instagram creator's draft for a brand collaboration before she sends it to the brand. Compare her caption and script with the brief. Return ONLY JSON:
+{"items": [{"label": "the brief's point in under 8 words, like 'Says it is fragrance-free'", "ok": true | false, "note": "if not ok: what to add or change, one short sentence in plain English; '' if ok"}],
+ "summary": "one friendly sentence: ready to send, or the one thing to fix first"}
+Rules: one item per key message, must-say or must-show point, and each don't from the brief (ok = she avoided it). Skip hashtags, mentions, links and promo codes (checked elsewhere). Points that can only be seen in the video (like "show the product in the first 3 seconds") are ok: null with note "Check in the video". Up to 8 items. Use only the brief and her text; never invent requirements.`,
+		JSON.stringify({ brief, caption, script }),
+		700
+	);
+	const j = firstJson(reply) ?? {};
+	const items = (Array.isArray(j.items) ? (j.items as Record<string, unknown>[]) : [])
+		.map((i) => ({ label: clip(i.label, 80), ok: i.ok === true ? true : i.ok === false ? false : null, note: clip(i.note, 200) }))
+		.filter((i) => i.label)
+		.slice(0, 8);
+	return { items, summary: clip(j.summary, 200) };
+}
+
+// Get found: the words brands (and the AI search inside Instagram, YouTube and Google) look for, in her
+// "about" line, her Instagram bio and keywords, from what she actually makes.
+async function getFound(x: Run, b: Record<string, unknown>) {
+	const clip = (v: unknown, n: number) => String(v ?? '').replace(/\s+/g, ' ').trim().slice(0, n);
+	const facts = {
+		name: clip(b.name, 60),
+		niche: clip(b.niche, 120),
+		city: clip(b.city, 60),
+		languages: (Array.isArray(b.languages) ? b.languages : []).map((l) => clip(l, 20)).slice(0, 6),
+		topics: (Array.isArray(b.topics) ? b.topics : []).map((t) => clip(t, 40)).slice(0, 6),
+		brands: (Array.isArray(b.brands) ? b.brands : []).map((t) => clip(t, 40)).slice(0, 12),
+		followers: Number(b.followers) || 0,
+		audience: clip(b.audience, 160),
+		now: clip(b.bio, 400)
+	};
+	const reply = await chat(
+		x,
+		`You help an Indian Instagram creator get found by brands. Brands and the AI search inside Instagram, YouTube and Google match creators by plain descriptions: niche, city, language, audience and the kind of content. From her facts, return ONLY JSON:
+{"bio": "her 'about' line for her collab page, 2 short sentences, under 260 characters, third person is fine: what she makes, for whom, where, in which languages, and the brands or categories she fits. No hashtags or emojis.",
+ "ig_bio": "an Instagram bio under 140 characters: what you get + city + 'Collabs:' with no link (the link goes in the link field)",
+ "keywords": ["6 to 10 short search phrases a brand would type, like 'Bengaluru skincare creator', 'Kannada lifestyle reels'"],
+ "missing": ["up to 3 short things her profile doesn't say yet that brands look for, like 'your audience's age' or 'the languages you speak'"]}
+Use only her facts; never invent numbers, awards or brands. Write in simple English.`,
+		JSON.stringify(facts),
+		600
+	);
+	const j = firstJson(reply) ?? {};
+	const list = (v: unknown, n: number, len: number) => (Array.isArray(v) ? v : []).map((k) => clip(k, len)).filter(Boolean).slice(0, n);
+	return { bio: clip(j.bio, 300), ig_bio: clip(j.ig_bio, 150), keywords: list(j.keywords, 10, 50), missing: list(j.missing, 3, 80) };
 }
 
 async function script(x: Run, b: Record<string, unknown>) {

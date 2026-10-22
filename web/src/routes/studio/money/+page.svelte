@@ -79,7 +79,7 @@
 		<a class="cr-ring" href="/studio/payments"><i><span><Icon name="wallet" /></span></i>{#if lateList.length}<b>{lateList.length} LATE</b>{:else if dueN}<b>{dueN} DUE</b>{/if}<small>Payments</small></a>
 		<a class="cr-ring" href="/studio/reports"><i><span><Icon name="chart" /></span></i><small>Reports</small></a>
 		<a class="cr-ring" href="/studio/payments"><i><span><Icon name="doc" /></span></i><small>Invoices</small></a>
-		<a class="cr-ring" href="/studio/reports"><i><span><Icon name="rupee" /></span></i><small>TDS</small></a>
+		<a class="cr-ring" href="/studio/tax"><i><span><Icon name="rupee" /></span></i><small>Tax desk</small></a>
 		<a class="cr-ring" href="/studio/calendar"><i><span><Icon name="cal" /></span></i><small>Due dates</small></a>
 	</nav>
 	{#if facts.length}

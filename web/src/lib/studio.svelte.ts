@@ -715,6 +715,8 @@ export type InvoiceInput = {
 	currency?: string;
 	inr_rate?: number;
 	tds_rate: number;
+	/** 194J fees or 194C contract work (Section 393 of the Income-tax Act, 2025, from 1 Apr 2026). */
+	tds_section?: '194J' | '194C';
 	issue_date: string;
 	due_date: string | null;
 	send_to: string;
@@ -813,7 +815,7 @@ export async function loadInstagram() {
 	keepCopy();
 }
 
-async function invokeFn(name: string, body: Record<string, unknown>) {
+export async function invokeFn(name: string, body: Record<string, unknown>) {
 	const { data, error } = await supabase.functions.invoke(name, { body });
 	if (error) {
 		let msg = errMessage(error);
@@ -846,8 +848,8 @@ export async function igSync(reportFor?: string) {
 
 /** The Instagram sign-in address for this creator. Every creator comes back through the same server
  * address (the one registered with Meta), and the signed state says whose account it is. */
-export async function igStart(extra: boolean): Promise<string> {
-	const r = (await invokeFn('instagram-auth', { action: 'start', extra })) as { url?: string };
+export async function igStart(extra: boolean, comments = false): Promise<string> {
+	const r = (await invokeFn('instagram-auth', { action: 'start', extra, comments })) as { url?: string };
 	if (!r?.url) throw new Error('Instagram sign-in could not start. Try again.');
 	return r.url;
 }

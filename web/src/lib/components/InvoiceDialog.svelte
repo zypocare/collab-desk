@@ -65,6 +65,7 @@
 			.sort((a, b) => b.created_at.localeCompare(a.created_at))[0]
 	);
 	let tdsRate = $state(start.e?.tds_rate ?? lastForBrand?.tds_rate ?? 0);
+	let tdsSection = $state<'194J' | '194C'>(start.e?.tds_section ?? lastForBrand?.tds_section ?? '194J');
 	let issueDate = $state(start.e?.issue_date ?? todayIso());
 	let dueDate = $state(start.due);
 	let sendTo = $state(start.e?.send_to ?? start.accounts);
@@ -136,6 +137,7 @@
 				tax_mode: s.gst_registered ? taxMode : 'none',
 				gst_rate: s.gst_registered && !foreign ? Number(gstRate) : 0,
 				tds_rate: foreign ? 0 : Number(tdsRate),
+				tds_section: tdsSection,
 				currency: cur,
 				inr_rate: foreign ? Number(rate) || 1 : 1,
 				issue_date: issueDate,
@@ -213,6 +215,13 @@
 					<label for="iv-tds">TDS the brand will deduct</label>
 					<Select id="iv-tds" bind:value={tdsRate} options={[0, 1, 2, 10].map((r) => ({ value: r, label: r ? `${r}%` : 'None' }))} />
 				</div>
+				{#if tdsRate > 0}
+					<div class="f">
+						<label for="iv-tds-s">Under</label>
+						<Select id="iv-tds-s" bind:value={tdsSection} onchange={(v) => (tdsRate = v === '194C' ? (tdsRate === 10 ? 1 : tdsRate) : 10)} options={[{ value: '194J' as const, label: '194J · fees for content (10%)' }, { value: '194C' as const, label: '194C · contract work (1% or 2%)' }]} />
+						<small class="hint">Section 393 of the new Income-tax Act from 1 April 2026; same rates.</small>
+					</div>
+				{/if}
 			{/if}
 			<div class="f"><label for="iv-due">Payment due</label><DatePicker id="iv-due" bind:value={dueDate} /></div>
 		</div>

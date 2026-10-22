@@ -7,7 +7,9 @@
 	import type { PublicPage } from '#lib/types.ts';
 	import { copyText, toast } from '#lib/ui.svelte.ts';
 	import { PHONE_Q } from '#lib/phone.svelte.ts';
+	import { waShare } from '#lib/util.ts';
 	import Icon from '#lib/components/Icon.svelte';
+	import GetFound from '#lib/components/GetFound.svelte';
 	import Segmented from '#lib/components/Segmented.svelte';
 
 	// Her brand page (the public page brands see): the link and ways to share it, what is on it
@@ -58,10 +60,11 @@
 		<p>Put it in your Instagram bio and send it in DMs. Brands sign in with their work email to send and track requests.</p>
 		<div class="bp-acts">
 			<button class="btn grad lg" onclick={() => copyText(link, 'Link copied')}><Icon name="copy" />Copy link</button>
+			<a class="btn wa" href={waShare('', `My rates, packages and collab requests: ${link}`)} target="_blank" rel="noopener"><Icon name="send" />WhatsApp my rate card</a>
 			<a class="btn" href="/?preview=1" target="_blank" rel="noopener"><Icon name="eye" />Open your page</a>
 			<a class="btn" href="/studio/qr"><Icon name="qr" />QR codes</a>
 			<button class="btn" onclick={kit} disabled={kitBusy}>{#if kitBusy}<span class="spinner"></span>{:else}<Icon name="film" />{/if}Media kit PDF</button>
-			{#if s.show_insights && studio.ig?.connected}<button class="btn" onclick={() => copyText(`${link}/insights`, 'Insights link copied. Send it when brands ask for insights')}><Icon name="chart" />Insights link</button>{/if}
+			{#if s.show_insights && studio.ig?.connected}<button class="btn" onclick={() => copyText(`${link}/insights`, 'Insights link copied. Send it when brands ask for insights')}><Icon name="chart" />Insights link</button><a class="btn wa" href={waShare('', `My live Instagram numbers (updated every day): ${link}/insights`)} target="_blank" rel="noopener"><Icon name="send" />WhatsApp my media kit</a>{/if}
 		</div>
 	</div>
 	<div class="bp-status">
@@ -69,6 +72,8 @@
 		<span class="bp-reply">Replies in about {s.reply_time || '1 day'}</span>
 	</div>
 </section>
+
+<GetFound {link} />
 
 <div class="bp-grid">
 	<section class="panel bp-parts rv" style="--i:2">

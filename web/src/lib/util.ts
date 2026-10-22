@@ -28,6 +28,9 @@ export const phoneOk = (v: string | null | undefined) => {
 	return !t || (/^\+?[\d\s\-()]+$/.test(t) && t.replace(/\D/g, '').length >= 8 && t.replace(/\D/g, '').length <= 15);
 };
 
+/** WhatsApp to this number, or (with no number) WhatsApp's own chat picker. */
+export const waShare = (phone: string | null | undefined, text: string) => waLink(phone, text) || `https://wa.me/?text=${encodeURIComponent(text)}`;
+
 export function waLink(phone: string | null | undefined, text: string) {
 	let n = (phone ?? '').replace(/\D/g, '');
 	if (n.length === 11 && n.startsWith('0')) n = n.slice(1);

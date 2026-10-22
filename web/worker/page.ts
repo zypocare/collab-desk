@@ -68,11 +68,27 @@ export async function brandPage(req: Request, env: PageEnv, url: URL, ctx: Ctx):
 		return new Response(null, { status: 302, headers: { location: 'https://app.miracleapp.live/signup?as=creator', 'cache-control': 'no-store' } });
 	}
 	if (!boot?.page) return res;
+	// Count the view, with where it came from (?utm_source=… or the site that linked here). Bots and
+	// link previews don't count.
+	const ua = req.headers.get('user-agent') ?? '';
+	if (slug && !url.searchParams.has('preview') && !/bot|crawl|spider|preview|facebookexternalhit|whatsapp|slack|telegram|discord|curl|wget|python|headless/i.test(ua)) {
+		const ref = (() => {
+			try {
+				const r = new URL(req.headers.get('referer') ?? '');
+				return r.hostname === host ? '' : r.hostname.replace(/^(www|m|l|lm)\./, '');
+			} catch {
+				return '';
+			}
+		})();
+		const source = url.searchParams.get('utm_source') || (url.searchParams.get('qr') ? 'qr' : '') || ref || 'direct';
+		ctx.waitUntil(rpc(env, slug, 'page_hit', { p_slug: slug, p_source: source }, 3000).catch(() => null));
+	}
 
 	const p = boot.page as { display_name?: string; handle?: string; niche?: string; city?: string; app_name?: string; accepting?: boolean };
 	const name = p.display_name || (p.handle ? `@${p.handle}` : 'this creator');
 	const title = `Work with ${name}`;
-	const desc = [[p.niche, p.city].map((x) => String(x ?? '').trim()).filter(Boolean).join(' · '), p.accepting === false ? 'See past work and rates.' : 'Rates, open weeks and past work. Send a collab request.'].filter(Boolean).join('. ');
+	const bio = String((boot.extra as { bio?: string } | null)?.bio ?? '').trim();
+	const desc = bio ? `${bio}${p.accepting === false ? '' : ' Send a collab request.'}` : [[p.niche, p.city].map((x) => String(x ?? '').trim()).filter(Boolean).join(' · '), p.accepting === false ? 'See past work and rates.' : 'Rates, open weeks and past work. Send a collab request.'].filter(Boolean).join('. ');
 	const v = Number(boot.card?.v) || 0;
 	const image = v && boot.owner ? `${env.SUPABASE_URL}/storage/v1/object/public/cards/${boot.owner.id}/page.jpg?v=${v}` : `${url.origin}/icon-512.png`;
 	const meta = [
@@ -93,7 +109,21 @@ export async function brandPage(req: Request, env: PageEnv, url: URL, ctx: Ctx):
 		.join('');
 	// The page data, ready for the app (no "<" inside, so it can't end the script early).
 	const data = JSON.stringify({ page: boot.page, ins: boot.ins, extra: boot.extra, at: Date.now() }).replace(/</g, '\\u003c');
-	const head = `<title>${attr(title)}</title>${meta}<script id="pp-boot" type="application/json">${data}</script>`;
+	// Who she is, for search engines and AI assistants that read pages (schema.org).
+	const ld = JSON.stringify({
+		'@context': 'https://schema.org',
+		'@type': 'ProfilePage',
+		mainEntity: {
+			'@type': 'Person',
+			name,
+			description: desc,
+			...(p.handle ? { alternateName: `@${p.handle}`, sameAs: [`https://instagram.com/${String(p.handle).replace(/^@+/, '')}`] } : {}),
+			...(p.city ? { homeLocation: { '@type': 'Place', name: p.city } } : {}),
+			...(p.niche ? { knowsAbout: String(p.niche).split(',').map((x) => x.trim()).filter(Boolean) } : {}),
+			jobTitle: 'Content creator'
+		}
+	}).replace(/</g, '\\u003c');
+	const head = `<title>${attr(title)}</title>${meta}<link rel="canonical" href="${attr(`${url.origin}/`)}" /><script type="application/ld+json">${ld}</script><script id="pp-boot" type="application/json">${data}</script>`;
 
 	const out = new HTMLRewriter().on('head', { element: (el) => el.append(head, { html: true }) }).transform(res);
 	const h = new Headers(out.headers);

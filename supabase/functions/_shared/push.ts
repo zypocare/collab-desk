@@ -76,6 +76,8 @@ export function pushFor(kind: string, p: Record<string, unknown>): Push | null {
       return { title: `${String(p.brand || '@' + String(p.from ?? ''))} may want a collab`, body: `${String(p.text ?? '')} · Instagram DM`, url: `/studio/inbox/ig/${encodeURIComponent(String(p.igsid ?? ''))}`, tag: `igc-${String(p.igsid ?? '')}` };
     case 'ig_dm':
       return { title: `Instagram DM from @${String(p.from ?? '')}`, body: String(p.text ?? ''), url: `/studio/inbox/ig/${encodeURIComponent(String(p.igsid ?? ''))}`, tag: `ig-${String(p.igsid ?? '')}` };
+    case 'comment_dm':
+      return { title: `@${String(p.from ?? '')} commented "${String(p.keyword ?? '')}"`, body: 'A DM reply is ready. Tap to send it.', url: '/studio/settings?s=autopilot', tag: 'comment-dm' };
     case 'insights_viewed':
       return { title: `${String(p.label ?? 'A brand')} opened your insights`, body: Number(p.views) > 1 ? `Viewed ${p.views} times. A good moment to follow up.` : 'A good moment to follow up.', url: '/studio/settings?s=profile', tag: `ins-${String(p.label ?? '')}` };
     case 'question_received':

@@ -623,7 +623,8 @@
 							{#if nameLines.a}<span class="mp-ln"><span>{nameLines.a}</span></span>{/if}
 							<span class="mp-ln"><span class="mp-gt">{nameLines.b}</span></span>
 						</h1>
-						{#if p.niche || p.city}<p class="mp-lede mp-fade" style="animation-delay:.4s">{p.niche ? `${p.niche}${p.city ? ` from ${p.city}` : ''}.` : `From ${p.city}.`}</p>{/if}
+						{#if p.bio}<p class="mp-lede mp-fade" style="animation-delay:.4s">{p.bio}</p>
+						{:else if p.niche || p.city}<p class="mp-lede mp-fade" style="animation-delay:.4s">{p.niche ? `${p.niche}${p.city ? ` from ${p.city}` : ''}.` : `From ${p.city}.`}</p>{/if}
 						{#if p.content_languages?.length}
 							<div class="mp-chips mp-fade" style="animation-delay:.5s" aria-label="Content languages">{#each p.content_languages as l (l)}<span class="mp-chip">{l}</span>{/each}</div>
 						{/if}

@@ -4,7 +4,7 @@
 	import { studio } from '../studio.svelte';
 	import { supabase } from '../supabase';
 	import { copyText, toast } from '../ui.svelte';
-	import { errMessage, initials } from '../util';
+	import { errMessage, initials, waShare } from '../util';
 	import { saveBlob } from '../download';
 	import { DEFAULT_LOOK, drawQr, loadPhoto, look } from '../brandQr';
 	import type { QrCode } from '../types';
@@ -83,6 +83,7 @@
 			{#if canShare}<button class="btn grad lg" onclick={share} disabled={!code}><Icon name="share" />Share QR code</button>{/if}
 			<button class="btn" class:grad={!canShare} class:lg={!canShare} onclick={save} disabled={!code}><Icon name="download" />Save image</button>
 			<button class="btn" onclick={() => copyText(url, 'Link copied')} disabled={!code}><Icon name="copy" />Copy link</button>
+			<a class="btn wa" href={waShare('', `${name}: rates, packages and collab requests in one place. ${url}`)} target="_blank" rel="noopener"><Icon name="send" />WhatsApp</a>
 		</div>
 	</div>
 </div>

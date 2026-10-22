@@ -2,6 +2,7 @@
 // Also "load": brings in the latest messages of a conversation from Instagram.
 import { admin } from '../_shared/admin.ts';
 import { creatorOfCaller } from '../_shared/creators.ts';
+import { privateReply } from '../_shared/instagram.ts';
 
 const GRAPH = 'https://graph.instagram.com/v21.0';
 const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-creator' };
@@ -16,7 +17,25 @@ Deno.serve(async (req) => {
   const { data: tok } = await db.from('ig_token').select('access_token, permissions').eq('id', creator).maybeSingle();
   if (!tok?.access_token) return reply({ error: 'Connect Instagram first.' }, 400);
   if (!String(tok.permissions ?? '').includes('instagram_business_manage_messages')) return reply({ error: 'Allow DMs first: My page > Profile & Instagram > Allow DMs and posting.' }, 400);
-  const { igsid, text } = await req.json().catch(() => ({}));
+  const { igsid, text, comment_log } = await req.json().catch(() => ({}));
+  // Comment-to-DM, "ask" mode: she sends (or skips) a reply that was waiting for her.
+  if (comment_log) {
+    const { data: log } = await db.from('dm_auto_log').select('id, comment_id, reply, status, rule_id').eq('creator_id', creator).eq('id', comment_log).maybeSingle();
+    if (!log || log.status !== 'pending') return reply({ error: 'That reply was already handled.' }, 400);
+    if (text === false) {
+      await db.from('dm_auto_log').update({ status: 'skipped' }).eq('id', log.id);
+      return reply({ ok: true });
+    }
+    if (!String(tok.permissions ?? '').includes('instagram_business_manage_comments')) return reply({ error: 'Allow comments first: turn on Comment-to-DM again and say yes on Instagram.' }, 400);
+    try {
+      await privateReply(tok.access_token, log.comment_id, typeof text === 'string' && text.trim() ? text.trim() : log.reply);
+    } catch (e) {
+      await db.from('dm_auto_log').update({ status: 'failed', error: String((e as Error)?.message ?? e).slice(0, 300) }).eq('id', log.id);
+      return reply({ error: String((e as Error)?.message ?? e) }, 400);
+    }
+    await db.from('dm_auto_log').update({ status: 'sent', sent_at: new Date().toISOString() }).eq('id', log.id);
+    return reply({ ok: true });
+  }
   if (!igsid) return reply({ error: 'Missing conversation.' }, 400);
 
   const body = String(text ?? '').trim();
