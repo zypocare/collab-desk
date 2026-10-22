@@ -37,6 +37,19 @@ insert into results select 'Another creator can''t see her plans', not exists (s
 insert into results select 'or her scheduled reels', not exists (select 1 from public.scheduled_posts where file_path like 'own/' || :a_id || '/%'), null;
 reset role;
 
+-- Check-ups are hers too, and can plan reels.
+select set_config('request.jwt.claims', json_build_object('email', 'gr-a@test.dev', 'sub', :'a_uid', 'role', 'authenticated')::text, true);
+set local role authenticated;
+insert into public.growth_checkups (data, done) values ('{"verdict": "test"}', '{"bio": true}');
+insert into public.content_plans (title, post_at, status, source) values ('Deepavali reel', now() + interval '10 days', 'planned', 'checkup');
+insert into results select 'A check-up is hers', (select creator_id = :a_id from public.growth_checkups where data ->> 'verdict' = 'test'), null;
+insert into results select 'and can plan reels', exists (select 1 from public.content_plans where source = 'checkup'), null;
+reset role;
+select set_config('request.jwt.claims', json_build_object('email', 'gr-b@test.dev', 'sub', :'b_uid', 'role', 'authenticated')::text, true);
+set local role authenticated;
+insert into results select 'Another creator can''t see her check-up', not exists (select 1 from public.growth_checkups where data ->> 'verdict' = 'test'), null;
+reset role;
+
 -- ================================================================== 2. Matches
 select set_config('request.jwt.claims', json_build_object('email', 'gr-a@test.dev', 'sub', :'a_uid', 'role', 'authenticated')::text, true);
 set local role authenticated;

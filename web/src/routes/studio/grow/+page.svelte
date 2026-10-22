@@ -6,14 +6,18 @@
 	import { copyText, countUp } from '#lib/ui.svelte.ts';
 	import { compact, firstName } from '#lib/util.ts';
 	import Avatar from '#lib/components/Avatar.svelte';
+	import { checkups, enoughReels, latest, loadCheckups, runCheckup } from '#lib/checkup.svelte.ts';
 	import Icon from '#lib/components/Icon.svelte';
 
 	// Grow: real followers and views from what already works for her. Her numbers, what's working, this
 	// week's reel ideas (the growth autopilot), collab reels with other creators, and a reel worth boosting.
 	onMount(async () => {
 		if (!studio.media.length) await loadInstagram();
-		await loadGrow();
+		await Promise.all([loadGrow(), loadCheckups()]);
 		if (studio.ig?.connected) planWeek();
+		// The check-up runs again every two weeks, when she opens Grow.
+		const last = latest();
+		if (studio.ig?.connected && enoughReels() && last && Date.now() - Date.parse(last.created_at) > 14 * 864e5) runCheckup();
 	});
 	const connected = $derived(!!studio.ig?.connected);
 	const st = $derived(stats(studio.media, studio.followersHistory, studio.ig));
@@ -69,6 +73,17 @@
 		<div class="clear-acts"><a class="glass-chip" href="/studio/settings?s=profile"><Icon name="link" />Connect Instagram</a></div>
 	</div>
 {:else}
+	<!-- The growth check-up: why she isn't growing, and what to change -->
+	{@const cu = latest()}
+	<a class="gr-cu rv" class:warn={!!cu?.data.findings.length} href="/studio/grow/checkup">
+		<span class="gr-it">
+			{#if cu && cu.data.findings.length}<b>Growth check-up: {cu.data.findings.length} thing{cu.data.findings.length === 1 ? '' : 's'} holding you back</b><small>Biggest: {cu.data.findings[0].title.toLowerCase()}</small>
+			{:else if cu}<b>Growth check-up: nothing big holding you back</b><small>See what works and what to do more of</small>
+			{:else}<b>{checkups.running ? 'Reading your reels and audience…' : 'Run your growth check-up'}</b><small>Why you're not growing, and what to change</small>{/if}
+		</span>
+		<Icon name="chevR" />
+	</a>
+
 	<!-- The numbers that matter for growth -->
 	<section class="hero-card glow gr-hero rv" aria-label="Your growth">
 		<div class="mesh" aria-hidden="true"></div>
@@ -200,6 +215,26 @@
 {/if}
 
 <style>
+	.gr-cu {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) auto;
+		gap: 12px;
+		align-items: center;
+		padding: 16px 18px;
+		margin-bottom: 16px;
+		border-radius: 20px;
+		background: var(--surface);
+		box-shadow: inset 0 0 0 1px var(--line-strong, var(--line));
+		color: inherit;
+		text-decoration: none;
+	}
+	.gr-cu.warn {
+		background: color-mix(in oklab, var(--bad) 8%, var(--surface));
+		box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--bad) 35%, transparent);
+	}
+	.gr-cu b {
+		font-size: 15px;
+	}
 	.gr-hero {
 		position: relative;
 		display: grid;

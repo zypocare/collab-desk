@@ -176,7 +176,8 @@
 		'/studio/instagram': 'Instagram',
 		'/studio/share': 'Add from a share',
 		'/studio/grow': 'Grow',
-		'/studio/grow/check': 'Check a reel'
+		'/studio/grow/check': 'Check a reel',
+		'/studio/grow/checkup': 'Growth check-up'
 	};
 	const SECTIONS: Record<string, string> = {
 		profile: 'Edit profile',

@@ -18,7 +18,7 @@ type Env = {
 type Run = { env: Env; gemini: boolean; neurons: number };
 
 // Expected size of each job in Cloudflare neurons (reserved before, corrected after).
-const COST: Record<string, number> = { dm: 160, reply: 110, caption: 110, pitch: 140, fit: 230, classify: 40, summary: 220, negotiate: 210, script: 330, nudge: 120, ask: 260, voice: 60, embed: 8, cheer: 60, reelcheck: 260, growplan: 200 };
+const COST: Record<string, number> = { dm: 160, reply: 110, caption: 110, pitch: 140, fit: 230, classify: 40, summary: 220, negotiate: 210, script: 330, nudge: 120, ask: 260, voice: 60, embed: 8, cheer: 60, reelcheck: 260, growplan: 200, checkup: 420 };
 // Cloudflare's price list in neurons per token (Llama 3.3 70B fast; Llama 3.2 11B vision).
 const PER_TOKEN = { text: [0.0267, 0.2048], vision: [0.0045, 0.0615] };
 const USED_UP = "Today's free AI is used up. It's back at 5:30 am.";
@@ -39,10 +39,10 @@ export default {
 		try {
 			const kind = url.pathname.slice('/api/ai/'.length);
 			if (kind === 'status') return json(await status(req, env));
-			if (!['dm', 'reply', 'caption', 'pitch', 'classify', 'fit', 'summary', 'negotiate', 'script', 'nudge', 'ask', 'voice', 'embed', 'cheer', 'scout', 'reelcheck', 'growplan'].includes(kind)) return json({ error: 'Unknown.' }, 404);
+			if (!['dm', 'reply', 'caption', 'pitch', 'classify', 'fit', 'summary', 'negotiate', 'script', 'nudge', 'ask', 'voice', 'embed', 'cheer', 'scout', 'reelcheck', 'growplan', 'checkup'].includes(kind)) return json({ error: 'Unknown.' }, 404);
 			const body = (await req.json()) as Record<string, unknown>;
 			const job = (x: Run) =>
-				kind === 'cheer' ? cheer(x, body) : kind === 'scout' ? scout(x, body) : kind === 'dm' ? readDm(x, body) : kind === 'reply' ? replies(x, body) : kind === 'pitch' ? pitch(x, body) : kind === 'classify' ? classify(x, body) : kind === 'fit' ? fit(x, body) : kind === 'summary' ? summary(x, body) : kind === 'negotiate' ? creatorOf(req, env).then((me) => negotiate(x, body, me)) : kind === 'script' ? script(x, body) : kind === 'nudge' ? nudge(x, body) : kind === 'ask' ? creatorOf(req, env).then((me) => ask(x, body, me)) : kind === 'voice' ? voice(x, body) : kind === 'embed' ? embed(x, body) : kind === 'reelcheck' ? reelCheck(x, body) : kind === 'growplan' ? growPlan(x, body) : creatorOf(req, env).then((me) => caption(x, body, me));
+				kind === 'cheer' ? cheer(x, body) : kind === 'scout' ? scout(x, body) : kind === 'dm' ? readDm(x, body) : kind === 'reply' ? replies(x, body) : kind === 'pitch' ? pitch(x, body) : kind === 'classify' ? classify(x, body) : kind === 'fit' ? fit(x, body) : kind === 'summary' ? summary(x, body) : kind === 'negotiate' ? creatorOf(req, env).then((me) => negotiate(x, body, me)) : kind === 'script' ? script(x, body) : kind === 'nudge' ? nudge(x, body) : kind === 'ask' ? creatorOf(req, env).then((me) => ask(x, body, me)) : kind === 'voice' ? voice(x, body) : kind === 'embed' ? embed(x, body) : kind === 'reelcheck' ? reelCheck(x, body) : kind === 'growplan' ? growPlan(x, body) : kind === 'checkup' ? checkup(x, body) : creatorOf(req, env).then((me) => caption(x, body, me));
 
 			// Checking an incoming Instagram DM comes from the DM webhook with a single-use pass, and the
 			// hourly fun nudge from its job the same way. DMs stay on Cloudflare (never sent to Google);
@@ -695,6 +695,39 @@ Return ONLY JSON: {"ideas": [{"title": "under 9 words, the reel itself", "why": 
 		.slice(0, 3);
 	if (!ideas.length) throw new Error('!The AI had no ideas this time. Try again.');
 	return { ideas };
+}
+
+// ---------- Grow: the growth check-up ----------
+// Reads her reels' captions into a few topics, says who her content is made for (to compare with who
+// actually follows her), suggests a one-line bio, and names the best reel's format to repeat.
+// The numbers themselves are worked out in the app; this only reads the words.
+async function checkup(x: Run, b: Record<string, unknown>) {
+	const reels = (Array.isArray(b.reels) ? b.reels : []).slice(0, 40) as { id: string; caption: string; views: number }[];
+	const reply = await chat(
+		x,
+		`You help an Indian Instagram creator understand her account. From her niche, city, languages and her reels (id, caption start, views), return ONLY JSON:
+{"topics": [{"name": "2-4 word topic in plain English, like 'Trips near Bengaluru'", "ids": ["reel ids"]}],
+ "ideal": {"gender": "women" | "men" | "everyone", "age_from": number, "age_to": number, "city": "the city her content is mostly for, or '' if not local"},
+ "bio": "a one-line Instagram bio under 60 characters saying who it's for and what they get, built on her best topics",
+ "repeat": "one sentence: the format of her best reel to repeat, from its caption (hook first, then what)"}
+Rules: 3 to 6 topics; every reel id in exactly one topic; put reels that fit nothing in a topic named "Everything else". Base "ideal" on who her topics are made for (e.g. home decor and festival looks for women 22-40 in her city). Use only the captions; never invent facts.`,
+		JSON.stringify({ niche: b.niche ?? '', city: b.city ?? '', languages: b.languages ?? [], reels: reels.map((r) => ({ id: String(r.id), caption: String(r.caption ?? '').slice(0, 120), views: Number(r.views) || 0 })) }),
+		1200
+	);
+	const j = firstJson(reply) ?? {};
+	const ids = new Set(reels.map((r) => String(r.id)));
+	const topics = (Array.isArray(j.topics) ? (j.topics as Record<string, unknown>[]) : [])
+		.map((t) => ({ name: String(t.name ?? '').trim().slice(0, 40), ids: (Array.isArray(t.ids) ? t.ids.map(String) : []).filter((i) => ids.has(i)) }))
+		.filter((t) => t.name && t.ids.length)
+		.slice(0, 6);
+	const ideal = (j.ideal ?? {}) as Record<string, unknown>;
+	const g = String(ideal.gender ?? 'everyone');
+	return {
+		topics,
+		ideal: { gender: ['women', 'men'].includes(g) ? g : 'everyone', age_from: Math.max(13, Math.min(60, Number(ideal.age_from) || 18)), age_to: Math.max(18, Math.min(65, Number(ideal.age_to) || 40)), city: String(ideal.city ?? '').slice(0, 40) },
+		bio: String(j.bio ?? '').trim().slice(0, 80),
+		repeat: String(j.repeat ?? '').trim().slice(0, 200)
+	};
 }
 
 async function script(x: Run, b: Record<string, unknown>) {

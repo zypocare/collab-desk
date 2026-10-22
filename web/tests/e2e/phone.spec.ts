@@ -5,7 +5,7 @@ test('phone: main screens fit the screen', async ({ page }) => {
 	await fakeAi(page);
 	await signIn(page);
 	const noErrors = watchErrors(page);
-	for (const path of ['/studio', '/studio/collabs', '/studio/calendar', '/studio/payments', '/studio/profile', '/studio/inbox', '/studio/reports', '/studio/grow', '/studio/grow/check']) {
+	for (const path of ['/studio', '/studio/collabs', '/studio/calendar', '/studio/payments', '/studio/profile', '/studio/inbox', '/studio/reports', '/studio/grow', '/studio/grow/check', '/studio/grow/checkup']) {
 		await page.goto(path);
 		await page.waitForLoadState('networkidle');
 		await noSidewaysScroll(page);
