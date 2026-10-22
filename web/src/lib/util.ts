@@ -170,7 +170,9 @@ export const outstanding = (c: Collab) =>
 		? Math.max(0, (Number(c.fee) || 0) - (Number(c.pay_received) || 0))
 		: 0;
 export const overdue = (c: Collab) => isPaid(c) && c.pay_status === 'invoiced' && !!c.pay_due && diff(c.pay_due) < 0;
-export const payState = (c: Collab) => (c.pay_status === 'paid' ? 'paid' : overdue(c) ? 'overdue' : 'due');
+/** Paid once the status says so, or once the whole fee has come in (whatever the status still says). */
+export const payState = (c: Collab) =>
+	c.pay_status === 'paid' || (isPaid(c) && Number(c.fee) > 0 && (Number(c.pay_received) || 0) >= Number(c.fee) - 1) ? 'paid' : overdue(c) ? 'overdue' : 'due';
 
 export type NextLine = { text: string; tone: '' | 'late' | 'soon'; icon: string };
 export function nextLine(c: Collab): NextLine {

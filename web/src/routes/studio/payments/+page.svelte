@@ -51,6 +51,11 @@
 	const next = $derived(rows.filter((c) => payState(c) !== 'paid' && c.pay_due).sort((a, b) => a.pay_due!.localeCompare(b.pay_due!))[0]);
 	const counts = $derived({ all: rows.length, due: rows.filter((c) => payState(c) === 'due').length, overdue: nOd, paid: rows.filter((c) => payState(c) === 'paid').length });
 	const HUE = { paid: 'var(--ok)', due: 'var(--warn,#e0a23a)', overdue: 'var(--bad)' } as const;
+	// Still owed but no invoice sent yet (the hero's line when no due date is known).
+	const notInvoiced = $derived.by(() => {
+		const n = rows.filter((c) => payState(c) !== 'paid' && !c.pay_due && outstanding(c) > 0).length;
+		return `${n} collab${n === 1 ? '' : 's'}`;
+	});
 	const pick = (f: typeof filter) => {
 		filter = filter === f ? 'all' : f;
 		swapKey++;
@@ -109,7 +114,7 @@
 				{#if toRemind.length}<button class="glass-chip" onclick={remindAll} disabled={reminding}><Icon name="bell" />Remind</button>{/if}
 			</div>
 			<div class="hc-val" use:countUp={{ value: due + od, money: true }}>{inr(due + od)}</div>
-			<div class="hc-sub">{next ? `Next: ${next.brand.name} · ${fmt(next.pay_due)}` : 'Nothing waiting to be paid'}</div>
+			<div class="hc-sub">{next ? `Next: ${next.brand.name} · ${fmt(next.pay_due)}` : due + od > 0 ? `${notInvoiced} not invoiced yet` : 'Nothing waiting to be paid'}</div>
 			{#if recd + due + od > 0}
 				<div class="pipe-bar" aria-hidden="true">
 					{#if recd}<i style="flex:{recd};--hue:var(--ok)"></i>{/if}
@@ -138,15 +143,15 @@
 				<Ticket
 					name={c.brand.name}
 					sub={delivText(c.deliverables) || 'Collab'}
-					money={inrS(c.fee)}
-					moneySub={c.pay_status === 'paid' ? 'paid' : st === 'overdue' ? 'overdue' : c.pay_due ? 'due' : 'not invoiced'}
-					task={c.invoice_no ? `Invoice ${c.invoice_no}` : c.pay_status === 'paid' ? 'Paid in full' : 'No invoice sent yet'}
-					status={c.pay_status === 'paid' ? `Paid ${fmt(c.paid_on)}` : c.pay_due ? (diff(c.pay_due) < 0 ? `${-diff(c.pay_due)} day${diff(c.pay_due) === -1 ? '' : 's'} late` : diff(c.pay_due) === 0 ? 'Due today' : `Due ${fmt(c.pay_due)}`) : 'Send the invoice'}
-					tone={c.pay_status === 'paid' ? 'ok' : st === 'overdue' ? 'hot' : c.pay_due ? 'warn' : 'calm'}
+					money={inrS(st === 'paid' ? c.fee : outstanding(c))}
+					moneySub={st === 'paid' ? 'paid' : st === 'overdue' ? 'overdue' : c.pay_received > 0 ? 'left to pay' : c.pay_due ? 'due' : 'not invoiced'}
+					task={c.invoice_no ? `Invoice ${c.invoice_no}` : st === 'paid' ? 'Paid in full' : 'No invoice sent yet'}
+					status={st === 'paid' ? `Paid ${fmt(c.paid_on)}` : c.pay_due ? (diff(c.pay_due) < 0 ? `${-diff(c.pay_due)} day${diff(c.pay_due) === -1 ? '' : 's'} late` : diff(c.pay_due) === 0 ? 'Due today' : `Due ${fmt(c.pay_due)}`) : 'Send the invoice'}
+					tone={st === 'paid' ? 'ok' : st === 'overdue' ? 'hot' : c.pay_due ? 'warn' : 'calm'}
 					onopen={() => (ui.openCollab = c.id)}
 					{i}
 				>
-					{#if c.pay_status !== 'paid'}<button class="btn primary" onclick={() => markPaid(c)} aria-label="Mark {c.brand.name} as paid">Paid?</button>{:else}<button class="btn" onclick={() => (ui.openCollab = c.id)}>Open</button>{/if}
+					{#if st !== 'paid'}<button class="btn primary" onclick={() => markPaid(c)} aria-label="Mark {c.brand.name} as paid">Paid?</button>{:else}<button class="btn" onclick={() => (ui.openCollab = c.id)}>Open</button>{/if}
 				</Ticket>
 			{:else}
 				<div class="clear hero-card glow m-none">
