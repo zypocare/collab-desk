@@ -494,10 +494,68 @@ export type BrandCreator = {
 	photo: string | null;
 	followers: number | null;
 	engagement: number | null;
+	handle?: string;
+	/** What they make (Reel, Story...) and the languages they create in. */
+	kinds?: string[];
+	languages?: string[];
+	avg_views?: number | null;
 	current?: boolean;
 	open?: number;
 	waiting?: number;
 	done?: number;
+};
+
+/** A brand's saved group of creators (with invited Instagram handles of creators not on Miracle yet). */
+export type PoolMember = { id: string; handle: string; note: string; tags: string[]; joined: boolean; creator: BrandCreator | null };
+export type Pool = { id: string; name: string; created_at: string; members: PoolMember[] };
+
+/** One brief for many creators: what submit_request takes. fee is per creator (0 = ask for a quote). */
+export type CampaignBrief = {
+	type: CollabType;
+	deliverables: { kind: string; qty: number }[];
+	fee: number;
+	product: string;
+	product_value: number;
+	barter_kind: 'product' | 'experience';
+	content_language: string[];
+	preferred_live: string | null;
+	usage: string;
+	brief: string;
+	brief_details: BriefDetails;
+};
+export type CampaignSummary = {
+	id: string;
+	name: string;
+	status: 'draft' | 'sent';
+	created_at: string;
+	sent_at: string | null;
+	budget_total: number;
+	brief: Partial<CampaignBrief>;
+	creators: number;
+	agreed: number;
+	waiting: number;
+};
+export type CampaignQuote = { id: string; total: number; currency: string; status: 'sent' | 'accepted' | 'changes'; items: { kind: string; qty: number; rate: number }[]; version: number };
+export type CampaignRow = {
+	id: string;
+	handle: string;
+	status: 'sent' | 'invited' | 'failed';
+	note: string;
+	joined: boolean;
+	creator: BrandCreator | null;
+	code: string | null;
+	stage: Stage | null;
+	stage_label: string | null;
+	fee: number | null;
+	live_date: string | null;
+	draft_date: string | null;
+	pay_status: string | null;
+	quote: CampaignQuote | null;
+	draft_pending: boolean;
+};
+export type CampaignBoard = {
+	campaign: { id: string; name: string; status: 'draft' | 'sent'; pool_id: string | null; brief: Partial<CampaignBrief>; budget_total: number; created_at: string; sent_at: string | null; company: string | null };
+	rows: CampaignRow[];
 };
 
 /** Everything across every creator a brand works with. */

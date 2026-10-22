@@ -91,6 +91,33 @@ insert into results select 'Brand on A''s page can''t read B''s collab', not pub
 reset role;
 select set_config('request.headers', '', true);
 
+-- Pools and campaigns: the brand login's own, sent as one ordinary request per creator
+select set_config('request.jwt.claims', json_build_object('email', 'shopper@test.dev', 'sub', :'brand_uid', 'role', 'authenticated')::text, true);
+select set_config('request.headers', json_build_object('x-creator', 'creatorb')::text, true);
+set local role authenticated;
+select (public.pool_save(null, 'Test pool') ->> 'id') as pool_id \gset
+select public.pool_add(:'pool_id', array[:b_id, :a_id], array['@Someone.New']) is not null as added \gset
+insert into results select 'Pool holds both creators and an invited handle', (select jsonb_array_length(x -> 'members') = 3 from jsonb_array_elements(public.pools_list()) x where x ->> 'id' = :'pool_id'), null;
+select public.campaign_save(jsonb_build_object('name', 'Test campaign', 'pool_id', :'pool_id', 'brief',
+  jsonb_build_object('type', 'paid', 'deliverables', jsonb_build_array(jsonb_build_object('kind', 'Reel', 'qty', 1)), 'fee', 5000, 'usage', 'Organic only', 'brief', 'Campaign test'))) as camp_id \gset
+select public.send_campaign(:'camp_id', array[:b_id], array['someone.new']) as board \gset
+insert into results select 'Board shows the request and the invite', (select jsonb_array_length(public.campaign_board(:'camp_id') -> 'rows') = 2), null;
+reset role;
+insert into results select 'Campaign sends B an ordinary request, tagged B', (select k.creator_id = :b_id and k.code like 'BB%' from public.campaign_creators x join public.collabs k on k.id = x.collab_id where x.campaign_id = :'camp_id' and x.creator_id = :b_id), (select status || ' ' || note from public.campaign_creators where campaign_id = :'camp_id' and creator_id = :b_id);
+insert into results select 'Campaign request uses the brand''s B company', (select b.creator_id = :b_id and b.id = :'b_brand' from public.campaign_creators x join public.collabs k on k.id = x.collab_id join public.brands b on b.id = k.brand_id where x.campaign_id = :'camp_id' and x.creator_id = :b_id), null;
+-- creator B sees the request but nothing about the campaign or the pool
+select set_config('request.headers', '', true);
+select set_config('request.jwt.claims', json_build_object('email', 'creator-b@test.dev', 'sub', gen_random_uuid(), 'role', 'authenticated')::text, true);
+set local role authenticated;
+insert into results select 'B sees the campaign request as a normal collab', exists (select 1 from public.collabs where brief = 'Campaign test'), null;
+insert into results select 'B sees no campaigns or pools', not exists (select 1 from public.brand_campaigns) and not exists (select 1 from public.brand_pools) and not exists (select 1 from public.campaign_creators), null;
+insert into results select 'B gets no other login''s campaign board', public.campaign_board(:'camp_id') is null, null;
+insert into results select 'B can''t send someone else''s campaign', false, null;
+do $$ begin perform public.send_campaign((select id from public.brand_campaigns limit 1), array[1], '{}'); update results set ok = true where check_name = 'B can''t send someone else''s campaign'; exception when others then update results set ok = true, detail = sqlerrm where check_name = 'B can''t send someone else''s campaign'; end $$;
+reset role;
+select set_config('request.jwt.claims', '', true);
+update results set ok = (select count(*) from public.campaign_creators where campaign_id = :'camp_id' and status = 'sent') = 1 where check_name = 'B can''t send someone else''s campaign';
+
 -- A collab can't be given another creator's company
 insert into results select 'A collab can''t take another creator''s brand', false, null;
 do $$ begin update public.collabs set brand_id = (select id from public.brands where creator_id = 1 limit 1) where brief = 'Collab of B'; exception when others then update results set ok = true, detail = sqlerrm where check_name = 'A collab can''t take another creator''s brand'; end $$;

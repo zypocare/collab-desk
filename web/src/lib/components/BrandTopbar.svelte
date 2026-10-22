@@ -62,6 +62,9 @@
 		: path === '/brand' ? 'Miracle'
 		: path === '/brand/requests' ? 'Requests'
 		: path === '/brand/creators' ? 'Creators'
+		: path === '/brand/campaigns' ? 'Campaigns'
+		: path === '/brand/campaigns/new' ? 'New campaign'
+		: path.startsWith('/brand/campaigns/') ? 'Campaign'
 		: path === '/brand/new' ? 'New request'
 		: isNew ? 'Add a brand'
 		: path === '/brand/details' ? 'Company'
@@ -69,9 +72,10 @@
 		: path.startsWith('/insights') ? 'Insights'
 		: ''
 	);
-	const sub = $derived(path === '/' ? 'Brand collaborations' : signedIn && name && path !== '/brand' && path !== '/brand/creators' ? `with ${first}` : '');
+	const sub = $derived(path === '/' ? 'Brand collaborations' : signedIn && name && path !== '/brand' && !path.startsWith('/brand/creators') && !path.startsWith('/brand/campaigns') ? `with ${first}` : '');
 	const back = $derived(
 		path.startsWith('/brand/r/') ? '/brand/requests'
+		: path.startsWith('/brand/campaigns/') ? '/brand/campaigns'
 		: isNew ? '/brand/details'
 		: path.startsWith('/insights') ? '/'
 		: path === '/brand/new' ? (signedIn ? '/brand/requests' : '/')
@@ -148,6 +152,7 @@
 		<nav class="bt-nav" aria-label="Brand">
 			<a href="/brand" aria-current={path === '/brand' ? 'page' : undefined}>Dashboard</a>
 			<a href="/brand/creators" aria-current={path === '/brand/creators' ? 'page' : undefined}>Creators</a>
+			<a href="/brand/campaigns" aria-current={path.startsWith('/brand/campaigns') ? 'page' : undefined}>Campaigns</a>
 			<a href="/brand/requests" aria-current={path === '/brand/requests' || path.startsWith('/brand/r/') || path === '/brand/new' ? 'page' : undefined}>Requests</a>
 			<a href="/brand/details" aria-current={path === '/brand/details' ? 'page' : undefined}>Company</a>
 		</nav>
@@ -197,9 +202,10 @@
 
 {#if signedIn}
 	<!-- Phones and tablets: the brand menu moves to a tab bar at the bottom. -->
-	<nav class="brand-tabs" class:hide-tabs={phone.on && (path.startsWith('/brand/r/') || path === '/brand/new')} aria-label="Brand">
+	<nav class="brand-tabs" style="grid-template-columns:repeat(5,minmax(0,1fr))" class:hide-tabs={phone.on && (path.startsWith('/brand/r/') || path === '/brand/new' || path === '/brand/campaigns/new')} aria-label="Brand">
 		<a href="/brand" aria-current={path === '/brand' ? 'page' : undefined}><span class="bt-ic"><Icon name="home" /></span><span>Home</span></a>
 		<a href="/brand/creators" aria-current={path === '/brand/creators' ? 'page' : undefined}><span class="bt-ic"><Icon name="users" /></span><span>Creators</span></a>
+		<a href="/brand/campaigns" aria-current={path.startsWith('/brand/campaigns') ? 'page' : undefined}><span class="bt-ic"><Icon name="send" /></span><span>Campaigns</span></a>
 		<a href="/brand/requests" aria-current={path === '/brand/requests' || path.startsWith('/brand/r/') ? 'page' : undefined}><span class="bt-ic"><Icon name="inbox" />{#if unread}<i class="bt-n">{unread}</i>{/if}</span><span>Requests</span></a>
 		<a href="/brand/details" aria-current={path.startsWith('/brand/details') ? 'page' : undefined}><span class="bt-ic"><Icon name="box" /></span><span>Company</span></a>
 	</nav>

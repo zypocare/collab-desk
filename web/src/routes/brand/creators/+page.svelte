@@ -8,10 +8,16 @@
 	import { compact, errMessage } from '#lib/util.ts';
 	import type { BrandCreator } from '#lib/types.ts';
 	import Avatar from '#lib/components/Avatar.svelte';
+	import AddToPool from '#lib/components/AddToPool.svelte';
+	import PoolsPanel from '#lib/components/PoolsPanel.svelte';
+	import { pools } from '#lib/campaigns.svelte.ts';
 
 	// Creators: the ones this brand works with, and Discover (creators who chose to be listed).
-	const tab = $derived(page.url.searchParams.get('tab') === 'discover' ? 'discover' : 'mine');
-	const setTab = (t: 'mine' | 'discover') => goto(t === 'discover' ? '?tab=discover' : '?', { replaceState: true });
+	const tab = $derived(({ discover: 'discover', pools: 'pools' } as const)[page.url.searchParams.get('tab') ?? ''] ?? 'mine');
+	const setTab = (t: 'mine' | 'discover' | 'pools') => goto(t === 'mine' ? '?' : `?tab=${t}`, { replaceState: true });
+	// Arrived from a pool's "Add creators": the cards add straight to that pool.
+	const toPool = $derived(page.url.searchParams.get('pool') ?? '');
+	const toPoolName = $derived(pools.list.find((p) => p.id === toPool)?.name ?? 'the pool');
 	const at = (slug: string, path: string) => (slug === pageSlug ? path : addressFor(slug, path));
 
 	let q = $state('');
@@ -59,17 +65,23 @@
 	<div class="cr-bar">
 		<div class="cr-tabs" role="tablist" aria-label="Creators">
 			<button role="tab" aria-selected={tab === 'mine'} class:on={tab === 'mine'} onclick={() => setTab('mine')}>Your creators{mine.length ? ` · ${mine.length}` : ''}</button>
+			<button role="tab" aria-selected={tab === 'pools'} class:on={tab === 'pools'} onclick={() => setTab('pools')}>Pools{pools.loaded && pools.list.length ? ` · ${pools.list.length}` : ''}</button>
 			<button role="tab" aria-selected={tab === 'discover'} class:on={tab === 'discover'} onclick={() => setTab('discover')}>Discover</button>
 		</div>
-		<label class="cr-search">
+		{#if tab !== 'pools'}<label class="cr-search">
 			<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
 			<span class="sr">Search creators</span>
 			<input type="search" placeholder="Search by name, niche or city" bind:value={q} />
-		</label>
+		</label>{/if}
 	</div>
 </header>
 
-{#if tab === 'mine'}
+{#if toPool && tab !== 'pools'}
+	<div class="cr-banner">Adding to <b>{toPoolName}</b>. Tap Add on the creators you want. <a href="?tab=pools&pool={toPool}">Done</a></div>
+{/if}
+{#if tab === 'pools'}
+	<PoolsPanel />
+{:else if tab === 'mine'}
 	{#if !brandHome.dash}
 		<div class="loader" style="min-height:30vh"><span class="ring"><span></span></span></div>
 	{:else if !mine.length}
@@ -91,7 +103,9 @@
 							<a class="cr-neo cr-grad" href={at(c.slug, '/brand/new')}>{c.done ? 'Book again' : 'Send a request'}</a>
 						{/if}
 						<a class="cr-neo cr-ghost" href={at(c.slug, '/')}>Page</a>
+						{#if !toPool}<AddToPool creator={c.id} name={c.name} />{/if}
 					</div>
+					{#if toPool}<AddToPool creator={c.id} name={c.name} pool={toPool} />{/if}
 				</article>
 			{/each}
 		</div>
@@ -119,7 +133,9 @@
 					<div class="cr-acts">
 						{#if c.accepting}<a class="cr-neo cr-grad" href={at(c.slug, '/brand/new')}>Send a request</a>{/if}
 						<a class="cr-neo cr-ghost" href={at(c.slug, '/')}>Page</a>
+						{#if !toPool}<AddToPool creator={c.id} name={c.name} />{/if}
 					</div>
+					{#if toPool}<AddToPool creator={c.id} name={c.name} pool={toPool} />{/if}
 				</article>
 			{/each}
 		</div>
@@ -127,6 +143,23 @@
 {/if}
 
 <style>
+	.cr-banner {
+		margin-bottom: 16px;
+		padding: 12px 16px;
+		border-radius: 14px;
+		background: color-mix(in oklab, var(--g2) 12%, transparent);
+		box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--g2) 40%, transparent);
+		font-size: 14px;
+		color: var(--ink-2);
+	}
+	.cr-banner b {
+		color: var(--ink);
+	}
+	.cr-banner a {
+		margin-left: 8px;
+		color: var(--ink);
+		font-weight: 700;
+	}
 	.cr-h h1 {
 		margin: 0 0 18px;
 		font-size: clamp(34px, 4.4vw, 46px);
