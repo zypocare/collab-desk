@@ -1,6 +1,7 @@
 // Crashes in the app go to the admin panel's Problems tab, with the last few things the person did and
 // which phone or browser it was. Never the text they typed, messages, quotes or bank details.
 import { version } from '$app/env';
+import { updated } from '$app/state';
 import { supabase } from './supabase';
 import { onLimit } from './util';
 
@@ -65,6 +66,15 @@ let started = false;
 export function initProblems() {
 	if (started || typeof window === 'undefined') return;
 	started = true;
+	// Back to the app after a while (the phone app resumed, a tab brought forward): if a new version went out
+	// meanwhile, load it now, before a screen asks for a file the old version had. Not while someone is typing.
+	let hiddenAt = 0;
+	document.addEventListener('visibilitychange', async () => {
+		if (document.visibilityState === 'hidden') return void (hiddenAt = Date.now());
+		if (!hiddenAt || Date.now() - hiddenAt < 30_000) return;
+		const typing = document.activeElement?.matches?.('input, textarea, select, [contenteditable="true"]');
+		if (!typing && (await updated.check().catch(() => false))) location.reload();
+	});
 	addEventListener('error', (ev) => {
 		// An old tab after a deploy asks for files that are gone: load the new version (once).
 		if (CHUNK.test(ev.message ?? '')) return reloadOnce(ev.error ?? ev.message);
@@ -109,8 +119,9 @@ export function reloadOnce(e: unknown) {
 	try {
 		const last = Number(sessionStorage.getItem('cd-reloaded') ?? 0);
 		if (Date.now() - last > 60_000) {
+			// Expected after a deploy, and the reload fixes it: not a problem worth reporting.
 			sessionStorage.setItem('cd-reloaded', String(Date.now()));
-			reportProblem(e).finally(() => location.reload());
+			location.reload();
 			return;
 		}
 	} catch {
