@@ -178,6 +178,11 @@
   [data-side="studio"] .doc h2{font-size:16px}
   [data-side="studio"] .doc-table{font-size:15px}
   [data-side="studio"] .doc-table th{font-size:13.5px;text-transform:none;letter-spacing:normal}
+  [data-side="studio"] .doc.legal{font-size:15px}
+  [data-side="studio"] .doc.legal .doc-h .eb{font-size:11px;letter-spacing:normal}
+  [data-side="studio"] .doc.legal .doc-h h1{font-size:26px;letter-spacing:normal}
+  [data-side="studio"] .doc.legal h2{font-size:15px}
+  [data-side="studio"] .doc.legal p,[data-side="studio"] .doc.legal li{font-size:15px}
   [data-side="studio"] .doc-table tfoot td{font-size:16px}
   [data-side="studio"] .tg-steps{font-size:15px}
   [data-side="studio"] .tg-steps code{font-size:13.5px}
