@@ -202,6 +202,14 @@
 <!-- Sign in, in the website's look: Miracle on a glowing panel, the email-code card beside it. -->
 <div class="lg">
 	<div class="lg-glow" aria-hidden="true"><i></i><i></i><i></i></div>
+	<!-- Behind the card: the Miracle "m" drawing itself in light, again and again, and a few sparks. -->
+	<svg class="lg-mark" viewBox="0 0 512 512" aria-hidden="true">
+		<defs><linearGradient id="lg-mg" gradientUnits="userSpaceOnUse" x1="60" y1="100" x2="560" y2="440"><stop offset="0" stop-color="#9C7BFF" /><stop offset=".52" stop-color="#F25A90" /><stop offset="1" stop-color="#FFAE6B" /></linearGradient></defs>
+		<g transform="translate(256 256) scale(.79) skewX(-13) translate(-304.5 -266)" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="22">
+			<path class="lg-m1" stroke="url(#lg-mg)" pathLength="1" d="M64 128C92 104 132 112 144 156C154 220 158 330 156 392C155 420 182 420 182 392C182 300 176 200 196 160C220 104 290 104 300 160C310 220 312 330 310 392C309 420 336 420 336 392C336 300 330 200 350 160C374 104 444 104 452 160C460 230 456 330 452 392C450 440 500 440 540 360M499 384L540 360L545 408" />
+		</g>
+	</svg>
+	<div class="lg-sparks" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
 	<aside class="lg-side">
 		<a class="lg-brand" href="/" aria-label="Miracle home"><Logo size={40} /><b>Miracle</b></a>
 		<div class="lg-pitch">
@@ -299,6 +307,22 @@
 	.lg-glow i:nth-child(2) { width: 460px; height: 460px; left: 22%; top: 30%; background: var(--g2); opacity: 0.35; animation-delay: -6s; }
 	.lg-glow i:nth-child(3) { width: 320px; height: 320px; left: 8%; bottom: -120px; background: var(--g3); opacity: 0.22; animation-delay: -11s; }
 	@keyframes lg-drift { to { transform: translate(60px, 40px) scale(1.08); } }
+	.lg-mark { position: absolute; z-index: -1; left: 50%; top: 50%; width: min(150vmin, 980px); height: min(150vmin, 980px); transform: translate(-50%, -50%) rotate(-6deg); opacity: 0.34; filter: blur(0.5px) drop-shadow(0 0 30px rgba(242, 90, 144, 0.5)); pointer-events: none; }
+	.lg-m1 { stroke-dasharray: 0.45 1.6; stroke-dashoffset: 1.6; animation: lg-trace 7s linear infinite; }
+	@keyframes lg-trace { to { stroke-dashoffset: -0.45; } }
+	.lg-sparks { position: absolute; inset: 0; z-index: -1; pointer-events: none; }
+	.lg-sparks i { position: absolute; width: 4px; height: 4px; border-radius: 50%; background: #fff; box-shadow: 0 0 10px 2px rgba(255, 174, 107, 0.7); opacity: 0; animation: lg-twinkle 5s ease-in-out infinite; }
+	.lg-sparks i:nth-child(1) { left: 12%; top: 18%; animation-delay: -0.4s; }
+	.lg-sparks i:nth-child(2) { left: 82%; top: 12%; animation-delay: -1.6s; }
+	.lg-sparks i:nth-child(3) { left: 68%; top: 34%; animation-delay: -2.8s; }
+	.lg-sparks i:nth-child(4) { left: 24%; top: 62%; animation-delay: -3.4s; }
+	.lg-sparks i:nth-child(5) { left: 90%; top: 70%; animation-delay: -0.9s; }
+	.lg-sparks i:nth-child(6) { left: 46%; top: 86%; animation-delay: -2.1s; }
+	.lg-sparks i:nth-child(7) { left: 6%; top: 82%; animation-delay: -4.2s; }
+	.lg-sparks i:nth-child(8) { left: 56%; top: 6%; animation-delay: -1.1s; }
+	.lg-sparks i:nth-child(9) { left: 34%; top: 40%; animation-delay: -3.9s; }
+	.lg-sparks i:nth-child(10) { left: 74%; top: 92%; animation-delay: -2.4s; }
+	@keyframes lg-twinkle { 0%, 100% { opacity: 0; transform: translateY(0) scale(0.6); } 40% { opacity: 0.9; transform: translateY(-14px) scale(1); } 70% { opacity: 0; transform: translateY(-26px) scale(0.6); } }
 
 	.lg-side { display: flex; flex-direction: column; justify-content: space-between; gap: 40px; padding: 40px 56px; border-right: 1px solid color-mix(in oklab, var(--ink) 8%, transparent); background: linear-gradient(90deg, transparent, rgba(17, 13, 17, 0.35)); }
 	.lg-brand { display: inline-flex; align-items: center; gap: 12px; color: var(--ink); text-decoration: none; }
@@ -342,9 +366,15 @@
 		.lg { grid-template-columns: minmax(0, 1fr); }
 		.lg-side { display: none; }
 		.lg-brand-sm { display: inline-flex; }
-		.lg-main { align-content: start; padding-top: max(56px, env(safe-area-inset-top, 0px)); gap: 26px; }
+		.lg-main { align-content: center; min-height: 100dvh; padding-top: calc(env(safe-area-inset-top, 0px) + 28px); padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 28px); gap: 26px; }
+		.lg-glow i:nth-child(1) { width: 380px; height: 380px; left: -140px; top: -60px; }
+		.lg-glow i:nth-child(2) { width: 360px; height: 360px; left: 30%; top: 40%; opacity: 0.42; }
+		.lg-glow i:nth-child(3) { width: 300px; height: 300px; left: -40px; bottom: -80px; opacity: 0.3; }
+		.lg-card { animation: lg-in 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+		.lg-brand-sm { animation: lg-in 0.8s 0.1s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
 		.lg-card { padding: 26px 22px; }
 		.lg-card h1 { font-size: 40px; }
 	}
-	@media (prefers-reduced-motion: reduce) { .lg-glow i { animation: none; } }
+	@keyframes lg-in { from { opacity: 0; transform: translateY(24px) scale(0.98); } }
+	@media (prefers-reduced-motion: reduce) { .lg-glow i, .lg-m1, .lg-sparks i, .lg-card, .lg-brand-sm { animation: none; } .lg-m1 { stroke-dasharray: none; } }
 </style>

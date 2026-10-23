@@ -2125,4 +2125,4 @@ body{font-feature-settings:'cv11','ss01';letter-spacing:-.005em}
 
 /* The phone app (Android draws apps edge to edge): a solid strip behind the clock and status icons, so the
    page never scrolls underneath them. */
-html.native body::after{content:"";position:fixed;z-index:10000;top:0;left:0;right:0;height:max(env(safe-area-inset-top,0px),var(--safe-area-inset-top,0px));background:var(--bg,#110D11);pointer-events:none}
+html.native body::after{content:"";position:fixed;z-index:10000;top:0;left:0;right:0;height:env(safe-area-inset-top,0px);background:var(--bg,#110D11);pointer-events:none}
