@@ -16,6 +16,14 @@
 	// Brands: email, their company, then straight to the dashboard.
 	const KEY = 'mc-signup-as';
 	const asked = page.url.searchParams.get('as');
+	// "Claim your link" on the website: keep the name for when she picks her link after review.
+	const link = (page.url.searchParams.get('link') ?? '').trim().toLowerCase().slice(0, 30);
+	if (link)
+		try {
+			localStorage.setItem('mc-wanted-link', link);
+		} catch {
+			/* storage blocked */
+		}
 	let as = $state<'creator' | 'brand'>(asked === 'brand' || asked === 'creator' ? asked : stored());
 	function stored(): 'creator' | 'brand' {
 		try {

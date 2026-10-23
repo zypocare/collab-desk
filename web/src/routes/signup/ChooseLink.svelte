@@ -13,7 +13,15 @@
 		[...new Set([clean(handle), clean(firstName(name)), clean(name), clean(handle).replace(/-/g, '')])].filter((x) => SLUG_RE.test(x) && !x.startsWith('new-')).slice(0, 3)
 	);
 
-	let slug = $state(untrack(() => clean(handle) || clean(firstName(name))));
+	// The name she typed on the website's "Claim your link", kept since sign-up.
+	const wanted = (() => {
+		try {
+			return localStorage.getItem('mc-wanted-link') ?? '';
+		} catch {
+			return '';
+		}
+	})();
+	let slug = $state(untrack(() => clean(wanted) || clean(handle) || clean(firstName(name))));
 	let free = $state<boolean | null>(null);
 	let busy = $state(false);
 	let error = $state('');

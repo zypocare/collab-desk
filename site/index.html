@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Miracle: every collab, handled</title>
+<title>Miracle: brand deals, done properly</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<meta name="description" content="Miracle runs brand collabs for creators and brands in India: requests, quotes, GST invoices, payments, campaigns and a desk AI. No commission.">
+<meta name="description" content="Miracle is the business side of being a creator in India: a page brands book you from, AI that checks every offer, GST invoices that chase themselves and a tax desk. No commission, ever.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@500;600&family=Instrument+Serif:ital@0;1&display=swap">
@@ -601,6 +601,110 @@ footer{position:relative;overflow:hidden;padding-block:70px 0;border-top:1px sol
   *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
   html{scroll-behavior:auto}
 }
+
+/* ---------- the new storyline: claim, proof, five promises, each shown working ---------- */
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.claimf{display:flex;flex-wrap:wrap;gap:12px;margin-top:6px;max-width:560px}
+.claimf label{flex:1 1 260px;display:flex;align-items:center;height:58px;padding:0 16px;background:rgba(26,21,26,.82);box-shadow:inset 0 0 0 1.5px var(--line-2);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.claimf label:focus-within{box-shadow:inset 0 0 0 1.5px var(--g3)}
+.claimf input{flex:1;min-width:0;width:0;height:100%;border:0;background:none;outline:none;font:600 17px var(--f-body);color:var(--ink)}
+.claimf input::placeholder{color:var(--ink-3);font-weight:500}
+.claimf label span{color:var(--ink-3);font-size:15px;white-space:nowrap}
+.claimf .neo{height:58px}
+.hero-copy{grid-template-columns:minmax(0,1fr)}
+.claim-alt{margin:2px 0 0;font-size:14.5px;color:var(--ink-3)}
+.claim-alt a{color:var(--ink);font-weight:600;text-decoration:underline;text-underline-offset:3px}
+.proof{border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:rgba(26,21,26,.5)}
+.proof-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:24px;padding-block:26px}
+.proof-row div{display:grid;gap:4px}
+.proof-row b{font:400 clamp(28px,3vw,40px)/1 var(--f-display)}
+.proof-row small{font-size:13.5px;color:var(--ink-3)}
+.promises{padding-block:clamp(72px,9vw,120px)}
+.promises .h2{margin:14px 0 40px}
+.pr-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px}
+.pr{display:grid;gap:12px;align-content:start;padding:24px;min-height:250px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line);transition:transform .3s var(--ease),box-shadow .3s}
+.pr:hover{transform:translateY(-4px);box-shadow:inset 0 0 0 1px var(--c),0 18px 40px -24px var(--c)}
+.pr span{font:600 12px var(--f-mono);color:var(--c)}
+.pr b{font:400 32px/1.02 var(--f-display)}
+.pr p{margin:0;font-size:14.5px;line-height:1.55;color:var(--ink-2)}
+.pil{padding-block:clamp(72px,9vw,112px)}
+.pil.alt,.ai2{background:#161116;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.ai2{padding-block:clamp(72px,9vw,112px)}
+.pil-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:clamp(36px,6vw,80px);align-items:center}
+.pil-grid.rev .pil-copy{order:2}
+.pil-copy{display:grid;gap:18px;align-content:start}
+.h2.sm{font-size:clamp(40px,4.6vw,66px)}
+.pil-copy .lede{max-width:36ch}
+.pts{margin:0;padding:0;list-style:none;display:grid;gap:12px;font-size:15.5px;line-height:1.55;color:var(--ink-2)}
+.pts li{position:relative;padding-left:24px}
+.pts li::before{content:"→";position:absolute;left:0;top:0;color:var(--c);font-weight:700}
+.pts b{color:var(--ink)}
+.pil-vis{display:flex;gap:20px;justify-content:center;align-items:flex-start;min-width:0}
+.pil-vis.stack{flex-direction:column;align-items:stretch}
+.mphone{flex:none;width:250px;border-radius:38px;border:8px solid #000;background:var(--surface);overflow:hidden;box-shadow:0 40px 80px -30px rgba(0,0,0,.8)}
+.mp-top{height:150px;background:linear-gradient(160deg,var(--h),#1F151E);display:grid;place-items:center}
+.mp-top span{width:72px;height:72px;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.16);font:400 34px var(--f-display)}
+.mp-b{display:grid;gap:8px;padding:16px}
+.mp-name{font-size:28px;font-style:italic;line-height:1}
+.mp-b small{font-size:11.5px;color:var(--ink-3)}
+.mp-row{display:flex;justify-content:space-between;gap:12px;padding:9px 10px;background:var(--surface-2);font-size:13px}
+.mp-row.line{margin-top:6px}
+.mp-cta{margin-top:4px;padding:11px;background:var(--ink);color:var(--on-light);font-size:12.5px;font-weight:700;text-align:center;box-shadow:3px 3px 0 var(--g2)}
+.bubbles{display:grid;gap:12px;width:250px;margin-top:56px}
+.bub{display:grid;gap:4px;padding:14px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line);font-size:14px;line-height:1.45}
+.bub.me{background:var(--surface-2)}
+.bub small{color:var(--ink-3);font-size:12px}
+.mcard{display:grid;gap:12px;padding:22px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line);font-size:14.5px;line-height:1.5;width:100%;max-width:520px}
+.mcard small{color:var(--ink-3)}
+.mcard .lbl{font-size:11px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-3)}
+.mcard .bad{color:var(--bad)}
+.mcard .warn{color:var(--warn)}
+.mc-h{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.mc-h b{font-size:24px}
+.chip{padding:6px 12px;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+.chip.ok{background:rgba(111,208,140,.16);color:var(--ok)}
+.mcard .big{font-size:27px;line-height:1.18}
+.tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.tiles span{display:grid;gap:3px;padding:12px;background:var(--surface-2)}
+.tiles b{font-size:17px}
+.bar{display:block;height:8px;background:var(--surface-2)}
+.bar i{display:block;height:100%;background:var(--live)}
+.ladder{gap:0}
+.ladder .lbl{padding-bottom:12px}
+.ladder .ls{display:grid;grid-template-columns:30px minmax(0,1fr);gap:12px;padding:14px 0;border-top:1px solid var(--line)}
+.ladder .ls i{font-style:normal;font-weight:700;color:var(--ink-3)}
+.ladder .ls.done i{color:var(--ok)}
+.ladder .ls.on i{color:var(--g2)}
+.ladder .ls span{display:grid;gap:2px}
+.ladder .landed{margin-top:10px;padding:14px;background:rgba(111,208,140,.12);color:var(--ok);font-weight:600}
+.auto{gap:0;padding:0}
+.ap{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px;align-items:center;padding:16px 20px}
+.ap+.ap{border-top:1px solid var(--line)}
+.ap>span:first-child{display:grid;gap:2px}
+.sw{display:flex;border:1px solid var(--line-2);font-size:12px;font-weight:700}
+.sw i{font-style:normal;padding:8px 11px;color:var(--ink-3)}
+.sw i.on{background:var(--ink);color:var(--on-light)}
+.chips{display:flex;flex-wrap:wrap;gap:8px;padding:16px 20px;border-top:1px solid var(--line)}
+.chips i{font-style:normal;padding:6px 10px;background:var(--surface-2);font-size:12.5px;font-weight:600}
+.who{padding-block:clamp(72px,9vw,112px)}
+.who-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
+.who-card{display:grid;gap:18px;align-content:start;justify-items:start;padding:clamp(24px,3vw,36px);background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
+.who-card h2{margin:0;font-size:clamp(34px,3.4vw,46px);line-height:1.02;font-weight:400}
+@media (max-width:1100px){.pr-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.pr:last-child{grid-column:1/-1}}
+@media (max-width:860px){
+  .pil-grid,.who-grid{grid-template-columns:minmax(0,1fr)}
+  .pil-grid.rev .pil-copy{order:0}
+  .proof-row{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .pil-vis{flex-wrap:wrap}
+  .bubbles{margin-top:0;width:100%;max-width:320px}
+}
+@media (max-width:560px){
+  .pr-grid{grid-template-columns:minmax(0,1fr)}
+  .pr{min-height:0}
+  .ap{grid-template-columns:minmax(0,1fr);gap:10px}
+  .sw{justify-self:start}
+  .tiles{grid-template-columns:minmax(0,1fr)}
+}
 </style>
 <meta name="theme-color" content="#110D11">
 <meta property="og:title" content="Miracle: every collab, handled">
@@ -642,14 +746,14 @@ footer{position:relative;overflow:hidden;padding-block:70px 0;border-top:1px sol
       <b>Miracle</b>
     </a>
     <nav class="nav" aria-label="Sections">
-      <a href="#how">How it works</a>
-      <a href="#features">For creators</a>
+      <a href="#promises">For creators</a>
       <a href="#brands">For brands</a>
-      <a href="#ai">Desk AI</a>
+      <a href="#agencies">For managers</a>
+      <a href="#ai">AI desk</a>
       <a href="#trust">No commission</a>
     </nav>
     <a class="signin" href="/signin">Sign in</a>
-    <a class="neo light mag" href="#join">Get<span class="long"> started</span></a>
+    <a class="neo light mag" href="#claim">Claim<span class="long"> your link</span></a>
   </div>
 </header>
 
@@ -668,14 +772,15 @@ footer{position:relative;overflow:hidden;padding-block:70px 0;border-top:1px sol
     </svg>
     <div class="wrap">
       <div class="hero-copy">
-        <span class="eb">For creators and brands in India</span>
-        <h1 id="hero-title"><span class="ln"><span>Every collab,</span></span><span class="ln"><span class="gt">handled.</span></span></h1>
-        <p class="lede">Miracle runs the business side of brand collabs. Creators handle requests, quotes, GST invoices and payments with a desk AI that knows their work. Brands find creators, run campaigns and pay them directly. No commission, ever.</p>
-        <div class="cta-row">
-          <a class="neo grad mag" href="https://app.miracleapp.live/signup?as=creator"><span class="shine" aria-hidden="true"></span>Join as a creator</a>
-          <a class="neo ghost mag" href="https://app.miracleapp.live/signup?as=brand">Join as a brand</a>
-        </div>
-        <div class="trust"><span><i></i>No commission on any deal</span><span><i></i>Brands pay creators directly</span><span><i></i>Every creator reviewed</span></div>
+        <span class="eb">For Indian creators and brands</span>
+        <h1 id="hero-title"><span class="ln"><span>Brand deals, done properly.</span></span><span class="ln"><span class="gt">Paid on time.</span></span></h1>
+        <p class="lede">Miracle is the business side of being a creator: a page brands book you from, an AI that checks every offer, GST invoices that chase themselves, and a tax desk that keeps you clean. No commission on any deal, ever.</p>
+        <form class="claimf" id="claim" action="https://app.miracleapp.live/signup" method="get">
+          <input type="hidden" name="as" value="creator">
+          <label for="claim-name"><span class="sr">Your link</span><input id="claim-name" name="link" placeholder="yourname" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="30" pattern="[A-Za-z0-9-]{1,30}" title="Letters, numbers and hyphens"><span>.miracleapp.live</span></label>
+          <button class="neo grad mag" type="submit"><span class="shine" aria-hidden="true"></span>Claim your link</button>
+        </form>
+        <p class="claim-alt">Brand or agency? <a href="https://app.miracleapp.live/signup?as=brand">Start here</a> · Already on Miracle? <a href="/signin">Sign in</a></p>
       </div>
 
       <div class="stage3d" aria-label="The Miracle app home screen">
@@ -721,285 +826,193 @@ footer{position:relative;overflow:hidden;padding-block:70px 0;border-top:1px sol
 
   <!-- marquee, like the app's ticker -->
   <div class="marq" aria-hidden="true">
-    <div class="row"><span>Brand requests</span><span class="sp">✦</span><span><em>quotes</em></span><span class="sp">✦</span><span>GST invoices</span><span class="sp">✦</span><span><em>UPI QR</em></span><span class="sp">✦</span><span>payment reminders</span><span class="sp">✦</span><span><em>drafts</em></span><span class="sp">✦</span><span>pitch autopilot</span><span class="sp">✦</span><span><em>desk AI</em></span><span class="sp">✦</span><span>Brand requests</span><span class="sp">✦</span><span><em>quotes</em></span><span class="sp">✦</span><span>GST invoices</span><span class="sp">✦</span><span><em>UPI QR</em></span><span class="sp">✦</span><span>payment reminders</span><span class="sp">✦</span><span><em>drafts</em></span><span class="sp">✦</span><span>pitch autopilot</span><span class="sp">✦</span><span><em>desk AI</em></span><span class="sp">✦</span></div>
+    <div class="row"><span>Get found</span><span class="sp">✦</span><span><em>live media kit</em></span><span class="sp">✦</span><span>Offer check</span><span class="sp">✦</span><span><em>fair rates</em></span><span class="sp">✦</span><span>GST invoices</span><span class="sp">✦</span><span><em>UPI QR</em></span><span class="sp">✦</span><span>Paid on time</span><span class="sp">✦</span><span><em>growth check-up</em></span><span class="sp">✦</span><span>Tax desk</span><span class="sp">✦</span><span><em>AI desk</em></span><span class="sp">✦</span><span>Get found</span><span class="sp">✦</span><span><em>live media kit</em></span><span class="sp">✦</span><span>Offer check</span><span class="sp">✦</span><span><em>fair rates</em></span><span class="sp">✦</span><span>GST invoices</span><span class="sp">✦</span><span><em>UPI QR</em></span><span class="sp">✦</span><span>Paid on time</span><span class="sp">✦</span><span><em>growth check-up</em></span><span class="sp">✦</span><span>Tax desk</span><span class="sp">✦</span><span><em>AI desk</em></span><span class="sp">✦</span></div>
     <div class="row rev"><span>3 new requests waiting</span><span class="sp">✦</span><span>₹3.04L still to come</span><span class="sp">✦</span><span>Draft due Friday</span><span class="sp">✦</span><span>₹40,000 just landed</span><span class="sp">✦</span><span>Post in 30 minutes</span><span class="sp">✦</span><span>3 new requests waiting</span><span class="sp">✦</span><span>₹3.04L still to come</span><span class="sp">✦</span><span>Draft due Friday</span><span class="sp">✦</span><span>₹40,000 just landed</span><span class="sp">✦</span><span>Post in 30 minutes</span><span class="sp">✦</span></div>
   </div>
 
-  <!-- 2 · The deck: one collab, from request to paid -->
-  <section class="deck" id="how" aria-labelledby="how-title">
-    <div class="deck-stage">
-      <div class="wrap">
-        <div class="deck-copy">
-          <span class="eb">How a collab moves</span>
-          <h2 class="h2" id="how-title">From DM to paid, <span class="gt">on one ticket.</span></h2>
-          <div class="rail" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
-          <div class="steps">
-            <div class="step on" style="--c:#7EA2FF"><span class="tag">01 · New request</span><b>A brand finds your link.</b><p>They send a proper request with the budget, dates and deliverables. Miracle scores it so you know at a glance if it's worth it.</p></div>
-            <div class="step" style="--c:#EFB35A"><span class="tag">02 · Quote</span><b>Your quote, in a tap.</b><p>Priced from your rate card: the fee, usage rights, revisions and advance, sent as a clean quote the brand can accept.</p></div>
-            <div class="step" style="--c:#B49CFF"><span class="tag">03 · Draft</span><b>Drafts approved in the thread.</b><p>Send the cut, get notes, agree the go-live time. No lost WhatsApp voice notes.</p></div>
-            <div class="step" style="--c:#4CCFC2"><span class="tag">04 · Live</span><b>It goes live. Proof goes out.</b><p>Miracle spots the post and shares the numbers with the brand on a page they can open anytime.</p></div>
-            <div class="step" style="--c:#6FD08C"><span class="tag">05 · Paid</span><b>And the money lands.</b><p>A GST invoice with a UPI QR for the exact amount, polite reminders, and a ping the moment it's paid.</p></div>
-          </div>
-        </div>
-        <div class="pile">
-          <div class="ticket" style="--h:#2F6F9F">
-            <div class="t-top"><span class="t-ini">GB</span><span class="t-name"><b>Glowberry</b><small>NEW REQUEST</small></span><span class="t-amt"><b>₹68k</b><small>1 REEL</small></span></div>
-            <div class="t-cut"></div>
-            <div class="t-bot"><span><b>Scored 93 · take it</b><small style="color:#6FD08C"><i></i>Fits your rate and your calendar</small></span><span class="neo grad">Review</span></div>
-          </div>
-          <div class="ticket" style="--h:#B4700A">
-            <div class="t-top"><span class="t-ini">GB</span><span class="t-name"><b>Glowberry</b><small>QUOTE SENT</small></span><span class="t-amt"><b>₹68,000</b><small>+ GST</small></span></div>
-            <div class="t-cut"></div>
-            <div class="t-bot"><span><b>Usage 30 days · 50% advance</b><small style="color:#EFB35A"><i></i>Brand opened it 2 min ago</small></span><span class="neo grad">Nudge</span></div>
-          </div>
-          <div class="ticket" style="--h:#7550D0">
-            <div class="t-top"><span class="t-ini">S</span><span class="t-name"><b>Sorso</b><small>DRAFT APPROVED</small></span><span class="t-amt"><b>1 Reel</b><small>3 STORIES</small></span></div>
-            <div class="t-cut"></div>
-            <div class="t-bot"><span><b>Goes live Friday, 7 PM</b><small style="color:#B49CFF"><i></i>Caption covers every must-say</small></span><span class="neo grad">Schedule</span></div>
-          </div>
-          <div class="ticket" style="--h:#0B877D">
-            <div class="t-top"><span class="t-ini">KN</span><span class="t-name"><b>Kumkum Naturals</b><small>LIVE</small></span><span class="t-amt"><b>48.2K</b><small>VIEWS</small></span></div>
-            <div class="t-cut"></div>
-            <div class="t-bot"><span><b>Insights shared with the brand</b><small style="color:#4CCFC2"><i></i>Opened by the brand today</small></span><span class="neo grad">Share</span></div>
-          </div>
-          <div class="ticket paid" style="--h:#3D7F6A">
-            <div class="t-top"><span class="t-ini">KN</span><span class="t-name"><b>Kumkum Naturals</b><small>PAID</small></span><span class="t-amt"><b>₹40,000</b><small>VIA UPI</small></span></div>
-            <div class="t-cut"></div>
-            <div class="stub"><div class="t-bot"><span><b>INV/26-27/011 · settled</b><small style="color:#6FD08C"><i></i>Landed in your bank</small></span><span class="neo grad">Receipt</span></div></div>
-            <span class="paid-stamp">Paid</span>
-            <span class="spark-burst" aria-hidden="true"></span>
-          </div>
-        </div>
-      </div>
+  <!-- 2 · Proof -->
+  <section class="proof" aria-label="Why creators trust Miracle">
+    <div class="wrap proof-row">
+      <div data-r><b>0%</b><small>commission on any deal</small></div>
+      <div data-r="2"><b>UPI</b><small>brands pay you directly</small></div>
+      <div data-r="3"><b>GST · TDS</b><small>invoices and tax, done the Indian way</small></div>
+      <div data-r="4"><b>EN · HI · KN</b><small>an AI desk that speaks your language</small></div>
     </div>
   </section>
 
-  <!-- 3 · Features -->
-  <section class="feat" id="features" aria-labelledby="feat-title">
+  <!-- 3 · Five promises -->
+  <section class="promises" id="promises" aria-labelledby="pr-title">
     <div class="wrap">
-      <div class="feat-head">
-        <div><span class="eb" data-r>For creators</span><h2 class="h2" id="feat-title" data-r>The whole business, <span class="gt">in one place.</span></h2></div>
-        <p class="lede" data-r="2">Everything a creator handles between "hi, collab?" and the money in the bank, built the way the app on your phone already works.</p>
-      </div>
-      <div class="bento">
-        <article class="cell c7" data-r>
-          <h3>One link. <span class="gt">Every brand.</span></h3>
-          <p>Your rates, packages, open weeks and past work on one page. Brands send a proper request instead of a DM.</p>
-          <div class="demo">
-            <div class="url"><span class="lock">●</span><span class="typed">nivy.miracleapp.live</span></div>
-            <div class="bp"><span class="av"><b>ND</b></span><span><strong>Niveditha</strong><small>Lifestyle · Travel · Food · Bengaluru</small></span><span class="neo light">Send a request</span></div>
-            <div class="bp-stats"><span><b>251K</b>followers</span><span><b>₹18k</b>per Reel</span><span><b>2 slots</b>open this week</span></div>
-          </div>
-        </article>
-        <article class="cell c5" data-r="2">
-          <h3>Every offer, <span class="gt">scored.</span></h3>
-          <p>Take it, negotiate or skip, with the reason.</p>
-          <div class="demo score">
-            <div class="rg"><svg viewBox="0 0 132 132"><circle cx="66" cy="66" r="55" fill="none" stroke="#2E262E" stroke-width="10"/><circle class="v" cx="66" cy="66" r="55" fill="none" stroke="#6FD08C" stroke-width="10" stroke-linecap="round"/></svg><b data-count="93">93</b></div>
-            <ul><li class="take">TAKE IT</li><li><i></i>Above your Reel rate</li><li><i></i>Free slot that week</li><li><i></i>Brand paid on time before</li></ul>
-          </div>
-        </article>
-        <article class="cell c4" data-r>
-          <h3>Quotes that <span class="gt">close.</span></h3>
-          <p>Worked out from your rate card.</p>
-          <div class="demo quote">
-            <div class="row"><span>1 Reel</span><b>₹15,000</b></div>
-            <div class="row"><span>Usage · 30 days</span><b>₹3,000</b></div>
-            <div class="row"><span>Revisions</span><b>2 included</b></div>
-            <div class="tot"><small>TOTAL</small><b>₹<span data-count="18000" data-fmt="in">18,000</span></b></div>
-          </div>
-        </article>
-        <article class="cell c4" data-r="2">
-          <h3>GST. TDS. <span class="gt">UPI.</span></h3>
-          <p>A proper tax invoice and a QR for the exact amount.</p>
-          <div class="demo inv">
-            <div><small>TAX INVOICE · INV/26-27/012</small><b>₹19,440</b><div class="gst"><span>Fee ₹18,000</span><span>GST 18% ₹3,240</span><span>TDS 10% −₹1,800</span></div></div>
-            <div class="qr" aria-label="UPI QR code for ₹19,440" role="img"></div>
-          </div>
-        </article>
-        <article class="cell c4" data-r="3">
-          <h3>Paid <span class="gt">on time.</span></h3>
-          <p>Reminders go out for you, kindly.</p>
-          <div class="demo pings">
-            <div class="ping"><span class="d" style="--c:#2C7A45"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg></span><span><b>₹40,000 just landed</b><small>Kumkum Naturals</small></span></div>
-            <div class="ping"><span class="d" style="--c:#B4700A"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0112 0c0 7 3 9 3 9H3s3-2 3-9M10 21a2 2 0 004 0"/></svg></span><span><b>Reminder sent politely</b><small>Glowberry · due tomorrow</small></span></div>
-            <div class="ping"><span class="d" style="--c:#A8466E"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg></span><span><b>Post in 30 minutes</b><small>Sorso · 1 Reel at 7 PM</small></span></div>
-          </div>
-        </article>
-        <article class="cell c6" data-r>
-          <h3>Your week, <span class="gt">at a glance.</span></h3>
-          <p>Shoots, drafts, go-lives and payments on one calendar. Brands see when you're full.</p>
-          <div class="demo">
-            <div class="week">
-              <span class="day today">TODAY<b>21</b><i style="--a:#fff"></i></span>
-              <span class="day">THU<b>22</b><i></i></span>
-              <span class="day">FRI<b>23</b><i style="--a:#FFAE6B;--b:#4CCFC2"></i></span>
-              <span class="day">SAT<b>24</b><i></i></span>
-              <span class="day">SUN<b>25</b><i style="--a:#9C7BFF;--b:#F25A90"></i></span>
-              <span class="day">MON<b>26</b><i></i></span>
-              <span class="day">TUE<b>27</b><i style="--a:#6FD08C"></i></span>
-            </div>
-            <div class="slots"><div>COLLAB SLOTS THIS WEEK<b>3 of 3 booked</b></div><div class="bars" style="letter-spacing:0"><i></i><i></i><i></i></div>Fully booked: brands see this week as full.</div>
-          </div>
-        </article>
-        <article class="cell c6" data-r="2">
-          <h3>Pitches while <span class="gt">you create.</span></h3>
-          <p>Miracle finds brands that suit you and pitches them from your own email. You approve each one, or let it run.</p>
-          <div class="demo pitch">
-            <div class="pt" style="--c:#6FD08C"><i></i><span>A coffee roaster<small>Coffee · fits your café Reels</small></span><em>SENT</em></div>
-            <div class="pt" style="--c:#FFAE6B"><i></i><span>A skincare label<small>Skincare · email found</small></span><em>READY</em></div>
-            <div class="pt" style="--c:#F25A90"><i></i><span>A snack brand<small>Food · they replied</small></span><em>REPLIED</em></div>
-            <div class="pt" style="--c:#6FD08C"><i></i><span>A travel gear brand<small>Travel · follow-up 1</small></span><em>SENT</em></div>
-          </div>
-        </article>
+      <span class="eb" data-r>Everything between "hi, collab?" and money in the bank</span>
+      <h2 class="h2" id="pr-title" data-r>Five things Miracle <span class="gt">does for you.</span></h2>
+      <div class="pr-grid">
+        <a class="pr" href="#found" data-r style="--c:var(--req)"><span>01</span><b>Get found</b><p>A page brands book you from, a media kit that updates itself, and auto-DMs when someone comments "COLLAB".</p></a>
+        <a class="pr" href="#deals" data-r="2" style="--c:var(--warn)"><span>02</span><b>Close better deals</b><p>Every offer scored, risky contract lines flagged, and what creators your size really charge.</p></a>
+        <a class="pr" href="#paid" data-r="3" style="--c:var(--ok)"><span>03</span><b>Get paid on time</b><p>Advances, GST invoices with UPI, reminders that go by themselves, and a formal demand when they don't pay.</p></a>
+        <a class="pr" href="#grow" data-r="4" style="--c:#B49CFF"><span>04</span><b>Grow for real</b><p>A check-up of your own reels: what's working, what's holding you back, and what to post next.</p></a>
+        <a class="pr" href="#tax" data-r="5" style="--c:var(--live)"><span>05</span><b>Stay tax-ready</b><p>The GST limit with barter counted, TDS by brand, and a Form 26AS check every quarter.</p></a>
       </div>
     </div>
   </section>
 
-  <!-- 4 · Desk AI -->
-  <section class="ai" id="ai" aria-labelledby="ai-title">
-    <div class="wrap">
-      <div class="ai-copy">
-        <span class="eb" data-r>Built in · Desk AI</span>
-        <h2 class="h2" id="ai-title" data-r>Ask your desk <span class="gt">anything.</span></h2>
-        <p class="lede" data-r="2">Desk AI knows your requests, your money and your calendar. It answers, drafts replies in your voice and writes Reel scripts, in the language the brand wrote in.</p>
-        <div class="langs" data-r="3"><span>English</span><span>Hinglish</span><span lang="kn">ಕನ್ನಡ</span><span lang="hi">हिंदी</span></div>
+  <!-- 4 · Each promise, shown working -->
+  <section class="pil" id="found" aria-labelledby="pf-title">
+    <div class="wrap pil-grid">
+      <div class="pil-copy" data-r>
+        <span class="eb" style="color:var(--req)">01 · Get found</span>
+        <h2 class="h2 sm" id="pf-title">One link brands <span class="gt">book</span> you from.</h2>
+        <p class="lede">Your rates, packages, open weeks and past brands on one page at yourname.miracleapp.live. Brands send a proper request with the budget and dates, instead of "hi, collab?" in your DMs.</p>
+        <ul class="pts" style="--c:var(--req)">
+          <li><b>A media kit that updates itself.</b> Followers, reach and audience, live from Instagram, as a link or a PDF.</li>
+          <li><b>Comment-to-DM.</b> Someone comments "COLLAB" on your reel; they get your rates by DM.</li>
+          <li><b>Found in search.</b> An about line written for the words brands type, and the AI search inside Instagram and Google.</li>
+        </ul>
       </div>
-      <div class="chat" data-r="2">
-        <div class="chat-in">
-          <div class="chat-head"><span class="orb" aria-hidden="true"><span></span></span><span><b>Hello, <span class="gt">Nivy</span></b><small>Ask your desk</small></span></div>
-          <div class="msgs" aria-live="polite">
-            <div class="me-b">Who hasn't paid me yet?</div>
-            <div class="ai-b">Two brands owe you ₹1,08,000. Glowberry is 3 days late. Want me to send a polite reminder?</div>
-            <div class="acts"><span class="neo light">Send reminder</span><span class="neo ghost">See invoices</span></div>
+      <div class="pil-vis" data-r="2" role="img" aria-label="A creator's Miracle page, and a comment that becomes a DM">
+        <div class="mphone">
+          <div class="mp-top" style="--h:#2F6F9F"><span>N</span></div>
+          <div class="mp-b">
+            <b class="serif mp-name">Nivy</b>
+            <small>Lifestyle · Bengaluru · Kannada, English</small>
+            <span class="mp-row"><span>1 Reel</span><b>from ₹18,000</b></span>
+            <span class="mp-row"><span>Open weeks</span><b style="color:var(--ok)">2 left in Nov</b></span>
+            <span class="mp-cta">Send a request</span>
           </div>
-          <div class="composer" aria-hidden="true"><span>Ask about money, brands or your week</span><i><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4z"/></svg></i></div>
+        </div>
+        <div class="bubbles">
+          <span class="bub"><small>Comment on your reel</small><b>@kora.botanicals: COLLAB please!</b></span>
+          <span class="bub me"><small>DM sent by Miracle</small>Hi! My rates, packages and the request form are all here: nivy.miracleapp.live</span>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- 4b · For brands: a campaign moving across a board, as the brand sees it -->
-  <section class="bdeck" id="brands" aria-labelledby="brands-title">
-    <div class="bdeck-stage">
-      <div class="wrap bdeck-in">
-        <div class="bdeck-head">
-          <div class="bdeck-title">
-            <span class="eb">For brands · How a campaign moves</span>
-            <h2 class="h2" id="brands-title">One brief. <span class="gt">Every creator.</span></h2>
-          </div>
-          <div class="bsteps" aria-live="polite">
-            <div class="bstep on" style="--c:#7EA2FF"><span class="tag">01 · Shortlist</span><b>Pick creators who fit.</b><p>Search reviewed creators by niche, city and language, with their real Instagram numbers. The shortlist autopilot suggests more like them.</p></div>
-            <div class="bstep" style="--c:#B49CFF"><span class="tag">02 · Brief</span><b>Send it to the whole pool.</b><p>Write the brief once: deliverables, dates and budget. Each creator gets their own request, and follow-ups go out for you.</p></div>
-            <div class="bstep" style="--c:#EFB35A"><span class="tag">03 · Quotes</span><b>Compare quotes side by side.</b><p>Accept the ones within budget in a tap. Bigger quotes wait for an approver on your team.</p></div>
-            <div class="bstep" style="--c:#4CCFC2"><span class="tag">04 · Drafts</span><b>Drafts checked before you look.</b><p>Every caption is checked for your @mention, hashtags and #ad, so you only review what matters.</p></div>
-            <div class="bstep" style="--c:#6FD08C"><span class="tag">05 · Live &amp; paid</span><b>Results in. Invoices paid.</b><p>Posts are matched with their real reach. Pay each creator directly and keep the GST for your input credit.</p></div>
-          </div>
-        </div>
-        <div class="bpills" role="group" aria-label="Campaign stages">
-          <button type="button" class="on" style="--c:#7EA2FF">Shortlist</button><button type="button" style="--c:#B49CFF">Brief</button><button type="button" style="--c:#EFB35A">Quotes</button><button type="button" style="--c:#4CCFC2">Drafts</button><button type="button" style="--c:#6FD08C">Live &amp; paid</button>
-        </div>
-        <div class="bwin" aria-label="A campaign board in Miracle" role="img">
-          <div class="bwin-bar">
-            <span class="bwin-dots" aria-hidden="true"><i></i><i></i><i></i></span>
-            <span class="bwin-url">Winter glow campaign · Kora Botanicals</span>
-            <span class="bwin-meta"><span>Budget <b>₹1,50,000</b></span><span>Committed <b data-bm="committed">₹0</b></span><span>Reach <b data-bm="reach">—</b></span></span>
-          </div>
-          <div class="bboard-scroll">
-            <div class="bboard">
-              <div class="bcol" style="--c:#7EA2FF"><h4>Shortlist <span data-n>5</span></h4></div>
-              <div class="bcol" style="--c:#B49CFF"><h4>Brief sent <span data-n>0</span></h4></div>
-              <div class="bcol" style="--c:#EFB35A"><h4>Quoted <span data-n>0</span></h4></div>
-              <div class="bcol" style="--c:#4CCFC2"><h4>Draft approved <span data-n>0</span></h4></div>
-              <div class="bcol" style="--c:#6FD08C"><h4>Live &amp; paid <span data-n>0</span></h4></div>
-              <div class="bcard" style="--h:#2F6F9F" data-cap="4" data-s="Food · Mumbai · 48K|Opened the brief|₹18,000 · within budget|Caption checks passed|52.4K reach · paid"><span class="av">AM</span><b>Aarav</b><small>Food · Mumbai · 48K</small></div>
-              <div class="bcard" style="--h:#A8466E" data-cap="4" data-s="Skincare · Delhi · 1.2L|Opened the brief|₹26,000 · approved by Riya|Caption checks passed|81K reach · paid"><span class="av">SK</span><b>Sana</b><small>Skincare · Delhi · 1.2L</small></div>
-              <div class="bcard" style="--h:#7550D0" data-cap="3" data-s="Beauty · Bengaluru · 36K|Opened the brief|₹20,000 · within budget|Goes live Friday, 7 PM|Goes live Friday, 7 PM"><span class="av">MR</span><b>Meera</b><small>Beauty · Bengaluru · 36K</small></div>
-              <div class="bcard" style="--h:#A66A2C" data-cap="2" data-s="Fitness · Pune · 64K|Opened the brief|₹40,000 · over budget, countered|₹40,000 · over budget, countered|₹40,000 · over budget, countered"><span class="av">KB</span><b>Kabir</b><small>Fitness · Pune · 64K</small></div>
-              <div class="bcard" style="--h:#3D7F6A" data-cap="1" data-s="Lifestyle · Kochi · 22K|Follow-up sent for you|Follow-up sent for you|No reply · moved on|No reply · moved on"><span class="av">IS</span><b>Isha</b><small>Lifestyle · Kochi · 22K</small></div>
-            </div>
-          </div>
+  <section class="pil alt" id="deals" aria-labelledby="pd-title">
+    <div class="wrap pil-grid rev">
+      <div class="pil-copy" data-r>
+        <span class="eb" style="color:var(--warn)">02 · Close better deals</span>
+        <h2 class="h2 sm" id="pd-title">Know what to say <span class="gt">yes</span> to.</h2>
+        <p class="lede">Every request is scored on money, time and fit: take it, negotiate or skip. Before you sign, Miracle reads the brand's agreement and points out what creators usually push back on.</p>
+        <ul class="pts" style="--c:var(--warn)">
+          <li><b>Quotes that close.</b> From your rate card, with usage rights, revisions and an advance, accepted online by the brand.</li>
+          <li><b>Real prices.</b> What creators your size were actually paid on Miracle, not guesses.</li>
+        </ul>
+      </div>
+      <div class="pil-vis stack" data-r="2" role="img" aria-label="A request scored, an agreement checked and what creators your size charge">
+        <div class="mcard"><span class="mc-h"><b class="serif">Kora · 1 Reel + 2 Stories</b><span class="chip ok">Take it · 86</span></span><small>₹25,000 covers your fair price. Their dates fit your week. They paid creators in about 9 days.</small></div>
+        <div class="mcard"><span class="lbl">Their agreement, checked</span><span><b class="bad">!</b> They can use your reel forever. <small>Ask for 3 months; paid ads are extra.</small></span><span><b class="warn">!</b> No beauty brands for 90 days. <small>Limit it to skincare for 30 days.</small></span></div>
+        <div class="mcard"><span class="lbl">What creators your size charge</span><span class="mp-row"><span>Reel</span><b>₹8,000 – ₹30,000</b></span><span class="mp-row"><span>Story</span><b>₹2,000 – ₹6,000</b></span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="pil" id="paid" aria-labelledby="pp-title">
+    <div class="wrap pil-grid">
+      <div class="pil-copy" data-r>
+        <span class="eb" style="color:var(--ok)">03 · Get paid on time</span>
+        <h2 class="h2 sm" id="pp-title">No more chasing <span class="gt">brands</span> for money.</h2>
+        <p class="lede">Ask for an advance in the quote. Send a GST invoice with a UPI QR for the exact amount. Miracle sends the reminders, marks it paid when your bank says so and, when a brand is very late, prepares the formal demand.</p>
+        <ul class="pts" style="--c:var(--ok)">
+          <li><b>See who pays on time</b> before you say yes: "pays in about 9 days", from invoices paid to creators on Miracle.</li>
+          <li><b>MSME protection.</b> Registered with Udyam? Late brands owe interest after 45 days, and Miracle fills the complaint in for you.</li>
+        </ul>
+      </div>
+      <div class="pil-vis" data-r="2" role="img" aria-label="Getting paid, step by step">
+        <div class="mcard ladder">
+          <span class="lbl">Getting paid, step by step</span>
+          <span class="ls done"><i>✓</i><span><b>Friendly reminder</b><small>Goes by itself after the due date</small></span></span>
+          <span class="ls done"><i>✓</i><span><b>Firm reminder with a date</b><small>"Please pay by 20 Oct"</small></span></span>
+          <span class="ls on"><i>3</i><span><b>Formal payment demand</b><small>A letter with a final date, by email or WhatsApp</small></span></span>
+          <span class="ls"><i>4</i><span><b>MSME complaint or legal notice</b><small>Ready when you are</small></span></span>
+          <span class="landed">₹24,000 from Urban Brew reached your bank · marked paid</span>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- 4c · For brands: the business side, as tabs -->
-  <section class="bkit" aria-labelledby="bkit-title">
-    <div class="wrap">
-      <div class="bkit-head">
-        <h2 class="h2" id="bkit-title" data-r>The business side, <span class="gt">for brands too.</span></h2>
-        <p class="lede" data-r="2">Everything after the post goes live: invoices, ad rights, dates, products and the people who sign off. One place, every creator.</p>
+  <section class="pil alt" id="grow" aria-labelledby="pg-title">
+    <div class="wrap pil-grid rev">
+      <div class="pil-copy" data-r>
+        <span class="eb" style="color:#B49CFF">04 · Grow for real</span>
+        <h2 class="h2 sm" id="pg-title">Real followers, <span class="gt">not bought</span> ones.</h2>
+        <p class="lede">Miracle reads your own reels and audience and tells you, plainly, what's holding you back and what to post next. Check a reel before you post it, plan festival reels in your calendar, and team up with creators in your niche.</p>
       </div>
-      <div class="bkit-ui" data-r>
-        <div class="bkit-tabs" role="tablist" aria-label="Brand tools">
-          <button type="button" role="tab" id="bt-money" aria-controls="bp-money" aria-selected="true"><b>Money</b><small>Every invoice, GST and TDS</small></button>
-          <button type="button" role="tab" id="bt-content" aria-controls="bp-content" aria-selected="false" tabindex="-1"><b>Content</b><small>Posts and ad rights</small></button>
-          <button type="button" role="tab" id="bt-cal" aria-controls="bp-cal" aria-selected="false" tabindex="-1"><b>Calendar</b><small>Every go-live, clashes flagged</small></button>
-          <button type="button" role="tab" id="bt-ship" aria-controls="bp-ship" aria-selected="false" tabindex="-1"><b>Shipping</b><small>Products on their way</small></button>
-          <button type="button" role="tab" id="bt-team" aria-controls="bp-team" aria-selected="false" tabindex="-1"><b>Team</b><small>Roles and approvals</small></button>
-          <button type="button" role="tab" id="bt-auto" aria-controls="bp-auto" aria-selected="false" tabindex="-1"><b>Autopilots</b><small>Off, ask me, or auto</small></button>
+      <div class="pil-vis" data-r="2" role="img" aria-label="A growth check-up">
+        <div class="mcard">
+          <span class="lbl">Your growth check-up · every 2 weeks</span>
+          <b class="serif big">Your festival reels get the most shares. Most of your followers aren't who your content is for.</b>
+          <span class="tiles"><span><small>Best day</small><b>Saturday</b></span><span><small>Best time</small><b>7 pm</b></span><span><small>Watch</small><b>Saves per 1k</b></span></span>
+          <small><b style="color:#B49CFF">Next:</b> plan 3 Deepavali reels · rewrite your bio · invite a creator to a collab reel</small>
         </div>
-        <div class="bkit-win">
-          <div class="bwin-bar"><span class="bwin-dots" aria-hidden="true"><i></i><i></i><i></i></span><span class="bwin-url">Business · Kora Botanicals</span></div>
+      </div>
+    </div>
+  </section>
 
-          <div class="bkit-panel" role="tabpanel" id="bp-money" aria-labelledby="bt-money">
-            <div class="bk-tiles">
-              <div class="hot"><small>To pay</small><b>₹62,400</b><span>3 invoices · ₹9,000 overdue</span></div>
-              <div><small>Paid in October</small><b>₹44,000</b><span>to 2 creators</span></div>
-              <div><small>GST to claim</small><b>₹9,520</b><span>this financial year</span></div>
-              <div><small>TDS deducted</small><b>₹5,300</b><span>for your returns</span></div>
-            </div>
-            <div class="bk-rows">
-              <div><span>MD/26-27/004 · Meera</span><b>₹23,600</b><em class="late">4 days late</em><span class="bk-btn">Mark paid</span></div>
-              <div><span>SK/26-27/012 · Sana</span><b>₹30,680</b><em>in 5 days</em><span class="bk-btn">Mark paid</span></div>
-              <div><span>AM/26-27/009 · Aarav</span><b>₹21,240</b><em class="ok">Paid 18 Oct</em><span></span></div>
-            </div>
-          </div>
-
-          <div class="bkit-panel" role="tabpanel" id="bp-content" aria-labelledby="bt-content" hidden>
-            <div class="bk-posts">
-              <div><span class="ph" style="--a:#3a2a33;--b:#2d2638"></span><b>Sana · Reel</b><small>81K reach</small><em class="warn">Paid ads until 13 Nov · 9 days left</em><span class="bk-btn">Extend usage</span></div>
-              <div><span class="ph" style="--a:#23303a;--b:#2d2638"></span><b>Aarav · Reel</b><small>52.4K reach</small><em class="ok">Paid ads until 30 Dec</em><span class="bk-btn ghost">Files</span></div>
-              <div><span class="ph" style="--a:#33302a;--b:#3a2a33"></span><b>Meera · Story</b><small>9.1K reach</small><em>Organic only</em><span class="bk-btn ghost">Ask for ad rights</span></div>
-            </div>
-          </div>
-
-          <div class="bkit-panel" role="tabpanel" id="bp-cal" aria-labelledby="bt-cal" hidden>
-            <p class="bk-warn">2 posts go live on 25 Oct. Spread them out?</p>
-            <div class="bk-cal">
-              <span class="d">Mon<b>20</b></span><span class="d">Tue<b>21</b></span><span class="d">Wed<b>22</b><i style="--c:#4CCFC2">Meera · draft</i></span><span class="d">Thu<b>23</b></span><span class="d">Fri<b>24</b><i style="--c:#7550D0">Kabir · shoot</i></span><span class="d">Sat<b>25</b></span><span class="d clash">Sun<b>26</b><i style="--c:#A8466E">Sana · live</i><i style="--c:#2F6F9F">Aarav · live</i></span>
-            </div>
-          </div>
-
-          <div class="bkit-panel" role="tabpanel" id="bp-ship" aria-labelledby="bt-ship" hidden>
-            <div class="bk-rows">
-              <div><span>Meera · Glow kit</span><b>Flat 4B, Green Park, Bengaluru</b><em class="warn">Ready to send</em><span class="bk-btn">Mark shipped</span></div>
-              <div><span>Sana · Glow kit</span><b>Delhivery · 1234567890</b><em>On the way · sent 20 Oct</em><span class="bk-btn ghost">Track</span></div>
-              <div><span>Kabir · Glow kit</span><b>Waiting for his address</b><em>Not yet</em><span class="bk-btn ghost">Ask again</span></div>
-            </div>
-          </div>
-
-          <div class="bkit-panel" role="tabpanel" id="bp-team" aria-labelledby="bt-team" hidden>
-            <div class="bk-team">
-              <div class="bk-people">
-                <div><span class="av" style="--h:#7550D0">RS</span><b>Riya Sharma<small>Marketing</small></b><em>Admin</em></div>
-                <div><span class="av" style="--h:#0B877D">AK</span><b>Arjun Kumar<small>Brand manager</small></b><em>Approver</em></div>
-                <div><span class="av" style="--h:#A66A2C">PM</span><b>Priya Menon<small>Accounts</small></b><em>Finance</em></div>
-              </div>
-              <div class="bk-approve"><small>Waiting for approval</small><b>Kabir's quote: ₹40,000</b><span>Over your ₹30,000 limit · asked by Arjun</span><span class="bk-btn">Approve and accept</span></div>
-            </div>
-          </div>
-
-          <div class="bkit-panel" role="tabpanel" id="bp-auto" aria-labelledby="bt-auto" hidden>
-            <div class="bk-auto">
-              <div><span><b>Shortlist</b><small>Suggests creators who fit each campaign</small></span><span class="seg" role="radiogroup" aria-label="Shortlist"><button type="button" role="radio" aria-checked="false">Off</button><button type="button" role="radio" aria-checked="true">Ask me</button><button type="button" role="radio" aria-checked="false">Auto</button></span></div>
-              <div><span><b>Follow-ups</b><small>Nudges creators who haven't replied</small></span><span class="seg" role="radiogroup" aria-label="Follow-ups"><button type="button" role="radio" aria-checked="false">Off</button><button type="button" role="radio" aria-checked="false">Ask me</button><button type="button" role="radio" aria-checked="true">Auto</button></span></div>
-              <div><span><b>Draft checks</b><small>Flags a missing @mention, hashtag or #ad</small></span><span class="seg" role="radiogroup" aria-label="Draft checks"><button type="button" role="radio" aria-checked="false">Off</button><button type="button" role="radio" aria-checked="false">Ask me</button><button type="button" role="radio" aria-checked="true">Auto</button></span></div>
-              <div><span><b>Accept quotes</b><small>Within budget, signed in your name</small></span><span class="seg" role="radiogroup" aria-label="Accept quotes"><button type="button" role="radio" aria-checked="false">Off</button><button type="button" role="radio" aria-checked="true">Ask me</button><button type="button" role="radio" aria-checked="false">Auto</button></span></div>
-            </div>
-          </div>
+  <section class="pil" id="tax" aria-labelledby="pt-title">
+    <div class="wrap pil-grid">
+      <div class="pil-copy" data-r>
+        <span class="eb" style="color:var(--live)">05 · Stay tax-ready</span>
+        <h2 class="h2 sm" id="pt-title">GST and TDS, <span class="gt">already</span> done.</h2>
+        <p class="lede">Built for India, not translated for it. Miracle counts your barter towards the ₹20 lakh GST limit, tracks the TDS each brand deducts under the new Income-tax Act, and reminds you to check it in your Form 26AS. Your CA gets one tidy file each quarter.</p>
+      </div>
+      <div class="pil-vis" data-r="2" role="img" aria-label="The tax desk">
+        <div class="mcard">
+          <span class="lbl">Your tax desk · FY 2026-27</span>
+          <span class="mp-row"><span>Turnover, with barter</span><b>₹7,60,000 of ₹20,00,000</b></span>
+          <span class="bar"><i style="width:38%"></i></span>
+          <span class="mp-row line"><span>Kora · TDS 194J</span><b style="color:var(--ok)">₹2,500 · in your 26AS</b></span>
+          <span class="mp-row"><span>Glowberry · gifts this year</span><b style="color:var(--warn)">₹18,500 of ₹20,000</b></span>
+          <span class="mp-row"><span>Ad disclosure on your last post</span><b style="color:var(--ok)">#ad up front</b></span>
         </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5 · AI desk and autopilots -->
+  <section class="ai2" id="ai" aria-labelledby="ai-title">
+    <div class="wrap pil-grid">
+      <div class="pil-copy" data-r>
+        <span class="eb" style="color:var(--g2)">Your AI desk</span>
+        <h2 class="h2 sm" id="ai-title">A desk that works <span class="gt">while you create.</span></h2>
+        <p class="lede">It knows your requests, your money and your calendar. Ask it anything, in English, Hindi or Kannada. For the busywork, turn on an autopilot: it asks you first, or just does it. One switch each.</p>
+      </div>
+      <div class="pil-vis" data-r="2">
+        <div class="mcard auto" role="img" aria-label="Autopilots, each set to Off, Ask me or Auto">
+          <span class="ap"><span><b>Pitch brands that suit you</b><small>Finds them and writes from your own email</small></span><span class="sw"><i>Off</i><i class="on">Ask me</i><i>Auto</i></span></span>
+          <span class="ap"><span><b>Reply to "COLLAB" comments</b><small>Sends your rates by DM</small></span><span class="sw"><i>Off</i><i>Ask me</i><i class="on">Auto</i></span></span>
+          <span class="ap"><span><b>Chase late payments</b><small>Two reminders, then waits for you</small></span><span class="sw"><i>Off</i><i>Ask me</i><i class="on">Auto</i></span></span>
+          <span class="ap"><span><b>Check drafts against the brief</b><small>Before the brand sees them</small></span><span class="sw"><i>Off</i><i class="on">Ask me</i><i>Auto</i></span></span>
+          <span class="ap"><span><b>Plan reels that grow you</b><small>Festivals and your best formats, in your calendar</small></span><span class="sw"><i>Off</i><i class="on">Ask me</i><i>Auto</i></span></span>
+          <span class="chips"><i>Writes captions and Reel scripts</i><i>Reads DMs for real offers</i><i>Checks contracts</i><i>Checks #ad rules</i></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6 · Brands and managers -->
+  <section class="who" aria-label="For brands, and for managers and agencies">
+    <div class="wrap who-grid">
+      <div class="who-card" id="brands" data-r>
+        <span class="eb" style="color:var(--req)">For brands</span>
+        <h2 class="serif">Creators who deliver, and sales you can see.</h2>
+        <ul class="pts" style="--c:var(--req)">
+          <li><b>Verified creators.</b> Paid deals and on-time posts, worked out by Miracle, not typed in.</li>
+          <li><b>One brief, every creator.</b> Requests, quotes, drafts and approvals in one list.</li>
+          <li><b>Sales from each creator's code.</b> Import Shopify or WooCommerce orders; see cost per sale and return on spend.</li>
+          <li><b>GST invoices you can claim.</b> Pay each creator directly.</li>
+        </ul>
+        <a class="neo light mag" href="https://app.miracleapp.live/signup?as=brand">Join as a brand</a>
+      </div>
+      <div class="who-card" id="agencies" data-r="2">
+        <span class="eb" style="color:var(--g3)">For managers and agencies</span>
+        <h2 class="serif">Your whole roster, in one place.</h2>
+        <ul class="pts" style="--c:var(--g3)">
+          <li><b>Switch between creators</b> in one tap, with the right access for each.</li>
+          <li><b>See every deal and payment</b> across your creators.</li>
+          <li><b>A commission ledger</b> that tracks your share; the money still goes to the creator.</li>
+          <li><b>Pitch decks in a minute</b> from the creators you pick.</li>
+        </ul>
+        <a class="neo ghost mag" href="mailto:contact@miracleapp.live?subject=Bringing%20my%20roster%20to%20Miracle">Bring your roster</a>
       </div>
     </div>
   </section>
@@ -1009,9 +1022,9 @@ footer{position:relative;overflow:hidden;padding-block:70px 0;border-top:1px sol
     <div class="wrap">
       <h2 class="h2" id="trust-title" data-r>Your money. Your data. <span class="gt">No cut.</span></h2>
       <div class="pillars">
-        <div class="pillar" data-r><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10h18M5 10v8M9 10v8M15 10v8M19 10v8M3 20h18M12 3l9 5H3z"/></svg><b>Brands pay you directly.</b><p>Money goes straight to your bank or UPI. Miracle never holds it and never touches it.</p></div>
-        <div class="pillar" data-r="2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v6c0 4.5-3 7.8-7 9-4-1.2-7-4.5-7-9V6z"/><path d="M9 12l2 2 4-4"/></svg><b>You choose what brands see.</b><p>Your rates, notes and other deals stay private. A brand sees only its own collab.</p></div>
-        <div class="pillar" data-r="3"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 16L16 8M9 9h.01M15 15h.01"/></svg><b>Zero commission.</b><p>Take ₹5,000 deals or ₹5 lakh deals. Every rupee is yours.</p></div>
+        <div class="pillar" data-r><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10h18M5 10v8M9 10v8M15 10v8M19 10v8M3 20h18M12 3l9 5H3z"/></svg><b>Straight to your bank.</b><p>Brands pay you by UPI or bank transfer. Miracle never holds your money or takes a share of a deal, big or small.</p></div>
+        <div class="pillar" data-r="2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v6c0 4.5-3 7.8-7 9-4-1.2-7-4.5-7-9V6z"/><path d="M9 12l2 2 4-4"/></svg><b>Private by default.</b><p>Your rates, notes and other deals stay yours. A brand sees only its own collab.</p></div>
+        <div class="pillar" data-r="3"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 16L16 8M9 9h.01M15 15h.01"/></svg><b>Leave any time.</b><p>Download everything, invoices included, in one tap. Take ₹5,000 deals or ₹5 lakh deals: every rupee is yours.</p></div>
       </div>
     </div>
   </section>
@@ -1025,7 +1038,7 @@ footer{position:relative;overflow:hidden;padding-block:70px 0;border-top:1px sol
       </g>
     </svg>
     <div class="wrap">
-      <h2 class="h2" id="join-title" data-r>Ready <span class="gt">when you are.</span></h2>
+      <h2 class="h2" id="join-title" data-r>Run your creator business <span class="gt">like a business.</span></h2>
       <div class="join-grid">
         <div class="join-card" data-r>
           <span class="eb">Creators</span>
@@ -1060,7 +1073,7 @@ footer{position:relative;overflow:hidden;padding-block:70px 0;border-top:1px sol
     </div>
     <div class="foot">
       <div class="f-brand"><a class="brand" href="#top" aria-label="Miracle, back to the top"><svg viewBox="0 0 512 512" aria-hidden="true" style="width:34px;height:34px"><g transform="translate(256 256) scale(1.04) translate(-256 -256)"><g transform="translate(256 256) scale(.79) skewX(-13) translate(-304.5 -266)" fill="none" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"><use href="#kd" transform="translate(-13 -10)" stroke="#F4EEF2"/><use href="#kd" transform="translate(13 10)" stroke="url(#kg)"/></g></g></svg><b style="font:400 28px/1 var(--f-display);font-style:italic;color:var(--ink)">Miracle</b></a><p>Brand collaborations, handled, for creators and the brands they work with. Made in Bengaluru.</p><p class="f-tag">No commission on any deal. Brands pay creators directly.</p></div>
-      <nav aria-label="Product"><b>Product</b><a href="#how">How it works</a><a href="#features">For creators</a><a href="#brands">For brands</a><a href="#trust">No commission</a></nav>
+      <nav aria-label="Product"><b>Product</b><a href="#promises">For creators</a><a href="#brands">For brands</a><a href="#agencies">For managers</a><a href="#ai">AI desk</a><a href="#trust">No commission</a></nav>
       <nav aria-label="For creators"><b>For creators</b><a href="https://app.miracleapp.live/signup?as=creator">Join as a creator</a><a href="/signin">Sign in</a></nav>
       <nav aria-label="For brands"><b>For brands</b><a href="https://app.miracleapp.live/signup?as=brand">Join as a brand</a><a href="/signin?as=brand">Brand sign in</a></nav>
       <nav aria-label="Company"><b>Company</b><a href="mailto:contact@miracleapp.live">Contact us</a><a href="/terms">Terms of service</a><a href="/privacy">Privacy policy</a><a href="/data-deletion">Data deletion</a></nav>
@@ -1190,92 +1203,6 @@ footer{position:relative;overflow:hidden;padding-block:70px 0;border-top:1px sol
   }
   if (reduce) paint(0);
   if (reduce) { phone.style.transform = 'rotateY(-5deg) rotateX(3deg)'; } else requestAnimationFrame(heroFrame);
-
-  /* the deck: tickets dealt by scroll, the last one tears off its stub */
-  const deck = document.querySelector('.deck');
-  const cards = [...deck.querySelectorAll('.pile .ticket')];
-  const steps = [...deck.querySelectorAll('.step')];
-  const rails = [...deck.querySelectorAll('.rail i')];
-  const paid = deck.querySelector('.paid'), stub = paid.querySelector('.stub'), burst = paid.querySelector('.spark-burst');
-  ['#6FD08C', '#FFAE6B', '#F25A90', '#9C7BFF', '#F4EEF2', '#6FD08C', '#FFAE6B', '#F25A90', '#9C7BFF', '#4CCFC2', '#FFAE6B', '#F25A90'].forEach((c, i) => {
-    const s = document.createElement('i'), a = (i / 12) * Math.PI * 2, r = 70 + (i % 3) * 30;
-    s.style.cssText = `--c:${c};--x:${Math.cos(a) * r}px;--y:${Math.sin(a) * r - 30}px`; burst.appendChild(s);
-  });
-  let active = -1, burstOn = false;
-  function deckFrame() {
-    const r = deck.getBoundingClientRect();
-    if (r.bottom > 0 && r.top < innerHeight) {
-      const p = clamp(-r.top / (r.height - innerHeight), 0, 1);
-      // each ticket rests front and centre for a stretch of scroll before the next one comes in
-      const raw = p * (cards.length - 1 + .6), i0 = Math.floor(raw), fr = raw - i0;
-      const s = i0 >= cards.length - 1 ? raw : i0 + easeIO(clamp((fr - .3) / .7, 0, 1));
-      const lift = Math.min(innerHeight * .9, 640);
-      cards.forEach((c, i) => {
-        const d = i === cards.length - 1 ? Math.max(i - s, 0) : i - s;
-        let y, rot, sc, op, dim;
-        if (d > 0) { const k = Math.min(d, 1); y = k * lift; rot = k * 9; sc = 1; op = d > 1.02 ? 0 : 1; dim = 0; }
-        else { const k = Math.min(-d, 4); y = -k * 26; rot = -k * 1.5; sc = 1 - k * .055; op = clamp(1 - k * .26, 0, 1); dim = Math.min(k * .35, .7); }
-        // the ticket in front sits at exactly its own size and place, so its text stays sharp
-        c.style.transform = Math.abs(d) < .02 ? 'none' : `translate(0, ${Math.round(y)}px) rotate(${rot.toFixed(2)}deg) scale(${sc.toFixed(3)})`;
-        c.style.opacity = op; c.style.zIndex = 10 + i; c.style.setProperty('--dim', dim);
-      });
-      const tear = clamp((s - (cards.length - 1) - .1) / .45, 0, 1);
-      stub.style.transform = tear === 0 ? 'none' : `translate(${Math.round(tear * 40)}px, ${Math.round(easeIO(tear) * 150)}px) rotate(${(tear * 14).toFixed(2)}deg)`;
-      stub.style.opacity = 1 - clamp((tear - .6) / .4, 0, 1);
-      paid.style.setProperty('--stamp', clamp((tear - .35) / .4, 0, 1));
-      if (tear > .5 && !burstOn) { burstOn = true; paid.classList.add('burst'); }
-      if (tear < .2 && burstOn) { burstOn = false; paid.classList.remove('burst'); }
-      const now = clamp(Math.round(s), 0, cards.length - 1);
-      if (now !== active) { active = now; steps.forEach((el, i) => el.classList.toggle('on', i === now)); }
-      rails.forEach((el, i) => el.style.setProperty('--p', clamp(s - i + 1, 0, 1)));
-    }
-    requestAnimationFrame(deckFrame);
-  }
-  requestAnimationFrame(deckFrame);
-
-  /* spotlight on the feature cards */
-  const bento = document.querySelector('.bento');
-  bento.addEventListener('pointermove', (e) => {
-    const c = e.target.closest('.cell'); if (!c) return;
-    const r = c.getBoundingClientRect();
-    c.style.setProperty('--mx', e.clientX - r.left + 'px'); c.style.setProperty('--my', e.clientY - r.top + 'px');
-  });
-
-  /* the UPI QR */
-  const qr = document.querySelector('.qr');
-  '1110111100010110101111110110010001101110101101110'.split('').forEach((b) => { const i = document.createElement('i'); if (b === '0') i.className = 'o'; qr.appendChild(i); });
-
-  /* Desk AI talks */
-  const convos = [
-    { q: 'Who hasn’t paid me yet?', a: 'Two brands owe you ₹1,08,000. Glowberry is 3 days late. Want me to send a polite reminder?', acts: ['Send reminder', 'See invoices'] },
-    { q: 'Reply to Glowberry in Hinglish', a: 'Hi team, idea bahut accha hai! 1 Reel aur 2 Stories ₹68,000 mein ho jayenge, 50% advance ke saath. Shoot is Friday tak.', acts: ['Send reply', 'Edit'] },
-    { q: 'Is ₹15k fair for 2 Reels?', a: 'That’s low for you. Your rate card says ₹18k a Reel, so 2 Reels come to ₹36,000. Counter at ₹32,000 with 30 days of usage.', acts: ['Send counter', 'Accept'] },
-    { q: 'Write a Reel script for Sorso', a: 'Hook: “My 7 AM looks like this.” Scene 1, kettle on. Scene 2, the first sip. Close on the bottle with your code NIVY10.', acts: ['Use script', 'Make it funnier'] }
-  ];
-  const msgs = document.querySelector('.msgs');
-  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-  let aiOn = false, aiStarted = false;
-  async function talk() {
-    let k = 1;
-    for (;;) {
-      if (!aiOn) { await sleep(400); continue; }
-      const c = convos[k % convos.length]; k++;
-      msgs.replaceChildren();
-      const me = document.createElement('div'); me.className = 'me-b'; msgs.appendChild(me);
-      for (const ch of c.q) { me.textContent += ch; await sleep(34); }
-      await sleep(350);
-      const dots = document.createElement('div'); dots.className = 'dots'; dots.innerHTML = '<i></i><i></i><i></i>'; msgs.appendChild(dots);
-      await sleep(900); dots.remove();
-      const ai = document.createElement('div'); ai.className = 'ai-b'; msgs.appendChild(ai);
-      for (const w of c.a.split(' ')) { const s = document.createElement('span'); s.className = 'w'; s.textContent = w + ' '; ai.appendChild(s); await sleep(55); }
-      await sleep(250);
-      const acts = document.createElement('div'); acts.className = 'acts';
-      c.acts.forEach((t, i) => { const b = document.createElement('span'); b.className = 'neo ' + (i ? 'ghost' : 'light'); b.textContent = t; acts.appendChild(b); });
-      acts.style.animation = 'fade .5s var(--ease) both'; msgs.appendChild(acts);
-      await sleep(4200);
-    }
-  }
-  new IntersectionObserver((es) => { aiOn = es[0].isIntersecting; if (aiOn && !aiStarted && !reduce) { aiStarted = true; setTimeout(talk, 2600); } }, { threshold: .35 }).observe(document.querySelector('.chat'));
 
   /* buttons lean toward the cursor; a soft light follows it */
   if (fine && !reduce) {
