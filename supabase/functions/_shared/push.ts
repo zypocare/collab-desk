@@ -61,8 +61,54 @@ async function sendFcm(endpoint: string, msg: Push) {
   const gone = r.status === 404 || /UNREGISTERED|registration-token-not-registered/i.test(text);
   throw Object.assign(new Error(text.slice(0, 200)), { statusCode: gone ? 404 : r.status, body: text.slice(0, 200) });
 }
-/** Web push for browsers, Firebase for the apps. */
+// The iPhone app gets alerts straight from Apple's push service (free), endpoint "apns:<device token>".
+// Secrets: APNS_KEY (the text of the .p8 key from Certificates, IDs & Profiles > Keys, with Apple Push
+// Notifications service ticked), APNS_KEY_ID (its 10-character ID) and APPLE_TEAM_ID.
+const APNS = (() => {
+  const key = (Deno.env.get('APNS_KEY') ?? '').trim();
+  const id = (Deno.env.get('APNS_KEY_ID') ?? '').trim();
+  const team = (Deno.env.get('APPLE_TEAM_ID') ?? '').trim();
+  return key && id && team ? { key, id, team, topic: Deno.env.get('APNS_TOPIC') ?? 'live.miracleapp.app' } : null;
+})();
+export const apnsConfigured = !!APNS;
+let apnsJwt: { value: string; until: number } | null = null;
+/** Apple's sign-in for sending: a token signed with the .p8 key, renewed every 50 minutes (Apple allows 60). */
+async function apnsAuth() {
+  if (apnsJwt && apnsJwt.until > Date.now()) return apnsJwt.value;
+  const head = b64url(JSON.stringify({ alg: 'ES256', kid: APNS!.id }));
+  const body = b64url(JSON.stringify({ iss: APNS!.team, iat: Math.floor(Date.now() / 1000) }));
+  const pem = APNS!.key.replace(/-----[^-]+-----/g, '').replace(/\s+/g, '');
+  const key = await crypto.subtle.importKey('pkcs8', Uint8Array.from(atob(pem), (c) => c.charCodeAt(0)), { name: 'ECDSA', namedCurve: 'P-256' }, false, ['sign']);
+  const sig = new Uint8Array(await crypto.subtle.sign({ name: 'ECDSA', hash: 'SHA-256' }, key, new TextEncoder().encode(`${head}.${body}`)));
+  apnsJwt = { value: `${head}.${body}.${b64url(sig)}`, until: Date.now() + 50 * 60_000 };
+  return apnsJwt.value;
+}
+/** One alert to one iPhone. Throws with statusCode 404 when the app is gone from it (or the token is no good). */
+async function sendApns(endpoint: string, msg: Push) {
+  const r = await fetch(`https://api.push.apple.com/3/device/${endpoint.slice(5)}`, {
+    method: 'POST',
+    headers: {
+      authorization: `bearer ${await apnsAuth()}`,
+      'apns-topic': APNS!.topic,
+      'apns-push-type': 'alert',
+      'apns-priority': '10',
+      'apns-expiration': String(Math.floor(Date.now() / 1000) + 86400),
+      ...(msg.tag ? { 'apns-collapse-id': msg.tag.slice(0, 64) } : {}),
+    },
+    body: JSON.stringify({ aps: { alert: { title: msg.title, body: msg.body }, sound: 'default', 'thread-id': msg.tag ?? 'miracle' }, url: msg.url, tag: msg.tag ?? '' }),
+  });
+  if (r.ok) return;
+  const text = await r.text();
+  const gone = r.status === 410 || /BadDeviceToken|Unregistered|DeviceTokenNotForTopic/.test(text);
+  throw Object.assign(new Error(text.slice(0, 200)), { statusCode: gone ? 404 : r.status, body: text.slice(0, 200) });
+}
+
+/** Web push for browsers, Firebase for the Android app, Apple's push service for the iPhone app. */
 async function deliver(s: { endpoint: string; p256dh: string; auth: string }, msg: Push) {
+  if (s.endpoint.startsWith('apns:')) {
+    if (!APNS) throw Object.assign(new Error("Apple's push service is not set up on the server"), { statusCode: null });
+    return sendApns(s.endpoint, msg);
+  }
   if (s.endpoint.startsWith('fcm:')) {
     if (!FCM) throw Object.assign(new Error('Firebase is not set up on the server'), { statusCode: null });
     return sendFcm(s.endpoint, msg);
@@ -75,7 +121,7 @@ export type Push = { title: string; body: string; url: string; tag?: string; /**
 
 /** Sends to every device the creator's team turned alerts on for; forgets devices the browser says are gone. */
 export async function pushToCreator(db: SupabaseClient, creator: number, msg: Push) {
-  if (!pushConfigured && !fcmConfigured) return { sent: 0, skipped: 'push not configured' };
+  if (!pushConfigured && !fcmConfigured && !apnsConfigured) return { sent: 0, skipped: 'push not configured' };
   const { data: subs } = await db.from('push_subscriptions').select('id, endpoint, p256dh, auth, device').eq('creator_id', creator);
   // Her own greeting, if she set one in My page > Alerts.
   const { data: me } = await db.from('creator_settings').select('alert_name, alert_line').eq('id', creator).maybeSingle();
@@ -236,7 +282,7 @@ export function pushForBrand(kind: string, p: Record<string, unknown>, creatorNa
 
 /** Sends to every device a brand login turned alerts on for; forgets devices the browser says are gone. */
 export async function pushToBrandUser(db: SupabaseClient, userId: string, msg: Push) {
-  if (!pushConfigured && !fcmConfigured) return { sent: 0, skipped: 'push not configured' };
+  if (!pushConfigured && !fcmConfigured && !apnsConfigured) return { sent: 0, skipped: 'push not configured' };
   const { data: subs } = await db.from('brand_push_subscriptions').select('id, endpoint, p256dh, auth, device').eq('user_id', userId);
   let sent = 0;
   const failed: { device: string; code: number | null; error: string }[] = [];

@@ -94,10 +94,13 @@ const savedToken = () => {
 	}
 };
 
-/** This build of the app can get alerts: it was built with the Firebase setup (it says so in its user agent). */
-export const nativePushReady = () => isNative() && !!plugin('PushNotifications') && /MiraclePush/.test(navigator.userAgent);
+/** This build of the app can get alerts: on Android, it was built with the Firebase setup (it says so in its
+ * user agent); on iPhone, every store build can (Apple's push service). */
+export const nativePushReady = () => isNative() && !!plugin('PushNotifications') && (nativePlatform() === 'ios' || /MiraclePush/.test(navigator.userAgent));
+// Android's alerts go through Firebase ("fcm:<token>"), the iPhone's through Apple ("apns:<device token>").
+const pushPrefix = () => (nativePlatform() === 'ios' ? 'apns:' : 'fcm:');
 
-/** The phone's alert address ("fcm:<token>"), asking permission first. */
+/** The phone's alert address ("fcm:<token>" or "apns:<token>"), asking permission first. */
 export async function nativePushEndpoint(): Promise<string> {
 	const push = plugin('PushNotifications');
 	if (!push || !nativePushReady()) throw new Error("Alerts aren't switched on in this version of the app yet. They come with the next update.");
@@ -117,11 +120,11 @@ export async function nativePushEndpoint(): Promise<string> {
 		} catch {
 			/* storage blocked */
 		}
-		return `fcm:${token}`;
+		return pushPrefix() + token;
 	} finally {
 		stop();
 	}
 }
 /** The alert address this phone registered before, if any. */
-export const nativePushSaved = () => (savedToken() ? `fcm:${savedToken()}` : '');
+export const nativePushSaved = () => (savedToken() ? pushPrefix() + savedToken() : '');
 export const nativeDevice = () => (nativePlatform() === 'ios' ? 'iPhone app' : 'Android app');

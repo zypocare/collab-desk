@@ -1,0 +1,108 @@
+# The iPhone app (mobile/ios): built on GitHub's Mac computers, so no Mac is needed. Every run checks that
+# it builds; once the Apple Developer account's secrets are in, it also signs the app and sends it to
+# App Store Connect, where it shows up in TestFlight (for testing on iPhones) and can be sent for review.
+# Run it by hand from the Actions tab too ("Run workflow").
+#
+# Versions: the same "version" in mobile/package.json as Android (with its mobile/CHANGELOG.md section); the
+# build number is this workflow's run number.
+#
+# Secrets (all from the Apple Developer account; without them the run only checks the build):
+#   APPLE_TEAM_ID             the team's 10-character ID (Membership details)
+#   APPLE_API_KEY_ID          App Store Connect > Users and Access > Integrations > App Store Connect API (Team key, App Manager)
+#   APPLE_API_ISSUER_ID       the Issuer ID shown on that page
+#   APPLE_API_KEY_P8_BASE64   that key's .p8 file, base64-encoded
+name: iPhone app
+
+on:
+  push:
+    branches: [main]
+    paths: ['mobile/ios/**', 'mobile/package.json', 'mobile/capacitor.config.json', 'mobile/CHANGELOG.md', '.github/workflows/ios.yml']
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: mobile
+    env:
+      BUILD_NUMBER: ${{ github.run_number }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+
+      - name: Install
+        run: npm ci
+
+      - name: Version
+        run: |
+          v=$(node -p "require('./package.json').version")
+          echo "$v" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$' || { echo "mobile/package.json version '$v' isn't like 1.0.1"; exit 1; }
+          grep -q "^## $v" CHANGELOG.md || { echo "Add a '## $v' section to mobile/CHANGELOG.md (what changed in this version)"; exit 1; }
+          echo "VERSION=$v" >> "$GITHUB_ENV"
+          echo "### Miracle for iPhone $v (build $BUILD_NUMBER)" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Copy the app into the iPhone project
+        run: npx cap sync ios
+
+      - name: Check it builds
+        working-directory: mobile/ios/App
+        run: |
+          xcodebuild -project App.xcodeproj -scheme App -configuration Release \
+            -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
+            MARKETING_VERSION="$VERSION" CURRENT_PROJECT_VERSION="$BUILD_NUMBER" \
+            CODE_SIGNING_ALLOWED=NO build | tail -n 30
+          test "${PIPESTATUS[0]}" -eq 0
+
+      - name: Apple sign-in for signing and upload
+        env:
+          KEY: ${{ secrets.APPLE_API_KEY_P8_BASE64 }}
+          KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          ISSUER: ${{ secrets.APPLE_API_ISSUER_ID }}
+          TEAM: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          if [ -n "$KEY" ] && [ -n "$KEY_ID" ] && [ -n "$ISSUER" ] && [ -n "$TEAM" ]; then
+            printf '%s' "$KEY" | base64 --decode > "$RUNNER_TEMP/AuthKey.p8"
+            { echo "ASC_KEY=$RUNNER_TEMP/AuthKey.p8"; echo "ASC_KEY_ID=$KEY_ID"; echo "ASC_ISSUER=$ISSUER"; echo "TEAM_ID=$TEAM"; } >> "$GITHUB_ENV"
+          else
+            echo "No Apple Developer secrets yet: the build was only checked." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Sign and archive
+        if: env.ASC_KEY != ''
+        working-directory: mobile/ios/App
+        run: |
+          xcodebuild -project App.xcodeproj -scheme App -configuration Release \
+            -destination 'generic/platform=iOS' -archivePath "$RUNNER_TEMP/Miracle.xcarchive" \
+            MARKETING_VERSION="$VERSION" CURRENT_PROJECT_VERSION="$BUILD_NUMBER" \
+            DEVELOPMENT_TEAM="$TEAM_ID" CODE_SIGN_STYLE=Automatic \
+            -allowProvisioningUpdates -authenticationKeyPath "$ASC_KEY" \
+            -authenticationKeyID "$ASC_KEY_ID" -authenticationKeyIssuerID "$ASC_ISSUER" \
+            archive | tail -n 30
+          test "${PIPESTATUS[0]}" -eq 0
+
+      - name: Send to App Store Connect (TestFlight)
+        if: env.ASC_KEY != ''
+        working-directory: mobile/ios/App
+        run: |
+          cat > "$RUNNER_TEMP/ExportOptions.plist" <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0"><dict>
+            <key>method</key><string>app-store-connect</string>
+            <key>destination</key><string>upload</string>
+            <key>teamID</key><string>$TEAM_ID</string>
+            <key>signingStyle</key><string>automatic</string>
+            <key>manageAppVersionAndBuildNumber</key><false/>
+          </dict></plist>
+          EOF
+          xcodebuild -exportArchive -archivePath "$RUNNER_TEMP/Miracle.xcarchive" \
+            -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" -exportPath "$RUNNER_TEMP/export" \
+            -allowProvisioningUpdates -authenticationKeyPath "$ASC_KEY" \
+            -authenticationKeyID "$ASC_KEY_ID" -authenticationKeyIssuerID "$ASC_ISSUER" | tail -n 30
+          test "${PIPESTATUS[0]}" -eq 0
+          echo "Sent to App Store Connect: it appears in TestFlight once Apple has processed it (usually 10 to 30 minutes)." >> "$GITHUB_STEP_SUMMARY"
