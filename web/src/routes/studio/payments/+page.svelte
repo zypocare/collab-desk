@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { markPaid, reloadCollabs, setInvoiceFlags, studio } from '#lib/studio.svelte.ts';
 	import { countUp, toast, ui } from '#lib/ui.svelte.ts';
-	import { delivText, diff, errMessage, fmt, hasProduct, inr, inrS, isPaid, outstanding, overdue, parse, payState, relWord, stageIndex, stageLabel, todayIso } from '#lib/util.ts';
+	import { delivText, diff, errMessage, fmt, hasProduct, inr, inrS, isPaid, outstanding, overdue, parse, payState, relWord, stageIndex, stageLabel, todayIso, waShare } from '#lib/util.ts';
 	import Icon from '#lib/components/Icon.svelte';
 	import Mono from '#lib/components/Mono.svelte';
 	import Ticket from '#lib/components/Ticket.svelte';
@@ -152,7 +152,9 @@
 					{i}
 				>
 					{@const lateInv = st === 'overdue' ? c.invoices.find((x) => (x.status === 'sent' || x.status === 'partly_paid') && x.due_date && x.due_date < todayIso()) : undefined}
-					{#if lateInv}<a class="btn" href="/studio/payments/late/{lateInv.id}">Next steps</a>{/if}
+					{@const openInv = !lateInv && st !== 'paid' ? c.invoices.find((x) => x.status === 'sent' || x.status === 'partly_paid') : undefined}
+					{#if lateInv}<a class="btn" href="/studio/payments/late/{lateInv.id}">Next steps</a>
+					{:else if openInv}<a class="btn wa" href={waShare(c.contact_phone, `Hi ${c.contact_name ? c.contact_name.split(' ')[0] : ''}, here's invoice ${openInv.number} for ${inr(outstanding(c))}${openInv.due_date ? `, due ${fmt(openInv.due_date)}` : ''}. You can pay by UPI or bank transfer here: ${location.origin}/invoice/${openInv.public_token}`)} target="_blank" rel="noopener" aria-label="Send {c.brand.name} the invoice on WhatsApp">WhatsApp</a>{/if}
 					{#if st !== 'paid'}<button class="btn primary" onclick={() => markPaid(c)} aria-label="Mark {c.brand.name} as paid">Paid?</button>{:else}<button class="btn" onclick={() => (ui.openCollab = c.id)}>Open</button>{/if}
 				</Ticket>
 			{:else}

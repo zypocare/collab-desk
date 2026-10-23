@@ -7,6 +7,7 @@
 	import Icon from './Icon.svelte';
 	import { quoteOptions, suggestTerms, usageFee as usageFeeFor, type QuoteOption } from '../suggest';
 	import Select from './Select.svelte';
+	import { loadBench, rangeFor } from '../benchmark.svelte';
 	import { CURRENCIES, fromInr, money, rateToday, signOf, type Currency } from '../currency';
 
 	// preset: terms to start from (an offer check's asks, or "Quote with 50% advance" for a new brand).
@@ -135,6 +136,7 @@
 	const itemsSubtotal = $derived(items.reduce((a, i) => a + i.qty * i.rate, 0));
 	const brandBudget = $derived(c.fee);
 	onMount(() => first?.querySelector('input')?.focus());
+	onMount(loadBench);
 
 	function addItem(kind: string) {
 		items.push({ kind, qty: 1, rate: rates[kind] ?? 0 });
@@ -211,6 +213,9 @@
 			{/each}
 			<Select action class="add-sel" ariaLabel="Add a line" placeholder="+ Add a line" options={KINDS.map((k) => ({ value: k, label: k }))} onchange={(k) => addItem(k)} />
 		</div>
+		{#if !foreign && items.some((i) => rangeFor(i.kind))}
+			<p class="hint q-bench">Creators your size charge: {items.filter((i) => rangeFor(i.kind)).map((i) => `${i.kind} ${inr(rangeFor(i.kind)!.low)}–${inr(rangeFor(i.kind)!.high)}`).join(' · ')}</p>
+		{/if}
 
 		<div class="fields" style="margin-top:16px">
 			<div class="f">

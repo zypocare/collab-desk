@@ -6,6 +6,7 @@
 	import { countUp, toast } from '#lib/ui.svelte.ts';
 	import { compact, errMessage, firstName, inr, inrS } from '#lib/util.ts';
 	import Icon from '#lib/components/Icon.svelte';
+	import BrandSales from '#lib/components/BrandSales.svelte';
 	import Segmented from '#lib/components/Segmented.svelte';
 	import Ticket from '#lib/components/Ticket.svelte';
 	import Columns from '#lib/components/charts/Columns.svelte';
@@ -189,6 +190,7 @@
 			<p class="md-note">One .xlsx with a sheet each: Summary, Requests, Invoices, Content, Campaigns, Creators and Shipping, for {label.toLowerCase()}.</p>
 			<button class="btn primary" style="align-self:flex-start" onclick={excel} disabled={busy}>{#if busy}<span class="spinner"></span>{:else}<Icon name="download" />{/if}Download .xlsx</button>
 		</section>
+		<BrandSales />
 	</div>
 
 	<!-- Best creators: the app's tickets, cheapest views first. -->

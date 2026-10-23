@@ -23,6 +23,7 @@
 	import PasskeyNudge from '#lib/components/PasskeyNudge.svelte';
 	import MoneyIn from '#lib/components/MoneyIn.svelte';
 	import { phone, startPhone } from '#lib/phone.svelte.ts';
+	import { agency, loadStudios, useCreator } from '#lib/agency.svelte.ts';
 	import { lively } from '#lib/lively.ts';
 	import { net } from '#lib/offline.svelte.ts';
 
@@ -295,6 +296,18 @@
 		{ href: '/studio/page', label: 'Brand page', icon: 'link', on: ['/studio/page', '/studio/profile', '/studio/qr'] },
 		{ href: '/studio/settings', label: 'Settings', icon: 'gear', on: ['/studio/settings'] }
 	];
+	// Managers and agencies who work for several creators: switch between their studios, and the roster.
+	$effect(() => {
+		if (studio.loaded && !agency.loaded) untrack(() => loadStudios());
+	});
+	const others = $derived(agency.studios.filter((x) => !x.current));
+	async function switchTo(id: number) {
+		try {
+			await useCreator(id, path);
+		} catch (e) {
+			toast(e instanceof Error ? e.message : String(e), 'alert');
+		}
+	}
 	const deskCurrent = $derived(DESK.find((n) => (n.href === '/studio' ? path === '/studio' : n.on.some((h) => path.startsWith(h))))?.href);
 	const deskTabs = $derived(tabs && group?.href !== '/studio/content' ? tabs : null);
 	// Brands that came back more than once, most loyal first.
@@ -359,6 +372,13 @@
 						>
 					{/each}
 				</div>
+				{#if others.length}
+					<div class="side-lbl">Your creators</div>
+					<a class="side-it" href="/studio/roster" aria-current={path === '/studio/roster' ? 'page' : undefined}><Icon name="users" /><span class="side-t">Roster</span></a>
+					{#each others as o (o.id)}
+						<button class="side-it" onclick={() => switchTo(o.id)} title="Work as {o.name}"><span class="side-b tint" style="--hue:var(--m{hueOf(o.name)})">{initials(o.name)}</span><span class="side-t">{o.name}</span></button>
+					{/each}
+				{/if}
 				{#if repeatBrands.length}
 					<div class="side-lbl">Repeat brands</div>
 					{#each repeatBrands as b (b.id)}

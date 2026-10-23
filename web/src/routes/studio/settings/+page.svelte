@@ -14,7 +14,7 @@
 	import { theme, toggleTheme } from '#lib/ui.svelte.ts';
 	import { downloadMediaKit } from '#lib/mediaKitPdf.ts';
 	import { copyText, toast } from '#lib/ui.svelte.ts';
-	import { KINDS, compact, inr, offeredKinds, phoneOk } from '#lib/util.ts';
+	import { KINDS, compact, inr, offeredKinds, phoneOk, waShare } from '#lib/util.ts';
 	import { LANGUAGES } from '#lib/languages.ts';
 	import LanguagePicker from '#lib/components/LanguagePicker.svelte';
 	import { rateCheck, suggestRates } from '#lib/rateSuggest.ts';
@@ -33,10 +33,13 @@
 	import OffersSettings from '#lib/components/OffersSettings.svelte';
 	import DecisionSettings from '#lib/components/DecisionSettings.svelte';
 	import RateLearn from '#lib/components/RateLearn.svelte';
+	import RateBenchmark from '#lib/components/RateBenchmark.svelte';
 	import ReviewsSettings from '#lib/components/ReviewsSettings.svelte';
 	import AppSettings from '#lib/components/AppSettings.svelte';
 	import AutopilotSettings from '#lib/components/AutopilotSettings.svelte';
 	import CommentDmSettings from '#lib/components/CommentDmSettings.svelte';
+	import GetFound from '#lib/components/GetFound.svelte';
+	import { agency } from '#lib/agency.svelte.ts';
 	import TeamSettings from '#lib/components/TeamSettings.svelte';
 	import DeleteAccount from '#lib/components/DeleteAccount.svelte';
 	import BlockedList from '#lib/components/BlockedList.svelte';
@@ -238,9 +241,15 @@
 	const onCards = () => cardsEl && (cardI = Math.round(cardsEl.scrollLeft / Math.max(1, cardsEl.clientWidth * 0.86)));
 	const cards = $derived([
 		{ icon: 'link', eb: 'Your link', text: 'Brands request collabs from your link', act: 'Copy link', run: () => copyText(link, 'Link copied. Put it in your Instagram bio.') },
+		{ icon: 'send', eb: 'WhatsApp', text: 'Send brands your rates and request link', act: 'WhatsApp', run: () => window.open(waShare('', `My rates, packages and collab requests: ${link}`), '_blank', 'noopener') },
 		{ icon: 'film', eb: 'Media kit', text: 'Your media kit, ready to send', act: 'Download', run: kit },
 		{ icon: 'qr', eb: 'QR code', text: 'A QR code for events and prints', act: 'Open', run: () => goto('/studio/qr') },
-		...(s.show_insights && studio.ig?.connected ? [{ icon: 'chart', eb: 'Insights', text: 'Send brands your live insights', act: 'Copy', run: () => copyText(`${link}/insights`, 'Insights link copied') }] : [])
+		...(s.show_insights && studio.ig?.connected
+			? [
+					{ icon: 'chart', eb: 'Insights', text: 'Send brands your live insights', act: 'Copy', run: () => copyText(`${link}/insights`, 'Insights link copied') },
+					{ icon: 'share', eb: 'Media kit on WhatsApp', text: 'Your live Instagram numbers, as a link', act: 'WhatsApp', run: () => window.open(waShare('', `My live Instagram numbers (updated every day): ${link}/insights`), '_blank', 'noopener') }
+				]
+			: [])
 	]);
 
 	function open(id: Sec) {
@@ -275,7 +284,8 @@
 				<p>Put this in your Instagram bio and send it in DMs. Brands sign in with their work email to send and track requests.</p>
 				<div class="row">
 					<button class="btn" onclick={() => copyText(link, 'Link copied')}><Icon name="copy" />Copy link</button>
-					{#if s.show_insights && studio.ig?.connected}<button class="btn out" onclick={() => copyText(`${link}/insights`, 'Insights link copied. Send it when brands ask for insights')}><Icon name="chart" />Insights link</button>{/if}
+					<a class="btn out wa" href={waShare('', `My rates, packages and collab requests: ${link}`)} target="_blank" rel="noopener"><Icon name="send" />WhatsApp</a>
+					{#if s.show_insights && studio.ig?.connected}<button class="btn out" onclick={() => copyText(`${link}/insights`, 'Insights link copied. Send it when brands ask for insights')}><Icon name="chart" />Insights link</button><a class="btn out wa" href={waShare('', `My live Instagram numbers (updated every day): ${link}/insights`)} target="_blank" rel="noopener"><Icon name="send" />WhatsApp media kit</a>{/if}
 					<a class="btn out" href="/?preview=1" target="_blank" rel="noopener"><Icon name="eye" />Preview your page</a>
 					<button class="btn out" onclick={kit} disabled={kitBusy}>{#if kitBusy}<span class="spinner"></span>{:else}<Icon name="film" />{/if}Media kit PDF</button>
 				</div>
@@ -292,6 +302,9 @@
 				<div class="cs-who"><b>{s.display_name}</b><small><Icon name="shield" />@{s.handle}{since !== '9999' ? ` · since ${since}` : ''}</small></div>
 				<button class="cs-edit" onclick={() => open('profile')} aria-label="Edit profile"><Icon name="edit" /></button>
 			</header>
+			{#if agency.studios.length > 1}
+				<a class="cs-row" href="/studio/roster"><Icon name="users" /><span>Your creators: roster and switching ({agency.studios.length})</span></a>
+			{/if}
 			<div class="cs-cards" bind:this={cardsEl} onscroll={onCards}>
 				{#each cards as k (k.icon)}
 					<div class="cs-card"><span class="cs-eb"><span class="cs-ci"><Icon name={k.icon} /></span>{k.eb}</span><p>{k.text}</p><button class="cs-cb" onclick={k.run} disabled={k.icon === 'film' && kitBusy}>{#if k.icon === 'film' && kitBusy}<span class="spinner"></span>{:else}{k.act}{/if}</button></div>
@@ -315,6 +328,7 @@
 					<button class="btn primary" onclick={() => copyText(link, 'Link copied')}><Icon name="copy" />Copy</button>
 				</Ticket>
 			</div>
+			<div class="cs-gf"><GetFound {link} /></div>
 			{#each GROUPS as g (g.label)}
 				<div class="cs-h">{g.label}</div>
 				{#each g.ids.map(byId) as x (x.id)}
@@ -444,6 +458,7 @@
 							</div>
 						</section>
 						<RateLearn />
+						<RateBenchmark />
 						<PackagesSettings />
 					{:else if active === 'bookings'}
 						<section class="panel rv" style="--i:1">

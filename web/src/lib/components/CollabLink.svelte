@@ -55,6 +55,7 @@
 			<div><b>{l.clicks}</b><small>link taps</small></div>
 			<div><b>{l.sales ?? '—'}</b><small>orders with the code</small></div>
 			<div><b>{l.revenue !== null && l.revenue !== undefined ? inr(l.revenue) : '—'}</b><small>sales{l.sales_by === 'brand' ? ' (from the brand)' : ''}</small></div>
+			{#if l.revenue && c.fee}<div><b>{(Number(l.revenue) / Number(c.fee)).toFixed(1)}×</b><small>sales for every ₹1 of your fee</small></div>{/if}
 		</div>
 		<form class="ln-sales" onsubmit={sales}>
 			<input class="inp num" name="sales" type="number" min="0" placeholder="Orders" value={l.sales ?? ''} aria-label="Orders with the code" />
