@@ -112,7 +112,8 @@
 {#if step === 'email'}
 	<form class="su-card" onsubmit={sendCode} novalidate>
 		{#if asking}
-		<div style="display:grid;gap:8px">
+		<div class="su-head">
+			<span class="su-eb">Join free</span>
 			<h1 class="su-h1">Join <em>Miracle</em></h1>
 			<p class="su-lead">First, who are you joining as?</p>
 		</div>
@@ -130,13 +131,14 @@
 			</label>
 		</fieldset>
 		{:else}
-		<div style="display:grid;gap:8px">
-			<h1 class="su-h1">Join <em>Miracle</em> as a {as}</h1>
+		<div class="su-head">
+			<span class="su-eb">Join as a {as}</span>
+			<h1 class="su-h1">Your <em>{as === 'brand' ? 'work email' : 'email'}</em></h1>
 			<p class="su-lead">{as === 'brand' ? 'Work with creators. Start straight away.' : 'Run your brand collabs. We review your profile first.'} <button type="button" class="su-link" onclick={() => (asking = true)}>Not a {as}? Change</button></p>
 		</div>
 		{/if}
 		<div class="su-f">
-			<label for="su-email">{as === 'brand' ? 'Your work email' : 'Your email'}</label>
+			<label for="su-email">{as === 'brand' ? 'Work email' : 'Email address'}</label>
 			<input class="su-in" id="su-email" type="email" autocomplete="email" inputmode="email" placeholder="you@example.com" bind:value={email} />
 			<small>We'll send a 6-digit code. No password needed.</small>
 		</div>
@@ -147,9 +149,10 @@
 	</form>
 {:else}
 	<form class="su-card" onsubmit={verify} novalidate>
-		<div style="display:grid;gap:8px">
-			<h1 class="su-h1">Check your <em>email</em></h1>
-			<p class="su-lead">We sent a 6-digit code to <b>{email}</b>.</p>
+		<div class="su-head">
+			<span class="su-eb">Check your email</span>
+			<h1 class="su-h1">Enter the <em>code</em></h1>
+			<p class="su-lead">We sent it to <b>{email}</b>. It works for one hour.</p>
 		</div>
 		<div class="su-f">
 			<label for="su-code">6-digit code</label>

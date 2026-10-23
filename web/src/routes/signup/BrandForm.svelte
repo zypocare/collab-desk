@@ -104,7 +104,7 @@
 	</div>
 	{#if error}<p class="su-err" role="alert">{error}</p>{/if}
 	<div class="su-row">
-		<button class="su-neo su-light" disabled={busy}>{busy ? 'One moment…' : 'Create my brand account'}</button>
+		<button class="su-neo su-go" disabled={busy}>{busy ? 'One moment…' : 'Create my brand account'}</button>
 		<span class="su-hint">You go straight to your dashboard. Add more brands and teammates later.</span>
 	</div>
 </form>

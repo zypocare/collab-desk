@@ -4,6 +4,7 @@
 	import { auth, signOut } from '#lib/auth.svelte.ts';
 	import { addressFor } from '#lib/creatorHost.ts';
 	import Logo from '#lib/components/Logo.svelte';
+	import AuthBackdrop from '#lib/components/AuthBackdrop.svelte';
 	import StartStep from './StartStep.svelte';
 	import CreatorForm from './CreatorForm.svelte';
 	import BrandForm from './BrandForm.svelte';
@@ -78,17 +79,14 @@
 
 <svelte:head><title>{view === 'link' ? 'Pick your link' : view === 'waiting' ? 'Your request' : 'Join Miracle'}</title></svelte:head>
 
+<!-- The same look as Sign in: the drifting glows and the "m" tracing itself behind one card. -->
 <div class="su">
+	<AuthBackdrop />
 	<header class="su-top">
 		{#if inApp}
-			<span class="su-brand"><Logo size={30} /><b>Miracle</b></span>
+			<span class="su-brand"><Logo size={34} /><b>Miracle</b></span>
 		{:else}
-			<a class="su-brand" href="https://www.miracleapp.live" aria-label="Miracle website"><Logo size={30} /><b>Miracle</b></a>
-		{/if}
-		{#if auth.session}
-			<small>{email} · <button class="su-link" onclick={leave}>Sign out</button></small>
-		{:else}
-			<small>Already on Miracle? <a href="/login?next=%2Fsignup">Sign in</a></small>
+			<a class="su-brand" href="https://www.miracleapp.live" aria-label="Miracle website"><Logo size={34} /><b>Miracle</b></a>
 		{/if}
 	</header>
 	<main class="su-main">
@@ -115,4 +113,11 @@
 			<div class="su-load"><span class="ring"><span></span></span></div>
 		{/if}
 	</main>
+	<p class="su-acct">
+		{#if auth.session}
+			{email} · <button class="su-link" onclick={leave}>Sign out</button>
+		{:else}
+			Already on Miracle? <a href="/login?next=%2Fsignup">Sign in</a>
+		{/if}
+	</p>
 </div>

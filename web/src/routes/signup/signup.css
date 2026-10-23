@@ -1,56 +1,94 @@
-/* Sign-up at app.miracleapp.live: one card per step, the website's night look in the app's tokens. */
+/* Sign-up at app.miracleapp.live: one card per step, in Sign in's look (always dark): the drifting glows
+   and the tracing "m" behind (AuthBackdrop), a glass card, square fields and NeoPOP buttons. */
 .su {
+	--bg: #110d11;
+	--surface: #1a151a;
+	--surface-2: #231d23;
+	--line: #2e262e;
+	--line-2: #3e343e;
+	--line-strong: #3e343e;
+	--ink: #f4eef2;
+	--ink-2: #c9bfc6;
+	--ink-3: #a39aa1;
+	--g1: #9c7bff;
+	--g2: #f25a90;
+	--g3: #ffae6b;
+	--ok: #5fd39a;
+	--bad: #ff7b70;
+	--on-grad: #fff;
+	--grad: linear-gradient(115deg, var(--g1), var(--g2) 52%, var(--g3));
+	--f-display: 'Instrument Serif', Georgia, serif;
+	--f-serif: 'Instrument Serif', Georgia, serif;
+	--f-body: 'Geist', ui-sans-serif, system-ui, sans-serif;
+	position: relative;
+	isolation: isolate;
 	min-height: 100vh;
 	min-height: 100dvh;
 	display: flex;
 	flex-direction: column;
-	background:
-		radial-gradient(50% 45% at 12% 0%, color-mix(in oklab, var(--g1) 16%, transparent), transparent 70%),
-		radial-gradient(45% 45% at 92% 100%, color-mix(in oklab, var(--g2) 13%, transparent), transparent 70%),
-		var(--bg);
+	align-items: center;
+	gap: 22px;
+	padding: calc(env(safe-area-inset-top, 0px) + 28px) max(16px, env(safe-area-inset-right, 0px)) calc(env(safe-area-inset-bottom, 0px) + 28px) max(16px, env(safe-area-inset-left, 0px));
+	background: var(--bg);
 	color: var(--ink);
+	font-family: var(--f-body);
+	color-scheme: dark;
 }
 .su-top {
 	display: flex;
-	align-items: center;
-	gap: 12px;
-	padding: calc(18px + env(safe-area-inset-top, 0px)) max(20px, env(safe-area-inset-left, 0px)) 8px max(20px, env(safe-area-inset-right, 0px));
+	justify-content: center;
+	animation: su-in 0.8s 0.1s cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 .su-brand {
-	display: flex;
+	display: inline-flex;
 	align-items: center;
-	gap: 8px;
-	flex: 1;
+	gap: 12px;
 	color: var(--ink);
 	text-decoration: none;
 }
 .su-brand b {
-	font: italic 400 27px/1 var(--f-serif);
+	font: italic 400 32px/1 var(--f-serif);
+	letter-spacing: -0.01em;
 }
-.su-top small {
+.su-acct {
+	margin: 0;
 	font-size: 14px;
 	color: var(--ink-3);
+	text-align: center;
 }
-.su-top small a,
-.su-top button.su-link {
+.su-acct a,
+.su-acct .su-link {
 	color: var(--ink);
 	font-weight: 600;
 }
 .su-main {
 	flex: 1;
+	width: 100%;
 	display: flex;
 	justify-content: center;
-	align-items: flex-start;
-	padding: 24px max(16px, env(safe-area-inset-left, 0px)) 56px max(16px, env(safe-area-inset-right, 0px));
+	align-items: center;
 }
 .su-card {
-	width: min(620px, 100%);
+	width: min(560px, 100%);
 	display: grid;
-	gap: 22px;
+	gap: 18px;
 	padding: 32px;
-	border-radius: 24px;
-	background: var(--surface);
-	box-shadow: inset 0 0 0 1px var(--line-strong);
+	border-radius: 28px;
+	background: radial-gradient(120% 70% at 0% 0%, rgba(242, 90, 144, 0.16), transparent 60%), rgba(26, 21, 26, 0.86);
+	box-shadow: 0 0 0 1px var(--line-2) inset, 0 60px 120px -50px rgba(242, 90, 144, 0.45);
+	backdrop-filter: blur(18px);
+	-webkit-backdrop-filter: blur(18px);
+	animation: su-in 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@keyframes su-in {
+	from {
+		opacity: 0;
+		transform: translateY(24px) scale(0.98);
+	}
+}
+.su-head {
+	display: grid;
+	gap: 10px;
 }
 .su-wide {
 	width: min(880px, 100%);
@@ -60,14 +98,20 @@
 	display: grid;
 	gap: 22px;
 }
-.su-h1 {
+/* `.su` in front: beats the desktop rule that puts every heading in the body font. */
+.su .su-h1 {
 	margin: 0;
-	font: 700 clamp(34px, 6vw, 46px) / 1.02 var(--f-body);
-	letter-spacing: -0.02em;
+	font: 400 clamp(38px, 7vw, 46px) / 1 var(--f-display);
+	letter-spacing: -0.01em;
 	text-wrap: balance;
 }
 .su-h1 em {
-	font: italic 400 1.04em/1 var(--f-serif);
+	font-style: italic;
+	background: var(--grad);
+	-webkit-background-clip: text;
+	background-clip: text;
+	color: transparent;
+	padding-right: 0.08em;
 }
 .su-big {
 	font-size: clamp(42px, 8vw, 72px);
@@ -82,15 +126,18 @@
 }
 .su-lead {
 	margin: 0;
-	font-size: 16.5px;
+	font-size: 15px;
 	line-height: 1.55;
-	color: var(--ink-2);
+	color: var(--ink-3);
+}
+.su-lead b {
+	color: var(--ink);
 }
 .su-eb {
-	font: 700 12px/1 var(--f-body);
-	letter-spacing: 0.22em;
+	font: 700 11.5px/1 var(--f-body);
+	letter-spacing: 0.3em;
 	text-transform: uppercase;
-	color: var(--ink-3);
+	color: var(--ink-2);
 }
 .su-ok {
 	color: var(--ok);
@@ -110,14 +157,15 @@
 	display: grid;
 	gap: 6px;
 	padding: 18px;
-	border-radius: 16px;
-	box-shadow: inset 0 0 0 1.5px var(--line-strong);
+	background: #0c090c;
+	box-shadow: inset 0 0 0 1px var(--line-2);
 	cursor: pointer;
-	transition: box-shadow 0.2s, background 0.2s;
+	transition: box-shadow 0.2s, background 0.2s, transform 0.12s;
 }
 .su-as label:has(input:checked) {
-	background: color-mix(in oklab, var(--c) 11%, transparent);
-	box-shadow: inset 0 0 0 2px var(--c);
+	background: color-mix(in oklab, var(--c) 12%, #0c090c);
+	box-shadow: inset 0 0 0 1.5px var(--c), 4px 4px 0 var(--c);
+	transform: translate(-2px, -2px);
 }
 .su-as label:has(input:focus-visible) {
 	outline: 2px solid var(--g3);
@@ -150,9 +198,10 @@
 .su-f > label,
 .su-f > legend,
 .su-lbl {
-	font-size: 13px;
-	font-weight: 600;
-	color: var(--ink-2);
+	font: 700 11px/1.3 var(--f-body);
+	letter-spacing: 0.22em;
+	text-transform: uppercase;
+	color: var(--ink-3);
 	padding: 0;
 }
 .su-f small,
@@ -170,14 +219,18 @@
 }
 .su-in {
 	width: 100%;
-	height: 52px;
-	padding: 0 14px;
+	height: 56px;
+	padding: 0 16px;
 	border: 0;
-	border-radius: 12px;
-	background: var(--bg);
-	box-shadow: inset 0 0 0 1.5px var(--line-strong);
+	border-radius: 0;
+	background: #0c090c;
+	box-shadow: inset 0 0 0 1px var(--line-2);
 	color: var(--ink);
-	font: 400 16px var(--f-body);
+	font: 500 17px var(--f-body);
+	transition: box-shadow 0.2s;
+}
+.su-in::placeholder {
+	color: #6f656c;
 }
 textarea.su-in {
 	height: auto;
@@ -187,7 +240,7 @@ textarea.su-in {
 }
 .su-in:focus {
 	outline: 0;
-	box-shadow: inset 0 0 0 2px var(--g2);
+	box-shadow: inset 0 0 0 1.5px var(--g2), 4px 4px 0 var(--g2);
 }
 .su-code {
 	/* The same code box as Sign in: square, six dots, big spaced digits. */
@@ -215,12 +268,11 @@ textarea.su-in {
 .su-pre {
 	display: flex;
 	align-items: center;
-	border-radius: 12px;
-	background: var(--bg);
-	box-shadow: inset 0 0 0 1.5px var(--line-strong);
+	background: #0c090c;
+	box-shadow: inset 0 0 0 1px var(--line-2);
 }
 .su-pre:focus-within {
-	box-shadow: inset 0 0 0 2px var(--g2);
+	box-shadow: inset 0 0 0 1.5px var(--g2), 4px 4px 0 var(--g2);
 }
 .su-pre > span {
 	padding-left: 14px;
@@ -303,7 +355,8 @@ textarea.su-in {
 .su-neo {
 	display: inline-grid;
 	place-items: center;
-	min-height: 54px;
+	min-height: 56px;
+	transition: transform 0.12s, box-shadow 0.12s;
 	padding: 0 28px;
 	border: 0;
 	cursor: pointer;
@@ -312,6 +365,13 @@ textarea.su-in {
 	letter-spacing: 0.14em;
 	text-transform: uppercase;
 }
+.su-neo:hover:not(:disabled) {
+	transform: translate(-2px, -2px);
+}
+.su-neo:active:not(:disabled) {
+	transform: translate(5px, 5px);
+	box-shadow: none;
+}
 .su-neo:disabled {
 	opacity: 0.55;
 	cursor: default;
@@ -319,7 +379,7 @@ textarea.su-in {
 .su-go {
 	background: var(--grad);
 	color: var(--on-grad);
-	box-shadow: 4px 4px 0 color-mix(in oklab, var(--g1) 70%, black);
+	box-shadow: 5px 5px 0 #6a4bc9;
 }
 .su-light {
 	background: var(--ink);
@@ -341,12 +401,11 @@ textarea.su-in {
 }
 .su-err {
 	margin: 0;
-	padding: 12px 14px;
-	border-radius: 12px;
+	padding: 10px 12px;
 	background: color-mix(in oklab, var(--bad) 12%, transparent);
+	box-shadow: inset 3px 0 0 var(--bad);
 	color: var(--bad);
 	font-size: 14px;
-	font-weight: 600;
 }
 .su-note {
 	display: flex;
@@ -393,8 +452,7 @@ details.su-more .su-grid {
 
 @media (max-width: 640px) {
 	.su-card {
-		padding: 22px 18px;
-		border-radius: 20px;
+		padding: 26px 22px;
 	}
 	.su-grid {
 		grid-template-columns: minmax(0, 1fr);
@@ -404,5 +462,11 @@ details.su-more .su-grid {
 	}
 	.su-neo {
 		width: 100%;
+	}
+}
+@media (prefers-reduced-motion: reduce) {
+	.su-card,
+	.su-top {
+		animation: none;
 	}
 }
