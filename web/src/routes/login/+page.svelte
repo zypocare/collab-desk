@@ -27,10 +27,13 @@
 	let tsBox = $state<HTMLElement>();
 	let tsId = '';
 	let codeInput = $state<HTMLInputElement>();
-	// A password instead of an email code, only for accounts that were given one (Meta's app reviewers,
-	// who can't receive our codes). Reached with /login?pw=1; everyone else never sees it.
-	const withPw = page.url.searchParams.get('pw') === '1';
+	// A password instead of an email code, only for accounts that were given one (Meta's and Google's app
+	// reviewers, who can't receive our codes). Reached with /login?pw=1, or by typing the review login's
+	// email (the Play Store app can't open a link with ?pw=1); everyone else never sees it.
+	const REVIEW_LOGIN = 'review@miracleapp.live';
+	const pwLink = page.url.searchParams.get('pw') === '1';
 	let password = $state('');
+	const withPw = $derived(pwLink || email.trim().toLowerCase() === REVIEW_LOGIN);
 
 	// Already signed in? Go straight to the right area.
 	let signingIn = false;
@@ -223,7 +226,7 @@
 			{#if step === 'email'}
 				<span class="lg-eb">Sign in</span>
 				<h1>Your <em>email</em></h1>
-				<p class="lg-lead">We'll send you a 6-digit code. No password needed.</p>
+				<p class="lg-lead">{withPw ? 'Enter the email and password you were given.' : "We'll send you a 6-digit code. No password needed."}</p>
 				<form onsubmit={withPw ? signInPw : sendCode} novalidate>
 					<label class="lg-l" for="email">Email address</label>
 					<input class="lg-in" id="email" type="email" inputmode="email" autocomplete="email" placeholder="name@brand.com" bind:value={email} />
