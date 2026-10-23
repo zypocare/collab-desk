@@ -1,13 +1,15 @@
-// Play Store graphics: five phone screenshots (1080x1920) and the feature graphic (1024x500), drawn from
-// the real app screens in site/img. Run: node mobile/store/make.mjs (needs a Chromium for Playwright;
-// set PW_CHROME to its path). Output: docs/store/android/.
-import { chromium } from 'playwright-core';
+// Store graphics: five phone screenshots for Play (1080x1920) and the App Store (1320x2868), and Play's
+// feature graphic (1024x500), drawn from the real app screens in site/img. Run: node mobile/store/make.mjs
+// (needs a Chromium for Playwright; set PW_CHROME to its path). Output: docs/store/android/ and docs/store/ios/.
 import fs from 'node:fs';
+import { createRequire } from 'node:module';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, '../..');
+// Playwright comes from the web app's packages.
+const { chromium } = createRequire(path.join(root, 'web/package.json'))('playwright-core');
 const img = (n) => 'data:image/webp;base64,' + fs.readFileSync(path.join(root, 'site/img', n)).toString('base64');
 const icon = 'data:image/svg+xml;base64,' + fs.readFileSync(path.join(root, 'web/static/icon.svg')).toString('base64');
 const out = path.join(root, 'docs/store/android');
@@ -63,5 +65,20 @@ await page.setContent(`<html><head>${FONTS}<style>${BASE}
 </body></html>`, { waitUntil: 'networkidle' });
 await page.screenshot({ path: path.join(out, 'feature-graphic.png') });
 fs.copyFileSync(path.join(root, 'web/static/icon-512.png'), path.join(out, 'icon-512.png'));
+// App Store: the same five on a 6.9-inch iPhone screen (1320 × 2868), in docs/store/ios/.
+const outIos = path.join(root, 'docs/store/ios');
+fs.mkdirSync(outIos, { recursive: true });
+const ios = await b.newPage({ viewport: { width: 440, height: 956 }, deviceScaleFactor: 3 });
+for (const s of SHOTS) {
+  await ios.setContent(`<html><head>${FONTS}<style>${BASE}
+    .eb{position:absolute;left:34px;top:74px;font-weight:700;font-size:12px;letter-spacing:.24em;text-transform:uppercase;color:#F25A90}
+    h1{position:absolute;left:34px;right:34px;top:98px;margin:0;font:400 44px/1 'Instrument Serif',serif;letter-spacing:-.01em}
+    p{position:absolute;left:34px;right:44px;top:200px;margin:0;font-size:16px;line-height:1.35;color:#C9BFC6}
+    .dev{left:50%;top:286px;width:290px;height:628px;margin-left:-145px;transform:rotate(-3deg);border-radius:34px;padding:7px}
+    .dev img{border-radius:28px}.isl{top:14px;width:62px;height:18px;margin-left:-31px}
+  </style></head><body><div class="bg"></div><div class="eb">${s.eb}</div><h1>${s.h}</h1><p>${s.p}</p>
+  <div class="dev"><span class="isl"></span><img src="${img(s.screen)}"></div></body></html>`, { waitUntil: 'networkidle' });
+  await ios.screenshot({ path: path.join(outIos, s.file) });
+}
 await b.close();
 console.log('written to', out);
