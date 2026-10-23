@@ -18,6 +18,8 @@ const OWN = /(^|\.)miracleapp\.live$/;
 export function startNative() {
 	if (!isNative()) return;
 	document.documentElement.classList.add('native', `native-${nativePlatform()}`);
+	// The welcome animation takes over from the launch screen.
+	(plugin('SplashScreen')?.hide as ((o: { fadeOutDuration: number }) => Promise<void>) | undefined)?.({ fadeOutDuration: 200 }).catch(() => {});
 	const app = plugin('App');
 	// Android's back button: back in the app's history, or out of the app from the first screen.
 	app?.addListener('backButton', ((e: { canGoBack: boolean }) => {

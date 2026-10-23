@@ -24,6 +24,7 @@
 	import { PHONE_Q, depth } from '#lib/phone.svelte.ts';
 	import { initProblems, step } from '#lib/problems.ts';
 	import ClosingScreen from '#lib/components/ClosingScreen.svelte';
+	import AppIntro from '#lib/components/AppIntro.svelte';
 
 	let { children }: LayoutProps = $props();
 
@@ -98,4 +99,5 @@
 	{/each}
 </div>
 <ConfirmDialog />
+<AppIntro />
 <canvas id="confetti" aria-hidden="true"></canvas>
