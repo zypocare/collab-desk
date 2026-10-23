@@ -2,6 +2,7 @@
 	// Money on a laptop: an exact build of the approved design (artifact "Laptop Money redesign").
 	// The year at the top, this month's goal beside it, four numbers in one strip, a line of money
 	// facts, month by month next to what is coming in, then who pays most and where it comes from.
+	import OtherIncome from './OtherIncome.svelte';
 	import { studio } from '../studio.svelte';
 	import { useFinancialReport } from '../financialReport.svelte';
 	import { ui, countUp } from '../ui.svelte';
@@ -251,6 +252,7 @@
 			{/if}
 		</section>
 	</div>
+	<OtherIncome {fy} received={m.received} />
 </div>
 
 <style>

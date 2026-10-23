@@ -428,6 +428,9 @@ export type Settings = {
 	nudge_days: number;
 	autopilot_brief: boolean;
 	show_insights: boolean;
+	/** Her email list: the sign-up box on her page, and its one line. */
+	fan_list_on?: boolean;
+	fan_list_pitch?: string;
 	/** Alerts when a brand opens a brief that fits her (Pitches > Open briefs). */
 	brief_alerts?: boolean;
 	/** Growth autopilot: ask before adding the week's reel ideas to the Calendar, or add them straight away. */
@@ -469,6 +472,9 @@ export type PublicPage = {
 	demand_factor?: number;
 	/** Her "about" line. */
 	bio?: string | null;
+	/** Her links for followers, and the sign-up box for her email list (null when it's off). */
+	links?: { id: string; title: string; url: string }[];
+	fan_list?: { pitch: string | null } | null;
 	barter: { mode: 'open' | 'selective' | 'closed'; min_value: number; reply_time: string; slots_left: number | null } | null;
 	worked_with: string[];
 	instagram: {

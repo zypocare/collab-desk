@@ -11,6 +11,7 @@
 	import { appAddress } from '#lib/creatorHost.ts';
 	import type { PublicPage } from '#lib/types.ts';
 	import Logo from '#lib/components/Logo.svelte';
+	import PublicLinks from '#lib/components/PublicLinks.svelte';
 
 	// A creator's page for brands (name.miracleapp.live), in the website's night scene: aurora hero with her
 	// numbers, the brands she's worked with, her best Reels, packages as tickets, open weeks, her audience and
@@ -684,6 +685,8 @@
 					</div>
 				</div>
 			</section>
+
+			<PublicLinks links={p.links ?? []} fanList={p.fan_list ?? null} {first} />
 
 			{#if catalogue.length}
 				<section class="mp-sec mp-cat" id="brands" aria-labelledby="mp-br-t">

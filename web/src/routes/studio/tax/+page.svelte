@@ -3,6 +3,8 @@
 	import { saveBrand, studio } from '#lib/studio.svelte.ts';
 	import { supabase } from '#lib/supabase.ts';
 	import { gstLimit, tdsByBrand, turnover, type QuarterKey } from '#lib/taxDesk.ts';
+	import { loadOtherIncome, otherIncome, otherInFy } from '#lib/otherIncome.svelte.ts';
+	import { onMount } from 'svelte';
 	import { toast } from '#lib/ui.svelte.ts';
 	import { errMessage, fmt, inr } from '#lib/util.ts';
 	import Barter194R from '#lib/components/Barter194R.svelte';
@@ -14,7 +16,11 @@
 	let start = $state(String(now.start));
 	const fy = $derived(fyFromStart(Number(start)));
 	const s = $derived(studio.settings!);
-	const t = $derived(turnover(studio.collabs, fy));
+	onMount(() => {
+		if (!otherIncome.loaded) loadOtherIncome().catch(() => {});
+	});
+	const oi = $derived(otherInFy(otherIncome.rows, fy));
+	const t = $derived(turnover(studio.collabs, fy, oi.total));
 	const limit = $derived(gstLimit(s?.state));
 	const share = $derived(Math.min(1, t.total / limit));
 	const tds = $derived(tdsByBrand(studio.collabs, fy));
@@ -72,8 +78,9 @@
 				<dt>Fees invoiced</dt><dd>{inr(t.fees)}</dd>
 				{#if t.paidNoInvoice}<dt>Paid without an invoice</dt><dd>{inr(t.paidNoInvoice)}</dd>{/if}
 				<dt>Barter (products, stays)</dt><dd>{inr(t.barter)}</dd>
+				{#if t.other}<dt>Other income (YouTube, affiliate…)</dt><dd>{inr(t.other)}</dd>{/if}
 			</dl>
-			<small class="hint">Platform payouts and affiliate income count too. Add them with your accountant.</small>
+			<small class="hint">{t.other ? 'Income from outside Miracle comes from Money › Other income.' : 'YouTube, affiliate and platform income count too: add them in Money › Other income.'}</small>
 		</div>
 	</section>
 
@@ -89,6 +96,12 @@
 			{:else}
 				<p class="hint">No invoices in {fy.label} yet.</p>
 			{/each}
+			{#if oi.tds}
+				<div class="tx-brand">
+					<div class="tx-bh"><b>Other income</b><span class="num">{inr(oi.total)}</span></div>
+					<small class="tx-note info">{inr(oi.tds)} TDS deducted by {[...new Set(oi.list.filter((r) => r.tds).map((r) => r.payer))].join(', ')}. Check it in your 26AS too.</small>
+				</div>
+			{/if}
 		</div>
 	</section>
 

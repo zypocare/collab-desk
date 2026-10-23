@@ -14,6 +14,7 @@
 	import HBars from '#lib/components/charts/HBars.svelte';
 	import Gauge from '#lib/components/charts/Gauge.svelte';
 	import LaptopMoney from '#lib/components/LaptopMoney.svelte';
+	import OtherIncome from '#lib/components/OtherIncome.svelte';
 
 	// Money at a glance: the year's earnings, month by month, growth on last year, where it comes from,
 	// who pays most, cash or product, what is coming in and how fast brands pay.
@@ -142,4 +143,5 @@
 		</div>
 	</section>
 </div>
+<OtherIncome {fy} received={m.received} />
 {/if}

@@ -15,7 +15,7 @@
 <div class="page">
 	<div class="wrap doc-wrap">
 		<article class="doc legal">
-			<header class="doc-h"><div><div class="eb">Last updated 17 October 2026</div><h1>Privacy policy</h1></div></header>
+			<header class="doc-h"><div><div class="eb">Last updated 24 October 2026</div><h1>Privacy policy</h1></div></header>
 			<p>{app} is the website {who} uses to manage brand collaborations: requests, quotes, agreements, content approvals, invoices and results. This page explains what we collect and why.</p>
 
 			<h2>What we collect</h2>
@@ -23,6 +23,7 @@
 				<li><b>Brands and their teams:</b> name, work email, phone (if given), company details and billing details you enter, the requests, messages, files and feedback you send.</li>
 				<li><b>Instagram data of {who}'s own account:</b> profile, follower numbers, posts and their insights (views, reach, likes, saves), audience breakdowns, and Instagram direct messages sent to the account, through Meta's official Instagram API. Only {who}'s own account is connected.</li>
 				<li><b>People who message {who} on Instagram:</b> only conversations that look like a brand collaboration are kept: your Instagram username, name, profile picture and the messages in that conversation, so {who} can reply and plan the collaboration. Other messages are checked automatically when they arrive and are not stored.</li>
+				<li><b>People who join a creator's email list:</b> the email address and first name you give on her page, used only for that creator's emails to her list. Every email has a link to leave the list, and the creator can download or remove her list at any time.</li>
 				<li><b>Technical data:</b> sign-in sessions, the device's notification subscription (if you allow alerts), and basic logs needed to keep the service secure.</li>
 			</ul>
 

@@ -845,6 +845,28 @@ export function render(kind: string, p: Payload, s: Settings): Omit<Mail, 'to'> 
     };
   }
 
+  // A creator's email to her fan list: a plain personal letter from her (not the business frame), with
+  // the way to leave the list in the footer and in the List-Unsubscribe header.
+  if (kind === 'fan_broadcast') {
+    const leave = url(s, `/unsubscribe?t=${encodeURIComponent(String(p.token ?? ''))}`);
+    const handle = String(s.handle ?? '').replace(/^@/, '');
+    const linkify = (t: string) => esc(t).replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" style="color:#d4296a">$1</a>').replace(/\n/g, '<br>');
+    const paras = String(p.body ?? '').split(/\n{2,}/).map((x) => `<p style="margin:0 0 14px">${linkify(x.trim())}</p>`).join('');
+    const hello = p.name ? `<p style="margin:0 0 14px">Hi ${esc(firstOf(p.name))},</p>` : '';
+    return {
+      subject: String(p.subject ?? ''),
+      fromName: `${s.display_name} via Miracle`,
+      headers: { 'List-Unsubscribe': `<${leave}>` },
+      html: `<!doctype html><html><head><meta name="color-scheme" content="light"></head><body style="margin:0;padding:0;background:#f4eff0;font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;color:${INK}">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4eff0;padding:28px 14px"><tr><td align="center">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border-radius:20px;border:1px solid ${LINE}">
+<tr><td style="padding:28px 30px 8px;font-size:16px;line-height:1.65;color:${BODY}">${hello}${paras}<p style="margin:18px 0 0">${esc(s.display_name)}${handle ? `<br><a href="https://instagram.com/${esc(handle)}" style="color:${MUTED};text-decoration:none">@${esc(handle)}</a>` : ''}</p></td></tr>
+<tr><td style="padding:18px 30px 24px;font-size:12.5px;line-height:1.5;color:${MUTED}">You get this because you joined ${esc(me)}'s list on <a href="${esc(url(s, '/'))}" style="color:${MUTED}">${esc(url(s, '/').replace(/^https?:\/\//, '').replace(/\/$/, ''))}</a>. <a href="${esc(leave)}" style="color:${MUTED}">Leave this list</a>.</td></tr>
+</table></td></tr></table></body></html>`,
+      text: `${p.name ? `Hi ${firstOf(p.name)},\n\n` : ''}${String(p.body ?? '')}\n\n${s.display_name}${handle ? ` (@${handle})` : ''}\n\n--\nYou joined ${me}'s list on ${url(s, '/')}. Leave this list: ${leave}`,
+    };
+  }
+
   if (kind === 'question_received') {
     const who = [p.name, p.brand].filter(Boolean).join(', ') || String(p.email ?? '');
     return {

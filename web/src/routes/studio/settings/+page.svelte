@@ -49,6 +49,8 @@
 	import ResetData from '#lib/components/ResetData.svelte';
 	import SecuritySettings from '#lib/components/SecuritySettings.svelte';
 	import InsightLinks from '#lib/components/InsightLinks.svelte';
+	import PageLinks from '#lib/components/PageLinks.svelte';
+	import FanList from '#lib/components/FanList.svelte';
 
 	const s = $derived(studio.settings!);
 	const link = $derived(s.site_url.replace(/\/$/, ''));
@@ -166,7 +168,7 @@
 
 	// Settings are split into a few sections and only the one she picks is shown.
 	// On phones the menu is its own screen: tap a section, and "All settings" (or Back) returns.
-	type Sec = 'profile' | 'rates' | 'bookings' | 'offers' | 'autopilot' | 'payments' | 'reviews' | 'alerts' | 'team' | 'blocked' | 'account';
+	type Sec = 'profile' | 'links' | 'rates' | 'bookings' | 'offers' | 'autopilot' | 'payments' | 'reviews' | 'alerts' | 'team' | 'blocked' | 'account';
 	const autoOn = $derived([s.autopilot_packages, s.autopilot_counter, s.autopilot_nudge, s.autopilot_brief, s.autopilot_review].filter(Boolean).length);
 	const hasPay = $derived(!!(s.upi_id || s.bank_details));
 	const sections = $derived<{ id: Sec; label: string; icon: string; sub: string; warn?: string }[]>([
@@ -177,6 +179,7 @@
 			sub: studio.ig?.connected ? `@${studio.ig.username} connected` : 'Connect Instagram for live stats',
 			warn: studio.ig?.connected ? undefined : 'Instagram not connected'
 		},
+		{ id: 'links', label: 'Links & fan list', icon: 'link', sub: s.fan_list_on ? 'Links for followers · fan list on' : 'Links for followers · fan list off' },
 		{ id: 'rates', label: 'Rates & packages', icon: 'rupee', sub: `${offered.length} content types · ${studio.packages.filter((k) => k.active).length} packages` },
 		{
 			id: 'bookings',
@@ -426,6 +429,9 @@
 								<InsightLinks />
 							{/if}
 						</section>
+					{:else if active === 'links'}
+						<PageLinks />
+						<FanList />
 					{:else if active === 'rates'}
 						<section class="panel rv" style="--i:1">
 							<div class="panel-h"><h2>Rate card</h2><small>switch off what you don't offer</small></div>

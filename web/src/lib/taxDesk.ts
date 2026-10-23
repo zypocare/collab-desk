@@ -19,7 +19,9 @@ const issued = (i: Invoice) => i.status !== 'draft' && i.status !== 'cancelled';
 const inFy = (d: string | null | undefined, fy: FY) => !!d && d >= fy.from && d <= fy.to;
 const inr = (i: Invoice) => (Number(i.subtotal) || 0) * (i.currency && i.currency !== 'INR' ? Number(i.inr_rate) || 1 : 1);
 
-export function turnover(collabs: Collab[], fy: FY) {
+/** Her year's turnover for the GST limit: fees, money recorded without an invoice, barter at its value, and
+ * income from outside Miracle (YouTube, affiliate, platform bonuses: `other`, from Money's Other income). */
+export function turnover(collabs: Collab[], fy: FY, other = 0) {
 	let fees = 0;
 	let paidNoInvoice = 0;
 	for (const c of collabs) {
@@ -29,7 +31,7 @@ export function turnover(collabs: Collab[], fy: FY) {
 		if (!inv.length && c.pay_status === 'paid' && inFy(c.paid_on, fy)) paidNoInvoice += Number(c.pay_received) || Number(c.fee) || 0;
 	}
 	const barter = barter194r(collabs, fy).reduce((a, r) => a + r.total, 0);
-	return { fees, paidNoInvoice, barter, total: fees + paidNoInvoice + barter };
+	return { fees, paidNoInvoice, barter, other, total: fees + paidNoInvoice + barter + other };
 }
 
 export type QuarterKey = 'Q1' | 'Q2' | 'Q3' | 'Q4';
