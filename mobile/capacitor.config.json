@@ -49,5 +49,6 @@
       "initialViewportFitValueHint": "cover",
       "style": "DARK"
     }
-  }
+  },
+  "appendUserAgent": "MiracleApp"
 }

@@ -4,7 +4,8 @@
 // In a normal browser none of this runs.
 
 type Listener = { remove: () => Promise<void> };
-type Plugin = Record<string, (...args: never[]) => Promise<unknown>> & { addListener: (event: string, fn: (data: never) => void) => Promise<Listener> };
+// addListener hands back the listener itself or a promise of it, depending on how the plugin is reached.
+type Plugin = Record<string, (...args: never[]) => Promise<unknown>> & { addListener: (event: string, fn: (data: never) => void) => Listener | Promise<Listener> };
 type Cap = { isNativePlatform?: () => boolean; getPlatform?: () => string; Plugins?: Record<string, Plugin> };
 
 const cap = (): Cap | undefined => (typeof window === 'undefined' ? undefined : (window as unknown as { Capacitor?: Cap }).Capacitor);
@@ -84,28 +85,34 @@ const savedToken = () => {
 	}
 };
 
+/** This build of the app can get alerts: it was built with the Firebase setup (it says so in its user agent). */
+export const nativePushReady = () => isNative() && !!plugin('PushNotifications') && /MiraclePush/.test(navigator.userAgent);
+
 /** The phone's alert address ("fcm:<token>"), asking permission first. */
 export async function nativePushEndpoint(): Promise<string> {
 	const push = plugin('PushNotifications');
-	if (!push) throw new Error('Alerts are not available in this version of the app.');
+	if (!push || !nativePushReady()) throw new Error("Alerts aren't switched on in this version of the app yet. They come with the next update.");
 	const perm = (await (push.requestPermissions as () => Promise<{ receive: string }>)()).receive;
 	if (perm !== 'granted') throw new Error('Notifications are off for Miracle. Turn them on in your phone settings.');
-	const token = await new Promise<string>((resolve, reject) => {
-		const done: Listener[] = [];
-		const stop = () => done.forEach((l) => l.remove());
-		push.addListener('registration', ((t: { value: string }) => (stop(), resolve(t.value))) as never).then((l) => done.push(l));
-		push.addListener('registrationError', ((e: { error: string }) => (stop(), reject(new Error(e.error || 'The phone could not set up alerts.')))) as never).then((l) => done.push(l));
-		(push.register as () => Promise<void>)().catch(reject);
-		setTimeout(() => (stop(), reject(new Error('The phone took too long to set up alerts. Try again.'))), 15000);
-	});
+	const done: Listener[] = [];
+	const stop = () => done.forEach((l) => Promise.resolve(l?.remove?.()).catch(() => {}));
 	try {
-		localStorage.setItem(TOKEN_KEY, token);
-	} catch {
-		/* storage blocked */
+		const token = await new Promise<string>((resolve, reject) => {
+			Promise.resolve(push.addListener('registration', ((t: { value: string }) => resolve(t.value)) as never)).then((l) => done.push(l));
+			Promise.resolve(push.addListener('registrationError', ((e: { error: string }) => reject(new Error(e.error || 'The phone could not set up alerts.'))) as never)).then((l) => done.push(l));
+			Promise.resolve((push.register as () => Promise<void>)()).catch(reject);
+			setTimeout(() => reject(new Error('The phone took too long to set up alerts. Try again.')), 15000);
+		});
+		try {
+			localStorage.setItem(TOKEN_KEY, token);
+		} catch {
+			/* storage blocked */
+		}
+		return `fcm:${token}`;
+	} finally {
+		stop();
 	}
-	return `fcm:${token}`;
 }
-
 /** The alert address this phone registered before, if any. */
 export const nativePushSaved = () => (savedToken() ? `fcm:${savedToken()}` : '');
 export const nativeDevice = () => (nativePlatform() === 'ios' ? 'iPhone app' : 'Android app');

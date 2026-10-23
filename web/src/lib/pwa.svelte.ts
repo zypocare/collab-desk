@@ -1,5 +1,5 @@
 // Installing the app on her phone, and phone notifications for this device.
-import { isNative, nativeDevice, nativePushEndpoint, nativePushSaved, startNative } from './native';
+import { isNative, nativeDevice, nativePushEndpoint, nativePushReady, nativePushSaved, startNative } from './native';
 import { supabase } from './supabase';
 
 type InstallEvent = Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: string }> };
@@ -37,7 +37,8 @@ export async function install() {
 }
 
 export const isIos = () => /iphone|ipad|ipod/i.test(navigator.userAgent);
-export const pushSupported = () => isNative() || ('serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window);
+// Inside the app: only a build made with the Firebase setup can get alerts.
+export const pushSupported = () => (isNative() ? nativePushReady() : 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window);
 
 const b64ToBytes = (b64: string) => {
 	const s = atob((b64 + '='.repeat((4 - (b64.length % 4)) % 4)).replace(/-/g, '+').replace(/_/g, '/'));
@@ -49,6 +50,7 @@ const bytesToB64 = (buf: ArrayBuffer | null) =>
 /** Is this device already getting notifications? */
 export async function pushState(): Promise<'unsupported' | 'blocked' | 'on' | 'off'> {
 	if (isNative()) {
+		if (!nativePushReady()) return 'unsupported';
 		const ep = nativePushSaved();
 		if (!ep) return 'off';
 		const { data } = await supabase.from('push_subscriptions').select('id').eq('endpoint', ep).maybeSingle();

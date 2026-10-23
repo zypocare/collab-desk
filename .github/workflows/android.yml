@@ -44,14 +44,21 @@ jobs:
       - name: Install
         run: npm ci
 
-      - name: Copy the app into the Android project
-        run: npx cap sync android
-
       - name: Firebase config (alerts)
         env:
           GS: ${{ secrets.ANDROID_GOOGLE_SERVICES_JSON }}
         run: |
-          if [ -n "$GS" ]; then printf '%s' "$GS" > android/app/google-services.json; echo "alerts: on"; else echo "alerts: no Firebase config yet"; fi
+          if [ -n "$GS" ]; then
+            printf '%s' "$GS" > android/app/google-services.json
+            # Tell the web app this build can get alerts (it reads the user agent).
+            node -e "const f='capacitor.config.json',c=JSON.parse(require('fs').readFileSync(f));c.appendUserAgent='MiracleApp MiraclePush';require('fs').writeFileSync(f,JSON.stringify(c,null,2))"
+            echo "alerts: on"
+          else
+            echo "alerts: no Firebase config yet"
+          fi
+
+      - name: Copy the app into the Android project
+        run: npx cap sync android
 
       - name: Upload key
         env:
