@@ -1,5 +1,9 @@
 apply plugin: 'com.android.application'
 
+// Set by the build server for each store upload (MIRACLE_VERSION_CODE / MIRACLE_VERSION_NAME).
+def miracleVersionCode = Integer.parseInt(System.getenv("MIRACLE_VERSION_CODE") ?: "1")
+def miracleVersionName = System.getenv("MIRACLE_VERSION_NAME") ?: "1.0"
+
 android {
     namespace = "live.miracleapp.app"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -7,9 +11,8 @@ android {
         applicationId "live.miracleapp.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        // Set by the build server for each store upload (MIRACLE_VERSION_CODE / MIRACLE_VERSION_NAME).
-        versionCode (System.getenv("MIRACLE_VERSION_CODE") ?: "1").toInteger()
-        versionName System.getenv("MIRACLE_VERSION_NAME") ?: "1.0"
+        versionCode miracleVersionCode
+        versionName miracleVersionName
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
