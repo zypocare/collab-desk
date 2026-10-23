@@ -14,6 +14,8 @@ export const nativePlatform = () => (isNative() ? (cap()?.getPlatform?.() ?? 'we
 const plugin = (name: string) => cap()?.Plugins?.[name] as Plugin | undefined;
 
 const OWN = /(^|\.)miracleapp\.live$/;
+// The website (miracleapp.live, www.) is not part of the app: it opens in the browser.
+const WEBSITE = /^(www\.)?miracleapp\.live$/;
 
 /** Called once when the app starts. */
 export function startNative() {
@@ -50,7 +52,7 @@ export function startNative() {
 			} catch {
 				return;
 			}
-			if (!/^https?:$/.test(u.protocol) || OWN.test(u.hostname)) return;
+			if (!/^https?:$/.test(u.protocol) || (OWN.test(u.hostname) && !WEBSITE.test(u.hostname))) return;
 			ev.preventDefault();
 			openOutside(u.href);
 		},

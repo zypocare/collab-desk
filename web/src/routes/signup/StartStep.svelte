@@ -1,11 +1,14 @@
 <script lang="ts">
-	import { tick } from 'svelte';
+	import { tick, untrack } from 'svelte';
 	import { auth, refreshAccount } from '#lib/auth.svelte.ts';
 	import { supabase, turnstileSiteKey } from '#lib/supabase.ts';
 	import { errMessage } from '#lib/util.ts';
 
 	// Step 1: creator or brand, then the email and its 6-digit code (the same sign-in as everywhere).
-	let { as = $bindable() }: { as: 'creator' | 'brand' } = $props();
+	// `chosen`: they already said creator or brand (the app's welcome, the sign-in screen, a Join button),
+	// so the question isn't asked again; "Change" brings it back.
+	let { as = $bindable(), chosen = false }: { as: 'creator' | 'brand'; chosen?: boolean } = $props();
+	let asking = $state(untrack(() => !chosen));
 
 	type Turnstile = { render: (el: HTMLElement, opts: Record<string, unknown>) => string; reset: (id?: string) => void; remove?: (id: string) => void };
 
@@ -108,6 +111,7 @@
 
 {#if step === 'email'}
 	<form class="su-card" onsubmit={sendCode} novalidate>
+		{#if asking}
 		<div style="display:grid;gap:8px">
 			<h1 class="su-h1">Join <em>Miracle</em></h1>
 			<p class="su-lead">First, who are you joining as?</p>
@@ -125,6 +129,12 @@
 				<span>Work with creators. Start straight away.</span>
 			</label>
 		</fieldset>
+		{:else}
+		<div style="display:grid;gap:8px">
+			<h1 class="su-h1">Join <em>Miracle</em> as a {as}</h1>
+			<p class="su-lead">{as === 'brand' ? 'Work with creators. Start straight away.' : 'Run your brand collabs. We review your profile first.'} <button type="button" class="su-link" onclick={() => (asking = true)}>Not a {as}? Change</button></p>
+		</div>
+		{/if}
 		<div class="su-f">
 			<label for="su-email">{as === 'brand' ? 'Your work email' : 'Your email'}</label>
 			<input class="su-in" id="su-email" type="email" autocomplete="email" inputmode="email" placeholder="you@example.com" bind:value={email} />

@@ -25,7 +25,11 @@
 		} catch {
 			/* storage blocked */
 		}
-	let as = $state<'creator' | 'brand'>(asked === 'brand' || asked === 'creator' ? asked : stored());
+	const chosen = asked === 'brand' || asked === 'creator';
+	let as = $state<'creator' | 'brand'>(chosen ? asked : stored());
+	// In the phone app or the installed web app, the logo stays here instead of opening the website inside it.
+	const inApp =
+		isNative() || matchMedia('(display-mode: standalone)').matches || (navigator as Navigator & { standalone?: boolean }).standalone === true;
 	function stored(): 'creator' | 'brand' {
 		try {
 			return sessionStorage.getItem(KEY) === 'brand' ? 'brand' : 'creator';
@@ -76,7 +80,11 @@
 
 <div class="su">
 	<header class="su-top">
-		<a class="su-brand" href="https://www.miracleapp.live" aria-label="Miracle website"><Logo size={30} /><b>Miracle</b></a>
+		{#if inApp}
+			<span class="su-brand"><Logo size={30} /><b>Miracle</b></span>
+		{:else}
+			<a class="su-brand" href="https://www.miracleapp.live" aria-label="Miracle website"><Logo size={30} /><b>Miracle</b></a>
+		{/if}
 		{#if auth.session}
 			<small>{email} · <button class="su-link" onclick={leave}>Sign out</button></small>
 		{:else}
@@ -85,7 +93,7 @@
 	</header>
 	<main class="su-main">
 		{#if view === 'start'}
-			<StartStep bind:as />
+			<StartStep bind:as {chosen} />
 		{:else if view === 'creator'}
 			<CreatorForm {email} request={acc?.role === 'pending' ? acc.request : null} />
 		{:else if view === 'waiting' && acc?.role === 'pending' && acc.request}
