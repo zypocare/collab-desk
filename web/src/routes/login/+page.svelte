@@ -278,6 +278,15 @@
 				</form>
 			{/if}
 		</div>
+		{#if step === 'email' && !withPw}
+			<div class="lg-join">
+				<span class="lg-l">New to Miracle? Join free</span>
+				<div class="lg-join-row">
+					<a class="lg-neo lg-ghost lg-sm" href="/signup?as=creator"><Icon name="spark" />I'm a creator</a>
+					<a class="lg-neo lg-ghost lg-sm" href="/signup?as=brand"><Icon name="box" />I'm a brand</a>
+				</div>
+			</div>
+		{/if}
 		<p class="lg-terms">By continuing you agree to Miracle's <a href="/terms">Terms</a> and <a href="/privacy">Privacy policy</a>.</p>
 	</main>
 </div>
@@ -359,6 +368,9 @@
 	.lg-alt { display: flex; justify-content: space-between; gap: 12px; margin-top: 4px; font-size: 13.5px; color: var(--ink-3); }
 	.lg-lnk { border: 0; padding: 0; background: none; color: var(--ink-2); font: inherit; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
 	.lg-lnk:hover { color: var(--ink); }
+	.lg-join { width: min(440px, 100%); display: grid; gap: 12px; }
+	.lg-join-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+	.lg-sm { height: 48px; margin-top: 0; font-size: 12px; letter-spacing: 0.1em; text-decoration: none; }
 	.lg-terms { margin: 0; font-size: 12.5px; color: var(--ink-3); }
 	.lg-terms a { color: var(--ink-2); }
 

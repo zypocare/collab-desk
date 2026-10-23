@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { goto } from '$app/navigation';
 	import { auth } from '../auth.svelte';
 	import { isNative } from '../native';
 
@@ -47,6 +48,11 @@
 		phase = 'out';
 		setTimeout(() => (show = false), 600);
 	}
+	// The last slide: join as a creator or a brand, or sign in to an account she already has.
+	function join(as: 'creator' | 'brand') {
+		close();
+		goto(`/signup?as=${as}`);
+	}
 	function next() {
 		if (i < SLIDES.length - 1) i++;
 		else close();
@@ -88,11 +94,21 @@
 						<p>{SLIDES[i].p}</p>
 					</div>
 				{/key}
-				<div class="ai-foot">
-					<span class="ai-dots" aria-hidden="true">{#each SLIDES as _, k (k)}<i class:on={k === i}></i>{/each}</span>
-					<button type="button" class="ai-skip" onclick={close}>Skip</button>
-					<button type="button" class="ai-next" onclick={next}>{i < SLIDES.length - 1 ? 'Next' : 'Get started'}</button>
-				</div>
+				{#if i < SLIDES.length - 1}
+					<div class="ai-foot">
+						<span class="ai-dots" aria-hidden="true">{#each SLIDES as _, k (k)}<i class:on={k === i}></i>{/each}</span>
+						<button type="button" class="ai-skip" onclick={close}>Skip</button>
+						<button type="button" class="ai-next" onclick={next}>Next</button>
+					</div>
+				{:else}
+					<div class="ai-join">
+						<div class="ai-join-row">
+							<button type="button" class="ai-next" onclick={() => join('creator')}>I'm a creator</button>
+							<button type="button" class="ai-next ai-alt" onclick={() => join('brand')}>I'm a brand</button>
+						</div>
+						<button type="button" class="ai-skip" onclick={close}>I already have an account · Sign in</button>
+					</div>
+				{/if}
 			</div>
 		{/if}
 	</div>
@@ -304,6 +320,26 @@
 	.ai-dots i.on {
 		width: 22px;
 		background: #f25a90;
+	}
+	.ai-join {
+		display: grid;
+		gap: 8px;
+		justify-items: center;
+	}
+	.ai-join-row {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 12px;
+		width: 100%;
+	}
+	.ai-join-row .ai-next {
+		padding: 0 10px;
+		letter-spacing: 0.08em;
+	}
+	.ai-next.ai-alt {
+		background: transparent;
+		color: #f4eef2;
+		box-shadow: inset 0 0 0 1.5px #3e343e, 4px 4px 0 #2e262e;
 	}
 	.ai-skip {
 		height: 48px;

@@ -14,7 +14,7 @@
 	display: flex;
 	align-items: center;
 	gap: 12px;
-	padding: 18px max(20px, env(safe-area-inset-left, 0px)) 8px max(20px, env(safe-area-inset-right, 0px));
+	padding: calc(18px + env(safe-area-inset-top, 0px)) max(20px, env(safe-area-inset-left, 0px)) 8px max(20px, env(safe-area-inset-right, 0px));
 }
 .su-brand {
 	display: flex;
