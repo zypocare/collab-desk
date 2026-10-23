@@ -28,9 +28,9 @@ App id: `live.miracleapp.app` (fixed forever once published).
 
 ## Store listing (ready to paste)
 
-- **App name:** Miracle: Creator Business
+- **App name (store title, 30 max):** Miracle: Collabs Made Easy · the name under the icon stays Miracle
 - **Category:** Business · **Contact:** contact@miracleapp.live · **Website:** https://www.miracleapp.live
-- **Short description (80):** Brand deals for creators: requests, quotes, GST invoices, payments. No commission.
+- **Short description (80):** Brand deals for Indian creators: rates, media kit, invoices and on-time pay.
 - **Full description:**
 
   Miracle is the business side of being a creator in India.
@@ -51,8 +51,8 @@ App id: `live.miracleapp.app` (fixed forever once published).
   An AI desk that knows your requests, money and calendar, in English, Hindi or Kannada, with
   autopilots you switch to Ask me or Auto. Brands pay you directly: no commission, ever.
 
-- **Graphics:** icon 512 px (`web/static/icon-512.png`), feature graphic 1024×500 (to make),
-  phone screenshots (from `site/img/screen-*.webp`, exported as PNG).
+- **Graphics:** ready in `docs/store/android/`: icon 512 px, feature graphic 1024×500 and five
+  phone screenshots (1080×1920). Remake them with `node mobile/store/make.mjs`.
 - **Privacy policy:** https://www.miracleapp.live/privacy · **Account deletion:**
   https://www.miracleapp.live/data-deletion (and in the app: Settings › Sign-in & account).
 - **App access for reviewers:** the demo creator (see `docs/META-REVIEW.md`): sign in at
