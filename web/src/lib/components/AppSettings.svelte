@@ -13,6 +13,8 @@
 	let busy = $state(false);
 	// In the phone app: which version this is (it's read once the app has started).
 	let appVersion = $state('');
+	// Alerts greet her by her "Call me" name, else the first name on her profile (as the server does).
+	const greetName = $derived(String(studio.settings?.alert_name ?? '').trim() || String(studio.settings?.display_name ?? '').trim().split(/\s+/)[0] || '');
 	onMount(() => {
 		appVersion = native.version;
 		if (isNative() && !appVersion) setTimeout(() => (appVersion = native.version), 1500);
@@ -96,7 +98,7 @@
 			<button class="btn sm" onclick={() => voiceAlert(voiceLine(studio.settings?.alert_name ?? '', 'You might have a new collab.'), { on: true, force: true })}><Icon name="bell" />Hear it</button>
 			<input type="checkbox" class="tgl" checked={studio.settings?.voice_alerts !== false} aria-label="Say alerts out loud in the app" onchange={(e) => saveSettings({ voice_alerts: (e.currentTarget as HTMLInputElement).checked })} />
 		</div>
-		<p class="hint span2">Alerts then read: <b>{studio.settings?.alert_name ? `Hey ${studio.settings.alert_name}! ` : ''}Sunveda may want a collab</b>{studio.settings?.alert_line ? ` · ${studio.settings.alert_line}` : ''}.</p>
+		<p class="hint span2">Alerts then read: <b>{greetName ? `Hey ${greetName}! ` : ''}Sunveda may want a collab</b>{studio.settings?.alert_line ? ` · ${studio.settings.alert_line}` : ''}.</p>
 	</div>
 	{#if status === 'on'}
 		<div class="row-btns"><button class="btn sm" onclick={test}><Icon name="bell" />Send a test</button></div>

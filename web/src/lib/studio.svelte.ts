@@ -295,10 +295,13 @@ export async function loadLeads() {
 }
 const seenLeads = new Set<string>();
 let leadsLoaded = false;
-/** Her voice alert, if she has it on. */
+/** Her voice alert, if she has it on. A teammate signed in to her studio hears their own name. */
 function speak(what: string) {
 	const s = studio.settings;
-	if (s) voiceAlert(voiceLine(s.alert_name ?? '', what), { on: s.voice_alerts !== false });
+	const mate = studio.me && studio.me.team_role !== 'owner' ? String(studio.me.name ?? '').trim().split(/\s+/)[0] : null;
+	// Her "Call me" name, else the first name on her profile (as the phone alerts do).
+	const hers = s?.alert_name?.trim() || String(s?.display_name ?? '').trim().split(/\s+/)[0] || '';
+	if (s) voiceAlert(voiceLine(mate ?? hers, what), { on: s.voice_alerts !== false });
 }
 
 export async function loadFits() {

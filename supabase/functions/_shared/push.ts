@@ -117,25 +117,50 @@ async function deliver(s: { endpoint: string; p256dh: string; auth: string }, ms
   await webpush.sendNotification({ endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } }, JSON.stringify(msg), { TTL: 60 * 60 * 24, urgency: 'high' });
 }
 
-export type Push = { title: string; body: string; url: string; tag?: string; /** Buttons on the notification (Android, Windows, Mac Chrome). */ actions?: { action: string; title: string; url: string }[]; /** Her name only, without her line under each alert (for the light, friendly nudges). */ nameOnly?: boolean; /** Exactly as written: no name in front, no line under it. */ plain?: boolean };
+export type Push = { title: string; body: string; url: string; tag?: string; /** Only her own phones, never her team's (the personal water, food and break nudges). */ ownerOnly?: boolean; /** Buttons on the notification (Android, Windows, Mac Chrome). */ actions?: { action: string; title: string; url: string }[]; /** Her name only, without her line under each alert (for the light, friendly nudges). */ nameOnly?: boolean; /** Exactly as written: no name in front, no line under it. */ plain?: boolean };
 
-/** Sends to every device the creator's team turned alerts on for; forgets devices the browser says are gone. */
+/** Sends to every device the creator's team turned alerts on for; forgets devices the browser says are gone.
+ * Each person is greeted by their own name: the creator by hers ("Call me" in Settings), a teammate
+ * (manager, assistant, agency) by theirs, with whose studio it is. */
 export async function pushToCreator(db: SupabaseClient, creator: number, msg: Push) {
   if (!pushConfigured && !fcmConfigured && !apnsConfigured) return { sent: 0, skipped: 'push not configured' };
-  const { data: subs } = await db.from('push_subscriptions').select('id, endpoint, p256dh, auth, device').eq('creator_id', creator);
-  // Her own greeting, if she set one in My page > Alerts.
-  const { data: me } = await db.from('creator_settings').select('alert_name, alert_line').eq('id', creator).maybeSingle();
-  const name = String(me?.alert_name ?? '').trim();
+  const { data: subs } = await db.from('push_subscriptions').select('id, endpoint, p256dh, auth, device, user_id').eq('creator_id', creator);
+  const { data: me } = await db.from('creator_settings').select('alert_name, alert_line, display_name, creator_email').eq('id', creator).maybeSingle();
+  const first = (n: unknown) => String(n ?? '').trim().split(/\s+/)[0] ?? '';
+  // Her "Call me" name (Settings), else the first name on her profile.
+  const name = String(me?.alert_name ?? '').trim() || first(me?.display_name);
   const line = String(me?.alert_line ?? '').trim();
-  if (name && !msg.plain) msg = { ...msg, title: `Hey ${name}! ${msg.title}` };
-  if (line && !msg.nameOnly && !msg.plain) msg = { ...msg, body: msg.body ? `${msg.body}\n${line}` : line };
+  const herName = name || 'your creator';
+  const ownerEmail = String(me?.creator_email ?? '').trim().toLowerCase();
+  // Whose phone each device is: the login it was turned on from, and that person's name on her team.
+  const ids = [...new Set((subs ?? []).map((s) => s.user_id).filter(Boolean))];
+  const { data: people } = ids.length ? await db.from('profiles').select('id, email, full_name').in('id', ids) : { data: [] };
+  const { data: team } = await db.from('team_members').select('email, name').eq('creator_id', creator);
+  const forDevice = (userId: string | null): Push | null => {
+    const p = (people ?? []).find((x) => x.id === userId);
+    const email = String(p?.email ?? '').trim().toLowerCase();
+    const isHers = !userId || !p || !ownerEmail || email === ownerEmail;
+    if (msg.plain) return isHers || !msg.ownerOnly ? msg : null;
+    if (isHers) {
+      return {
+        ...msg,
+        title: name ? `Hey ${name}! ${msg.title}` : msg.title,
+        body: line && !msg.nameOnly ? (msg.body ? `${msg.body}\n${line}` : line) : msg.body,
+      };
+    }
+    if (msg.ownerOnly) return null;
+    const mate = first((team ?? []).find((t) => String(t.email ?? '').trim().toLowerCase() === email)?.name) || first(p?.full_name);
+    return { ...msg, title: mate ? `Hey ${mate}! ${msg.title}` : msg.title, body: msg.body ? `${msg.body}\nFor ${herName}` : `For ${herName}` };
+  };
   let sent = 0;
   const failed: { device: string; code: number | null; error: string }[] = [];
   for (const s of subs ?? []) {
+    const own = forDevice(s.user_id ?? null);
+    if (!own) continue;
     try {
       // High urgency: Android (Doze) and iPhone hold normal pushes while the phone is locked and idle,
       // and show them only when it wakes. These are things she should see now.
-      await deliver(s, msg);
+      await deliver(s, own);
       sent++;
     } catch (e) {
       const code = (e as { statusCode?: number }).statusCode;

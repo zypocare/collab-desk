@@ -120,7 +120,7 @@ async function nudgeFor(db: ReturnType<typeof admin>, s: Settings, url: URL, dry
   }
   if (!line) return { skipped: 'nothing new to say' };
 
-  const msg = { title: line.title, body: line.body, url: kind === 'work' ? fact?.url ?? '/studio' : kind === 'night' ? '/studio/calendar' : '/studio', tag: 'day-nudge', plain: true };
+  const msg = { title: line.title, body: line.body, url: kind === 'work' ? fact?.url ?? '/studio' : kind === 'night' ? '/studio/calendar' : '/studio', tag: 'day-nudge', plain: true, ownerOnly: true };
   if (dry) return { dry: true, hour, kind, fact, source, msg };
   const res = await pushToCreator(db, s.id, msg);
   await db.from('fun_nudges_sent').insert({ creator_id: s.id, kind, topic: fact?.topic ?? kind, title: line.title, body: line.body, source, norm: norm(line.title + ' ' + line.body) });
