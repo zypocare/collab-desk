@@ -548,7 +548,9 @@ footer{position:relative;overflow:hidden;padding-block:70px 0;border-top:1px sol
 .f-links{display:flex;flex-wrap:wrap;gap:8px 22px}
 .f-links a:hover{color:var(--ink)}
 .giant{margin:40px 0 0;padding:0 .12em .14em;font:400 clamp(110px,22vw,340px)/1 var(--f-display);font-style:italic;letter-spacing:-.03em;text-align:center;color:transparent;-webkit-text-stroke:1px var(--line-2);background:var(--grad);-webkit-background-clip:text;background-clip:text;background-size:0% 100%;background-repeat:no-repeat;transition:background-size 1.4s var(--ease)}
-.giant:hover,.giant.in{background-size:100% 100%}
+.giant:hover,.giant.in{background-size:100% 100%;-webkit-text-stroke:0 transparent}
+.giant{position:relative;z-index:61;text-rendering:geometricPrecision;-webkit-font-smoothing:antialiased;transition:background-size 1.4s var(--ease),-webkit-text-stroke-color .6s,opacity .9s var(--ease)}
+.giant.in{transform:none!important;will-change:auto}
 
 /* cursor glow */
 .cursor{position:fixed;z-index:1;left:0;top:0;width:520px;height:520px;margin:-260px 0 0 -260px;border-radius:50%;background:radial-gradient(circle,rgba(242,90,144,.1),transparent 60%);pointer-events:none;will-change:transform;opacity:0;transition:opacity .4s}
