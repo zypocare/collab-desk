@@ -5,6 +5,7 @@ import { decide, type Decision, type FitData } from './decide';
 import { askAi } from './ai';
 import { voiceAlert, voiceLine } from './voice';
 import { supabase } from './supabase';
+import { isNative } from './native';
 import type { Package } from './types';
 import type { BankAlert, Brand, BrandPrivate, BrandReport, Checklist, Collab, Deliverable, DeliverableItem, IgAccount, IgMedia, Quote, Retainer, Settings, Stage } from './types';
 import { collectPages, collectRanges } from './pagination';
@@ -849,7 +850,7 @@ export async function igSync(reportFor?: string) {
 /** The Instagram sign-in address for this creator. Every creator comes back through the same server
  * address (the one registered with Meta), and the signed state says whose account it is. */
 export async function igStart(extra: boolean, comments = false): Promise<string> {
-	const r = (await invokeFn('instagram-auth', { action: 'start', extra, comments })) as { url?: string };
+	const r = (await invokeFn('instagram-auth', { action: 'start', extra, comments, app: isNative() })) as { url?: string };
 	if (!r?.url) throw new Error('Instagram sign-in could not start. Try again.');
 	return r.url;
 }

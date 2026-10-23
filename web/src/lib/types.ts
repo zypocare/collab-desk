@@ -208,6 +208,13 @@ export type Collab = {
 	usage_ext_days: number;
 	usage_ext_price: number;
 	usage_ext_status: '' | 'requested' | 'approved' | 'declined';
+	/** How the brand runs paid ads with her content, and the partnership-ad code she shared. */
+	ad_how?: '' | 'partnership' | 'access' | 'repost';
+	ad_code?: string;
+	ad_code_at?: string | null;
+	territory?: string;
+	/** What the exclusivity covers (a category or named competitors). */
+	excl_scope?: string;
 	counter_fee: number | null;
 	counter_status: '' | 'sent' | 'taken' | 'kept';
 	shoot_date: string | null;

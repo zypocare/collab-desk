@@ -256,6 +256,7 @@
 	{#if studio.collabs.some((c) => c.stage !== 'declined')}
 	<span class="tb-gap"></span>
 	<a class="btn" href="/studio/import" title="Add the collabs you already have from DMs, all at once"><Icon name="layers" />Import existing</a>
+	<a class="btn" href="/studio/rights" title="Brand ads with your content, until when, and your exclusivities"><Icon name="shield" />Usage rights</a>
 	<button class="btn" class:primary={selecting} title="Drag cards between columns, or select several to act on together" aria-pressed={selecting} onclick={() => (selecting ? stopSelecting() : (selecting = true))}><Icon name={selecting ? 'x' : 'check'} />{selecting ? 'Done' : 'Select'}</button>
 	{/if}
 </div>

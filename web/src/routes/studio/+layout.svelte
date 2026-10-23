@@ -178,6 +178,8 @@
 		'/studio/import': 'Import collabs',
 		'/studio/instagram': 'Instagram',
 		'/studio/share': 'Add from a share',
+		'/studio/rights': 'Usage rights',
+		'/studio/tax': 'Tax desk',
 		'/studio/grow': 'Grow',
 		'/studio/grow/check': 'Check a reel',
 		'/studio/grow/checkup': 'Growth check-up'
@@ -215,7 +217,8 @@
 		: brandId ? '/studio/brands'
 		: path.startsWith('/studio/instagram') ? '/studio/content'
 		: path.startsWith('/studio/grow/') ? '/studio/grow'
-		: /^\/studio\/(import|share)/.test(path) ? '/studio/collabs'
+		: /^\/studio\/(import|share|rights)/.test(path) ? '/studio/collabs'
+		: path === '/studio/tax' ? '/studio/money'
 		: ''
 	);
 	const unread = $derived(studio.collabs.reduce((a, c) => a + unreadFor(c), 0));
@@ -290,7 +293,7 @@
 	const DESK: { href: string; label: string; icon: string; on: string[] }[] = [
 		{ href: '/studio', label: 'Today', icon: 'home', on: [] },
 		{ href: '/studio/inbox', label: 'Inbox', icon: 'inbox', on: ['/studio/inbox'] },
-		{ href: '/studio/collabs', label: 'Collabs', icon: 'board', on: ['/studio/collabs', '/studio/brands', '/studio/pitches', '/studio/c/', '/studio/import', '/studio/share'] },
+		{ href: '/studio/collabs', label: 'Collabs', icon: 'board', on: ['/studio/collabs', '/studio/brands', '/studio/pitches', '/studio/c/', '/studio/import', '/studio/share', '/studio/rights'] },
 		{ href: '/studio/calendar', label: 'Calendar', icon: 'cal', on: ['/studio/calendar'] },
 		{ href: '/studio/content', label: 'Content', icon: 'film', on: ['/studio/content', '/studio/instagram'] },
 		{ href: '/studio/grow', label: 'Grow', icon: 'spark', on: ['/studio/grow'] },

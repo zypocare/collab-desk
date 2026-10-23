@@ -28,6 +28,8 @@ const COMMENTS = ['instagram_business_manage_comments'];
 const BRAND = ['instagram_business_basic'];
 // Where a brand lands after connecting (Miracle's own address; the sign-in is shared across miracleapp.live).
 const BRAND_SETTINGS = Deno.env.get('BRAND_SETTINGS_URL') ?? 'https://app.miracleapp.live/brand/settings';
+// Miracle's own address (the phone app opens it).
+const APP_ORIGIN = new URL(BRAND_SETTINGS).origin;
 
 const b64url = (bytes: Uint8Array) => btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 
@@ -43,7 +45,7 @@ async function makeState(who: number | string) {
 }
 
 /** Who a state was made for, or null if it is forged, changed or out of date. */
-async function readWho(state: string): Promise<{ creator?: number; brand?: string } | null> {
+async function readWho(state: string): Promise<{ creator?: number; brand?: string; app?: boolean } | null> {
   const parts = state.split('.');
   if (parts.length !== 4 || !STATE_SECRET) return null;
   const [who, expires, nonce, signature] = parts;
@@ -53,8 +55,10 @@ async function readWho(state: string): Promise<{ creator?: number; brand?: strin
   for (let i = 0; i < expected.length; i++) diff |= expected.charCodeAt(i) ^ (signature.charCodeAt(i) || 0);
   if (diff !== 0 || Number(expires) * 1000 < Date.now()) return null;
   if (who.startsWith('b:')) return /^[0-9a-f-]{36}$/.test(who.slice(2)) ? { brand: who.slice(2) } : null;
-  const id = Number(who);
-  return Number.isInteger(id) && id > 0 ? { creator: id } : null;
+  // "12~a": creator 12, connecting from the Android or iPhone app (sent back to the app's own address).
+  const app = who.endsWith('~a');
+  const id = Number(app ? who.slice(0, -2) : who);
+  return Number.isInteger(id) && id > 0 ? { creator: id, app } : null;
 }
 
 /** The creator a state was made for (creator states only). */
@@ -131,7 +135,8 @@ Deno.serve(async (req) => {
     }
     const creator = who?.creator ?? null;
     if (!creator) return new Response("This sign-in link isn't valid any more. Start again from My page.", { status: 400 });
-    const site = String((await settingsOf(db, creator))?.site_url ?? '').replace(/\/$/, '');
+    // From the phone app: back to the app's own address, where its native parts work.
+    const site = who?.app ? APP_ORIGIN : String((await settingsOf(db, creator))?.site_url ?? '').replace(/\/$/, '');
     const back = (path: string, params: Record<string, string> = {}) => {
       if (!/^https?:\/\//.test(site)) return new Response(params.error_description ?? 'Instagram connected. You can close this tab.', { status: params.error ? 400 : 200 });
       const u = new URL(site + path);
@@ -150,7 +155,7 @@ Deno.serve(async (req) => {
     }
   }
 
-  const { action, code, redirect_uri, state, extra, comments, as } = await req.json().catch(() => ({}));
+  const { action, code, redirect_uri, state, extra, comments, app, as } = await req.json().catch(() => ({}));
 
   // A brand: start the connection, or refresh the profile it shows creators.
   if (as === 'brand') {
@@ -189,7 +194,7 @@ Deno.serve(async (req) => {
   // The address to send her to on Instagram, with a signed state for this creator.
   if (action === 'start') {
     if (!STATE_SECRET) return reply({ error: 'INSTAGRAM_APP_SECRET is not set on the server.' }, 400);
-    const signed = await makeState(creator);
+    const signed = await makeState(app === true ? `${creator}~a` : creator);
     const scope = [...BASIC, ...(extra || comments ? EXTRA : []), ...(comments ? COMMENTS : [])].join(',');
     return reply({ state: signed, redirect_uri: CALLBACK, url: authorizeUrl(CALLBACK, scope, signed) });
   }
