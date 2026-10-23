@@ -1,6 +1,7 @@
 // Agency mode: a manager or agency who works for several creators switches between their studios, sees
 // the whole roster at once, keeps a commission ledger (tracking only) and makes pitch decks.
 import { addressFor } from './creatorHost';
+import { isNative } from './native';
 import { supabase } from './supabase';
 import { errMessage } from './util';
 
@@ -44,7 +45,7 @@ export async function useCreator(id: number, to = '/studio', slug = '') {
 	if (error) throw new Error(errMessage(error));
 	// Each creator's studio lives at her own address (the sign-in is shared across them).
 	const s = slug || agency.studios.find((x) => x.id === id)?.slug || '';
-	location.href = s ? addressFor(s, to) : to;
+	location.href = s && !isNative() ? addressFor(s, to) : to;
 }
 
 export async function loadRoster() {

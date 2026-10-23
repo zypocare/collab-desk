@@ -24,6 +24,7 @@
 	import MoneyIn from '#lib/components/MoneyIn.svelte';
 	import { phone, startPhone } from '#lib/phone.svelte.ts';
 	import { agency, loadStudios, useCreator } from '#lib/agency.svelte.ts';
+	import { isNative } from '#lib/native.ts';
 	import { lively } from '#lib/lively.ts';
 	import { net } from '#lib/offline.svelte.ts';
 
@@ -103,7 +104,8 @@
 		if (a?.role !== 'creator') return;
 		// Approved but no link yet: pick it first (on Miracle's own address).
 		if (a.needs_link) location.replace(appAddress('/signup'));
-		else if (a.slug && (pageSlug ? pageSlug !== a.slug : isAppHost(location.hostname))) location.replace(addressFor(a.slug, page.url.pathname + page.url.search));
+		// (The Android and iPhone apps keep her studio on Miracle's own address, where the app's native parts work.)
+		else if (!isNative() && a.slug && (pageSlug ? pageSlug !== a.slug : isAppHost(location.hostname))) location.replace(addressFor(a.slug, page.url.pathname + page.url.search));
 	});
 	// Load and listen once she is signed in (also when the session is restored a moment after this screen opens).
 	$effect(() => {

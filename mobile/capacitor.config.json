@@ -1,0 +1,44 @@
+{
+  "appId": "live.miracleapp.app",
+  "appName": "Miracle",
+  "webDir": "www",
+  "server": {
+    "url": "https://app.miracleapp.live/studio",
+    "androidScheme": "https",
+    "errorPath": "offline.html",
+    "allowNavigation": [
+      "miracleapp.live",
+      "*.miracleapp.live",
+      "*.supabase.co",
+      "instagram.com",
+      "*.instagram.com",
+      "*.facebook.com"
+    ]
+  },
+  "android": {
+    "backgroundColor": "#110D11",
+    "allowMixedContent": false
+  },
+  "ios": {
+    "backgroundColor": "#110D11",
+    "contentInset": "never",
+    "limitsNavigationsToAppBoundDomains": false
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 1200,
+      "launchAutoHide": true,
+      "backgroundColor": "#110D11",
+      "showSpinner": false,
+      "androidScaleType": "CENTER_CROP"
+    },
+    "StatusBar": {
+      "style": "DARK",
+      "backgroundColor": "#110D11",
+      "overlaysWebView": false
+    },
+    "PushNotifications": {
+      "presentationOptions": ["badge", "sound", "alert"]
+    }
+  }
+}

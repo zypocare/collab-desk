@@ -9,6 +9,7 @@
 	import BrandForm from './BrandForm.svelte';
 	import Waiting from './Waiting.svelte';
 	import ChooseLink from './ChooseLink.svelte';
+	import { isNative } from '#lib/native.ts';
 	import './signup.css';
 
 	// Sign-up on Miracle's own address (app.miracleapp.live/signup), linked from every Join button on the website.
@@ -57,7 +58,7 @@
 
 	// Already set up: a creator goes to their studio (on their own address), a brand to its dashboard.
 	$effect(() => {
-		if (acc?.role === 'creator' && !acc.needs_link && acc.slug) location.replace(addressFor(acc.slug, '/studio'));
+		if (acc?.role === 'creator' && !acc.needs_link && acc.slug) location.replace(isNative() ? '/studio' : addressFor(acc.slug, '/studio'));
 		else if (acc?.role === 'brand' && isBrand && as === 'brand') goto('/brand', { replaceState: true });
 	});
 	// A request that was sent again goes back to the waiting screen.

@@ -8,11 +8,74 @@ const SUBJECT = Deno.env.get('VAPID_SUBJECT') ?? 'mailto:push@example.com';
 export const pushConfigured = PUBLIC !== '' && PRIVATE !== '';
 if (pushConfigured) webpush.setVapidDetails(SUBJECT, PUBLIC, PRIVATE);
 
+// The Android and iPhone apps get alerts through Firebase Cloud Messaging (free). Their devices are kept in
+// the same tables as browsers, with the endpoint "fcm:<token>". The secret is the Firebase project's
+// service account JSON (Project settings > Service accounts > Generate new private key).
+const FCM = (() => {
+  try {
+    const j = JSON.parse(Deno.env.get('FIREBASE_SERVICE_ACCOUNT') ?? '{}');
+    return j.client_email && j.private_key && j.project_id ? (j as { client_email: string; private_key: string; project_id: string }) : null;
+  } catch {
+    return null;
+  }
+})();
+export const fcmConfigured = !!FCM;
+let fcmToken: { value: string; until: number } | null = null;
+const b64url = (b: Uint8Array | string) => btoa(typeof b === 'string' ? b : String.fromCharCode(...b)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+async function fcmAccess() {
+  if (fcmToken && fcmToken.until > Date.now() + 60_000) return fcmToken.value;
+  const now = Math.floor(Date.now() / 1000);
+  const head = b64url(JSON.stringify({ alg: 'RS256', typ: 'JWT' }));
+  const body = b64url(JSON.stringify({ iss: FCM!.client_email, scope: 'https://www.googleapis.com/auth/firebase.messaging', aud: 'https://oauth2.googleapis.com/token', iat: now, exp: now + 3600 }));
+  const pem = FCM!.private_key.replace(/-----[^-]+-----/g, '').replace(/\s+/g, '');
+  const key = await crypto.subtle.importKey('pkcs8', Uint8Array.from(atob(pem), (c) => c.charCodeAt(0)), { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' }, false, ['sign']);
+  const sig = new Uint8Array(await crypto.subtle.sign('RSASSA-PKCS1-v1_5', key, new TextEncoder().encode(`${head}.${body}`)));
+  const r = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: { 'content-type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer', assertion: `${head}.${body}.${b64url(sig)}` }),
+  });
+  const j = await r.json();
+  if (!j.access_token) throw new Error(`Firebase sign-in failed: ${JSON.stringify(j).slice(0, 160)}`);
+  fcmToken = { value: j.access_token, until: Date.now() + (Number(j.expires_in) || 3600) * 1000 };
+  return fcmToken.value;
+}
+/** One alert to one app device. Throws with statusCode 404 when the device is gone (uninstalled). */
+async function sendFcm(endpoint: string, msg: Push) {
+  const token = endpoint.slice(4);
+  const r = await fetch(`https://fcm.googleapis.com/v1/projects/${FCM!.project_id}/messages:send`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', authorization: `Bearer ${await fcmAccess()}` },
+    body: JSON.stringify({
+      message: {
+        token,
+        notification: { title: msg.title, body: msg.body },
+        data: { url: msg.url, tag: msg.tag ?? '' },
+        android: { priority: 'HIGH', ttl: '86400s', notification: { channel_id: 'alerts', tag: msg.tag ?? undefined, color: '#F25A90' } },
+        apns: { headers: { 'apns-priority': '10' }, payload: { aps: { sound: 'default', 'thread-id': msg.tag ?? 'miracle' } } },
+      },
+    }),
+  });
+  if (r.ok) return;
+  const text = await r.text();
+  const gone = r.status === 404 || /UNREGISTERED|registration-token-not-registered/i.test(text);
+  throw Object.assign(new Error(text.slice(0, 200)), { statusCode: gone ? 404 : r.status, body: text.slice(0, 200) });
+}
+/** Web push for browsers, Firebase for the apps. */
+async function deliver(s: { endpoint: string; p256dh: string; auth: string }, msg: Push) {
+  if (s.endpoint.startsWith('fcm:')) {
+    if (!FCM) throw Object.assign(new Error('Firebase is not set up on the server'), { statusCode: null });
+    return sendFcm(s.endpoint, msg);
+  }
+  if (!pushConfigured) throw Object.assign(new Error('web push is not set up'), { statusCode: null });
+  await webpush.sendNotification({ endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } }, JSON.stringify(msg), { TTL: 60 * 60 * 24, urgency: 'high' });
+}
+
 export type Push = { title: string; body: string; url: string; tag?: string; /** Buttons on the notification (Android, Windows, Mac Chrome). */ actions?: { action: string; title: string; url: string }[]; /** Her name only, without her line under each alert (for the light, friendly nudges). */ nameOnly?: boolean; /** Exactly as written: no name in front, no line under it. */ plain?: boolean };
 
 /** Sends to every device the creator's team turned alerts on for; forgets devices the browser says are gone. */
 export async function pushToCreator(db: SupabaseClient, creator: number, msg: Push) {
-  if (!pushConfigured) return { sent: 0, skipped: 'push not configured' };
+  if (!pushConfigured && !fcmConfigured) return { sent: 0, skipped: 'push not configured' };
   const { data: subs } = await db.from('push_subscriptions').select('id, endpoint, p256dh, auth, device').eq('creator_id', creator);
   // Her own greeting, if she set one in My page > Alerts.
   const { data: me } = await db.from('creator_settings').select('alert_name, alert_line').eq('id', creator).maybeSingle();
@@ -26,7 +89,7 @@ export async function pushToCreator(db: SupabaseClient, creator: number, msg: Pu
     try {
       // High urgency: Android (Doze) and iPhone hold normal pushes while the phone is locked and idle,
       // and show them only when it wakes. These are things she should see now.
-      await webpush.sendNotification({ endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } }, JSON.stringify(msg), { TTL: 60 * 60 * 24, urgency: 'high' });
+      await deliver(s, msg);
       sent++;
     } catch (e) {
       const code = (e as { statusCode?: number }).statusCode;
@@ -173,13 +236,13 @@ export function pushForBrand(kind: string, p: Record<string, unknown>, creatorNa
 
 /** Sends to every device a brand login turned alerts on for; forgets devices the browser says are gone. */
 export async function pushToBrandUser(db: SupabaseClient, userId: string, msg: Push) {
-  if (!pushConfigured) return { sent: 0, skipped: 'push not configured' };
+  if (!pushConfigured && !fcmConfigured) return { sent: 0, skipped: 'push not configured' };
   const { data: subs } = await db.from('brand_push_subscriptions').select('id, endpoint, p256dh, auth, device').eq('user_id', userId);
   let sent = 0;
   const failed: { device: string; code: number | null; error: string }[] = [];
   for (const s of subs ?? []) {
     try {
-      await webpush.sendNotification({ endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } }, JSON.stringify(msg), { TTL: 60 * 60 * 24, urgency: 'high' });
+      await deliver(s, msg);
       sent++;
     } catch (e) {
       const code = (e as { statusCode?: number }).statusCode;

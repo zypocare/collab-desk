@@ -1,4 +1,5 @@
 // Installing the app on her phone, and phone notifications for this device.
+import { isNative, nativeDevice, nativePushEndpoint, nativePushSaved, startNative } from './native';
 import { supabase } from './supabase';
 
 type InstallEvent = Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: string }> };
@@ -8,6 +9,12 @@ export const pwa = $state<{ installEvent: InstallEvent | null; installed: boolea
 /** Called once from the root layout. Keeps the browser's install offer for our own button. */
 export function watchInstall() {
 	if (typeof window === 'undefined') return;
+	// Inside the Android or iPhone app: it is already installed, and the native pieces start.
+	if (isNative()) {
+		pwa.installed = true;
+		startNative();
+		return;
+	}
 	if (!import.meta.env.DEV && 'serviceWorker' in navigator) navigator.serviceWorker.register('/service-worker.js').catch((e) => console.error('[sw]', e));
 	pwa.installed = matchMedia('(display-mode: standalone)').matches || (navigator as unknown as { standalone?: boolean }).standalone === true;
 	addEventListener('beforeinstallprompt', (e) => {
@@ -30,7 +37,7 @@ export async function install() {
 }
 
 export const isIos = () => /iphone|ipad|ipod/i.test(navigator.userAgent);
-export const pushSupported = () => 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+export const pushSupported = () => isNative() || ('serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window);
 
 const b64ToBytes = (b64: string) => {
 	const s = atob((b64 + '='.repeat((4 - (b64.length % 4)) % 4)).replace(/-/g, '+').replace(/_/g, '/'));
@@ -41,6 +48,12 @@ const bytesToB64 = (buf: ArrayBuffer | null) =>
 
 /** Is this device already getting notifications? */
 export async function pushState(): Promise<'unsupported' | 'blocked' | 'on' | 'off'> {
+	if (isNative()) {
+		const ep = nativePushSaved();
+		if (!ep) return 'off';
+		const { data } = await supabase.from('push_subscriptions').select('id').eq('endpoint', ep).maybeSingle();
+		return data ? 'on' : 'off';
+	}
 	if (!pushSupported()) return 'unsupported';
 	if (Notification.permission === 'denied') return 'blocked';
 	const reg = await navigator.serviceWorker.getRegistration();
@@ -59,6 +72,12 @@ async function worker(): Promise<ServiceWorkerRegistration> {
 }
 
 export async function enablePush() {
+	if (isNative()) {
+		const endpoint = await nativePushEndpoint();
+		const { error } = await supabase.from('push_subscriptions').upsert({ endpoint, p256dh: '', auth: '', device: nativeDevice() }, { onConflict: 'endpoint' });
+		if (error) throw new Error(error.message);
+		return;
+	}
 	// Ask first, straight from her tap (iPhones only allow the question then).
 	const perm = await Notification.requestPermission();
 	if (perm !== 'granted') throw new Error(perm === 'denied' ? 'Notifications are blocked for this site. Allow them in the browser settings.' : 'Notifications were not allowed.');
@@ -87,6 +106,11 @@ export function logAlerts(kind: 'alerts_on' | 'alerts_failed' | 'alerts_unsuppor
 }
 
 export async function disablePush() {
+	if (isNative()) {
+		const ep = nativePushSaved();
+		if (ep) await supabase.from('push_subscriptions').delete().eq('endpoint', ep);
+		return;
+	}
 	const reg = await navigator.serviceWorker.getRegistration();
 	const sub = await reg?.pushManager.getSubscription();
 	if (sub) {
@@ -102,6 +126,16 @@ export async function disablePush() {
  * it, the next alert finds the device gone and the server drops it then. Never holds up signing out.
  */
 export async function dropPush(serverToo: boolean) {
+	if (isNative()) {
+		const ep = nativePushSaved();
+		if (ep && serverToo) {
+			await Promise.race([
+				Promise.all([supabase.from('push_subscriptions').delete().eq('endpoint', ep), supabase.from('brand_push_subscriptions').delete().eq('endpoint', ep)]).catch(() => {}),
+				new Promise((r) => setTimeout(r, 3000))
+			]);
+		}
+		return;
+	}
 	if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return;
 	const work = (async () => {
 		const reg = await navigator.serviceWorker.getRegistration();
@@ -118,6 +152,12 @@ export async function dropPush(serverToo: boolean) {
 
 /** Brands: alerts on this phone go to this brand login (Settings > Emails & alerts). */
 export async function enableBrandPush() {
+	if (isNative()) {
+		const endpoint = await nativePushEndpoint();
+		const { error } = await supabase.from('brand_push_subscriptions').upsert({ endpoint, p256dh: '', auth: '', device: nativeDevice() }, { onConflict: 'endpoint' });
+		if (error) throw new Error(error.message);
+		return;
+	}
 	const perm = await Notification.requestPermission();
 	if (perm !== 'granted') throw new Error(perm === 'denied' ? 'Notifications are blocked for this site. Allow them in the browser settings.' : 'Notifications were not allowed.');
 	const { data: key, error } = await supabase.rpc('push_public_key');
@@ -137,6 +177,11 @@ export async function enableBrandPush() {
 }
 
 export async function disableBrandPush() {
+	if (isNative()) {
+		const ep = nativePushSaved();
+		if (ep) await supabase.from('brand_push_subscriptions').delete().eq('endpoint', ep);
+		return;
+	}
 	const reg = await navigator.serviceWorker.getRegistration();
 	const sub = await reg?.pushManager.getSubscription();
 	if (sub) {
@@ -147,6 +192,12 @@ export async function disableBrandPush() {
 
 /** Is this phone getting this brand's alerts? */
 export async function brandPushOn(): Promise<boolean> {
+	if (isNative()) {
+		const ep = nativePushSaved();
+		if (!ep) return false;
+		const { data } = await supabase.from('brand_push_subscriptions').select('id').eq('endpoint', ep).maybeSingle();
+		return !!data;
+	}
 	if (!pushSupported()) return false;
 	const reg = await navigator.serviceWorker.getRegistration();
 	const sub = await reg?.pushManager.getSubscription();
@@ -157,6 +208,14 @@ export async function brandPushOn(): Promise<boolean> {
 
 /** A brand signed in: keep its own alerts on this phone, drop any left from someone else's sign-in. */
 export async function keepOnlyBrandPush() {
+	if (isNative()) {
+		try {
+			if (!(await brandPushOn())) await dropPush(false);
+		} catch {
+			/* nothing to do */
+		}
+		return;
+	}
 	if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return;
 	try {
 		if (!(await brandPushOn())) await dropPush(false);

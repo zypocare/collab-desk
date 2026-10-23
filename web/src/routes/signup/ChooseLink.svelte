@@ -2,6 +2,7 @@
 	import { untrack } from 'svelte';
 	import { addressFor, ROOT_DOMAIN } from '#lib/creatorHost.ts';
 	import { supabase } from '#lib/supabase.ts';
+	import { isNative } from '#lib/native.ts';
 	import { errMessage, firstName } from '#lib/util.ts';
 
 	// Approved: the creator picks name.miracleapp.live (once), then goes to the studio there.
@@ -54,7 +55,7 @@
 			return (error = errMessage(err));
 		}
 		// The studio lives on the new address (the sign-in is shared across miracleapp.live).
-		location.href = addressFor((data as { slug: string }).slug, '/studio');
+		location.href = isNative() ? '/studio' : addressFor((data as { slug: string }).slug, '/studio');
 	}
 </script>
 

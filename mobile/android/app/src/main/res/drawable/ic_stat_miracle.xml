@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The Miracle "m" for the status bar (white on transparent, as Android asks for alert icons). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="512"
+    android:viewportHeight="512">
+    <group android:translateX="256" android:translateY="256" android:scaleX="0.79" android:scaleY="0.79">
+        <group android:translateX="-304.5" android:translateY="-266">
+            <path
+                android:fillColor="#00000000"
+                android:strokeColor="#FFFFFFFF"
+                android:strokeWidth="44"
+                android:strokeLineCap="round"
+                android:strokeLineJoin="round"
+                android:pathData="M64 128C92 104 132 112 144 156C154 220 158 330 156 392C155 420 182 420 182 392C182 300 176 200 196 160C220 104 290 104 300 160C310 220 312 330 310 392C309 420 336 420 336 392C336 300 330 200 350 160C374 104 444 104 452 160C460 230 456 330 452 392C450 440 500 440 540 360M499 384L540 360L545 408" />
+        </group>
+    </group>
+</vector>

@@ -1,0 +1,26 @@
+{
+  "name": "miracle-mobile",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Miracle for Android and iPhone: the web app in a native shell with native alerts, back button and links.",
+  "scripts": {
+    "sync": "cap sync",
+    "android": "cap sync android && cap open android",
+    "ios": "cap sync ios && cap open ios",
+    "assets": "capacitor-assets generate --iconBackgroundColor '#110D11' --iconBackgroundColorDark '#110D11' --splashBackgroundColor '#110D11' --splashBackgroundColorDark '#110D11'"
+  },
+  "dependencies": {
+    "@capacitor/android": "8.5.3",
+    "@capacitor/app": "8.1.2",
+    "@capacitor/browser": "8.0.5",
+    "@capacitor/core": "8.5.3",
+    "@capacitor/ios": "8.5.3",
+    "@capacitor/push-notifications": "8.1.3",
+    "@capacitor/splash-screen": "8.0.2",
+    "@capacitor/status-bar": "8.0.4"
+  },
+  "devDependencies": {
+    "@capacitor/assets": "3.0.5",
+    "@capacitor/cli": "8.5.3"
+  }
+}

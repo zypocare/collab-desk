@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Miracle</string>
+    <string name="title_activity_main">Miracle</string>
+    <string name="package_name">live.miracleapp.app</string>
+    <string name="custom_url_scheme">live.miracleapp.app</string>
+</resources>

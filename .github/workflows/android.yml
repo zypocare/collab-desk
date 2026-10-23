@@ -1,0 +1,91 @@
+# The Android app (mobile/): builds a test APK every time the app shell changes, and a signed bundle
+# (.aab) for the Play Store when the upload key is in the secrets. Download both from the run's
+# "Artifacts" section. Run it by hand from the Actions tab too ("Run workflow").
+#
+# Secrets it uses (all optional; without them you get an unsigned test APK without alerts):
+#   ANDROID_GOOGLE_SERVICES_JSON  the Firebase app's google-services.json (for alerts)
+#   ANDROID_KEYSTORE_BASE64       the upload key (.jks), base64-encoded
+#   ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD
+name: Android app
+
+on:
+  push:
+    branches: [main]
+    paths: ['mobile/**', '.github/workflows/android.yml']
+  workflow_dispatch:
+    inputs:
+      version_name:
+        description: 'Version shown in the store (like 1.0.1)'
+        required: false
+        default: ''
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile
+    env:
+      # A new store upload needs a higher number each time: the run number does that.
+      MIRACLE_VERSION_CODE: ${{ github.run_number }}
+      MIRACLE_VERSION_NAME: ${{ inputs.version_name || format('1.0.{0}', github.run_number) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Install
+        run: npm ci
+
+      - name: Copy the app into the Android project
+        run: npx cap sync android
+
+      - name: Firebase config (alerts)
+        env:
+          GS: ${{ secrets.ANDROID_GOOGLE_SERVICES_JSON }}
+        run: |
+          if [ -n "$GS" ]; then printf '%s' "$GS" > android/app/google-services.json; echo "alerts: on"; else echo "alerts: no Firebase config yet"; fi
+
+      - name: Upload key
+        env:
+          KS: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          if [ -n "$KS" ]; then
+            printf '%s' "$KS" | base64 -d > "$RUNNER_TEMP/upload.jks"
+            echo "MIRACLE_KEYSTORE_FILE=$RUNNER_TEMP/upload.jks" >> "$GITHUB_ENV"
+          fi
+
+      - name: Build
+        working-directory: mobile/android
+        env:
+          MIRACLE_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          MIRACLE_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          MIRACLE_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon assembleDebug
+          if [ -n "$MIRACLE_KEYSTORE_FILE" ]; then ./gradlew --no-daemon bundleRelease assembleRelease; fi
+
+      - name: Test APK (install on a phone)
+        uses: actions/upload-artifact@v4
+        with:
+          name: miracle-android-test-apk
+          path: mobile/android/app/build/outputs/apk/debug/*.apk
+          retention-days: 30
+
+      - name: Store bundle (upload to Google Play)
+        if: env.MIRACLE_KEYSTORE_FILE != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: miracle-android-store-bundle
+          path: |
+            mobile/android/app/build/outputs/bundle/release/*.aab
+            mobile/android/app/build/outputs/apk/release/*.apk
+          retention-days: 90
