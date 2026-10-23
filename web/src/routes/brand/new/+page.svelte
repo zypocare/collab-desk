@@ -17,6 +17,8 @@
 	import Icon from '#lib/components/Icon.svelte';
 	import ExpectedResults from '#lib/components/ExpectedResults.svelte';
 	import BriefEditor from '#lib/components/BriefEditor.svelte';
+	import BriefFromLink from '#lib/components/BriefFromLink.svelte';
+	import { fillBrief, type BriefDraft } from '#lib/brandAi.ts';
 	import Select from '#lib/components/Select.svelte';
 	import DatePicker from '#lib/components/DatePicker.svelte';
 	import { brandAdvice, type Advice } from '#lib/priority.ts';
@@ -157,6 +159,12 @@
 	let usage = $state('Organic only');
 	let brief = $state('');
 	let briefDetails = $state<BriefDetails>({});
+	function fromLink(d: BriefDraft) {
+		if (!brief.trim()) brief = d.brief;
+		if (type !== 'paid' && !product.trim()) product = d.product;
+		if (type !== 'paid' && !productValue && d.price) productValue = String(d.price);
+		briefDetails = fillBrief(briefDetails, d);
+	}
 	let busy = $state(false);
 	let error = $state('');
 	let errDel = $state('');
@@ -543,6 +551,7 @@
 				</div>
 				<div class="bsec rq-card" id="rq-brief">
 					<div class="bsec-h"><i>{guest ? '05' : '04'}</i><h2>Brief</h2></div>
+					{#if !guest && acc}<BriefFromLink category={acc.brand?.category ?? ''} deal={type} deliverables={delivText(lines)} onfill={fromLink} />{/if}
 					<BriefEditor bind:value={briefDetails} idp="b" category={acc?.brand?.category ?? g.category} />
 					<div class="f" style="margin-top:12px"><label for="b-brief">Anything else</label><textarea class="inp" id="b-brief" rows="3" placeholder="What's launching, context, timing notes" maxlength="4000" bind:value={brief}></textarea>{#if brief.length > 3600}<small class="hint">{4000 - brief.length} characters left</small>{/if}</div>
 				</div>

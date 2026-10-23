@@ -7,6 +7,7 @@
 	import { compact, errMessage, firstName, inr, inrS } from '#lib/util.ts';
 	import Icon from '#lib/components/Icon.svelte';
 	import BrandSales from '#lib/components/BrandSales.svelte';
+	import BrandAnalyst from '#lib/components/BrandAnalyst.svelte';
 	import Segmented from '#lib/components/Segmented.svelte';
 	import Ticket from '#lib/components/Ticket.svelte';
 	import Columns from '#lib/components/charts/Columns.svelte';
@@ -108,6 +109,7 @@
 	</section>
 
 	<div class="md-grid">
+		<BrandAnalyst report={r} {company} period={label} />
 		<section class="md-card md-wide rv" style="--i:1">
 			<header class="md-h"><div><span class="bx-eb">Month by month</span><h2>What you spent</h2></div><a href="/brand/business/money">Payments<Icon name="arrow" /></a></header>
 			<Columns

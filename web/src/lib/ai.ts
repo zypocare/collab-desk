@@ -1,8 +1,8 @@
-// The free AI (runs on the site's own Cloudflare server, see worker/index.ts). Signed-in creator only.
+// The free AI (runs on the site's own Cloudflare server, see worker/index.ts). Signed-in creators; the brand* kinds for brands.
 import { supabase } from './supabase';
 import type { Parsed } from './parseDm';
 
-export async function askAi<T>(kind: 'dm' | 'reply' | 'caption' | 'pitch' | 'fit' | 'status' | 'summary' | 'negotiate' | 'script' | 'nudge' | 'ask' | 'voice' | 'embed' | 'reelcheck' | 'growplan' | 'checkup' | 'offercheck' | 'precheck' | 'getfound', body: Record<string, unknown>): Promise<T> {
+export async function askAi<T>(kind: 'dm' | 'reply' | 'caption' | 'pitch' | 'fit' | 'status' | 'summary' | 'negotiate' | 'script' | 'nudge' | 'ask' | 'voice' | 'embed' | 'reelcheck' | 'growplan' | 'checkup' | 'offercheck' | 'precheck' | 'getfound' | 'brandask' | 'brandbrief', body: Record<string, unknown>): Promise<T> {
 	const { data } = await supabase.auth.getSession();
 	const token = data.session?.access_token;
 	if (!token) throw new Error('Sign in again to use AI.');

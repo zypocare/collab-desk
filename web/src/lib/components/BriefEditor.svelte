@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import type { BriefDetails } from '../types';
 	import { parseTags } from '../util';
 	import { applyTemplate, BRIEF_TEMPLATES, customFields, templateFor, type BriefTemplate } from '../briefTemplates';
@@ -33,6 +34,15 @@
 
 	let tagsText = $state((value.hashtags ?? []).join(' '));
 	let mentionsText = $state((value.mentions ?? []).join(' '));
+	// Filled from outside (the AI's draft from a product link): show the new tags in their boxes too.
+	$effect(() => {
+		const t = (value.hashtags ?? []).join(' ');
+		if (untrack(() => parseTags(tagsText, '#').join(' ')) !== t) tagsText = t;
+	});
+	$effect(() => {
+		const m = (value.mentions ?? []).join(' ');
+		if (untrack(() => parseTags(mentionsText, '@').join(' ')) !== m) mentionsText = m;
+	});
 
 	function set(patch: Partial<BriefDetails>) {
 		value = { ...value, ...patch };

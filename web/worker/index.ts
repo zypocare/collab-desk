@@ -22,7 +22,7 @@ type Env = {
 type Run = { env: Env; gemini: boolean; neurons: number };
 
 // Expected size of each job in Cloudflare neurons (reserved before, corrected after).
-const COST: Record<string, number> = { dm: 160, reply: 110, caption: 110, pitch: 140, fit: 230, classify: 40, summary: 220, negotiate: 210, script: 330, nudge: 120, ask: 260, voice: 60, embed: 8, cheer: 60, reelcheck: 260, growplan: 200, checkup: 420, offercheck: 700, precheck: 220, getfound: 180 };
+const COST: Record<string, number> = { dm: 160, reply: 110, caption: 110, pitch: 140, fit: 230, classify: 40, summary: 220, negotiate: 210, script: 330, nudge: 120, ask: 260, voice: 60, embed: 8, cheer: 60, reelcheck: 260, growplan: 200, checkup: 420, offercheck: 700, precheck: 220, getfound: 180, brandask: 450, brandbrief: 600 };
 // Cloudflare's price list in neurons per token (Llama 3.3 70B fast; Llama 3.2 11B vision).
 const PER_TOKEN = { text: [0.0267, 0.2048], vision: [0.0045, 0.0615] };
 const USED_UP = "Today's free AI is used up. It's back at 5:30 am.";
@@ -43,10 +43,10 @@ export default {
 		try {
 			const kind = url.pathname.slice('/api/ai/'.length);
 			if (kind === 'status') return json(await status(req, env));
-			if (!['dm', 'reply', 'caption', 'pitch', 'classify', 'fit', 'summary', 'negotiate', 'script', 'nudge', 'ask', 'voice', 'embed', 'cheer', 'scout', 'reelcheck', 'growplan', 'checkup', 'offercheck', 'precheck', 'getfound'].includes(kind)) return json({ error: 'Unknown.' }, 404);
+			if (!['dm', 'reply', 'caption', 'pitch', 'classify', 'fit', 'summary', 'negotiate', 'script', 'nudge', 'ask', 'voice', 'embed', 'cheer', 'scout', 'reelcheck', 'growplan', 'checkup', 'offercheck', 'precheck', 'getfound', 'brandask', 'brandbrief'].includes(kind)) return json({ error: 'Unknown.' }, 404);
 			const body = (await req.json()) as Record<string, unknown>;
 			const job = (x: Run) =>
-				kind === 'cheer' ? cheer(x, body) : kind === 'scout' ? scout(x, body) : kind === 'dm' ? readDm(x, body) : kind === 'reply' ? replies(x, body) : kind === 'pitch' ? pitch(x, body) : kind === 'classify' ? classify(x, body) : kind === 'fit' ? fit(x, body) : kind === 'summary' ? summary(x, body) : kind === 'negotiate' ? creatorOf(req, env).then((me) => negotiate(x, body, me)) : kind === 'script' ? script(x, body) : kind === 'nudge' ? nudge(x, body) : kind === 'ask' ? creatorOf(req, env).then((me) => ask(x, body, me)) : kind === 'voice' ? voice(x, body) : kind === 'embed' ? embed(x, body) : kind === 'reelcheck' ? reelCheck(x, body) : kind === 'growplan' ? growPlan(x, body) : kind === 'checkup' ? checkup(x, body) : kind === 'offercheck' ? offerCheck(x, body) : kind === 'precheck' ? preCheck(x, body) : kind === 'getfound' ? getFound(x, body) : creatorOf(req, env).then((me) => caption(x, body, me));
+				kind === 'cheer' ? cheer(x, body) : kind === 'scout' ? scout(x, body) : kind === 'dm' ? readDm(x, body) : kind === 'reply' ? replies(x, body) : kind === 'pitch' ? pitch(x, body) : kind === 'classify' ? classify(x, body) : kind === 'fit' ? fit(x, body) : kind === 'summary' ? summary(x, body) : kind === 'negotiate' ? creatorOf(req, env).then((me) => negotiate(x, body, me)) : kind === 'script' ? script(x, body) : kind === 'nudge' ? nudge(x, body) : kind === 'ask' ? creatorOf(req, env).then((me) => ask(x, body, me)) : kind === 'voice' ? voice(x, body) : kind === 'embed' ? embed(x, body) : kind === 'reelcheck' ? reelCheck(x, body) : kind === 'growplan' ? growPlan(x, body) : kind === 'checkup' ? checkup(x, body) : kind === 'offercheck' ? offerCheck(x, body) : kind === 'precheck' ? preCheck(x, body) : kind === 'getfound' ? getFound(x, body) : kind === 'brandask' ? brandAsk(x, body) : kind === 'brandbrief' ? brandBrief(x, body) : creatorOf(req, env).then((me) => caption(x, body, me));
 
 			// Checking an incoming Instagram DM comes from the DM webhook with a single-use pass, and the
 			// hourly fun nudge from its job the same way. DMs stay on Cloudflare (never sent to Google);
@@ -76,6 +76,23 @@ export default {
 					}
 				}
 				return json({ ...(await job({ env, gemini: false, neurons: 0 })), ...(kind === 'cheer' || kind === 'scout' ? { by: 'cloudflare', why } : {}) });
+			}
+
+			// Brands have their own, smaller daily share (per team), then the same free Gemini backup.
+			if (kind === 'brandask' || kind === 'brandbrief') {
+				// A link we won't open is turned away before it uses any of today's share.
+				if (kind === 'brandbrief') publicUrl(String(body.url ?? ''));
+				const t = await rpc(req, env, 'ai_take_brand', { p_kind: kind, p_cost: COST[kind] });
+				if (!t || t.reason === 'not_brand') return json({ error: 'Sign in with your brand account to use AI.' }, 403);
+				if (t.ok) {
+					try {
+						return json(await job({ env, gemini: false, neurons: 0 }));
+					} catch (e) {
+						if (!/neuron|allocation|4006|quota|limit/i.test(String((e as Error)?.message))) throw e;
+					}
+				}
+				if (!env.GEMINI_API_KEY || !(await rpc(req, env, 'ai_take_brand_gemini', { p_kind: kind }))?.ok) return json({ error: USED_UP }, 429);
+				return json(await job({ env, gemini: true, neurons: 0 }));
 			}
 
 			// The same reading asked again is answered from the cache (two weeks), at no cost.
@@ -1018,4 +1035,154 @@ Return ONLY JSON: {"headline": "one line, under 14 words, the story of the month
 	const j = firstJson(reply) ?? {};
 	const list = (v: unknown, n: number) => (Array.isArray(v) ? v.map(String).filter(Boolean).slice(0, n) : []);
 	return { headline: String(j.headline ?? '').trim(), wins: list(j.wins, 4), watch: list(j.watch, 3), actions: list(j.actions, 3) };
+}
+
+/** A brand's results in plain words: what stands out, and what to do next (or the answer to its question). */
+async function brandAsk(x: Run, b: Record<string, unknown>) {
+	const clip = (v: unknown, n: number) => String(v ?? '').replace(/\s+/g, ' ').trim().slice(0, n);
+	const facts = JSON.stringify(b.facts ?? {}).slice(0, 7000);
+	const question = clip(b.question, 300);
+	const reply = await chat(
+		x,
+		`You are a plain-speaking marketing analyst for an Indian brand that works with Instagram creators. You get the brand's numbers for one period as JSON (money in rupees; totals.paid = what the brand actually paid in the period, a creator's invoiced = invoices that creator sent in the period, paid or still due; cpv = fees per view; engagement = likes, comments, shares and saves per view; sales only where the brand imported orders). Return ONLY JSON:
+{"headline": "the single most important thing about these results, one sentence under 140 characters",
+ "points": ["3 to 5 findings, one sentence each, each quoting the real number from the data"],
+ "next": ["2 or 3 concrete next steps that name the creators or campaigns from the data"],
+ "answer": "${question ? 'a direct answer to the question in 2 to 4 sentences, using the numbers' : ''}"}
+Rules: use only numbers in the data and never invent any; compare creators by cost per view, engagement, sales and rating; when there is too little data to judge (few posts, no views yet), say so plainly instead of guessing. Write rupees the Indian way (₹1,20,000 or ₹1.2 lakh). Brands pay creators directly; never suggest paying or holding money through the app. Speak to the brand as "you" ("you paid", "your creators"). Simple English, no jargon.`,
+		`Brand: ${clip(b.company, 60)}. Period: ${clip(b.period, 40)}.${question ? `\nQuestion: ${question}` : ''}\nData: ${facts}`,
+		900
+	);
+	const j = firstJson(reply) ?? {};
+	const list = (v: unknown, n: number) => (Array.isArray(v) ? v : []).map((k) => clip(k, 260)).filter(Boolean).slice(0, n);
+	return { headline: clip(j.headline, 180), points: list(j.points, 5), next: list(j.next, 3), answer: question ? clip(j.answer, 900) : '' };
+}
+
+/** A link a brand pasted, as a public web page's address: no addresses inside a network, no logins in it. */
+function publicUrl(raw: string) {
+	let u: URL;
+	try {
+		u = new URL(/^https?:\/\//i.test(raw.trim()) ? raw.trim() : `https://${raw.trim()}`);
+	} catch {
+		throw new Error("!That doesn't look like a link. Paste the product page's address, like https://yourshop.in/product.");
+	}
+	const host = u.hostname.toLowerCase();
+	if (!/^https?:$/.test(u.protocol) || u.username || u.password || host === 'localhost' || /^[\d.]+$/.test(host) || host.includes(':') || host.startsWith('[') || /\.(local|internal|lan|localhost)$/.test(host) || !host.includes('.'))
+		throw new Error('!Use the public address of the product page, like https://yourshop.in/product.');
+	return u;
+}
+
+/** A product page, read for a brief: the name, description and price it states, and some of its text. */
+async function readProductPage(raw: string) {
+	const CANT = "!That page couldn't be read (some shops block outside readers). Type the product and a line about it in the brief instead.";
+	const u = publicUrl(raw);
+	const host = u.hostname.toLowerCase();
+	let r: Response;
+	try {
+		r = await fetch(u.href, { headers: { 'user-agent': 'Mozilla/5.0 (compatible; MiracleBrief/1.0; +https://www.miracleapp.live)', accept: 'text/html,application/xhtml+xml' }, redirect: 'follow', signal: AbortSignal.timeout(9000) });
+	} catch {
+		throw new Error(CANT);
+	}
+	if (!r.ok || !/html|text/i.test(r.headers.get('content-type') ?? '')) throw new Error(CANT);
+	// At most 1.5 MB of the page.
+	const reader = r.body?.getReader();
+	if (!reader) throw new Error(CANT);
+	const chunks: Uint8Array[] = [];
+	let size = 0;
+	while (size < 1_500_000) {
+		const { done, value } = await reader.read();
+		if (done || !value) break;
+		chunks.push(value);
+		size += value.length;
+	}
+	reader.cancel().catch(() => {});
+	const all = new Uint8Array(size);
+	let at = 0;
+	for (const c of chunks) {
+		all.set(c.subarray(0, Math.max(0, size - at)), at);
+		at += c.length;
+	}
+	const html = new TextDecoder().decode(all);
+	const decode = (t: string) =>
+		t.replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#39;|&apos;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&nbsp;/g, ' ').replace(/&#(\d+);/g, (_, n) => String.fromCharCode(Number(n)));
+	const meta = (name: string) => {
+		const m =
+			html.match(new RegExp(`<meta[^>]+(?:property|name)=["']${name}["'][^>]*content=["']([^"']*)["']`, 'i')) ??
+			html.match(new RegExp(`<meta[^>]+content=["']([^"']*)["'][^>]*(?:property|name)=["']${name}["']`, 'i'));
+		return m ? decode(m[1]).trim() : '';
+	};
+	// Structured product data (schema.org), when the shop has it.
+	const walk = (n: unknown): Record<string, unknown> | null => {
+		if (Array.isArray(n)) return n.map(walk).find(Boolean) ?? null;
+		if (!n || typeof n !== 'object') return null;
+		const o = n as Record<string, unknown>;
+		const t = o['@type'];
+		if (t === 'Product' || (Array.isArray(t) && t.includes('Product'))) return o;
+		return walk(o['@graph']);
+	};
+	let product: Record<string, unknown> | null = null;
+	for (const m of html.matchAll(/<script[^>]+application\/ld\+json[^>]*>([\s\S]*?)<\/script>/gi)) {
+		try {
+			product ??= walk(JSON.parse(m[1].trim()));
+		} catch {
+			/* a broken block: skip it */
+		}
+	}
+	const offers = product?.offers;
+	const offer = (Array.isArray(offers) ? offers[0] : offers) as Record<string, unknown> | undefined;
+	const currency = String(offer?.priceCurrency || meta('product:price:currency') || meta('og:price:currency') || 'INR').toUpperCase();
+	const priceNum = Number(offer?.price ?? offer?.lowPrice ?? (meta('product:price:amount') || meta('og:price:amount') || NaN));
+	// A price only when the page states one in rupees.
+	const price = currency === 'INR' && priceNum > 0 && priceNum < 1e7 ? Math.round(priceNum) : null;
+	const brandName = product?.brand && typeof product.brand === 'object' ? String((product.brand as Record<string, unknown>).name ?? '') : String(product?.brand ?? '');
+	const text = decode(html.replace(/<(script|style|noscript|svg|nav|footer|header)\b[\s\S]*?<\/\1>/gi, ' ').replace(/<[^>]+>/g, ' '))
+		.replace(/\s+/g, ' ')
+		.trim()
+		.slice(0, 4000);
+	const title = decode((html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1] ?? '').trim());
+	const facts = {
+		url: u.href,
+		site: meta('og:site_name') || host.replace(/^www\./, ''),
+		title: (String(product?.name ?? '') || meta('og:title') || title).slice(0, 200),
+		brand: brandName.slice(0, 80),
+		description: (String(product?.description ?? '') || meta('og:description') || meta('description')).slice(0, 1200),
+		price,
+		text
+	};
+	if (!facts.title && !facts.description && facts.text.length < 200) throw new Error(CANT);
+	return facts;
+}
+
+/** A creator brief from a product link: what the content should show, the key message, do's and don'ts. */
+async function brandBrief(x: Run, b: Record<string, unknown>) {
+	const clip = (v: unknown, n: number) => String(v ?? '').replace(/\s+/g, ' ').trim().slice(0, n);
+	const page = await readProductPage(String(b.url ?? ''));
+	const reply = await chat(
+		x,
+		`You write creator briefs for an Indian brand that works with Instagram creators. From the product page below, return ONLY JSON:
+{"product": "the product's short name, under 60 characters",
+ "brief": "2 or 3 sentences for the creator: what the content should show, for whom, and the feeling to leave",
+ "message": "the one key message, under 160 characters",
+ "dos": ["3 to 5 short do's, e.g. show it in use, mention the real benefit the page states, add the Paid partnership label"],
+ "donts": ["2 to 4 short don'ts, e.g. no claims the page doesn't make (medical, 'best', 'guaranteed'), no competitor brands in frame"],
+ "hashtags": ["3 to 5 hashtags, including the brand's own if the page shows one"],
+ "mentions": ["the brand's Instagram handle, only if the page shows it"]}
+Use only facts from the page; never invent claims, ingredients, prices, offers or handles. Simple English. Indian creators label paid content as an ad (ASCI), so one do is always the Paid partnership label.`,
+		JSON.stringify({ ...page, category: clip(b.category, 40), deal: clip(b.deal, 40), deliverables: clip(b.deliverables, 120) }),
+		900
+	);
+	const j = firstJson(reply) ?? {};
+	const list = (v: unknown, n: number, len: number) => (Array.isArray(v) ? v : []).map((k) => clip(k, len)).filter(Boolean).slice(0, n);
+	const tags = (v: unknown, mark: string) => list(v, 6, 40).map((t) => mark + t.replace(/^[#@]+/, '').replace(/\s+/g, '')).filter((t) => t.length > 1);
+	return {
+		product: clip(j.product, 80) || clip(page.title, 80),
+		price: page.price,
+		brief: clip(j.brief, 600),
+		message: clip(j.message, 200),
+		dos: list(j.dos, 5, 160),
+		donts: list(j.donts, 4, 160),
+		hashtags: tags(j.hashtags, '#'),
+		mentions: tags(j.mentions, '@'),
+		link: page.url
+	};
 }

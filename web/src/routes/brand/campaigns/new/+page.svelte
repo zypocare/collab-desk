@@ -11,6 +11,8 @@
 	import type { BrandCreator, BriefDetails, CampaignBrief, CollabType } from '#lib/types.ts';
 	import Avatar from '#lib/components/Avatar.svelte';
 	import BriefEditor from '#lib/components/BriefEditor.svelte';
+	import BriefFromLink from '#lib/components/BriefFromLink.svelte';
+	import { fillBrief, type BriefDraft } from '#lib/brandAi.ts';
 	import CompanyStep from '#lib/components/CompanyStep.svelte';
 	import DatePicker from '#lib/components/DatePicker.svelte';
 	import Select from '#lib/components/Select.svelte';
@@ -40,6 +42,13 @@
 	let picked = $state<Record<string, boolean>>({});
 	let busy = $state(false);
 	let err = $state('');
+	function fromLink(d: BriefDraft) {
+		if (!name.trim() && d.product) name = d.product;
+		if (!brief.trim()) brief = d.brief;
+		if (type !== 'paid' && !product.trim()) product = d.product;
+		if (type !== 'paid' && !productValue && d.price) productValue = String(d.price);
+		briefDetails = fillBrief(briefDetails, d);
+	}
 
 	onMount(async () => {
 		loadPools().catch(() => {});
@@ -217,6 +226,7 @@
 				<div class="f"><label for="nc-usage">Usage rights</label><Select id="nc-usage" bind:value={usage} options={USAGE.map((u) => ({ value: u, label: usageOption(u) }))} /></div>
 			</div>
 			<div class="f"><span class="lbl">Language (optional)</span><div class="nc-langs">{#each LANGUAGES as l (l)}<button class:on={langs.includes(l)} onclick={() => (langs = langs.includes(l) ? langs.filter((x) => x !== l) : [...langs, l])}>{l}</button>{/each}</div><p class="hint">Each creator gets only the languages they create in.</p></div>
+			<BriefFromLink category={acc?.brand?.category ?? ''} deal={type} deliverables={delivText(Object.entries(qty).filter(([, n]) => n > 0).map(([kind, n]) => ({ kind, qty: n })))} onfill={fromLink} />
 			<div class="f"><label for="nc-brief">The brief</label><textarea id="nc-brief" rows="4" bind:value={brief} maxlength="2000" placeholder="What should the content show? What's launching?"></textarea></div>
 			<BriefEditor bind:value={briefDetails} idp="nc" category={acc?.brand?.category ?? ''} />
 			<div class="nc-go"><button class="nc-neo nc-grad" onclick={next}>Next: creators</button></div>
