@@ -756,6 +756,93 @@ footer{position:relative;overflow:hidden;padding-block:70px 0;border-top:1px sol
   .pil-vis::before,.pil-vis.in .mphone,.js .pil-vis.in .chip.ok{animation:none}
   .js .pil-vis .bar i{width:38%!important;transition:none}
 }
+
+/* ---------- devices: real app screens in a 3D phone, with glass notifications around them ---------- */
+.pil-vis{min-height:640px;display:grid;place-items:center}
+.dev{position:relative;margin:0;width:min(300px,72vw);aspect-ratio:390/844;transform:rotateY(calc(var(--ry,-10deg) + var(--px,0deg))) rotateX(calc(4deg + var(--py,0deg)));transform-style:preserve-3d;transition:transform 1s var(--ease)}
+.dev-frame{position:absolute;inset:0;border-radius:48px;padding:9px;background:linear-gradient(150deg,#4a3d46 0%,#120d12 30%,#0b080b 70%,#3a2f37 100%);box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.14),inset 0 0 0 4px #050405,0 60px 120px -40px rgba(0,0,0,.95),0 30px 60px -30px rgba(242,90,144,.25)}
+.dev-frame img{display:block;width:100%;height:100%;object-fit:cover;object-position:top;border-radius:40px;background:#0c090c;padding-top:38px;box-sizing:border-box}
+.dev-frame::after{content:"9:41";position:absolute;z-index:2;top:22px;left:34px;font:600 12.5px/1 var(--f-body);color:#F4EEF2;letter-spacing:.02em}
+.dev-frame::before{content:"";position:absolute;z-index:2;top:23px;right:32px;width:34px;height:11px;border-radius:3px;background:linear-gradient(90deg,#F4EEF2 70%,transparent 70%);box-shadow:inset 0 0 0 1.5px #F4EEF2;opacity:.85}
+.dev-island{position:absolute;z-index:2;top:19px;left:50%;width:88px;height:26px;margin-left:-44px;border-radius:20px;background:#000}
+.dev-shine{position:absolute;inset:0;border-radius:48px;pointer-events:none;background:linear-gradient(115deg,rgba(255,255,255,.16) 0%,rgba(255,255,255,.04) 22%,transparent 40%)}
+.js .pil-vis .dev{opacity:0;transform:translateY(80px) rotateY(var(--ry,-10deg)) rotateX(18deg) scale(.92)}
+.js .pil-vis.in .dev{opacity:1;transform:rotateY(calc(var(--ry,-10deg) + var(--px,0deg))) rotateX(calc(4deg + var(--py,0deg)));transition:opacity 1s var(--ease),transform 1.3s var(--ease)}
+.pil-vis.in .dev{animation:devfloat 7s 1.4s ease-in-out infinite}
+@keyframes devfloat{50%{translate:0 -12px}}
+/* two phones fanned for the spotlight */
+.duo{grid-template-columns:1fr;position:relative}
+.duo .dev{grid-area:1/1}
+.duo .dev.back{translate:42% -6%;scale:.86;filter:brightness(.72)}
+.duo .dev:not(.back){translate:-26% 4%}
+/* glass notifications */
+.toast{position:absolute;z-index:3;display:flex;align-items:center;gap:12px;max-width:280px;padding:12px 16px 12px 12px;border-radius:20px;background:rgba(32,25,32,.66);backdrop-filter:blur(18px) saturate(150%);-webkit-backdrop-filter:blur(18px) saturate(150%);box-shadow:inset 0 0 0 1px rgba(255,255,255,.1),0 24px 48px -20px rgba(0,0,0,.8);will-change:transform}
+.toast::before{content:"";position:absolute;inset:0;border-radius:inherit;padding:1px;background:linear-gradient(135deg,rgba(255,255,255,.28),transparent 40%,rgba(242,90,144,.35));-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none}
+.toast>span:last-child{display:grid;gap:2px;min-width:0}
+.toast b{font-size:14px;font-weight:700;line-height:1.25}
+.toast small{font-size:12px;color:var(--ink-3);line-height:1.3}
+.ti{flex:none;width:38px;height:38px;border-radius:12px;display:grid;place-items:center;background:color-mix(in oklab,var(--c) 22%,transparent);color:var(--c);box-shadow:inset 0 0 0 1px color-mix(in oklab,var(--c) 40%,transparent)}
+.ti svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.ti.score b{font:400 19px/1 var(--f-display);color:var(--c)}
+.toast.money{background:rgba(24,40,30,.72)}
+.toast.money b{color:#9FE8B7}
+.t1{left:2%;top:16%}
+.t2{right:0;top:50%}
+.t3{left:6%;bottom:9%}
+.toast.low{top:auto;bottom:12%}
+.pil-grid.rev .t1{left:auto;right:2%}
+.pil-grid.rev .t2{right:auto;left:0}
+.duo .t1{left:0;top:auto;bottom:16%}
+.duo .t2{right:0;top:12%}
+.js .pil-vis .toast{opacity:0;scale:.86;translate:0 20px}
+.js .pil-vis.in .toast{opacity:1;scale:1;translate:0 0;transition:opacity .7s var(--ease),scale .8s cubic-bezier(.3,1.5,.5,1),translate .8s var(--ease)}
+.js .pil-vis.in .t1{transition-delay:.7s}.js .pil-vis.in .t2{transition-delay:1.3s}.js .pil-vis.in .t3{transition-delay:1.9s}
+.pil-vis.in .toast .ti{animation:ping 2.8s 2.4s ease-out infinite}
+@keyframes ping{0%{box-shadow:inset 0 0 0 1px color-mix(in oklab,var(--c) 40%,transparent),0 0 0 0 color-mix(in oklab,var(--c) 45%,transparent)}70%,100%{box-shadow:inset 0 0 0 1px color-mix(in oklab,var(--c) 40%,transparent),0 0 0 12px transparent}}
+/* the spotlight on a real creator */
+.spot{position:relative;padding-block:clamp(72px,9vw,120px) 0;overflow:hidden}
+.spot-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:clamp(36px,6vw,80px);align-items:center}
+.spot-copy{display:grid;gap:22px;align-content:start;justify-items:start}
+.spot-who{display:flex;align-items:center;gap:18px}
+.spot-av{position:relative;flex:none;width:96px;height:96px;border-radius:50%;padding:4px;background:conic-gradient(from var(--a,0deg),var(--g1),var(--g2),var(--g3),var(--g1));animation:spin 6s linear infinite}
+.spot-av img{width:100%;height:100%;border-radius:50%;object-fit:cover;display:block;border:3px solid var(--bg)}
+@property --a{syntax:'<angle>';inherits:false;initial-value:0deg}
+@keyframes spin{to{--a:360deg}}
+.spot-who b{display:block;font-size:clamp(34px,3.6vw,48px);line-height:1}
+.spot-who small{display:block;margin-top:6px;font-size:14px;color:var(--ink-3)}
+.spot-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;width:100%}
+.spot-stats div{display:grid;gap:2px;padding:14px;border-radius:16px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}
+.spot-stats b{font:400 28px/1 var(--f-display)}
+.spot-stats small{font-size:12.5px;color:var(--ink-3)}
+.brand-run{margin-top:clamp(48px,6vw,80px);padding-block:22px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);overflow:hidden;-webkit-mask:linear-gradient(90deg,transparent,#000 10%,#000 90%,transparent);mask:linear-gradient(90deg,transparent,#000 10%,#000 90%,transparent)}
+.brand-run .row{display:flex;gap:44px;width:max-content;animation:run 46s linear infinite}
+.brand-run span{font:italic 400 26px/1 var(--f-display);color:var(--ink-2);white-space:nowrap}
+@keyframes run{to{transform:translateX(-50%)}}
+/* autopilot switches, modern */
+.auto{border-radius:24px;overflow:hidden;background:rgba(26,21,26,.7);backdrop-filter:blur(10px)}
+.sw{position:relative;border:0;border-radius:99px;padding:3px;background:var(--surface-2);box-shadow:inset 0 0 0 1px var(--line-2)}
+.sw i{border-radius:99px;padding:7px 12px}
+.sw i.on{background:var(--grad);color:#fff;box-shadow:0 6px 16px -6px rgba(242,90,144,.7)}
+@media (max-width:860px){
+  .spot-grid{grid-template-columns:minmax(0,1fr)}
+  .spot-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .pil-vis{min-height:560px}
+}
+@media (max-width:560px){
+  .dev{width:min(250px,64vw)}
+  .toast{max-width:220px;padding:10px 12px 10px 10px;gap:10px}
+  .toast b{font-size:13px}.toast small{font-size:11px}
+  .ti{width:32px;height:32px}
+  .t1{left:0;top:6%}.t2{right:0;top:54%}.t3{left:0;bottom:4%}
+  .pil-grid.rev .t1{right:0}.pil-grid.rev .t2{left:0}
+  .duo .dev:not(.back){translate:-14% 4%}.duo .dev.back{translate:30% -6%}
+}
+@media (prefers-reduced-motion:reduce){
+  .js .pil-vis .dev,.js .pil-vis .toast{opacity:1;transform:rotateY(var(--ry,-10deg));scale:1;translate:0 0}
+  .pil-vis.in .dev,.pil-vis.in .toast .ti,.spot-av,.brand-run .row{animation:none}
+}
+
+.toast{transform:translateY(var(--par,0px))}
 </style>
 <meta name="theme-color" content="#110D11">
 <meta property="og:title" content="Miracle: every collab, handled">
@@ -843,7 +930,7 @@ footer{position:relative;overflow:hidden;padding-block:70px 0;border-top:1px sol
               <div class="ph-bar"><b>Miracle</b><span aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg><svg viewBox="0 0 32 32" style="color:#F25A90"><use href="#spk"/></svg><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4z"/></svg></span></div>
               <div class="ph-hero">
                 <div><small>Wednesday, 21 October</small><b class="ph-hi">Good evening,<em>Nivy</em></b><span class="ph-due"><i></i>3 due today · 12 active collabs</span></div>
-                <div class="ph-ring"><svg viewBox="0 0 96 96"><circle cx="48" cy="48" r="43" fill="#140e14" stroke="rgba(255,255,255,.1)" stroke-width="4"/><circle cx="48" cy="48" r="43" fill="none" stroke="url(#rg)" stroke-width="4" stroke-linecap="round" stroke-dasharray="270" stroke-dashoffset="40" transform="rotate(-90 48 48)"/></svg><div><b>251.3K</b><small>followers</small><span>2.4% eng.</span></div></div>
+                <div class="ph-ring"><svg viewBox="0 0 96 96"><circle cx="48" cy="48" r="43" fill="#140e14" stroke="rgba(255,255,255,.1)" stroke-width="4"/><circle cx="48" cy="48" r="43" fill="none" stroke="url(#rg)" stroke-width="4" stroke-linecap="round" stroke-dasharray="270" stroke-dashoffset="40" transform="rotate(-90 48 48)"/></svg><div><b>20K</b><small>followers</small><span>4.2% eng.</span></div></div>
               </div>
               <div class="ph-stories" aria-hidden="true">
                 <span class="st me"><i><b>ND</b></i>New collab</span>
@@ -888,6 +975,36 @@ footer{position:relative;overflow:hidden;padding-block:70px 0;border-top:1px sol
       <div data-r="2"><b>UPI</b><small>brands pay you directly</small></div>
       <div data-r="3"><b>GST · TDS</b><small>invoices and tax, done the Indian way</small></div>
       <div data-r="4"><b>EN · HI · KN</b><small>an AI desk that speaks your language</small></div>
+    </div>
+  </section>
+
+  <!-- 3b · A real creator on Miracle -->
+  <section class="spot" id="nivy" aria-labelledby="spot-title">
+    <div class="wrap spot-grid">
+      <div class="spot-copy" data-r>
+        <span class="eb">A creator on Miracle</span>
+        <div class="spot-who">
+          <span class="spot-av"><img src="/img/nivy.webp" alt="Niveditha Devegowda" width="96" height="96" loading="lazy"></span>
+          <span><b class="serif">Niveditha <span class="gt">Devegowda</span></b><small>@nicks_universe_it_is · Lifestyle, travel and fashion · Bengaluru</small></span>
+        </div>
+        <p class="lede">Her page, rates, media kit and every brand deal run on Miracle. Brands see her real numbers, live from Instagram, and book her in a minute.</p>
+        <div class="spot-stats">
+          <div><b><span data-count="20010" data-fmt="in">20,010</span></b><small>followers</small></div>
+          <div><b>4.18%</b><small>engagement</small></div>
+          <div><b><span data-count="17848" data-fmt="in">17,848</span></b><small>views a reel</small></div>
+          <div><b><span data-count="19">19</span></b><small>brands worked with</small></div>
+        </div>
+        <a class="neo light mag" href="https://nivy.miracleapp.live" target="_blank" rel="noopener">See Nivy's page</a>
+      </div>
+      <div class="pil-vis duo" data-r="2">
+        <figure class="dev back" style="--ry:14deg"><div class="dev-frame"><span class="dev-island" aria-hidden="true"></span><img src="/img/screen-nivy-reels.webp" alt="Nivy's brand collabs on her page: The Furniture Park reel with 115K views, Gobi Maps with 33.2K" width="390" height="844" loading="lazy"></div><span class="dev-shine" aria-hidden="true"></span></figure>
+        <figure class="dev" style="--ry:-10deg"><div class="dev-frame"><span class="dev-island" aria-hidden="true"></span><img src="/img/screen-nivy-page.webp" alt="Nivy's Miracle page: open for collabs, languages and a Send a request button" width="390" height="844" loading="lazy"></div><span class="dev-shine" aria-hidden="true"></span></figure>
+        <div class="toast t1" data-depth="50"><span class="ti" style="--c:#6FD08C"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg></span><span><b>115K views</b><small>The Furniture Park · a collab reel</small></span></div>
+        <div class="toast t2" data-depth="80"><span class="ti" style="--c:#F25A90"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v12H5.2L4 17.2z"/><path d="M8 9h8M8 12h5"/></svg></span><span><b>New request</b><small>Sent from nivy.miracleapp.live</small></span></div>
+      </div>
+    </div>
+    <div class="brand-run" aria-label="Brands Nivy has worked with">
+      <div class="row"><span>The Furniture Park</span><span>Gobi Maps</span><span>Flipkart Auto Fest</span><span>Sixth Stage Club</span><span>Sorso</span><span>Stories Brewery</span><span>Moai Koramangala</span><span>The Brewseum</span><span>Burger Brewery</span><span>Happybrew Blr</span><span>Flipkart Food Fest</span><span>CopperFinch</span><span>The Furniture Park</span><span>Gobi Maps</span><span>Flipkart Auto Fest</span><span>Sixth Stage Club</span><span>Sorso</span><span>Stories Brewery</span><span>Moai Koramangala</span><span>The Brewseum</span><span>Burger Brewery</span><span>Happybrew Blr</span><span>Flipkart Food Fest</span><span>CopperFinch</span></div>
     </div>
   </section>
 
@@ -968,21 +1085,11 @@ footer{position:relative;overflow:hidden;padding-block:70px 0;border-top:1px sol
           <li><b>Found in search.</b> An about line written for the words brands type, and the AI search inside Instagram and Google.</li>
         </ul>
       </div>
-      <div class="pil-vis" data-r="2" role="img" aria-label="A creator's Miracle page, and a comment that becomes a DM">
-        <div class="mphone">
-          <div class="mp-top" style="--h:#2F6F9F"><span>N</span></div>
-          <div class="mp-b">
-            <b class="serif mp-name">Nivy</b>
-            <small>Lifestyle · Bengaluru · Kannada, English</small>
-            <span class="mp-row"><span>1 Reel</span><b>from ₹<span data-count="18000" data-fmt="in">18,000</span></b></span>
-            <span class="mp-row"><span>Open weeks</span><b style="color:var(--ok)">2 left in Nov</b></span>
-            <span class="mp-cta">Send a request</span>
-          </div>
-        </div>
-        <div class="bubbles">
-          <span class="bub"><small>Comment on your reel</small><b>@kora.botanicals: COLLAB please!</b></span>
-          <span class="bub me"><small>DM sent by Miracle</small>Hi! My rates, packages and the request form are all here: nivy.miracleapp.live</span>
-        </div>
+      <div class="pil-vis" data-r="2">
+        <figure class="dev" style="--ry:-12deg"><div class="dev-frame"><span class="dev-island" aria-hidden="true"></span><img src="/img/screen-nivy-page.webp" alt="A creator's Miracle page with a Send a request button" width="390" height="844" loading="lazy"></div><span class="dev-shine" aria-hidden="true"></span></figure>
+        <div class="toast t1" data-depth="60"><span class="ti" style="--c:#7EA2FF"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg></span><span><b>@kora.botanicals: COLLAB</b><small>commented on your reel</small></span></div>
+        <div class="toast t2" data-depth="90"><span class="ti" style="--c:#F25A90"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4z"/></svg></span><span><b>Your rates, sent by DM</b><small>by Miracle, a second later</small></span></div>
+        <div class="toast t3" data-depth="40"><span class="ti" style="--c:#4CCFC2"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V5M4 19h16M8 15l3-4 3 2 5-6"/></svg></span><span><b>Media kit updated</b><small>live from Instagram, today</small></span></div>
       </div>
     </div>
   </section>
@@ -998,10 +1105,10 @@ footer{position:relative;overflow:hidden;padding-block:70px 0;border-top:1px sol
           <li><b>Real prices.</b> What creators your size were actually paid on Miracle, not guesses.</li>
         </ul>
       </div>
-      <div class="pil-vis stack" data-r="2" role="img" aria-label="A request scored, an agreement checked and what creators your size charge">
-        <div class="mcard"><span class="mc-h"><b class="serif">Kora · 1 Reel + 2 Stories</b><span class="chip ok">Take it · <span data-count="86">86</span></span></span><small>₹25,000 covers your fair price. Their dates fit your week. They paid creators in about 9 days.</small></div>
-        <div class="mcard"><span class="lbl">Their agreement, checked</span><span><b class="bad">!</b> They can use your reel forever. <small>Ask for 3 months; paid ads are extra.</small></span><span><b class="warn">!</b> No beauty brands for 90 days. <small>Limit it to skincare for 30 days.</small></span></div>
-        <div class="mcard"><span class="lbl">What creators your size charge</span><span class="mp-row"><span>Reel</span><b>₹8,000 – ₹30,000</b></span><span class="mp-row"><span>Story</span><b>₹2,000 – ₹6,000</b></span></div>
+      <div class="pil-vis" data-r="2">
+        <figure class="dev" style="--ry:12deg"><div class="dev-frame"><span class="dev-island" aria-hidden="true"></span><img src="/img/screen-offer.webp" alt="Miracle checking a brand's agreement: fairness 58, ask for 3 changes" width="390" height="844" loading="lazy"></div><span class="dev-shine" aria-hidden="true"></span></figure>
+        <div class="toast t1" data-depth="70"><span class="ti score" style="--c:#6FD08C"><b><span data-count="86">86</span></b></span><span><b>Take it</b><small>Kora Activewear · 2 Reels · ₹60,000</small></span></div>
+        <div class="toast t2" data-depth="45"><span class="ti" style="--c:#EFB35A"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v20M17 6H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span><span><b>₹8K – ₹30K a Reel</b><small>what creators your size charge</small></span></div>
       </div>
     </div>
   </section>
@@ -1017,15 +1124,10 @@ footer{position:relative;overflow:hidden;padding-block:70px 0;border-top:1px sol
           <li><b>MSME protection.</b> Registered with Udyam? Late brands owe interest after 45 days, and Miracle fills the complaint in for you.</li>
         </ul>
       </div>
-      <div class="pil-vis" data-r="2" role="img" aria-label="Getting paid, step by step">
-        <div class="mcard ladder">
-          <span class="lbl">Getting paid, step by step</span>
-          <span class="ls done"><i>✓</i><span><b>Friendly reminder</b><small>Goes by itself after the due date</small></span></span>
-          <span class="ls done"><i>✓</i><span><b>Firm reminder with a date</b><small>"Please pay by 20 Oct"</small></span></span>
-          <span class="ls on"><i>3</i><span><b>Formal payment demand</b><small>A letter with a final date, by email or WhatsApp</small></span></span>
-          <span class="ls"><i>4</i><span><b>MSME complaint or legal notice</b><small>Ready when you are</small></span></span>
-          <span class="landed">₹<span data-count="24000" data-fmt="in">24,000</span> from Urban Brew reached your bank · marked paid</span>
-        </div>
+      <div class="pil-vis" data-r="2">
+        <figure class="dev" style="--ry:-12deg"><div class="dev-frame"><span class="dev-island" aria-hidden="true"></span><img src="/img/screen-paid.webp" alt="Getting paid, step by step: reminders sent, a formal payment demand ready to send" width="390" height="844" loading="lazy"></div><span class="dev-shine" aria-hidden="true"></span></figure>
+        <div class="toast t1 money low" data-depth="80"><span class="ti" style="--c:#6FD08C"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg></span><span><b>₹<span data-count="35000" data-fmt="in">35,000</span> just landed</b><small>Glasshouse Eyewear · marked paid</small></span></div>
+        <div class="toast t2" data-depth="50"><span class="ti" style="--c:#7EA2FF"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span><span><b>Pays in about 9 days</b><small>from invoices paid to other creators</small></span></div>
       </div>
     </div>
   </section>
@@ -1037,13 +1139,10 @@ footer{position:relative;overflow:hidden;padding-block:70px 0;border-top:1px sol
         <h2 class="h2 sm" id="pg-title">Real followers, <span class="gt">not bought</span> ones.</h2>
         <p class="lede">Miracle reads your own reels and audience and tells you, plainly, what's holding you back and what to post next. Check a reel before you post it, plan festival reels in your calendar, and team up with creators in your niche.</p>
       </div>
-      <div class="pil-vis" data-r="2" role="img" aria-label="A growth check-up">
-        <div class="mcard">
-          <span class="lbl">Your growth check-up · every 2 weeks</span>
-          <b class="serif big">Your festival reels get the most shares. Most of your followers aren't who your content is for.</b>
-          <span class="tiles"><span><small>Best day</small><b>Saturday</b></span><span><small>Best time</small><b>7 pm</b></span><span><small>Watch</small><b>Saves per 1k</b></span></span>
-          <small><b style="color:#B49CFF">Next:</b> plan 3 Deepavali reels · rewrite your bio · invite a creator to a collab reel</small>
-        </div>
+      <div class="pil-vis" data-r="2">
+        <figure class="dev" style="--ry:12deg"><div class="dev-frame"><span class="dev-island" aria-hidden="true"></span><img src="/img/screen-grow.webp" alt="Grow in Miracle: followers rising, reel views, and what's working" width="390" height="844" loading="lazy"></div><span class="dev-shine" aria-hidden="true"></span></figure>
+        <div class="toast t1" data-depth="70"><span class="ti" style="--c:#B49CFF"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.6 5.6L20 9.3l-4 4 1 5.7-5-2.8-5 2.8 1-5.7-4-4 5.4-.7z"/></svg></span><span><b>Festival reels get the most shares</b><small>from your growth check-up</small></span></div>
+        <div class="toast t2" data-depth="45"><span class="ti" style="--c:#FFAE6B"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></span><span><b>Post Saturday, 7 pm</b><small>when your audience is watching</small></span></div>
       </div>
     </div>
   </section>
@@ -1055,15 +1154,10 @@ footer{position:relative;overflow:hidden;padding-block:70px 0;border-top:1px sol
         <h2 class="h2 sm" id="pt-title">GST and TDS, <span class="gt">already</span> done.</h2>
         <p class="lede">Built for India, not translated for it. Miracle counts your barter towards the ₹20 lakh GST limit, tracks the TDS each brand deducts under the new Income-tax Act, and reminds you to check it in your Form 26AS. Your CA gets one tidy file each quarter.</p>
       </div>
-      <div class="pil-vis" data-r="2" role="img" aria-label="The tax desk">
-        <div class="mcard">
-          <span class="lbl">Your tax desk · FY 2026-27</span>
-          <span class="mp-row"><span>Turnover, with barter</span><b>₹<span data-count="760000" data-fmt="in">7,60,000</span> of ₹20,00,000</b></span>
-          <span class="bar"><i style="width:38%"></i></span>
-          <span class="mp-row line"><span>Kora · TDS 194J</span><b style="color:var(--ok)">₹2,500 · in your 26AS</b></span>
-          <span class="mp-row"><span>Glowberry · gifts this year</span><b style="color:var(--warn)">₹18,500 of ₹20,000</b></span>
-          <span class="mp-row"><span>Ad disclosure on your last post</span><b style="color:var(--ok)">#ad up front</b></span>
-        </div>
+      <div class="pil-vis" data-r="2">
+        <figure class="dev" style="--ry:-12deg"><div class="dev-frame"><span class="dev-island" aria-hidden="true"></span><img src="/img/screen-tax.webp" alt="Miracle's tax desk: GST turnover with barter, and TDS by brand" width="390" height="844" loading="lazy"></div><span class="dev-shine" aria-hidden="true"></span></figure>
+        <div class="toast t1" data-depth="70"><span class="ti" style="--c:#4CCFC2"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg></span><span><b>TDS ₹12,100 in your 26AS</b><small>Northstar Travel · section 194J</small></span></div>
+        <div class="toast t2" data-depth="45"><span class="ti" style="--c:#EFB35A"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 9v4M12 17h.01M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg></span><span><b>Gifts ₹18,500 of ₹20,000</b><small>barter tax (194R) is close</small></span></div>
       </div>
     </div>
   </section>
@@ -1445,19 +1539,31 @@ footer{position:relative;overflow:hidden;padding-block:70px 0;border-top:1px sol
   }
   new IntersectionObserver((es) => { aiOn = es[0].isIntersecting; if (aiOn && !aiStarted && !reduce) { aiStarted = true; setTimeout(talk, 2600); } }, { threshold: .35 }).observe(document.querySelector('.chat'));
 
-  /* the promises: visuals lean toward the cursor */
-  if (fine && !reduce) {
-    document.querySelectorAll('.pil-vis').forEach((v) => {
-      const t = v.firstElementChild;
-      if (!t) return;
-      t.classList.add('tilt');
-      v.addEventListener('pointermove', (e) => {
-        const r = v.getBoundingClientRect();
-        const x = (e.clientX - r.left) / r.width - .5, y = (e.clientY - r.top) / r.height - .5;
-        t.style.transform = `rotateY(${(x * 8).toFixed(2)}deg) rotateX(${(y * -6).toFixed(2)}deg)`;
-      });
-      v.addEventListener('pointerleave', () => { t.style.transform = ''; });
+  /* the promises: phones lean toward the cursor; notifications drift at their own depth as you scroll */
+  const vis = [...document.querySelectorAll('.pil-vis')];
+  if (fine && !reduce) vis.forEach((v) => {
+    v.addEventListener('pointermove', (e) => {
+      const r = v.getBoundingClientRect();
+      v.style.setProperty('--px', (((e.clientX - r.left) / r.width - .5) * 14).toFixed(2) + 'deg');
+      v.style.setProperty('--py', (((e.clientY - r.top) / r.height - .5) * -8).toFixed(2) + 'deg');
     });
+    v.addEventListener('pointerleave', () => { v.style.setProperty('--px', '0deg'); v.style.setProperty('--py', '0deg'); });
+  });
+  if (!reduce) {
+    const toasts = [...document.querySelectorAll('.toast[data-depth]')];
+    let tq = false;
+    const drift = () => {
+      tq = false;
+      const mid = innerHeight / 2;
+      toasts.forEach((t) => {
+        const r = t.parentElement.getBoundingClientRect();
+        if (r.bottom < -200 || r.top > innerHeight + 200) return;
+        const off = (r.top + r.height / 2 - mid) / innerHeight;
+        t.style.setProperty('--par', Math.round(off * -t.dataset.depth) + 'px');
+      });
+    };
+    addEventListener('scroll', () => { if (!tq) { tq = true; requestAnimationFrame(drift); } }, { passive: true });
+    drift();
   }
 
   /* autopilots flick between Ask me and Auto, one row at a time, while they're on screen */
