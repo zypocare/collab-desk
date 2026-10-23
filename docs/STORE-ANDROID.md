@@ -22,9 +22,18 @@ App id: `live.miracleapp.app` (fixed forever once published).
    repository, and stored in the GitHub secrets `ANDROID_KEYSTORE_BASE64`,
    `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`. Keep a backup copy.
 4. In Play Console: create the app, turn on **Play App Signing**, upload the first `.aab`
-   (Actions › Android app › Run workflow › download "miracle-android-store-bundle").
+   (Actions › Android app › Run workflow › download "miracle-android-store-bundle-v…").
 5. Copy the **app signing key's SHA-256** (Play Console › Setup › App signing) to Claude: it goes in
    `miracleapp.live/.well-known/assetlinks.json`, so Miracle links open straight in the app.
+
+## Releasing an update
+
+Most changes need no store update: the app loads Miracle's screens from the server. When the app's
+shell changes (a permission, plugin, icon, splash, links), ship a new version as described at the top of
+[mobile/CHANGELOG.md](../mobile/CHANGELOG.md): bump `"version"` in `mobile/package.json`, add its notes,
+push, and upload the `.aab` named `miracle-android-store-bundle-v<version>-build<number>`. The build
+number comes from GitHub and always goes up, as Play requires. Settings › Phone app shows the version
+on the phone, and problem reports include it.
 
 ## Store listing (ready to paste)
 

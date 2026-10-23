@@ -1,6 +1,7 @@
 // Crashes in the app go to the admin panel's Problems tab, with the last few things the person did and
 // which phone or browser it was. Never the text they typed, messages, quotes or bank details.
 import { version } from '$app/env';
+import { isNative, native, nativeDevice } from './native';
 import { updated } from '$app/state';
 import { supabase } from './supabase';
 import { onLimit } from './util';
@@ -34,7 +35,7 @@ function device() {
 	const ua = navigator.userAgent;
 	const os = /iPhone|iPad/.test(ua) ? 'iPhone' : /Android/.test(ua) ? 'Android' : /Mac OS/.test(ua) ? 'Mac' : /Windows/.test(ua) ? 'Windows' : 'Other';
 	const b = /Edg\/(\d+)/.exec(ua) ? `Edge ${/Edg\/(\d+)/.exec(ua)![1]}` : /CriOS\/(\d+)|Chrome\/(\d+)/.exec(ua) ? `Chrome ${(/CriOS\/(\d+)|Chrome\/(\d+)/.exec(ua)!.slice(1).find(Boolean))}` : /Firefox\/(\d+)/.exec(ua) ? `Firefox ${/Firefox\/(\d+)/.exec(ua)![1]}` : /Version\/(\d+).*Safari/.exec(ua) ? `Safari ${/Version\/(\d+)/.exec(ua)![1]}` : 'Browser';
-	const app = matchMedia('(display-mode: standalone)').matches ? ' · app' : '';
+	const app = isNative() ? ` · ${nativeDevice()} ${native.version}`.trimEnd() : matchMedia('(display-mode: standalone)').matches ? ' · app' : '';
 	return `${os}, ${b}${app}, ${innerWidth}px`;
 }
 

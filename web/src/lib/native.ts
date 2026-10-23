@@ -17,6 +17,10 @@ const OWN = /(^|\.)miracleapp\.live$/;
 // The website (miracleapp.live, www.) is not part of the app: it opens in the browser.
 const WEBSITE = /^(www\.)?miracleapp\.live$/;
 
+/** The phone app's own version and build, like "1.0.1 (12)" (mobile/package.json and the build number), once
+ * known; '' in a browser. Shown in Settings and sent with problem reports. */
+export const native = { version: '' };
+
 /** Called once when the app starts. */
 export function startNative() {
 	if (!isNative()) return;
@@ -24,6 +28,9 @@ export function startNative() {
 	// The welcome animation takes over from the launch screen.
 	(plugin('SplashScreen')?.hide as ((o: { fadeOutDuration: number }) => Promise<void>) | undefined)?.({ fadeOutDuration: 200 }).catch(() => {});
 	const app = plugin('App');
+	(app?.getInfo as (() => Promise<{ version: string; build: string }>) | undefined)?.()
+		.then((i) => (native.version = `${i.version} (${i.build})`))
+		.catch(() => {});
 	// Android's back button: back in the app's history, or out of the app from the first screen.
 	app?.addListener('backButton', ((e: { canGoBack: boolean }) => {
 		if (e.canGoBack || history.length > 1) history.back();

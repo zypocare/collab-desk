@@ -1,8 +1,9 @@
 apply plugin: 'com.android.application'
 
-// Set by the build server for each store upload (MIRACLE_VERSION_CODE / MIRACLE_VERSION_NAME).
+// Set by the build server for each store upload (MIRACLE_VERSION_CODE / MIRACLE_VERSION_NAME). A build on
+// a computer uses the version in mobile/package.json and build number 1.
 def miracleVersionCode = Integer.parseInt(System.getenv("MIRACLE_VERSION_CODE") ?: "1")
-def miracleVersionName = System.getenv("MIRACLE_VERSION_NAME") ?: "1.0"
+def miracleVersionName = System.getenv("MIRACLE_VERSION_NAME") ?: new groovy.json.JsonSlurper().parse(file("../../package.json")).version
 
 android {
     namespace = "live.miracleapp.app"

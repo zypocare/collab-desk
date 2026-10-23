@@ -7,9 +7,16 @@
 	import { toast } from '../ui.svelte';
 	import { errMessage } from '../util';
 	import Icon from './Icon.svelte';
+	import { isNative, native } from '../native';
 
 	let status = $state<'unsupported' | 'blocked' | 'on' | 'off' | 'loading'>('loading');
 	let busy = $state(false);
+	// In the phone app: which version this is (it's read once the app has started).
+	let appVersion = $state('');
+	onMount(() => {
+		appVersion = native.version;
+		if (isNative() && !appVersion) setTimeout(() => (appVersion = native.version), 1500);
+	});
 	let ios = $state(false);
 	onMount(async () => {
 		ios = isIos();
@@ -50,6 +57,11 @@
 
 <section class="panel rv" style="--i:3">
 	<div class="panel-h"><h2>Phone app & alerts</h2><small>no app store needed</small></div>
+	{#if isNative()}
+	<div class="switch-row" style="border-top:0">
+		<div><b>Miracle app</b><small>Version {appVersion || '…'}. New features arrive by themselves; the Play Store only updates the app around them.</small></div>
+	</div>
+	{:else}
 	<div class="switch-row" style="border-top:0">
 		<div>
 			<b>Install on your phone</b>
@@ -62,6 +74,7 @@
 		</div>
 		{#if pwa.installEvent}<button class="btn sm grad" onclick={install}><Icon name="plus" />Install</button>{/if}
 	</div>
+	{/if}
 	<div class="switch-row">
 		<div>
 			<b>Notifications on this device</b>

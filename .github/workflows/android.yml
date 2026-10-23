@@ -2,6 +2,10 @@
 # (.aab) for the Play Store when the upload key is in the secrets. Download both from the run's
 # "Artifacts" section. Run it by hand from the Actions tab too ("Run workflow").
 #
+# Versions: the version people see (1.0.0, 1.0.1, 1.1.0) is "version" in mobile/package.json, the one
+# place to change it (with a line in mobile/CHANGELOG.md). The build number Play needs to go up on every
+# upload is this workflow's run number, so it never repeats. Each run's files are named with both.
+#
 # Secrets it uses (all optional; without them you get an unsigned test APK without alerts):
 #   ANDROID_GOOGLE_SERVICES_JSON  the Firebase app's google-services.json (for alerts)
 #   ANDROID_KEYSTORE_BASE64       the upload key (.jks), base64-encoded
@@ -13,11 +17,6 @@ on:
     branches: [main]
     paths: ['mobile/**', '.github/workflows/android.yml']
   workflow_dispatch:
-    inputs:
-      version_name:
-        description: 'Version shown in the store (like 1.0.1)'
-        required: false
-        default: ''
 
 jobs:
   build:
@@ -28,7 +27,6 @@ jobs:
     env:
       # A new store upload needs a higher number each time: the run number does that.
       MIRACLE_VERSION_CODE: ${{ github.run_number }}
-      MIRACLE_VERSION_NAME: ${{ inputs.version_name || format('1.0.{0}', github.run_number) }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -43,6 +41,15 @@ jobs:
 
       - name: Install
         run: npm ci
+
+      - name: Version
+        run: |
+          v=$(node -p "require('./package.json').version")
+          echo "$v" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$' || { echo "mobile/package.json version '$v' isn't like 1.0.1"; exit 1; }
+          grep -q "^## $v" CHANGELOG.md || { echo "Add a '## $v' section to mobile/CHANGELOG.md (what changed in this version)"; exit 1; }
+          echo "MIRACLE_VERSION_NAME=$v" >> "$GITHUB_ENV"
+          echo "MIRACLE_TAG=v$v-build${{ github.run_number }}" >> "$GITHUB_ENV"
+          echo "### Miracle $v (build ${{ github.run_number }})" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Firebase config (alerts)
         env:
@@ -83,7 +90,7 @@ jobs:
       - name: Test APK (install on a phone)
         uses: actions/upload-artifact@v4
         with:
-          name: miracle-android-test-apk
+          name: miracle-android-test-apk-${{ env.MIRACLE_TAG }}
           path: mobile/android/app/build/outputs/apk/debug/*.apk
           retention-days: 30
 
@@ -91,8 +98,18 @@ jobs:
         if: env.MIRACLE_KEYSTORE_FILE != ''
         uses: actions/upload-artifact@v4
         with:
-          name: miracle-android-store-bundle
+          name: miracle-android-store-bundle-${{ env.MIRACLE_TAG }}
           path: |
             mobile/android/app/build/outputs/bundle/release/*.aab
             mobile/android/app/build/outputs/apk/release/*.apk
           retention-days: 90
+
+      - name: What to upload
+        if: env.MIRACLE_KEYSTORE_FILE != ''
+        working-directory: .
+        run: |
+          {
+            echo ""
+            echo "Upload the .aab in **miracle-android-store-bundle-$MIRACLE_TAG** to Play Console (Production, Create new release)."
+            echo "Version $MIRACLE_VERSION_NAME, build $MIRACLE_VERSION_CODE. Release notes: the \`## $MIRACLE_VERSION_NAME\` section of mobile/CHANGELOG.md."
+          } >> "$GITHUB_STEP_SUMMARY"
