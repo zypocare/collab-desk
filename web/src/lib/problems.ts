@@ -37,7 +37,8 @@ function device() {
 	return `${os}, ${b}${app}, ${innerWidth}px`;
 }
 
-const NOISE = /ResizeObserver loop|Script error|AbortError|The user aborted|cancelled|Load failed$|Failed to fetch$|NetworkError/i;
+// Also a navigation cancelled by another tap, and a page slide the browser skipped for the next one.
+const NOISE = /ResizeObserver loop|Script error|AbortError|The user aborted|cancelled|Load failed$|Failed to fetch$|NetworkError|^navigation aborted|Transition was skipped/i;
 const CHUNK = /Failed to fetch dynamically imported module|Importing a module script failed|error loading dynamically imported module/i;
 
 /** Sends one crash; hands back the reference shown to the person (or '' when it isn't worth sending). */

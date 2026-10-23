@@ -30,7 +30,9 @@ export function lively() {
 		card.style.viewTransitionName = 'cr-card';
 		const root = document.documentElement;
 		root.classList.add('cr-grow');
-		nav.complete.finally(() => setTimeout(() => root.classList.remove('cr-grow'), 700));
+		// A cancelled navigation (another tap first) still clears the grow, without an error.
+		const done = () => setTimeout(() => root.classList.remove('cr-grow'), 700);
+		nav.complete.then(done, done);
 	});
 
 	onMount(() => {

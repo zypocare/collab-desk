@@ -115,7 +115,8 @@ export function toggleTheme() {
 			)
 		)
 		.catch(() => {});
-	vt.finished.finally(() => document.documentElement.classList.remove('vt-theme'));
+	const clear = () => document.documentElement.classList.remove('vt-theme');
+	vt.finished.then(clear, clear);
 }
 
 // ---- actions ----

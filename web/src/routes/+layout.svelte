@@ -64,11 +64,14 @@
 		if (nav.from.url.pathname === nav.to.url.pathname && !app) return;
 		const a = depth(nav.from.url), b = depth(nav.to.url);
 		document.documentElement.dataset.nav = !app ? '' : b > a ? 'push' : b < a ? 'pop' : 'tab';
+		// A second tap while a slide is running cancels the first navigation and skips its slide: both
+		// are normal, so neither may surface as an error.
 		return new Promise<void>((resolve) => {
-			d.startViewTransition!(async () => {
+			const vt = d.startViewTransition!(async () => {
 				resolve();
-				await nav.complete;
-			});
+				await nav.complete.catch(() => {});
+			}) as { ready?: Promise<void>; finished?: Promise<void>; updateCallbackDone?: Promise<void> } | undefined;
+			for (const p of [vt?.ready, vt?.finished, vt?.updateCallbackDone]) p?.catch(() => {});
 		});
 	});
 	import ConfirmDialog from '#lib/components/ConfirmDialog.svelte';
