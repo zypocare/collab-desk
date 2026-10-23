@@ -194,4 +194,14 @@
 			grid-template-columns: minmax(0, 1fr);
 		}
 	}
+	@media (max-width: 640px) {
+		.tos-lead {
+			font-size: 16px;
+			line-height: 1.55;
+		}
+		.tos-officer {
+			padding: 18px;
+			border-radius: 16px;
+		}
+	}
 </style>
