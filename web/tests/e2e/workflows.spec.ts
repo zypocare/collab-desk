@@ -75,6 +75,8 @@ test('individual progress persists through live, pause, resume and cancellation'
 	noErrors();
 });
 
+// Needs more than 25 collabs for the test creator: supabase/tests/fixtures/pagination.sql adds them (the
+// nightly Checks run does it before the tests; run it once by hand after a local `supabase db reset`).
 test('list pagination keeps all records available and reports request complete server totals', async ({ page }) => {
 	const noErrors = watchErrors(page);
 	await page.goto('/studio/collabs');

@@ -62,6 +62,8 @@ jobs:
           printf 'VITE_SUPABASE_URL=%s\nVITE_SUPABASE_ANON_KEY=%s\n' "$API_URL" "$ANON_KEY" > web/.env
       - name: Workflow and reporting database regressions
         run: docker exec -i supabase_db_Influence psql -U supabase_admin -d postgres -v ON_ERROR_STOP=1 < supabase/tests/workflows.sql
+      - name: Test data for the pagination check (more than one page of collabs)
+        run: docker exec -i supabase_db_Influence psql -U supabase_admin -d postgres -v ON_ERROR_STOP=1 < supabase/tests/fixtures/pagination.sql
       - run: npm ci
         working-directory: web
       - run: npx playwright install --with-deps chromium
