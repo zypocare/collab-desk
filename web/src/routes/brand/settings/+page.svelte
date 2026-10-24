@@ -22,13 +22,15 @@
 	import { supabase } from '#lib/supabase.ts';
 	import { theme, toggleTheme, toast } from '#lib/ui.svelte.ts';
 	import { compact, errMessage, fmt, inr } from '#lib/util.ts';
+	import PlanBilling from '#lib/components/PlanBilling.svelte';
+	import { loadPlan, plan } from '#lib/plan.svelte.ts';
 
 	// A brand's settings, laid out like the creator studio's: the sections on the left, the open one on the right.
 	const acct = $derived(auth.account?.role === 'brand' ? auth.account : null);
 	const company = $derived(acct?.brand?.name || acct?.profile?.name || 'Your brand');
 	const gstin = $derived(acct?.profile?.gstin ?? '');
 
-	type Sec = 'company' | 'billing' | 'team' | 'brands' | 'alerts' | 'blocked' | 'account' | 'help';
+	type Sec = 'company' | 'billing' | 'team' | 'brands' | 'plan' | 'alerts' | 'blocked' | 'account' | 'help';
 	const sections = $derived<{ id: Sec; label: string; icon: string; sub: string; warn?: string; href?: string }[]>([
 		{
 			id: 'company',
@@ -40,6 +42,7 @@
 		{ id: 'billing', label: 'Billing & GST', icon: 'rupee', sub: gstin ? `GSTIN ${gstin.slice(0, 6)}…` : 'GSTIN, address and accounts email' },
 		{ id: 'team', label: 'Team & approvals', icon: 'users', sub: 'Colleagues, agencies and approvals' },
 		{ id: 'brands', label: 'Brands you manage', icon: 'layers', sub: (acct?.brands?.length ?? 0) > 1 ? `${acct?.brands.length} brands` : 'For agencies with several brands' },
+		{ id: 'plan', label: 'Plan & billing', icon: 'spark', sub: plan.data ? `${plan.data.name ?? 'Free'}${plan.data.period === 'trial' ? ` · trial, ${plan.data.days_left} days left` : ''}` : 'Free, Brand Pro and Agency' },
 		{ id: 'alerts', label: 'Emails & alerts', icon: 'bell', sub: 'Phone alerts, quotes, drafts and invoices' },
 		{ id: 'blocked', label: 'Blocked', icon: 'ban', sub: 'Creators you blocked' },
 		{ id: 'account', label: 'Sign-in & account', icon: 'gear', sub: 'Your data, sign out, delete' },
@@ -105,11 +108,12 @@
 	const GROUPS: { label: string; ids: Sec[] }[] = [
 		{ label: 'Your brand', ids: ['company', 'billing'] },
 		{ label: 'Working together', ids: ['team', 'brands'] },
-		{ label: 'Account', ids: ['alerts', 'blocked', 'account', 'help'] }
+		{ label: 'Account', ids: ['plan', 'alerts', 'blocked', 'account', 'help'] }
 	];
 	const byId = (id: Sec) => sections.find((x) => x.id === id)!;
 	onMount(() => {
 		if (!brandHome.dash) loadDashboard();
+		if (!plan.loaded) loadPlan().catch(() => {});
 	});
 	const d = $derived(brandHome.dash);
 	const doneN = $derived((d?.creators ?? []).reduce((a, c) => a + (c.done ?? 0), 0));
@@ -338,6 +342,8 @@
 								<a class="bs-row" href="/brand/details?new=1"><span class="bs-plus"><Icon name="plus" /></span><span><b>Add another brand</b><small>For agencies working for several brands</small></span><Icon name="chevR" /></a>
 							</div>
 						</section>
+					{:else if active === 'plan'}
+						<PlanBilling side="brand" />
 					{:else if active === 'team'}
 						<BrandTeam />
 					{:else if active === 'alerts'}

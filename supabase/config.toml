@@ -515,3 +515,11 @@ verify_jwt = false
 # Called by the database every 5 minutes (shared secret) and by the creator.
 [functions.instagram-publish]
 verify_jwt = false
+
+# Buying a Miracle plan through Razorpay (the buyer's sign-in is checked inside, by the database).
+[functions.billing]
+verify_jwt = false
+
+# Razorpay's webhook for plan renewals and cancellations (checked by its signature).
+[functions.billing-webhook]
+verify_jwt = false

@@ -8,6 +8,7 @@ import { ARTICLES, CATEGORIES } from '../../web/src/lib/help/articles.ts';
 import { APP, CSS, cta, esc, JOIN, md, page, SITE } from './layout.mjs';
 import { LANDING } from './landing.mjs';
 import { GUIDES } from './guides.mjs';
+import { pricingPage, refundPage } from './pricing.mjs';
 
 const OUT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const write = (rel, html) => {
@@ -146,9 +147,11 @@ urls.push(['/help', 'weekly', 0.7]);
 
 // ------------------------------------------------------------------ 404, stylesheet, sitemap
 write('404.html', page({ path: '/404', title: 'Page not found · Miracle', description: 'This page isn’t here.', noindex: true, body: `<section class="hero wrap"><span class="eb">404</span><h1>Not <em>here.</em></h1><p class="lede">That page moved or never existed.</p><div class="acts"><a class="btn" href="/">Miracle home</a><a class="btn ghost" href="/guides">Guides</a><a class="btn ghost" href="/help">Help</a></div></section>` }));
+write('pricing.html', pricingPage());
+write('refund-policy.html', refundPage());
 write('assets/site.css', CSS.trim() + '\n');
 
-const fixed = [['/', 'weekly', 1.0], ['/creators', 'daily', 0.9], ['/tools/rate-calculator', 'monthly', 0.8], ['/tools/engagement-calculator', 'monthly', 0.8], ['/privacy', 'yearly', 0.2], ['/terms', 'yearly', 0.2], ['/data-deletion', 'yearly', 0.2]];
+const fixed = [['/', 'weekly', 1.0], ['/creators', 'daily', 0.9], ['/pricing', 'monthly', 0.9], ['/refund-policy', 'yearly', 0.3], ['/tools/rate-calculator', 'monthly', 0.8], ['/tools/engagement-calculator', 'monthly', 0.8], ['/privacy', 'yearly', 0.2], ['/terms', 'yearly', 0.2], ['/data-deletion', 'yearly', 0.2]];
 const today = new Date().toISOString().slice(0, 10);
 write('sitemap.xml', `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">

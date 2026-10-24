@@ -11,7 +11,7 @@ import { reportProblem } from '../_shared/problems.ts';
 // Alerts only: a brand opening her insights link.
 const PUSH_ONLY = new Set(['insights_viewed', 'ig_dm', 'ig_collab', 'month_summary', 'comment_dm']);
 // Mails to a brand that come from the app itself, so replies don't go to the creator.
-const FROM_APP = new Set(['brief_application', 'brief_digest', 'support_reply', 'tat_overdue', 'tat_escalated']);
+const FROM_APP = new Set(['brief_application', 'brief_digest', 'support_reply', 'tat_overdue', 'tat_escalated', 'plan_receipt', 'plan_ending', 'plan_ended']);
 // Miracle's support inbox: replies to support mail go there, and the team's ticket mail comes there.
 const SUPPORT_INBOX = Deno.env.get('SUPPORT_EMAIL') ?? 'support@miracleapp.live';
 

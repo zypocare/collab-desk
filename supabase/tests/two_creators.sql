@@ -64,6 +64,8 @@ select code as b_code from public.collabs where brief = 'Collab of B' \gset
 select id as a_collab, code as a_code from public.collabs where creator_id = 1 and brand_id = :'a_brand' limit 1 \gset
 select gen_random_uuid() as brand_uid \gset
 insert into auth.users (id, email, aud, role) values (:'brand_uid', 'shopper@test.dev', 'authenticated', 'authenticated');
+-- Brand Pro, so its autopilots can be switched on (migration 154).
+insert into public.billing_subscriptions (subject_kind, subject, plan, period, ends_at, source) values ('workspace', :'brand_uid', 'brand_pro', 'comp', now() + interval '30 days', 'admin');
 insert into public.profiles (id, email) values (:'brand_uid', 'shopper@test.dev') on conflict do nothing;
 insert into public.brand_members (profile_id, brand_id) values (:'brand_uid', :'a_brand'), (:'brand_uid', :'b_brand') on conflict do nothing;
 update public.profiles set brand_id = :'a_brand' where id = :'brand_uid';

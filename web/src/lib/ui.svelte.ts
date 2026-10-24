@@ -21,11 +21,12 @@ let toastId = 0;
 export function toast(msg: string, icon = 'check') {
 	const t: Toast = { id: ++toastId, msg, icon, out: false };
 	ui.toasts.push(t);
+	// A free plan's limit stays long enough to tap Upgrade.
 	setTimeout(() => {
 		const x = ui.toasts.find((y) => y.id === t.id);
 		if (x) x.out = true;
 		setTimeout(() => (ui.toasts = ui.toasts.filter((y) => y.id !== t.id)), 320);
-	}, 3200);
+	}, /Miracle (Pro|Agency): /.test(msg) ? 7000 : 3200);
 }
 
 export const pointer = { x: 0, y: 0 };

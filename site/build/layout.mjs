@@ -44,7 +44,7 @@ ${json}
 <body>
 <header class="top"><div class="bar wrap">
   <a class="brand" href="/" aria-label="Miracle home"><img src="/icon.svg" alt="" width="30" height="30"><b>Miracle</b></a>
-  <nav aria-label="Main"><a href="/get-brand-deals">For creators</a><a class="hide-xs" href="/find-influencers-india">For brands</a><a class="hide-s" href="/guides">Guides</a><a class="hide-s" href="/help">Help</a><a class="btn sm" href="${JOIN}">Join free</a></nav>
+  <nav aria-label="Main"><a href="/get-brand-deals">For creators</a><a class="hide-xs" href="/find-influencers-india">For brands</a><a class="hide-s" href="/guides">Guides</a><a class="hide-s" href="/help">Help</a><a class="hide-xs" href="/pricing">Pricing</a><a class="btn sm" href="${JOIN}">Join free</a></nav>
 </div></header>
 <main>
 ${crumbs.length ? `<nav class="crumbs wrap" aria-label="You are here"><a href="/">Miracle</a>${crumbs.map((c, i) => (i === crumbs.length - 1 ? ` <span>›</span> <span aria-current="page">${esc(c.name)}</span>` : ` <span>›</span> <a href="${c.path}">${esc(c.name)}</a>`)).join('')}</nav>` : ''}
@@ -55,7 +55,7 @@ ${body}
     <nav aria-label="For creators"><b>For creators</b><a href="/get-brand-deals">Get brand deals</a><a href="/pitch-brands">Pitch brands with AI</a><a href="/link-in-bio-for-creators">Link in bio that books deals</a><a href="/influencer-media-kit">Live media kit</a><a href="/influencer-rate-card">Rate card</a><a href="/brand-collaboration-management">Manage collabs</a><a href="/get-paid-by-brands">Get paid on time</a></nav>
     <nav aria-label="For brands"><b>For brands</b><a href="/find-influencers-india">Find influencers in India</a><a href="/creators">Creator directory</a><a href="/influencer-marketing-no-commission">No-commission influencer marketing</a><a href="${JOIN_BRAND}">Join as a brand</a></nav>
     <nav aria-label="Learn"><b>Learn</b><a href="/guides">Guides</a><a href="/help">Help centre</a><a href="/tools/rate-calculator">Rate calculator</a><a href="/tools/engagement-calculator">Engagement calculator</a></nav>
-    <nav aria-label="Company"><b>Company</b><a href="mailto:support@miracleapp.live">support@miracleapp.live</a><a href="/privacy">Privacy</a><a href="/terms">Terms</a><a href="/data-deletion">Data deletion</a></nav>
+    <nav aria-label="Company"><b>Company</b><a href="/pricing">Pricing</a><a href="mailto:support@miracleapp.live">support@miracleapp.live</a><a href="/privacy">Privacy</a><a href="/terms">Terms</a><a href="/refund-policy">Refunds &amp; cancellation</a><a href="/data-deletion">Data deletion</a></nav>
   </div>
   <p class="legal">© 2026 Miracle is a product of Zyposoft Technologies Private Limited, Bengaluru, India. No commission on any deal: brands pay creators directly.</p>
 </footer>
@@ -93,6 +93,7 @@ h1 em,h2 em{font-style:italic;background:var(--grad);-webkit-background-clip:tex
 .sec{padding-top:36px;padding-bottom:36px}
 .grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
 .card{padding:22px;border-radius:22px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}.card p{margin:0;font-size:15px}
+.plans{align-items:stretch}.plan{display:flex;flex-direction:column;gap:10px}.plan.hot{background:radial-gradient(110% 70% at 0% 0%,rgba(242,90,144,.16),transparent 60%),var(--surface);box-shadow:inset 0 0 0 1px rgba(242,90,144,.45)}.plan h3{margin:0}.plan .btn{margin-top:auto;align-self:flex-start}.price{display:flex;align-items:baseline;gap:6px;margin:0!important}.price b{font:400 44px/1 var(--f-display);color:var(--ink)}.price small{color:var(--ink-3)}.plan .alt{font-size:13.5px!important;color:var(--ink-3)}.ticks{display:grid;gap:7px;margin:4px 0 8px;padding:0;list-style:none;font-size:14.5px}.ticks li{padding-left:24px;position:relative}.ticks li::before{content:'✓';position:absolute;left:0;color:var(--ok);font-weight:700}.small{font-size:13.5px;color:var(--ink-3)}
 .card .n{display:inline-grid;place-items:center;width:30px;height:30px;margin-bottom:12px;background:var(--ink);color:var(--bg);font:400 18px/1 var(--f-display)}
 .steps{counter-reset:s;display:grid;gap:12px;margin:0;padding:0;list-style:none;max-width:760px}
 .steps li{counter-increment:s;display:grid;grid-template-columns:auto minmax(0,1fr);gap:14px;padding:16px 18px;border-radius:18px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line)}

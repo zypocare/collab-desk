@@ -578,6 +578,61 @@ ${ok ? url(s, '/') : studio()}`,
 
   // Creator sign-ups: a new request for the people who run Miracle, then a welcome or a kind no.
   // ---------------------------------------------------------------- support
+  // ---------------------------------------------------------------- Miracle's own plans
+  if (kind === 'plan_receipt' || kind === 'plan_ending' || kind === 'plan_ended') {
+    const planLink = url(s, p.side === 'brand' ? '/brand/settings?s=plan' : '/studio/settings?s=plan');
+    const day = (v: unknown) => (v ? new Date(String(v)).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Asia/Kolkata' }) : '');
+    const plan = String(p.plan ?? 'Pro');
+    if (kind === 'plan_receipt') {
+      const amount = Number(p.amount) || 0, gst = Number(p.gst) || 0;
+      return {
+        subject: p.first ? `Welcome to ${plan}` : `Payment received: ${plan}`,
+        html: layout(
+          s,
+          p.first ? `You're on ${plan}` : `Thanks, ${plan} is renewed`,
+          `${P(`We received <b>₹${amount.toLocaleString('en-IN')}</b> for ${esc(plan)} (${p.period === 'year' ? 'yearly' : 'monthly'}). It's active until <b>${esc(day(p.until))}</b>${p.first ? ' and renews by itself; you can stop renewal any time in Plan & billing' : ''}.`)}
+           ${P(`Invoice ${esc(String(p.invoice_no ?? ''))} · ₹${(amount - gst).toFixed(2)} + GST 18% ₹${gst.toFixed(2)} · Zyposoft Technologies Private Limited.`)}`,
+          { label: 'Plan & billing', href: planLink },
+          { to: 'app', why: 'you bought a Miracle plan', preheader: `₹${amount} received for ${plan}` },
+        ),
+        text: `We received ₹${amount} for ${plan}. Active until ${day(p.until)}.
+Invoice ${p.invoice_no}: ₹${(amount - gst).toFixed(2)} + GST 18% ₹${gst.toFixed(2)}.
+
+Plan & billing: ${planLink}`,
+      };
+    }
+    if (kind === 'plan_ending') {
+      const what = p.trial ? `Your ${plan} trial` : `Your ${plan} plan`;
+      return {
+        subject: `${what} ends on ${day(p.ends_at)}`,
+        html: layout(
+          s,
+          `${what} ends soon`,
+          `${P(`${esc(what)} ends on <b>${esc(day(p.ends_at))}</b>. After that the autopilots switch off and the free plan's limits apply. Nothing you made is deleted.`)}
+           ${P(p.trial ? 'Keep everything working: pick monthly or yearly on the website.' : 'To keep it, switch renewal back on in Plan & billing.')}`,
+          { label: p.trial ? 'Choose a plan' : 'Plan & billing', href: planLink },
+          { to: 'app', why: p.trial ? 'your free trial is ending' : 'your plan is ending', preheader: `${what} ends on ${day(p.ends_at)}` },
+        ),
+        text: `${what} ends on ${day(p.ends_at)}. After that the autopilots switch off and the free plan's limits apply.
+
+${planLink}`,
+      };
+    }
+    return {
+      subject: p.trial ? `Your ${plan} trial has ended` : `Your ${plan} plan has ended`,
+      html: layout(
+        s,
+        "You're on the free plan now",
+        `${P(`Your ${esc(plan)} ${p.trial ? 'trial' : 'plan'} has ended, so the autopilots are off and the free plan's limits apply. Everything you made is still there.`)}
+         ${P('Come back to Pro whenever you like; your settings are where you left them.')}`,
+        { label: 'See plans', href: planLink },
+        { to: 'app', why: 'your plan ended', preheader: 'Your autopilots are off for now' },
+      ),
+      text: `Your ${plan} ${p.trial ? 'trial' : 'plan'} has ended; you're on the free plan. Everything you made is still there.
+
+${planLink}`,
+    };
+  }
   // ---------------------------------------------------------------- turnaround (brand teams)
   if (kind === 'tat_overdue' || kind === 'tat_escalated') {
     const late = Number(p.hours_over) || 0;

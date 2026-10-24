@@ -90,6 +90,7 @@
   [data-side="studio"] .balance b{font-size:18px}
   [data-side="studio"] .log li{font-size:15px}
   [data-side="studio"] .log li time{font-size:13.5px}
+  [data-side="studio"] .toast-up{font-size:12.5px}
   [data-side="studio"] .toast{font-size:15px}
   [data-side="studio"] .cover-txt{letter-spacing:normal}
   [data-side="studio"] .cover-txt small{font-size:13.5px;text-transform:none;letter-spacing:normal}

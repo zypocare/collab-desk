@@ -30,6 +30,8 @@ insert into auth.users (id, email, aud, role) values
 insert into public.profiles (id, email, full_name) values (:'a_uid', 'admin@tat.test', 'Asha Admin'), (:'m_uid', 'maya@tat.test', 'Maya'),
   (:'ap_uid', 'approver@tat.test', 'Arjun'), (:'f_uid', 'finance@tat.test', 'Farah'), (:'b_uid', 'other@tat.test', ''), (:'x_uid', 'outsider@tat.test', '') on conflict (id) do update set full_name = excluded.full_name;
 insert into public.brand_teams (owner) values (:'a_uid'), (:'b_uid');
+-- Brand Pro, so owners, targets and escalation are allowed (migration 154).
+insert into public.billing_subscriptions (subject_kind, subject, plan, period, ends_at, source) values ('workspace', :'a_uid', 'brand_pro', 'comp', now() + interval '30 days', 'admin');
 insert into public.brand_team_members (owner, email, role, profile_id, joined_at) values
   (:'a_uid', 'maya@tat.test', 'member', :'m_uid', now() - interval '9 days'),
   (:'a_uid', 'approver@tat.test', 'approver', :'ap_uid', now() - interval '8 days'),

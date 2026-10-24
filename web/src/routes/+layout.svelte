@@ -16,6 +16,7 @@
 	import { afterNavigate, onNavigate } from '$app/navigation';
 	import { isIOS } from '#lib/back.ts';
 	import { page } from '$app/state';
+	import { canSell, upgradeNeeded, upgradeText } from '#lib/plan.svelte.ts';
 	import { startReveal } from '#lib/reveal.ts';
 	import { auth, initAuth } from '#lib/auth.svelte.ts';
 	import { initTheme, ui } from '#lib/ui.svelte.ts';
@@ -95,7 +96,11 @@
 
 <div class="toasts" aria-live="polite">
 	{#each ui.toasts as t (t.id)}
-		<div class="toast" class:out={t.out} class:bad={t.icon === 'alert'} role={t.icon === 'alert' ? 'alert' : 'status'}><span class="ti"><Icon name={t.icon} /></span><span class="toast-msg">{t.msg}</span><i class="tbar" aria-hidden="true"></i></div>
+		{@const up = upgradeNeeded(t.msg)}
+		<div class="toast" class:out={t.out} class:bad={t.icon === 'alert' && !up} class:up role={t.icon === 'alert' ? 'alert' : 'status'}
+			><span class="ti"><Icon name={up ? 'spark' : t.icon} /></span><span class="toast-msg">{up ? upgradeText(t.msg) : t.msg}</span
+			>{#if up}<a class="toast-up" href={page.url.pathname.startsWith('/brand') ? '/brand/settings?s=plan' : '/studio/settings?s=plan'}>{canSell() ? 'Upgrade' : 'Your plan'}</a>{/if}<i class="tbar" aria-hidden="true"></i></div
+		>
 	{/each}
 </div>
 <ConfirmDialog />

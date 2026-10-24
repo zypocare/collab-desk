@@ -93,6 +93,7 @@ export default {
 				if (kind === 'brandbrief') publicUrl(String(body.url ?? ''));
 				const t = await rpc(req, env, 'ai_take_brand', { p_kind: kind, p_cost: COST[kind] });
 				if (!t || t.reason === 'not_brand') return json({ error: 'Sign in with your brand account to use AI.' }, 403);
+				if (t.capped && /_free$/.test(String(t.plan ?? ''))) return json({ error: FREE_USED_UP }, 429);
 				if (t.ok) {
 					try {
 						return json(await job({ env, gemini: false, neurons: 0 }));
@@ -119,6 +120,7 @@ export default {
 			const est = (COST[kind] ?? 150) + (kind === 'dm' && String(body.image ?? '') ? 100 : 0);
 			const t = await take(req, env, kind, est);
 			if (t === 'auth') return json({ error: 'Sign in again to use AI.' }, 403);
+			if (t === 'free') return json({ error: FREE_USED_UP }, 429);
 			if (t === 'ok') {
 				const x: Run = { env, gemini: false, neurons: 0 };
 				try {
@@ -174,10 +176,14 @@ async function rpc(req: Request, env: Env, fn: string, args: Record<string, unkn
 	return r?.ok ? ((await r.json().catch(() => null)) as Record<string, unknown> | null) : null;
 }
 /** Signed in as the creator, and room left in Cloudflare's free amount today? */
-async function take(req: Request, env: Env, kind: string, cost: number): Promise<'ok' | 'budget' | 'auth'> {
+async function take(req: Request, env: Env, kind: string, cost: number): Promise<'ok' | 'budget' | 'auth' | 'free'> {
 	const res = await rpc(req, env, 'ai_take2', { p_kind: kind, p_cost: cost });
+	// The free plan's daily AI is used up (not the shared allowance): say so, with the way to more.
+	if (res?.capped && /_free$/.test(String(res.plan ?? ''))) return 'free';
 	return res?.ok ? 'ok' : res?.reason === 'budget' ? 'budget' : 'auth';
 }
+/** The free plan's daily AI is used up. The app offers the upgrade on "Miracle Pro: …" messages. */
+const FREE_USED_UP = "Miracle Pro: You've used today's free AI. It's back tomorrow, or go Pro for much more every day.";
 /** Correct the reserved size to what the job really used. */
 async function settle(req: Request, env: Env, kind: string, delta: number) {
 	if (delta) await rpc(req, env, 'ai_settle', { p_kind: kind, p_delta: delta });

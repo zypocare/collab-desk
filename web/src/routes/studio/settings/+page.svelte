@@ -54,6 +54,8 @@
 	import PageLinks from '#lib/components/PageLinks.svelte';
 	import FanList from '#lib/components/FanList.svelte';
 	import { clampHints } from '#lib/clampHints.ts';
+	import PlanBilling from '#lib/components/PlanBilling.svelte';
+	import { loadPlan, plan } from '#lib/plan.svelte.ts';
 
 	const s = $derived(studio.settings!);
 	const link = $derived(s.site_url.replace(/\/$/, ''));
@@ -171,7 +173,7 @@
 
 	// Settings are split into a few sections and only the one she picks is shown.
 	// On phones the menu is its own screen: tap a section, and "All settings" (or Back) returns.
-	type Sec = 'profile' | 'found' | 'links' | 'rates' | 'bookings' | 'offers' | 'autopilot' | 'payments' | 'reviews' | 'alerts' | 'team' | 'blocked' | 'account';
+	type Sec = 'profile' | 'found' | 'links' | 'rates' | 'bookings' | 'offers' | 'autopilot' | 'payments' | 'reviews' | 'alerts' | 'team' | 'plan' | 'blocked' | 'account';
 	const autoOn = $derived([s.autopilot_packages, s.autopilot_counter, s.autopilot_nudge, s.autopilot_brief, s.autopilot_review].filter(Boolean).length);
 	const hasPay = $derived(!!(s.upi_id || s.bank_details));
 	const sections = $derived<{ id: Sec; label: string; icon: string; sub: string; warn?: string }[]>([
@@ -209,6 +211,7 @@
 		{ id: 'reviews', label: 'Results & reviews', icon: 'chart', sub: s.show_results ? 'Shown on your page' : 'Hidden from your page' },
 		{ id: 'alerts', label: 'Inbox, replies & alerts', icon: 'bell', sub: `${(s.saved_replies ?? []).length} saved replies · ${s.digest_enabled ? '9 AM summary on' : '9 AM summary off'}` },
 		{ id: 'team', label: 'Team', icon: 'users', sub: studio.me?.team_role && studio.me.team_role !== 'owner' ? `You are ${studio.me.team_role === 'accountant' ? 'the accountant' : studio.me.team_role === 'assistant' ? 'an assistant' : 'a manager'}` : 'Managers, assistants and an accountant' },
+		{ id: 'plan', label: 'Plan & billing', icon: 'spark', sub: plan.data ? `${plan.data.name ?? 'Free'}${plan.data.period === 'trial' ? ` · trial, ${plan.data.days_left} days left` : ''}` : 'Free, Pro and Agency' },
 		{ id: 'blocked', label: 'Blocked', icon: 'ban', sub: 'Brands that can’t send you requests' },
 		{
 			id: 'account',
@@ -222,6 +225,7 @@
 	let narrow = $state(false);
 	onMount(() => {
 		if (!studio.packages.length) loadPackages();
+		if (!plan.loaded) loadPlan().catch(() => {});
 		const mq = matchMedia('(max-width: 900px)');
 		const on = () => (narrow = mq.matches);
 		on();
@@ -237,7 +241,7 @@
 		{ label: 'Your page', ids: ['profile', 'found', 'links', 'rates', 'reviews'] },
 		{ label: 'Bookings & money', ids: ['bookings', 'offers', 'payments'] },
 		{ label: 'How your desk works', ids: ['autopilot', 'alerts', 'team'] },
-		{ label: 'Account', ids: ['blocked', 'account'] }
+		{ label: 'Account', ids: ['plan', 'blocked', 'account'] }
 	];
 	const byId = (id: Sec) => sections.find((x) => x.id === id)!;
 	const since = $derived(studio.collabs.reduce((m, c) => (c.received_on && c.received_on < m ? c.received_on : m), '9999').slice(0, 4));
@@ -512,6 +516,8 @@
 						<CollabInviteSetting />
 					{:else if active === 'team'}
 						<TeamSettings />
+					{:else if active === 'plan'}
+						<PlanBilling side="creator" />
 					{:else if active === 'account'}
 						<SecuritySettings />
 						<ShippingSettings />
