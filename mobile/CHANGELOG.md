@@ -16,9 +16,13 @@ How to ship one:
 4. Play Console › Production › Create new release › upload the `.aab` › paste the notes › send for review.
 5. Fill in the "Build" and "Sent" lines below.
 
-## 1.0.1 (not yet built)
+## 1.0.2 (planned)
 
 - Voice notes and voice typing work in the app (it now asks for the microphone).
+
+## 1.0.1
+
+- No scrollbar on the side of the screen: pages scroll like a native app.
 
 ## 1.0.0
 

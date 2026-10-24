@@ -4,12 +4,11 @@
 	import { onMount } from 'svelte';
 	import { todayIso } from '../util';
 	import { enablePush, isIos, logAlerts, pushState, pwa } from '../pwa.svelte';
-	import { supabase } from '../supabase';
 	import { toast } from '../ui.svelte';
 	import { errMessage } from '../util';
 	import Icon from './Icon.svelte';
 
-	// On Today, until this phone gets alerts: one tap to turn them on (and a test right away).
+	// On Today, until this phone gets alerts: one tap to turn them on. (A test is only sent from Settings, when asked for.)
 	let status = $state<'unsupported' | 'blocked' | 'on' | 'off' | 'loading'>('loading');
 	let busy = $state(false);
 	let hidden = $state(false);
@@ -32,8 +31,7 @@
 			await enablePush();
 			logAlerts('alerts_on');
 			status = 'on';
-			const { data } = await supabase.functions.invoke('push-test', { body: {} });
-			toast((data as { sent?: number })?.sent ? 'Alerts are on. A test is on its way.' : 'Alerts are on.', 'bell');
+			toast('Alerts are on.', 'bell');
 		} catch (e) {
 			logAlerts('alerts_failed', errMessage(e));
 			toast(errMessage(e), 'alert');
