@@ -7,10 +7,8 @@
 		KIND_ICON,
 		TYPE_LABEL,
 		stageLabel,
-		STAGES,
 		delivText,
 		diff,
-		evLabel,
 		events,
 		firstName,
 		fmt,
@@ -78,8 +76,6 @@
 	const evs = $derived(events(list));
 	const week = $derived(Array.from({ length: 7 }, (_, i) => ({ i, dt: parse(rel(i)), list: evs.filter((e) => e.date === rel(i)) })));
 	const upcoming = $derived(evs.filter((e) => diff(e.date) >= 0 && diff(e.date) <= 6).sort((a, b) => a.date.localeCompare(b.date)).slice(0, 3));
-	const pipe = $derived(STAGES.slice(0, 5).map((st) => ({ st, n: list.filter((c) => c.stage === st.id).length })));
-	const pipeMax = $derived(Math.max(1, ...pipe.map((p) => p.n)));
 
 	// The header drifts and fades a little as the screen scrolls.
 	let sy = $state(0);
@@ -112,14 +108,11 @@
 	const hot = (t: Task) => t.kind === 'pay' || t.kind === 'msg' || t.d < 0 || (t.kind === 'new' && diff(t.c.received_on) <= -1);
 	const ticketMoney = (t: Task) => (t.c.type === 'barter' ? (t.c.product_value ? inrS(t.c.product_value) : 'Barter') : t.c.fee ? inrS(t.c.fee) : 'Quote');
 
-	// This week: the next seven days as capsules, the day she taps opened below (today first).
-	let pick = $state(0);
-	const KIND_WORD: Record<string, string> = { shoot: 'Shoot', draft: 'Draft due', live: 'Goes live', pay: 'Payment due', follow: 'Follow-up', product: 'Product arrives' };
+	// This week in one line (the day by day is on Plan).
 	const weekN = $derived(week.reduce((a, d) => a + d.list.length, 0));
 	const busiest = $derived([...week].sort((a, b) => b.list.length - a.list.length)[0]);
 	const dayName = (d: Date, i: number) => (i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : d.toLocaleDateString('en-IN', { weekday: 'long' }));
 	const NUM = ['No', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten'];
-	const picked = $derived(week[pick]);
 	// Her collab slots, Monday to Sunday, the same weeks and count as her brand page and Settings. The days
 	// above run into next week, so both weeks show: this one (to Sunday) and the next.
 	const cap = $derived(Math.max(1, s.weekly_capacity ?? 3));
@@ -144,7 +137,7 @@
 	const ticker = $derived(
 		[
 			received > 0 && { b: inrS(received), t: ` came in this ${monthName}` },
-			urgent > 0 && { b: String(urgent), t: ` due today` },
+			urgent > 0 && { b: String(urgent), t: ` need${urgent === 1 ? 's' : ''} you today` },
 			list.filter((c) => c.stage === 'request').length > 0 && { b: String(list.filter((c) => c.stage === 'request').length), t: ' new requests waiting' },
 			outs > 0 && { b: inrS(outs), t: ' still to come in' },
 			goal > 0 && { b: `${pctN}%`, t: ` of the ${inrS(goal)} goal` },
@@ -180,7 +173,7 @@
 	<h1 class="ht-hi">{greet},<br /><em>{firstName(s.display_name)}</em></h1>
 	<p class="ht-sum">
 		<span class="ht-dot" class:calm={!urgent}></span>
-		{urgent ? `${urgent} due today` : 'Nothing due today'} · {active.length} active collab{active.length === 1 ? '' : 's'}
+		{urgent ? `${urgent} need${urgent === 1 ? 's' : ''} you today` : 'Nothing needs you today'} · {active.length} active collab{active.length === 1 ? '' : 's'}
 	</p>
 </section>
 
@@ -217,7 +210,7 @@
 		<div class="hc-foot">
 			<a href="/studio/payments"><small>Still to come</small><b use:countUp={{ value: outs, money: true }}>{inr(outs)}</b></a>
 			<a href="/studio/payments"><small>Overdue</small><b class:od={odSum > 0} use:countUp={{ value: odSum, money: true }}>{inr(odSum)}</b></a>
-			<a href="/studio/payments"><small>Next payout</small><b>{nextPayout ? `${nextPayout.brand.name} · ${fmt(nextPayout.pay_due)}` : 'None scheduled'}</b></a>
+			<a href="/studio/payments"><small>Next payout</small><b>{nextPayout ? fmt(nextPayout.pay_due) : 'None'}</b>{#if nextPayout}<span class="hc-who">{nextPayout.brand.name}</span>{/if}</a>
 		</div>
 	</div>
 </section>
@@ -302,53 +295,8 @@
 		{/each}
 		<small>{slotNote}</small>
 	</a>
-	<div class="wk2-days" role="group" aria-label="Pick a day">
-		{#each week as d (d.i)}
-			<button class="wk2-d" class:now={d.i === 0} class:on={d.i === pick} onclick={() => (pick = d.i)} aria-label="{dayName(d.dt, d.i)}, {d.list.length || 'nothing'} {d.list.length === 1 ? 'thing' : 'things'}" aria-pressed={d.i === pick}>
-				<small>{d.i === 0 ? 'Today' : d.dt.toLocaleDateString('en-IN', { weekday: 'short' })}</small>
-				<b>{d.dt.getDate()}</b>
-				<span class="wk2-dots">{#each d.list.slice(0, 3) as e (e.c.id + e.kind)}<i class="k-{e.kind}"></i>{/each}</span>
-			</button>
-		{/each}
-	</div>
-	{#key pick}
-		<div class="wk2-day">
-			<div class="wk2-day-h"><b>{dayName(picked.dt, picked.i)}{picked.i > 1 ? `, ${picked.dt.getDate()} ${picked.dt.toLocaleDateString('en-IN', { month: 'short' })}` : ''}</b><small>{picked.list.length ? `${picked.list.length} thing${picked.list.length === 1 ? '' : 's'}` : 'Free'}</small></div>
-			{#if picked.list.length}
-				<ul class="wk2-tl">
-					{#each picked.list as e (e.c.id + e.kind)}
-						<li class="k-{e.kind}">
-							<a href="/studio/c/{e.c.code}">
-								<span class="wk2-node" aria-hidden="true"></span>
-								<span class="wk2-ev"><em>{KIND_WORD[e.kind] ?? evLabel(e)}{e.kind === 'live' && e.c.live_time ? ` · ${e.c.live_time.slice(0, 5)}` : ''}</em><b>{e.c.brand.name}{delivText(e.c.deliverables) ? ` · ${delivText(e.c.deliverables)}` : ''}</b><small>{e.kind === 'pay' ? `${inr(outstanding(e.c))} to come in` : e.kind === 'draft' ? 'First cut to the brand' : e.kind === 'live' ? 'Post, tag the brand, pin the link' : e.kind === 'shoot' ? 'Charge up, find the light' : e.kind === 'product' ? 'Unbox it on camera' : 'A friendly nudge keeps it moving'}</small></span>
-							</a>
-						</li>
-					{/each}
-				</ul>
-			{:else}
-				<p class="wk2-free">Nothing booked. A free day is where the next big collab starts:</p>
-				<div class="wk2-ideas">
-					<a href="/studio/content"><span class="k-shoot"><Icon name="film" /></span>Plan a reel</a>
-					<a href="/studio/pitches"><span class="k-live"><Icon name="send" /></span>Pitch a brand</a>
-					<a href="/studio/calendar"><span class="k-draft"><Icon name="edit" /></span>Batch captions</a>
-				</div>
-			{/if}
-		</div>
-	{/key}
-	<div class="wk2-key" aria-hidden="true"><span class="k-shoot"><i></i>Shoot</span><span class="k-draft"><i></i>Draft due</span><span class="k-live"><i></i>Goes live</span><span class="k-pay"><i></i>Payment</span></div>
+	<a class="wk2-more" href="/studio/calendar">See the week day by day<Icon name="chevR" /></a>
 </section>
 
-<section class="hs">
-	<header class="hs-h"><h2>Pipeline</h2><a href="/studio/collabs">See all</a></header>
-	<div class="pp">
-		{#each pipe as p, i (p.st.id)}
-			<a class="pp-s st-{p.st.id}" href="/studio/collabs" style="--h:{p.n / pipeMax};--i:{i}">
-				<span class="pp-bar"><i></i></span>
-				<b use:countUp={{ value: p.n }}>{p.n}</b>
-				<small>{p.st.label}</small>
-			</a>
-		{/each}
-	</div>
-</section>
 
 <div class="hs"><BrandQuestions /></div>

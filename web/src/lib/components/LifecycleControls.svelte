@@ -11,7 +11,8 @@
 	let resumeOn = $state<string | null>(null);
 	let busy = $state(false);
 	const held = $derived(c.stage === 'paused' || c.stage === 'cancelled');
-	function open(value: 'paused' | 'cancelled') { reason = ''; resumeOn = null; mode = value; }
+	/** Pause or cancel: opened from the collab's ⋯ menu. */
+	export function open(value: 'paused' | 'cancelled') { reason = ''; resumeOn = null; mode = value; }
 	async function submit(e: SubmitEvent) {
 		e.preventDefault();
 		if (!mode || !reason.trim() || (mode === 'paused' && resumeOn && resumeOn < todayIso())) return;
@@ -32,11 +33,9 @@
 		<span>Production reminders and scheduled posting are suspended. Invoices and payment history are retained.</span>
 	</div>
 {/if}
-{#if studio.me?.team_role !== 'accountant'}
+{#if held && studio.me?.team_role !== 'accountant'}
 	<div class="row" style="margin-top:12px;flex-wrap:wrap">
-		{#if held}<button class="btn sm" disabled={busy} onclick={resume}>{c.stage === 'cancelled' ? 'Reopen collaboration' : 'Resume collaboration'}</button>{/if}
-		{#if !['paused', 'cancelled', 'wrapped', 'declined'].includes(c.stage)}<button class="btn sm" onclick={() => open('paused')}>Pause collaboration</button>{/if}
-		{#if !['cancelled', 'wrapped', 'declined'].includes(c.stage)}<button class="btn sm ghost danger" onclick={() => open('cancelled')}>Cancel collaboration</button>{/if}
+		<button class="btn sm" disabled={busy} onclick={resume}>{c.stage === 'cancelled' ? 'Reopen collaboration' : 'Resume collaboration'}</button>
 	</div>
 {/if}
 

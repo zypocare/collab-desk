@@ -830,6 +830,12 @@ a{color:inherit}
 .warn-box .row{display:flex;gap:8px;margin-top:4px}
 .warn-text{color:var(--warn)!important}
 .q-card{padding:14px 16px;border-radius:16px;background:var(--surface-2);display:flex;flex-direction:column;gap:4px}
+/* "Check the offer": one tappable row above the quote */
+.of-entry{display:flex;align-items:center;gap:12px;margin:0 0 14px;padding:12px 14px;border-radius:14px;background:var(--surface-2);color:var(--ink);text-decoration:none}
+.of-entry>.ic{flex:none;width:18px;height:18px;color:var(--ink-2)}
+.of-entry>span{display:grid;gap:2px;flex:1;min-width:0}
+.of-entry b{font-size:14.5px;font-weight:650}
+.of-entry small{font-size:12.5px;line-height:1.4;color:var(--ink-3)}
 .q-card-h{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
 .q-card-h b{font-family:var(--f-display);font-size:22px;letter-spacing:-.03em}
 .q-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}

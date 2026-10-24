@@ -27,7 +27,7 @@
 
 {#if ig?.connected}
 	<section class="panel glow rv" style="--i:7;margin-top:18px">
-		<div class="panel-h"><h2>Instagram</h2><small>@{ig.username} · updated {ig.last_sync_at ? fmtUpdated(ig.last_sync_at) : ''}</small></div>
+		<div class="panel-h"><h2>Instagram</h2><small>{[ig.username ? `@${ig.username}` : '', ig.last_sync_at ? `updated ${fmtUpdated(ig.last_sync_at)}` : ''].filter(Boolean).join(' · ')}</small></div>
 		<div class="ig-grid">
 			<div class="ig-stat">
 				<span class="lbl">Followers</span>

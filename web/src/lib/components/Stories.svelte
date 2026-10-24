@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { studio } from '../studio.svelte';
 	import { copyText } from '../ui.svelte';
-	import { delivText, stageLabel, tasks, type Task } from '../util';
+	import { delivText, inrS, stageLabel, tasks, type Task } from '../util';
 	import type { Collab } from '../types';
 	import Icon from './Icon.svelte';
 
@@ -9,7 +9,8 @@
 	// need her come first; the rest of the active ones follow.
 	const need = $derived([...new Map(tasks(studio.collabs).map((t) => [t.c.id, t])).values()]);
 	const rest = $derived(studio.collabs.filter((c) => !need.some((t) => t.c.id === c.id) && !['wrapped', 'declined', 'cancelled'].includes(c.stage)));
-	const fee = (c: Collab) => (c.type === 'barter' ? 'Barter' : c.fee > 0 ? `₹${c.fee.toLocaleString('en-IN')}` : 'No fee yet');
+	// Short amounts (₹85k) so the next-step chip beside it fits on a narrow card.
+	const fee = (c: Collab) => (c.type === 'barter' ? 'Barter' : c.fee > 0 ? inrS(c.fee) : 'No fee');
 	const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 	const when = (d: number) => (d < 0 ? 'late' : d === 0 ? 'today' : d === 1 ? 'tmrw' : DAYS[new Date(Date.now() + d * 864e5).getDay()]);
 	const NEXT: Record<Task['kind'], string> = {

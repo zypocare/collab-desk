@@ -23,6 +23,17 @@
 	const d = $derived(dealStats(studio.collabs, fy.from, fy.to, studio.settings?.rates ?? {}));
 	const pct = (x: number | null) => (x === null ? '—' : `${Math.round(x * 100)}%`);
 	const dayText = (x: number | null) => (x === null ? '—' : `${Math.round(x)} day${Math.round(x) === 1 ? '' : 's'}`);
+	// Deal numbers that have something to show yet (a "—" tile reads as broken).
+	const kpis = $derived(
+		[
+			{ v: d.winRate, b: pct(d.winRate), t: `of decided requests won (${d.wonCount} won, ${d.declined} not)` },
+			{ v: d.quoteRate, b: pct(d.quoteRate), t: `of quotes accepted (${d.quotesSent} sent)` },
+			{ v: d.avgDiscount, b: pct(Math.max(0, d.avgDiscount ?? 0)), t: 'average discount from your rate card' },
+			{ v: d.avgClose, b: dayText(d.avgClose), t: 'from request to accepted quote' },
+			{ v: d.avgAnswer, b: dayText(d.avgAnswer), t: 'for brands to answer a quote' },
+			{ v: d.avgFee, b: d.avgFee === null ? '' : inr(d.avgFee), t: 'average fee per paid collab' }
+		].filter((k) => k.v !== null)
+	);
 	// One plain-words tip from the numbers.
 	const tip = $derived.by(() => {
 		if (d.fullPriceRate !== null && d.discountRate !== null && d.fullPriceRate >= d.discountRate - 0.05)
@@ -66,7 +77,7 @@
 	<div>
 		<div class="eb">Money · {fy.label}</div>
 		<h1>Reports</h1>
-		<p>Income, GST and TDS for the financial year (April to March), ready for your accountant.</p>
+		<p>What you earned, who paid most and what wins you deals, for the financial year (April to March). Files for your accountant are at the bottom.</p>
 	</div>
 	<div class="acts">
 		<Segmented
@@ -90,9 +101,12 @@
 	</div>
 	<div class="md-tiles">
 		<div class="md-tile"><small>Invoiced</small><b class="num">{inrS(r.total.taxable)}</b><span>{r.total.invoices} invoice{r.total.invoices === 1 ? '' : 's'}, before GST</span></div>
-		<div class="md-tile"><small>GST charged</small><b class="num">{inrS(r.total.gst)}</b><span>{s.gst_registered ? 'to pay with your GST returns' : 'not registered for GST'}</span></div>
-		<div class="md-tile"><small>TDS deducted</small><b class="num">{inrS(r.total.tds)}</b><span>{certsMissing ? `${certsMissing} Form 16A missing` : 'claim it back in your return'}</span></div>
-		<div class="md-tile"><small>Barter value</small><b class="num">{inrS(r.total.barter)}</b><span>products received</span></div>
+		<div class="md-tile"><small>Average fee</small><b class="num">{d.avgFee === null ? '—' : inrS(d.avgFee)}</b><span>per paid collab</span></div>
+		<div class="md-tile"><small>Deals won</small><b class="num">{d.wonCount}</b><span>{d.winRate === null ? 'requests this year' : `${pct(d.winRate)} win rate`}</span></div>
+		<div class="md-tile"><small>Products</small><b class="num">{inrS(r.total.barter)}</b><span>value of barter received</span></div>
+		<!-- Tax only when there is some: the tax desk and the files below have the detail. -->
+		{#if s.gst_registered && r.total.gst}<div class="md-tile"><small>GST charged</small><b class="num">{inrS(r.total.gst)}</b><span>to pay with your GST returns</span></div>{/if}
+		{#if r.total.tds}<div class="md-tile"><small>TDS deducted</small><b class="num">{inrS(r.total.tds)}</b><span>{certsMissing ? `${certsMissing} Form 16A missing` : 'claim it back in your return'}</span></div>{/if}
 	</div>
 </section>
 
@@ -109,7 +123,7 @@
 	<section class="panel rv" style="--i:6">
 		<div class="panel-h"><h2>Month by month</h2><button class="btn sm" onclick={exportMonthly}><Icon name="arrow" />CSV</button></div>
 			<div class="rp-m">
-				<div class="rp-total"><small>Kept this year</small><b>{inr(r.total.received - r.total.costs)}</b><span>{inr(r.total.received)} received · {inr(r.total.tds)} TDS · {inr(r.total.costs)} costs</span></div>
+				<div class="rp-total"><small>Kept this year</small><b>{inr(r.total.received - r.total.costs)}</b><span>{[`${inr(r.total.received)} received`, r.total.tds ? `${inr(r.total.tds)} TDS` : '', r.total.costs ? `${inr(r.total.costs)} costs` : ''].filter(Boolean).join(' · ')}</span></div>
 				<ol class="tp-rank">
 					{#each liveMonths as m (m.key)}
 						{@const kept = m.received - m.costs}
@@ -128,19 +142,14 @@
 	</section>
 	<section class="md-card rv" style="--i:7">
 		<header class="md-h"><div><span class="bx-eb">Month by month</span><h2>Money received</h2></div><a href="/studio/money">Dashboard<Icon name="arrow" /></a></header>
-		<Columns items={r.months.map((m) => ({ label: m.label.slice(0, 3), values: [m.taxable, m.received], now: m.key === new Date().toISOString().slice(0, 7) }))} names={['Invoiced', 'Received']} colors={['color-mix(in oklab, var(--g1) 30%, transparent)', 'linear-gradient(180deg, var(--g2), var(--g1))']} fmt={inrS} height={240} />
+		<Columns items={r.months.map((m) => ({ label: phone.on ? m.label.slice(0, 1) : m.label.slice(0, 3), values: [m.taxable, m.received], now: m.key === new Date().toISOString().slice(0, 7) }))} names={['Invoiced', 'Received']} colors={['color-mix(in oklab, var(--g1) 30%, transparent)', 'linear-gradient(180deg, var(--g2), var(--g1))']} fmt={inrS} height={240} />
 	</section>
 </div>
 
 <section class="panel rv deals" style="--i:8;margin-bottom:18px">
 	<div class="panel-h"><h2>Your deals</h2><small>requests received in {fy.label}</small></div>
-	<div class="dl-kpis">
-		<div><b>{pct(d.winRate)}</b><small>of decided requests won ({d.wonCount} won, {d.declined} not)</small></div>
-		<div><b>{pct(d.quoteRate)}</b><small>of quotes accepted ({d.quotesSent} sent)</small></div>
-		<div><b>{d.avgDiscount === null ? '—' : pct(Math.max(0, d.avgDiscount))}</b><small>average discount from your rate card</small></div>
-		<div><b>{dayText(d.avgClose)}</b><small>from request to accepted quote</small></div>
-		<div><b>{dayText(d.avgAnswer)}</b><small>for brands to answer a quote</small></div>
-		<div><b>{d.avgFee === null ? '—' : inr(d.avgFee)}</b><small>average fee per paid collab</small></div>
+	<div class="dl-kpis" hidden={!kpis.length}>
+		{#each kpis as k (k.t)}<div><b>{k.b}</b><small>{k.t}</small></div>{/each}
 	</div>
 	{#if tip}<p class="dl-tip"><Icon name="spark" />{tip}</p>{/if}
 	<div class="dl-tables">
@@ -153,7 +162,7 @@
 							<li class:top={i === 0}>
 								<span class="tp-n">{String(i + 1).padStart(2, '0')}</span>
 								<span class="tp-t"><b>{g.key}</b><small>{g.deals} request{g.deals === 1 ? '' : 's'}{g.rate === null ? '' : ` · ${pct(g.rate)} won`}</small><span class="tp-bar"><i style="width:{Math.max(6, Math.round((g.deals / top) * 100))}%"></i></span></span>
-								<b class="tp-v">{g.avgFee ? inr(g.avgFee) : '—'}</b>
+								<b class="tp-v">{g.avgFee ? inr(g.avgFee) : ''}</b>
 							</li>
 						{:else}<li class="rp-none">No requests in this year yet.</li>{/each}
 					</ol>

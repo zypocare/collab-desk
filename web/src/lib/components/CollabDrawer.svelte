@@ -125,6 +125,8 @@
 		moreOpen = !moreOpen;
 	}
 	let reportOpen = $state(false);
+	// Pause and cancel live in the ⋯ menu; a request that isn't on yet only needs Decline.
+	let life = $state<LifecycleControls | undefined>();
 	async function blockBrand() {
 		moreOpen = false;
 		if (!c) return;
@@ -191,6 +193,9 @@
 		tick().then(() => (present = JUMPS.map(([id]) => id).filter((id) => document.getElementById(id)?.offsetParent)));
 	});
 	const c = $derived(byId(ui.openCollab));
+	const canDecline = $derived(!!c && (c.stage === 'request' || c.stage === 'negotiating') && !['paid', 'invoiced', 'advance'].includes(c.pay_status));
+	const canPause = $derived(!!c && studio.me?.team_role !== 'accountant' && !canDecline && !['paused', 'cancelled', 'wrapped', 'declined', 'request', 'negotiating'].includes(c.stage));
+	const canCancel = $derived(!!c && studio.me?.team_role !== 'accountant' && !canDecline && !['cancelled', 'wrapped', 'declined'].includes(c.stage));
 	const scam = $derived(!!c && ['request', 'negotiating'].includes(c.stage) && asksToPay(c.brief, JSON.stringify(c.brief_details ?? {}), c.note_for_brand));
 	// Phones: short stage names so the six labels fit side by side.
 	const SHORT_STAGE: Record<string, string> = { request: 'New', negotiating: 'Talks', confirmed: 'Agreed', creating: 'Creating', live: 'Live', wrapped: 'Done' };
@@ -470,13 +475,13 @@
 						<span>{cl.reason[0].toUpperCase() + cl.reason.slice(1)}. <button class="lnk" onclick={() => (ui.openCollab = cl.other.id)}>Open it</button></span>
 					</div>
 				{/each}
-				{#if (c.stage === 'request' || c.stage === 'negotiating') && !['paid', 'invoiced', 'advance'].includes(c.pay_status)}
+				{#if canDecline}
 					<button class="btn sm ghost danger" style="margin-top:14px" onclick={declineIt}><Icon name="x" />Decline this request</button>
 				{:else if c.stage === 'declined'}
 					<p class="hint" style="margin:0 0 10px">The brand sees this request as "Not going ahead".</p>
 					<button class="btn sm" onclick={() => changeStage('request')}><Icon name="refresh" />Reopen request</button>
 				{/if}
-				<LifecycleControls {c} />
+				<LifecycleControls {c} bind:this={life} />
 			</section>
 
 			{#if isRanked(c)}<DecisionCard {c} />{/if}
@@ -933,6 +938,8 @@
 {#if c && moreOpen}
 	<div class="more-scrim" role="presentation" use:portal onclick={() => (moreOpen = false)}></div>
 	<div class="more-menu" role="menu" use:portal style="top:{moreAt.top}px;right:{moreAt.right}px">
+		{#if canPause}<button role="menuitem" onclick={() => ((moreOpen = false), life?.open('paused'))}><Icon name="clock" />Pause collaboration</button>{/if}
+		{#if canCancel}<button role="menuitem" class="mm-danger" onclick={() => ((moreOpen = false), life?.open('cancelled'))}><Icon name="x" />Cancel collaboration</button>{/if}
 		<button role="menuitem" onclick={() => ((moreOpen = false), (reportOpen = true))}><Icon name="flag" />Report {c.brand.name}</button>
 		<button role="menuitem" onclick={blockBrand}><Icon name="ban" />Block {c.brand.name}</button>
 	</div>

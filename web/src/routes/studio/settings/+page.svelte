@@ -53,6 +53,7 @@
 	import InsightLinks from '#lib/components/InsightLinks.svelte';
 	import PageLinks from '#lib/components/PageLinks.svelte';
 	import FanList from '#lib/components/FanList.svelte';
+	import { clampHints } from '#lib/clampHints.ts';
 
 	const s = $derived(studio.settings!);
 	const link = $derived(s.site_url.replace(/\/$/, ''));
@@ -389,7 +390,7 @@
 				<h2>{current.label}</h2>
 			</div>
 			{#key active}
-				<div class="set-panels">
+				<div class="set-panels" use:clampHints>
 					{#if active === 'profile'}
 						<section class="panel rv" style="--i:1">
 							<div class="panel-h"><h2>Profile</h2><small>shown on your brand page</small></div>

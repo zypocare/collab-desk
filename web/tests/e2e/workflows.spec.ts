@@ -38,6 +38,9 @@ test('individual progress persists through live, pause, resume and cancellation'
 	await page.goto(`/studio/c/${fixture.code}`);
 	await expect(page.getByRole('heading', { name: /Deliverables.*0 of 3 done/ })).toBeVisible();
 	const first = page.getByRole('group', { name: 'Story 1', exact: true });
+	// Each piece is one line; tap it to edit.
+	const openFirst = () => page.locator('.piece summary', { hasText: 'Story 1' }).click();
+	await openFirst();
 	await first.getByLabel('Status', { exact: true }).click();
 	await page.getByRole('option', { name: 'Published', exact: true }).click();
 	await expect(page.getByRole('heading', { name: /Deliverables.*1 of 3 done/ })).toBeVisible();
@@ -46,12 +49,15 @@ test('individual progress persists through live, pause, resume and cancellation'
 	await expect(first.getByLabel('Assigned to')).toBeEnabled();
 	await page.reload();
 	await expect(page.getByRole('heading', { name: /Deliverables.*1 of 3 done/ })).toBeVisible();
+	await expect(page.locator('.piece summary', { hasText: 'Story 1' })).toContainText('Editor');
+	await openFirst();
 	await expect(first.getByLabel('Assigned to')).toHaveValue('Editor');
 	await page.getByRole('button', { name: 'Live', exact: true }).click();
 	const force = page.getByRole('button', { name: 'Move to Live anyway' });
 	if (await force.isVisible()) await force.click();
 	await expect(page.getByRole('heading', { name: /Deliverables.*1 of 3 done/ })).toBeVisible();
-	await page.getByRole('button', { name: 'Pause collaboration', exact: true }).click();
+	await page.getByRole('button', { name: 'More', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Pause collaboration' }).click();
 	let dialog = page.getByRole('dialog', { name: 'Pause collaboration' });
 	await dialog.getByLabel('Reason').fill('Waiting for the next shipment');
 	await dialog.getByRole('button', { name: 'Pause collaboration' }).click();
@@ -59,10 +65,12 @@ test('individual progress persists through live, pause, resume and cancellation'
 	await expect(first.getByLabel('Status', { exact: true })).toBeDisabled();
 	await page.reload();
 	await expect(page.getByRole('button', { name: 'Resume collaboration' })).toBeVisible();
+	await openFirst();
 	await page.getByRole('button', { name: 'Resume collaboration' }).click();
 	await page.getByRole('alertdialog').getByRole('button', { name: 'Resume', exact: true }).click();
 	await expect(first.getByLabel('Status', { exact: true })).toBeEnabled();
-	await page.getByRole('button', { name: 'Cancel collaboration', exact: true }).click();
+	await page.getByRole('button', { name: 'More', exact: true }).click();
+	await page.getByRole('menuitem', { name: 'Cancel collaboration' }).click();
 	dialog = page.getByRole('dialog', { name: 'Cancel collaboration' });
 	await dialog.getByLabel('Reason').fill('Campaign ended');
 	await dialog.getByRole('button', { name: 'Cancel collaboration' }).click();

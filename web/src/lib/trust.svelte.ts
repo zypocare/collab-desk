@@ -53,8 +53,8 @@ export function brandChips(r: PayRecord | undefined, ownGstin: string | null | u
 		chips.push({ text: `Pays in about ${r.avg_days} day${r.avg_days === 1 ? '' : 's'}`, tone });
 	}
 	const valid = g ? gstinValid(g) : false;
-	if (!g) chips.push({ text: 'No GST number', tone: 'warn' });
-	else chips.push(valid ? { text: 'Valid GSTIN', tone: 'ok' } : { text: "GSTIN doesn't check out", tone: 'bad' });
+	// A missing GSTIN is normal for most brands she works with; only a wrong one is worth a chip.
+	if (g && !valid) chips.push({ text: "GSTIN doesn't check out", tone: 'bad' });
 	if (r?.instagram) chips.push({ text: 'Instagram verified', tone: 'info' });
 
 	let line = '';

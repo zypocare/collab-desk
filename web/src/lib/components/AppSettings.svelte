@@ -94,8 +94,10 @@
 		<div class="f"><label for="al-name">Call me</label><input class="inp" id="al-name" maxlength="30" placeholder={`e.g. ${String(studio.settings?.display_name ?? '').trim().split(' ')[0] || 'your first name'}`} value={studio.settings?.alert_name ?? ''} onchange={(e) => saveSettings({ alert_name: (e.currentTarget as HTMLInputElement).value.trim() })} /></div>
 		<div class="f"><label for="al-line">A line under each alert <span class="hint">(optional)</span></label><input class="inp" id="al-line" maxlength="80" placeholder="e.g. Check your collab app" value={studio.settings?.alert_line ?? ''} onchange={(e) => saveSettings({ alert_line: (e.currentTarget as HTMLInputElement).value.trim() })} /></div>
 		<div class="switch-row span2 voice-row">
-			<div><b>Say it out loud in the app</b><small>While the app is open, a chime and "{voiceLine(studio.settings?.alert_name ?? '', 'You might have a new collab.')}" for a new possible collab or request. Phone alerts use your phone's usual sound.</small></div>
-			<button class="btn sm" onclick={() => voiceAlert(voiceLine(studio.settings?.alert_name ?? '', 'You might have a new collab.'), { on: true, force: true })}><Icon name="bell" />Hear it</button>
+			<div>
+				<b>Say it out loud in the app</b><small>While the app is open, a chime and "{voiceLine(studio.settings?.alert_name ?? '', 'You might have a new collab.')}" for a new possible collab or request. Phone alerts use your phone's usual sound.</small>
+				<button class="btn sm voice-try" onclick={() => voiceAlert(voiceLine(studio.settings?.alert_name ?? '', 'You might have a new collab.'), { on: true, force: true })}><Icon name="bell" />Hear it</button>
+			</div>
 			<input type="checkbox" class="tgl" checked={studio.settings?.voice_alerts !== false} aria-label="Say alerts out loud in the app" onchange={(e) => saveSettings({ voice_alerts: (e.currentTarget as HTMLInputElement).checked })} />
 		</div>
 		<p class="hint span2">Alerts then read: <b>{greetName ? `Hey ${greetName}! ` : ''}Sunveda may want a collab</b>{studio.settings?.alert_line ? ` · ${studio.settings.alert_line}` : ''}.</p>

@@ -127,12 +127,19 @@
 			<!-- svelte-ignore a11y_media_has_caption -->
 			<video bind:this={video} src={url} playsinline muted preload="auto" onloadeddata={grab} controls></video>
 		{:else}
-			<span class="rc-empty"><Icon name="film" /></span>
+			<!-- Nothing picked yet: the whole box is the button. -->
+			<label class="rc-empty">
+				<span class="rc-em-ic"><Icon name="film" /></span>
+				<b>Tap to pick your reel</b>
+				<small>From your gallery. It stays on this phone until you schedule it.</small>
+				<span class="rc-tips"><i>Length</i><i>First second</i><i>Covered text</i><i>Best time</i></span>
+				<input type="file" accept="video/*" onchange={pick} hidden />
+			</label>
 		{/if}
-		<label class="btn rc-file"><Icon name="film" />{file ? 'Pick another video' : 'Pick the reel'}<input type="file" accept="video/*" onchange={pick} hidden /></label>
+		{#if file}<label class="btn rc-file"><Icon name="film" />Pick another video<input type="file" accept="video/*" onchange={pick} hidden /></label>{/if}
 		{#if seconds}<small class="hint">{seconds}s long</small>{/if}
 		<label class="f"><span class="rc-eb">Caption (optional)</span><textarea class="inp" rows="3" bind:value={caption} placeholder="What you'd write under it"></textarea></label>
-		<button class="btn primary" onclick={() => check()} disabled={!file || !!busy}>{#if busy === 'check'}<span class="spinner"></span>{:else}<Icon name="spark" />{/if}Check it</button>
+		<button class="btn primary" onclick={() => check()} disabled={!file || !!busy}>{#if busy === 'check'}<span class="spinner"></span>{:else}<Icon name="spark" />{/if}{file ? 'Check it' : 'Pick a reel to check'}</button>
 	</section>
 
 	{#if res}
@@ -187,12 +194,61 @@
 	}
 	.rc-empty {
 		display: grid;
-		place-items: center;
+		place-content: center;
+		justify-items: center;
+		gap: 8px;
+		padding: 24px;
+		text-align: center;
 		color: var(--ink-3);
+		background:
+			radial-gradient(90% 60% at 50% 0%, color-mix(in oklab, var(--g2) 16%, transparent), transparent 70%),
+			var(--surface-2, var(--surface));
+		border: 1.5px dashed var(--line-strong);
+		cursor: pointer;
 	}
-	.rc-empty :global(.ic) {
-		width: 40px;
-		height: 40px;
+	.rc-empty b {
+		font: 400 24px/1.15 var(--f-serif, Georgia, serif);
+		color: var(--ink);
+	}
+	.rc-empty small {
+		max-width: 26ch;
+		font-size: 13px;
+		line-height: 1.45;
+	}
+	.rc-em-ic {
+		display: grid;
+		place-items: center;
+		width: 64px;
+		height: 64px;
+		margin-bottom: 4px;
+		border-radius: 50%;
+		background: linear-gradient(135deg, var(--g1), var(--g2));
+		color: #fff;
+	}
+	.rc-em-ic :global(.ic) {
+		width: 28px;
+		height: 28px;
+	}
+	.rc-tips {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: center;
+		gap: 6px;
+		margin-top: 8px;
+	}
+	.rc-tips i {
+		padding: 4px 10px;
+		border-radius: 999px;
+		border: 1px solid var(--line-strong);
+		font: 600 11.5px var(--f-body, inherit);
+		font-style: normal;
+		color: var(--ink-2);
+	}
+	@media (max-width: 760px) {
+		.rc-empty {
+			aspect-ratio: auto;
+			min-height: 340px;
+		}
 	}
 	.rc-file {
 		justify-content: center;

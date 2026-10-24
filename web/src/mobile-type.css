@@ -154,6 +154,8 @@
   [data-side="studio"] .tag{font-size:15px}
   [data-side="studio"] .declined-toggle{font-size:15px}
   [data-side="studio"] .warn-box{font-size:15px}
+  [data-side="studio"] .of-entry b{font-size:13.5px;font-weight:600}
+  [data-side="studio"] .of-entry small{font-size:13.5px}
   [data-side="studio"] .q-card-h b{font-size:18px;letter-spacing:normal}
   [data-side="studio"] .old-list li{font-size:15px}
   [data-side="studio"] .draft-link{font-size:15px}

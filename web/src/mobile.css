@@ -1283,6 +1283,7 @@
 /* Voice alert setting */
 .voice-row{padding:12px 0 0;border-top:1px solid var(--line)}
 .voice-row .btn{flex:none}
+.voice-row .voice-try{margin-top:10px}
 
 /* Chat: the AI buttons side by side */
 .th-ai-btns{display:flex;flex-wrap:wrap;gap:8px}
