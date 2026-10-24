@@ -1,6 +1,10 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { KIND_LABEL, actOn, autopilots, loadAutopilots, saveAutopilots, type AutopilotItem, type AutopilotKind, type Mode } from '#lib/autopilots.svelte.ts';
+	import { KIND_LABEL, actOn, autopilots, checkCompetitors, loadAutopilots, saveAutopilots, type AutopilotItem, type AutopilotKind, type Competitor, type Mode } from '#lib/autopilots.svelte.ts';
+	import { campaigns, loadCampaigns } from '#lib/campaigns.svelte.ts';
+	import { healthChips } from '#lib/health.ts';
+	import { compact } from '#lib/util.ts';
+	import Avatar from '#lib/components/Avatar.svelte';
 	import { addressFor } from '#lib/creatorHost.ts';
 	import { pageSlug } from '#lib/supabase.ts';
 	import { toast } from '#lib/ui.svelte.ts';
@@ -10,7 +14,51 @@
 	// Autopilots: five agents, each Off / Ask me / Auto, and what they prepared, waiting for an OK.
 	onMount(() => {
 		loadAutopilots().catch((e) => toast(errMessage(e), 'alert'));
+		loadCampaigns().catch(() => {});
 	});
+
+	// Competitor watch: up to five competitors, the campaign new creators are invited to, and Check now.
+	let rivals = $state<Competitor[]>([]);
+	let rivalsFor = '';
+	$effect(() => {
+		const key = JSON.stringify(st?.watch_brands ?? []);
+		if (st && key !== rivalsFor) {
+			rivalsFor = key;
+			rivals = (st.watch_brands ?? []).map((b) => ({ ...b }));
+		}
+	});
+	async function saveRivals() {
+		const clean = rivals.map((r) => ({ name: r.name.trim(), handle: r.handle.trim().replace(/^@+/, '') })).filter((r) => r.name || r.handle);
+		rivalsFor = JSON.stringify(clean);
+		await saveField({ watch_brands: clean });
+	}
+	async function setWatch(m: Mode) {
+		if (m !== 'off' && !rivals.some((r) => r.name.trim() || r.handle.trim())) {
+			toast('Add a competitor first.', 'alert');
+			return;
+		}
+		if (m === 'auto' && !st?.watch_campaign) {
+			toast('Pick the campaign to invite creators to first.', 'alert');
+			return;
+		}
+		await saveField({ watch: m });
+		toast(`Competitor watch: ${m === 'off' ? 'off' : m === 'ask' ? 'asks you first' : 'on Auto'}`, 'check');
+	}
+	let checking = $state(false);
+	async function checkNow() {
+		checking = true;
+		try {
+			const r = await checkCompetitors();
+			toast(r.creators ? `Found ${r.creators} creator${r.creators === 1 ? '' : 's'} with your competitors${r.invites ? `, ${r.invites} invite${r.invites === 1 ? '' : 's'} ready` : ''}` : 'No creators found yet. We’ll look again every Monday.', 'check');
+			document.getElementById('inbox')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+		} catch (e) {
+			toast(errMessage(e), 'alert');
+		} finally {
+			checking = false;
+		}
+	}
+	const ig = (h: string) => `https://www.instagram.com/${encodeURIComponent(h)}/`;
+	const when = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : '');
 	const st = $derived(autopilots.settings);
 	const pending = $derived(autopilots.items.filter((i) => i.status === 'pending'));
 	const lately = $derived(autopilots.items.filter((i) => i.status !== 'pending').slice(0, 8));
@@ -62,13 +110,15 @@
 			busy = '';
 		}
 	}
-	const sub = (i: AutopilotItem) => [i.campaign, i.creator?.name].filter(Boolean).join(' · ');
+	const sub = (i: AutopilotItem) => [i.campaign, i.creator?.name ?? i.payload.creator?.name].filter(Boolean).join(' · ');
 	const editable = (i: AutopilotItem) => i.kind === 'followup' || (i.kind === 'draft' && i.payload.action === 'changes') || (i.kind === 'negotiate' && i.payload.action === 'counter');
 	const primary = (i: AutopilotItem) =>
 		i.kind === 'followup' ? 'Send'
 		: i.kind === 'draft' ? (i.payload.action === 'changes' ? 'Ask for these changes' : 'Approve')
 		: i.kind === 'negotiate' ? (i.payload.action === 'accept' ? 'Accept' : i.payload.action === 'counter' ? 'Send' : '')
 		: i.kind === 'rebook' ? 'Book again'
+		: i.kind === 'invite' ? 'Invite'
+		: i.kind === 'watch' ? 'Got it'
 		: '';
 	const statusText = (i: AutopilotItem) => (i.status === 'auto' ? 'Done on Auto' : i.status === 'done' ? 'You approved' : 'Skipped');
 </script>
@@ -112,6 +162,38 @@
 			{/each}
 		</div>
 
+		<section class="ap-c cw rv" aria-label="Competitor watch">
+			<div class="ap-top">
+				<h2>Competitor watch</h2>
+				<div class="ap-seg" role="radiogroup" aria-label="Competitor watch mode">
+					{#each MODES as m (m.v)}<button role="radio" aria-checked={st.watch === m.v} class:on={st.watch === m.v} class:auto={m.v === 'auto'} onclick={() => setWatch(m.v)}>{m.label}</button>{/each}
+				</div>
+			</div>
+			<p>Every Monday, finds the creators your competitors work with: paid posts by creators on Miracle that tag or name them, and what a Google search turns up, with links. New creators who haven't worked with you are invited to your campaign.</p>
+			<div class="cw-rivals">
+				{#each rivals as r, n (n)}
+					<div class="cw-rival">
+						<input placeholder="Brand name, e.g. Mamaearth" maxlength="80" bind:value={r.name} onchange={saveRivals} aria-label="Competitor {n + 1} name" />
+						<input placeholder="@instagram" maxlength="31" bind:value={r.handle} onchange={saveRivals} aria-label="Competitor {n + 1} Instagram" />
+						<button class="icon-btn" onclick={() => ((rivals = rivals.filter((_, k) => k !== n)), saveRivals())} aria-label="Remove competitor {n + 1}"><Icon name="x" /></button>
+					</div>
+				{/each}
+				{#if rivals.length < 5}<button class="btn sm ghost" onclick={() => (rivals = [...rivals, { name: '', handle: '' }])}><Icon name="plus" />Add a competitor</button>{/if}
+			</div>
+			<label class="ap-rule">Invite new creators to
+				<select class="cw-sel" value={st.watch_campaign ?? ''} onchange={(e) => saveField({ watch_campaign: (e.currentTarget as HTMLSelectElement).value || null })}>
+					<option value="">No campaign: just tell me</option>
+					{#each campaigns.list as c (c.id)}<option value={c.id}>{c.name}</option>{/each}
+				</select>
+				· up to <input type="number" min="1" max="20" value={st.watch_max} onchange={(e) => saveField({ watch_max: Number((e.currentTarget as HTMLInputElement).value) })} /> a week
+			</label>
+			{#if st.watch !== 'off'}<small class="ap-mode">{st.watch === 'auto' ? 'Auto invites new creators to the campaign and tells you. Creators not on Miracle are added to it by Instagram handle, with an invite you can copy and send them.' : 'Each invite waits for your OK.'}</small>{/if}
+			<div class="cw-foot">
+				<small>{st.watch_checked_at ? `Last checked ${when(st.watch_checked_at)}` : 'Not checked yet'}{st.lately.watch ? ` · ${st.lately.watch.title}` : ''}</small>
+				<button class="btn sm" onclick={checkNow} disabled={checking || st.watch === 'off' || !rivals.some((r) => r.name.trim() || r.handle.trim())}>{#if checking}<span class="spinner"></span>Checking…{:else}<Icon name="search" />Check now{/if}</button>
+			</div>
+		</section>
+
 		<section class="ap-inbox" id="inbox" aria-label="Waiting for your OK">
 			<header class="hs-h"><h2>Waiting for your OK</h2>{#if pending.length}<span class="hs-n">{pending.length}</span>{/if}</header>
 			<p class="ap-isub">What your autopilots prepared. Nothing goes out until you approve it.</p>
@@ -127,6 +209,50 @@
 					{/if}
 					{#if i.kind === 'shortlist' && i.payload.creators}
 						<p class="ap-body">{i.payload.creators.slice(0, 4).map((c) => firstName(c.name)).join(', ')}{i.payload.creators.length > 4 ? ` and ${i.payload.creators.length - 4} more` : ''}</p>
+					{/if}
+					{#if i.kind === 'watch' && i.payload.competitors}
+						<div class="cw-brief">
+							{#each i.payload.competitors as c (c.name)}
+								<div class="cw-sec">
+									<div class="cw-h"><b>{c.name}</b>{#if c.handle}<a href={ig(c.handle)} target="_blank" rel="noopener">@{c.handle}</a>{/if}<small>{c.miracle.length + c.web.length} creator{c.miracle.length + c.web.length === 1 ? '' : 's'}</small></div>
+									{#if !c.miracle.length && !c.web.length}<p class="cw-none">No creators spotted with {c.name} yet.</p>{/if}
+									{#each c.miracle as m (m.creator_id)}
+										<div class="cw-row">
+											<Avatar name={m.creator.name} src={m.creator.photo ?? ''} size="40px" />
+											<div class="cw-who">
+												<b>{m.creator.name}{#if m.new}<em class="cw-new">New</em>{/if}{#if m.known}<em class="cw-known">Worked with you</em>{/if}</b>
+												<small>{[m.creator.niche?.split(',')[0]?.trim(), m.creator.city, m.creator.followers != null ? `${compact(m.creator.followers)} followers` : ''].filter(Boolean).join(' · ')}</small>
+												<span class="cw-chips">{#each healthChips(m.creator.health as never) as ch (ch.text)}<i class="cp-chip {ch.tone}">{ch.text}</i>{/each}<i class="cp-chip info">On Miracle</i></span>
+												<span class="cw-posts">{#each m.posts.slice(0, 3) as p (p.link)}<a href={p.link} target="_blank" rel="noopener">{p.source === 'web' ? 'Source' : `Post ${when(p.posted_at)}`}{p.views ? ` · ${compact(p.views)} views` : ''}</a>{/each}</span>
+											</div>
+											<a class="btn sm" href="/brand/creator/{m.creator_id}">Profile</a>
+										</div>
+									{/each}
+									{#each c.web as w (w.handle)}
+										<div class="cw-row">
+											<span class="cw-av">@</span>
+											<div class="cw-who">
+												<b>{w.name || `@${w.handle}`}{#if w.new}<em class="cw-new">New</em>{/if}</b>
+												<small>@{w.handle}{w.note ? ` · ${w.note}` : ''}</small>
+												<span class="cw-posts"><a href={w.link} target="_blank" rel="noopener">Where we saw it</a><span>Not on Miracle yet</span></span>
+											</div>
+											<a class="btn sm" href={ig(w.handle)} target="_blank" rel="noopener">Instagram</a>
+										</div>
+									{/each}
+								</div>
+							{/each}
+							{#if !i.payload.campaign}<p class="cw-tip">Pick a campaign in Competitor watch, and the new creators are invited to it (after your OK, or on Auto).</p>{/if}
+						</div>
+					{/if}
+					{#if i.kind === 'invite'}
+						<div class="cw-row cw-inv">
+							{#if i.payload.creator}<Avatar name={i.payload.creator.name} src={i.payload.creator.photo ?? ''} size="40px" />{:else}<span class="cw-av">@</span>{/if}
+							<div class="cw-who">
+								<b>{i.payload.creator?.name ?? `@${i.payload.handle}`}</b>
+								<small>{i.payload.on_miracle ? [i.payload.creator?.niche?.split(',')[0]?.trim(), i.payload.creator?.city, i.payload.creator?.followers != null ? `${compact(i.payload.creator.followers)} followers` : ''].filter(Boolean).join(' · ') : `@${i.payload.handle} · not on Miracle yet: added to the campaign, where you can copy an invite to send them`}</small>
+								{#if i.payload.link}<span class="cw-posts"><a href={i.payload.link} target="_blank" rel="noopener">What they made for {i.payload.competitor}</a></span>{/if}
+							</div>
+						</div>
 					{/if}
 					{#if editable(i)}
 						<label class="ap-msg"><span>Message</span><textarea rows="2" value={edits[i.id] ?? i.body} oninput={(e) => (edits[i.id] = (e.currentTarget as HTMLTextAreaElement).value)}></textarea></label>
@@ -252,6 +378,173 @@
 	}
 	.ap-late.ok {
 		color: var(--ok);
+	}
+	.cw {
+		gap: 12px;
+	}
+	.cw-rivals {
+		display: grid;
+		gap: 8px;
+		justify-items: start;
+	}
+	.cw-rival {
+		display: grid;
+		grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) auto;
+		gap: 8px;
+		width: 100%;
+		max-width: 560px;
+	}
+	.cw-rival input,
+	.cw-sel {
+		height: 38px;
+		padding: 0 10px;
+		border: 0;
+		border-radius: 0;
+		background: color-mix(in oklab, var(--ink) 5%, var(--bg));
+		box-shadow: inset 0 0 0 1px var(--line-strong);
+		color: var(--ink);
+		font: 500 14px/1 var(--f-body);
+		min-width: 0;
+	}
+	.cw-sel {
+		max-width: 260px;
+	}
+	.cw-foot {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		justify-content: space-between;
+		gap: 10px;
+		padding-top: 10px;
+		border-top: 1px dashed var(--line-strong);
+	}
+	.cw-foot small {
+		font-size: 12.5px;
+		color: var(--ink-3);
+	}
+	.cw-brief {
+		display: grid;
+		gap: 14px;
+	}
+	.cw-sec {
+		display: grid;
+		gap: 8px;
+	}
+	.cw-h {
+		display: flex;
+		align-items: baseline;
+		gap: 8px;
+		flex-wrap: wrap;
+	}
+	.cw-h b {
+		font-family: var(--f-serif);
+		font-weight: 400;
+		font-size: 20px;
+	}
+	.cw-h a,
+	.cw-h small {
+		font-size: 12.5px;
+		color: var(--ink-3);
+	}
+	.cw-row {
+		display: grid;
+		grid-template-columns: auto minmax(0, 1fr) auto;
+		gap: 12px;
+		align-items: center;
+		padding: 10px 12px;
+		border-radius: 14px;
+		background: color-mix(in oklab, var(--ink) 3%, var(--surface));
+		box-shadow: inset 0 0 0 1px var(--line);
+	}
+	.cw-inv {
+		grid-template-columns: auto minmax(0, 1fr);
+	}
+	.cw-av {
+		display: grid;
+		place-items: center;
+		width: 40px;
+		height: 40px;
+		border-radius: 50%;
+		background: var(--surface-2);
+		color: var(--ink-3);
+		font-weight: 700;
+	}
+	.cw-who {
+		display: grid;
+		gap: 3px;
+		min-width: 0;
+	}
+	.cw-who b {
+		display: flex;
+		align-items: center;
+		gap: 6px;
+		flex-wrap: wrap;
+		font-size: 14.5px;
+	}
+	.cw-who small {
+		font-size: 12.5px;
+		color: var(--ink-3);
+		overflow-wrap: anywhere;
+	}
+	.cw-new,
+	.cw-known {
+		padding: 2px 7px;
+		border-radius: 99px;
+		background: var(--g2);
+		color: #fff;
+		font-size: 10px;
+		font-style: normal;
+		font-weight: 700;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+	}
+	.cw-known {
+		background: var(--surface-2);
+		color: var(--ink-2);
+	}
+	.cw-chips {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 4px;
+	}
+	.cw-chips i {
+		padding: 2px 8px;
+		border-radius: 99px;
+		background: var(--surface-2);
+		color: var(--ink-2);
+		font-size: 11px;
+		font-style: normal;
+		font-weight: 600;
+	}
+	.cw-chips i.ok {
+		background: color-mix(in oklab, var(--ok) 16%, transparent);
+		color: var(--ok);
+	}
+	.cw-chips i.warn {
+		background: color-mix(in oklab, var(--warn) 18%, transparent);
+		color: var(--warn);
+	}
+	.cw-chips i.bad {
+		background: color-mix(in oklab, var(--bad) 16%, transparent);
+		color: var(--bad);
+	}
+	.cw-posts {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 4px 12px;
+		font-size: 12.5px;
+	}
+	.cw-posts a {
+		color: var(--ink-2);
+	}
+	.cw-posts span {
+		color: var(--ink-3);
+	}
+	.cw-none,
+	.cw-tip {
+		margin: 0;
+		font-size: 13px;
+		color: var(--ink-3);
 	}
 	.ap-inbox {
 		display: grid;

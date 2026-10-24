@@ -448,6 +448,10 @@ verify_jwt = false
 [functions.pitch-finder]
 verify_jwt = false
 
+# Competitor watch for brands: Monday's job (cron secret) and a brand's "Check now" (their sign-in).
+[functions.competitor-watch]
+verify_jwt = false
+
 # The growth check-up: the daily job (cron secret) and the creator's "Run it again" (her sign-in).
 [functions.growth-checkup]
 verify_jwt = false

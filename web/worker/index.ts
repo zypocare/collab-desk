@@ -47,21 +47,21 @@ export default {
 		try {
 			const kind = url.pathname.slice('/api/ai/'.length);
 			if (kind === 'status') return json(await status(req, env));
-			if (!['dm', 'reply', 'caption', 'pitch', 'classify', 'fit', 'summary', 'negotiate', 'script', 'nudge', 'ask', 'voice', 'embed', 'cheer', 'scout', 'reelcheck', 'growplan', 'checkup', 'offercheck', 'precheck', 'getfound', 'brandask', 'brandbrief', 'safety', 'helpask'].includes(kind)) return json({ error: 'Unknown.' }, 404);
+			if (!['dm', 'reply', 'caption', 'pitch', 'classify', 'fit', 'summary', 'negotiate', 'script', 'nudge', 'ask', 'voice', 'embed', 'cheer', 'scout', 'reelcheck', 'growplan', 'checkup', 'offercheck', 'precheck', 'getfound', 'brandask', 'brandbrief', 'safety', 'helpask', 'compwatch'].includes(kind)) return json({ error: 'Unknown.' }, 404);
 			const body = (await req.json()) as Record<string, unknown>;
 			const job = (x: Run) =>
-				kind === 'cheer' ? cheer(x, body) : kind === 'scout' ? scout(x, body) : kind === 'dm' ? readDm(x, body) : kind === 'reply' ? replies(x, body) : kind === 'pitch' ? pitch(x, body) : kind === 'classify' ? classify(x, body) : kind === 'fit' ? fit(x, body) : kind === 'summary' ? summary(x, body) : kind === 'negotiate' ? creatorOf(req, env).then((me) => negotiate(x, body, me)) : kind === 'script' ? script(x, body) : kind === 'nudge' ? nudge(x, body) : kind === 'ask' ? creatorOf(req, env).then((me) => ask(x, body, me)) : kind === 'voice' ? voice(x, body) : kind === 'embed' ? embed(x, body) : kind === 'reelcheck' ? reelCheck(x, body) : kind === 'growplan' ? growPlan(x, body) : kind === 'checkup' ? checkup(x, body) : kind === 'safety' ? safety(x, body) : kind === 'helpask' ? helpAsk(x, body) : kind === 'offercheck' ? offerCheck(x, body) : kind === 'precheck' ? preCheck(x, body) : kind === 'getfound' ? getFound(x, body) : kind === 'brandask' ? brandAsk(x, body) : kind === 'brandbrief' ? brandBrief(x, body) : creatorOf(req, env).then((me) => caption(x, body, me));
+				kind === 'cheer' ? cheer(x, body) : kind === 'scout' ? scout(x, body) : kind === 'dm' ? readDm(x, body) : kind === 'reply' ? replies(x, body) : kind === 'pitch' ? pitch(x, body) : kind === 'classify' ? classify(x, body) : kind === 'fit' ? fit(x, body) : kind === 'summary' ? summary(x, body) : kind === 'negotiate' ? creatorOf(req, env).then((me) => negotiate(x, body, me)) : kind === 'script' ? script(x, body) : kind === 'nudge' ? nudge(x, body) : kind === 'ask' ? creatorOf(req, env).then((me) => ask(x, body, me)) : kind === 'voice' ? voice(x, body) : kind === 'embed' ? embed(x, body) : kind === 'reelcheck' ? reelCheck(x, body) : kind === 'growplan' ? growPlan(x, body) : kind === 'checkup' ? checkup(x, body) : kind === 'safety' ? safety(x, body) : kind === 'helpask' ? helpAsk(x, body) : kind === 'compwatch' ? compWatch(x, body) : kind === 'offercheck' ? offerCheck(x, body) : kind === 'precheck' ? preCheck(x, body) : kind === 'getfound' ? getFound(x, body) : kind === 'brandask' ? brandAsk(x, body) : kind === 'brandbrief' ? brandBrief(x, body) : creatorOf(req, env).then((me) => caption(x, body, me));
 
 			// Checking an incoming Instagram DM comes from the DM webhook with a single-use pass, and the
 			// hourly fun nudge from its job the same way. DMs stay on Cloudflare (never sent to Google);
 			// the fun nudges are written by Gemini first (wittier), Cloudflare if Gemini can't.
 			// The daily pitch finder comes the same way for finding brands (Gemini with Google Search) and
 			// writing their pitches (Gemini first).
-			if (kind === 'classify' || kind === 'cheer' || kind === 'scout' || ((kind === 'pitch' || kind === 'checkup' || kind === 'safety') && req.headers.get('x-ai-ticket'))) {
+			if (kind === 'classify' || kind === 'cheer' || kind === 'scout' || kind === 'compwatch' || ((kind === 'pitch' || kind === 'checkup' || kind === 'safety') && req.headers.get('x-ai-ticket'))) {
 				const allowed = await takeTicket(req, env, kind);
 				if (allowed !== true) return json({ error: allowed }, 403);
 				let why = env.GEMINI_API_KEY ? '' : 'no Gemini key';
-				if ((kind === 'cheer' || kind === 'scout') && env.GEMINI_API_KEY) {
+				if ((kind === 'cheer' || kind === 'scout' || kind === 'compwatch') && env.GEMINI_API_KEY) {
 					try {
 						return json({ ...(await job({ env, gemini: true, neurons: 0 })), by: 'gemini' });
 					} catch (e) {
@@ -779,6 +779,49 @@ Rules: never invent menus, features, prices or promises that aren't in the artic
 	const slugs = new Set(found.map((a) => a.slug));
 	const sources = (Array.isArray(j.sources) ? j.sources.map(String) : []).filter((s) => slugs.has(s)).slice(0, 3);
 	return { answer: String(j.answer ?? '').trim().slice(0, 1200), sources: sources.length ? sources : [found[0].slug], confident: j.confident === true && !!String(j.answer ?? '').trim() };
+}
+
+// Competitor watch (a brand's weekly job, single-use pass): which Instagram creators each competitor worked
+// with lately, from a Google search only. Without search there's no answer: a model's memory would invent
+// creators. Every creator needs a source link the search returned.
+async function compWatch(x: Run, b: Record<string, unknown>) {
+	const brands = (Array.isArray(b.brands) ? b.brands : []).slice(0, 5) as { name?: string; handle?: string }[];
+	if (!x.gemini || !brands.length) return { competitors: [], why: x.gemini ? 'no competitors' : 'needs search' };
+	const out: { competitor: string; creators: { handle: string; name: string; url: string; note: string }[] }[] = [];
+	for (const br of brands) {
+		const name = String(br.name ?? '').trim().slice(0, 80);
+		const handle = String(br.handle ?? '').replace(/^@+/, '').trim().slice(0, 30);
+		if (!name && !handle) continue;
+		const who = [name, handle ? `@${handle}` : ''].filter(Boolean).join(' / ');
+		let reply = '';
+		try {
+			reply = await gemini(
+				x.env,
+				`You research influencer marketing in India. Use Google Search. Find Instagram creators (influencers) who posted a paid partnership, collab, ambassador or gifted post with the brand ${who} in the last 6 months. Only creators you found in search results, each with the https link of the page that shows it (the Instagram post, the creator's profile, or an article naming them). Never invent a creator, a handle or a link. Up to 10.
+Return ONLY a JSON array: [{"handle": "instagram handle without @", "name": "creator's name", "url": "https://...", "note": "under 12 words: what they made, e.g. 'Reel for the monsoon skincare range, Sep 2026'"}]. If you find none, return [].`,
+				`Brand: ${who}${b.category ? `\nCategory: ${String(b.category).slice(0, 40)}` : ''}`,
+				2000,
+				0.2,
+				true
+			);
+		} catch {
+			continue;
+		}
+		const a = reply.indexOf('['), z = reply.lastIndexOf(']');
+		let list: Record<string, unknown>[] = [];
+		try {
+			list = a >= 0 && z > a ? (JSON.parse(reply.slice(a, z + 1)) as Record<string, unknown>[]) : [];
+		} catch {
+			list = [];
+		}
+		const own = handle.toLowerCase();
+		const creators = list
+			.map((r) => ({ handle: String(r.handle ?? '').replace(/^@+/, '').trim().toLowerCase().slice(0, 30), name: String(r.name ?? '').trim().slice(0, 120), url: String(r.url ?? '').trim().slice(0, 500), note: String(r.note ?? '').trim().slice(0, 200) }))
+			.filter((r) => /^[a-z0-9._]{2,30}$/.test(r.handle) && r.handle !== own && /^https:\/\/[^\s]+$/.test(r.url))
+			.slice(0, 10);
+		out.push({ competitor: name || `@${handle}`, creators });
+	}
+	return { competitors: out };
 }
 
 // Brand safety: reads a creator's recent captions (from the nightly Instagram sync, with a single-use

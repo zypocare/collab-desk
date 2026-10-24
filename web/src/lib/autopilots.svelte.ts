@@ -5,7 +5,15 @@ import type { BrandCreator } from './types';
 import { errMessage } from './util';
 
 export type Mode = 'off' | 'ask' | 'auto';
-export type AutopilotKind = 'shortlist' | 'followup' | 'draft' | 'negotiate' | 'rebook';
+export type AutopilotKind = 'shortlist' | 'followup' | 'draft' | 'negotiate' | 'rebook' | 'watch' | 'invite';
+export type Competitor = { name: string; handle: string };
+/** One competitor in the weekly brief: creators on Miracle seen with it, and ones the web search found. */
+export type WatchSection = {
+	name: string;
+	handle: string;
+	miracle: { creator: BrandCreator & { health?: unknown }; creator_id: number; posts: { link: string; posted_at: string | null; views: number | null; source: 'miracle' | 'web' }[]; new: boolean; known: boolean }[];
+	web: { handle: string; name: string; link: string; note: string; new: boolean }[];
+};
 export type Autopilots = {
 	shortlist: Mode;
 	shortlist_max: number;
@@ -16,6 +24,11 @@ export type Autopilots = {
 	negotiate_over: number;
 	signer: string;
 	rebook: Mode;
+	watch: Mode;
+	watch_brands: Competitor[];
+	watch_campaign: string | null;
+	watch_max: number;
+	watch_checked_at: string | null;
 	waiting: number;
 	lately: Partial<Record<AutopilotKind, { title: string; status: string; at: string }>>;
 };
@@ -34,6 +47,15 @@ export type AutopilotItem = {
 		budget?: number;
 		code?: string;
 		slug?: string;
+		competitors?: WatchSection[];
+		new?: number;
+		campaign?: { id: string; name: string } | null;
+		creator_id?: number | null;
+		handle?: string;
+		competitor?: string;
+		link?: string;
+		on_miracle?: boolean;
+		creator?: BrandCreator | null;
 	};
 	note: string;
 	created_at: string;
@@ -79,4 +101,15 @@ export const shortlistFor = (campaign: string | null, brief: unknown | null, lim
 
 export const draftCheck = (draft: string) => call<{ caption: string; checks: DraftCheck[]; missing: number; message: string } | null>('draft_check', { p_draft: draft });
 
-export const KIND_LABEL: Record<AutopilotKind, string> = { shortlist: 'Shortlist', followup: 'Follow-up', draft: 'Draft checker', negotiate: 'Negotiator', rebook: 'Rebook' };
+export const KIND_LABEL: Record<AutopilotKind, string> = { shortlist: 'Shortlist', followup: 'Follow-up', draft: 'Draft checker', negotiate: 'Negotiator', rebook: 'Rebook', watch: 'Competitor watch', invite: 'Invite' };
+
+/** Competitor watch now (at most once an hour): the web search, creators on Miracle, the brief and the invites. */
+export async function checkCompetitors() {
+	const { data, error } = await supabase.functions.invoke('competitor-watch', { body: {} });
+	if (error) {
+		const body = await (error as { context?: Response }).context?.json?.().catch(() => null);
+		throw new Error((body as { error?: string } | null)?.error ?? errMessage(error));
+	}
+	await loadAutopilots(false);
+	return data as { creators?: number; new?: number; invites?: number; web?: number };
+}
