@@ -6,6 +6,7 @@
 	import Icon from '../Icon.svelte';
 	import RecordHead from './RecordHead.svelte';
 	import Notes from './Notes.svelte';
+	import PlanBlock from './PlanBlock.svelte';
 
 	let { id }: { id: string } = $props();
 
@@ -157,6 +158,7 @@
 					<div><dt>Blocked by</dt><dd>{num(b.blocked_by)} creator{b.blocked_by === 1 ? '' : 's'}</dd></div>
 				</dl>
 			</section>
+			<PlanBlock kind="agency" subject={b.id} />
 			{#if tab !== 'notes'}
 				<section class="card">
 					<div class="card-h"><h2 class="card-t">Latest note</h2><button class="lnk" onclick={() => (tab = 'notes')}>{b.notes.length ? 'All notes' : 'Add one'}</button></div>

@@ -7,6 +7,7 @@
 	import RecordHead from './RecordHead.svelte';
 	import Notes from './Notes.svelte';
 	import Timeline from './Timeline.svelte';
+	import PlanBlock from './PlanBlock.svelte';
 
 	let { id, onchange }: { id: string; onchange?: () => void } = $props();
 
@@ -257,6 +258,7 @@
 					{#if c.instagram}<div><dt>Instagram</dt><dd>{c.instagram.connected ? 'Connected' : 'Disconnected'}{#if c.instagram.synced} · synced {ago(c.instagram.synced)}{/if}{#if c.instagram.error}<br /><span class="err">{c.instagram.error}</span>{/if}</dd></div>{/if}
 				</dl>
 			</section>
+			<PlanBlock kind="creator" subject={String(c.id)} />
 			<section class="card">
 				<div class="card-h"><h2 class="card-t">Related</h2></div>
 				<ul class="rel">

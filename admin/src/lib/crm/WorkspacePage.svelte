@@ -5,6 +5,7 @@
 	import { askText, toast } from '../ui.svelte.ts';
 	import RecordHead from './RecordHead.svelte';
 	import Notes from './Notes.svelte';
+	import PlanBlock from './PlanBlock.svelte';
 
 	let { id }: { id: string } = $props();
 
@@ -222,6 +223,7 @@
 			{/if}
 		</div>
 		<aside class="side">
+			<PlanBlock kind="workspace" subject={w.id} />
 			<section class="card">
 				<div class="card-h"><h2 class="card-t">Trust</h2><a href={href('safety')}>Safety</a></div>
 				<dl class="kv">

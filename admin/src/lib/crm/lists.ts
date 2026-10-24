@@ -816,6 +816,65 @@ const AUTOMATION: Record<string, ListConfig> = {
 	}
 };
 
+const BILL_PERIOD: Record<string, string> = { trial: 'Trial', month: 'Monthly', year: 'Yearly', comp: 'Free (given)' };
+const BILL_KIND: Record<string, string> = { creator: 'Creator', workspace: 'Workspace', agency: 'Agency login' };
+const billSubject = (r: Row) => (r.kind === 'creator' ? href('creators', r.subject) : r.kind === 'workspace' ? href('workspaces', r.subject) : href('brand-logins', r.subject));
+const BILLING: Record<string, ListConfig> = {
+	subscriptions: {
+		id: 'subscriptions', kind: 'subscriptions', group: 'Billing', title: 'Subscriptions', noun: 'subscription', search: 'Account, email, plan, note',
+		presets: [
+			{ id: 'live', label: 'Live', filters: { live: true } },
+			{ id: 'paid', label: 'Paying', filters: { live: true, source: 'razorpay' } },
+			{ id: 'trials', label: 'Trials', filters: { live: true, period: 'trial' } },
+			{ id: 'ending', label: 'Ending in 7 days', filters: { live: true, 'days_left:lte': 7 } },
+			{ id: 'comps', label: 'Given free', filters: { period: 'comp' } },
+			{ id: 'trouble', label: 'Payment failed', filters: { status: 'halted' } },
+			{ id: 'all', label: 'All', filters: {} }
+		],
+		filters: [
+			{ key: 'side', label: 'Side', options: [{ label: 'Creators', value: 'creator' }, { label: 'Brands', value: 'brand' }, { label: 'Agencies', value: 'agency' }] },
+			{ key: 'period', label: 'Period', options: Object.entries(BILL_PERIOD).map(([v, l]) => ({ label: l, value: v })) },
+			{ key: 'status', label: 'Status', options: ['active', 'cancelled', 'halted', 'ended', 'pending'].map((v) => ({ label: label(v), value: v })) },
+			DAYS('created', 'Started')
+		],
+		columns: [
+			{ key: 'name', label: 'Account', sub: 'email', link: billSubject },
+			{ key: 'kind', label: 'For', text: (r) => BILL_KIND[r.kind] ?? r.kind },
+			{ key: 'plan_name', label: 'Plan' },
+			{ key: 'period', label: 'Period', type: 'tag', tag: (v, r) => [BILL_PERIOD[v] ?? v, v === 'trial' ? 't-info' : v === 'comp' ? 't-acc' : r.founding ? 't-warn' : 't-ok'] },
+			{ key: 'status', label: 'Status', type: 'tag', tag: (v, r) => (r.live ? (v === 'halted' ? ['Payment failed', 't-bad'] : r.cancel_at_end || v === 'cancelled' ? ['Ends at period end', 't-warn'] : ['Live', 't-ok']) : [label(v), 't-mute']) },
+			{ key: 'price', label: 'Price', type: 'money' },
+			{ key: 'paid', label: 'Paid so far', type: 'money' },
+			{ key: 'days_left', label: 'Days left', type: 'num' },
+			{ key: 'ends_at', label: 'Ends', type: 'day' },
+			{ key: 'note', label: 'Note', wrap: true, nosort: true }
+		],
+		sort: 'created',
+		href: billSubject,
+		rowActions: [
+			{ label: 'End now', danger: true, show: (r) => r.live && r.source !== 'razorpay',
+				run: withReason('End this plan now?', 'The account drops to its free plan straight away. Paid plans end through Razorpay instead.', 'End now', 'admin_billing_end', (r, why) => ({ p_subscription: r.id, p_reason: why }), 'Plan ended') }
+		]
+	},
+	'billing-payments': {
+		id: 'billing-payments', kind: 'billing_payments', group: 'Billing', title: 'Plan payments', noun: 'payment', search: 'Invoice number, account, email, plan',
+		presets: [{ id: 'all', label: 'All', filters: {} }, { id: 'month', label: 'Last 30 days', filters: { 'created:gte': 'days:30' } }],
+		filters: [DAYS('created', 'Paid')],
+		columns: [
+			{ key: 'created', label: 'Paid', type: 'when' },
+			{ key: 'invoice_no', label: 'Invoice', type: 'mono' },
+			{ key: 'name', label: 'Account', sub: 'email', link: billSubject },
+			{ key: 'plan_name', label: 'Plan' },
+			{ key: 'period', label: 'Period', text: (r) => BILL_PERIOD[r.period] ?? r.period },
+			{ key: 'amount', label: 'Amount', type: 'money' },
+			{ key: 'gst', label: 'GST', type: 'money' },
+			{ key: 'net', label: 'Before GST', type: 'money' }
+		],
+		sort: 'created',
+		href: billSubject
+	}
+};
+
 export const LISTS: Record<string, ListConfig> = {
 	creators: {
 		id: 'creators',
@@ -987,7 +1046,7 @@ export const LISTS: Record<string, ListConfig> = {
 			{ id: 'system', label: 'Switches, jobs & limits', filters: { kind: ['flag', 'limits', 'job', 'outbox', 'admins', 'problem'] } }
 		],
 		filters: [
-			{ key: 'kind', label: 'Record', options: ['creator', 'brand_login', 'workspace', 'collab', 'campaign', 'brand', 'ticket', 'problem', 'ban', 'flag', 'limits', 'job', 'outbox', 'admins'].map((v) => ({ label: label(v), value: v })) },
+			{ key: 'kind', label: 'Record', options: ['creator', 'brand_login', 'workspace', 'agency', 'collab', 'campaign', 'brand', 'ticket', 'problem', 'ban', 'plan', 'billing', 'subscription', 'flag', 'limits', 'job', 'outbox', 'admins'].map((v) => ({ label: label(v), value: v })) },
 			DAYS('at', 'When')
 		],
 		columns: [
@@ -1003,13 +1062,13 @@ export const LISTS: Record<string, ListConfig> = {
 	}
 };
 
-Object.assign(LISTS, DEALS, SYSTEM, TRUST, GROWTH, AUTOMATION);
+Object.assign(LISTS, DEALS, SYSTEM, TRUST, GROWTH, AUTOMATION, BILLING);
 
 export function recordHref(kind: string, id: string | null | undefined): string | null {
 	if (kind === 'limits') return href('controls');
 	if (!id) return null;
 	if (kind === 'creator') return href('creators', id);
-	if (kind === 'brand_login') return href('brand-logins', id);
+	if (kind === 'brand_login' || kind === 'agency') return href('brand-logins', id);
 	if (kind === 'workspace') return href('workspaces', id);
 	if (kind === 'collab') return href('collabs', id);
 	if (kind === 'brand') return href('brands', id);
@@ -1021,6 +1080,8 @@ export function recordHref(kind: string, id: string | null | undefined): string 
 	if (kind === 'ticket') return href('support', id);
 	if (kind === 'problem') return href('problems', id);
 	if (kind === 'ban') return href('bans');
+	if (kind === 'plan' || kind === 'billing') return href('plans');
+	if (kind === 'subscription') return href('subscriptions');
 	return null;
 }
 
