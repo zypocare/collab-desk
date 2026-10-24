@@ -21,6 +21,7 @@
 	import ProblemPage from './crm/ProblemPage.svelte';
 	import SafetyPage from './crm/SafetyPage.svelte';
 	import AutopilotsPage from './crm/AutopilotsPage.svelte';
+	import Quotas from './crm/Quotas.svelte';
 
 	let { email, onsignout }: { email: string; onsignout: () => void } = $props();
 
@@ -85,6 +86,7 @@
 			label: 'System',
 			items: [
 				{ id: 'controls', label: 'Switches & limits', icon: 'shield', badge: () => flagsOff, warn: true },
+				{ id: 'quotas', label: 'Daily quotas', icon: 'chart' },
 				{ id: 'jobs', label: 'Scheduled jobs', icon: 'clock' },
 				{ id: 'outbox', label: 'Emails & outbox', icon: 'send', badge: () => queue.emails_failed ?? 0 },
 				{ id: 'inbound', label: 'Inbound mail', icon: 'inbox' },
@@ -185,6 +187,8 @@
 				<SafetyPage id={route.id} onchange={loadQueue} />
 			{:else if route.section === 'autopilots'}
 				<AutopilotsPage />
+			{:else if route.section === 'quotas'}
+				<Quotas />
 			{:else if route.section === 'controls'}
 				<Controls onflags={(n) => (flagsOff = n)} />
 			{:else if route.section === 'jobs'}

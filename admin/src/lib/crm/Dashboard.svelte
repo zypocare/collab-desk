@@ -5,6 +5,7 @@
 	import { errMessage, supabase } from '../supabase.ts';
 	import Icon from '../Icon.svelte';
 	import { recordHref } from './lists.ts';
+	import QuotaBars, { quotasOf } from './QuotaBars.svelte';
 
 	// How Miracle is doing: key numbers for a period, what's waiting on an admin, both funnels, the collab
 	// pipeline, money that moved between brands and creators, system health and the latest events.
@@ -13,11 +14,13 @@
 	type D = Record<string, any>;
 	let days = $state(30);
 	let d = $state<D | null>(null);
+	let quota = $state<D | null>(null);
 	let err = $state('');
 	let busy = $state(false);
 
 	async function load() {
 		busy = true;
+		supabase.rpc('admin_quotas').then(({ data }) => data && (quota = data as D));
 		const { data, error } = await supabase.rpc('admin_dashboard', { p_days: days });
 		busy = false;
 		err = error ? errMessage(error) : '';
@@ -118,15 +121,22 @@
 			</div>
 		</section>
 
+		{#if quota}
+			<section class="card">
+				<div class="card-h"><h2 class="card-t">Daily quotas</h2><a href={href('quotas')}>Details and limits</a></div>
+				<QuotaBars quotas={quotasOf(quota)} />
+			</section>
+		{/if}
+
 		<div class="two">
 			<section class="card">
 				<div class="card-h"><h2 class="card-t">Needs you</h2></div>
 				<a class="qrow" href={href('signups')}><span class="tag {q.signups ? 't-warn' : 't-ok'} n">{num(q.signups)}</span><span class="qt"><b>Creator sign-ups waiting</b><small>{q.signups ? `oldest asked ${ago(q.signups_oldest)}` : 'All caught up'}</small></span><Icon name="arrow" /></a>
 				<a class="qrow" href={href('support')}><span class="tag {q.support ? 't-bad' : 't-ok'} n">{num(q.support)}</span><span class="qt"><b>Support tickets open</b><small>{num(q.support_urgent)} urgent · {num(q.support_unread)} unread</small></span><Icon name="arrow" /></a>
 				<a class="qrow" href={href('safety')}><span class="tag {q.safety ? 't-bad' : 't-ok'} n">{num(q.safety)}</span><span class="qt"><b>Accounts with open reports</b><small>{num(q.safety_paused)} paused by themselves</small></span><Icon name="arrow" /></a>
-				<div class="qrow"><span class="tag {q.emails_failed ? 't-warn' : 't-ok'} n">{num(q.emails_failed)}</span><span class="qt"><b>Emails failed this week</b><small>Retry and skip arrive with the Controls phase</small></span></div>
+				<a class="qrow" href={href('outbox')}><span class="tag {q.emails_failed ? 't-warn' : 't-ok'} n">{num(q.emails_failed)}</span><span class="qt"><b>Emails failed this week</b><small>Send them again or skip them in the outbox</small></span><Icon name="arrow" /></a>
 				<a class="qrow" href={href('problems')}><span class="tag {q.problems_new ? 't-info' : 't-ok'} n">{num(q.problems_new)}</span><span class="qt"><b>New problems today</b><small>{num(q.problems_open)} open in all</small></span><Icon name="arrow" /></a>
-				<div class="qrow"><span class="tag {q.ig_expiring ? 't-warn' : 't-ok'} n">{num(q.ig_expiring)}</span><span class="qt"><b>Instagram logins expiring in 7 days</b><small>Creators get a reconnect alert</small></span></div>
+				<a class="qrow" href={href('instagram')}><span class="tag {q.ig_expiring ? 't-warn' : 't-ok'} n">{num(q.ig_expiring)}</span><span class="qt"><b>Instagram logins expiring in 7 days</b><small>Creators get a reconnect alert</small></span><Icon name="arrow" /></a>
 			</section>
 
 			<section class="card">
