@@ -9,6 +9,7 @@
 	import { checkups, latest, loadCheckups } from '#lib/checkup.svelte.ts';
 	import Icon from '#lib/components/Icon.svelte';
 	import HealthCard from '#lib/components/HealthCard.svelte';
+	import PhoneGrow from '#lib/components/PhoneGrow.svelte';
 
 	// Grow: real followers and views from what already works for her. Her numbers, what's working, this
 	// week's reel ideas (the growth autopilot), collab reels with other creators, and a reel worth boosting.
@@ -53,6 +54,7 @@
 
 <svelte:head><title>Grow · Miracle</title></svelte:head>
 
+{#if !phone.on}
 <header class="ph rv">
 	<div>
 		<div class="eb">Instagram · last 30 days</div>
@@ -61,6 +63,7 @@
 	</div>
 	<div class="acts"><a class="btn grad" href="/studio/grow/check"><Icon name="film" />Check a reel before you post</a></div>
 </header>
+{/if}
 
 {#if !connected}
 	<div class="clear hero-card glow m-none">
@@ -70,6 +73,8 @@
 		<small>Grow reads your own posts and followers (never your DMs) to show what brings you new people, and plans your week from it.</small>
 		<div class="clear-acts"><a class="glass-chip" href="/studio/settings?s=profile"><Icon name="link" />Connect Instagram</a></div>
 	</div>
+{:else if phone.on}
+	<PhoneGrow />
 {:else}
 	<!-- The growth check-up: why she isn't growing, and what to change -->
 	{@const cu = latest()}
