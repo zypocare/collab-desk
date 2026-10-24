@@ -1,6 +1,6 @@
 // The pricing page and the refund and cancellation policy. Prices match billing_plans in the database
 // (supabase/migrations/20261024000154_billing.sql); change both together.
-import { APP, esc, JOIN, JOIN_BRAND, md, page } from './layout.mjs';
+import { esc, JOIN, JOIN_BRAND, JOIN_LABEL, md, page, PRELAUNCH } from './layout.mjs';
 
 export const PLANS = [
 	{
@@ -32,14 +32,67 @@ export const AGENCY = { name: 'Agency', month: 4999, year: 49999, founding: 2499
 
 const rs = (n) => '₹' + n.toLocaleString('en-IN');
 const perks = (list) => `<ul class="ticks">${list.map((p) => `<li>${esc(p)}</li>`).join('')}</ul>`;
-const paidCard = (p, join, label = 'Start the 14-day trial') => `
+// The price shows monthly or yearly; the switch at the top flips every card.
+const priceBlock = (p) => `
+  <p class="price"><b data-m="${rs(p.month)}" data-y="${rs(p.year)}">${rs(p.year)}</b><small data-m="/month" data-y="/year">/year</small></p>
+  <p class="alt" data-m="or ${rs(p.year)}/year: 2 months free" data-y="about ${rs(Math.round(p.year / 12))} a month · &lt;b&gt;founding members ${rs(p.founding)}/year&lt;/b&gt;">about ${rs(Math.round(p.year / 12))} a month · <b>founding members ${rs(p.founding)}/year</b></p>`;
+const paidCard = (p, join) => `
 <div class="card plan hot">
   <h3>${esc(p.name)}</h3>
-  <p class="price"><b>${rs(p.month)}</b><small>/month</small></p>
-  <p class="alt">or ${rs(p.year)}/year (2 months free) · <b>founding members ${rs(p.founding)}/year</b></p>
+  ${priceBlock(p)}
   ${perks(p.perks)}
-  <a class="btn grad" href="${join}">${label}</a>
+  <a class="btn grad" href="${join}">${PRELAUNCH ? JOIN_LABEL : 'Start the 14-day trial'}</a>
 </div>`;
+
+// Feature by feature, for each side. [feature, free, pro]: true, false or a short text; null starts a group.
+const COMPARE = {
+	creator: [
+		['Your page and getting found', null],
+		['Brand page brands book you from (yourname.miracleapp.live)', true, true],
+		['Live Instagram numbers and media kit', true, true],
+		['Listed in the creator directory', true, true],
+		['Live insights page to send brands', false, true],
+		['Deals', null],
+		['Requests, collab board, calendar and drafts', true, true],
+		['Quotes brands accept online', '3 a month', 'Unlimited'],
+		['GST invoices with UPI QR', '3 a month', 'Unlimited'],
+		['Offer check and fair-rate advice (AI)', true, true],
+		['Autopilots', null],
+		['Pitch autopilot: brands found and pitched for you', false, true],
+		['Pitches you send yourself', '5 a month', 'Unlimited'],
+		['Invoices, dates and tracking links on their own', false, true],
+		['Payment reminders and bank-credit matching', false, true],
+		['Nudges, counters for low offers, rebook offers', false, true],
+		['Team and AI', null],
+		['Team: manager, assistant, accountant', false, 'Up to 5'],
+		['Daily AI (captions, scripts, replies, checks)', 'A little', '6×'],
+		['No commission on any deal', true, true]
+	],
+	brand: [
+		['Finding creators', null],
+		['Discover with audience health and filters', true, true],
+		['Creator pools and shortlists', true, true],
+		['Working with creators', null],
+		['Requests to creators', '3 a month', 'Unlimited'],
+		['Campaigns', '1 a month', 'Unlimited'],
+		['Open briefs that creators apply to', false, true],
+		['Briefs, drafts, approvals and reports', true, true],
+		['Autopilots and tracking', null],
+		['Brand autopilots: shortlist, follow-up, draft check, negotiate, rebook', false, true],
+		['Competitor watch', false, true],
+		['Sales tracking from your store', false, true],
+		['Turnaround owners, targets and escalation', false, true],
+		['Team and AI', null],
+		['Team seats with roles and approvals', '1', '5'],
+		['Daily AI (briefs, report reading)', 'A little', '3×'],
+		['Pay creators directly, no commission', true, true]
+	]
+};
+const cell = (v) => (v === true ? '<span class="y">✓</span>' : v === false ? '<span class="n">—</span>' : esc(v));
+const compareTable = (rows, paidName) => `
+<div class="table"><table class="cmp"><thead><tr><th>Feature</th><th>Free</th><th>${esc(paidName)}</th></tr></thead><tbody>
+${rows.map((r) => (r[1] === null ? `<tr class="grp"><td colspan="3">${esc(r[0])}</td></tr>` : `<tr><td>${esc(r[0])}</td><td>${cell(r[1])}</td><td>${cell(r[2])}</td></tr>`)).join('')}
+</tbody></table></div>`;
 
 export const PRICING_FAQ = [
 	['Is there a commission on deals?', 'No, never. Brands pay creators directly by UPI or bank transfer, and Miracle takes nothing from any deal on any plan. Plans pay for the tools, not for the deals.'],
@@ -56,9 +109,11 @@ export function pricingPage() {
 <section class="hero wrap">
   <span class="eb">Pricing</span>
   <h1>Start free. <em>Go Pro when the deals come.</em></h1>
-  <p class="lede">Every plan keeps your deals commission-free: brands pay creators directly. Pro puts the autopilots to work, so the follow-ups, invoices and pitches happen without you. 14 days of Pro free for everyone, no card needed.</p>
+  <p class="lede">Every plan keeps your deals commission-free: brands pay creators directly. Pro puts the autopilots to work, so follow-ups, invoices and pitches happen without you. Everyone gets 14 days of Pro free, no card needed.</p>
+  ${PRELAUNCH ? `<p class="soon"><span><b>Opening soon.</b> Miracle opens in batches, starting with the waitlist. Waitlist members get first access to the 100 founding places. <a href="${JOIN}">Join the waitlist</a></span></p>` : ''}
+  <div class="ptoggle" role="group" aria-label="Billing"><button type="button" data-p="m" aria-pressed="false">Monthly</button><button type="button" data-p="y" aria-pressed="true">Yearly <em>2 months free</em></button></div>
 </section>
-${PLANS.map((s) => `
+${PLANS.map((s, i) => `
 <section class="sec wrap">
   <h2>${esc(s.who)}</h2>
   <div class="grid2 plans">
@@ -67,23 +122,33 @@ ${PLANS.map((s) => `
       <p class="price"><b>${s.free.price}</b><small>/forever</small></p>
       <p class="alt">No card. No time limit.</p>
       ${perks(s.free.perks)}
-      <a class="btn ghost" href="${s.paid.join}">Join free</a>
+      <a class="btn ghost" href="${s.paid.join}">${PRELAUNCH ? JOIN_LABEL : 'Join free'}</a>
     </div>
     ${paidCard(s.paid, s.paid.join)}
   </div>
+  <details class="cmp-more"${i === 0 ? ' open' : ''}><summary>Compare Free and ${esc(s.paid.name)}, feature by feature</summary>${compareTable(i === 0 ? COMPARE.creator : COMPARE.brand, s.paid.name)}</details>
 </section>`).join('')}
 <section class="sec wrap">
   <h2>For agencies</h2>
-  <div class="grid2 plans">${paidCard(AGENCY, JOIN_BRAND, 'Talk to us or start free')}
-    <div class="card"><h3>Running creators and brands together?</h3><p>Agency covers every creator you manage on Pro, your own brand team, and the client teams you work in, with one sign-in. Write to <a href="mailto:support@miracleapp.live">support@miracleapp.live</a> for a walkthrough.</p></div>
+  <div class="grid2 plans">${paidCard(AGENCY, PRELAUNCH ? '/waitlist?as=agency' : JOIN_BRAND)}
+    <div class="card"><h3>Running creators and brands together?</h3><p>Agency covers every creator you manage on Pro, your own brand team, and the client teams you work in, with one sign-in and 15 seats. Write to <a href="mailto:support@miracleapp.live">support@miracleapp.live</a> for a walkthrough.</p></div>
   </div>
 </section>
 <section class="sec wrap"><h2>Questions</h2><div class="faq">${PRICING_FAQ.map(([q, a]) => `<details><summary>${esc(q)}</summary><p>${md(a)}</p></details>`).join('')}</div></section>
-<section class="sec wrap"><p class="small">Prices in Indian rupees, including 18% GST. Sold by Zyposoft Technologies Private Limited, #7, Nisarga Layout, Chikkalsandra, Bangalore 560061, India. Questions: <a href="mailto:support@miracleapp.live">support@miracleapp.live</a>. See the <a href="/terms#price">terms</a> and the <a href="/refund-policy">refund and cancellation policy</a>.</p></section>`;
+<section class="sec wrap"><p class="small">Prices in Indian rupees, including 18% GST. Sold by Zyposoft Technologies Private Limited, #7, Nisarga Layout, Chikkalsandra, Bangalore 560061, India. Questions: <a href="mailto:support@miracleapp.live">support@miracleapp.live</a>. See the <a href="/terms#price">terms</a> and the <a href="/refund-policy">refund and cancellation policy</a>.</p></section>
+<script>
+(() => {
+  const set = (k) => {
+    document.querySelectorAll('.ptoggle button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.p === k)));
+    document.querySelectorAll('[data-m][data-y]').forEach((el) => (el.innerHTML = el.dataset[k]));
+  };
+  document.querySelectorAll('.ptoggle button').forEach((b) => b.addEventListener('click', () => set(b.dataset.p)));
+})();
+</script>`;
 	return page({
 		path: '/pricing',
 		title: 'Pricing · Miracle: free for creators and brands, Pro from ₹299',
-		description: 'Free plan for creators and brands, Creator Pro ₹299/month, Brand Pro ₹1,999/month, Agency ₹4,999/month. 14-day free trial, no commission on any deal.',
+		description: 'Free plan for creators and brands, Creator Pro ₹299/month, Brand Pro ₹1,999/month, Agency ₹4,999/month. Compare every feature. 14-day free trial, no commission on any deal.',
 		body,
 		ld: [{ '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: PRICING_FAQ.map(([q, a]) => ({ '@type': 'Question', name: q, acceptedAnswer: { '@type': 'Answer', text: a.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') } })) }],
 		crumbs: [{ name: 'Pricing', path: '/pricing' }]

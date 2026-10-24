@@ -5,10 +5,11 @@ import { mkdirSync, writeFileSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ARTICLES, CATEGORIES } from '../../web/src/lib/help/articles.ts';
-import { APP, CSS, cta, esc, JOIN, md, page, SITE } from './layout.mjs';
+import { APP, CSS, cta, esc, JOIN, JOIN_BRAND, JOIN_LABEL, md, page, PRELAUNCH, SITE } from './layout.mjs';
 import { LANDING } from './landing.mjs';
 import { GUIDES } from './guides.mjs';
 import { pricingPage, refundPage } from './pricing.mjs';
+import { waitlistPage } from './waitlist.mjs';
 
 const OUT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const write = (rel, html) => {
@@ -31,7 +32,7 @@ for (const l of LANDING) {
   <span class="eb">${esc(l.eb)}</span>
   <h1>${esc(l.h1[0])}<em>${esc(l.h1[1])}</em></h1>
   <p class="lede">${md(l.lede)}</p>
-  <div class="acts"><a class="btn grad" href="${l.who === 'brand' ? `${APP}/signup?as=brand` : JOIN}">${l.who === 'brand' ? 'Join as a brand' : 'Join free'}</a><small>Free · no commission on any deal</small></div>
+  <div class="acts"><a class="btn grad" href="${l.who === 'brand' ? JOIN_BRAND : JOIN}">${PRELAUNCH ? JOIN_LABEL : l.who === 'brand' ? 'Join as a brand' : 'Join free'}</a><small>${PRELAUNCH ? 'Opening soon · free plan · no commission on any deal' : 'Free · no commission on any deal'}</small></div>
 </section>
 <section class="sec wrap"><div class="grid3">${l.features.map(([h, p]) => `<div class="card"><h3>${esc(h)}</h3><p>${md(p)}</p></div>`).join('')}</div></section>
 <section class="sec wrap"><h2>How to <em>start.</em></h2><ol class="steps">${l.steps.map((s) => `<li><span>${md(s)}</span></li>`).join('')}</ol></section>
@@ -148,10 +149,11 @@ urls.push(['/help', 'weekly', 0.7]);
 // ------------------------------------------------------------------ 404, stylesheet, sitemap
 write('404.html', page({ path: '/404', title: 'Page not found · Miracle', description: 'This page isn’t here.', noindex: true, body: `<section class="hero wrap"><span class="eb">404</span><h1>Not <em>here.</em></h1><p class="lede">That page moved or never existed.</p><div class="acts"><a class="btn" href="/">Miracle home</a><a class="btn ghost" href="/guides">Guides</a><a class="btn ghost" href="/help">Help</a></div></section>` }));
 write('pricing.html', pricingPage());
+write('waitlist.html', waitlistPage());
 write('refund-policy.html', refundPage());
 write('assets/site.css', CSS.trim() + '\n');
 
-const fixed = [['/', 'weekly', 1.0], ['/creators', 'daily', 0.9], ['/pricing', 'monthly', 0.9], ['/refund-policy', 'yearly', 0.3], ['/tools/rate-calculator', 'monthly', 0.8], ['/tools/engagement-calculator', 'monthly', 0.8], ['/privacy', 'yearly', 0.2], ['/terms', 'yearly', 0.2], ['/data-deletion', 'yearly', 0.2]];
+const fixed = [['/', 'weekly', 1.0], ['/creators', 'daily', 0.9], ['/pricing', 'monthly', 0.9], ['/waitlist', 'weekly', 0.8], ['/refund-policy', 'yearly', 0.3], ['/tools/rate-calculator', 'monthly', 0.8], ['/tools/engagement-calculator', 'monthly', 0.8], ['/privacy', 'yearly', 0.2], ['/terms', 'yearly', 0.2], ['/data-deletion', 'yearly', 0.2]];
 const today = new Date().toISOString().slice(0, 10);
 write('sitemap.xml', `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">

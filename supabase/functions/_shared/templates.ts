@@ -578,6 +578,31 @@ ${ok ? url(s, '/') : studio()}`,
 
   // Creator sign-ups: a new request for the people who run Miracle, then a welcome or a kind no.
   // ---------------------------------------------------------------- support
+  // ---------------------------------------------------------------- the pre-launch waitlist
+  if (kind === 'waitlist_welcome') {
+    const share = `https://www.miracleapp.live/waitlist?ref=${encodeURIComponent(String(p.ref_code ?? ''))}`;
+    const role = String(p.role ?? 'creator');
+    const who = role === 'brand' ? 'brands' : role === 'agency' ? 'agencies' : 'creators';
+    return {
+      subject: `You're #${p.position} on the Miracle waitlist`,
+      html: layout(
+        s,
+        `You're #${Number(p.position) || 1} in line`,
+        `${hi(p.name || 'there')}${P(`Thanks for joining. Miracle opens to ${esc(who)} in batches, and you'll get your invite at this address the moment it's your turn.`)}
+         ${p.link ? P(`We're holding <b>${esc(String(p.link))}.miracleapp.live</b> for you until then.`) : ''}
+         ${P(`<b>Move up the line:</b> every friend who joins with your link moves you up. Share it on your story or WhatsApp:`)}
+         ${quoteBox('Your link', share)}
+         ${P('Waitlist members get first access to the 100 founding places: half price on a yearly plan, kept for as long as you stay. Plans and prices are at miracleapp.live/pricing.')}`,
+        { label: 'See where you are', href: share },
+        { to: 'app', why: 'you joined the Miracle waitlist', preheader: `You're #${p.position}. Share your link to move up.` },
+      ),
+      text: `You're #${p.position} on the Miracle waitlist.${p.link ? ` We're holding ${p.link}.miracleapp.live for you.` : ''}
+
+Every friend who joins with your link moves you up: ${share}
+
+Waitlist members get first access to the 100 founding places (half price yearly). Pricing: https://www.miracleapp.live/pricing`,
+    };
+  }
   // ---------------------------------------------------------------- Miracle's own plans
   if (kind === 'plan_receipt' || kind === 'plan_ending' || kind === 'plan_ended') {
     const planLink = url(s, p.side === 'brand' ? '/brand/settings?s=plan' : '/studio/settings?s=plan');
