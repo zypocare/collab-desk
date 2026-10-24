@@ -411,6 +411,122 @@ const DEALS: Record<string, ListConfig> = {
 	}
 };
 
+const OUTBOX_TAG: Record<string, string> = { sent: 't-ok', pending: 't-info', sending: 't-acc', failed: 't-bad', skipped: 't-mute' };
+async function outbox(rows: Row[], action: 'retry' | 'skip') {
+	const reason = await askText({
+		title: action === 'retry' ? `Send ${rows.length === 1 ? 'this email' : rows.length + ' emails'} again?` : `Skip ${rows.length === 1 ? 'this email' : rows.length + ' emails'}?`,
+		body: action === 'retry' ? 'They go back in the queue from the first try and the sender runs straight away.' : "They won't be sent. The reason is kept on each one.",
+		ok: action === 'retry' ? 'Send again' : 'Skip',
+		danger: action === 'skip',
+		input: { label: action === 'retry' ? 'Note (optional)' : 'Why', required: action === 'skip' }
+	});
+	if (reason === null) return false;
+	const { data, error } = await supabase.rpc('admin_outbox_set', { p_ids: rows.map((r) => r.id), p_action: action, p_reason: reason });
+	if (error) {
+		toast(errMessage(error), true);
+		return false;
+	}
+	toast(`${data} email${data === 1 ? '' : 's'} ${action === 'retry' ? 'queued again' : 'skipped'}`);
+	return true;
+}
+const accountLink = (r: Row) => (r.side === 'creator' ? href('creators', r.account_id) : href('workspaces', r.account_id));
+
+const SYSTEM: Record<string, ListConfig> = {
+	outbox: {
+		id: 'outbox', kind: 'outbox', group: 'System', title: 'Emails & outbox', noun: 'email', search: 'Email kind, address, error, creator',
+		presets: [
+			{ id: 'all', label: 'All', filters: {} },
+			{ id: 'failed', label: 'Failed', filters: { status: 'failed' } },
+			{ id: 'pending', label: 'Waiting', filters: { status: ['pending', 'sending'] } },
+			{ id: 'sent', label: 'Sent', filters: { status: 'sent' } },
+			{ id: 'skipped', label: 'Skipped', filters: { status: 'skipped' } }
+		],
+		filters: [{ key: 'status', label: 'Status', options: Object.keys(OUTBOX_TAG).map((v) => ({ label: label(v), value: v })) }, DAYS('created', 'Queued')],
+		columns: [
+			{ key: 'created', label: 'Queued', type: 'when' },
+			{ key: 'kind', label: 'Email', type: 'mono' },
+			{ key: 'to', label: 'To' },
+			{ key: 'creator', label: 'Creator', link: creatorLink },
+			{ key: 'status', label: 'Status', type: 'tag', tag: plain(OUTBOX_TAG) },
+			{ key: 'attempts', label: 'Tries', type: 'num' },
+			{ key: 'error', label: 'Error', wrap: true, nosort: true },
+			{ key: 'sent_at', label: 'Sent', type: 'ago' }
+		],
+		sort: 'created',
+		href: () => null,
+		bulk: [
+			{ label: 'Send again', show: (r) => r.status === 'failed' || r.status === 'skipped', run: (rows) => outbox(rows, 'retry') },
+			{ label: 'Skip', danger: true, show: (r) => r.status === 'failed' || r.status === 'pending', run: (rows) => outbox(rows, 'skip') }
+		],
+		rowActions: [
+			{ label: 'Send again', show: (r) => r.status === 'failed' || r.status === 'skipped', run: (rows) => outbox(rows, 'retry') },
+			{ label: 'Skip', danger: true, show: (r) => r.status === 'failed' || r.status === 'pending', run: (rows) => outbox(rows, 'skip') }
+		]
+	},
+	inbound: {
+		id: 'inbound', kind: 'inbound', group: 'System', title: 'Inbound mail', noun: 'email', search: 'Sender, subject, action, creator, collab',
+		presets: [{ id: 'all', label: 'All', filters: {} }],
+		filters: [DAYS('created', 'Received')],
+		columns: [
+			{ key: 'created', label: 'Received', type: 'when' },
+			{ key: 'sender', label: 'From' },
+			{ key: 'subject', label: 'Subject', wrap: true },
+			{ key: 'action', label: 'What happened', text: (r) => label(r.action) },
+			{ key: 'code', label: 'Collab', type: 'mono', link: collabLink },
+			{ key: 'creator', label: 'Creator', link: creatorLink }
+		],
+		sort: 'created',
+		href: collabLink
+	},
+	'ai-usage': {
+		id: 'ai-usage', kind: 'ai_usage', group: 'System', title: 'AI usage', noun: 'day', search: 'Account, kind of AI',
+		presets: [
+			{ id: 'all', label: 'All', filters: {} },
+			{ id: 'today', label: 'Today', filters: { 'created:gte': 'days:1' } },
+			{ id: 'heavy', label: 'Over half their share', filters: { 'share:gte': 50 } },
+			{ id: 'gemini', label: 'Used Gemini backup', filters: { 'gemini:gte': 1 } },
+			{ id: 'brands', label: 'Brands', filters: { side: 'workspace' } }
+		],
+		filters: [{ key: 'side', label: 'Side', options: [{ label: 'Creators', value: 'creator' }, { label: 'Brand workspaces', value: 'workspace' }] }, DAYS('created', 'Day')],
+		columns: [
+			{ key: 'day', label: 'Day', type: 'day' },
+			{ key: 'account', label: 'Account', link: accountLink },
+			{ key: 'side', label: 'Side', type: 'tag', tag: (v) => [v === 'creator' ? 'Creator' : 'Workspace', v === 'creator' ? 't-ok' : 't-info'] },
+			{ key: 'calls', label: 'Calls', type: 'num' },
+			{ key: 'cost', label: 'Units used', type: 'num' },
+			{ key: 'share', label: 'Of daily share', text: (r) => (r.share !== undefined ? r.share + '%' : '—') },
+			{ key: 'gemini', label: 'Gemini calls', type: 'num' },
+			{ key: 'capped', label: 'Lower share', text: (r) => (r.capped !== undefined ? String(r.capped) : '—') },
+			{ key: 'kinds', label: 'Used for', wrap: true, nosort: true }
+		],
+		sort: 'created',
+		href: accountLink
+	},
+	instagram: {
+		id: 'instagram', kind: 'instagram', group: 'System', title: 'Instagram', noun: 'account', search: 'Username, account, error',
+		presets: [
+			{ id: 'all', label: 'All', filters: {} },
+			{ id: 'errors', label: 'With errors', filters: { 'error:gte': '' } },
+			{ id: 'expiring', label: 'Login expiring in 7 days', filters: { expiring: true } },
+			{ id: 'off', label: 'Disconnected', filters: { connected: false } },
+			{ id: 'brands', label: 'Brand accounts', filters: { side: 'workspace' } }
+		],
+		filters: [{ key: 'side', label: 'Side', options: [{ label: 'Creators', value: 'creator' }, { label: 'Brand workspaces', value: 'workspace' }] }],
+		columns: [
+			{ key: 'username', label: 'Instagram', text: (r) => (r.username ? '@' + r.username : '—'), link: (r) => (r.username ? `https://instagram.com/${r.username}` : null) },
+			{ key: 'account', label: 'Account', link: accountLink },
+			{ key: 'side', label: 'Side', type: 'tag', tag: (v) => [v === 'creator' ? 'Creator' : 'Workspace', v === 'creator' ? 't-ok' : 't-info'] },
+			{ key: 'followers', label: 'Followers', type: 'compact' },
+			{ key: 'connected', label: 'State', type: 'tag', tag: yes('Connected', 'Disconnected') },
+			{ key: 'expires', label: 'Login expires', type: 'day' },
+			{ key: 'synced', label: 'Last sync', type: 'ago' },
+			{ key: 'error', label: 'Last error', wrap: true, nosort: true }
+		],
+		sort: 'synced',
+		href: accountLink
+	}
+};
+
 export const LISTS: Record<string, ListConfig> = {
 	creators: {
 		id: 'creators',
@@ -579,10 +695,10 @@ export const LISTS: Record<string, ListConfig> = {
 			{ id: 'deals', label: 'Deals', filters: { kind: ['collab', 'campaign', 'brand'] } },
 			{ id: 'messages', label: 'Messages read', filters: { action: 'read_messages' } },
 			{ id: 'support', label: 'Support', filters: { kind: ['ticket'] } },
-			{ id: 'system', label: 'Limits & problems', filters: { kind: ['limits', 'problem'] } }
+			{ id: 'system', label: 'Switches, jobs & limits', filters: { kind: ['flag', 'limits', 'job', 'outbox', 'admins', 'problem'] } }
 		],
 		filters: [
-			{ key: 'kind', label: 'Record', options: ['creator', 'brand_login', 'workspace', 'collab', 'campaign', 'brand', 'ticket', 'problem', 'limits'].map((v) => ({ label: label(v), value: v })) },
+			{ key: 'kind', label: 'Record', options: ['creator', 'brand_login', 'workspace', 'collab', 'campaign', 'brand', 'ticket', 'problem', 'flag', 'limits', 'job', 'outbox', 'admins'].map((v) => ({ label: label(v), value: v })) },
 			DAYS('at', 'When')
 		],
 		columns: [
@@ -598,9 +714,10 @@ export const LISTS: Record<string, ListConfig> = {
 	}
 };
 
-Object.assign(LISTS, DEALS);
+Object.assign(LISTS, DEALS, SYSTEM);
 
 export function recordHref(kind: string, id: string | null | undefined): string | null {
+	if (kind === 'limits') return href('controls');
 	if (!id) return null;
 	if (kind === 'creator') return href('creators', id);
 	if (kind === 'brand_login') return href('brand-logins', id);
@@ -608,6 +725,10 @@ export function recordHref(kind: string, id: string | null | undefined): string 
 	if (kind === 'collab') return href('collabs', id);
 	if (kind === 'brand') return href('brands', id);
 	if (kind === 'campaign') return href('campaigns', id);
+	if (kind === 'flag' || kind === 'limits') return href('controls');
+	if (kind === 'job') return href('jobs');
+	if (kind === 'outbox') return href('outbox');
+	if (kind === 'admins') return href('admins');
 	if (kind === 'ticket') return href('support');
 	if (kind === 'problem') return href('problems');
 	return null;

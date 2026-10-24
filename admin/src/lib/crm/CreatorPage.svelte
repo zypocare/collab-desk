@@ -78,6 +78,21 @@
 		safety: { label: 'Safety', color: '#a3241a' },
 		admin: { label: 'Admin', color: '#6b6570' }
 	};
+	async function autopilot(key: string, name: string, on: boolean) {
+		if (!c) return;
+		const reason = await askText({
+			title: `${on ? 'Turn on' : 'Turn off'} ${name} for ${c.name || c.email}?`,
+			body: on ? 'It starts working on their account again.' : 'It stops on their account straight away. They can turn it back on in Settings.',
+			ok: on ? 'Turn on' : 'Turn off',
+			danger: !on,
+			input: { label: 'Why (for the audit trail)', required: true }
+		});
+		if (reason === null) return;
+		const { data, error } = await supabase.rpc('admin_creator_autopilot', { p_id: c.id, p_key: key, p_on: on, p_reason: reason });
+		if (error) return toast(errMessage(error), true);
+		c = data as R;
+		toast(`${name} ${on ? 'on' : 'off'}`);
+	}
 	const AUTOS: [string, string][] = [
 		['packages', 'Package replies'], ['counter', 'Counter-offers'], ['nudge', 'Follow-up nudges'], ['review', 'Review asks'], ['brief', 'Brief questions'],
 		['invoice', 'Invoices on live'], ['dates', 'Date reminders'], ['track', 'Tracking links'], ['pitch', 'Pitch finder'], ['instant_booking', 'Instant booking'],
@@ -195,13 +210,23 @@
 				</section>
 			{:else if tab === 'auto'}
 				<section class="card">
-					<div class="card-h"><h2 class="card-t">Autopilots</h2><span class="muted sm">What runs on their account (switches arrive with the Controls phase)</span></div>
+					<div class="card-h"><h2 class="card-t">Autopilots</h2><span class="muted sm">Switching one here is the same as the creator flipping it in Settings, and is logged</span></div>
 					<ul class="auto">
-						{#each AUTOS as [k, name] (k)}<li><span class="tag {c.autopilots[k] ? 't-ok' : 't-mute'}">{c.autopilots[k] ? 'On' : 'Off'}</span>{name}{#if k === 'pitch' && c.autopilots.pitch_mode}<span class="muted"> · {label(c.autopilots.pitch_mode)}</span>{/if}</li>{/each}
-						<li><span class="tag {c.autopilots.comment_dm && c.autopilots.comment_dm !== 'off' ? 't-ok' : 't-mute'}">{label(c.autopilots.comment_dm || 'off')}</span>Comment → DM replies</li>
-						<li><span class="tag {c.autopilots.grow && c.autopilots.grow !== 'off' ? 't-ok' : 't-mute'}">{label(c.autopilots.grow || 'off')}</span>Growth mode</li>
+						{#each AUTOS as [k, name] (k)}
+							<li>
+								<button class="sw" class:on={c.autopilots[k]} role="switch" aria-checked={!!c.autopilots[k]} aria-label={name} onclick={() => autopilot(k, name, !c!.autopilots[k])}><span></span></button>
+								<span>{name}{#if k === 'pitch' && c.autopilots.pitch_mode && c.autopilots[k]}<span class="muted"> · {c.autopilots.pitch_mode === 'auto' ? 'automatic' : 'asks first'}</span>{/if}</span>
+							</li>
+						{/each}
+						<li>
+							<button class="sw" class:on={c.autopilots.comment_dm && c.autopilots.comment_dm !== 'off'} role="switch" aria-checked={!!c.autopilots.comment_dm && c.autopilots.comment_dm !== 'off'} aria-label="Comment to DM replies"
+								disabled={!c.autopilots.comment_dm || c.autopilots.comment_dm === 'off'} title="Only the creator can turn this on" onclick={() => autopilot('comment_dm', 'Comment → DM replies', false)}><span></span></button>
+							<span>Comment → DM replies{#if c.autopilots.comment_dm && c.autopilots.comment_dm !== 'off'}<span class="muted"> · {c.autopilots.comment_dm === 'auto' ? 'automatic' : 'asks first'}</span>{/if}</span>
+						</li>
+						<li><span class="tag {c.autopilots.grow === 'auto' ? 't-ok' : 't-mute'}">{c.autopilots.grow === 'auto' ? 'Automatic' : 'Asks first'}</span><span>Growth mode</span></li>
 					</ul>
 				</section>
+				<p class="muted sm">To stop one autopilot for everyone, use <a href={href('controls')}>Switches & limits</a>. To lower this creator's daily AI share, add a limit for them there.</p>
 			{:else if tab === 'support'}
 				<section class="card tbl-wrap">
 					<div class="card-h"><h2 class="card-t">Support tickets</h2><a href={href('support')}>Open support</a></div>
@@ -275,6 +300,11 @@
 	.auto { list-style: none; margin: 0; padding: 6px 16px 12px; display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 4px 16px; }
 	.auto li { display: flex; align-items: center; gap: 10px; padding: 7px 0; font-size: 13px; border-bottom: 1px solid var(--line-soft); }
 	.auto .tag { min-width: 44px; justify-content: center; }
+	.sw { position: relative; width: 34px; height: 20px; border-radius: 10px; border: 0; flex: none; background: var(--line-strong); }
+	.sw.on { background: var(--ok); }
+	.sw:disabled { opacity: .5; cursor: not-allowed; }
+	.sw span { position: absolute; top: 3px; left: 3px; width: 14px; height: 14px; border-radius: 50%; background: #fff; transition: left .15s; }
+	.sw.on span { left: 17px; }
 	.rel { list-style: none; margin: 0; padding: 0; }
 	.rel li { border-top: 1px solid var(--line-soft); }
 	.rel li:first-child { border-top: 0; }

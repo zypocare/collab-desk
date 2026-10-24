@@ -81,10 +81,29 @@
 		['shortlist', 'Shortlist', (a) => (a.shortlist_max ? `up to ${a.shortlist_max}` : '')],
 		['followup', 'Follow-up', (a) => (a.followup_days ? `after ${a.followup_days} days` : '')],
 		['draftcheck', 'Draft check', () => ''],
-		['negotiate', 'Negotiate', (a) => (a.negotiate_over ? `over ${inrShort(a.negotiate_over)}` : '')],
+		['negotiate', 'Negotiate', (a) => (a.negotiate_over ? `quotes ${a.negotiate_over}% over budget` : '')],
 		['rebook', 'Rebook', () => ''],
 		['watch', 'Competitor watch', (a) => (a.watch_max ? `${a.watch_max} a week` : '')]
 	];
+	async function mode(key: string, name: string, to: string, el: HTMLSelectElement) {
+		if (!w) return;
+		const was = w.autopilots?.[key] ?? 'off';
+		const reason = await askText({
+			title: `${name}: ${to === 'off' ? 'off' : to === 'ask' ? 'ask first' : 'automatic'} for ${w.name}?`,
+			body: to === 'off' ? 'It stops for this workspace straight away. Its Admin can turn it back on.' : 'The same as the workspace changing it in Autopilots.',
+			ok: 'Change',
+			danger: to === 'off',
+			input: { label: 'Why (for the audit trail)', required: true }
+		});
+		if (reason === null) return void (el.value = was);
+		const { data, error } = await supabase.rpc('admin_workspace_autopilot', { p_owner: id, p_key: key, p_mode: to, p_reason: reason });
+		if (error) {
+			el.value = was;
+			return toast(errMessage(error), true);
+		}
+		w = data as R;
+		toast(`${name} changed`);
+	}
 	const ITEM_TAG: Record<string, string> = { pending: 't-warn', done: 't-ok', auto: 't-info', skipped: 't-mute' };
 </script>
 
@@ -161,7 +180,13 @@
 					<ul class="auto">
 						{#each AUTOS as [k, name, extra] (k)}
 							{@const v = w.autopilots?.[k] ?? 'off'}
-							<li><span class="tag {v === 'off' ? 't-mute' : v === 'auto' ? 't-ok' : 't-warn'}">{v === 'auto' ? 'Automatic' : v === 'ask' ? 'Ask first' : 'Off'}</span><span>{name}{#if v !== 'off' && w.autopilots && extra(w.autopilots)}<span class="muted"> · {extra(w.autopilots)}</span>{/if}</span></li>
+							<li>
+								<label class="sr" for="ap-{k}">{name}</label>
+								<select id="ap-{k}" class="mode m-{v}" value={v} onchange={(e) => mode(k, name, e.currentTarget.value, e.currentTarget)}>
+									<option value="off">Off</option><option value="ask">Ask first</option><option value="auto">Automatic</option>
+								</select>
+								<span>{name}{#if v !== 'off' && w.autopilots && extra(w.autopilots)}<span class="muted"> · {extra(w.autopilots)}</span>{/if}</span>
+							</li>
 						{/each}
 					</ul>
 				</section>
@@ -233,5 +258,8 @@
 	.auto { list-style: none; margin: 0; padding: 6px 16px 12px; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 4px 16px; }
 	.auto li { display: flex; align-items: center; gap: 10px; padding: 8px 0; font-size: 13px; border-bottom: 1px solid var(--line-soft); }
 	.auto .tag { min-width: 76px; justify-content: center; }
+	.mode { height: 28px; border-radius: 6px; border: 1px solid var(--line-strong); background: var(--surface); font-size: 12.5px; font-weight: 500; padding: 0 6px; min-width: 104px; }
+	.mode.m-auto { background: var(--ok-bg); color: var(--ok); border-color: #bfe0cc; }
+	.mode.m-ask { background: var(--warn-bg); color: var(--warn); border-color: #ecd6a8; }
 	.ln { font-size: 13px; white-space: pre-wrap; display: grid; gap: 6px; }
 </style>

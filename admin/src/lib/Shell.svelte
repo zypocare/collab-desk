@@ -12,6 +12,9 @@
 	import CollabPage from './crm/CollabPage.svelte';
 	import BrandPage from './crm/BrandPage.svelte';
 	import CampaignPage from './crm/CampaignPage.svelte';
+	import Controls from './crm/Controls.svelte';
+	import Jobs from './crm/Jobs.svelte';
+	import Admins from './crm/Admins.svelte';
 	import Palette from './crm/Palette.svelte';
 	import { LISTS } from './crm/lists.ts';
 	import ProblemsTab from './ProblemsTab.svelte';
@@ -58,15 +61,29 @@
 				{ id: 'problems', label: 'Problems', icon: 'alert', badge: () => queue.problems_new ?? 0 }
 			]
 		},
-		{ label: 'System', items: [{ id: 'audit', label: 'Audit trail', icon: 'list' }] }
+		{
+			label: 'System',
+			items: [
+				{ id: 'controls', label: 'Switches & limits', icon: 'shield', badge: () => flagsOff, warn: true },
+				{ id: 'jobs', label: 'Scheduled jobs', icon: 'clock' },
+				{ id: 'outbox', label: 'Emails & outbox', icon: 'send', badge: () => queue.emails_failed ?? 0 },
+				{ id: 'inbound', label: 'Inbound mail', icon: 'inbox' },
+				{ id: 'ai-usage', label: 'AI usage', icon: 'spark' },
+				{ id: 'instagram', label: 'Instagram', icon: 'link' },
+				{ id: 'admins', label: 'Admins', icon: 'key' },
+				{ id: 'audit', label: 'Audit trail', icon: 'list' }
+			]
+		}
 	];
 	const screens = NAV.flatMap((g) => g.items.map((i) => ({ label: i.label, href: href(i.id) })));
 	const LEGACY: Record<string, [string, string]> = { support: ['Trust', 'Support'], safety: ['Trust', 'Safety'], problems: ['Trust', 'Problems'] };
 
 	let queue = $state<Record<string, number>>({});
+	let flagsOff = $state(0);
 	async function loadQueue() {
-		const { data } = await supabase.rpc('admin_dashboard', { p_days: 7 });
-		if (data) queue = (data as { queue: Record<string, number> }).queue;
+		const [q, c] = await Promise.all([supabase.rpc('admin_dashboard', { p_days: 7 }), supabase.rpc('admin_controls')]);
+		if (q.data) queue = (q.data as { queue: Record<string, number> }).queue;
+		if (c.data) flagsOff = (c.data as { flags: { on: boolean }[] }).flags.filter((f) => !f.on).length;
 	}
 	let palette = $state(false);
 	let menu = $state(false);
@@ -123,7 +140,7 @@
 			<button class="search" onclick={() => (palette = true)}>
 				<Icon name="search" /><span>Search creators, brands, collabs, invoices, tickets…</span><kbd>{isMac ? '⌘' : 'Ctrl'} K</kbd>
 			</button>
-			<span class="tag t-ok live"><i></i>Live data</span>
+			{#if flagsOff}<a class="tag t-warn live" href={href('controls')}>{flagsOff} switch{flagsOff === 1 ? '' : 'es'} off</a>{:else}<span class="tag t-ok live"><i></i>Live data</span>{/if}
 		</header>
 
 		<main class="main">
@@ -141,6 +158,12 @@
 				<BrandPage id={route.id} />
 			{:else if route.section === 'campaigns' && route.id}
 				<CampaignPage id={route.id} />
+			{:else if route.section === 'controls'}
+				<Controls onflags={(n) => (flagsOff = n)} />
+			{:else if route.section === 'jobs'}
+				<Jobs />
+			{:else if route.section === 'admins'}
+				<Admins />
 			{:else if LISTS[route.section]}
 				{#key route.section}<ListView config={LISTS[route.section]} onchange={loadQueue} />{/key}
 			{:else if LEGACY[route.section]}
