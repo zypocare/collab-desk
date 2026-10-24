@@ -442,9 +442,14 @@
   .dk2-acts { display: flex; gap: 12px; padding-right: 4px; }
   [data-side] .dk2-acts .dk2-add { flex: 1; height: 48px; justify-content: center; font-size: 15px; font-weight: 700; }
   [data-side] .dk2-acts .dk2-open { flex: none; width: 48px; height: 48px; padding: 0; justify-content: center; }
-  .dk2-dots { display: flex; justify-content: center; gap: 6px; }
-  .dk2-dots button { width: 6px; height: 6px; padding: 0; border: 0; border-radius: 99px; background: var(--line-strong); cursor: pointer; transition: width .3s cubic-bezier(.2, .9, .25, 1), background .3s; }
-  .dk2-dots button.on { width: 18px; background: var(--ink); }
+  .dk2-lead { touch-action: pan-y; overflow: hidden; }
+  .dk2-of { margin-left: 8px; padding: 2px 8px; border-radius: 99px; background: color-mix(in oklab, var(--ink) 10%, transparent); font-size: 10.5px; letter-spacing: .08em; color: var(--ink); }
+  .dk2-dots { display: flex; justify-content: center; align-items: center; gap: 2px; margin-top: -4px; }
+  .dk2-dots .dk2-dot { display: grid; place-items: center; width: 28px; height: 32px; padding: 0; border: 0; background: none; cursor: pointer; }
+  .dk2-dots .dk2-dot i { width: 7px; height: 7px; border-radius: 99px; background: var(--line-strong); transition: width .3s cubic-bezier(.2, .9, .25, 1), background .3s; }
+  .dk2-dots .dk2-dot.on i { width: 20px; background: var(--ink); }
+  .dk2-dots .dk2-step { display: grid; place-items: center; width: 36px; height: 32px; padding: 0; border: 0; background: none; color: var(--ink-3); cursor: pointer; }
+  .dk2-dots .dk2-step .ic { width: 18px; height: 18px; }
 
   .dk2-sh { display: flex; align-items: baseline; justify-content: space-between; margin-top: 4px; }
   .dk2-sh span { font-size: 11px; font-weight: 700; letter-spacing: .17em; text-transform: uppercase; color: var(--ink-3); }

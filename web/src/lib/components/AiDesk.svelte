@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { fly } from 'svelte/transition';
 	import { isRanked } from '../priority';
 	import { askAi } from '../ai';
 	import { monthLabel, prevMonth } from '../monthSummary';
@@ -52,6 +53,40 @@
 	// (with what the brand actually wrote), and the open requests as swipeable score cards.
 	const phoneLeads = $derived([...studio.leads].sort((a, b) => Number(b.collab_flag === 'likely') - Number(a.collab_flag === 'likely')).slice(0, 3));
 	let leadI = $state(0);
+	// Which way the card slides (1 = to the next one, -1 = back).
+	let dir = $state(1);
+	function goLead(i: number) {
+		const n = phoneLeads.length;
+		if (n < 2) return;
+		const to = (i + n) % n;
+		dir = i > leadI ? 1 : -1;
+		leadI = to;
+		navigator.vibrate?.(8);
+	}
+	// Swipe left or right on the card to see the next possible collab (a tap still opens things).
+	function swipe(node: HTMLElement) {
+		let x0 = 0, y0 = 0, on = false;
+		const down = (e: PointerEvent) => {
+			if (e.pointerType === 'mouse') return;
+			x0 = e.clientX; y0 = e.clientY; on = true;
+		};
+		const up = (e: PointerEvent) => {
+			if (!on) return;
+			on = false;
+			const dx = e.clientX - x0, dy = e.clientY - y0;
+			if (Math.abs(dx) < 45 || Math.abs(dx) < Math.abs(dy) * 1.3) return;
+			goLead(dx < 0 ? leadI + 1 : leadI - 1);
+			// A swipe isn't a tap: swallow a click that follows straight away (never a later one).
+			const block = (ev: Event) => (ev.stopPropagation(), ev.preventDefault());
+			node.addEventListener('click', block, { capture: true, once: true });
+			setTimeout(() => node.removeEventListener('click', block, { capture: true }), 350);
+		};
+		const cancel = () => (on = false);
+		node.addEventListener('pointerdown', down);
+		node.addEventListener('pointerup', up);
+		node.addEventListener('pointercancel', cancel);
+		return { destroy() { node.removeEventListener('pointerdown', down); node.removeEventListener('pointerup', up); node.removeEventListener('pointercancel', cancel); } };
+	}
 	const lead = $derived(phoneLeads[Math.min(leadI, Math.max(0, phoneLeads.length - 1))]);
 	let said = $state<Record<string, string>>({});
 	$effect(() => {
@@ -121,11 +156,12 @@
 		<h2 class="dk2-say">{#each say as p, i (i)}{#if p.em}<em class="dk2-{p.em}">{p.t}</em>{:else}{p.t}{/if}{/each}</h2>
 
 		{#if lead}
-			<div class="dk2-lead">
-				<div class="dk2-lead-in">
+			<div class="dk2-lead" use:swipe>
+				{#key lead.igsid}
+				<div class="dk2-lead-in" in:fly={{ x: 40 * dir, duration: 220 }}>
 					<div class="dk2-lt">
 						<Icon name="send" />
-						<span>Spotted in your DMs</span>
+						<span>Spotted in your DMs{#if phoneLeads.length > 1}<b class="dk2-of">{Math.min(leadI, phoneLeads.length - 1) + 1} of {phoneLeads.length}</b>{/if}</span>
 						<em class:maybe={lead.collab_flag !== 'likely'}><i></i>{lead.collab_flag === 'likely' ? 'Likely' : 'Maybe'}</em>
 					</div>
 					<a class="dk2-who" href="/studio/inbox/ig/{lead.igsid}">
@@ -140,9 +176,14 @@
 						<a class="btn dk2-open" href="/studio/inbox/ig/{lead.igsid}" aria-label="Open the chat"><Icon name="arrow" /></a>
 					</div>
 					{#if phoneLeads.length > 1}
-						<div class="dk2-dots">{#each phoneLeads as l, i (l.igsid)}<button class:on={i === leadI} onclick={() => (leadI = i)} aria-label="Show @{l.username || 'lead'}"></button>{/each}</div>
+						<div class="dk2-dots">
+							<button class="dk2-step" onclick={() => goLead(leadI - 1)} aria-label="Previous possible collab"><Icon name="chevL" /></button>
+							{#each phoneLeads as l, i (l.igsid)}<button class="dk2-dot" class:on={i === leadI} onclick={() => goLead(i)} aria-label="Show @{l.username || 'lead'}"><i></i></button>{/each}
+							<button class="dk2-step" onclick={() => goLead(leadI + 1)} aria-label="Next possible collab"><Icon name="chevR" /></button>
+						</div>
 					{/if}
 				</div>
+				{/key}
 			</div>
 			{#if studio.leads.length > 3}<a class="ail-more" href="/studio/inbox">+{studio.leads.length - 3} more possible collabs in Messages<Icon name="chevR" /></a>{/if}
 		{/if}

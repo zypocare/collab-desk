@@ -124,7 +124,12 @@
 				setTimeout(() => node.classList.remove('drag'), 220);
 			}
 			node.classList.remove('arm');
-			if (locked) node.addEventListener('click', (e) => (e.stopPropagation(), e.preventDefault()), { capture: true, once: true });
+			// A swipe isn't a tap: swallow a click that follows straight away (never a later one).
+			if (locked) {
+				const block = (e: Event) => (e.stopPropagation(), e.preventDefault());
+				node.addEventListener('click', block, { capture: true, once: true });
+				setTimeout(() => node.removeEventListener('click', block, { capture: true }), 350);
+			}
 		};
 		node.addEventListener('pointerdown', down);
 		node.addEventListener('pointermove', move);
