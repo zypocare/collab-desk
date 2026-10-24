@@ -223,12 +223,25 @@
 
   /* ---------- screens slide like an app ---------- */
   ::view-transition-group(m-bar),::view-transition-group(m-tabs){z-index:5}
+  /* The top bar and the tab bar never cross-fade (that showed two tab bars at once for a moment): the new one
+     is simply there, and its own pieces move (the tab light slides, the icon pops, the title rises). */
+  ::view-transition-old(m-bar),::view-transition-old(m-tabs){display:none}
+  ::view-transition-new(m-bar),::view-transition-new(m-tabs){animation:none}
+  ::view-transition-group(m-bar),::view-transition-group(m-tabs){animation:none}
   html[data-nav="push"]::view-transition-old(root){animation:m-out-l .38s cubic-bezier(.2,.85,.25,1) both}
   html[data-nav="push"]::view-transition-new(root){animation:m-in-r .38s cubic-bezier(.2,.85,.25,1) both}
   html[data-nav="pop"]::view-transition-old(root){animation:m-out-r .32s cubic-bezier(.3,.7,.3,1) both;z-index:2}
   html[data-nav="pop"]::view-transition-new(root){animation:m-in-l .32s cubic-bezier(.3,.7,.3,1) both}
   html[data-nav="tab"]::view-transition-old(root){animation:m-fade-out .14s ease both}
   html[data-nav="tab"]::view-transition-new(root){animation:m-tab-in .3s cubic-bezier(.2,.8,.2,1) both}
+  /* Things that float over the page (prompts, toasts, the action bars) stay put while the screen changes,
+     instead of sliding away with the old screen and fading back in by the tab bar. */
+  [data-desk] .pk{view-transition-name:m-pk}
+  [data-desk] .toasts{view-transition-name:m-toasts}
+  [data-desk] .fab{view-transition-name:m-fab}
+  [data-desk] .batch-bar{view-transition-name:m-batch}
+  [data-desk] .imp-actions{view-transition-name:m-imp}
+  ::view-transition-group(m-pk),::view-transition-group(m-toasts),::view-transition-group(m-fab),::view-transition-group(m-batch),::view-transition-group(m-imp){z-index:6;animation-duration:.2s}
 
   /* ---------- buttons and fields, Instagram style ---------- */
   [data-desk] .btn{height:42px;padding:0 16px;gap:7px;border-radius:12px;border:0;background:var(--ig-fill);box-shadow:none;color:var(--ink);font-size:15px;font-weight:600}
@@ -953,7 +966,7 @@
 @keyframes m-out-r{to{transform:translateX(100%)}}
 @keyframes m-fade-in{from{opacity:.4}}
 @keyframes m-fade-out{to{opacity:0}}
-@keyframes m-tab-in{from{opacity:0;transform:translateY(10px)}}
+@keyframes m-tab-in{from{opacity:0}}
 @keyframes m-rise{from{opacity:0;transform:translateY(12px)}}
 @keyframes m-pop{0%{transform:scale(.8)}60%{transform:scale(1.12)}100%{transform:scale(1)}}
 @keyframes m-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}

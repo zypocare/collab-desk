@@ -43,7 +43,7 @@
 		{ href: '/studio/inbox', label: 'Messages', icon: 'inbox', desk: true },
 		{ href: '/studio/content', label: 'Plan', icon: 'cal', tabs: [{ href: '/studio/content', label: 'Content' }, { href: '/studio/calendar', label: 'Calendar' }, { href: '/studio/grow', label: 'Grow' }], also: ['/studio/grow/'] },
 		{ href: '/studio/money', label: 'Money', icon: 'wallet', tabs: [{ href: '/studio/money', label: 'Overview' }, { href: '/studio/payments', label: 'Payments' }, { href: '/studio/reports', label: 'Reports' }] },
-		{ href: '/studio/settings', label: 'My page', short: 'Page', icon: 'link', also: ['/studio/profile'] }
+		{ href: '/studio/settings', label: 'My page', short: 'Page', icon: 'link', also: ['/studio/profile', '/studio/qr', '/studio/help'] }
 	];
 	const path = $derived(page.url.pathname);
 	// Something new from the server (a request, a payment, a save): a light sweep runs under the top bar.
@@ -250,6 +250,7 @@
 		: path.startsWith('/studio/help/tickets/') ? '/studio/help/tickets'
 		: path.startsWith('/studio/help/') ? '/studio/help'
 		: path === '/studio/help' ? '/studio/settings'
+		: path === '/studio/qr' ? '/studio/settings'
 		: ''
 	);
 	const unread = $derived(studio.collabs.reduce((a, c) => a + unreadFor(c), 0));
@@ -491,7 +492,7 @@
 				<header class="m-bar" class:scrolled={phone.scrolled} class:sub={!!back} class:hide={phone.hide && !back} class:cs={path === '/studio/settings'} class:cs-sub={path === '/studio/settings' && !!sec}><span class="m-live" class:ping aria-hidden="true"></span>
 					{#if back}
 						<button class="m-ib m-back" onclick={goBack} aria-label="Back"><Icon name={path === '/studio/settings' && sec ? 'back' : 'chevL'} /></button>
-						<div class="m-title">{title}</div>
+						{#key title}<div class="m-title">{title}</div>{/key}
 						<div class="m-r">{#if path === '/studio/settings' && !sec}<a class="cs-pill" href="/?preview=1" target="_blank" rel="noopener"><Icon name="eye" />Preview</a>{/if}</div>
 					{:else}
 						<div class="m-brand" class:wordmark={path === '/studio'}>{path === '/studio' ? (studio.settings?.app_name ?? 'Miracle') : title}</div>

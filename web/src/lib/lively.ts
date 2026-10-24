@@ -8,10 +8,13 @@ const REDUCED = typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduce
 const onPhone = () => matchMedia('(max-width: 760px)').matches;
 const IOS = typeof navigator !== 'undefined' && (/iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1));
 
+// A glow spreads from the finger on these.
+const RIPPLE = '.btn, .cs-row, .tk-band, .cs-card, .imp-seg button, .m-seg a, .subtabs a, .wc, .hero-card, .m-ccard, .cr-it, .qr-item, .chip, .pill, .cs-wins a, .cs-logout, .imp-way, .lnk';
+
 // What tilts when pressed.
 const TILT = '.wc, .hero-card, .md-hero, .cr-it, .m-ccard, .qr-item, .ct-mini, .tk, .dk2-sc';
 // What rises in as it comes on screen.
-const RISE = ['.hs', '.wc', '.md-card', '.m-hero', '.md-hero', '.set-list', '.set-group', '.m-ccard', '.cr-ring', '.cr-ticker', '.qr-item', '.ct-mini', '.m-group', '.pf-tile', '.dr-sec']
+const RISE = ['.hs', '.wc', '.md-card', '.m-hero', '.md-hero', '.set-list', '.set-group', '.m-ccard', '.cr-ring', '.cr-ticker', '.qr-item', '.ct-mini', '.m-group', '.pf-tile', '.dr-sec', '.cs-me', '.cs-cards', '.tks', '.cs-h', '.cs-grp', '.cs-wins', '.cs-logout', '.imp-mode', '.imp-row', '.panel', '.alert-prompt', '.ob', '.hero-card', '.linkcard', '.qr-grid', '.qr-stage', '.ht', '.pg-card', '.mc-col']
 	.map((s) => `main ${s}`)
 	.join(', ');
 
@@ -57,6 +60,41 @@ export function lively() {
 			if (pressed) delete pressed.dataset.press;
 			pressed = null;
 		};
+		// The glow: a soft light spreads from where the finger touched, then fades.
+		const ripple = (e: PointerEvent) => {
+			if (!onPhone() || e.pointerType === 'mouse') return;
+			const el = (e.target as Element | null)?.closest?.(RIPPLE) as HTMLElement | null;
+			if (!el || (el as HTMLButtonElement).disabled) return;
+			const r = el.getBoundingClientRect();
+			if (getComputedStyle(el).position === 'static') el.style.position = 'relative';
+			const box = document.createElement('span');
+			box.className = 'mc-rip';
+			box.setAttribute('aria-hidden', 'true');
+			const dot = document.createElement('i');
+			const size = Math.hypot(r.width, r.height) * 2;
+			dot.style.width = dot.style.height = `${size}px`;
+			dot.style.left = `${e.clientX - r.left - size / 2}px`;
+			dot.style.top = `${e.clientY - r.top - size / 2}px`;
+			box.append(dot);
+			el.append(box);
+			setTimeout(() => box.remove(), 700);
+		};
+		addEventListener('pointerdown', ripple, { passive: true });
+
+		// Tilt the phone and the light inside the cards moves with it (Android; iPhone asks first, so not there).
+		let tx = 0, ty = 0, tq = 0;
+		const root = document.documentElement;
+		const tilt = (e: DeviceOrientationEvent) => {
+			if (e.beta == null || e.gamma == null) return;
+			tx = Math.max(-1, Math.min(1, e.gamma / 30));
+			ty = Math.max(-1, Math.min(1, (e.beta - 45) / 30));
+			tq ||= requestAnimationFrame(() => {
+				tq = 0;
+				root.style.setProperty('--tx', tx.toFixed(3));
+				root.style.setProperty('--ty', ty.toFixed(3));
+			});
+		};
+		if (!IOS) addEventListener('deviceorientation', tilt, { passive: true });
 		addEventListener('pointerdown', down, { passive: true });
 		for (const ev of ['pointerup', 'pointercancel', 'blur'] as const) addEventListener(ev, up, { passive: true });
 
@@ -138,6 +176,9 @@ export function lively() {
 			io?.disconnect();
 			cancelAnimationFrame(queued);
 			removeEventListener('pointerdown', down);
+			removeEventListener('pointerdown', ripple);
+			removeEventListener('deviceorientation', tilt);
+			cancelAnimationFrame(tq);
 			for (const ev of ['pointerup', 'pointercancel', 'blur'] as const) removeEventListener(ev, up);
 			removeEventListener('touchstart', tStart);
 			removeEventListener('touchmove', tMove);

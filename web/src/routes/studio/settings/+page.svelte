@@ -343,8 +343,8 @@
 			{#each GROUPS as g (g.label)}
 				<div class="cs-h">{titleCase(g.label)}</div>
 				<div class="cs-grp">
-					{#each g.ids.map(byId) as x (x.id)}
-						<a class="cs-row" href="?s={x.id}" onclick={(e) => (e.preventDefault(), open(x.id))}><span class="cs-ico" class:warn={!!x.warn}><Icon name={x.icon} /></span><span class="cs-txt"><b>{titleCase(x.label)}</b><small>{x.warn ?? x.sub}</small></span>{#if x.warn}<i class="cs-dot" title={x.warn}></i>{/if}<Icon name="chev" class="cs-chev" /></a>
+					{#each g.ids.map(byId) as x, j (x.id)}
+						<a class="cs-row" style="--k:{j}" href="?s={x.id}" onclick={(e) => (e.preventDefault(), open(x.id))}><span class="cs-ico" class:warn={!!x.warn}><Icon name={x.icon} /></span><span class="cs-txt"><b>{titleCase(x.label)}</b><small>{x.warn ?? x.sub}</small></span>{#if x.warn}<i class="cs-dot" title={x.warn}></i>{/if}<Icon name="chev" class="cs-chev" /></a>
 					{/each}
 				</div>
 			{/each}

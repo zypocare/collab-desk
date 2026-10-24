@@ -170,6 +170,6 @@ export function depth(u: URL) {
 	if (p.startsWith('/brand/r/') || p.startsWith('/insights') || (p === '/brand/details' && u.searchParams.get('new'))) return 2;
 	if (/^\/studio\/inbox\/./.test(p)) return 3;
 	if (p === '/studio/settings') return u.searchParams.get('s') ? 3 : 2;
-	if (/^\/studio\/(c|import|instagram|share|inbox)(\/|$)/.test(p) || /^\/studio\/brands\/./.test(p)) return 2;
+	if (/^\/studio\/(c|import|instagram|share|inbox|qr|help|tax)(\/|$)/.test(p) || /^\/studio\/brands\/./.test(p)) return 2;
 	return 1;
 }

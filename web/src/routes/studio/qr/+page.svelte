@@ -152,7 +152,8 @@
 		</section>
 
 		<section class="md-card qr-stage rv" style="--i:2">
-			<canvas bind:this={canvas} aria-label="QR code for {sel.name}"></canvas>
+			<!-- A light passes over the code now and then, and it follows the phone's tilt. -->
+			<div class="qr-art"><canvas bind:this={canvas} aria-label="QR code for {sel.name}"></canvas><span class="qr-sheen" aria-hidden="true"></span></div>
 			<span class="qr-url mono">{url(sel).replace(/^https?:\/\//, '')}</span>
 			<div class="qr-stats">
 				<div><b class="num">{sel.scans}</b><small>scans</small></div>
@@ -241,6 +242,11 @@
 	.qr-t small { font-size: 13px; color: var(--ink-3); }
 
 	.qr-stage { display: grid; justify-items: center; gap: 14px; padding: 22px; }
+	.qr-art { position: relative; display: block; width: 100%; max-width: 360px; margin: 0 auto; border-radius: 26px; line-height: 0; animation: qr-float 6s ease-in-out infinite; }
+	.qr-sheen { position: absolute; inset: 0; pointer-events: none; border-radius: inherit; background: linear-gradient(115deg, transparent 35%, rgba(255, 255, 255, 0.55) 48%, rgba(255, 220, 240, 0.25) 52%, transparent 65%); background-size: 260% 100%; mix-blend-mode: soft-light; animation: qr-sheen 5.5s ease-in-out infinite; translate: calc(var(--tx, 0) * 14px) calc(var(--ty, 0) * 10px); }
+	@keyframes qr-sheen { 0%, 55% { background-position: 130% 0; } 100% { background-position: -30% 0; } }
+	@keyframes qr-float { 0%, 100% { translate: 0 0; } 50% { translate: 0 -6px; } }
+	@media (prefers-reduced-motion: reduce) { .qr-art, .qr-sheen { animation: none; } }
 	.qr-stage canvas { width: 100%; max-width: 360px; height: auto; border-radius: 26px; box-shadow: 0 24px 50px -30px color-mix(in oklab, var(--g1) 60%, transparent); }
 	.qr-url { justify-self: stretch; width: 100%; font-size: 13px; color: var(--ink-3); overflow-wrap: anywhere; text-align: center; }
 	.qr-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; width: 100%; }
@@ -249,7 +255,7 @@
 	.qr-stats b.num { font: 600 24px/1.1 var(--f-mono); letter-spacing: -.03em; }
 	.qr-stats small { font-size: 12.5px; color: var(--ink-3); }
 	.qr-acts { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
-	@media (max-width: 760px) { .qr-acts .qr-share { flex: 1 0 100%; justify-content: center; height: 48px; } .qr-stage canvas { max-width: 300px; } .qr-stage .qr-acts { order: 3; } .qr-stage .qr-stats { order: 4; } .qr-stage .qr-url { order: 2; } .qr-stage canvas { order: 1; } }
+	@media (max-width: 760px) { .qr-acts .qr-share { flex: 1 0 100%; justify-content: center; height: 48px; } .qr-stage canvas, .qr-art { max-width: 300px; } .qr-stage .qr-acts { order: 3; } .qr-stage .qr-stats { order: 4; } .qr-stage .qr-url { order: 2; } .qr-stage canvas { order: 1; } }
 
 	.qr-ctl { display: grid; gap: 18px; padding: 22px; }
 	.f { display: grid; gap: 8px; }
