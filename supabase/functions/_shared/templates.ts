@@ -537,6 +537,57 @@ export function render(kind: string, p: Payload, s: Settings): Omit<Mail, 'to'> 
   }
 
   // Creator sign-ups: a new request for the people who run Miracle, then a welcome or a kind no.
+  // ---------------------------------------------------------------- support
+  if (kind === 'support_reply') {
+    const link = url(s, String(p.link ?? '/studio/help'));
+    const ref = `#${p.number}`;
+    return {
+      subject: p.solved ? `Solved: ${p.subject} (${ref})` : `Miracle support replied: ${p.subject} (${ref})`,
+      html: layout(
+        s,
+        p.solved ? 'We think this is sorted' : 'Miracle support replied',
+        `${hi(p.name || 'there')}${P(`About your ticket <b>${esc(ref)}</b>, “${esc(p.subject)}”:`)}
+         ${quoteBox('Miracle support', p.body)}
+         ${P(p.solved ? 'If it isn’t sorted, reply in the app and the ticket opens again.' : 'Reply in the app so everything stays in one place.')}`,
+        { label: 'Open your ticket', href: link },
+        { to: 'app', why: 'you asked Miracle for help', preheader: String(p.body ?? '').slice(0, 120) },
+      ),
+      text: `Hi ${firstOf(p.name || 'there')},
+
+About your ticket ${ref}, "${p.subject}":
+
+${p.body}
+
+Open your ticket: ${link}
+
+Miracle support`,
+    };
+  }
+  if (kind === 'support_new' || kind === 'support_user_reply') {
+    const admin = `https://admin.miracleapp.live/#support`;
+    const ref = `#${p.number}`;
+    const who = `${p.name || p.email} (${p.side === 'brand' ? 'brand' : p.side === 'creator' ? 'creator' : 'signed in'})`;
+    const isNew = kind === 'support_new';
+    return {
+      subject: `${p.urgent ? '[Urgent] ' : ''}${isNew ? 'New ticket' : 'Reply on ticket'} ${ref}: ${p.subject}`,
+      html: layout(
+        s,
+        isNew ? `New ticket ${esc(ref)}` : `${esc(String(p.name || p.email))} replied on ${esc(ref)}`,
+        `${P(`<b>${esc(p.subject)}</b>${isNew ? ` · ${esc(p.category)}` : ''}`)}
+         ${quoteBox(who, p.body)}
+         ${P(`Their email: ${esc(p.email)}`)}`,
+        { label: 'Open the Support tab', href: admin },
+        { to: 'app', why: `you're a ${s.app_name} admin` },
+      ),
+      text: `${isNew ? 'New ticket' : 'Reply on ticket'} ${ref}: ${p.subject}
+From ${who}, ${p.email}
+
+${p.body}
+
+Answer it: ${admin}`,
+    };
+  }
+
   if (kind === 'creator_request') {
     const where = [p.niche, p.city].map((x) => String(x ?? '').trim()).filter(Boolean).join(' · ');
     const admin = 'https://admin.miracleapp.live';

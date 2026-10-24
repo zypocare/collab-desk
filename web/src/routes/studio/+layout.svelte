@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { alerts, watchAlerts } from '#lib/alerts.svelte.ts';
+	import { refreshSupportUnread } from '#lib/support.svelte.ts';
 	import { afterNavigate, goto } from '$app/navigation';
 	import Logo from '#lib/components/Logo.svelte';
 	import { edgeSwipeBack, goBackOr } from '#lib/back.ts';
@@ -88,6 +89,7 @@
 
 	onMount(() => {
 		const stopAlerts = watchAlerts();
+		refreshSupportUnread();
 		watchVoiceUnlock();
 		// Back to the tab or window after a while: make sure the screen shows the latest.
 		const back = () => document.visibilityState === 'visible' && catchUp();
@@ -183,6 +185,9 @@
 		'/studio/share': 'Add from a share',
 		'/studio/rights': 'Usage rights',
 		'/studio/alerts': 'Alerts',
+		'/studio/help': 'Help',
+		'/studio/help/new': 'Contact support',
+		'/studio/help/tickets': 'Your tickets',
 		'/studio/tax': 'Tax desk',
 		'/studio/grow': 'Grow',
 		'/studio/grow/check': 'Check a reel',
@@ -213,6 +218,8 @@
 		: sec ? (SECTIONS[sec] ?? '')
 		: brandId ? (studio.brands.find((b) => b.id === brandId)?.name ?? 'Brand')
 		: path.startsWith('/studio/grow/collab/') ? 'Collab reel'
+		: path.startsWith('/studio/help/tickets/') ? 'Ticket'
+		: path.startsWith('/studio/help/') && !TITLES[path] ? 'Help'
 		: (TITLES[path] ?? group?.label ?? '')
 	);
 	const back = $derived(
@@ -226,6 +233,9 @@
 		: /^\/studio\/(import|share|rights)/.test(path) ? '/studio/collabs'
 		: path === '/studio/tax' ? '/studio/money'
 		: path === '/studio/alerts' ? '/studio'
+		: path.startsWith('/studio/help/tickets/') ? '/studio/help/tickets'
+		: path.startsWith('/studio/help/') ? '/studio/help'
+		: path === '/studio/help' ? '/studio/settings'
 		: ''
 	);
 	const unread = $derived(studio.collabs.reduce((a, c) => a + unreadFor(c), 0));
@@ -307,7 +317,8 @@
 		{ href: '/studio/grow', label: 'Grow', icon: 'spark', on: ['/studio/grow'] },
 		{ href: '/studio/money', label: 'Money', icon: 'wallet', on: ['/studio/money', '/studio/payments', '/studio/reports'] },
 		{ href: '/studio/page', label: 'Brand page', icon: 'link', on: ['/studio/page', '/studio/profile', '/studio/qr'] },
-		{ href: '/studio/settings', label: 'Settings', icon: 'gear', on: ['/studio/settings'] }
+		{ href: '/studio/settings', label: 'Settings', icon: 'gear', on: ['/studio/settings'] },
+		{ href: '/studio/help', label: 'Help', icon: 'info', on: ['/studio/help'] }
 	];
 	// Managers and agencies who work for several creators: switch between their studios, and the roster.
 	$effect(() => {

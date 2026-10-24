@@ -11,7 +11,7 @@ import { reportProblem } from '../_shared/problems.ts';
 // Alerts only: a brand opening her insights link.
 const PUSH_ONLY = new Set(['insights_viewed', 'ig_dm', 'ig_collab', 'month_summary', 'comment_dm']);
 // Mails to a brand that come from the app itself, so replies don't go to the creator.
-const FROM_APP = new Set(['brief_application', 'brief_digest']);
+const FROM_APP = new Set(['brief_application', 'brief_digest', 'support_reply']);
 
 const CRON_SECRET = Deno.env.get('CRON_SECRET') ?? '';
 
@@ -128,7 +128,7 @@ Deno.serve(async (req) => {
       const toOwner = String(row.to_email).toLowerCase() === ownerEmail;
       await sendMail({
         to: row.to_email,
-        cc: toOwner && row.kind !== 'new_device' ? teamCc : undefined,
+        cc: toOwner && row.kind !== 'new_device' && !row.kind.startsWith('support_') ? teamCc : undefined,
         ...mail,
         ...(row.creator_id == null ? (creator.replyTo ? { replyTo: creator.replyTo } : {}) : toOwner || !ownerEmail || FROM_APP.has(row.kind) ? {} : { replyTo: ownerEmail }),
       });

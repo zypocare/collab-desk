@@ -44,6 +44,11 @@ const NOISE = /ResizeObserver loop|Script error|AbortError|The user aborted|canc
 const CHUNK = /Failed to fetch dynamically imported module|Importing a module script failed|error loading dynamically imported module/i;
 
 /** Sends one crash; hands back the reference shown to the person (or '' when it isn't worth sending). */
+/** For a support ticket: which phone or browser, the app's version and the last few things they did. */
+export function supportDevice() {
+	return { device: device(), release: Number(version) ? Number(version).toString(36) : String(version).slice(-8), app: native.version || '', page: location.pathname, steps: [...steps] };
+}
+
 export async function reportProblem(e: unknown, place = location.pathname): Promise<string> {
 	const err = e instanceof Error ? e : new Error(typeof e === 'string' ? e : String((e as { message?: unknown })?.message ?? e));
 	const message = err.message || String(e);

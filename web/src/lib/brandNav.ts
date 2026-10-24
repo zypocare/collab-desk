@@ -43,7 +43,7 @@ export function brandGroups(onApp: boolean): BrandGroup[] {
 			],
 			also: ['/brand/reports', '/brand/business/money', '/brand/business/shipping']
 		},
-		{ href: '/brand/settings', label: 'Brand', icon: 'gear', me: true, also: ['/brand/settings', '/brand/details', '/brand/business/team'] }
+		{ href: '/brand/settings', label: 'Brand', icon: 'gear', me: true, also: ['/brand/settings', '/brand/details', '/brand/business/team', '/brand/help'] }
 	];
 }
 

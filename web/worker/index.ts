@@ -7,6 +7,7 @@
 
 import { brandPage, qrScan } from './page';
 import { directory } from './directory';
+import { asText, search as helpSearch } from '../src/lib/help/articles';
 
 type Env = {
 	ASSETS: { fetch: (req: Request) => Promise<Response> };
@@ -23,7 +24,7 @@ type Env = {
 type Run = { env: Env; gemini: boolean; neurons: number };
 
 // Expected size of each job in Cloudflare neurons (reserved before, corrected after).
-const COST: Record<string, number> = { dm: 160, reply: 110, caption: 110, pitch: 140, fit: 230, classify: 40, summary: 220, negotiate: 210, script: 330, nudge: 120, ask: 260, voice: 60, embed: 8, cheer: 60, reelcheck: 260, growplan: 200, checkup: 420, offercheck: 700, precheck: 220, getfound: 180, brandask: 450, brandbrief: 600, safety: 300 };
+const COST: Record<string, number> = { dm: 160, reply: 110, caption: 110, pitch: 140, fit: 230, classify: 40, summary: 220, negotiate: 210, script: 330, nudge: 120, ask: 260, voice: 60, embed: 8, cheer: 60, reelcheck: 260, growplan: 200, checkup: 420, offercheck: 700, precheck: 220, getfound: 180, brandask: 450, brandbrief: 600, safety: 300, helpask: 200 };
 // Cloudflare's price list in neurons per token (Llama 3.3 70B fast; Llama 3.2 11B vision).
 const PER_TOKEN = { text: [0.0267, 0.2048], vision: [0.0045, 0.0615] };
 const USED_UP = "Today's free AI is used up. It's back at 5:30 am.";
@@ -46,10 +47,10 @@ export default {
 		try {
 			const kind = url.pathname.slice('/api/ai/'.length);
 			if (kind === 'status') return json(await status(req, env));
-			if (!['dm', 'reply', 'caption', 'pitch', 'classify', 'fit', 'summary', 'negotiate', 'script', 'nudge', 'ask', 'voice', 'embed', 'cheer', 'scout', 'reelcheck', 'growplan', 'checkup', 'offercheck', 'precheck', 'getfound', 'brandask', 'brandbrief', 'safety'].includes(kind)) return json({ error: 'Unknown.' }, 404);
+			if (!['dm', 'reply', 'caption', 'pitch', 'classify', 'fit', 'summary', 'negotiate', 'script', 'nudge', 'ask', 'voice', 'embed', 'cheer', 'scout', 'reelcheck', 'growplan', 'checkup', 'offercheck', 'precheck', 'getfound', 'brandask', 'brandbrief', 'safety', 'helpask'].includes(kind)) return json({ error: 'Unknown.' }, 404);
 			const body = (await req.json()) as Record<string, unknown>;
 			const job = (x: Run) =>
-				kind === 'cheer' ? cheer(x, body) : kind === 'scout' ? scout(x, body) : kind === 'dm' ? readDm(x, body) : kind === 'reply' ? replies(x, body) : kind === 'pitch' ? pitch(x, body) : kind === 'classify' ? classify(x, body) : kind === 'fit' ? fit(x, body) : kind === 'summary' ? summary(x, body) : kind === 'negotiate' ? creatorOf(req, env).then((me) => negotiate(x, body, me)) : kind === 'script' ? script(x, body) : kind === 'nudge' ? nudge(x, body) : kind === 'ask' ? creatorOf(req, env).then((me) => ask(x, body, me)) : kind === 'voice' ? voice(x, body) : kind === 'embed' ? embed(x, body) : kind === 'reelcheck' ? reelCheck(x, body) : kind === 'growplan' ? growPlan(x, body) : kind === 'checkup' ? checkup(x, body) : kind === 'safety' ? safety(x, body) : kind === 'offercheck' ? offerCheck(x, body) : kind === 'precheck' ? preCheck(x, body) : kind === 'getfound' ? getFound(x, body) : kind === 'brandask' ? brandAsk(x, body) : kind === 'brandbrief' ? brandBrief(x, body) : creatorOf(req, env).then((me) => caption(x, body, me));
+				kind === 'cheer' ? cheer(x, body) : kind === 'scout' ? scout(x, body) : kind === 'dm' ? readDm(x, body) : kind === 'reply' ? replies(x, body) : kind === 'pitch' ? pitch(x, body) : kind === 'classify' ? classify(x, body) : kind === 'fit' ? fit(x, body) : kind === 'summary' ? summary(x, body) : kind === 'negotiate' ? creatorOf(req, env).then((me) => negotiate(x, body, me)) : kind === 'script' ? script(x, body) : kind === 'nudge' ? nudge(x, body) : kind === 'ask' ? creatorOf(req, env).then((me) => ask(x, body, me)) : kind === 'voice' ? voice(x, body) : kind === 'embed' ? embed(x, body) : kind === 'reelcheck' ? reelCheck(x, body) : kind === 'growplan' ? growPlan(x, body) : kind === 'checkup' ? checkup(x, body) : kind === 'safety' ? safety(x, body) : kind === 'helpask' ? helpAsk(x, body) : kind === 'offercheck' ? offerCheck(x, body) : kind === 'precheck' ? preCheck(x, body) : kind === 'getfound' ? getFound(x, body) : kind === 'brandask' ? brandAsk(x, body) : kind === 'brandbrief' ? brandBrief(x, body) : creatorOf(req, env).then((me) => caption(x, body, me));
 
 			// Checking an incoming Instagram DM comes from the DM webhook with a single-use pass, and the
 			// hourly fun nudge from its job the same way. DMs stay on Cloudflare (never sent to Google);
@@ -81,8 +82,13 @@ export default {
 				return json({ ...(await job({ env, gemini: false, neurons: 0 })), ...(kind === 'cheer' || kind === 'scout' ? { by: 'cloudflare', why } : {}) });
 			}
 
+			// The help centre's AI: nothing to read means nothing to ask (and no AI used).
+			if (kind === 'helpask' && !helpSearch(String(body.q ?? ''), body.side === 'brand' ? 'brand' : 'creator', 4).length) return json({ answer: '', sources: [], confident: false });
+
 			// Brands have their own, smaller daily share (per team), then the same free Gemini backup.
-			if (kind === 'brandask' || kind === 'brandbrief') {
+			// (Help questions from a creator fall through to hers.)
+			const brandHelp = kind === 'helpask' && body.side === 'brand';
+			if (kind === 'brandask' || kind === 'brandbrief' || brandHelp) {
 				// A link we won't open is turned away before it uses any of today's share.
 				if (kind === 'brandbrief') publicUrl(String(body.url ?? ''));
 				const t = await rpc(req, env, 'ai_take_brand', { p_kind: kind, p_cost: COST[kind] });
@@ -149,7 +155,7 @@ async function reportProblem(env: Env, message: string, place: string, stack: st
 }
 
 // Readings that give the same answer for the same input (kept two weeks).
-const CACHED = ['dm', 'summary', 'fit', 'embed'];
+const CACHED = ['dm', 'summary', 'fit', 'embed', 'helpask'];
 async function sha(text: string) {
 	const d = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
 	return [...new Uint8Array(d)].map((b) => b.toString(16).padStart(2, '0')).join('');
@@ -752,6 +758,27 @@ Rules: 3 to 6 topics; every reel id in exactly one topic; put reels that fit not
 		bio: String(j.bio ?? '').trim().slice(0, 80),
 		repeat: String(j.repeat ?? '').trim().slice(0, 200)
 	};
+}
+
+// The help centre's AI: answers a question only from the help articles that match it (found here, not
+// sent by the app), says which ones, and owns up when they don't cover it so the person can ask a human.
+async function helpAsk(x: Run, b: Record<string, unknown>) {
+	const q = String(b.q ?? '').replace(/\s+/g, ' ').trim().slice(0, 500);
+	const side = b.side === 'brand' ? 'brand' : 'creator';
+	const found = helpSearch(q, side, 4);
+	if (!q || !found.length) return { answer: '', sources: [], confident: false };
+	const reply = await chat(
+		x,
+		`You are Miracle's help desk. Miracle is an Indian app where ${side === 'brand' ? 'brands book creators (influencers) and pay them directly' : 'creators run brand collabs: requests, quotes, drafts, GST invoices and payments, with no commission'}. Answer the person's question using ONLY the help articles given. Return ONLY JSON:
+{"answer": "2 to 5 short sentences or numbered steps, in plain friendly English, saying exactly where to tap", "sources": ["slug of each article you used"], "confident": true or false}
+Rules: never invent menus, features, prices or promises that aren't in the articles. If the articles don't answer it, or it needs someone to look at their account (a payment that didn't arrive, a bug, a charge, a ban), set "confident": false and say in one sentence that support can look into it. Use "you".`,
+		JSON.stringify({ question: q, articles: found.map((a) => ({ slug: a.slug, text: asText(a) })) }),
+		600
+	);
+	const j = firstJson(reply) ?? {};
+	const slugs = new Set(found.map((a) => a.slug));
+	const sources = (Array.isArray(j.sources) ? j.sources.map(String) : []).filter((s) => slugs.has(s)).slice(0, 3);
+	return { answer: String(j.answer ?? '').trim().slice(0, 1200), sources: sources.length ? sources : [found[0].slug], confident: j.confident === true && !!String(j.answer ?? '').trim() };
 }
 
 // Brand safety: reads a creator's recent captions (from the nightly Instagram sync, with a single-use

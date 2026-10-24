@@ -30,6 +30,7 @@
 	import PackagesSettings from '#lib/components/PackagesSettings.svelte';
 	import AvailabilitySettings from '#lib/components/AvailabilitySettings.svelte';
 	import AwayMode from '#lib/components/AwayMode.svelte';
+	import { support } from '#lib/support.svelte.ts';
 	import OffersSettings from '#lib/components/OffersSettings.svelte';
 	import DecisionSettings from '#lib/components/DecisionSettings.svelte';
 	import RateLearn from '#lib/components/RateLearn.svelte';
@@ -340,6 +341,8 @@
 					<a class="cs-row" href="?s={x.id}" onclick={(e) => (e.preventDefault(), open(x.id))}><Icon name={x.icon} /><span>{x.label}</span>{#if x.warn}<i class="cs-dot" title={x.warn}></i>{/if}</a>
 				{/each}
 			{/each}
+			<div class="cs-h">Help</div>
+			<a class="cs-row" href="/studio/help"><Icon name="info" /><span>Help & support</span>{#if support.unread}<i class="cs-dot" title="New reply from support"></i>{/if}</a>
 			<a class="cs-row" href="/studio/qr"><Icon name="qr" /><span>QR codes: look and extra codes</span></a>
 			<a class="cs-row" href="/studio/import"><Icon name="layers" /><span>Import collabs</span></a>
 			<button class="cs-row" onclick={toggleTheme}><Icon name={theme.value === 'dark' ? 'sun' : 'moon'} /><span>{theme.value === 'dark' ? 'Light look' : 'Dark look'}</span></button>

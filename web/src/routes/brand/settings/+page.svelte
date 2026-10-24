@@ -28,7 +28,7 @@
 	const company = $derived(acct?.brand?.name || acct?.profile?.name || 'Your brand');
 	const gstin = $derived(acct?.profile?.gstin ?? '');
 
-	type Sec = 'company' | 'billing' | 'team' | 'brands' | 'alerts' | 'blocked' | 'account';
+	type Sec = 'company' | 'billing' | 'team' | 'brands' | 'alerts' | 'blocked' | 'account' | 'help';
 	const sections = $derived<{ id: Sec; label: string; icon: string; sub: string; warn?: string; href?: string }[]>([
 		{
 			id: 'company',
@@ -42,7 +42,8 @@
 		{ id: 'brands', label: 'Brands you manage', icon: 'layers', sub: (acct?.brands?.length ?? 0) > 1 ? `${acct?.brands.length} brands` : 'For agencies with several brands' },
 		{ id: 'alerts', label: 'Emails & alerts', icon: 'bell', sub: 'Phone alerts, quotes, drafts and invoices' },
 		{ id: 'blocked', label: 'Blocked', icon: 'ban', sub: 'Creators you blocked' },
-		{ id: 'account', label: 'Sign-in & account', icon: 'gear', sub: 'Your data, sign out, delete' }
+		{ id: 'account', label: 'Sign-in & account', icon: 'gear', sub: 'Your data, sign out, delete' },
+		{ id: 'help', label: 'Help & support', icon: 'info', sub: 'Guides, Ask Miracle and your tickets', href: '/brand/help' }
 	]);
 
 	let narrow = $state(false);
@@ -104,7 +105,7 @@
 	const GROUPS: { label: string; ids: Sec[] }[] = [
 		{ label: 'Your brand', ids: ['company', 'billing'] },
 		{ label: 'Working together', ids: ['team', 'brands'] },
-		{ label: 'Account', ids: ['alerts', 'blocked', 'account'] }
+		{ label: 'Account', ids: ['alerts', 'blocked', 'account', 'help'] }
 	];
 	const byId = (id: Sec) => sections.find((x) => x.id === id)!;
 	onMount(() => {

@@ -27,7 +27,8 @@
 		{ href: '/brand/business/content', label: 'Content', icon: 'film', on: on('/brand/business/content') },
 		{ href: '/brand/business/money', label: 'Money', icon: 'wallet', on: on('/brand/business/money', '/brand/business/shipping') },
 		{ href: '/brand/reports', label: 'Reports', icon: 'chart', on: on('/brand/reports') },
-		{ href: '/brand/settings', label: 'Settings', icon: 'gear', on: on('/brand/settings', '/brand/details', '/brand/business/team') }
+		{ href: '/brand/settings', label: 'Settings', icon: 'gear', on: on('/brand/settings', '/brand/details', '/brand/business/team') },
+		{ href: '/brand/help', label: 'Help', icon: 'info', on: on('/brand/help') }
 	]);
 
 	const unread = $derived(allRequests.list.reduce((a, r) => a + r.unread, 0));

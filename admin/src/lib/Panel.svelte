@@ -11,13 +11,15 @@
 	import BrandsTab from './BrandsTab.svelte';
 	import ProblemsTab from './ProblemsTab.svelte';
 	import SafetyTab from './SafetyTab.svelte';
+	import SupportTab from './SupportTab.svelte';
 
 	let { email, onsignout }: { email: string; onsignout: () => void } = $props();
 
-	type Tab = 'overview' | 'requests' | 'creators' | 'brands' | 'problems' | 'safety';
+	type Tab = 'overview' | 'requests' | 'support' | 'creators' | 'brands' | 'problems' | 'safety';
 	const TABS: { id: Tab; label: string; icon: string }[] = [
 		{ id: 'overview', label: 'Overview', icon: 'chart' },
 		{ id: 'requests', label: 'Requests', icon: 'inbox' },
+		{ id: 'support', label: 'Support', icon: 'mail' },
 		{ id: 'creators', label: 'Creators', icon: 'users' },
 		{ id: 'brands', label: 'Brands', icon: 'board' },
 		{ id: 'problems', label: 'Problems', icon: 'alert' },
@@ -34,8 +36,10 @@
 	// Badges: new problems today, and accounts with open reports.
 	let newProblems = $state(0);
 	let openReports = $state(0);
+	let supportUnread = $state(0);
 	async function loadBadges() {
-		const [p, s] = await Promise.all([supabase.rpc('admin_problems'), supabase.rpc('admin_safety')]);
+		const [p, s, u] = await Promise.all([supabase.rpc('admin_problems'), supabase.rpc('admin_safety'), supabase.rpc('admin_support', { p_status: 'open' })]);
+		if (!u.error) supportUnread = (u.data as { counts: { open: number } }).counts.open;
 		if (!p.error) newProblems = (p.data as Problems).new_today;
 		if (!s.error) openReports = (s.data as Safety).targets.filter((t) => t.open).length;
 	}
@@ -105,6 +109,7 @@
 				<button class="tab" aria-current={tab === t.id ? 'page' : undefined} onclick={() => go(t.id)}>
 					<Icon name={t.icon} /><span>{t.label}</span>
 					{#if t.id === 'requests' && pending}<i class="badge" aria-label="{pending} waiting">{pending}</i>{/if}
+					{#if t.id === 'support' && supportUnread}<i class="badge" aria-label="{supportUnread} waiting">{supportUnread}</i>{/if}
 					{#if t.id === 'problems' && newProblems}<i class="badge" aria-label="{newProblems} new">{newProblems} new</i>{/if}
 					{#if t.id === 'safety' && openReports}<i class="badge warn" aria-label="{openReports} to look at">{openReports}</i>{/if}
 				</button>
@@ -125,6 +130,7 @@
 				{#if tab === 'overview'}How Miracle is <em class="gt">doing</em>
 				{:else if tab === 'requests'}Waiting for <em class="gt">you</em>
 				{:else if tab === 'creators'}Every <em class="gt">creator</em>
+				{:else if tab === 'support'}People who need <em class="gt">help</em>
 				{:else if tab === 'problems'}What <em class="gt">broke</em>
 				{:else if tab === 'safety'}Keeping it <em class="gt">safe</em>
 				{:else}Every <em class="gt">brand</em>{/if}
@@ -141,6 +147,8 @@
 		<RequestsTab {creators} {busyId} onset={setStatus} />
 	{:else if tab === 'creators'}
 		<CreatorsTab {creators} {busyId} onset={setStatus} />
+	{:else if tab === 'support'}
+		{#key refreshKey}<SupportTab />{/key}
 	{:else if tab === 'problems'}
 		{#key refreshKey}<ProblemsTab onload={(p) => (newProblems = p.new_today)} />{/key}
 	{:else if tab === 'safety'}
