@@ -1,7 +1,7 @@
 // A brand's pools (saved groups of creators) and campaigns (one brief sent to many creators, each as an
 // ordinary request of their own). All through database functions that only touch this login's own.
 import { supabase } from './supabase';
-import type { BrandCreator, CampaignApplication, CampaignBoard, CampaignSummary, OpenBrief, Pool } from './types';
+import type { BrandCreator, CampaignApplication, CampaignBoard, CampaignSummary, OpenBrief, Pool, BriefRules } from './types';
 import { errMessage } from './util';
 
 export const pools = $state<{ list: Pool[]; loaded: boolean }>({ list: [], loaded: false });
@@ -80,5 +80,14 @@ export const setApplication = (id: string, status: 'new' | 'shortlist' | 'no') =
 export const sendApplications = (campaign: string) => call<CampaignBoard | null>('applications_send', { p_campaign: campaign });
 // Creator side.
 export const openBriefs = () => call<OpenBrief[]>('open_briefs');
+/** Who can apply to an open brief. */
+export const setCampaignRules = (id: string, rules: BriefRules) => call<BriefRules>('campaign_rules', { p_id: id, p_rules: rules });
+const short = (n: number) => (n >= 1e5 ? `${+(n / 1e5).toFixed(1)}L` : n >= 1e3 ? `${+(n / 1e3).toFixed(1)}K` : String(n));
+/** "10K–1L followers · Beauty, Skincare · Kannada · Bengaluru", or '' for anyone. */
+export function rulesText(r: BriefRules | undefined | null) {
+	if (!r) return '';
+	const f = r.min_followers && r.max_followers ? `${short(r.min_followers)}–${short(r.max_followers)} followers` : r.min_followers ? `${short(r.min_followers)}+ followers` : r.max_followers ? `up to ${short(r.max_followers)} followers` : '';
+	return [f, r.niches?.join(', '), r.languages?.length ? `in ${r.languages.join(' or ')}` : '', r.cities?.join(' or ')].filter(Boolean).join(' · ');
+}
 export const applyToBrief = (campaign: string, rate: number, note: string) => call<OpenBrief[]>('brief_apply', { p_campaign: campaign, p_rate: rate, p_note: note });
 export const withdrawFromBrief = (campaign: string) => call<OpenBrief[]>('brief_withdraw', { p_campaign: campaign });

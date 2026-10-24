@@ -214,6 +214,8 @@ export function pushFor(kind: string, p: Record<string, unknown>): Push | null {
       return { title: `New request from ${brand}`, body: [p.deliverables, p.type === 'barter' ? 'Barter' : Number(p.fee) ? inr(p.fee) : 'Asked for a quote'].filter(Boolean).join(' · '), url: open(code), tag: code };
     case 'message_to_creator':
       return { title: `${brand} sent a message`, body: String(p.body ?? '').slice(0, 140), url: open(code), tag: `msg-${code}` };
+    case 'case_study_answer':
+      return { title: p.ok ? `${brand} approved your case study` : `${brand} asked for case study changes`, body: p.ok ? 'It\'s on your page now.' : String(p.note ?? '').slice(0, 140), url: open(code), tag: `case-${code}` };
     case 'support_reply':
       return { title: p.solved ? `Ticket #${p.number} solved` : `Miracle support replied (#${p.number})`, body: String(p.body ?? '').slice(0, 140), url: String(p.link ?? '/studio/help'), tag: `support-${p.id}` };
     case 'sales_reported':
@@ -295,6 +297,8 @@ export function pushForBrand(kind: string, p: Record<string, unknown>, creatorNa
       return { pref: 'drafts', msg: { title: `Draft to approve · ${who}`, body: `Draft ${p.round} for ${code} is ready for your review.`, url: request, tag: `draft-${code}` } };
     case 'draft_nudge':
       return { pref: 'drafts', msg: { title: `Draft to approve · ${who}`, body: `Draft ${p.round} for ${code} is still waiting for you.`, url: request, tag: `draft-${code}` } };
+    case 'case_study_ask':
+      return { pref: 'drafts', msg: { title: `${who} wrote a case study about your collab`, body: String(p.title ?? '').slice(0, 140), url: request, tag: `case-${code}` } };
     case 'support_reply':
       return { pref: 'messages', msg: { title: p.solved ? `Ticket #${p.number} solved` : `Miracle support replied (#${p.number})`, body: String(p.body ?? '').slice(0, 140), url: String(p.link ?? '/brand/help'), tag: `support-${p.id}` } };
     case 'message_to_brand':

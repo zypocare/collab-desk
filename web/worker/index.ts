@@ -24,7 +24,7 @@ type Env = {
 type Run = { env: Env; gemini: boolean; neurons: number };
 
 // Expected size of each job in Cloudflare neurons (reserved before, corrected after).
-const COST: Record<string, number> = { dm: 160, reply: 110, caption: 110, pitch: 140, fit: 230, classify: 40, summary: 220, negotiate: 210, script: 330, nudge: 120, ask: 260, voice: 60, embed: 8, cheer: 60, reelcheck: 260, growplan: 200, checkup: 420, offercheck: 700, precheck: 220, getfound: 180, brandask: 450, brandbrief: 600, safety: 300, helpask: 200 };
+const COST: Record<string, number> = { dm: 160, reply: 110, caption: 110, pitch: 140, fit: 230, classify: 40, summary: 220, negotiate: 210, script: 330, nudge: 120, ask: 260, voice: 60, embed: 8, cheer: 60, reelcheck: 260, growplan: 200, checkup: 420, offercheck: 700, precheck: 220, getfound: 180, brandask: 450, brandbrief: 600, safety: 300, helpask: 200, casestudy: 400 };
 // Cloudflare's price list in neurons per token (Llama 3.3 70B fast; Llama 3.2 11B vision).
 const PER_TOKEN = { text: [0.0267, 0.2048], vision: [0.0045, 0.0615] };
 const USED_UP = "Today's free AI is used up. It's back at 5:30 am.";
@@ -47,10 +47,10 @@ export default {
 		try {
 			const kind = url.pathname.slice('/api/ai/'.length);
 			if (kind === 'status') return json(await status(req, env));
-			if (!['dm', 'reply', 'caption', 'pitch', 'classify', 'fit', 'summary', 'negotiate', 'script', 'nudge', 'ask', 'voice', 'embed', 'cheer', 'scout', 'reelcheck', 'growplan', 'checkup', 'offercheck', 'precheck', 'getfound', 'brandask', 'brandbrief', 'safety', 'helpask', 'compwatch'].includes(kind)) return json({ error: 'Unknown.' }, 404);
+			if (!['dm', 'reply', 'caption', 'pitch', 'classify', 'fit', 'summary', 'negotiate', 'script', 'nudge', 'ask', 'voice', 'embed', 'cheer', 'scout', 'reelcheck', 'growplan', 'checkup', 'offercheck', 'precheck', 'getfound', 'brandask', 'brandbrief', 'safety', 'helpask', 'compwatch', 'casestudy'].includes(kind)) return json({ error: 'Unknown.' }, 404);
 			const body = (await req.json()) as Record<string, unknown>;
 			const job = (x: Run) =>
-				kind === 'cheer' ? cheer(x, body) : kind === 'scout' ? scout(x, body) : kind === 'dm' ? readDm(x, body) : kind === 'reply' ? replies(x, body) : kind === 'pitch' ? pitch(x, body) : kind === 'classify' ? classify(x, body) : kind === 'fit' ? fit(x, body) : kind === 'summary' ? summary(x, body) : kind === 'negotiate' ? creatorOf(req, env).then((me) => negotiate(x, body, me)) : kind === 'script' ? script(x, body) : kind === 'nudge' ? nudge(x, body) : kind === 'ask' ? creatorOf(req, env).then((me) => ask(x, body, me)) : kind === 'voice' ? voice(x, body) : kind === 'embed' ? embed(x, body) : kind === 'reelcheck' ? reelCheck(x, body) : kind === 'growplan' ? growPlan(x, body) : kind === 'checkup' ? checkup(x, body) : kind === 'safety' ? safety(x, body) : kind === 'helpask' ? helpAsk(x, body) : kind === 'compwatch' ? compWatch(x, body) : kind === 'offercheck' ? offerCheck(x, body) : kind === 'precheck' ? preCheck(x, body) : kind === 'getfound' ? getFound(x, body) : kind === 'brandask' ? brandAsk(x, body) : kind === 'brandbrief' ? brandBrief(x, body) : creatorOf(req, env).then((me) => caption(x, body, me));
+				kind === 'cheer' ? cheer(x, body) : kind === 'scout' ? scout(x, body) : kind === 'dm' ? readDm(x, body) : kind === 'reply' ? replies(x, body) : kind === 'pitch' ? pitch(x, body) : kind === 'classify' ? classify(x, body) : kind === 'fit' ? fit(x, body) : kind === 'summary' ? summary(x, body) : kind === 'negotiate' ? creatorOf(req, env).then((me) => negotiate(x, body, me)) : kind === 'script' ? script(x, body) : kind === 'nudge' ? nudge(x, body) : kind === 'ask' ? creatorOf(req, env).then((me) => ask(x, body, me)) : kind === 'voice' ? voice(x, body) : kind === 'embed' ? embed(x, body) : kind === 'reelcheck' ? reelCheck(x, body) : kind === 'growplan' ? growPlan(x, body) : kind === 'checkup' ? checkup(x, body) : kind === 'safety' ? safety(x, body) : kind === 'helpask' ? helpAsk(x, body) : kind === 'compwatch' ? compWatch(x, body) : kind === 'casestudy' ? caseStudy(x, body) : kind === 'offercheck' ? offerCheck(x, body) : kind === 'precheck' ? preCheck(x, body) : kind === 'getfound' ? getFound(x, body) : kind === 'brandask' ? brandAsk(x, body) : kind === 'brandbrief' ? brandBrief(x, body) : creatorOf(req, env).then((me) => caption(x, body, me));
 
 			// Checking an incoming Instagram DM comes from the DM webhook with a single-use pass, and the
 			// hourly fun nudge from its job the same way. DMs stay on Cloudflare (never sent to Google);
@@ -779,6 +779,22 @@ Rules: never invent menus, features, prices or promises that aren't in the artic
 	const slugs = new Set(found.map((a) => a.slug));
 	const sources = (Array.isArray(j.sources) ? j.sources.map(String) : []).filter((s) => slugs.has(s)).slice(0, 3);
 	return { answer: String(j.answer ?? '').trim().slice(0, 1200), sources: sources.length ? sources : [found[0].slug], confident: j.confident === true && !!String(j.answer ?? '').trim() };
+}
+
+// A case study from a finished collab: the goal, what was made and the results, in the creator's voice, from
+// the brief, the results report and the brand's review. Numbers only from what's given.
+async function caseStudy(x: Run, b: Record<string, unknown>) {
+	const reply = await chat(
+		x,
+		`You write short case studies for an Indian creator's page, about one brand collaboration, for other brands to read. Return ONLY JSON:
+{"title": "under 70 characters: brand + the result, e.g. 'How a monsoon skincare reel reached 1.2L people for Kora'", "summary": "1 sentence, under 220 characters", "goal": "1-2 sentences: what the brand wanted", "made": "1-2 sentences: what was made and why it worked for this audience", "results": "1-2 sentences with the real numbers given"}
+Rules: use ONLY the facts and numbers given; never invent numbers, sales or quotes. Write in first person as the creator ("I made…"). Plain, specific, no hype words (no "amazing", "viral sensation"). Indian number style (1.2L, 45K).`,
+		JSON.stringify(b).slice(0, 4000),
+		700
+	);
+	const j = firstJson(reply) ?? {};
+	const t = (k: string, n: number) => String(j[k] ?? '').replace(/\s+/g, ' ').trim().slice(0, n);
+	return { title: t('title', 120), summary: t('summary', 300), goal: t('goal', 600), made: t('made', 600), results: t('results', 600) };
 }
 
 // Competitor watch (a brand's weekly job, single-use pass): which Instagram creators each competitor worked

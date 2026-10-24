@@ -737,6 +737,37 @@
 				</section>
 			{/if}
 
+			{#if p.cases?.length}
+				<section class="mp-sec" id="cases" aria-labelledby="mp-cs-t">
+					<div class="mp-wrap">
+						<div class="mp-sec-head">
+							<div><span class="mp-eb" data-r use:rv>Case studies</span><h2 class="mp-h2" id="mp-cs-t" data-r use:rv>How it went, <span class="mp-gt">in numbers.</span></h2></div>
+							<p class="mp-lede" data-r="2" use:rv>Collabs {first} wrote up, approved by the brands, with the numbers Instagram reports.</p>
+						</div>
+						<div class="mp-cases">
+							{#each p.cases as cs, i (cs.id)}
+								<article class="mp-case" data-r={(i % 3) + 1} use:rv style="--h:{hue(cs.brand)}">
+									<span class="mp-case-b">{cs.brand}</span>
+									<h3>{cs.title}</h3>
+									<p>{cs.summary}</p>
+									{#if cs.highlights?.length}<div class="mp-case-n">{#each cs.highlights as h (h.label)}<span><b>{h.value}</b>{h.label}</span>{/each}</div>{/if}
+									{#if cs.goal || cs.made || cs.results}
+										<details>
+											<summary>Read the story</summary>
+											{#if cs.goal}<h4>The goal</h4><p>{cs.goal}</p>{/if}
+											{#if cs.made}<h4>What {first} made</h4><p>{cs.made}</p>{/if}
+											{#if cs.results}<h4>The results</h4><p>{cs.results}</p>{/if}
+										</details>
+									{/if}
+									{#if cs.quote}<blockquote>“{cs.quote}”{#if cs.quote_by}<small>{cs.quote_by}, {cs.brand}</small>{/if}</blockquote>{/if}
+									{#if cs.post}<a class="mp-case-l" href={cs.post} target="_blank" rel="noopener">See the post &rarr;</a>{/if}
+								</article>
+							{/each}
+						</div>
+					</div>
+				</section>
+			{/if}
+
 			{#if showPackages}
 				<section class="mp-sec" id="packages" aria-labelledby="mp-pk-t">
 					<div class="mp-wrap">
@@ -1992,6 +2023,89 @@
 	}
 	.mp-proof b {
 		font: 400 26px/1 var(--f-display);
+		color: var(--ink);
+	}
+
+	/* case studies */
+	.mp-cases {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr));
+		gap: 16px;
+	}
+	.mp-case {
+		display: grid;
+		align-content: start;
+		gap: 12px;
+		padding: 22px;
+		border-radius: 24px;
+		background: radial-gradient(120% 70% at 0% 0%, color-mix(in oklab, var(--h, #f25a90) 18%, transparent), transparent 60%), var(--surface);
+		box-shadow: 0 0 0 1px var(--line) inset;
+	}
+	.mp-case-b {
+		font: 700 11px/1 var(--f-body);
+		letter-spacing: 0.18em;
+		text-transform: uppercase;
+		color: var(--ink-2);
+	}
+	.mp-case h3 {
+		margin: 0;
+		font: 400 26px/1.1 var(--f-display);
+		color: var(--ink);
+		text-wrap: balance;
+	}
+	.mp-case p {
+		margin: 0;
+		font-size: 15px;
+		line-height: 1.55;
+		color: var(--ink-2);
+	}
+	.mp-case-n {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 8px;
+	}
+	.mp-case-n span {
+		display: grid;
+		gap: 3px;
+		min-width: 86px;
+		padding: 10px 12px;
+		border-radius: 14px;
+		background: color-mix(in oklab, var(--ink) 6%, transparent);
+		font-size: 12px;
+		color: var(--ink-2);
+	}
+	.mp-case-n b {
+		font: 400 26px/1 var(--f-display);
+		color: var(--ink);
+	}
+	.mp-case details summary {
+		cursor: pointer;
+		font: 600 13px/1 var(--f-body);
+		color: var(--ink);
+	}
+	.mp-case details h4 {
+		margin: 12px 0 4px;
+		font: 700 11px/1 var(--f-body);
+		letter-spacing: 0.16em;
+		text-transform: uppercase;
+		color: var(--ink-2);
+	}
+	.mp-case blockquote {
+		margin: 0;
+		padding-left: 12px;
+		border-left: 3px solid var(--g2, #f25a90);
+		font-style: italic;
+		color: var(--ink);
+	}
+	.mp-case blockquote small {
+		display: block;
+		margin-top: 4px;
+		font-style: normal;
+		font-size: 12.5px;
+		color: var(--ink-2);
+	}
+	.mp-case-l {
+		font: 600 13px/1 var(--f-body);
 		color: var(--ink);
 	}
 

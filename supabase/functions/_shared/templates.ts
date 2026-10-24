@@ -345,6 +345,46 @@ export function render(kind: string, p: Payload, s: Settings): Omit<Mail, 'to'> 
     };
   }
 
+  // ---------------------------------------------------------------- case studies
+  if (kind === 'case_study_ask') {
+    return {
+      subject: `${me} wrote a case study about your collab (${code})`,
+      html: layout(
+        s,
+        `Approve ${esc(me)}'s case study?`,
+        `${hi(p.contact)}${P(`${esc(s.display_name)} turned your collab <b>${esc(code)}</b> into a short case study for ${esc(me)}'s page, with the results from Instagram. It goes up only if you approve it.`)}
+         ${quoteBox(String(p.title ?? ''), p.summary)}
+         ${P('You can add a line of your own, ask for changes, or say no.')}`,
+        { label: 'Read and approve', href: request() },
+        { code, preheader: String(p.summary ?? '').slice(0, 120) },
+      ),
+      text: `Hi ${firstOf(p.contact)},
+
+${s.display_name} wrote a case study about your collab ${code}: "${p.title}"
+
+${p.summary}
+
+It goes on ${me}'s page only if you approve it. Read and approve: ${request()}${sign}`,
+    };
+  }
+  if (kind === 'case_study_answer') {
+    const ok = p.ok === true;
+    return {
+      subject: ok ? `${brand} approved your case study` : `${brand} asked for changes to your case study`,
+      html: layout(
+        s,
+        ok ? 'Your case study is live' : 'Changes asked for',
+        `${P(ok ? `${esc(brand)} approved <b>${esc(p.title)}</b>. It's on your page now.` : `${esc(brand)} looked at <b>${esc(p.title)}</b> and asked for changes.`)}
+         ${p.note ? quoteBox('Their note', p.note) : ''}`,
+        { label: ok ? 'See your page' : 'Edit it', href: ok ? url(s, '/') : studio() },
+        { to: 'creator' },
+      ),
+      text: `${brand} ${ok ? 'approved' : 'asked for changes to'} your case study "${p.title}". ${p.note ?? ''}
+
+${ok ? url(s, '/') : studio()}`,
+    };
+  }
+
   if (kind === 'brief_request') {
     const NAMES: Record<string, string> = { message: 'the key message', hashtags: 'the hashtags to use', dos: "the do's and don'ts", tag: 'which accounts to tag' };
     const list = (Array.isArray(p.missing) ? p.missing : []).map((k: string) => NAMES[k] ?? k);

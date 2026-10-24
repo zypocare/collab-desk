@@ -297,6 +297,8 @@ export type ReportData = {
 	posts: ReportPost[];
 	totals: { views: number | null; reach: number | null; likes: number; comments: number; saves: number | null; shares: number | null; interactions: number };
 	engagement_rate: number | null;
+	/** The collab's tracked link: taps, and orders from the promo code (when there is one). */
+	link?: { clicks: number; promo_code: string; sales: number | null; revenue: number | null };
 	generated_at: string;
 	created_at?: string;
 };
@@ -479,6 +481,8 @@ export type PublicPage = {
 	bio?: string | null;
 	/** Her links for followers, and the sign-up box for her email list (null when it's off). */
 	links?: { id: string; title: string; url: string }[];
+	/** Case studies the brands approved. */
+	cases?: import('./caseStudy').PublicCase[];
 	fan_list?: { pitch: string | null } | null;
 	barter: { mode: 'open' | 'selective' | 'closed'; min_value: number; reply_time: string; slots_left: number | null } | null;
 	worked_with: string[];
@@ -642,6 +646,7 @@ export type CampaignBoard = {
 		budget_min?: number;
 		budget_max?: number;
 		applications?: number;
+		rules?: BriefRules;
 	};
 	rows: CampaignRow[];
 };
@@ -754,6 +759,9 @@ export type CampaignApplication = BrandCreator & {
 };
 
 /** An open brief, as a creator sees it. */
+/** Who can apply to an open brief (empty = anyone). */
+export type BriefRules = { min_followers?: number; max_followers?: number; niches?: string[]; languages?: string[]; cities?: string[] };
+
 export type OpenBrief = {
 	id: string;
 	name: string;
@@ -767,6 +775,9 @@ export type OpenBrief = {
 	open_until: string;
 	applied: number;
 	mine: { id: string; rate: number; note: string; status: 'new' | 'shortlist' | 'sent' } | null;
+	rules?: BriefRules;
+	/** Does she fit the rules, and if not, what she's missing. */
+	fit?: { ok: boolean; misses: string[] };
 };
 
 /** One request in the brand's list across every creator (and its inbox row). */

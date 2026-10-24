@@ -2,7 +2,8 @@
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
-	import { campaignBoard, inviteText, openCampaign, respondQuotes, sendCampaign } from '#lib/campaigns.svelte.ts';
+	import { campaignBoard, inviteText, openCampaign, respondQuotes, rulesText, sendCampaign, setCampaignRules } from '#lib/campaigns.svelte.ts';
+	import { LANGUAGES } from '#lib/languages.ts';
 	import { askNote } from '#lib/confirm.svelte.ts';
 	import { addressFor } from '#lib/creatorHost.ts';
 	import { phone } from '#lib/phone.svelte.ts';
@@ -173,10 +174,30 @@
 	});
 	// "20,000" and "₹20000" both read as 20000.
 	const num = (v: string) => Number(String(v).replace(/[^0-9.]/g, '')) || 0;
+	// Who can apply (empty = anyone).
+	let fol = $state('0-0');
+	let niches = $state('');
+	let langs = $state<string[]>([]);
+	let cities = $state('');
+	let rulesSeeded = '';
+	$effect(() => {
+		if (!c || rulesSeeded === c.id) return;
+		rulesSeeded = c.id;
+		const r = c.rules ?? {};
+		fol = `${r.min_followers ?? 0}-${r.max_followers ?? 0}`;
+		niches = (r.niches ?? []).join(', ');
+		langs = [...(r.languages ?? [])];
+		cities = (r.cities ?? []).join(', ');
+	});
+	const list = (v: string) => v.split(',').map((x) => x.trim()).filter(Boolean);
 	let opening = $state(false);
 	async function setOpen(open: boolean) {
 		opening = true;
 		try {
+			if (open) {
+				const [lo, hi] = fol.split('-').map(Number);
+				await setCampaignRules(id, { min_followers: lo || undefined, max_followers: hi || undefined, niches: list(niches), languages: langs, cities: list(cities) });
+			}
 			const b = open ? await openCampaign(id, true, until || null, num(minRate), num(maxRate)) : await openCampaign(id, false, null, 0, 0);
 			if (b) board = b;
 			toast(open ? 'Your brief is open. Creators who fit can apply.' : 'Applications closed', 'check');
@@ -311,6 +332,7 @@
 					</div>
 					<div class="hc-val ob-brief">{c.brief.brief || c.name}</div>
 					<div class="hc-sub">{[`Budget ${range(c.budget_min, c.budget_max)}`, c.brief.deliverables?.length ? `${delivText(c.brief.deliverables)} each` : '', c.brief.usage].filter(Boolean).join(' · ')}</div>
+					<div class="hc-sub ob-who">Who can apply: {rulesText(c.rules) || 'any creator open to brands'}</div>
 					<div class="hc-foot">
 						<button class:on={appShow === 'new'} onclick={() => (appShow = 'new')}><small><span class="dt" style="--hue:var(--bad)"></span>Applied</small><b>{apps.length}</b></button>
 						<button class:on={appShow === 'shortlist'} onclick={() => (appShow = 'shortlist')}><small><span class="dt" style="--hue:var(--ok)"></span>Shortlisted</small><b>{shortlisted}</b></button>
@@ -327,6 +349,31 @@
 					<div class="f"><label for="ob-min">Budget per creator, from (₹)</label><input class="inp" id="ob-min" inputmode="numeric" bind:value={minRate} placeholder="e.g. 10000" /></div>
 					<div class="f"><label for="ob-max">Up to (₹)</label><input class="inp" id="ob-max" inputmode="numeric" bind:value={maxRate} placeholder="e.g. 30000" /></div>
 				</div>
+				<fieldset class="ob-rules">
+					<legend>Who can apply <span class="hint">(leave empty for anyone)</span></legend>
+					<div class="fields">
+						<div class="f">
+							<label for="ob-fol">Followers</label>
+							<select class="inp" id="ob-fol" bind:value={fol}>
+								<option value="0-0">Any size</option>
+								<option value="1000-10000">1K to 10K</option>
+								<option value="10000-50000">10K to 50K</option>
+								<option value="10000-100000">10K to 1L</option>
+								<option value="50000-200000">50K to 2L</option>
+								<option value="100000-0">1L and up</option>
+							</select>
+						</div>
+						<div class="f"><label for="ob-niche">Niches</label><input class="inp" id="ob-niche" bind:value={niches} placeholder="e.g. Beauty, Skincare" /></div>
+						<div class="f"><label for="ob-city">Cities</label><input class="inp" id="ob-city" bind:value={cities} placeholder="e.g. Bengaluru, Mysuru" /></div>
+						<div class="f span2">
+							<span class="lbl-t">Creates in</span>
+							<div class="ob-langs" role="group" aria-label="Languages">
+								{#each LANGUAGES as l (l)}<button type="button" class:on={langs.includes(l)} aria-pressed={langs.includes(l)} onclick={() => (langs = langs.includes(l) ? langs.filter((x) => x !== l) : [...langs, l])}>{l}</button>{/each}
+							</div>
+						</div>
+					</div>
+					<p class="hint">Followers come from each creator's connected Instagram. Creators who don't fit see what's missing and can't apply.</p>
+				</fieldset>
 				<div class="ob-go"><button class="btn grad" disabled={opening} onclick={() => setOpen(true)}>{#if opening}<span class="spinner"></span>{:else}<Icon name="send" />{/if}Open brief</button></div>
 			</section>
 		{/if}
@@ -809,5 +856,44 @@
 		.cq-go button {
 			flex: 1 1 auto;
 		}
+	}
+	.ob-rules {
+		display: grid;
+		gap: 10px;
+		margin: 16px 0 0;
+		padding: 16px 0 0;
+		border: 0;
+		border-top: 1px dashed var(--line-strong);
+	}
+	.ob-rules legend {
+		float: left;
+		width: 100%;
+		margin-bottom: 8px;
+		font-weight: 700;
+		font-size: 14px;
+	}
+	.ob-langs {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 6px;
+	}
+	.ob-langs button {
+		height: 34px;
+		padding: 0 12px;
+		border: 1px solid var(--line-strong);
+		border-radius: 99px;
+		background: none;
+		color: var(--ink-2);
+		font: 600 13px/1 var(--f-body);
+		cursor: pointer;
+	}
+	.ob-langs button.on {
+		background: var(--ink);
+		border-color: var(--ink);
+		color: var(--bg);
+	}
+	.ob-who {
+		margin-top: 4px;
+		opacity: 0.85;
 	}
 </style>

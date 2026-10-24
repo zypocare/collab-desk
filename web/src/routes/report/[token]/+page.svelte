@@ -26,7 +26,9 @@
 					{ label: 'Likes', v: r.totals.likes },
 					{ label: 'Comments', v: r.totals.comments },
 					{ label: 'Saves', v: r.totals.saves },
-					{ label: 'Shares', v: r.totals.shares }
+					{ label: 'Shares', v: r.totals.shares },
+					{ label: 'Link taps', v: r.link?.clicks || null },
+					{ label: r.link?.promo_code ? `Orders with ${r.link.promo_code}` : 'Orders', v: r.link?.sales ?? null }
 				].filter((t) => t.v !== null && t.v !== undefined)
 			: []
 	);

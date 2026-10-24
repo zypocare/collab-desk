@@ -54,6 +54,7 @@
 	import BriefEditor from './BriefEditor.svelte';
 	import ScriptSheet from './ScriptSheet.svelte';
 	import BrandRating from './BrandRating.svelte';
+	import CaseStudy from './CaseStudy.svelte';
 	import UsageRights from './UsageRights.svelte';
 	import RightsCard from './RightsCard.svelte';
 	import { rightsRows } from '../rights';
@@ -615,6 +616,7 @@
 			</section>
 
 			{#if c.stage === 'live' || c.stage === 'wrapped'}<section class="sec" hidden={!sh('review')}><h3>How was {c.brand.name}?<small class="sec-sub">private</small></h3><BrandRating brand={c.brand} compact /></section>{/if}
+			{#if c.stage === 'live' || c.stage === 'wrapped'}<section class="sec" hidden={!sh('review')}><h3>Case study<small class="sec-sub">for your page</small></h3>{#key c.id}<CaseStudy {c} />{/key}</section>{/if}
 			{#if c.usage_ends}<section class="sec" hidden={!sh('usage')}><h3>Usage rights</h3><UsageRights {c} /></section>{/if}
 			{#if rightsRows([c]).length}<section class="sec" hidden={!sh('rights')}><h3>Ads and exclusivity</h3><RightsCard {c} /></section>{/if}
 			{#if ships(c)}<div class="sec-wrap" hidden={!sh('product')}><ProductShipping {c} /></div>{/if}

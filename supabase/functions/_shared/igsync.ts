@@ -436,8 +436,11 @@ async function makeReports(db: SupabaseClient, creator: number, reportFor?: stri
       views: has('views') ? sum('views') : null, reach: has('reach') ? sum('reach') : null, likes: sum('likes'), comments: sum('comments'),
       saves: has('saves') ? sum('saves') : null, shares: has('shares') ? sum('shares') : null, interactions: sum('interactions'),
     };
+    // The tracked link's taps and the orders from the code, as they stand today.
+    const { data: link } = await db.from('collab_links').select('clicks, promo_code, sales, revenue').eq('collab_id', c.id).maybeSingle();
     const data = {
       brand: c.brand.name, brand_handle: c.brand.instagram, code: c.code,
+      ...(link ? { link: { clicks: link.clicks, promo_code: link.promo_code, sales: link.sales, revenue: link.revenue } } : {}),
       creator: { name: s.display_name, handle: acct?.username || s.handle, followers: acct?.followers ?? null },
       deliverables: c.deliverables.map((d) => `${d.qty} ${d.qty > 1 ? (d.kind === 'Story' ? 'Stories' : `${d.kind}s`) : d.kind}`).join(', '),
       days_after: Math.max(1, Math.round((Date.now() - Math.min(...posts.map((p) => Date.parse(p.posted_at)))) / DAY)),

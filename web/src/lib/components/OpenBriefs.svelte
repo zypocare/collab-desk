@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { applyToBrief, withdrawFromBrief } from '#lib/campaigns.svelte.ts';
+	import { applyToBrief, rulesText, withdrawFromBrief } from '#lib/campaigns.svelte.ts';
 	import { ask } from '#lib/confirm.svelte.ts';
 	import { portal } from '#lib/portal.ts';
 	import { studio } from '#lib/studio.svelte.ts';
@@ -77,6 +77,10 @@
 		return `${closes(b)} · ${b.applied ? `${b.applied} applied` : 'be the first'}`;
 	}
 	const tone = (b: OpenBrief) => (b.mine ? 'ok' : diff(b.open_until) <= 1 ? 'hot' : 'warn');
+	const fits = (b: OpenBrief) => b.fit?.ok !== false;
+	/** You qualify (when there are rules), or the first thing she's missing. */
+	const fitChips = (b: OpenBrief) =>
+		b.mine ? [] : !fits(b) ? [{ text: b.fit!.misses[0], tone: 'warn' as const }] : rulesText(b.rules) ? [{ text: '✓ You qualify', tone: 'ok' as const }] : [];
 
 	function show(b: OpenBrief, edit: boolean) {
 		// A brand that already sent a request can't be changed from here.
@@ -135,9 +139,11 @@
 	<p class="hint">Brands looking for creators like you. Apply with your own rate; the brand sends a request if they pick you.</p>
 	<section class="tks pt-tks">
 		{#each briefs as b, i (b.id)}
-			<Ticket name={b.brand} sub={[b.verified ? '✓ Verified' : '', b.category].filter(Boolean).join(' · ')} money={budget(b)} moneySub={budgetSub(b)} task={task(b)} status={status(b)} tone={tone(b)} onopen={() => show(b, !b.mine)} {i}>
+			<Ticket name={b.brand} sub={[b.verified ? '✓ Verified' : '', b.category].filter(Boolean).join(' · ')} money={budget(b)} moneySub={budgetSub(b)} task={task(b)} status={status(b)} tone={tone(b)} chips={fitChips(b)} onopen={() => show(b, !b.mine && fits(b))} {i}>
 				<span class="pt-tk-acts">
-					{#if !b.mine}
+					{#if !b.mine && !fits(b)}
+						<button class="btn" onclick={() => show(b, false)}>See the brief</button>
+					{:else if !b.mine}
 						<button class="btn grad" onclick={() => show(b, true)}>Apply</button>
 					{:else}
 						<button class="btn" onclick={() => show(b, false)}>View</button>
@@ -163,6 +169,13 @@
 			<form onsubmit={send}>
 				<h2 id="ob-title">{open.edit ? `Apply to ${b.brand}` : b.brand}</h2>
 				<p>{[task(b), terms(b)].filter(Boolean).join(' · ')}</p>
+				{#if rulesText(b.rules)}
+					<div class="f">
+						<span class="lbl-t">Who can apply</span>
+						<p>{rulesText(b.rules)}</p>
+						{#if b.fit && !b.fit.ok && !b.mine}<p class="ob-miss">Not for you this time: {b.fit.misses.map((m) => m.charAt(0).toLowerCase() + m.slice(1)).join('; ')}.</p>{:else if !b.mine}<p class="ob-ok">✓ You qualify</p>{/if}
+					</div>
+				{/if}
 				{#if b.brief.brief}
 					<div class="f">
 						<span class="lbl-t">The brief</span>
@@ -203,3 +216,14 @@
 		</div>
 	</div>
 {/if}
+
+<style>
+	.ob-miss {
+		color: var(--warn);
+		font-weight: 600;
+	}
+	.ob-ok {
+		color: var(--ok);
+		font-weight: 600;
+	}
+</style>

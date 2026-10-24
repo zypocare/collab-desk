@@ -4,6 +4,7 @@
 	import { langText } from '#lib/languages.ts';
 	import { page } from '$app/state';
 	import BrandLink from '#lib/components/BrandLink.svelte';
+	import BrandCaseStudy from '#lib/components/BrandCaseStudy.svelte';
 	import { money } from '#lib/currency.ts';
 	import { auth, switchBrand } from '#lib/auth.svelte.ts';
 	import { brandData, loadRequests, loadUnread } from '#lib/brand.svelte.ts';
@@ -321,7 +322,7 @@
 		</section>
 	{/if}
 
-	{#key r.code}<BrandShipping code={r.code} {creator} onchange={loadRequests} /><BrandUsage code={r.code} {creator} onchange={loadRequests} /><BrandLink code={r.code} {creator} />{/key}
+	{#key r.code}<BrandShipping code={r.code} {creator} onchange={loadRequests} /><BrandUsage code={r.code} {creator} onchange={loadRequests} /><BrandLink code={r.code} {creator} /><BrandCaseStudy code={r.code} {creator} signer={auth.account?.role === 'brand' ? auth.account.full_name : ''} />{/key}
 
 	<section class="panel rv msg-panel" style="--i:3;margin-top:18px">
 		<div class="panel-h"><h2>Messages</h2><small>with {pub.data?.display_name ?? 'the creator'}</small></div>
