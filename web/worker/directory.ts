@@ -163,7 +163,14 @@ async function sitemap(env: PageEnv) {
 		'/tools/rate-calculator',
 		'/tools/engagement-calculator'
 	];
-	const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${[...new Set(urls)].map((u) => `<url><loc>${SITE}${esc(u)}</loc><changefreq>daily</changefreq></url>`).join('\n')}\n</urlset>`;
+	// Each listed creator's own page (her address), up to 20 pages of the directory.
+	const pages: string[] = [];
+	for (let n = 0; n < Math.min(20, Math.ceil(f.total / 24)); n++) {
+		const r = await rpc<{ items: Card[] }>(env, 'directory_search', { p_niche: '', p_city: '', p_q: '', p_page: n }).catch(() => ({ items: [] as Card[] }));
+		for (const c of r.items) pages.push(`https://${c.slug}.miracleapp.live/`);
+	}
+	const locs = [...[...new Set(urls)].map((u) => `${SITE}${u}`), ...pages];
+	const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${locs.map((u) => `<url><loc>${esc(u)}</loc><changefreq>daily</changefreq></url>`).join('\n')}\n</urlset>`;
 	return new Response(xml, { headers: { 'content-type': 'application/xml; charset=utf-8', 'cache-control': 'public, max-age=3600' } });
 }
 

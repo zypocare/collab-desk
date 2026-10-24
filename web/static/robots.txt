@@ -1,3 +1,24 @@
-# allow crawling everything by default
+# Creator pages (name.miracleapp.live) and the creator directory are for everyone, search engines too.
+# The app itself (studio, brand desk, invoices, agreements and other private links) isn't.
 User-agent: *
-Disallow:
+Allow: /$
+Allow: /creators
+Disallow: /studio
+Disallow: /brand
+Disallow: /api/
+Disallow: /invoice/
+Disallow: /agreement/
+Disallow: /report/
+Disallow: /review/
+Disallow: /insights/
+Disallow: /files/
+Disallow: /brief/
+Disallow: /join
+Disallow: /unsubscribe
+Disallow: /a/
+Disallow: /t/
+Disallow: /go/
+Disallow: /q/
+
+Sitemap: https://www.miracleapp.live/sitemap.xml
+Sitemap: https://www.miracleapp.live/creators/sitemap.xml

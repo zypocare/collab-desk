@@ -86,7 +86,10 @@ export async function brandPage(req: Request, env: PageEnv, url: URL, ctx: Ctx):
 
 	const p = boot.page as { display_name?: string; handle?: string; niche?: string; city?: string; app_name?: string; accepting?: boolean };
 	const name = p.display_name || (p.handle ? `@${p.handle}` : 'this creator');
-	const title = `Work with ${name}`;
+	// What people search: her name, what she makes and where ("Lifestyle creator in Bengaluru").
+	const what = [String(p.niche ?? '').split(',')[0].trim(), 'creator'].filter(Boolean).join(' ').replace(/^./, (c) => c.toUpperCase());
+	const where = String(p.city ?? '').trim();
+	const title = `${name} · ${what}${where ? ` in ${where}` : ''} · Book a brand collab`;
 	const bio = String((boot.extra as { bio?: string } | null)?.bio ?? '').trim();
 	const desc = bio ? `${bio}${p.accepting === false ? '' : ' Send a collab request.'}` : [[p.niche, p.city].map((x) => String(x ?? '').trim()).filter(Boolean).join(' · '), p.accepting === false ? 'See past work and rates.' : 'Rates, open weeks and past work. Send a collab request.'].filter(Boolean).join('. ');
 	const v = Number(boot.card?.v) || 0;
