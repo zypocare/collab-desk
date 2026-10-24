@@ -3,6 +3,8 @@ export const siteOf = (slug: string) => `https://${slug}.${ROOT}`;
 export const igOf = (handle: string) => `https://instagram.com/${handle.replace(/^@+/, '')}`;
 
 export const inr = (n: number | null | undefined) => '₹' + Math.round(Number(n) || 0).toLocaleString('en-IN');
+/** ₹1,999.85: rupees and paise, for tax invoices. */
+export const inr2 = (n: number | null | undefined) => '₹' + (Number(n) || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 export const num = (n: number | null | undefined) => (Number(n) || 0).toLocaleString('en-IN');
 
 /** ₹1.2L, ₹48k, ₹900; "—" for nothing. */

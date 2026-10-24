@@ -23,7 +23,7 @@ reset role;
 -- A paid monthly Brand Pro with a payment this month, and a creator trial ending in 3 days.
 insert into public.billing_subscriptions (subject_kind, subject, plan, period, status, ends_at, source, email, gateway_id)
 values ('workspace', :'w_uid', 'brand_pro', 'month', 'active', now() + interval '20 days', 'razorpay', 'bill-brand@test.dev', 'sub_billtest') returning id as paid_sub \gset
-insert into public.billing_payments (subscription_id, gateway_payment_id, amount, gst, invoice_no) values (:'paid_sub', 'pay_billtest', 2359.82, 359.97, 'MIR/26-99999');
+insert into public.billing_payments (subscription_id, gateway_payment_id, amount, gst, invoice_no, token, invoice) values (:'paid_sub', 'pay_billtest', 2359.82, 359.97, 'MIR/26-99999', 'tok-billtest', '{"taxable": 1999.85}');
 insert into public.billing_subscriptions (subject_kind, subject, plan, period, status, ends_at, source, email)
 values ('creator', '1', 'creator_pro', 'trial', 'active', now() + interval '3 days', 'trial', 'creator@example.test') returning id as trial_sub \gset
 
@@ -51,6 +51,8 @@ select public.admin_list('subscriptions', 'bill test brand', '{"live": true, "pe
 insert into results select 'The subscription lists its account, price and days left', :'s'::jsonb ->> 'name' = 'Bill Test Brand' and (:'s'::jsonb ->> 'price')::int = :pro_price
   and (:'s'::jsonb ->> 'days_left')::int between 19 and 21 and (:'s'::jsonb ->> 'paid')::numeric = 2359.82, :'s';
 select public.admin_list('billing_payments', 'MIR/26-99999') -> 'rows' -> 0 as p \gset
+insert into results select 'The payment links to its invoice', :'p'::jsonb ->> 'token' = 'tok-billtest' and (:'p'::jsonb ->> 'has_invoice')::boolean, null;
+insert into results select 'The overview''s latest payments carry the invoice link', exists (select 1 from jsonb_array_elements(:'o1'::jsonb -> 'payments') x where x ->> 'token' = 'tok-billtest'), null;
 insert into results select 'The payment lists its invoice, GST and account', (:'p'::jsonb ->> 'gst')::numeric = 359.97 and (:'p'::jsonb ->> 'net')::numeric = 1999.85 and :'p'::jsonb ->> 'name' = 'Bill Test Brand', :'p';
 
 -- One account's plan, and ending the trial through the billing functions.

@@ -25,4 +25,6 @@ export const FEATURE_LABEL: Record<string, string> = {
 export const PERIOD_LABEL: Record<string, string> = { trial: 'Trial', month: 'Monthly', year: 'Yearly', comp: 'Free (given)' };
 export const STATUS_TAG: Record<string, string> = { active: 't-ok', pending: 't-mute', cancelled: 't-warn', halted: 't-bad', ended: 't-mute' };
 export const KIND_LABEL: Record<string, string> = { creator: 'Creator', workspace: 'Brand workspace', agency: 'Agency login' };
-export const subjectHref = (kind: string, id: string) => (kind === 'creator' ? `#/creators/${id}` : kind === 'workspace' ? `#/workspaces/${id}` : `#/brand-logins/${id}`);
+/** A plan payment's GST invoice, as the buyer sees it (migration 157). */
+export const invoiceUrl = (token: string) => `https://app.miracleapp.live/bill/${encodeURIComponent(token)}`;
+export const subjectHref =(kind: string, id: string) => (kind === 'creator' ? `#/creators/${id}` : kind === 'workspace' ? `#/workspaces/${id}` : `#/brand-logins/${id}`);

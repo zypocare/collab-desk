@@ -27,7 +27,8 @@
 		);
 		const s = x.settings ?? {};
 		settings = { trial_days: s.trial_days, grace_days: s.grace_days, founding_on: s.founding_on, founding_left: s.founding_left,
-			legal_name: s.seller?.legal_name ?? '', gstin: s.seller?.gstin ?? '', address: s.seller?.address ?? '', state: s.seller?.state ?? '' };
+			legal_name: s.seller?.legal_name ?? '', gstin: s.seller?.gstin ?? '', address: s.seller?.address ?? '', state: s.seller?.state ?? '',
+			pan: s.seller?.pan ?? '', sac: s.seller?.sac ?? '997331', email: s.seller?.email ?? '' };
 	}
 	async function load() {
 		const { data, error } = await supabase.rpc('admin_billing');
@@ -73,7 +74,7 @@
 		const s = settings;
 		const { data, error } = await supabase.rpc('admin_billing_settings_save', {
 			p: { trial_days: Number(s.trial_days), grace_days: Number(s.grace_days), founding_on: !!s.founding_on, founding_left: Number(s.founding_left),
-				seller: { legal_name: s.legal_name, gstin: s.gstin, address: s.address, state: s.state }, reason }
+				seller: { legal_name: s.legal_name, gstin: s.gstin.trim().toUpperCase(), address: s.address, state: s.state, pan: s.pan.trim().toUpperCase(), sac: s.sac.trim() || '997331', email: s.email.trim() }, reason }
 		});
 		busy = '';
 		if (error) return toast(errMessage(error), true);
@@ -136,6 +137,9 @@
 
 		<section class="card">
 			<div class="card-h"><h2 class="card-t">Billing settings</h2><button class="btn pri sm" disabled={busy === 'settings'} onclick={saveSettings}>Save settings</button></div>
+			{#if !(d.settings?.seller?.gstin ?? '').trim()}
+				<div class="gstwarn" role="status"><b>No seller GSTIN yet.</b> Until it's saved here, plan invoices go out as a plain “Invoice” with no GST lines. Add Miracle's GSTIN, state and PAN to issue tax invoices.</div>
+			{/if}
 			<div class="card-b set">
 				<div class="f"><label for="s-trial">Free trial (days)</label><input id="s-trial" class="inp" type="number" min="0" max="90" bind:value={settings.trial_days} /></div>
 				<div class="f"><label for="s-grace">Grace after a failed payment (days)</label><input id="s-grace" class="inp" type="number" min="0" max="30" bind:value={settings.grace_days} /></div>
@@ -144,6 +148,9 @@
 				<div class="f wide"><label for="s-ln">Seller legal name (on invoices)</label><input id="s-ln" class="inp" bind:value={settings.legal_name} /></div>
 				<div class="f"><label for="s-g">Seller GSTIN</label><input id="s-g" class="inp mono" bind:value={settings.gstin} /></div>
 				<div class="f"><label for="s-st">Seller state</label><input id="s-st" class="inp" bind:value={settings.state} /></div>
+				<div class="f"><label for="s-pan">Seller PAN</label><input id="s-pan" class="inp mono" bind:value={settings.pan} /></div>
+				<div class="f"><label for="s-sac">SAC code</label><input id="s-sac" class="inp mono" placeholder="997331" bind:value={settings.sac} /></div>
+				<div class="f"><label for="s-em">Billing email (on invoices)</label><input id="s-em" class="inp" type="email" bind:value={settings.email} /></div>
 				<div class="f wide"><label for="s-ad">Seller address</label><textarea id="s-ad" class="inp" rows="2" bind:value={settings.address}></textarea></div>
 			</div>
 			<p class="card-b muted sm">{num(d.settings?.founding_left ?? 0)} founding offers left now.</p>
@@ -172,5 +179,6 @@
 	.set { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; align-items: end; }
 	.wide { grid-column: span 2; }
 	.chk { height: 36px; }
+	.gstwarn { margin: 12px 16px 0; padding: 10px 14px; border-radius: 8px; background: var(--warn-bg); color: var(--warn); font-size: 13px; }
 	@media (max-width: 560px) { .row3 { grid-template-columns: 1fr; } .wide { grid-column: auto; } }
 </style>

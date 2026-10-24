@@ -24,6 +24,7 @@
 	import Quotas from './crm/Quotas.svelte';
 	import BillingOverview from './crm/BillingOverview.svelte';
 	import PlansPage from './crm/PlansPage.svelte';
+	import InvoicesPage from './crm/InvoicesPage.svelte';
 
 	let { email, onsignout }: { email: string; onsignout: () => void } = $props();
 
@@ -90,7 +91,8 @@
 				{ id: 'billing', label: 'Overview', icon: 'rupee' },
 				{ id: 'plans', label: 'Plans & settings', icon: 'note' },
 				{ id: 'subscriptions', label: 'Subscriptions', icon: 'refresh' },
-				{ id: 'billing-payments', label: 'Plan payments', icon: 'check' }
+				{ id: 'billing-payments', label: 'Plan payments', icon: 'check' },
+				{ id: 'plan-invoices', label: 'Invoices (GST)', icon: 'note' }
 			]
 		},
 		{
@@ -204,6 +206,8 @@
 				<BillingOverview />
 			{:else if route.section === 'plans'}
 				<PlansPage />
+			{:else if route.section === 'plan-invoices'}
+				<InvoicesPage />
 			{:else if route.section === 'controls'}
 				<Controls onflags={(n) => (flagsOff = n)} />
 			{:else if route.section === 'jobs'}

@@ -3,7 +3,7 @@
 	import { day, inr, inr0, num, when } from '../format.ts';
 	import { href } from '../router.svelte.ts';
 	import { errMessage, supabase } from '../supabase.ts';
-	import { KIND_LABEL, subjectHref } from './billing.ts';
+	import { KIND_LABEL, invoiceUrl, subjectHref } from './billing.ts';
 
 	// Miracle's own plans: monthly recurring revenue, who's on which plan, trials ending, and the latest payments.
 	type R = Record<string, any>;
@@ -25,7 +25,7 @@
 			<h1>Overview</h1>
 			<p class="muted lead">Miracle's own plans. Money between brands and creators never goes through here.</p>
 		</div>
-		<div class="acts"><a class="btn" href={href('plans')}>Plans & settings</a><a class="btn" href={href('subscriptions')}>Subscriptions</a></div>
+		<div class="acts"><a class="btn" href={href('plan-invoices')}>Invoices</a><a class="btn" href={href('plans')}>Plans & settings</a><a class="btn" href={href('subscriptions')}>Subscriptions</a></div>
 	</header>
 	{#if err}<p class="err">{err}</p>{/if}
 	{#if !d}
@@ -76,7 +76,7 @@
 			<section class="card tbl-wrap">
 				<div class="card-h"><h2 class="card-t">Latest payments</h2><a href={href('billing-payments')}>All payments</a></div>
 				{#if !d.payments.length}<div class="card-empty">No plan payments yet.</div>{:else}
-					<table class="tbl"><tbody>{#each d.payments as p (p.id)}<tr><td class="mono">{p.invoice_no ?? '—'}</td><td><a href={subjectHref(p.kind, p.subject)}>{p.name ?? p.subject}</a></td><td class="mono">{p.plan}</td><td class="r mono">{inr(p.amount)}</td><td class="muted">{when(p.paid_at)}</td></tr>{/each}</tbody></table>
+					<table class="tbl"><tbody>{#each d.payments as p (p.id)}<tr><td class="mono">{#if p.token}<a href={invoiceUrl(p.token)} target="_blank" rel="noopener">{p.invoice_no}</a>{:else}{p.invoice_no ?? '—'}{/if}</td><td><a href={subjectHref(p.kind, p.subject)}>{p.name ?? p.subject}</a></td><td class="mono">{p.plan}</td><td class="r mono">{inr(p.amount)}</td><td class="muted">{when(p.paid_at)}</td></tr>{/each}</tbody></table>
 				{/if}
 			</section>
 		</div>

@@ -862,7 +862,7 @@ const BILLING: Record<string, ListConfig> = {
 		filters: [DAYS('created', 'Paid')],
 		columns: [
 			{ key: 'created', label: 'Paid', type: 'when' },
-			{ key: 'invoice_no', label: 'Invoice', type: 'mono' },
+			{ key: 'invoice_no', label: 'Invoice', type: 'mono', link: (r) => (r.token ? `https://app.miracleapp.live/bill/${encodeURIComponent(r.token)}` : null) },
 			{ key: 'name', label: 'Account', sub: 'email', link: billSubject },
 			{ key: 'plan_name', label: 'Plan' },
 			{ key: 'period', label: 'Period', text: (r) => BILL_PERIOD[r.period] ?? r.period },
