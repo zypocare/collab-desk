@@ -46,6 +46,20 @@
 		{ href: '/studio/settings', label: 'My page', short: 'Page', icon: 'link', also: ['/studio/profile'] }
 	];
 	const path = $derived(page.url.pathname);
+	// Something new from the server (a request, a payment, a save): a light sweep runs under the top bar.
+	let ping = $state(false);
+	let lastRev = -1;
+	let pingT: ReturnType<typeof setTimeout> | undefined;
+	$effect(() => {
+		const r = studio.revision;
+		if (lastRev >= 0 && r !== lastRev) {
+			ping = false;
+			clearTimeout(pingT);
+			requestAnimationFrame(() => (ping = true));
+			pingT = setTimeout(() => (ping = false), 1400);
+		}
+		lastRev = r;
+	});
 	// On a laptop Ask your desk sits over the page area with the side menu still showing,
 	// so moving to another page from the menu closes it.
 	$effect(() => {
@@ -446,9 +460,9 @@
 				<span class="nav-ind" bind:this={ind}></span>
 				{#each NAV.filter((n) => !n.desk && !blocked(n.href)) as n (n.href)}
 					<a class="nav" href={phone.on && n.href === '/studio/settings' ? '/studio/profile' : n.href} aria-current={current === n.href ? 'page' : undefined} aria-label={phone.on && n.href === '/studio/settings' ? 'Profile' : undefined}
-						><span class="nav-ic">{#if phone.on && n.href === '/studio/settings'}<Avatar name={studio.settings?.display_name ?? ''} src={studio.ig?.connected ? studio.ig.profile_picture_url : ''} size="28px" />{:else}<Icon name={n.icon} />{/if}</span><span class="nav-t" class:nav-long={!!n.short}>{n.label}</span>{#if n.short}<span class="nav-short" aria-hidden="true">{n.short}</span>{/if}{#if n.href === '/studio/inbox' && unread}<span class="badge" aria-label="{unread} unread">{unread}</span>{/if}{#if n.href === '/studio/collabs' && newCount}<span class="badge" aria-label="{newCount} new"
+						><span class="nav-ic">{#if phone.on && n.href === '/studio/settings'}<Avatar name={studio.settings?.display_name ?? ''} src={studio.ig?.connected ? studio.ig.profile_picture_url : ''} size="28px" />{:else}<Icon name={n.icon} />{/if}</span><span class="nav-t" class:nav-long={!!n.short}>{n.label}</span>{#if n.short}<span class="nav-short" aria-hidden="true">{n.short}</span>{/if}{#if n.href === '/studio/inbox' && unread}<span class="badge" aria-label="{unread} unread">{unread}</span>{/if}{#if n.href === '/studio/collabs' && newCount}{#key newCount}<span class="badge" aria-label="{newCount} new"
 								>{newCount}</span
-							>{/if}</a
+							>{/key}{/if}</a
 					>
 				{/each}
 			</div>
@@ -474,7 +488,7 @@
 		{/if}
 		<main class="main">
 			{#if phone.on && !chat}
-				<header class="m-bar" class:scrolled={phone.scrolled} class:sub={!!back} class:hide={phone.hide && !back} class:cs={path === '/studio/settings'} class:cs-sub={path === '/studio/settings' && !!sec}>
+				<header class="m-bar" class:scrolled={phone.scrolled} class:sub={!!back} class:hide={phone.hide && !back} class:cs={path === '/studio/settings'} class:cs-sub={path === '/studio/settings' && !!sec}><span class="m-live" class:ping aria-hidden="true"></span>
 					{#if back}
 						<button class="m-ib m-back" onclick={goBack} aria-label="Back"><Icon name={path === '/studio/settings' && sec ? 'back' : 'chevL'} /></button>
 						<div class="m-title">{title}</div>

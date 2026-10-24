@@ -2189,3 +2189,31 @@
   [data-side] .imp-actions .imp-go { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
   [data-side] .imp-actions .imp-go.idle { background: var(--surface-2); color: var(--ink-3); box-shadow: inset 0 0 0 1px var(--line-strong); opacity: 1; }
 }
+
+/* ---------- Alive on a phone: things answer the finger and the screen never sits still ---------- */
+@media (hover: none) and (pointer: coarse) {
+  /* Press: rows, tabs, chips and cards dip under the finger and spring back (scale, so it never fights a card's own transform). */
+  [data-side] :is(.cs-row, .imp-seg button, .m-seg a, .subtabs a, .rail .nav, .chip, .pill, .tk-band, .cs-card, .cs-wins a, .cs-logout, .lnk, .imp-x, .m-back, .cs-edit, .cs-pill, .toast, summary) { transition: scale .45s cubic-bezier(.2, 1.6, .35, 1), background-color .2s; }
+  [data-side] :is(.cs-row, .imp-seg button, .m-seg a, .subtabs a, .chip, .pill, .tk-band, .cs-card, .cs-wins a, .cs-logout, .lnk, summary):active { scale: .97; transition-duration: .08s; }
+  [data-side] :is(.rail .nav, .imp-x, .m-back, .cs-edit, .cs-pill):active { scale: .88; transition-duration: .08s; }
+}
+@media (max-width: 760px) and (prefers-reduced-motion: no-preference) {
+  /* The bottom menu: the icon you land on pops, and a new count bounces in. */
+  [data-side] .rail .nav[aria-current] .nav-ic { animation: mc-pop .55s cubic-bezier(.2, 1.7, .35, 1); }
+  [data-side] .rail .nav .badge { animation: mc-badge .6s cubic-bezier(.2, 1.8, .35, 1); }
+  @keyframes mc-pop { 0% { scale: .7; } 55% { scale: 1.18; } 100% { scale: 1; } }
+  @keyframes mc-badge { 0% { scale: 0; } 60% { scale: 1.3; } 100% { scale: 1; } }
+
+  /* Live dots breathe: open for collabs, things that need you, a new reply. */
+  [data-side] :is(.cs-dot, .tk small.ok > i, .tk small.warn > i, .tk small.bad > i) { animation: mc-breathe 2.2s ease-in-out infinite; }
+  @keyframes mc-breathe { 0%, 100% { scale: 1; opacity: 1; } 50% { scale: 1.4; opacity: .6; } }
+
+  /* Pull to refresh: the ring lights up the moment letting go will refresh. */
+  .ptr.ready span { border-top-color: var(--g2); scale: 1.15; transition: scale .3s cubic-bezier(.2, 1.7, .35, 1); }
+
+  /* Something new from the server: a light sweeps along the bottom edge of the top bar. */
+  [data-side] .m-live { position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; overflow: hidden; pointer-events: none; }
+  [data-side] .m-live.ping::after { content: ''; position: absolute; top: 0; bottom: 0; width: 45%; background: linear-gradient(90deg, transparent, var(--g1), var(--g2), var(--g3), transparent); animation: mc-sweep 1.2s cubic-bezier(.4, 0, .2, 1) both; }
+  @keyframes mc-sweep { from { left: -45%; } to { left: 100%; } }
+
+}

@@ -8,14 +8,19 @@
 	import { errMessage } from '../util';
 	import Icon from './Icon.svelte';
 	import { isNative, native } from '../native';
+	import { feelOn, setFeel } from '../feel';
 
 	let status = $state<'unsupported' | 'blocked' | 'on' | 'off' | 'loading'>('loading');
 	let busy = $state(false);
 	// In the phone app: which version this is (it's read once the app has started).
 	let appVersion = $state('');
+	// Vibration on taps and good news (phones only), for this device.
+	let feel = $state(true);
+	const touch = typeof matchMedia !== 'undefined' && matchMedia('(hover: none) and (pointer: coarse)').matches;
 	// Alerts greet her by her "Call me" name, else the first name on her profile (as the server does).
 	const greetName = $derived(String(studio.settings?.alert_name ?? '').trim() || String(studio.settings?.display_name ?? '').trim().split(/\s+/)[0] || '');
 	onMount(() => {
+		feel = feelOn();
 		appVersion = native.version;
 		if (isNative() && !appVersion) setTimeout(() => (appVersion = native.version), 1500);
 	});
@@ -76,6 +81,12 @@
 		</div>
 		{#if pwa.installEvent}<button class="btn sm grad" onclick={install}><Icon name="plus" />Install</button>{/if}
 	</div>
+	{/if}
+	{#if touch}
+		<div class="switch-row">
+			<div><b>Vibrate on taps</b><small>A light tick when you tap, and a buzz when money or a yes from a brand comes in. Just this phone.</small></div>
+			<input type="checkbox" class="tgl" checked={feel} aria-label="Vibrate on taps" onchange={(e) => setFeel((feel = (e.currentTarget as HTMLInputElement).checked))} />
+		</div>
 	{/if}
 	<div class="switch-row">
 		<div>

@@ -1,5 +1,6 @@
 // The Studio on a phone behaves like an installed app: an app bar that shows the title once the
 // big one scrolls away, sheets that slide down to close, and pull down to refresh.
+import { haptic } from './feel';
 export const PHONE_Q = '(max-width: 760px)';
 
 export const phone = $state({ on: false, scrolled: false, titled: false, hide: false });
@@ -126,20 +127,27 @@ function pullToRefresh(refresh: () => Promise<unknown>) {
 		dy = e.touches[0].clientY - y0;
 		if (dy <= 0 || scrollY > 0) return set(0);
 		set(Math.min(1, dy / MAX));
+		// A tick the moment letting go would refresh, like a real app.
+		const ready = dy >= MAX;
+		if (ready !== ind.classList.contains('ready')) {
+			ind.classList.toggle('ready', ready);
+			if (ready) haptic('select');
+		}
 	};
 	const end = async () => {
 		if (y0 < 0) return;
 		y0 = -1;
+		ind.classList.remove('ready');
 		if (dy < MAX) return set(0);
 		busy = true;
 		ind.classList.add('spin');
-		navigator.vibrate?.(8);
 		try {
 			await Promise.all([refresh(), new Promise((r) => setTimeout(r, 600))]);
 		} finally {
 			busy = false;
 			ind.classList.remove('spin');
 			set(0);
+			haptic('soft');
 		}
 	};
 	addEventListener('touchstart', start, { passive: true });

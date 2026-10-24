@@ -16,9 +16,13 @@ How to ship one:
 4. Play Console › Production › Create new release › upload the `.aab` › paste the notes › send for review.
 5. Fill in the "Build" and "Sent" lines below.
 
-## 1.0.2 (planned)
+## 1.0.3 (planned)
 
 - Voice notes and voice typing work in the app (it now asks for the microphone).
+
+## 1.0.2
+
+- The app answers your touch: a light vibration on taps and a buzz when money or a yes from a brand comes in (turn it off in Settings).
 
 ## 1.0.1
 

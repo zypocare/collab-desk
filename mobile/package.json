@@ -1,7 +1,7 @@
 {
   "name": "miracle-mobile",
   "private": true,
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Miracle for Android and iPhone: the web app in a native shell with native alerts, back button and links.",
   "scripts": {
     "sync": "cap sync",
@@ -14,6 +14,7 @@
     "@capacitor/app": "8.1.2",
     "@capacitor/browser": "8.0.5",
     "@capacitor/core": "8.5.3",
+    "@capacitor/haptics": "8.0.2",
     "@capacitor/ios": "8.5.3",
     "@capacitor/push-notifications": "8.1.3",
     "@capacitor/splash-screen": "8.0.2",

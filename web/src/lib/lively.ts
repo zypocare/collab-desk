@@ -1,5 +1,6 @@
 import { onNavigate } from '$app/navigation';
 import { onMount } from 'svelte';
+import { haptic } from './feel';
 
 // CRED-style motion for the phone studio. A tapped wallet card grows into the collab it opens, cards tilt under the finger and spring back, sheets close with a
 // swipe down, and search boxes roll through things to search for. Laptop is left as it is.
@@ -86,6 +87,7 @@ export function lively() {
 			if (!s) return;
 			s.style.transition = 'transform .45s cubic-bezier(.2,1.3,.35,1)';
 			if (dy > 110) {
+				haptic('soft');
 				s.style.transition = 'transform .2s ease-in';
 				s.style.transform = 'translateY(100%)';
 				setTimeout(() => {

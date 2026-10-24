@@ -18,6 +18,7 @@
 	import { page } from '$app/state';
 	import { canSell, upgradeNeeded, upgradeText } from '#lib/plan.svelte.ts';
 	import { startReveal } from '#lib/reveal.ts';
+	import { startFeel } from '#lib/feel.ts';
 	import { auth, initAuth } from '#lib/auth.svelte.ts';
 	import { initTheme, ui } from '#lib/ui.svelte.ts';
 	import { watchInstall } from '#lib/pwa.svelte.ts';
@@ -35,6 +36,7 @@
 		initAuth();
 		watchInstall();
 		startReveal();
+		startFeel();
 		keepReferral(new URL(location.href));
 		keepQr(new URL(location.href));
 	});

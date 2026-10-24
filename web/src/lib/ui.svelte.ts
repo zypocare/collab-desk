@@ -1,5 +1,6 @@
 // Shared UI state and small motion helpers: toasts, confetti, theme, count-up numbers.
 import { inr } from './util';
+import { feelToast, haptic } from './feel';
 
 export const REDUCED = typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -21,6 +22,7 @@ let toastId = 0;
 export function toast(msg: string, icon = 'check') {
 	const t: Toast = { id: ++toastId, msg, icon, out: false };
 	ui.toasts.push(t);
+	feelToast(msg, icon);
 	// A free plan's limit stays long enough to tap Upgrade.
 	setTimeout(() => {
 		const x = ui.toasts.find((y) => y.id === t.id);
@@ -49,6 +51,7 @@ if (typeof window !== 'undefined') {
 }
 
 export function confetti(x = pointer.x, y = pointer.y) {
+	haptic('success');
 	if (REDUCED || typeof document === 'undefined') return;
 	let cv = document.getElementById('confetti') as HTMLCanvasElement | null;
 	if (!cv) return;
@@ -165,10 +168,6 @@ export async function copyText(text: string, msg = 'Copied') {
 export function moneyIn(amount: number, brand: string) {
 	if (typeof window === 'undefined' || !matchMedia('(max-width: 760px)').matches || !(amount > 0)) return false;
 	ui.moneyIn = { amount, brand };
-	try {
-		navigator.vibrate?.([30, 40, 60]);
-	} catch {
-		/* no vibration here */
-	}
+	haptic('success');
 	return true;
 }
