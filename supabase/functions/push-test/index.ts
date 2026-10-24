@@ -21,7 +21,7 @@ Deno.serve(async (req) => {
   }
   const creator = await creatorOfCaller(req);
   if (!creator) return reply({ error: 'Only the creator can do this.' }, 403);
-  return reply(await pushToCreator(admin(), creator, { title: 'Notifications are on', body: "You'll get new requests, messages and payments here.", url: '/studio' }));
+  return reply(await pushToCreator(admin(), creator, { title: 'Notifications are on', body: "You'll get new requests, messages and payments here.", url: '/studio', keep: false }));
 });
 
 /** The creator a server job named; with no name and only one active creator, that one. */

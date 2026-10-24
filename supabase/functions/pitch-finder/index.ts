@@ -177,6 +177,7 @@ async function findFor(db: ReturnType<typeof admin>, s: Settings, opt: { manual:
       body: s.pitch_mode === 'auto' ? `${rows.slice(0, 3).map((r) => r.brand_name).join(', ')}${rows.length > 3 ? ' and more' : ''}. They go out from 10 AM.` : `${rows.slice(0, 3).map((r) => r.brand_name).join(', ')}${rows.length > 3 ? ' and more' : ''}. Approve the ones you like.`,
       url: '/studio/pitches',
       tag: 'pitch-autopilot',
+      kind: 'pitches_found',
     });
   }
   return result({ added: rows.length, scouted: scoutedN, fresh: freshN, ...(rows.length ? {} : { skipped: 'none of the brands found today show a public email on their website' }), brands: rows.map((r) => `${r.brand_name} <${r.email}>`) });

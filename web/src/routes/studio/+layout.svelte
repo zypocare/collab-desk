@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { alerts, watchAlerts } from '#lib/alerts.svelte.ts';
 	import { afterNavigate, goto } from '$app/navigation';
 	import Logo from '#lib/components/Logo.svelte';
 	import { edgeSwipeBack, goBackOr } from '#lib/back.ts';
@@ -86,6 +87,7 @@
 	});
 
 	onMount(() => {
+		const stopAlerts = watchAlerts();
 		watchVoiceUnlock();
 		// Back to the tab or window after a while: make sure the screen shows the latest.
 		const back = () => document.visibilityState === 'visible' && catchUp();
@@ -95,6 +97,7 @@
 			document.removeEventListener('visibilitychange', back);
 			removeEventListener('focus', back);
 			stopWatching();
+			stopAlerts();
 		};
 	});
 	// Sign-ins are shared across creators' addresses: a creator who opens someone else's address
@@ -179,6 +182,7 @@
 		'/studio/instagram': 'Instagram',
 		'/studio/share': 'Add from a share',
 		'/studio/rights': 'Usage rights',
+		'/studio/alerts': 'Alerts',
 		'/studio/tax': 'Tax desk',
 		'/studio/grow': 'Grow',
 		'/studio/grow/check': 'Check a reel',
@@ -221,6 +225,7 @@
 		: path.startsWith('/studio/grow/') ? '/studio/grow'
 		: /^\/studio\/(import|share|rights)/.test(path) ? '/studio/collabs'
 		: path === '/studio/tax' ? '/studio/money'
+		: path === '/studio/alerts' ? '/studio'
 		: ''
 	);
 	const unread = $derived(studio.collabs.reduce((a, c) => a + unreadFor(c), 0));
@@ -295,6 +300,7 @@
 	const DESK: { href: string; label: string; icon: string; on: string[] }[] = [
 		{ href: '/studio', label: 'Today', icon: 'home', on: [] },
 		{ href: '/studio/inbox', label: 'Inbox', icon: 'inbox', on: ['/studio/inbox'] },
+		{ href: '/studio/alerts', label: 'Alerts', icon: 'bell', on: ['/studio/alerts'] },
 		{ href: '/studio/collabs', label: 'Collabs', icon: 'board', on: ['/studio/collabs', '/studio/brands', '/studio/pitches', '/studio/c/', '/studio/import', '/studio/share', '/studio/rights'] },
 		{ href: '/studio/calendar', label: 'Calendar', icon: 'cal', on: ['/studio/calendar'] },
 		{ href: '/studio/content', label: 'Content', icon: 'film', on: ['/studio/content', '/studio/instagram'] },
@@ -375,7 +381,7 @@
 				<div class="side-nav">
 					{#each DESK.filter((n) => !blocked(n.href)) as n (n.href)}
 						<a class="side-it" href={n.href} aria-current={deskCurrent === n.href ? 'page' : undefined}
-							><Icon name={n.icon} /><span class="side-t">{n.label}</span>{#if n.href === '/studio/inbox' && unread}<span class="side-badge" aria-label="{unread} unread">{unread}</span>{/if}{#if n.href === '/studio/collabs' && newCount}<span class="side-new">{newCount} new</span>{/if}</a
+							><Icon name={n.icon} /><span class="side-t">{n.label}</span>{#if n.href === '/studio/inbox' && unread}<span class="side-badge" aria-label="{unread} unread">{unread}</span>{/if}{#if n.href === '/studio/alerts' && alerts.unread}<span class="side-badge" aria-label="{alerts.unread} new">{alerts.unread > 99 ? '99+' : alerts.unread}</span>{/if}{#if n.href === '/studio/collabs' && newCount}<span class="side-new">{newCount} new</span>{/if}</a
 						>
 					{/each}
 				</div>
@@ -472,6 +478,7 @@
 							{:else}
 								<button class="m-ib" onclick={() => palette?.show()} aria-label="Search and actions"><Icon name="search" /></button>
 							{/if}
+							{#if path === '/studio'}<a class="m-ib" href="/studio/alerts" aria-label="Alerts{alerts.unread ? `, ${alerts.unread} new` : ''}"><Icon name="bell" />{#if alerts.unread}<span class="m-badge">{alerts.unread > 99 ? '99+' : alerts.unread}</span>{/if}</a>{/if}
 							{#if path === '/studio'}<a class="m-ib" href="/studio/inbox" aria-label="Messages{unread ? `, ${unread} unread` : ''}"><Icon name="send" />{#if unread}<span class="m-badge">{unread}</span>{/if}</a>{/if}
 						</div>
 					{/if}

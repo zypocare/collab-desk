@@ -77,6 +77,7 @@ async function alertFor(db: ReturnType<typeof admin>, s: Settings, dry: boolean)
     url: '/studio/payments',
     // One at a time: a newer reminder replaces the last one on her phone.
     tag: 'pending-payments',
+    kind: 'payments_pending',
     actions: [
       { action: 'remind', title: 'Remind brands', url: '/studio/payments?act=remind' },
       { action: 'open', title: 'See payments', url: '/studio/payments' }

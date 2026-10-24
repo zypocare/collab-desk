@@ -104,7 +104,7 @@ Deno.serve(async (req) => {
     }
     // Phone alert for things that need her (independent of the email going out).
     const alert = pushFor(row.kind, row.payload ?? {});
-    if (alert) await pushToCreator(supabase, settings.id, alert).catch((e) => console.error('[push]', e));
+    if (alert) await pushToCreator(supabase, settings.id, { ...alert, kind: row.kind }).catch((e) => console.error('[push]', e));
     // And for the brand login it went to, if it has alerts on for this (never her own address).
     if (String(row.to_email ?? '').toLowerCase() !== ownerEmail) {
       await pushBrand(supabase, row.kind, row.payload ?? {}, String(row.to_email ?? ''), String(settings.display_name ?? '')).catch((e) => console.error('[push brand]', e));

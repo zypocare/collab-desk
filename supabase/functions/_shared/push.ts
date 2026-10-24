@@ -117,12 +117,34 @@ async function deliver(s: { endpoint: string; p256dh: string; auth: string }, ms
   await webpush.sendNotification({ endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } }, JSON.stringify(msg), { TTL: 60 * 60 * 24, urgency: 'high' });
 }
 
-export type Push = { title: string; body: string; url: string; tag?: string; /** Only her own phones, never her team's (the personal water, food and break nudges). */ ownerOnly?: boolean; /** Buttons on the notification (Android, Windows, Mac Chrome). */ actions?: { action: string; title: string; url: string }[]; /** Her name only, without her line under each alert (for the light, friendly nudges). */ nameOnly?: boolean; /** Exactly as written: no name in front, no line under it. */ plain?: boolean };
+export type Push = { title: string; body: string; url: string; tag?: string; /** What happened (request_received_creator, payment...), for the icon in Alerts. */ kind?: string; /** false: not kept in the app's Alerts (the casual nudges and tests). */ keep?: boolean; /** Only her own phones, never her team's (the personal water, food and break nudges). */ ownerOnly?: boolean; /** Buttons on the notification (Android, Windows, Mac Chrome). */ actions?: { action: string; title: string; url: string }[]; /** Her name only, without her line under each alert (for the light, friendly nudges). */ nameOnly?: boolean; /** Exactly as written: no name in front, no line under it. */ plain?: boolean };
+
+/** Every event alert is also kept in the app (Alerts), whether or not any phone gets it. A newer alert with
+ * the same tag (the same chat, the same payment reminder) replaces the older one, as on her phone. */
+async function keepAlert(db: SupabaseClient, creator: number, msg: Push) {
+  if (msg.keep === false) return;
+  try {
+    const tag = String(msg.tag ?? '').slice(0, 80);
+    if (tag) await db.from('creator_alerts').delete().eq('creator_id', creator).eq('tag', tag);
+    const { error } = await db.from('creator_alerts').insert({
+      creator_id: creator,
+      kind: String(msg.kind ?? '').slice(0, 40),
+      title: String(msg.title ?? '').slice(0, 200),
+      body: String(msg.body ?? '').slice(0, 600),
+      url: String(msg.url ?? '').slice(0, 500),
+      tag,
+    });
+    if (error) console.error('[alerts]', error.message);
+  } catch (e) {
+    console.error('[alerts]', e);
+  }
+}
 
 /** Sends to every device the creator's team turned alerts on for; forgets devices the browser says are gone.
  * Each person is greeted by their own name: the creator by hers ("Call me" in Settings), a teammate
  * (manager, assistant, agency) by theirs, with whose studio it is. */
 export async function pushToCreator(db: SupabaseClient, creator: number, msg: Push) {
+  await keepAlert(db, creator, msg);
   if (!pushConfigured && !fcmConfigured && !apnsConfigured) return { sent: 0, skipped: 'push not configured' };
   const { data: subs } = await db.from('push_subscriptions').select('id, endpoint, p256dh, auth, device, user_id').eq('creator_id', creator);
   const { data: me } = await db.from('creator_settings').select('alert_name, alert_line, display_name, creator_email').eq('id', creator).maybeSingle();
