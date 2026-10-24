@@ -88,10 +88,12 @@ export const ROLE_NOTE: Record<TeamRole, string> = {
 	member: 'campaigns and requests, within the limit'
 };
 
-/** Join a team this email was invited to (once per visit; cheap when there is none). */
+/** Join the teams this email was invited to (once per visit; cheap when there are none). True when it
+ * joined one just now, so the screens can reload with that team's companies. */
 let joined = false;
 export async function joinTeam() {
-	if (joined) return;
+	if (joined) return false;
 	joined = true;
-	await supabase.rpc('team_join');
+	const { data } = await supabase.rpc('team_join');
+	return ((data as { joined?: number } | null)?.joined ?? 0) > 0;
 }

@@ -8,6 +8,7 @@
 	import Avatar from './Avatar.svelte';
 	import Icon from './Icon.svelte';
 	import Logo from './Logo.svelte';
+	import WorkspaceSwitch from './WorkspaceSwitch.svelte';
 
 	// The brand side's menu on a laptop: the creator studio's side menu, with the brand's places.
 	const path = $derived(page.url.pathname);
@@ -44,6 +45,7 @@
 		{/each}
 	</div>
 	<div class="side-end">
+		<WorkspaceSwitch />
 		{#if creators.length}
 			<a class="side-ask" href="/brand/campaigns/new"><Icon name="plus" />New campaign</a>
 		{:else}

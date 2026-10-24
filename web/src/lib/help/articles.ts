@@ -313,9 +313,10 @@ export const ARTICLES: Article[] = [
 		summary: 'Invite colleagues, set who approves and who pays, switch companies.',
 		category: 'brand-start',
 		audience: 'brand',
-		keywords: ['team', 'colleague', 'invite', 'approver', 'finance', 'admin', 'member', 'company', 'switch', 'agency', 'multiple brands'],
+		keywords: ['team', 'colleague', 'invite', 'approver', 'finance', 'admin', 'member', 'company', 'switch', 'agency', 'multiple brands', 'client', 'clients', 'workspace', 'working for'],
 		body: [
-			{ p: 'In Settings, invite colleagues with their work email and a role: admin, approver (accepts quotes and drafts), finance (invoices and payments) or member. Agencies can add several companies and switch between them.' }
+			{ p: 'In Settings, invite colleagues with their work email and a role: admin, approver (accepts quotes and drafts), finance (invoices and payments) or member. Agencies can add several companies and switch between them.' },
+			{ p: 'Working for several clients (an agency, say)? Each client invites you to its own team. Joining one never shows it another client’s companies, requests or money. A Working for button appears in the menu: tap it to see every client side by side (open requests, what’s waiting on you, approvals, money to pay) and to switch. You see one client at a time.' }
 		],
 		links: [{ label: 'Brand settings', href: '/brand/settings' }]
 	},

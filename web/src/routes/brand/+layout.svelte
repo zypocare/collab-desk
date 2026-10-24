@@ -3,7 +3,7 @@
 	import { page } from '$app/state';
 	import { onMount, tick } from 'svelte';
 	import type { LayoutProps } from './$types';
-	import { auth } from '#lib/auth.svelte.ts';
+	import { auth, refreshAccount } from '#lib/auth.svelte.ts';
 	import { ui } from '#lib/ui.svelte.ts';
 	import { allRequests, brandData, loadAllRequests, loadRequests } from '#lib/brand.svelte.ts';
 	import { brandGroups, deskTabs, groupOf, tabOn } from '#lib/brandNav.ts';
@@ -11,6 +11,8 @@
 	import Icon from '#lib/components/Icon.svelte';
 	import { brandIg } from '#lib/brandIg.svelte.ts';
 	import { joinTeam } from '#lib/business.svelte.ts';
+	import { loadWorkspaces } from '#lib/workspaces.svelte.ts';
+	import WorkspaceSwitch from '#lib/components/WorkspaceSwitch.svelte';
 	import { appAddress, isAppHost } from '#lib/creatorHost.ts';
 	import { loadPublicPage, pub } from '#lib/publicPage.svelte.ts';
 	import BrandTopbar from '#lib/components/BrandTopbar.svelte';
@@ -46,9 +48,17 @@
 		else if (path === '/brand/new') goto('/brand/creators?tab=discover', { replaceState: true });
 	});
 
-	// Invited to a company's team: join it on the first visit after signing in.
+	// Invited to a company's team: join it on the first visit after signing in, then list the teams
+	// (clients) this login works for, for the switcher.
 	$effect(() => {
-		if (auth.account?.role === 'brand') joinTeam();
+		if (auth.account?.role === 'brand')
+			joinTeam()
+				.then(async (fresh) => {
+					// Just joined a team: its companies and requests weren't there when the screen loaded.
+					if (fresh) await refreshAccount().then(() => Promise.all([loadRequests(), loadAllRequests()]));
+				})
+				.catch(() => {})
+				.finally(() => loadWorkspaces().catch(() => {}));
 	});
 
 	onMount(() => {
@@ -134,7 +144,7 @@
 				</nav>
 			{/if}
 			<main class="main">
-				{#if phone.on}<BrandTopbar />{/if}
+				{#if phone.on}<BrandTopbar />{#if !detail}<WorkspaceSwitch compact />{/if}{/if}
 				{#if phone.on}
 					{@render children()}
 				{:else}
