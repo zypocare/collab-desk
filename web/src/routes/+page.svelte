@@ -917,7 +917,7 @@
 
 		<footer>
 			<div class="mp-wrap">
-				<a class="mp-pw" href="https://miracleapp.live" aria-label="Made with Miracle"><svg viewBox="0 0 512 512" aria-hidden="true"><g transform="translate(256 256) scale(1.04) translate(-256 -256)"><g transform="translate(256 256) scale(.79) skewX(-13) translate(-304.5 -266)" fill="none" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"><use href="#mp-kd" transform="translate(-13 -10)" stroke="#F4EEF2" /><use href="#mp-kd" transform="translate(13 10)" stroke="url(#mp-kg)" /></g></g></svg><span>Made with <b>Miracle</b></span></a>
+				<a class="mp-pw" href="https://www.miracleapp.live/get-brand-deals?utm_source=creator_page" aria-label="Made with Miracle: get brand deals as a creator"><svg viewBox="0 0 512 512" aria-hidden="true"><g transform="translate(256 256) scale(1.04) translate(-256 -256)"><g transform="translate(256 256) scale(.79) skewX(-13) translate(-304.5 -266)" fill="none" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"><use href="#mp-kd" transform="translate(-13 -10)" stroke="#F4EEF2" /><use href="#mp-kd" transform="translate(13 10)" stroke="url(#mp-kg)" /></g></g></svg><span>Made with <b>Miracle</b></span></a>
 				<span>Brands pay {first} directly. Miracle never takes a cut.</span>
 				{#if ins}<a href="/insights" style="color:var(--ink-2)">See {first}'s full insights</a>{/if}
 				{#if signedInBrand}
