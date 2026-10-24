@@ -6,7 +6,7 @@
 	import { answer, ui } from './lib/ui.svelte.ts';
 	import Icon from './lib/Icon.svelte';
 	import Login from './lib/Login.svelte';
-	import Panel from './lib/Panel.svelte';
+	import Shell from './lib/Shell.svelte';
 
 	// Signed out → the email-code sign-in. Signed in → the panel, but only for Miracle's admins.
 	let ready = $state(false);
@@ -28,11 +28,17 @@
 			if (session) await check();
 			ready = true;
 		});
+		// A question asked on one page shouldn't be answered on another.
+		const onHash = () => ui.confirm && answer(false);
+		addEventListener('hashchange', onHash);
 		const { data } = supabase.auth.onAuthStateChange((event, s) => {
 			session = s;
 			if (event === 'SIGNED_OUT') admin = null;
 		});
-		return () => data.subscription.unsubscribe();
+		return () => {
+			data.subscription.unsubscribe();
+			removeEventListener('hashchange', onHash);
+		};
 	});
 
 	async function signedIn(s: Session) {
@@ -65,7 +71,7 @@
 		</div>
 	</div>
 {:else}
-	<Panel email={session.user.email ?? ''} onsignout={signOut} />
+	<Shell email={session.user.email ?? ''} onsignout={signOut} />
 {/if}
 
 <div class="toasts" aria-live="polite">
@@ -79,10 +85,15 @@
 		<div class="dlg" role="dialog" aria-modal="true" aria-labelledby="dlg-t">
 			<h2 id="dlg-t">{ui.confirm.title}</h2>
 			{#if ui.confirm.body}<p>{ui.confirm.body}</p>{/if}
+			{#if ui.confirm.input}
+				<div class="f">
+					<label for="dlg-in">{ui.confirm.input.label}</label>
+					<input id="dlg-in" class="inp" {@attach (el) => el.focus()} placeholder={ui.confirm.input.placeholder ?? ''} bind:value={ui.confirm.text} onkeydown={(e) => e.key === 'Enter' && answer(true)} />
+				</div>
+			{/if}
 			<div class="acts">
-				<button class="neo dark" onclick={() => answer(false)}>Cancel</button>
-				<!-- svelte-ignore a11y_autofocus -->
-				<button class="neo {ui.confirm.danger ? 'danger' : 'grad'}" autofocus onclick={() => answer(true)}>{ui.confirm.ok ?? 'OK'}</button>
+				<button class="btn" onclick={() => answer(false)}>Cancel</button>
+				<button class="btn {ui.confirm.danger ? 'bad' : 'pri'}" {@attach (el) => void (!ui.confirm?.input && el.focus())} disabled={!!ui.confirm.input?.required && !ui.confirm.text.trim()} onclick={() => answer(true)}>{ui.confirm.ok ?? 'OK'}</button>
 			</div>
 		</div>
 	</div>
@@ -90,8 +101,8 @@
 
 <style>
 	.nope { min-height: 100vh; display: grid; place-items: center; padding: 24px 16px; }
-	.nope-card { width: min(460px, 100%); padding: 32px 28px 28px; background: var(--surface); border: 1px solid var(--line); display: grid; gap: 14px; }
-	.nope-card h1 { font-family: var(--f-serif); font-weight: 400; font-size: 38px; letter-spacing: -.01em; line-height: 1.05; }
+	.nope-card { width: min(460px, 100%); padding: 28px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; display: grid; gap: 14px; }
+	.nope-card h1 { font-size: 24px; line-height: 1.2; }
 	.nope-card p { color: var(--ink-2); margin-bottom: 8px; word-break: break-word; }
 	.nope-card b { color: var(--ink); }
 </style>

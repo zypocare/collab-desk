@@ -200,7 +200,7 @@
 	.su-row small { font-size: 12px; color: var(--ink-3); }
 	.su-last { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--ink-2) !important; }
 	.su-dot { flex: none; width: 9px; height: 9px; border-radius: 50%; background: var(--accent); }
-	.su-urg { flex: none; padding: 2px 8px; border-radius: 99px; background: var(--bad); color: #1c0912; font: 800 10.5px var(--f-body); font-style: normal; text-transform: uppercase; letter-spacing: .06em; }
+	.su-urg { flex: none; padding: 2px 8px; border-radius: 99px; background: var(--bad); color: #fff; font: 600 10.5px var(--f-body); font-style: normal; text-transform: uppercase; letter-spacing: .06em; }
 	.pr-none { padding: 22px 16px; color: var(--ink-3); }
 	.pr-pane { position: sticky; top: 84px; display: flex; flex-direction: column; gap: 14px; padding: 20px; border: 1px solid var(--line); background: var(--chrome); min-width: 0; max-height: calc(100vh - 110px); overflow: auto; }
 	.pr-top { display: grid; gap: 6px; }

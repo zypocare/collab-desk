@@ -18,5 +18,18 @@ export const ICONS: Record<string, string> = {
 	logout: '<path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 16l-4-4 4-4M6 12h10"/>',
 	mail: '<rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="m3.5 7 8.5 6 8.5-6"/>',
 	chart: '<path d="M4 20V10M10 20V4M16 20v-7M21 20H3"/>',
-	board: '<rect x="3.5" y="4" width="5" height="16" rx="1.5"/><rect x="10.5" y="4" width="5" height="10" rx="1.5"/><rect x="17.5" y="4" width="3.5" height="13" rx="1.5"/>'
+	board: '<rect x="3.5" y="4" width="5" height="16" rx="1.5"/><rect x="10.5" y="4" width="5" height="10" rx="1.5"/><rect x="17.5" y="4" width="3.5" height="13" rx="1.5"/>',
+	grid: '<rect x="4" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5"/>',
+	user: '<circle cx="12" cy="8" r="3.8"/><path d="M4.5 20c1-3.8 4-6 7.5-6s6.5 2.2 7.5 6"/>',
+	building: '<path d="M5 20V5.5A1.5 1.5 0 0 1 6.5 4h7A1.5 1.5 0 0 1 15 5.5V20M15 10h3.5a1.5 1.5 0 0 1 1.5 1.5V20M3 20h18M8.5 8h3M8.5 11.5h3M8.5 15h3"/>',
+	key: '<circle cx="8" cy="15" r="4"/><path d="m11 12 8.5-8.5M16 7l2.5 2.5M14 9l2 2"/>',
+	list: '<path d="M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01"/>',
+	download: '<path d="M12 4v11M7 10.5l5 5 5-5M5 20h14"/>',
+	note: '<path d="M6 4h9l4 4v12H6z"/><path d="M14.5 4v4.5H19M9 12.5h6M9 16h4"/>',
+	plus: '<path d="M12 5v14M5 12h14"/>',
+	trash: '<path d="M5 7h14M10 7V4.5h4V7M7 7l1 13h8l1-13"/>',
+	external: '<path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>',
+	pause: '<path d="M9 5v14M15 5v14"/>',
+	play: '<path d="M7 5l12 7-12 7z"/>',
+	menu: '<path d="M4 7h16M4 12h16M4 17h16"/>'
 };

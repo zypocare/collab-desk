@@ -28,7 +28,7 @@
 		const w = window as unknown as { turnstile?: Turnstile; onTurnstileLoad?: () => void };
 		const draw = () => {
 			if (!w.turnstile || !el.isConnected) return;
-			tsId = w.turnstile.render(el, { sitekey: turnstileSiteKey, callback: (t: string) => (captchaToken = t), 'expired-callback': () => (captchaToken = ''), theme: 'dark' });
+			tsId = w.turnstile.render(el, { sitekey: turnstileSiteKey, callback: (t: string) => (captchaToken = t), 'expired-callback': () => (captchaToken = ''), theme: 'light' });
 		};
 		if (w.turnstile) draw();
 		else {
@@ -154,7 +154,7 @@
 	.lg-top small { font-size: 11px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; color: var(--ink-3); padding: 3px 8px; border: 1px solid var(--line-strong); }
 	.lg-wrap { min-height: calc(100vh - 64px); display: grid; place-items: center; padding: 32px 16px; }
 	.lg-card { width: min(440px, 100%); padding: 30px 28px 26px; background: var(--surface); border: 1px solid var(--line); animation: rise .5s both; }
-	.lg-ic { width: 46px; height: 46px; display: grid; place-items: center; color: #fff; background: var(--grad); box-shadow: 3px 3px 0 #5c3ea0; }
+	.lg-ic { width: 46px; height: 46px; display: grid; place-items: center; color: #fff; background: var(--grad); border-radius: 10px; }
 	.lg-ic :global(.ic) { width: 22px; height: 22px; stroke-width: 2; }
 	h1 { margin: 20px 0 6px; font-family: var(--f-serif); font-weight: 400; font-size: 40px; letter-spacing: -.01em; }
 	.lead { color: var(--ink-2); margin-bottom: 22px; }
