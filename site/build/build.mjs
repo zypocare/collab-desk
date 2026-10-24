@@ -5,7 +5,7 @@ import { mkdirSync, writeFileSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ARTICLES, CATEGORIES } from '../../web/src/lib/help/articles.ts';
-import { APP, CSS, cta, esc, JOIN, JOIN_BRAND, JOIN_LABEL, md, page, PRELAUNCH, SITE } from './layout.mjs';
+import { APP, CSS, cta, esc, joinRow, md, mock, page, phone, SITE, slugify } from './layout.mjs';
 import { LANDING } from './landing.mjs';
 import { GUIDES } from './guides.mjs';
 import { pricingPage, refundPage } from './pricing.mjs';
@@ -24,28 +24,47 @@ const landBySlug = Object.fromEntries(LANDING.map((l) => [l.slug, l]));
 const urls = [];
 
 // ------------------------------------------------------------------ landing pages
+const PLAN = { creator: 'Creator Pro', brand: 'Brand Pro', agency: 'Agency' };
+const tile = (href, b, small, go = 'Read') => `<a class="tile" href="${href}"><b>${esc(b)}</b><small>${esc(small)}</small><span class="go">${go} →</span></a>`;
+const sideOf = (who) => (who === 'brand' ? 'brand' : who === 'agency' ? 'agency' : 'creator');
+const crumbOf = { creator: { name: 'For creators', path: '/get-brand-deals' }, brand: { name: 'For brands', path: '/find-influencers-india' }, agency: { name: 'For agencies', path: '/influencer-agency-software' } };
 for (const l of LANDING) {
 	const related = (l.related ?? []).map((s) => landBySlug[s]).filter(Boolean);
 	const guides = (l.guides ?? []).map((s) => guideBySlug[s]).filter(Boolean);
+	const side = sideOf(l.who);
+	const visual = l.shot ? phone(l.shot[0], l.shot[1], l.shot[2]) : l.mock ? mock(l.mock) : '';
 	const body = `
-<section class="hero wrap">
-  <span class="eb">${esc(l.eb)}</span>
-  <h1>${esc(l.h1[0])}<em>${esc(l.h1[1])}</em></h1>
-  <p class="lede">${md(l.lede)}</p>
-  <div class="acts"><a class="btn grad" href="${l.who === 'brand' ? JOIN_BRAND : JOIN}">${PRELAUNCH ? JOIN_LABEL : l.who === 'brand' ? 'Join as a brand' : 'Join free'}</a><small>${PRELAUNCH ? 'Opening soon · free plan · no commission on any deal' : 'Free · no commission on any deal'}</small></div>
+<section class="lhero"><div class="wrap lhero-in">
+  <div class="lhero-t">
+    <span class="eb">${esc(l.eb)}</span>
+    <h1>${esc(l.h1[0])}<em>${esc(l.h1[1])}</em></h1>
+    <p class="lede">${md(l.lede)}</p>
+    ${joinRow(side)}
+    <ul class="trust">${(l.trust ?? ['No commission on any deal', 'Instagram’s official API', 'Made in India, for India']).map((t) => `<li>${esc(t)}</li>`).join('')}</ul>
+  </div>
+  <div class="lhero-v">${visual}</div>
+</div></section>
+<section class="sec wrap">
+  <div class="sec-h"><span class="eb">What you get</span><h2>${md(l.fh ?? 'Everything it does *for you.*').replace(/\*(.+?)\*/g, '<em>$1</em>')}</h2></div>
+  <div class="feats">${l.features.map(([h, p, pro], i) => `<div class="feat"><span class="feat-n">${String(i + 1).padStart(2, '0')}${pro ? `<span class="tag">${PLAN[pro === true ? side : pro]}</span>` : ''}</span><h3>${esc(h)}</h3><p>${md(p)}</p></div>`).join('')}</div>
 </section>
-<section class="sec wrap"><div class="grid3">${l.features.map(([h, p]) => `<div class="card"><h3>${esc(h)}</h3><p>${md(p)}</p></div>`).join('')}</div></section>
-<section class="sec wrap"><h2>How to <em>start.</em></h2><ol class="steps">${l.steps.map((s) => `<li><span>${md(s)}</span></li>`).join('')}</ol></section>
-<section class="sec wrap"><h2>Questions</h2>${faqHtml(l.faq)}</section>
-${guides.length || related.length ? `<section class="sec wrap grid2">${guides.length ? `<div><h2>Read next</h2><div class="links">${guides.map((g) => `<a href="/guides/${g.slug}"><b>${esc(g.title)}</b><small>${esc(g.summary)}</small></a>`).join('')}</div></div>` : ''}${related.length ? `<div><h2>Also in Miracle</h2><div class="links">${related.map((r) => `<a href="/${r.slug}"><b>${esc(r.h1.join(''))}</b><small>${esc(r.description)}</small></a>`).join('')}</div></div>` : ''}</section>` : ''}
-${cta(...(l.cta ?? []), l.who)}`;
-	write(`${l.slug}.html`, page({ path: `/${l.slug}`, title: l.title, description: l.description, body, ld: [faqLd(l.faq)], crumbs: [{ name: l.who === 'brand' ? 'For brands' : 'For creators', path: l.who === 'brand' ? '/find-influencers-india' : '/get-brand-deals' }, { name: l.h1.join('').replace(/\.$/, ''), path: `/${l.slug}` }].filter((c, i, a) => a.findIndex((x) => x.path === c.path) === i) }));
+<section class="sec wrap">
+  <div class="sec-h"><span class="eb">How it works</span><h2>Up and running <em>in a day.</em></h2></div>
+  <ol class="flow">${l.steps.map((x) => `<li><span>${md(x)}</span></li>`).join('')}</ol>
+</section>
+<section class="sec wrap split">
+  <div class="sec-h"><span class="eb">Questions</span><h2>Good to <em>know.</em></h2><p>More answers in the <a href="/help">help centre</a>, or write to <a href="mailto:support@miracleapp.live">support@miracleapp.live</a>.</p></div>
+  ${faqHtml(l.faq)}
+</section>
+${guides.length || related.length ? `<section class="sec wrap"><div class="sec-h"><span class="eb">Keep reading</span><h2>More from <em>Miracle.</em></h2></div><div class="tiles">${((t) => t.slice(0, t.length >= 6 ? 6 : 3))([...related.map((r) => tile(`/${r.slug}`, r.h1.join(''), r.description, 'See how')), ...guides.map((g) => tile(`/guides/${g.slug}`, g.title, g.summary))]).join('')}</div></section>` : ''}
+${cta(l.cta?.[0], l.cta?.[1], side)}`;
+	write(`${l.slug}.html`, page({ path: `/${l.slug}`, title: l.title, description: l.description, body, ld: [faqLd(l.faq)], section: side, crumbs: [crumbOf[side], { name: l.h1.join('').replace(/\.$/, ''), path: `/${l.slug}` }].filter((c, i, a) => a.findIndex((x) => x.path === c.path) === i) }));
 	urls.push([`/${l.slug}`, 'weekly', 0.9]);
 }
 
 // ------------------------------------------------------------------ guides
 const block = (b) =>
-	b.h ? `<h2>${md(b.h)}</h2>`
+	b.h ? `<h2 id="${slugify(b.h)}">${md(b.h)}</h2>`
 	: b.p ? `<p>${md(b.p)}</p>`
 	: b.list ? `<ul>${b.list.map((x) => `<li>${md(x)}</li>`).join('')}</ul>`
 	: b.steps ? `<ol>${b.steps.map((x) => `<li>${md(x)}</li>`).join('')}</ol>`
@@ -54,29 +73,33 @@ const block = (b) =>
 	: b.table ? `<div class="table"><table><thead><tr>${b.table[0].map((c) => `<th>${esc(c)}</th>`).join('')}</tr></thead><tbody>${b.table.slice(1).map((r) => `<tr>${r.map((c) => `<td>${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`
 	: '';
 const when = (d) => new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' });
+const words = (g) => JSON.stringify(g.body).split(/\s+/).length;
 for (const g of GUIDES) {
 	const land = landBySlug[g.cta];
-	const more = GUIDES.filter((x) => x.slug !== g.slug && x.who === g.who).slice(0, 3);
+	const more = GUIDES.filter((x) => x.slug !== g.slug && x.who === g.who).slice(0, 2);
+	const heads = g.body.filter((b) => b.h);
 	const body = `
-<article class="hero wrap prose">
+<header class="ahead wrap">
   <span class="eb">${g.who === 'brand' ? 'Guide for brands' : 'Guide for creators'}</span>
   <h1>${esc(g.title)}</h1>
-  <p class="meta">Updated ${when(g.updated)} · by the Miracle team</p>
   <p class="lede">${md(g.description)}</p>
+  <p class="byline"><span>Updated ${when(g.updated)}</span><span>By the Miracle team</span><span>${Math.max(3, Math.round(words(g) / 220))} min read</span></p>
+</header>
+<div class="wrap adoc">
+  <nav class="aside" aria-label="On this page"><b>On this page</b>${heads.map((h) => `<a href="#${slugify(h.h)}">${esc(h.h.replace(/\*\*/g, ''))}</a>`).join('')}<a href="#questions">Questions</a>${land ? `<div class="box"><b>Do it with Miracle</b><br>${esc(land.h1.join(''))} <a href="/${land.slug}">See how</a></div>` : ''}</nav>
+  <article class="prose">
   ${g.body.map(block).join('\n  ')}
-  <h2>Questions</h2>
+  <h2 id="questions">Questions</h2>
   ${faqHtml(g.faq)}
-</article>
-<section class="sec wrap grid2">
-  <div><h2>More guides</h2><div class="links">${more.map((m) => `<a href="/guides/${m.slug}"><b>${esc(m.title)}</b><small>${esc(m.summary)}</small></a>`).join('')}</div></div>
-  ${land ? `<div><h2>Do it with Miracle</h2><div class="links"><a href="/${land.slug}"><b>${esc(land.h1.join(''))}</b><small>${esc(land.description)}</small></a></div></div>` : ''}
-</section>
+  </article>
+</div>
+<section class="sec wrap"><div class="sec-h"><span class="eb">Keep reading</span><h2>More <em>guides.</em></h2></div><div class="tiles">${[...(land ? [tile(`/${land.slug}`, land.h1.join(''), land.description, 'See how')] : []), ...more.map((m) => tile(`/guides/${m.slug}`, m.title, m.summary))].join('')}</div></section>
 ${cta(undefined, undefined, g.who)}`;
 	const ld = [
 		{ '@context': 'https://schema.org', '@type': 'Article', headline: g.title, description: g.description, datePublished: g.updated, dateModified: g.updated, inLanguage: 'en-IN', mainEntityOfPage: `${SITE}/guides/${g.slug}`, image: `${SITE}/og.jpg`, author: { '@type': 'Organization', name: 'Miracle', url: SITE }, publisher: { '@type': 'Organization', name: 'Miracle', logo: { '@type': 'ImageObject', url: `${SITE}/icon-192.png` } } },
 		faqLd(g.faq)
 	];
-	write(`guides/${g.slug}.html`, page({ path: `/guides/${g.slug}`, title: `${g.title} · Miracle`, description: g.description, body, ld, ogType: 'article', crumbs: [{ name: 'Guides', path: '/guides' }, { name: g.title, path: `/guides/${g.slug}` }] }));
+	write(`guides/${g.slug}.html`, page({ path: `/guides/${g.slug}`, title: `${g.title} · Miracle`, description: g.description, body, ld, ogType: 'article', section: 'guides', crumbs: [{ name: 'Guides', path: '/guides' }, { name: g.title, path: `/guides/${g.slug}` }] }));
 	urls.push([`/guides/${g.slug}`, 'monthly', 0.8]);
 }
 write('guides/index.html', page({
@@ -84,10 +107,11 @@ write('guides/index.html', page({
 	title: 'Guides for creators and brands in India · Miracle',
 	description: 'Practical guides on getting brand deals, pitching brands, what to charge, media kits, ASCI ad rules and finding influencers in India.',
 	crumbs: [{ name: 'Guides', path: '/guides' }],
+	section: 'guides',
 	body: `
-<section class="hero wrap"><span class="eb">Guides</span><h1>Learn the <em>business.</em></h1><p class="lede">How to get brand deals, what to charge, how to pitch and how to work with creators, in plain words.</p></section>
-${[['creator', 'For creators'], ['brand', 'For brands']].map(([w, label]) => `<section class="sec wrap"><h2>${label}</h2><div class="links">${GUIDES.filter((g) => g.who === w).map((g) => `<a href="/guides/${g.slug}"><b>${esc(g.title)}</b><small>${esc(g.summary)}</small></a>`).join('')}</div></section>`).join('')}
-<section class="sec wrap"><h2>Free tools</h2><div class="links"><a href="/tools/rate-calculator"><b>Instagram rate calculator</b><small>What to charge for a reel, post or story.</small></a><a href="/tools/engagement-calculator"><b>Engagement rate calculator</b><small>By followers and by views, compared with accounts your size.</small></a></div></section>
+<section class="hero wrap"><span class="eb">Guides</span><h1>Learn the <em>business.</em></h1><p class="lede">How to get brand deals, what to charge, how to pitch and how to work with creators, in plain words. Written for India, updated for 2026.</p></section>
+${[['creator', 'For creators', 'Deals, rates and pitching.'], ['brand', 'For brands', 'Finding and working with creators.']].map(([w, label, sub]) => `<section class="sec wrap"><div class="sec-h"><span class="eb">${label}</span><h2>${sub.replace(/(\S+\.)$/, '<em>$1</em>')}</h2></div><div class="tiles">${GUIDES.filter((g) => g.who === w).map((g) => tile(`/guides/${g.slug}`, g.title, g.summary)).join('')}</div></section>`).join('')}
+<section class="sec wrap"><div class="sec-h"><span class="eb">Free tools</span><h2>Work it <em>out.</em></h2></div><div class="tiles">${tile('/tools/rate-calculator', 'Instagram rate calculator', 'What to charge for a reel, post or story, with the formula shown.', 'Open')}${tile('/tools/engagement-calculator', 'Engagement rate calculator', 'By followers and by views, compared with accounts your size.', 'Open')}</div></section>
 ${cta()}`
 }));
 urls.push(['/guides', 'weekly', 0.8]);
@@ -102,20 +126,26 @@ const hblock = (b) =>
 const catOf = (id) => CATEGORIES.find((c) => c.id === id);
 for (const a of ARTICLES) {
 	const cat = catOf(a.category);
-	const more = ARTICLES.filter((x) => x.category === a.category && x.slug !== a.slug).slice(0, 4);
+	const inCat = ARTICLES.filter((x) => x.category === a.category);
+	const more = inCat.filter((x) => x.slug !== a.slug).slice(0, 3);
 	const body = `
-<article class="hero wrap prose">
+<header class="ahead wrap">
   <span class="eb">Help · ${esc(cat?.label ?? '')}</span>
   <h1>${esc(a.title)}</h1>
   <p class="lede">${md(a.summary)}</p>
+</header>
+<div class="wrap adoc">
+  <nav class="aside" aria-label="${esc(cat?.label ?? 'Help')}"><b>${esc(cat?.label ?? 'Help')}</b>${inCat.map((x) => `<a href="/help/${x.slug}"${x.slug === a.slug ? ' aria-current="page"' : ''}>${esc(x.title)}</a>`).join('')}<a href="/help">All help topics</a><div class="box"><b>Still stuck?</b><br>In the app, open Help › Contact support, or email <a href="mailto:support@miracleapp.live">support@miracleapp.live</a>.</div></nav>
+  <article class="prose">
   ${a.body.map(hblock).join('\n  ')}
   ${a.links?.length ? `<div class="acts">${a.links.map((l) => `<a class="btn ghost sm" href="${appLink(l.href)}">${esc(l.label)}</a>`).join('')}</div>` : ''}
-  <p class="tip">Still stuck? In the app, open <b>Help › Contact support</b>, or email <a href="mailto:support@miracleapp.live">support@miracleapp.live</a>.</p>
-</article>
-${more.length ? `<section class="sec wrap"><h2>More on ${esc((cat?.label ?? 'this').toLowerCase())}</h2><div class="links">${more.map((m) => `<a href="/help/${m.slug}"><b>${esc(m.title)}</b><small>${esc(m.summary)}</small></a>`).join('')}</div></section>` : ''}
+  <p class="tip">Still stuck? In the app, open <b>Help › Contact support</b>, or email <a href="mailto:support@miracleapp.live">support@miracleapp.live</a>. We reply within a working day.</p>
+  </article>
+</div>
+${more.length ? `<section class="sec wrap"><div class="sec-h"><span class="eb">${esc(cat?.label ?? 'Help')}</span><h2>Related <em>articles.</em></h2></div><div class="tiles">${more.map((m) => tile(`/help/${m.slug}`, m.title, m.summary)).join('')}</div></section>` : ''}
 ${cta(undefined, undefined, a.audience === 'brand' ? 'brand' : 'creator')}`;
 	const ld = [{ '@context': 'https://schema.org', '@type': 'TechArticle', headline: a.title, description: a.summary, inLanguage: 'en-IN', mainEntityOfPage: `${SITE}/help/${a.slug}`, publisher: { '@type': 'Organization', name: 'Miracle', logo: { '@type': 'ImageObject', url: `${SITE}/icon-192.png` } } }];
-	write(`help/${a.slug}.html`, page({ path: `/help/${a.slug}`, title: `${a.title} · Miracle help`, description: a.summary, body, ld, crumbs: [{ name: 'Help', path: '/help' }, { name: a.title, path: `/help/${a.slug}` }] }));
+	write(`help/${a.slug}.html`, page({ path: `/help/${a.slug}`, title: `${a.title} · Miracle help`, description: a.summary, body, ld, section: 'help', crumbs: [{ name: 'Help', path: '/help' }, { name: a.title, path: `/help/${a.slug}` }] }));
 	urls.push([`/help/${a.slug}`, 'monthly', 0.6]);
 }
 write('help/index.html', page({
@@ -123,23 +153,28 @@ write('help/index.html', page({
 	title: 'Miracle help centre: guides for creators and brands',
 	description: 'How to use Miracle: your page, Instagram, alerts, requests, quotes, drafts, invoices, payments, growth tools and your account. Or contact support.',
 	crumbs: [{ name: 'Help', path: '/help' }],
+	section: 'help',
 	body: `
-<section class="hero wrap"><span class="eb">Help centre</span><h1>How can we <em>help?</em></h1>
-  <form class="search" role="search" onsubmit="return false"><input id="hq" placeholder="Search the help centre" aria-label="Search the help centre" autocomplete="off"></form>
+<section class="hhero wrap"><span class="eb">Help centre</span><h1>How can we <em>help?</em></h1>
+  <form class="search" role="search" onsubmit="return false"><input id="hq" placeholder="Search: invoice, Instagram, quote…" aria-label="Search the help centre" autocomplete="off"></form>
   <p class="meta">Signed in? Ask Miracle’s AI in the app (Help), or email <a href="mailto:support@miracleapp.live">support@miracleapp.live</a>.</p>
 </section>
+<section class="sec wrap"><div class="hcats">
 ${CATEGORIES.map((c) => {
 	const list = ARTICLES.filter((a) => a.category === c.id);
-	return list.length ? `<section class="sec wrap cat" data-cat><h2>${esc(c.label)}</h2><div class="links">${list.map((a) => `<a href="/help/${a.slug}" data-k="${esc([a.title, a.summary, ...a.keywords].join(' ').toLowerCase())}"><b>${esc(a.title)}</b><small>${esc(a.summary)}</small></a>`).join('')}</div></section>` : '';
+	const aud = new Set(list.map((a) => a.audience ?? 'creator'));
+	return list.length ? `<div class="hcat" data-cat><h2>${esc(c.label)}</h2><p class="who">${aud.has('all') ? 'For everyone' : aud.has('brand') && !aud.has('creator') ? 'For brands' : aud.has('brand') ? 'For creators and brands' : 'For creators'} · ${list.length} articles</p><ul>${list.map((a) => `<li><a href="/help/${a.slug}" data-k="${esc([a.title, a.summary, ...a.keywords].join(' ').toLowerCase())}">${esc(a.title)}</a></li>`).join('')}</ul></div>` : '';
 }).join('')}
+</div><p class="none" id="hnone" hidden>Nothing found. Try another word, or email <a href="mailto:support@miracleapp.live">support@miracleapp.live</a>.</p></section>
 <script>
 document.getElementById('hq').addEventListener('input', function (e) {
-  var q = e.target.value.toLowerCase().trim().split(/\\s+/).filter(Boolean);
+  var q = e.target.value.toLowerCase().trim().split(/\\s+/).filter(Boolean), all = false;
   document.querySelectorAll('[data-cat]').forEach(function (s) {
     var any = false;
-    s.querySelectorAll('a[data-k]').forEach(function (a) { var ok = q.every(function (w) { return a.dataset.k.indexOf(w) >= 0; }); a.hidden = !ok; any = any || ok; });
-    s.hidden = !any;
+    s.querySelectorAll('a[data-k]').forEach(function (a) { var ok = q.every(function (w) { return a.dataset.k.indexOf(w) >= 0; }); a.parentNode.hidden = !ok; any = any || ok; });
+    s.hidden = !any; all = all || any;
   });
+  document.getElementById('hnone').hidden = all;
 });
 </script>
 ${cta()}`
@@ -147,7 +182,7 @@ ${cta()}`
 urls.push(['/help', 'weekly', 0.7]);
 
 // ------------------------------------------------------------------ 404, stylesheet, sitemap
-write('404.html', page({ path: '/404', title: 'Page not found · Miracle', description: 'This page isn’t here.', noindex: true, body: `<section class="hero wrap"><span class="eb">404</span><h1>Not <em>here.</em></h1><p class="lede">That page moved or never existed.</p><div class="acts"><a class="btn" href="/">Miracle home</a><a class="btn ghost" href="/guides">Guides</a><a class="btn ghost" href="/help">Help</a></div></section>` }));
+write('404.html', page({ path: '/404', title: 'Page not found · Miracle', description: 'This page isn’t here.', noindex: true, body: `<section class="hhero wrap"><span class="eb">404</span><h1>Not <em>here.</em></h1><p class="lede">That page moved or never existed.</p><div class="acts" style="justify-content:center"><a class="btn" href="/">Miracle home</a><a class="btn ghost" href="/guides">Guides</a><a class="btn ghost" href="/help">Help</a></div></section>` }));
 write('pricing.html', pricingPage());
 write('waitlist.html', waitlistPage());
 write('refund-policy.html', refundPage());

@@ -84,6 +84,36 @@ export const ARTICLES: Article[] = [
 		links: [{ label: 'Team settings', href: '/studio/settings?s=team' }]
 	},
 
+	{
+		slug: 'autopilots',
+		title: 'Auto-pilot: what Miracle can do for you',
+		summary: 'Invoices, dates, reminders, counters and brand pitches that happen on their own, each with its own switch.',
+		category: 'start',
+		audience: 'creator',
+		keywords: ['autopilot', 'auto-pilot', 'automatic', 'rules', 'pitch', 'pitches', 'reminder', 'invoice', 'counter', 'approve', 'auto', 'pro'],
+		body: [
+			{ p: 'In Settings › Auto-pilot, each rule has its own switch. Turn on only what you want; everything else waits for you as before.' },
+			{ list: ['Send invoices for you, once a collab is live.', 'Fill in dates: go-live on the date the brand asked for, and the draft due 4 days before.', 'Send brands their tracking link, so they can follow the collab without DMs.', 'Send quotes for package bookings in a week you have open.', 'Counter low barter offers with a polite reply.', 'Remind brands who go quiet, once, on a quote or draft.', 'Ask for missing brief details, and thank the brand with a review link when you wrap.'] },
+			{ p: 'The pitch autopilot finds up to 10 brands a day that fit your niche and city, using only public business emails from their own websites, and writes a pitch in your voice. In approve mode each pitch waits for your tap; in auto they go out one at a time between 10 am and 6 pm. A brand is never pitched twice.' },
+			{ tip: 'Auto-pilot rules and the pitch autopilot are part of Creator Pro, and on during your 14-day trial.' }
+		],
+		links: [{ label: 'Auto-pilot settings', href: '/studio/settings?s=autopilot' }]
+	},
+	{
+		slug: 'agency-roster',
+		title: 'Manage several creators (Agency)',
+		summary: 'One roster for every creator you manage, your commission ledger and pitch decks from your roster.',
+		category: 'start',
+		audience: 'creator',
+		keywords: ['agency', 'manager', 'talent', 'roster', 'several creators', 'many creators', 'commission', 'ledger', 'pitch deck', 'switch'],
+		body: [
+			{ p: 'Ask each creator to add you as a manager in Settings › Team. Everyone you manage shows up on your Roster, and you switch between their desks in one tap.' },
+			{ list: ['Commission ledger: your cut on each deal at the rate it was agreed, and what is settled. It only keeps track: brands pay creators directly and no money moves through Miracle.', 'Pitch deck: pick creators for a brand and get a deck with their live numbers, rates and best work.', 'Client workspaces: if you also work inside brands’ teams, each client is kept apart and you see one at a time.'] },
+			{ tip: 'The Agency plan (₹4,999 a month) gives every creator you manage Pro, plus your own brand team and 15 seats.' }
+		],
+		links: [{ label: 'Your roster', href: '/studio/roster' }]
+	},
+
 	// ------------------------------------------------------------------ requests & collabs
 	{
 		slug: 'how-requests-arrive',
@@ -272,6 +302,21 @@ export const ARTICLES: Article[] = [
 		links: [{ label: 'Find creators', href: '/brand/creators?tab=discover' }, { label: 'Your requests', href: '/brand/requests' }]
 	},
 	{
+		slug: 'brand-autopilots',
+		title: 'Brand autopilots and turnaround',
+		summary: 'Shortlists, follow-ups, draft checks, counters and rebooking on approve or auto, and a clock on every step.',
+		category: 'brand-start',
+		audience: 'brand',
+		keywords: ['autopilot', 'automatic', 'shortlist', 'follow-up', 'draft check', 'negotiate', 'counter', 'rebook', 'competitor', 'watch', 'turnaround', 'tat', 'escalation', 'owner', 'sla'],
+		body: [
+			{ p: 'In Autopilots, each one is off, ask (it prepares the step and waits for your approval) or auto (it goes ahead and tells you).' },
+			{ list: ['Shortlist: finds creators who fit each campaign (niche, content, engagement, price, past work with you).', 'Follow-up: a friendly nudge when a creator hasn’t quoted, a draft is late or a post is due.', 'Draft checker: checks each caption against your brief (mentions, hashtags, promo code, link, #ad).', 'Negotiator: accepts quotes within your budget, and asks for a lower price on ones a little above it.', 'Rebook: offers your best creators the same brief again when a collab ends.', 'Competitor watch: spots creators who work with up to five competitors and invites them to a campaign you pick.'] },
+			{ p: 'Turnaround (in Business › Turnaround) gives every step an owner and a target: replying to a quote, approving a draft, paying an invoice. When a step runs late, the owner is reminded, and then the next person up.' },
+			{ tip: 'Brand autopilots, competitor watch, open briefs, sales tracking and turnaround are part of Brand Pro, and on during your 14-day trial.' }
+		],
+		links: [{ label: 'Autopilots', href: '/brand/autopilots' }]
+	},
+	{
 		slug: 'brand-discover',
 		title: 'Find creators: Discover, pools and open briefs',
 		summary: 'Search by niche, audience and price; check audience health before you book.',
@@ -371,6 +416,22 @@ export const ARTICLES: Article[] = [
 			{ p: 'Open the request or profile and use the ⋯ menu to block or report. Blocked brands can’t send you requests; you can unblock them in Settings › Blocked. Reports go to the Miracle team, who look at every one.' },
 			{ tip: 'Asked to pay to get a collab, or for your bank login or OTP? That’s a scam. Report it and don’t pay.' }
 		]
+	},
+	{
+		slug: 'plans-billing',
+		title: 'Plans, the free trial and billing',
+		summary: 'What’s free, what Pro adds, how the 14-day trial works, and how to pay or stop renewing.',
+		category: 'account',
+		audience: 'all',
+		keywords: ['plan', 'plans', 'pro', 'free', 'trial', 'price', 'pricing', 'billing', 'subscription', 'renew', 'cancel', 'refund', 'invoice', 'receipt', 'agency', 'upgrade', 'razorpay'],
+		body: [
+			{ p: 'Miracle has a free plan with no time limit. Creators get 3 quotes, 3 invoices and 5 pitches a month; brands get 3 requests and 1 campaign a month. Pro removes the limits and turns on the autopilots: Creator Pro is ₹299 a month, Brand Pro ₹1,999 a month, and Agency ₹4,999 a month. A yearly plan is about two months free.' },
+			{ p: 'Everyone starts with 14 days of Pro, no card needed. When it ends you stay on the free plan unless you pick one; nothing you made is deleted.' },
+			{ steps: ['Open Settings › Plan & billing.', 'Pick a plan, monthly or yearly.', 'Pay on the web with UPI, a card or net banking (through Razorpay).', 'You get a receipt and an invoice by email, and the plan is on everywhere, the phone app too.'] },
+			{ p: 'Plans renew by themselves. Stop renewing in Plan & billing at any time: the plan stays on until the end of what you paid for. A first payment can be refunded within 7 days.' },
+			{ tip: 'There’s never a commission on deals, on any plan. Brands pay creators directly.' }
+		],
+		links: [{ label: 'Plan & billing', href: '/studio/settings?s=plan' }]
 	},
 	{
 		slug: 'contact-support',

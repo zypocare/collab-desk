@@ -21,7 +21,8 @@ const FOLLOWERS = ['Under 10K', '10K–50K', '50K–1L', '1L–5L', '5L+'];
 
 export function waitlistPage() {
 	const body = `
-<section class="hero wrap wl">
+<section class="hero wrap wl"><div class="wl-in">
+  <div>
   <span class="eb">Opening soon</span>
   <h1>Get in <em>first.</em></h1>
   <p class="lede">Miracle opens in batches, starting with the waitlist. Join now: we hold your link name, you get first access to the 100 founding places (half price, yearly), and every friend who joins with your link moves you up.</p>
@@ -59,15 +60,16 @@ export function waitlistPage() {
       <p class="small">We've emailed you this link too. Plans and prices: <a href="/pricing">pricing</a>.</p>
     </div>
   </div>
-</section>
-
-<section class="sec wrap">
-  <div class="grid3">
-    <div class="card"><h3>Why a waitlist?</h3><p>Miracle reads your Instagram through Meta's official sign-in, which opens to everyone once Meta finishes its review. We'd rather you start with everything working.</p></div>
-    <div class="card"><h3>What you get for waiting</h3><p>Your link name held, first access to the founding price (half off yearly, kept while you stay), and a 14-day Pro trial when you join.</p></div>
-    <div class="card"><h3>No commission, ever</h3><p>Brands pay creators directly. Miracle earns only from optional plans, never from your deals. <a href="/pricing">See the plans</a>.</p></div>
   </div>
-</section>
+
+  <ul class="perks" aria-label="Why join now">
+    <li><i>1</i><div><b>Your link name, held</b><span>yourname.miracleapp.live stays yours until launch, so nobody takes it first.</span></div></li>
+    <li><i>2</i><div><b>The founding price</b><span>The first 100 yearly plans are half price, kept for as long as the plan renews. Waitlist members get first access.</span></div></li>
+    <li><i>3</i><div><b>14 days of Pro, free</b><span>Every autopilot on from day one, no card needed. Then stay free or pick a plan.</span></div></li>
+    <li><i>4</i><div><b>Why a waitlist?</b><span>Miracle reads Instagram through Meta's official sign-in, which opens to everyone once Meta finishes its review. We'd rather you start with everything working.</span></div></li>
+    <li><i>5</i><div><b>No commission, ever</b><span>Brands pay creators directly. Miracle earns only from optional plans, never from your deals. <a href="/pricing">See the plans</a>.</span></div></li>
+  </ul>
+</div></section>
 
 <script>
 (() => {

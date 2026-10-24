@@ -98,7 +98,7 @@ export const PRICING_FAQ = [
 	['Is there a commission on deals?', 'No, never. Brands pay creators directly by UPI or bank transfer, and Miracle takes nothing from any deal on any plan. Plans pay for the tools, not for the deals.'],
 	['How does the free trial work?', 'Every new creator and brand gets 14 days of Pro, with no card needed. When it ends you stay on the free plan unless you pick a paid one; nothing you made is deleted.'],
 	['How do I pay?', 'On the website or the web app, through Razorpay: UPI AutoPay, cards or net banking. Plans renew by themselves and you can stop renewal any time. Plans aren’t sold inside the Play Store or iPhone apps; once you’ve paid, they unlock there too.'],
-	['Is GST included?', 'Yes. Prices include 18% GST, and every payment comes with a GST invoice from Zyposoft Technologies Private Limited.'],
+	['Is GST included?', 'Yes. Prices include 18% GST, and every payment comes with a tax invoice from Zyposoft Technologies Private Limited, by email and as a link.'],
 	['What is the founding member price?', 'The first 100 people to buy a yearly plan pay half, and keep that price for as long as their plan keeps renewing.'],
 	['Can I get a refund?', 'Yes, within 7 days of your first payment for a plan, if it isn’t for you. See the [refund and cancellation policy](/refund-policy).'],
 	['I manage several creators or clients. Which plan?', 'The Agency plan: Pro for every creator you manage and for your own brand team, client workspaces you switch between, a roster with your commission ledger, and 15 seats.']
@@ -115,7 +115,7 @@ export function pricingPage() {
 </section>
 ${PLANS.map((s, i) => `
 <section class="sec wrap">
-  <h2>${esc(s.who)}</h2>
+  <div class="sec-h"><span class="eb">${esc(s.who)}</span><h2>${i === 0 ? 'Get more deals, <em>chase less.</em>' : 'Find creators, <em>keep the budget.</em>'}</h2></div>
   <div class="grid2 plans">
     <div class="card plan">
       <h3>${esc(s.free.name)}</h3>
@@ -129,12 +129,12 @@ ${PLANS.map((s, i) => `
   <details class="cmp-more"${i === 0 ? ' open' : ''}><summary>Compare Free and ${esc(s.paid.name)}, feature by feature</summary>${compareTable(i === 0 ? COMPARE.creator : COMPARE.brand, s.paid.name)}</details>
 </section>`).join('')}
 <section class="sec wrap">
-  <h2>For agencies</h2>
+  <div class="sec-h"><span class="eb">For agencies</span><h2>Every creator and client, <em>one desk.</em></h2></div>
   <div class="grid2 plans">${paidCard(AGENCY, PRELAUNCH ? '/waitlist?as=agency' : JOIN_BRAND)}
-    <div class="card"><h3>Running creators and brands together?</h3><p>Agency covers every creator you manage on Pro, your own brand team, and the client teams you work in, with one sign-in and 15 seats. Write to <a href="mailto:support@miracleapp.live">support@miracleapp.live</a> for a walkthrough.</p></div>
+    <div class="card"><h3>Running creators and brands together?</h3><p>Agency covers every creator you manage on Pro, your own brand team, and the client teams you work in, with one sign-in and 15 seats. Write to <a href="mailto:support@miracleapp.live">support@miracleapp.live</a> for a walkthrough, or <a href="/influencer-agency-software">see what's in it</a>.</p></div>
   </div>
 </section>
-<section class="sec wrap"><h2>Questions</h2><div class="faq">${PRICING_FAQ.map(([q, a]) => `<details><summary>${esc(q)}</summary><p>${md(a)}</p></details>`).join('')}</div></section>
+<section class="sec wrap split"><div class="sec-h"><span class="eb">Questions</span><h2>Good to <em>know.</em></h2><p>Anything else? Write to <a href="mailto:support@miracleapp.live">support@miracleapp.live</a>.</p></div><div class="faq">${PRICING_FAQ.map(([q, a]) => `<details><summary>${esc(q)}</summary><p>${md(a)}</p></details>`).join('')}</div></section>
 <section class="sec wrap"><p class="small">Prices in Indian rupees, including 18% GST. Sold by Zyposoft Technologies Private Limited, #7, Nisarga Layout, Chikkalsandra, Bangalore 560061, India. Questions: <a href="mailto:support@miracleapp.live">support@miracleapp.live</a>. See the <a href="/terms#price">terms</a> and the <a href="/refund-policy">refund and cancellation policy</a>.</p></section>
 <script>
 (() => {
@@ -151,7 +151,8 @@ ${PLANS.map((s, i) => `
 		description: 'Free plan for creators and brands, Creator Pro ₹299/month, Brand Pro ₹1,999/month, Agency ₹4,999/month. Compare every feature. 14-day free trial, no commission on any deal.',
 		body,
 		ld: [{ '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: PRICING_FAQ.map(([q, a]) => ({ '@type': 'Question', name: q, acceptedAnswer: { '@type': 'Answer', text: a.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') } })) }],
-		crumbs: [{ name: 'Pricing', path: '/pricing' }]
+		crumbs: [{ name: 'Pricing', path: '/pricing' }],
+		section: 'pricing'
 	});
 }
 
