@@ -1046,7 +1046,7 @@ export const LISTS: Record<string, ListConfig> = {
 			{ id: 'system', label: 'Switches, jobs & limits', filters: { kind: ['flag', 'limits', 'job', 'outbox', 'admins', 'problem'] } }
 		],
 		filters: [
-			{ key: 'kind', label: 'Record', options: ['creator', 'brand_login', 'workspace', 'agency', 'collab', 'campaign', 'brand', 'ticket', 'problem', 'ban', 'plan', 'billing', 'subscription', 'flag', 'limits', 'job', 'outbox', 'admins'].map((v) => ({ label: label(v), value: v })) },
+			{ key: 'kind', label: 'Record', options: ['creator', 'brand_login', 'workspace', 'agency', 'collab', 'campaign', 'brand', 'ticket', 'problem', 'ban', 'plan', 'billing', 'subscription', 'waitlist', 'flag', 'limits', 'job', 'outbox', 'admins'].map((v) => ({ label: label(v), value: v })) },
 			DAYS('at', 'When')
 		],
 		columns: [
@@ -1082,6 +1082,7 @@ export function recordHref(kind: string, id: string | null | undefined): string 
 	if (kind === 'ban') return href('bans');
 	if (kind === 'plan' || kind === 'billing') return href('plans');
 	if (kind === 'subscription') return href('subscriptions');
+	if (kind === 'waitlist') return href('waitlist');
 	return null;
 }
 
