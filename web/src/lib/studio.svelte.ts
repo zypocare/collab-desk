@@ -19,6 +19,8 @@ import { uploadResumable } from './resumable';
 
 export const studio = $state<{
 	loaded: boolean;
+	/** Instagram and packages have arrived too (they load just after the rest). */
+	extras: boolean;
 	error: string;
 	/** Changes only after a complete snapshot has been fetched. */
 	revision: number;
@@ -39,7 +41,7 @@ export const studio = $state<{
 	packages: Package[];
 	retainers: Retainer[];
 	me: { role: 'creator'; email: string; team_role: 'owner' | 'manager' | 'assistant' | 'accountant'; name?: string } | null;
-}>({ revision: 0, me: null, loaded: false, error: '', collabs: [], brands: [], notes: {}, fits: {}, reading: [], leads: [], settings: null, alerts: [], ig: null, media: [], followersHistory: [], packages: [], retainers: [] });
+}>({ revision: 0, me: null, loaded: false, extras: false, error: '', collabs: [], brands: [], notes: {}, fits: {}, reading: [], leads: [], settings: null, alerts: [], ig: null, media: [], followersHistory: [], packages: [], retainers: [] });
 
 type CollabCursor = { created_at: string; id: string };
 async function fetchCollabs(id?: string) {
@@ -108,8 +110,7 @@ export async function loadStudio() {
 		]);
 		if (settings.error) throw settings.error;
 		loadAlerts();
-		loadInstagram();
-		loadPackages();
+		Promise.allSettled([loadInstagram(), loadPackages()]).then(() => (studio.extras = true));
 		loadRetainers();
 		loadFits();
 		loadLeads();

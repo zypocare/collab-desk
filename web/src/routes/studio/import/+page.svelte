@@ -161,25 +161,22 @@
 	</div>
 </header>
 
-<!-- Two ways in: paste a pile of DMs, or fill the cards one by one. -->
-<div class="imp-intro rv" style="--i:1">
-	<button class="imp-way" class:on={showBulk} onclick={() => (showBulk = !showBulk)}>
-		<span class="iw-ic grad"><Icon name="spark" /></span>
-		<span class="iw-t"><b>Paste your DMs</b><small>Paste several messages at once and the details fill themselves in</small></span>
-	</button>
-	<button class="imp-way" onclick={oneByOne}>
-		<span class="iw-ic"><Icon name="edit" /></span>
-		<span class="iw-t"><b>Add one by one</b><small>Type the brand, what you agreed and where it stands</small></span>
-	</button>
+<!-- Two ways in: type each collab, or paste a pile of DMs and let the rows fill themselves in. -->
+<div class="imp-mode rv" style="--i:1">
+	<div class="imp-seg" role="tablist" aria-label="How to add">
+		<button role="tab" aria-selected={!showBulk} onclick={oneByOne}><Icon name="edit" />Type Them In</button>
+		<button role="tab" aria-selected={showBulk} onclick={() => (showBulk = true)}><Icon name="spark" />Paste DMs</button>
+	</div>
+	<p class="imp-say">{showBulk ? 'Paste several brand messages at once. Each becomes a card below that you can check before saving.' : 'One card per collab already going: the brand, what you agreed and where it stands.'}</p>
 </div>
 
 {#if showBulk}
 	<section class="panel rv imp-bulk">
-		<div class="panel-h"><h2>Paste several messages</h2><small>one row each</small></div>
+		<div class="panel-h"><h2>Paste Several Messages</h2><small>one card each</small></div>
 		<div class="form-b" style="display:block">
 			<textarea class="inp" rows="8" placeholder={'Hi! I’m Asha from Lumière Skin (@lumiere.skin). 1 reel + 3 stories, budget 30k, live by 25th Oct…\n---\nHey, Rahul from Kora Kids here. Barter for 2 reels, products worth 8k…'} bind:value={bulk}></textarea>
 			<p class="hint" style="margin:8px 0 10px">Put a line with <b>---</b> (or two empty lines) between messages. Each becomes a row you can check before saving.</p>
-			<button class="btn sm grad" onclick={splitBulk} disabled={!bulk.trim()}><Icon name="spark" />Fill rows</button>
+			<button class="btn sm grad" onclick={splitBulk} disabled={!bulk.trim()}><Icon name="spark" />Fill the Cards</button>
 		</div>
 	</section>
 {/if}
@@ -197,11 +194,11 @@
 				<div class="f"><label for="ib-{r.id}">Brand</label><input class="inp" id="ib-{r.id}" list="imp-brands" placeholder="Brand name" bind:value={r.brand} /></div>
 				<div class="f"><label for="ii-{r.id}">Instagram <span class="hint">(optional)</span></label><input class="inp" id="ii-{r.id}" placeholder="@brand" bind:value={r.instagram} /></div>
 				<div class="f"><label for="iw-{r.id}">Content</label><input class="inp" id="iw-{r.id}" placeholder="1 Reel + 3 Stories" bind:value={r.what} /></div>
-				<div class="f"><label for="it-{r.id}">Type</label><Select id="it-{r.id}" bind:value={r.type} options={TYPES} /></div>
-				{#if r.type !== 'barter'}<div class="f"><label for="if-{r.id}">Fee</label><div class="pre"><span>₹</span><input class="inp num" id="if-{r.id}" type="number" inputmode="numeric" placeholder="0" bind:value={r.fee} /></div></div>{/if}
+				<div class="f half"><label for="it-{r.id}">Type</label><Select id="it-{r.id}" bind:value={r.type} options={TYPES} /></div>
+				{#if r.type !== 'barter'}<div class="f half"><label for="if-{r.id}">Fee</label><div class="pre"><span>₹</span><input class="inp num" id="if-{r.id}" type="number" inputmode="numeric" placeholder="0" bind:value={r.fee} /></div></div>{/if}
 				{#if r.type !== 'paid'}
-					<div class="f"><label for="ip-{r.id}">Product</label><input class="inp" id="ip-{r.id}" placeholder="What they send" bind:value={r.product} /></div>
-					<div class="f"><label for="iv-{r.id}">Worth</label><div class="pre"><span>₹</span><input class="inp num" id="iv-{r.id}" type="number" inputmode="numeric" placeholder="0" bind:value={r.worth} /></div></div>
+					<div class="f half"><label for="ip-{r.id}">Product</label><input class="inp" id="ip-{r.id}" placeholder="What they send" bind:value={r.product} /></div>
+					<div class="f half"><label for="iv-{r.id}">Worth</label><div class="pre"><span>₹</span><input class="inp num" id="iv-{r.id}" type="number" inputmode="numeric" placeholder="0" bind:value={r.worth} /></div></div>
 				{/if}
 				<div class="f"><label for="is-{r.id}">Where it stands</label><Select id="is-{r.id}" bind:value={r.where} options={WHERE} /></div>
 				<div class="f"><label for="id-{r.id}">{r.where === 'live' || r.where === 'done' ? 'Went live' : 'Go-live date'} <span class="hint">(optional)</span></label><DatePicker id="id-{r.id}" bind:value={r.date} /></div>
@@ -210,7 +207,7 @@
 				<div class="f"><label for="ie-{r.id}">Their email <span class="hint">(optional)</span></label><input class="inp" id="ie-{r.id}" type="email" placeholder="name@brand.com" bind:value={r.email} /></div>
 			</div>
 			<div class="imp-foot">
-				<button class="lnk imp-dm" onclick={() => (r.showDm = !r.showDm)}><Icon name="copy" />{r.showDm ? 'Hide message' : 'Paste their DM to fill this in'}</button>
+				<button class="lnk imp-dm" onclick={() => (r.showDm = !r.showDm)}><Icon name="copy" />{r.showDm ? 'Hide the Message' : 'Paste Their DM to Fill This In'}</button>
 				<button class="shot-x" style="opacity:1" aria-label="Remove row {i + 1}" onclick={() => (rows = rows.filter((x) => x.id !== r.id))}><Icon name="x" /></button>
 			</div>
 			{#if r.showDm}
@@ -222,10 +219,9 @@
 </div>
 
 <div class="imp-actions">
-	<button class="btn imp-add" onclick={addRow}><Icon name="plus" /><span class="nav-long">Add a row</span><span class="nav-short">Add another</span></button>
-	<span class="hint">{ready.length} ready{total ? ` · ${inr(total)} in fees` : ''}</span>
-	<label class="check-row imp-send"><input type="checkbox" class="cbx" bind:checked={sendLinks} /><span>Email brands (with an email) their tracking link</span></label>
-	<button class="btn grad lg" disabled={busy || !ready.length} onclick={save}>{#if busy}<span class="spinner"></span>Saving {progress} of {ready.length}{:else}<Icon name="check" />Import {ready.length || ''} collab{ready.length === 1 ? '' : 's'}{/if}</button>
+	<label class="check-row imp-send"><input type="checkbox" class="cbx" bind:checked={sendLinks} /><span>Email each brand its tracking link</span></label>
+	<button class="btn imp-add" onclick={addRow} aria-label="Add another collab"><Icon name="plus" />Add</button>
+	<button class="btn grad lg imp-go" class:idle={!ready.length && !busy} disabled={busy || !ready.length} onclick={save}>{#if busy}<span class="spinner"></span>Saving {progress} of {ready.length}{:else if !ready.length}Add a Brand to Import{:else}<Icon name="check" />Import {ready.length} Collab{ready.length === 1 ? '' : 's'}{total ? ` · ${inr(total)}` : ''}{/if}</button>
 </div>
 {:else}
 <!-- Laptop: one table, a line per collab, details opening under a row. -->

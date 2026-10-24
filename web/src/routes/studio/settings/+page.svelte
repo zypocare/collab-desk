@@ -14,7 +14,7 @@
 	import { theme, toggleTheme } from '#lib/ui.svelte.ts';
 	import { downloadMediaKit } from '#lib/mediaKitPdf.ts';
 	import { copyText, toast } from '#lib/ui.svelte.ts';
-	import { KINDS, compact, inr, offeredKinds, phoneOk, waShare } from '#lib/util.ts';
+	import { KINDS, compact, inr, offeredKinds, phoneOk, waShare, titleCase } from '#lib/util.ts';
 	import { LANGUAGES } from '#lib/languages.ts';
 	import LanguagePicker from '#lib/components/LanguagePicker.svelte';
 	import { rateCheck, suggestRates } from '#lib/rateSuggest.ts';
@@ -314,7 +314,7 @@
 				<button class="cs-edit" onclick={() => open('profile')} aria-label="Edit profile"><Icon name="edit" /></button>
 			</header>
 			{#if agency.studios.length > 1}
-				<a class="cs-row" href="/studio/roster"><Icon name="users" /><span>Your creators: roster and switching ({agency.studios.length})</span></a>
+				<div class="cs-grp cs-roster"><a class="cs-row" href="/studio/roster"><span class="cs-ico"><Icon name="users" /></span><span class="cs-txt"><b>Your Creators</b><small>Roster and switching · {agency.studios.length} creators</small></span><Icon name="chev" class="cs-chev" /></a></div>
 			{/if}
 			<div class="cs-cards" bind:this={cardsEl} onscroll={onCards}>
 				{#each cards as k (k.icon)}
@@ -341,17 +341,21 @@
 			</div>
 			<GetFoundCard onopen={() => open('found')} />
 			{#each GROUPS as g (g.label)}
-				<div class="cs-h">{g.label}</div>
-				{#each g.ids.map(byId) as x (x.id)}
-					<a class="cs-row" href="?s={x.id}" onclick={(e) => (e.preventDefault(), open(x.id))}><Icon name={x.icon} /><span>{x.label}</span>{#if x.warn}<i class="cs-dot" title={x.warn}></i>{/if}</a>
-				{/each}
+				<div class="cs-h">{titleCase(g.label)}</div>
+				<div class="cs-grp">
+					{#each g.ids.map(byId) as x (x.id)}
+						<a class="cs-row" href="?s={x.id}" onclick={(e) => (e.preventDefault(), open(x.id))}><span class="cs-ico" class:warn={!!x.warn}><Icon name={x.icon} /></span><span class="cs-txt"><b>{titleCase(x.label)}</b><small>{x.warn ?? x.sub}</small></span>{#if x.warn}<i class="cs-dot" title={x.warn}></i>{/if}<Icon name="chev" class="cs-chev" /></a>
+					{/each}
+				</div>
 			{/each}
-			<div class="cs-h">Help</div>
-			<a class="cs-row" href="/studio/help"><Icon name="info" /><span>Help & support</span>{#if support.unread}<i class="cs-dot" title="New reply from support"></i>{/if}</a>
-			<a class="cs-row" href="/studio/qr"><Icon name="qr" /><span>QR codes: look and extra codes</span></a>
-			<a class="cs-row" href="/studio/import"><Icon name="layers" /><span>Import collabs</span></a>
-			<button class="cs-row" onclick={toggleTheme}><Icon name={theme.value === 'dark' ? 'sun' : 'moon'} /><span>{theme.value === 'dark' ? 'Light look' : 'Dark look'}</span></button>
-			{#if pwa.installEvent && !pwa.installed}<button class="cs-row" onclick={install}><Icon name="download" /><span>Install the app</span></button>{/if}
+			<div class="cs-h">Help & More</div>
+			<div class="cs-grp">
+				<a class="cs-row" href="/studio/help"><span class="cs-ico"><Icon name="info" /></span><span class="cs-txt"><b>Help & Support</b><small>{support.unread ? 'New reply from support' : 'Answers, and a ticket to our team'}</small></span>{#if support.unread}<i class="cs-dot" title="New reply from support"></i>{/if}<Icon name="chev" class="cs-chev" /></a>
+				<a class="cs-row" href="/studio/qr"><span class="cs-ico"><Icon name="qr" /></span><span class="cs-txt"><b>QR Codes</b><small>Their look, and extra codes for events</small></span><Icon name="chev" class="cs-chev" /></a>
+				<a class="cs-row" href="/studio/import"><span class="cs-ico"><Icon name="layers" /></span><span class="cs-txt"><b>Import Collabs</b><small>Bring in deals from DMs or a list</small></span><Icon name="chev" class="cs-chev" /></a>
+				<button class="cs-row" onclick={toggleTheme}><span class="cs-ico"><Icon name={theme.value === 'dark' ? 'sun' : 'moon'} /></span><span class="cs-txt"><b>{theme.value === 'dark' ? 'Light Look' : 'Dark Look'}</b><small>Switch the app’s colours</small></span></button>
+				{#if pwa.installEvent && !pwa.installed}<button class="cs-row" onclick={install}><span class="cs-ico"><Icon name="download" /></span><span class="cs-txt"><b>Install the App</b><small>Miracle on your home screen</small></span></button>{/if}
+			</div>
 			<!-- What the desk has done for her, in two big numbers. -->
 			<div class="cs-wins">
 				<a href="/studio/payments"><small>Earned so far</small><b>{inr(earnedAll)}</b><span>See payments →</span></a>
@@ -366,7 +370,7 @@
 			</footer>
 		</div>
 	{/if}
-	{#if active && current && phone.on}<h1 class="cs-title">{current.label}</h1>{/if}
+	{#if active && current && phone.on}<h1 class="cs-title">{titleCase(current.label)}</h1>{/if}
 	<nav class="set-menu rv" style="--i:2" aria-label="Settings sections" hidden={phone.on && !active}>
 		{#each sections as x (x.id)}
 			<a class="set-item" class:on={x.id === active} href="?s={x.id}" aria-current={x.id === active ? 'page' : undefined} onclick={(e) => (e.preventDefault(), open(x.id))}>

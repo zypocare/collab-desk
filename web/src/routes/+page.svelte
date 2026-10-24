@@ -558,6 +558,10 @@
 
 <svelte:window onscroll={() => (scrolled = scrollY > 20)} />
 
+{#if preview && auth.account?.role === 'creator'}
+	<!-- Previewing her own page: the way back to the studio (the phone app has no other window to close). -->
+	<a class="mp-pv" href="/studio/settings" onclick={(e) => { if (history.length > 1) { e.preventDefault(); history.back(); } }}><svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6" /></svg>Back to your studio<small>Preview: what brands see</small></a>
+{/if}
 <div class="mp">
 	<div class="mp-grain" aria-hidden="true"></div>
 	<svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -965,6 +969,10 @@
 </div>
 
 <style>
+	.mp-pv { position: fixed; z-index: 60; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 16px); transform: translateX(-50%); display: flex; align-items: center; gap: 8px; padding: 11px 18px 11px 14px; border-radius: 999px; background: rgba(26, 21, 26, 0.92); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); box-shadow: inset 0 0 0 1px #3e343e, 0 20px 40px -16px rgba(0, 0, 0, 0.9); color: #f4eef2; font: 600 14px/1.2 'Geist', system-ui, sans-serif; text-decoration: none; white-space: nowrap; }
+	.mp-pv svg { width: 18px; height: 18px; }
+	.mp-pv small { margin-left: 4px; font-weight: 500; font-size: 12.5px; color: #a39aa1; }
+	@media (max-width: 380px) { .mp-pv small { display: none; } }
 	/* The app's theme and background art step aside on this page (it's dark only). */
 	:global(html.mp-on) {
 		scroll-behavior: smooth;

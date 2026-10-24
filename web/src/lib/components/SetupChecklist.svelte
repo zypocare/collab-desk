@@ -1,3 +1,7 @@
+<script module lang="ts">
+	let settledOnce = false;
+</script>
+
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { studio } from '#lib/studio.svelte.ts';
@@ -16,10 +20,15 @@
 	const key = (k: string) => `cd-setup-${k}-${s?.id ?? ''}`;
 	let bio = $state(false);
 	let hidden = $state(true);
-	// Instagram and packages arrive a moment after the studio: wait for them so a finished setup never flashes.
-	let settled = $state(false);
+	// Instagram and packages arrive a moment after the studio: wait for them (studio.extras, or 1.5 s at most)
+	// so a finished setup never flashes.
+	// Only once per visit to the app: coming back to Today later, the card is there at once instead of
+	// popping in and pushing the page down.
+	let settled = $state(settledOnce);
 	onMount(() => {
-		const t = setTimeout(() => (settled = true), 1500);
+		if (settled) return;
+		// Counted from when the app opened, so arriving at Today later doesn't wait again.
+		const t = setTimeout(() => (settled = settledOnce = true), Math.max(0, 1500 - performance.now()));
 		return () => clearTimeout(t);
 	});
 	$effect(() => {
@@ -68,7 +77,7 @@
 	);
 	const doneN = $derived(steps.filter((x) => x.done).length);
 	const owner = $derived(studio.me?.team_role === 'owner');
-	const show = $derived(settled && studio.loaded && owner && !hidden && steps.length > 0 && doneN < steps.length);
+	const show = $derived((settled || studio.extras) && studio.loaded && owner && !hidden && steps.length > 0 && doneN < steps.length);
 
 	function tickBio() {
 		bio = !bio;

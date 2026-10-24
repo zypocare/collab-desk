@@ -39,6 +39,7 @@ export const ICONS: Record<string, string> = {
 	plus: '<path d="M12 5v14M5 12h14"/>',
 	arrow: '<path d="M5 12h14M13 6l6 6-6 6"/>',
 	back: '<path d="M19 12H5M11 6l-6 6 6 6"/>',
+	chev: '<path d="m9 6 6 6-6 6"/>',
 	chevL: '<path d="m15 6-6 6 6 6"/>',
 	chevR: '<path d="m9 6 6 6-6 6"/>',
 	chevU: '<path d="m6 15 6-6 6 6"/>',

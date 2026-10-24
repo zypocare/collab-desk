@@ -466,3 +466,10 @@ export const compact = (n: number | null | undefined) => {
 	if (n >= 1e3) return `${+(n / 1e3).toFixed(1)}K`;
 	return String(Math.round(n));
 };
+
+// Small words stay lower case inside a title ("Rates & Packages", "QR Codes: Look and Extra Codes").
+const SMALL = new Set(['a', 'an', 'and', 'as', 'at', 'by', 'for', 'from', 'in', 'of', 'on', 'or', 'the', 'to', 'with']);
+/** Title Case for menu items and headings: each word capitalised (hyphenated parts too), small words left as they are. */
+export function titleCase(s: string) {
+	return s.replace(/[A-Za-z][A-Za-z']*/g, (w, i: number) => (i > 0 && SMALL.has(w.toLowerCase()) && !/[:\-]\s*$/.test(s.slice(0, i)) ? w : w[0].toUpperCase() + w.slice(1)));
+}

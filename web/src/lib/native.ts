@@ -59,7 +59,16 @@ export function startNative() {
 			} catch {
 				return;
 			}
-			if (!/^https?:$/.test(u.protocol) || (OWN.test(u.hostname) && !WEBSITE.test(u.hostname))) return;
+			if (!/^https?:$/.test(u.protocol)) return;
+			if (OWN.test(u.hostname) && !WEBSITE.test(u.hostname)) {
+				// The app has no second window: a Miracle page meant for a new tab (Preview, an invoice) opens
+				// right here, and the back button comes back.
+				if (a.target === '_blank') {
+					ev.preventDefault();
+					location.assign(u.href);
+				}
+				return;
+			}
 			ev.preventDefault();
 			openOutside(u.href);
 		},

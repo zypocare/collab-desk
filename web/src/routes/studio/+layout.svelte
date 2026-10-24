@@ -15,7 +15,7 @@
 	import { ensurePageCard } from '#lib/pageCard.ts';
 	import { indexDesk } from '#lib/desk.ts';
 	import { theme, toast, toggleTheme, ui } from '#lib/ui.svelte.ts';
-	import { firstName, hueOf, initials, inrS, iso, today, unreadFor } from '#lib/util.ts';
+	import { firstName, hueOf, initials, inrS, iso, today, unreadFor, titleCase } from '#lib/util.ts';
 	import { cascade } from '#lib/motion.ts';
 	import Icon from '#lib/components/Icon.svelte';
 	import Avatar from '#lib/components/Avatar.svelte';
@@ -215,12 +215,12 @@
 	const title = $derived(
 		path === '/studio/profile' || path === '/studio/inbox' ? (studio.settings?.handle ?? '')
 		: openC ? openC.brand.name
-		: sec ? (SECTIONS[sec] ?? '')
+		: sec ? titleCase(SECTIONS[sec] ?? '')
 		: brandId ? (studio.brands.find((b) => b.id === brandId)?.name ?? 'Brand')
-		: path.startsWith('/studio/grow/collab/') ? 'Collab reel'
+		: path.startsWith('/studio/grow/collab/') ? 'Collab Reel'
 		: path.startsWith('/studio/help/tickets/') ? 'Ticket'
 		: path.startsWith('/studio/help/') && !TITLES[path] ? 'Help'
-		: (TITLES[path] ?? group?.label ?? '')
+		: titleCase(TITLES[path] ?? group?.label ?? '')
 	);
 	const back = $derived(
 		detail ? '/studio/collabs'
