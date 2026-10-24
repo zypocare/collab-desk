@@ -1,3 +1,4 @@
+import type { Health } from './health';
 import type { Invoice } from './invoice';
 
 export type Stage = 'request' | 'negotiating' | 'confirmed' | 'creating' | 'live' | 'wrapped' | 'declined' | 'paused' | 'cancelled';
@@ -275,6 +276,8 @@ export type IgAccount = {
 	avg_reach: number | null;
 	demographics: Partial<Record<'age' | 'gender' | 'city' | 'country', Record<string, number>>>;
 	insights?: Record<string, unknown>;
+	/** Audience health and brand safety (what brands see), worked out by the nightly sync. */
+	health?: Health | Record<string, never>;
 	token_expires_at: string | null;
 	last_sync_at: string | null;
 	last_error: string;
@@ -561,6 +564,8 @@ export type BrandCreator = {
 	kinds?: string[];
 	languages?: string[];
 	avg_views?: number | null;
+	/** Audience health and brand safety, from her Instagram (only when connected). */
+	health?: Health | null;
 	current?: boolean;
 	open?: number;
 	waiting?: number;

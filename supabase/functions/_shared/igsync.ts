@@ -6,6 +6,7 @@ import { esc, todayIST } from './admin.ts';
 import { sendTelegram, telegramConfigured } from './telegram.ts';
 import { consumeContent, postKind, remainingContent, type PromisedContent } from './deliverableProgress.ts';
 import { activeCreators } from './creators.ts';
+import { saveHealth } from './health.ts';
 
 const DAY = 864e5;
 // A post's reach keeps growing for a couple of days while its views update at once, so averages leave
@@ -280,6 +281,9 @@ export async function runSync(db: SupabaseClient, creator: number, opts: SyncOpt
     if (saveError) throw new Error(saveError.message);
     // The brand page shows these.
     await db.from('creator_settings').update({ followers: short(p.followers_count), ...(engagement !== null ? { engagement: `${engagement}%` } : {}) }).eq('id', creator);
+
+    // 5b. Audience health and brand safety (brands see it before booking). Never stops the sync.
+    summary.health = await saveHealth(db, creator, p.followers_count, demographics).catch((e) => ({ error: e instanceof Error ? e.message : String(e) }));
 
     // 6. Go-live detection and disclosure check.
     summary.detected = await detectPosts(db, creator, rows);

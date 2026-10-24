@@ -41,6 +41,7 @@
 	import CampaignDocs from '#lib/components/CampaignDocs.svelte';
 	import DraftChecklist from '#lib/components/DraftChecklist.svelte';
 	import ReportMenu from '#lib/components/ReportMenu.svelte';
+	import HealthCard from '#lib/components/HealthCard.svelte';
 
 	const r = $derived(brandData.requests.find((x) => x.code.toUpperCase() === (page.params.code ?? '').toUpperCase()));
 	// Not in this list: the request is with another creator (open it on their address; the sign-in is
@@ -111,6 +112,15 @@
 
 	// Leaving the page: refresh the unread counts on My requests.
 	$effect(() => () => void loadUnread());
+
+	// Her audience health and brand safety (the creator whose address this is).
+	let health = $state<Record<string, unknown> | null>(null);
+	let healthAsked = false;
+	$effect(() => {
+		if (healthAsked || auth.account?.role !== 'brand') return;
+		healthAsked = true;
+		supabase.rpc('creator_health').then(({ data }) => (health = (data as Record<string, unknown> | null) ?? null));
+	});
 
 	let briefD = $state<BriefDetails | null>(null);
 	$effect(() => {
@@ -368,6 +378,8 @@
 	</section>
 
 	<CampaignDocs {r} />
+
+	{#if health}<div style="margin-top:18px"><HealthCard {health} name={creator} connected={health.connected !== false} stack /></div>{/if}
 
 
 

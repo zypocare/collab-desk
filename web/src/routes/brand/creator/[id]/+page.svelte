@@ -18,6 +18,8 @@
 	import HBars from '#lib/components/charts/HBars.svelte';
 	import Gauge from '#lib/components/charts/Gauge.svelte';
 	import ReportMenu from '#lib/components/ReportMenu.svelte';
+	import HealthCard from '#lib/components/HealthCard.svelte';
+	import { healthChips } from '#lib/health.ts';
 	import { goto } from '$app/navigation';
 
 	// One creator, from the brand's side: how well they fit, who their audience is, what they did with
@@ -97,7 +99,7 @@
 				<div class="eb">{[c.niche?.split(',')[0]?.trim(), c.city, c.handle ? `@${c.handle.replace(/^@+/, '')}` : ''].filter(Boolean).join(' · ')}</div>
 				<h1>{c.name}</h1>
 				<p>{c.followers != null ? `${compact(c.followers)} followers` : 'Instagram not linked'}{c.engagement != null ? ` · ${Number(c.engagement).toFixed(2)}% engagement` : ''}{rate ? ` · Reels from ${inrS(rate)}` : ''}</p>
-				<div class="cp-trust">{#each creatorChips(c.trust) as ch (ch.text)}<span class="cp-chip {ch.tone}">{ch.text}</span>{/each}<button class="lnk hint" onclick={() => (explain = !explain)} aria-expanded={explain}>What these mean</button></div>
+				<div class="cp-trust">{#each [...healthChips(c.health), ...creatorChips(c.trust)] as ch (ch.text)}<span class="cp-chip {ch.tone}">{ch.text}</span>{/each}<button class="lnk hint" onclick={() => (explain = !explain)} aria-expanded={explain}>What these mean</button></div>
 				{#if explain}
 					<p class="hint cp-explain"><b>Verified deals:</b> collabs done through Miracle and paid in full against a Miracle invoice. <b>On time:</b> the post went live on or before the agreed date, by Instagram's own time. <b>Replies in:</b> how fast they usually answer a new request. Worked out by Miracle; creators can't edit them.</p>
 				{/if}
@@ -131,6 +133,8 @@
 			</div>
 			<p class="md-note">From their niche, the audience they share, your past collabs with them and their rates. {ft?.audience == null ? 'They haven\'t shared their audience yet.' : ''}</p>
 		</section>
+
+		<HealthCard health={c.health} name={firstName(c.name)} connected={c.followers != null} />
 
 		<!-- Audience -->
 		<section class="md-card rv" style="--i:2">

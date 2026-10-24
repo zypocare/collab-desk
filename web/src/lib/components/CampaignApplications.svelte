@@ -5,6 +5,7 @@
 	import type { CampaignApplication, CampaignBoard } from '#lib/types.ts';
 	import Icon from '#lib/components/Icon.svelte';
 	import Ticket from '#lib/components/Ticket.svelte';
+	import { healthChips } from '#lib/health.ts';
 
 	// The creators who applied to an open brief: new ones first, a shortlist, and one tap to send
 	// every shortlisted creator a request at the rate they asked.
@@ -113,6 +114,7 @@
 				task={a.note ? `“${a.note}”` : ''}
 				status={statusText(a)}
 				tone={tone(a)}
+				chips={healthChips(a.health)}
 				href="/brand/creator/{a.id}"
 				{i}
 			>

@@ -8,6 +8,7 @@
 	import Avatar from '#lib/components/Avatar.svelte';
 	import { checkups, latest, loadCheckups } from '#lib/checkup.svelte.ts';
 	import Icon from '#lib/components/Icon.svelte';
+	import HealthCard from '#lib/components/HealthCard.svelte';
 
 	// Grow: real followers and views from what already works for her. Her numbers, what's working, this
 	// week's reel ideas (the growth autopilot), collab reels with other creators, and a reel worth boosting.
@@ -96,6 +97,9 @@
 			{#if st.watch !== null}<span><small>Avg. watch</small><b class="num">{st.watch.toFixed(1)}s</b><small>per reel</small></span>{/if}
 		</div>
 	</section>
+
+	<!-- What brands see before they book her: audience health and brand safety -->
+	<div class="gr-health"><HealthCard health={studio.ig?.health} mine connected /></div>
 
 	<div class="gr-grid">
 		<!-- What's working -->
@@ -212,6 +216,9 @@
 {/if}
 
 <style>
+	.gr-health {
+		margin-bottom: 18px;
+	}
 	.gr-cu {
 		display: grid;
 		grid-template-columns: minmax(0, 1fr) auto;

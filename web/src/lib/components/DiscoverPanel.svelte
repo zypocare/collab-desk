@@ -14,6 +14,7 @@
 	import Select from './Select.svelte';
 	import Ticket from './Ticket.svelte';
 	import { creatorChips } from '../trust.svelte';
+	import { healthChips } from '../health';
 
 	// Discover: every listed creator, filtered by niche, their audience (from what they share from
 	// Instagram), size, price and language, and sorted by how well they fit this brand.
@@ -42,8 +43,10 @@
 		if (c && !f.cities.includes(c)) f.cities = [...f.cities, c];
 		city = '';
 	}
+	// Only creators with a healthy audience and nothing serious in brand safety.
+	let healthy = $state(false);
 	const count = $derived(
-		f.niches.length + f.ages.length + f.cities.length + f.languages.length + (f.women ? 1 : 0) + (f.minFollowers || f.maxFollowers ? 1 : 0) + (f.reelMax ? 1 : 0)
+		f.niches.length + f.ages.length + f.cities.length + f.languages.length + (f.women ? 1 : 0) + (f.minFollowers || f.maxFollowers ? 1 : 0) + (f.reelMax ? 1 : 0) + (healthy ? 1 : 0)
 	);
 
 	const shown = $derived.by(() => {
@@ -53,6 +56,7 @@
 			.filter((c) => (c.listed || c.with_me.collabs) && !blocked.has(c.id))
 			.filter((c) => !words || [c.name, c.niche, c.city, c.handle].join(' ').toLowerCase().includes(words))
 			.filter((c) => passes(c, f))
+			.filter((c) => !healthy || ((c.health?.score ?? 0) >= 65 && c.health?.safety?.level !== 'review'))
 			.map((c) => ({ c, fit: fit(c, f, category), rate: reelRate(c) }))
 			.sort((a, b) => (sort === 'fit' ? b.fit.total - a.fit.total : sort === 'reach' ? (b.c.followers ?? 0) - (a.c.followers ?? 0) : (a.rate ?? 1e9) - (b.rate ?? 1e9)));
 	});
@@ -132,6 +136,7 @@
 					<Select id="dp-price" size="sm" value={String(f.reelMax)} onchange={(v) => (f.reelMax = Number(v))} options={[{ value: '0', label: 'Any price' }, { value: '10000', label: '₹10K' }, { value: '25000', label: '₹25K' }, { value: '50000', label: '₹50K' }, { value: '100000', label: '₹1L' }]} />
 				</div>
 				{#if f.reelMax}<small class="dp-sub">Only creators who show their rates</small>{/if}
+				<label class="dp-healthy"><input type="checkbox" class="tgl" bind:checked={healthy} /><span>Healthy audiences only<small>Score 65 or more, nothing serious in brand safety</small></span></label>
 			</div>
 			<div class="dp-g">
 				<span class="lbl-t">Language</span>
@@ -139,7 +144,7 @@
 					{#each LANGS as l (l)}<button class:on={f.languages.includes(l)} aria-pressed={f.languages.includes(l)} onclick={() => (f.languages = toggle(f.languages, l))}>{l}</button>{/each}
 				</div>
 			</div>
-			{#if count}<button class="btn ghost" onclick={() => (f = { ...NO_FILTERS, niches: [] })}><Icon name="x" />Clear filters</button>{/if}
+			{#if count}<button class="btn ghost" onclick={() => ((f = { ...NO_FILTERS, niches: [] }), (healthy = false))}><Icon name="x" />Clear filters</button>{/if}
 		</aside>
 	{/if}
 
@@ -158,7 +163,7 @@
 					task={audienceLine(c, f)}
 					status={phone.on ? `${ft.label}${rate ? ` · from ${inrS(rate)}` : ''}` : `${rate ? `Reels from ${inrS(rate)} · ` : ''}${ft.label}${c.with_me.collabs ? ' · you worked together' : ''}`}
 					tone={ft.tone}
-					chips={creatorChips(c.trust)}
+					chips={[...healthChips(c.health), ...creatorChips(c.trust)]}
 					href="/brand/creator/{c.id}"
 					{i}
 				>
@@ -171,7 +176,7 @@
 					<span class="clear-ic"><Icon name="search" /></span>
 					<b>No creators match</b>
 					<small>Loosen a filter or two. New creators join every week.</small>
-					{#if count}<div class="clear-acts"><button class="glass-chip" onclick={() => (f = { ...NO_FILTERS, niches: [] })}><Icon name="x" />Clear filters</button></div>{/if}
+					{#if count}<div class="clear-acts"><button class="glass-chip" onclick={() => ((f = { ...NO_FILTERS, niches: [] }), (healthy = false))}><Icon name="x" />Clear filters</button></div>{/if}
 				</div>
 			{/each}
 		{/if}
@@ -225,5 +230,23 @@
 	}
 	.dp-list {
 		min-width: 0;
+	}
+	.dp-healthy {
+		display: flex;
+		align-items: flex-start;
+		justify-content: space-between;
+		gap: 12px;
+		margin-top: 4px;
+		font-size: 14px;
+		font-weight: 600;
+	}
+	.dp-healthy small {
+		display: block;
+		font-size: 12px;
+		font-weight: 400;
+		color: var(--ink-3);
+	}
+	.dp-healthy span {
+		order: -1;
 	}
 </style>

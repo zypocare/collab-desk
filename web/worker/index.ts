@@ -23,7 +23,7 @@ type Env = {
 type Run = { env: Env; gemini: boolean; neurons: number };
 
 // Expected size of each job in Cloudflare neurons (reserved before, corrected after).
-const COST: Record<string, number> = { dm: 160, reply: 110, caption: 110, pitch: 140, fit: 230, classify: 40, summary: 220, negotiate: 210, script: 330, nudge: 120, ask: 260, voice: 60, embed: 8, cheer: 60, reelcheck: 260, growplan: 200, checkup: 420, offercheck: 700, precheck: 220, getfound: 180, brandask: 450, brandbrief: 600 };
+const COST: Record<string, number> = { dm: 160, reply: 110, caption: 110, pitch: 140, fit: 230, classify: 40, summary: 220, negotiate: 210, script: 330, nudge: 120, ask: 260, voice: 60, embed: 8, cheer: 60, reelcheck: 260, growplan: 200, checkup: 420, offercheck: 700, precheck: 220, getfound: 180, brandask: 450, brandbrief: 600, safety: 300 };
 // Cloudflare's price list in neurons per token (Llama 3.3 70B fast; Llama 3.2 11B vision).
 const PER_TOKEN = { text: [0.0267, 0.2048], vision: [0.0045, 0.0615] };
 const USED_UP = "Today's free AI is used up. It's back at 5:30 am.";
@@ -46,17 +46,17 @@ export default {
 		try {
 			const kind = url.pathname.slice('/api/ai/'.length);
 			if (kind === 'status') return json(await status(req, env));
-			if (!['dm', 'reply', 'caption', 'pitch', 'classify', 'fit', 'summary', 'negotiate', 'script', 'nudge', 'ask', 'voice', 'embed', 'cheer', 'scout', 'reelcheck', 'growplan', 'checkup', 'offercheck', 'precheck', 'getfound', 'brandask', 'brandbrief'].includes(kind)) return json({ error: 'Unknown.' }, 404);
+			if (!['dm', 'reply', 'caption', 'pitch', 'classify', 'fit', 'summary', 'negotiate', 'script', 'nudge', 'ask', 'voice', 'embed', 'cheer', 'scout', 'reelcheck', 'growplan', 'checkup', 'offercheck', 'precheck', 'getfound', 'brandask', 'brandbrief', 'safety'].includes(kind)) return json({ error: 'Unknown.' }, 404);
 			const body = (await req.json()) as Record<string, unknown>;
 			const job = (x: Run) =>
-				kind === 'cheer' ? cheer(x, body) : kind === 'scout' ? scout(x, body) : kind === 'dm' ? readDm(x, body) : kind === 'reply' ? replies(x, body) : kind === 'pitch' ? pitch(x, body) : kind === 'classify' ? classify(x, body) : kind === 'fit' ? fit(x, body) : kind === 'summary' ? summary(x, body) : kind === 'negotiate' ? creatorOf(req, env).then((me) => negotiate(x, body, me)) : kind === 'script' ? script(x, body) : kind === 'nudge' ? nudge(x, body) : kind === 'ask' ? creatorOf(req, env).then((me) => ask(x, body, me)) : kind === 'voice' ? voice(x, body) : kind === 'embed' ? embed(x, body) : kind === 'reelcheck' ? reelCheck(x, body) : kind === 'growplan' ? growPlan(x, body) : kind === 'checkup' ? checkup(x, body) : kind === 'offercheck' ? offerCheck(x, body) : kind === 'precheck' ? preCheck(x, body) : kind === 'getfound' ? getFound(x, body) : kind === 'brandask' ? brandAsk(x, body) : kind === 'brandbrief' ? brandBrief(x, body) : creatorOf(req, env).then((me) => caption(x, body, me));
+				kind === 'cheer' ? cheer(x, body) : kind === 'scout' ? scout(x, body) : kind === 'dm' ? readDm(x, body) : kind === 'reply' ? replies(x, body) : kind === 'pitch' ? pitch(x, body) : kind === 'classify' ? classify(x, body) : kind === 'fit' ? fit(x, body) : kind === 'summary' ? summary(x, body) : kind === 'negotiate' ? creatorOf(req, env).then((me) => negotiate(x, body, me)) : kind === 'script' ? script(x, body) : kind === 'nudge' ? nudge(x, body) : kind === 'ask' ? creatorOf(req, env).then((me) => ask(x, body, me)) : kind === 'voice' ? voice(x, body) : kind === 'embed' ? embed(x, body) : kind === 'reelcheck' ? reelCheck(x, body) : kind === 'growplan' ? growPlan(x, body) : kind === 'checkup' ? checkup(x, body) : kind === 'safety' ? safety(x, body) : kind === 'offercheck' ? offerCheck(x, body) : kind === 'precheck' ? preCheck(x, body) : kind === 'getfound' ? getFound(x, body) : kind === 'brandask' ? brandAsk(x, body) : kind === 'brandbrief' ? brandBrief(x, body) : creatorOf(req, env).then((me) => caption(x, body, me));
 
 			// Checking an incoming Instagram DM comes from the DM webhook with a single-use pass, and the
 			// hourly fun nudge from its job the same way. DMs stay on Cloudflare (never sent to Google);
 			// the fun nudges are written by Gemini first (wittier), Cloudflare if Gemini can't.
 			// The daily pitch finder comes the same way for finding brands (Gemini with Google Search) and
 			// writing their pitches (Gemini first).
-			if (kind === 'classify' || kind === 'cheer' || kind === 'scout' || ((kind === 'pitch' || kind === 'checkup') && req.headers.get('x-ai-ticket'))) {
+			if (kind === 'classify' || kind === 'cheer' || kind === 'scout' || ((kind === 'pitch' || kind === 'checkup' || kind === 'safety') && req.headers.get('x-ai-ticket'))) {
 				const allowed = await takeTicket(req, env, kind);
 				if (allowed !== true) return json({ error: allowed }, 403);
 				let why = env.GEMINI_API_KEY ? '' : 'no Gemini key';
@@ -752,6 +752,30 @@ Rules: 3 to 6 topics; every reel id in exactly one topic; put reels that fit not
 		bio: String(j.bio ?? '').trim().slice(0, 80),
 		repeat: String(j.repeat ?? '').trim().slice(0, 200)
 	};
+}
+
+// Brand safety: reads a creator's recent captions (from the nightly Instagram sync, with a single-use
+// pass) for what a brand would want to know before booking her. Only clear cases; most creators have none.
+async function safety(x: Run, b: Record<string, unknown>) {
+	const posts = (Array.isArray(b.posts) ? b.posts : []).slice(0, 40) as { id: string; caption: string }[];
+	if (!posts.length) return { flags: [] };
+	const KINDS = ['betting', 'adult', 'hate', 'alcohol_tobacco', 'health_claims', 'money_schemes', 'politics_religion', 'strong_language', 'unlabelled_ad'];
+	const reply = await chat(
+		x,
+		`You check an Indian Instagram creator's recent post captions for a brand that wants to book her. Return ONLY JSON:
+{"flags": [{"id": "post id", "kind": one of ${KINDS.map((k) => `"${k}"`).join(', ')}, "why": "under 15 words, what in the caption"}]}
+Kinds: betting = betting, satta, casinos, real-money or fantasy gaming apps; adult = sexual or explicit content; hate = abuse or hate against a group or person; alcohol_tobacco = advertising an alcohol, cigarette, vape or gutka brand, or pushing people to drink or smoke (a drink emoji, a pub or a night out is fine); health_claims = cure, guaranteed weight loss or medical claims; money_schemes = crypto tips, trading signals, get-rich schemes; politics_religion = attacking a party, leader or religion (not festivals or prayers); strong_language = swearing; unlabelled_ad = clearly promoting a brand, product or discount code with no #ad, #collab, #sponsored or paid partnership mention.
+Rules: flag only what the caption clearly says, never guess. Festivals, food, fitness, fashion, travel, normal opinions and mild slang are fine. Most creators have no flags: then return {"flags": []}. Never flag a post twice for the same kind.`,
+		JSON.stringify({ posts: posts.map((p) => ({ id: String(p.id), caption: String(p.caption ?? '').slice(0, 300) })) }),
+		900
+	);
+	const j = firstJson(reply) ?? {};
+	const ids = new Set(posts.map((p) => String(p.id)));
+	const flags = (Array.isArray(j.flags) ? (j.flags as Record<string, unknown>[]) : [])
+		.map((f) => ({ id: String(f.id ?? ''), kind: String(f.kind ?? ''), why: String(f.why ?? '').trim().slice(0, 160) }))
+		.filter((f) => ids.has(f.id) && KINDS.includes(f.kind))
+		.slice(0, 20);
+	return { flags };
 }
 
 // Checking a brand's offer: the agreement (pasted, a PDF, or photos of its pages) with their brief and
