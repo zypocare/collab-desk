@@ -2115,8 +2115,10 @@
 /* ===== PHONE: settings screens as cards, one per topic, instead of one long form. Long help text
    shows two lines and opens on a tap (clampHints). ===== */
 @media (max-width: 760px) {
-  [data-side] .set-panels { display: grid; gap: 14px; }
-  [data-side] .set-panels .panel:not(.gf) { margin: 0 12px; padding: 2px 0 8px; border-radius: 20px; background: var(--surface); box-shadow: 0 0 0 1px var(--line) inset; }
+  [data-side] .set-panels { display: grid; gap: 14px; padding-top: 14px; }
+  /* One field per row on every phone width: two columns cut names and long labels short. */
+  [data-side] .set-panels :is(.form-b, .fields) { grid-template-columns: minmax(0, 1fr); }
+  [data-side] .set-panels .panel:not(.gf) { margin: 0; padding: 2px 0 8px; border-radius: 20px; background: var(--surface); box-shadow: 0 0 0 1px var(--line) inset; }
   [data-side] .set-panels .panel + .panel { border-top: 0; }
   [data-side] .set-panels .panel-h { padding-top: 16px; padding-bottom: 4px; }
   [data-side] .set-panels .f { padding: 12px 0 10px; border-bottom: 1px solid var(--line); }
