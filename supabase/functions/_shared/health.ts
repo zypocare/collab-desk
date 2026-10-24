@@ -12,7 +12,9 @@ const DAY = 864e5;
 export type Tone = 'ok' | 'warn' | 'bad' | 'na';
 export type Check = { key: 'reach' | 'engagement' | 'growth' | 'audience'; label: string; score: number | null; tone: Tone; value: string; note: string };
 export type SafetyFlag = { kind: string; label: string; severity: 'high' | 'medium' | 'low'; why: string; post: { id: string; permalink: string; posted_at: string } };
-export type Safety = { level: 'clear' | 'note' | 'review' | 'unchecked'; checked_at: string | null; posts: number; flags: SafetyFlag[]; last_post?: string | null };
+export type Safety = { level: 'clear' | 'note' | 'review' | 'unchecked'; checked_at: string | null; posts: number; flags: SafetyFlag[]; last_post?: string | null; rules?: number };
+/** Raised when what counts as a flag changes: everyone's captions are read again at the next sync. */
+export const SAFETY_RULES = 2;
 export type Health = { v: 1; at: string; score: number | null; grade: 'strong' | 'good' | 'fair' | 'weak' | null; posts: number; checks: Check[]; safety: Safety };
 
 export type HealthPost = { id: string; posted_at: string; product_type: string; media_type: string; reach: number | null; views: number | null; likes: number | null; comments: number | null; saves: number | null; shares: number | null; interactions: number | null };
@@ -123,7 +125,7 @@ export const SAFETY_KINDS: Record<string, { label: string; severity: SafetyFlag[
 	betting: { label: 'Betting or real-money games', severity: 'high' },
 	adult: { label: 'Adult or sexual content', severity: 'high' },
 	hate: { label: 'Hate or abuse', severity: 'high' },
-	alcohol_tobacco: { label: 'Alcohol, tobacco or vaping', severity: 'medium' },
+	alcohol_tobacco: { label: 'Drinking or smoking', severity: 'low' },
 	health_claims: { label: 'Risky health or weight-loss claims', severity: 'medium' },
 	money_schemes: { label: 'Crypto or get-rich schemes', severity: 'medium' },
 	politics_religion: { label: 'Political or religious controversy', severity: 'medium' },
@@ -145,14 +147,14 @@ export function safetyFrom(raw: unknown, posts: { id: string; permalink: string;
 	}
 	const order = { high: 0, medium: 1, low: 2 };
 	flags.sort((a, b) => order[a.severity] - order[b.severity] || b.post.posted_at.localeCompare(a.post.posted_at));
-	const level: Safety['level'] = flags.some((f) => f.severity === 'high') || flags.filter((f) => f.severity === 'medium').length >= 2 ? 'review' : flags.length ? 'note' : 'clear';
-	return { level, checked_at: new Date().toISOString(), posts: checked, flags: flags.slice(0, 12), last_post: posts[0]?.posted_at ?? null };
+	const level: Safety['level'] = flags.some((f) => f.severity === 'high') ? 'review' : flags.length ? 'note' : 'clear';
+	return { level, checked_at: new Date().toISOString(), posts: checked, flags: flags.slice(0, 12), last_post: posts[0]?.posted_at ?? null, rules: SAFETY_RULES };
 }
 
 /** Asks the AI to read her recent captions (a single-use pass, like the checkup). Null if it couldn't. */
 export async function readSafety(db: SupabaseClient, creator: number, site: string, posts: { id: string; caption: string; permalink: string; posted_at: string }[]): Promise<Safety | null> {
 	const list = posts.filter((p) => p.caption.trim()).slice(0, 40);
-	if (!list.length) return { level: 'clear', checked_at: new Date().toISOString(), posts: 0, flags: [], last_post: posts[0]?.posted_at ?? null };
+	if (!list.length) return { level: 'clear', checked_at: new Date().toISOString(), posts: 0, flags: [], last_post: posts[0]?.posted_at ?? null, rules: SAFETY_RULES };
 	const ticket = crypto.randomUUID() + crypto.randomUUID();
 	const { error } = await db.from('ai_tickets').insert({ creator_id: creator, token: ticket, kind: 'safety' });
 	if (error) return null;
@@ -177,7 +179,7 @@ export async function saveHealth(db: SupabaseClient, creator: number, followers:
 	]);
 	const posts = (media ?? []) as (HealthPost & { caption: string; permalink: string })[];
 	const prev = ((acct?.health ?? {}) as Partial<Health>).safety;
-	const stale = !prev?.checked_at || Date.now() - Date.parse(prev.checked_at) > 7 * DAY || (posts[0]?.posted_at ?? '') > (prev.last_post ?? '');
+	const stale = !prev?.checked_at || prev.rules !== SAFETY_RULES || Date.now() - Date.parse(prev.checked_at) > 7 * DAY || (posts[0]?.posted_at ?? '') > (prev.last_post ?? '');
 	let safety: Safety = prev ?? { level: 'unchecked', checked_at: null, posts: 0, flags: [] };
 	if (stale) safety = (await readSafety(db, creator, String(s?.site_url || 'https://app.miracleapp.live'), posts).catch(() => null)) ?? safety;
 	const health = audienceHealth({ followers, posts, history: hist ?? [], demographics: demographics as HealthInput['demographics'] }, safety);

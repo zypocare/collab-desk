@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { GRADE, gradeTone, isHealth, safetyText, type Health } from '../health';
+	import { GRADE, gradeTone, isHealth, safetyGroups, safetyText, type Health } from '../health';
 	import Gauge from './charts/Gauge.svelte';
 	import Icon from './Icon.svelte';
 
@@ -43,11 +43,14 @@
 			<div class="hc-sh"><Icon name={h.safety?.level === 'clear' ? 'shield' : h.safety?.level === 'unchecked' ? 'clock' : 'flag'} /><b>Brand safety: {safetyText(h.safety)}</b>{#if h.safety?.posts}<small>{h.safety.posts} recent captions read</small>{/if}</div>
 			{#if h.safety?.flags?.length}
 				<ul>
-					{#each h.safety.flags as f (f.post.id + f.kind)}
+					{#each safetyGroups(h.safety) as g (g.kind)}
 						<li>
-							<span class="hc-sev {f.severity}">{f.severity === 'high' ? 'Serious' : f.severity === 'medium' ? 'Check' : 'Minor'}</span>
-							<div><b>{f.label}</b>{#if f.why}<small>{f.why}</small>{/if}</div>
-							{#if f.post.permalink}<a href={f.post.permalink} target="_blank" rel="noopener">The post<Icon name="arrow" /></a>{/if}
+							<span class="hc-sev {g.severity}">{g.severity === 'high' ? 'Serious' : g.severity === 'medium' ? 'Check' : 'Minor'}</span>
+							<div>
+								<b>{g.label}{g.posts.length > 1 ? ` · ${g.posts.length} posts` : ''}</b>
+								{#if g.why}<small>{g.posts.length > 1 ? 'e.g. ' : ''}{g.why}</small>{/if}
+								<span class="hc-posts">{#each g.posts.slice(0, 3) as p, i (p.id)}{#if p.permalink}<a href={p.permalink} target="_blank" rel="noopener">{g.posts.length > 1 ? `Post ${i + 1}` : 'The post'}<Icon name="arrow" /></a>{/if}{/each}</span>
+							</div>
 						</li>
 					{/each}
 				</ul>
@@ -80,10 +83,15 @@
 		gap: 12px;
 		min-width: 0;
 	}
-	.hc-list li,
-	.hc-safe li {
+	.hc-list li {
 		display: grid;
 		grid-template-columns: auto minmax(0, 1fr) auto;
+		gap: 10px;
+		align-items: start;
+	}
+	.hc-safe li {
+		display: grid;
+		grid-template-columns: auto minmax(0, 1fr);
 		gap: 10px;
 		align-items: start;
 	}
@@ -192,6 +200,12 @@
 	.hc-sev.low {
 		background: color-mix(in oklab, var(--ink) 8%, transparent);
 		color: var(--ink-2);
+	}
+	.hc-posts {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 4px 14px;
+		margin-top: 4px;
 	}
 	.hc-safe a {
 		display: inline-flex;

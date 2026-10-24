@@ -764,16 +764,30 @@ async function safety(x: Run, b: Record<string, unknown>) {
 		x,
 		`You check an Indian Instagram creator's recent post captions for a brand that wants to book her. Return ONLY JSON:
 {"flags": [{"id": "post id", "kind": one of ${KINDS.map((k) => `"${k}"`).join(', ')}, "why": "under 15 words, what in the caption"}]}
-Kinds: betting = betting, satta, casinos, real-money or fantasy gaming apps; adult = sexual or explicit content; hate = abuse or hate against a group or person; alcohol_tobacco = advertising an alcohol, cigarette, vape or gutka brand, or pushing people to drink or smoke (a drink emoji, a pub or a night out is fine); health_claims = cure, guaranteed weight loss or medical claims; money_schemes = crypto tips, trading signals, get-rich schemes; politics_religion = attacking a party, leader or religion (not festivals or prayers); strong_language = swearing; unlabelled_ad = clearly promoting a brand, product or discount code with no #ad, #collab, #sponsored or paid partnership mention.
+Kinds: betting = betting, satta, casinos, real-money or fantasy gaming apps; adult = sexual or explicit content; hate = abuse or hate against a group or person; alcohol_tobacco = drinking alcohol, smoking or vaping shown or promoted (some family brands avoid this); health_claims = cure, guaranteed weight loss or medical claims; money_schemes = crypto tips, trading signals, get-rich schemes; politics_religion = attacking a political party, a leader or a religion, or communal content (festivals like Diwali, Ganesh Chaturthi, Janmashtami, Eid, Christmas, Onam or Varamahalakshmi, Independence Day, prayers, temples and pujas are NEVER this); strong_language = swearing; unlabelled_ad = clearly promoting a brand, product or discount code with no #ad, #collab, #sponsored or paid partnership mention.
 Rules: flag only what the caption clearly says, never guess. Festivals, food, fitness, fashion, travel, normal opinions and mild slang are fine. Most creators have no flags: then return {"flags": []}. Never flag a post twice for the same kind.`,
 		JSON.stringify({ posts: posts.map((p) => ({ id: String(p.id), caption: String(p.caption ?? '').slice(0, 300) })) }),
 		900
 	);
 	const j = firstJson(reply) ?? {};
-	const ids = new Set(posts.map((p) => String(p.id)));
+	const byId = new Map(posts.map((p) => [String(p.id), String(p.caption ?? '')]));
+	// The model over-flags (festivals as religion, every cocktail as an alcohol ad): a flag only stands
+	// when the caption itself has words of that kind.
+	const CUES: Record<string, RegExp> = {
+		betting: /\b(bet|bets|betting|casino|rummy|poker|satta|teen ?patti|fantasy|dream ?11|real money|aviator|lottery|jackpot|win(ning)? ₹|cash prize)/i,
+		adult: /\b(nsfw|18\+|nude|naked|onlyfans|explicit|porn|xxx|sex)/i,
+		hate: /\b(hate|kill|terrorist|traitor|go back|scum|filthy|anti-?national|jihadi|sanghi|bhakt|libtard|chamcha)/i,
+		alcohol_tobacco: /\b(beer|wine|whisk(e)?y|vodka|rum|gin|tequila|cocktail|brewery|liquor|alcohol|cigarette|smok|vape|vaping|hookah|gutka|tobacco)/i,
+		health_claims: /\b(cure|cures|cured|guarantee|guaranteed|lose \d+|\d+ ?kg|weight ?loss|fat ?burn|detox|miracle|doctor|medicine|reverse|heal)/i,
+		money_schemes: /\b(crypto|bitcoin|trading|forex|signals?|stock tips|passive income|double your|investment plan|f&o|options|earn ₹|earn rs|get rich)/i,
+		politics_religion: /\b(bjp|congress|aap|modi|rahul|kejriwal|yogi|election|vote|voting|minister|party|protest|riot|propaganda|hindutva|jihad|communal|secular|pakistan|khalistan|bhakt|sanghi)/i,
+		strong_language: /(f\*+k|f\*ck|fuck|shit|bitch|\bbc\b|\bmc\b|chutiya|bsdk|\bwtf\b|bloody|madarchod|behenchod)/i,
+		unlabelled_ad: /(\bcode\b|discount|% ?off|link in (my )?bio|use my|\bshop\b|buy now|available (on|at)|order now)/i
+	};
+	const AD = /#(ad|collab|sponsored|paidpartnership|partner)\b|paid partnership/i;
 	const flags = (Array.isArray(j.flags) ? (j.flags as Record<string, unknown>[]) : [])
 		.map((f) => ({ id: String(f.id ?? ''), kind: String(f.kind ?? ''), why: String(f.why ?? '').trim().slice(0, 160) }))
-		.filter((f) => ids.has(f.id) && KINDS.includes(f.kind))
+		.filter((f) => byId.has(f.id) && KINDS.includes(f.kind) && CUES[f.kind].test(byId.get(f.id)!) && !(f.kind === 'unlabelled_ad' && AD.test(byId.get(f.id)!)))
 		.slice(0, 20);
 	return { flags };
 }
