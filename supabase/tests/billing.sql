@@ -104,6 +104,23 @@ insert into results select 'Paid: she is on Creator Pro for a year', private.pla
   and (select ends_at > now() + interval '364 days' from public.billing_subscriptions where gateway_id = 'sub_TEST1'), :'e1';
 insert into results select 'The payment is recorded with an invoice number and GST', (select amount = 1499 and gst = 228.66 and invoice_no like 'MIR/%' from public.billing_payments where gateway_payment_id = 'pay_TEST1'), (select row_to_json(y)::text from public.billing_payments y where gateway_payment_id = 'pay_TEST1');
 insert into results select 'A receipt email goes out from Miracle', exists (select 1 from public.outbox where kind = 'plan_receipt' and to_email = 'bill@test.dev' and creator_id is null), null;
+-- Invoices (migration 157): without the seller's GSTIN it's a plain invoice; with it, a tax invoice.
+select token as tok1, invoice as inv1 from public.billing_payments where gateway_payment_id = 'pay_TEST1' \gset
+insert into results select 'Each payment keeps its invoice, with the buyer and the period', :'inv1'::jsonb ->> 'number' like 'MIR/%' and :'inv1'::jsonb -> 'buyer' ->> 'name' = 'Bill T' and :'inv1'::jsonb -> 'item' ->> 'to' is not null, :'inv1';
+insert into results select 'No seller GSTIN yet: a plain invoice, no GST lines', :'inv1'::jsonb ->> 'title' = 'Invoice' and (:'inv1'::jsonb ->> 'taxable')::numeric = 1499, null;
+insert into results select 'The receipt carries the invoice link', (select payload ->> 'token' = :'tok1' and payload -> 'invoice' ->> 'number' is not null from public.outbox where kind = 'plan_receipt' and to_email = 'bill@test.dev' limit 1), null;
+set local role anon;
+select public.plan_invoice(:'tok1') as pub \gset
+select public.plan_invoice('short') is null as short_null \gset
+reset role;
+insert into results select 'Anyone with the link sees the invoice (no sign-in)', :'pub'::jsonb ->> 'number' = :'inv1'::jsonb ->> 'number', null;
+insert into results select 'A guessed short link sees nothing', :'short_null'::boolean, null;
+update public.billing_settings set seller = seller || '{"gstin": "29ABCDE1234F1Z5"}' where id = 1;
+update public.creator_settings set state = 'Karnataka' where id = :cid;
+insert into results select 'Same state: CGST and SGST, 18% inside the price', (select x ->> 'title' = 'Tax invoice' and (x ->> 'taxable')::numeric = 1270.34 and (x ->> 'cgst')::numeric + (x ->> 'sgst')::numeric = 228.66 and (x ->> 'igst')::numeric = 0
+  from (select private.plan_invoice_build(id) as x from public.billing_payments where gateway_payment_id = 'pay_TEST1') q), (select private.plan_invoice_build(id)::text from public.billing_payments where gateway_payment_id = 'pay_TEST1');
+update public.creator_settings set state = 'Maharashtra' where id = :cid;
+insert into results select 'Another state: IGST', (select (x ->> 'igst')::numeric = 228.66 and (x ->> 'cgst')::numeric = 0 from (select private.plan_invoice_build(id) as x from public.billing_payments where gateway_payment_id = 'pay_TEST1') q), null;
 insert into results select 'One founding place is used', (select founding_left from public.billing_settings) = :fl0 - 1, null;
 select public.billing_event(jsonb_build_object('event', 'subscription.charged', 'subscription_id', 'sub_TEST1', 'payment_id', 'pay_TEST1', 'amount', 149900,
   'current_end', extract(epoch from now() + interval '1 year')::bigint)) as e2 \gset
@@ -173,9 +190,11 @@ insert into results select '... but not a client team that hasn''t paid', privat
 -- ================================================================== 7. Admin only
 set local role authenticated;
 do $$ begin perform public.admin_billing(); exception when others then insert into caught values ('admin', sqlerrm); end $$;
+do $$ begin perform public.admin_billing_invoices(); exception when others then insert into caught values ('admin-inv', sqlerrm); end $$;
 do $$ begin perform public.billing_event('{}'); exception when others then insert into caught values ('event', sqlerrm); end $$;
 reset role;
 insert into results select 'Only admins see billing', exists (select 1 from caught where k = 'admin'), null;
+insert into results select 'Only admins see the invoice register', exists (select 1 from caught where k = 'admin-inv'), null;
 insert into results select 'Nobody signed in can post a Razorpay event', exists (select 1 from caught where k = 'event'), (select msg from caught where k = 'event');
 insert into results select 'Nobody reads the billing tables directly', not has_table_privilege('authenticated', 'public.billing_subscriptions', 'select') and not has_table_privilege('authenticated', 'public.billing_payments', 'select'), null;
 

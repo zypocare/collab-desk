@@ -584,21 +584,36 @@ ${ok ? url(s, '/') : studio()}`,
     const day = (v: unknown) => (v ? new Date(String(v)).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Asia/Kolkata' }) : '');
     const plan = String(p.plan ?? 'Pro');
     if (kind === 'plan_receipt') {
-      const amount = Number(p.amount) || 0, gst = Number(p.gst) || 0;
+      const amount = Number(p.amount) || 0;
+      const inv = (p.invoice ?? {}) as { title?: string; number?: string; taxable?: number; cgst?: number; sgst?: number; igst?: number; gst_charged?: boolean; gst_rate?: number;
+        buyer?: { name?: string; gstin?: string }; item?: { description?: string; from?: string; to?: string; sac?: string }; seller?: { legal_name?: string; gstin?: string }; place_of_supply?: string };
+      const rs = (n: unknown) => '₹' + (Number(n) || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      const bill = p.token ? url(s, `/bill/${encodeURIComponent(String(p.token))}`) : planLink;
+      const row = (k: string, v: string, b = false) => `<tr><td style="padding:6px 0;color:#6b6168">${esc(k)}</td><td style="padding:6px 0;text-align:right${b ? ';font-weight:700;color:#1f171c' : ''}">${v}</td></tr>`;
+      const tax = inv.gst_charged
+        ? (Number(inv.igst) ? row(`IGST @ ${inv.gst_rate ?? 18}%`, rs(inv.igst)) : row(`CGST @ ${(inv.gst_rate ?? 18) / 2}%`, rs(inv.cgst)) + row(`SGST @ ${(inv.gst_rate ?? 18) / 2}%`, rs(inv.sgst)))
+        : '';
+      const table = `<table role="presentation" width="100%" style="border-collapse:collapse;font-size:14px;margin:4px 0 16px">
+        ${row(inv.title ?? 'Invoice', esc(String(inv.number ?? p.invoice_no ?? '')), true)}
+        ${row('Billed to', esc(String(inv.buyer?.name ?? '')) + (inv.buyer?.gstin ? `<br><span style="color:#6b6168">GSTIN ${esc(inv.buyer.gstin)}</span>` : ''))}
+        ${row(String(inv.item?.description ?? plan), `${esc(day(inv.item?.from))} to ${esc(day(inv.item?.to))}`)}
+        ${row('Taxable value', rs(inv.taxable ?? amount))}${tax}
+        ${row('Total paid', rs(amount), true)}
+      </table>`;
       return {
-        subject: p.first ? `Welcome to ${plan}` : `Payment received: ${plan}`,
+        subject: p.first ? `Welcome to ${plan}: your invoice ${String(inv.number ?? p.invoice_no ?? '')}` : `Payment received: ${plan} (invoice ${String(inv.number ?? p.invoice_no ?? '')})`,
         html: layout(
           s,
           p.first ? `You're on ${plan}` : `Thanks, ${plan} is renewed`,
-          `${P(`We received <b>₹${amount.toLocaleString('en-IN')}</b> for ${esc(plan)} (${p.period === 'year' ? 'yearly' : 'monthly'}). It's active until <b>${esc(day(p.until))}</b>${p.first ? ' and renews by itself; you can stop renewal any time in Plan & billing' : ''}.`)}
-           ${P(`Invoice ${esc(String(p.invoice_no ?? ''))} · ₹${(amount - gst).toFixed(2)} + GST 18% ₹${gst.toFixed(2)} · Zyposoft Technologies Private Limited.`)}`,
-          { label: 'Plan & billing', href: planLink },
-          { to: 'app', why: 'you bought a Miracle plan', preheader: `₹${amount} received for ${plan}` },
+          `${P(`We received your payment. ${esc(plan)} is active until <b>${esc(day(p.until))}</b>${p.first ? ' and renews by itself; you can stop renewal any time in Plan & billing' : ''}.`)}
+           ${table}
+           ${P(`Your ${inv.gst_charged ? 'GST tax invoice' : 'invoice'} is attached as a PDF, and you can open it any time from the button below or from Plan & billing.`)}`,
+          { label: 'View or download the invoice', href: bill },
+          { to: 'app', why: 'you bought a Miracle plan', preheader: `₹${amount.toLocaleString('en-IN')} received for ${plan}` },
         ),
         text: `We received ₹${amount} for ${plan}. Active until ${day(p.until)}.
-Invoice ${p.invoice_no}: ₹${(amount - gst).toFixed(2)} + GST 18% ₹${gst.toFixed(2)}.
-
-Plan & billing: ${planLink}`,
+${inv.title ?? 'Invoice'} ${inv.number ?? p.invoice_no}: taxable ${rs(inv.taxable ?? amount)}${inv.gst_charged ? `, GST ${rs((Number(inv.cgst) || 0) + (Number(inv.sgst) || 0) + (Number(inv.igst) || 0))}` : ''}, total ${rs(amount)}.
+The invoice is attached; view it any time: ${bill}`,
       };
     }
     if (kind === 'plan_ending') {

@@ -7,6 +7,7 @@ import { render, type Settings as MailSettings } from '../_shared/templates.ts';
 import { pushFor, pushForBrand, pushToBrandUser, pushToCreator } from '../_shared/push.ts';
 import { settingsOf, teamCopies, type Settings } from '../_shared/creators.ts';
 import { reportProblem } from '../_shared/problems.ts';
+import { planInvoicePdf, type PlanInvoice } from '../_shared/planInvoicePdf.ts';
 
 // Alerts only: a brand opening her insights link.
 const PUSH_ONLY = new Set(['insights_viewed', 'ig_dm', 'ig_collab', 'month_summary', 'comment_dm']);
@@ -119,6 +120,10 @@ Deno.serve(async (req) => {
     }
     try {
       const mail = render(row.kind, row.payload ?? {}, settings);
+      // A plan payment's receipt carries its GST invoice as a PDF.
+      const attachments = row.kind === 'plan_receipt' && p.invoice ? await planInvoicePdf(p.invoice as PlanInvoice, Deno.env.get('APP_URL') ?? 'https://app.miracleapp.live')
+          .then((pdf) => [{ filename: `Miracle invoice ${String(p.invoice_no ?? '').replace(/[^A-Za-z0-9-]+/g, '-')}.pdf`, content: pdf }])
+          .catch((e) => (console.error('[invoice pdf]', e), undefined)) : undefined;
       if (!mailConfigured) {
         console.log(`[outbox] SMTP not configured, skipping #${row.id} to ${row.to_email}: ${mail.subject}`);
         await supabase.from('outbox').update({ status: 'skipped', last_error: 'SMTP not configured' }).eq('id', row.id);
@@ -129,6 +134,7 @@ Deno.serve(async (req) => {
       // (not the open-brief mails to a brand: those are from the app, not from the creator who applied).
       const toOwner = String(row.to_email).toLowerCase() === ownerEmail;
       await sendMail({
+        attachments,
         to: row.to_email,
         cc: toOwner && row.kind !== 'new_device' && !row.kind.startsWith('support_') ? teamCc : undefined,
         ...mail,

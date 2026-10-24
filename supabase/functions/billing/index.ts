@@ -4,7 +4,8 @@
 //   { action: 'cancel', agency? } -> stop renewing; the plan lasts to the end of what's paid
 // Who may buy for which account, and the price, come from the database (billing_intent), as the buyer.
 import { admin } from '../_shared/admin.ts';
-import { hmacHex, razorpayKeyId, razorpayReady, rzp, sameSig, type RzpSubscription } from '../_shared/razorpay.ts';
+import { reportProblem } from '../_shared/problems.ts';
+import { hmacHex, RazorpayError, razorpayKeyId, razorpayReady, rzp, sameSig, type RzpSubscription } from '../_shared/razorpay.ts';
 
 const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-creator' };
 const reply = (body: unknown, status = 200) => Response.json(body, { status, headers: cors });
@@ -86,6 +87,13 @@ Deno.serve(async (req) => {
     }
     return reply({ error: 'Unknown action.' }, 400);
   } catch (e) {
-    return reply({ error: e instanceof Error ? e.message : String(e) }, 400);
+    const msg = e instanceof Error ? e.message : String(e);
+    // Razorpay refusing our own keys or account (not anything the buyer did): tell the buyer plainly, and
+    // put the real reason in the admin's problems list.
+    if (e instanceof RazorpayError) {
+      await reportProblem(db, 'server', `Razorpay: ${msg}`, `billing ${String(body.action ?? '')}`);
+      return reply({ error: 'Payments are temporarily unavailable. Please try again in a little while.' }, 503);
+    }
+    return reply({ error: msg }, 400);
   }
 });

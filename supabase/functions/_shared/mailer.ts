@@ -4,7 +4,7 @@
 // A second account (SMTP2_*) is a backup: when the main one fails or hits its limit, the mail goes through it.
 import nodemailer from 'npm:nodemailer@6.9.16';
 
-export type Mail = { to: string; cc?: string[]; subject: string; html: string; text: string; replyTo?: string; fromName?: string; /** Extra headers, like List-Unsubscribe on a creator's emails to her list. */ headers?: Record<string, string> };
+export type Mail = { to: string; cc?: string[]; subject: string; html: string; text: string; replyTo?: string; fromName?: string; /** Extra headers, like List-Unsubscribe on a creator's emails to her list. */ headers?: Record<string, string>; /** Files sent with it (a PDF invoice). */ attachments?: { filename: string; content: Uint8Array; contentType?: string }[] };
 
 type Sender = { label: string; transport: ReturnType<typeof nodemailer.createTransport>; fromAddress: string; fromName: string };
 
@@ -38,6 +38,7 @@ export async function sendMail(mail: Mail): Promise<void> {
         cc: mail.cc?.length ? mail.cc : undefined,
         replyTo: mail.replyTo || undefined,
         headers: mail.headers,
+        attachments: mail.attachments?.map((a) => ({ filename: a.filename, content: a.content, contentType: a.contentType ?? 'application/pdf' })),
         subject: mail.subject,
         html: mail.html,
         text: mail.text,

@@ -174,7 +174,7 @@
 			<div class="panel-h"><h2>Payments</h2><small>GST invoices from Zyposoft Technologies</small></div>
 			<ul class="pb-pay">
 				{#each p.payments as y (y.id)}
-					<li><span><b>{y.invoice_no}</b><small>{day(y.paid_at)} · {y.period === 'year' ? 'yearly' : 'monthly'}</small></span><b class="num">{inr(y.amount)}</b></li>
+					<li><span><b>{y.invoice_no}</b><small>{day(y.paid_at)} · {y.period === 'year' ? 'yearly' : 'monthly'}</small></span><span class="pb-amt"><b class="num">{inr(y.amount)}</b>{#if y.token}<a class="btn sm ghost" href="/bill/{y.token}" target="_blank" rel="noopener"><Icon name="arrow" />Invoice</a>{/if}</span></li>
 				{/each}
 			</ul>
 		</section>
@@ -383,6 +383,11 @@
 	}
 	.pb-pay li span {
 		display: grid;
+	}
+	.pb-amt {
+		display: flex !important;
+		align-items: center;
+		gap: 10px;
 	}
 	.pb-pay small {
 		font-size: 12px;

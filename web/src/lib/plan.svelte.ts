@@ -40,7 +40,7 @@ export type MyPlan = PlanState & {
 	catalog: PlanInfo[];
 	offer: { on: boolean; left: number };
 	agency: PlanState;
-	payments: { id: string; amount: number; gst: number; invoice_no: string; paid_at: string; plan: string; period: string }[];
+	payments: { id: string; amount: number; gst: number; invoice_no: string; paid_at: string; plan: string; period: string; token?: string }[];
 };
 
 export const plan = $state<{ data: MyPlan | null; loaded: boolean }>({ data: null, loaded: false });

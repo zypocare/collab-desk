@@ -1,6 +1,13 @@
 // Razorpay, for Miracle's own plans (never for money between brands and creators).
 // Keys come from the server's secrets: RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET and RAZORPAY_WEBHOOK_SECRET.
 
+/** An error from Razorpay's API (wrong keys, account not activated, bad request), not from the buyer. */
+export class RazorpayError extends Error {
+  constructor(message: string, readonly status: number) {
+    super(message);
+  }
+}
+
 export const razorpayReady = () => !!Deno.env.get('RAZORPAY_KEY_ID') && !!Deno.env.get('RAZORPAY_KEY_SECRET');
 export const razorpayKeyId = () => Deno.env.get('RAZORPAY_KEY_ID') ?? '';
 
@@ -13,7 +20,7 @@ export async function rzp<T>(path: string, body?: unknown, method = body === und
     body: body === undefined ? undefined : JSON.stringify(body),
   });
   const j = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(String((j as { error?: { description?: string } }).error?.description ?? `Razorpay said ${r.status}`));
+  if (!r.ok) throw new RazorpayError(String((j as { error?: { description?: string } }).error?.description ?? `Razorpay said ${r.status}`), r.status);
   return j as T;
 }
 
