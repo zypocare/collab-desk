@@ -9,9 +9,11 @@
 	import CreatorPage from './crm/CreatorPage.svelte';
 	import BrandLoginPage from './crm/BrandLoginPage.svelte';
 	import WorkspacePage from './crm/WorkspacePage.svelte';
+	import CollabPage from './crm/CollabPage.svelte';
+	import BrandPage from './crm/BrandPage.svelte';
+	import CampaignPage from './crm/CampaignPage.svelte';
 	import Palette from './crm/Palette.svelte';
 	import { LISTS } from './crm/lists.ts';
-	import BrandsTab from './BrandsTab.svelte';
 	import ProblemsTab from './ProblemsTab.svelte';
 	import SafetyTab from './SafetyTab.svelte';
 	import SupportTab from './SupportTab.svelte';
@@ -32,7 +34,22 @@
 				{ id: 'workspaces', label: 'Brand workspaces', icon: 'building' }
 			]
 		},
-		{ label: 'Deals', items: [{ id: 'brands', label: 'Brands', icon: 'board' }] },
+		{
+			label: 'Deals',
+			items: [
+				{ id: 'brands', label: 'Brands', icon: 'board' },
+				{ id: 'collabs', label: 'Collabs', icon: 'spark' },
+				{ id: 'quotes', label: 'Quotes', icon: 'note' },
+				{ id: 'invoices', label: 'Invoices', icon: 'rupee' },
+				{ id: 'payments', label: 'Payments', icon: 'check' },
+				{ id: 'drafts', label: 'Drafts', icon: 'inbox' },
+				{ id: 'posts', label: 'Scheduled posts', icon: 'clock' },
+				{ id: 'campaigns', label: 'Campaigns', icon: 'send' },
+				{ id: 'pools', label: 'Pools', icon: 'users' },
+				{ id: 'retainers', label: 'Retainers', icon: 'refresh' },
+				{ id: 'pitches', label: 'Pitches', icon: 'mail' }
+			]
+		},
 		{
 			label: 'Trust',
 			items: [
@@ -44,7 +61,7 @@
 		{ label: 'System', items: [{ id: 'audit', label: 'Audit trail', icon: 'list' }] }
 	];
 	const screens = NAV.flatMap((g) => g.items.map((i) => ({ label: i.label, href: href(i.id) })));
-	const LEGACY: Record<string, [string, string]> = { brands: ['Deals', 'Brands'], support: ['Trust', 'Support'], safety: ['Trust', 'Safety'], problems: ['Trust', 'Problems'] };
+	const LEGACY: Record<string, [string, string]> = { support: ['Trust', 'Support'], safety: ['Trust', 'Safety'], problems: ['Trust', 'Problems'] };
 
 	let queue = $state<Record<string, number>>({});
 	async function loadQueue() {
@@ -70,7 +87,7 @@
 		menu = false;
 	});
 	const isMac = typeof navigator !== 'undefined' && /mac|iphone|ipad/i.test(navigator.platform);
-	const current = $derived(route.section === 'signups' || route.section === 'creators' ? (route.section === 'creators' && route.id ? 'creators' : route.section) : route.section);
+	const current = $derived(route.section);
 </script>
 
 <svelte:window onkeydown={onKey} />
@@ -118,14 +135,19 @@
 				<BrandLoginPage id={route.id} />
 			{:else if route.section === 'workspaces' && route.id}
 				<WorkspacePage id={route.id} />
+			{:else if route.section === 'collabs' && route.id}
+				<CollabPage id={route.id} />
+			{:else if route.section === 'brands' && route.id}
+				<BrandPage id={route.id} />
+			{:else if route.section === 'campaigns' && route.id}
+				<CampaignPage id={route.id} />
 			{:else if LISTS[route.section]}
 				{#key route.section}<ListView config={LISTS[route.section]} onchange={loadQueue} />{/key}
 			{:else if LEGACY[route.section]}
 				<header class="lh"><div class="eb">{LEGACY[route.section][0]}</div><h1>{LEGACY[route.section][1]}</h1></header>
 				{#if route.section === 'support'}<SupportTab onload={(n) => (queue = { ...queue, support_unread: n })} />
 				{:else if route.section === 'safety'}<SafetyTab onload={(s) => (queue = { ...queue, safety: s.targets.filter((t) => t.open).length })} />
-				{:else if route.section === 'problems'}<ProblemsTab onload={(p) => (queue = { ...queue, problems_new: p.new_today })} />
-				{:else}<BrandsTab />{/if}
+				{:else}<ProblemsTab onload={(p) => (queue = { ...queue, problems_new: p.new_today })} />{/if}
 			{:else}
 				<div class="card card-empty">This page doesn't exist. <a href={href('dashboard')}>Go to the dashboard</a></div>
 			{/if}

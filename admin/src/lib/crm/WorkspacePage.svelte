@@ -182,7 +182,7 @@
 					{#if !w.campaigns.length}<div class="card-empty">No campaigns.</div>{:else}
 						<table class="tbl">
 							<thead><tr><th>Name</th><th>Status</th><th class="r">Budget</th><th class="r">Creators</th><th class="r">Applications</th></tr></thead>
-							<tbody>{#each w.campaigns as k (k.id)}<tr><td class="w5">{k.name}</td><td><span class="tag {k.open ? 't-ok' : k.status === 'sent' ? 't-info' : 't-mute'}">{k.open ? 'Open brief' : label(k.status)}</span></td><td class="r mono">{inrShort(k.budget)}</td><td class="r mono">{num(k.creators)}</td><td class="r mono">{num(k.applications)}</td></tr>{/each}</tbody>
+							<tbody>{#each w.campaigns as k (k.id)}<tr><td><a class="w5" href={href('campaigns', k.id)}>{k.name}</a></td><td><span class="tag {k.open ? 't-ok' : k.status === 'sent' ? 't-info' : 't-mute'}">{k.open ? 'Open brief' : label(k.status)}</span></td><td class="r mono">{inrShort(k.budget)}</td><td class="r mono">{num(k.creators)}</td><td class="r mono">{num(k.applications)}</td></tr>{/each}</tbody>
 						</table>
 					{/if}
 				</section>

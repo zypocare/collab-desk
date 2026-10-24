@@ -3,7 +3,7 @@
 import { errMessage, supabase } from '../supabase.ts';
 import { ask, askText, toast } from '../ui.svelte.ts';
 import { href } from '../router.svelte.ts';
-import { STATUS_LABEL, STATUS_TAG, label } from '../format.ts';
+import { STAGE_LABEL, STAGE_TAG, STATUS_LABEL, STATUS_TAG, label } from '../format.ts';
 
 export type Row = Record<string, any>;
 export type Col = {
@@ -93,6 +93,323 @@ const creatorCols: Col[] = [
 	{ key: 'last_active', label: 'Last active', type: 'ago' },
 	{ key: 'joined', label: 'Joined', type: 'day' }
 ];
+
+// An action that asks why (for the audit trail), calls one admin function per row, and says how it went.
+function withReason(title: string, body: string, ok: string, fn: string, args: (r: Row, reason: string) => Record<string, unknown>, done: string, danger = true) {
+	return async (rows: Row[]) => {
+		const reason = await askText({ title: rows.length > 1 ? `${title} (${rows.length})` : title, body, ok, danger, input: { label: 'Why (for the audit trail)', required: true } });
+		if (reason === null) return false;
+		let n = 0;
+		for (const r of rows) {
+			const { error } = await supabase.rpc(fn, args(r, reason));
+			if (error) toast(errMessage(error), true);
+			else n++;
+		}
+		if (n) toast(done);
+		return n > 0;
+	};
+}
+const stage = (v: string): [string, string] => [STAGE_LABEL[v] ?? label(v), STAGE_TAG[v] ?? 't-mute'];
+const plain = (map: Record<string, string>) => (v: string): [string, string] => [label(v), map[v] ?? 't-mute'];
+const collabLink = (r: Row) => (r.collab_id ? href('collabs', r.collab_id) : null);
+const creatorLink = (r: Row) => (r.creator_id ? href('creators', r.creator_id) : null);
+const STAGES = ['request', 'negotiating', 'confirmed', 'creating', 'live', 'wrapped', 'paused', 'cancelled', 'declined'];
+const PAY = ['pending', 'advance', 'invoiced', 'paid', 'na'];
+const INVOICE_TAG: Record<string, string> = { paid: 't-ok', partly_paid: 't-warn', sent: 't-info', draft: 't-mute', cancelled: 't-bad' };
+const QUOTE_TAG: Record<string, string> = { accepted: 't-ok', sent: 't-info', changes: 't-warn', declined: 't-bad', draft: 't-mute', expired: 't-mute' };
+const POST_TAG: Record<string, string> = { scheduled: 't-info', publishing: 't-acc', published: 't-ok', failed: 't-bad', cancelled: 't-mute', on_hold: 't-warn' };
+const DRAFT_TAG: Record<string, string> = { pending: 't-warn', approved: 't-ok', changes: 't-bad', draft: 't-mute' };
+
+const DEALS: Record<string, ListConfig> = {
+	brands: {
+		id: 'brands', kind: 'brands', group: 'Deals', title: 'Brands', noun: 'brand', search: 'Brand, category, creator, Instagram, email',
+		presets: [
+			{ id: 'all', label: 'All', filters: {} },
+			{ id: 'active', label: 'With open collabs', filters: { 'open:gte': 1 } },
+			{ id: 'paid', label: 'Have paid', filters: { 'paid:gte': 1 } },
+			{ id: 'logins', label: 'With a brand login', filters: { 'logins:gte': 1 } },
+			{ id: 'none', label: 'No collabs', filters: { collabs: 0 } }
+		],
+		filters: [{ key: 'gst', label: 'GSTIN', options: [{ label: 'On file', value: true }, { label: 'Missing', value: false }] }, DAYS('created', 'Added')],
+		columns: [
+			{ key: 'name', label: 'Brand', sub: 'category' },
+			{ key: 'creator', label: 'In studio of', link: creatorLink },
+			{ key: 'collabs', label: 'Collabs', type: 'num' },
+			{ key: 'open', label: 'Open', type: 'num' },
+			{ key: 'paid', label: 'Paid', type: 'money' },
+			{ key: 'logins', label: 'Logins', type: 'num' },
+			{ key: 'last_collab', label: 'Last collab', type: 'ago' },
+			{ key: 'created', label: 'Added', type: 'day' }
+		],
+		sort: 'created',
+		href: (r) => href('brands', r.id)
+	},
+	collabs: {
+		id: 'collabs', kind: 'collabs', group: 'Deals', title: 'Collabs', noun: 'collab', search: 'Code, brand, creator, contact email, product',
+		presets: [
+			{ id: 'all', label: 'All', filters: {} },
+			{ id: 'open', label: 'Open', filters: { stage: ['request', 'negotiating', 'confirmed', 'creating', 'live'] } },
+			{ id: 'requests', label: 'New requests', filters: { stage: 'request' } },
+			{ id: 'unpaid', label: 'Live, not paid', filters: { stage: ['live', 'wrapped'], pay: ['pending', 'advance', 'invoiced'] } },
+			{ id: 'held', label: 'Paused or cancelled', filters: { stage: ['paused', 'cancelled'] } }
+		],
+		filters: [
+			{ key: 'stage', label: 'Stage', options: STAGES.map((v) => ({ label: STAGE_LABEL[v], value: v })) },
+			{ key: 'pay', label: 'Pay', options: PAY.map((v) => ({ label: label(v), value: v })) },
+			{ key: 'type', label: 'Type', options: ['paid', 'barter', 'hybrid'].map((v) => ({ label: label(v), value: v })) },
+			{ key: 'source', label: 'Came from', options: ['brand_page', 'manual', 'email', 'retainer'].map((v) => ({ label: label(v), value: v })) },
+			DAYS('created', 'Started')
+		],
+		columns: [
+			{ key: 'code', label: 'Collab', type: 'mono' },
+			{ key: 'brand', label: 'Brand', link: (r) => (r.brand_id ? href('brands', r.brand_id) : null) },
+			{ key: 'creator', label: 'Creator', link: creatorLink },
+			{ key: 'stage', label: 'Stage', type: 'tag', tag: stage },
+			{ key: 'pay', label: 'Pay', type: 'tag', tag: plain({ paid: 't-ok', advance: 't-info', invoiced: 't-warn' }) },
+			{ key: 'fee', label: 'Fee', type: 'money' },
+			{ key: 'received', label: 'Received', type: 'money' },
+			{ key: 'messages', label: 'Messages', type: 'num' },
+			{ key: 'live', label: 'Live date', type: 'day' },
+			{ key: 'updated', label: 'Updated', type: 'ago' },
+			{ key: 'created', label: 'Started', type: 'day' }
+		],
+		sort: 'created',
+		href: (r) => href('collabs', r.id)
+	},
+	quotes: {
+		id: 'quotes', kind: 'quotes', group: 'Deals', title: 'Quotes', noun: 'quote', search: 'Collab, brand, creator, who accepted',
+		presets: [
+			{ id: 'all', label: 'All', filters: {} },
+			{ id: 'sent', label: 'Waiting on brand', filters: { status: 'sent' } },
+			{ id: 'accepted', label: 'Accepted', filters: { status: 'accepted' } },
+			{ id: 'changes', label: 'Changes asked', filters: { status: 'changes' } }
+		],
+		filters: [{ key: 'status', label: 'Status', options: Object.keys(QUOTE_TAG).map((v) => ({ label: label(v), value: v })) }, DAYS('created', 'Made')],
+		columns: [
+			{ key: 'code', label: 'Collab', type: 'mono', text: (r) => `${r.code} v${r.version}` },
+			{ key: 'brand', label: 'Brand' },
+			{ key: 'creator', label: 'Creator', link: creatorLink },
+			{ key: 'total', label: 'Total', type: 'money' },
+			{ key: 'status', label: 'Status', type: 'tag', tag: plain(QUOTE_TAG) },
+			{ key: 'advance_pct', label: 'Advance', text: (r) => (r.advance_pct ? r.advance_pct + '%' : '—') },
+			{ key: 'sent_at', label: 'Sent', type: 'ago' },
+			{ key: 'responded_at', label: 'Answered', type: 'ago' },
+			{ key: 'accepted_by', label: 'Accepted by', text: (r) => r.accepted_by || '—' }
+		],
+		sort: 'created',
+		href: collabLink
+	},
+	invoices: {
+		id: 'invoices', kind: 'invoices', group: 'Deals', title: 'Invoices', noun: 'invoice', search: 'Invoice number, collab, brand, creator, billed email',
+		presets: [
+			{ id: 'all', label: 'All', filters: {} },
+			{ id: 'open', label: 'Waiting to be paid', filters: { status: ['sent', 'partly_paid'] } },
+			{ id: 'overdue', label: 'Overdue', filters: { overdue: true } },
+			{ id: 'paid', label: 'Paid', filters: { status: 'paid' } },
+			{ id: 'noremind', label: 'Reminders off', filters: { reminders: false, status: ['sent', 'partly_paid'] } }
+		],
+		filters: [
+			{ key: 'status', label: 'Status', options: Object.keys(INVOICE_TAG).map((v) => ({ label: label(v), value: v })) },
+			{ key: 'kind', label: 'Kind', options: ['advance', 'balance', 'full'].map((v) => ({ label: label(v), value: v })) },
+			DAYS('created', 'Made')
+		],
+		columns: [
+			{ key: 'number', label: 'Invoice', type: 'mono', sub: 'code' },
+			{ key: 'brand', label: 'Brand' },
+			{ key: 'creator', label: 'Creator', link: creatorLink },
+			{ key: 'kind', label: 'Kind', text: (r) => label(r.kind) },
+			{ key: 'total', label: 'Total', type: 'money' },
+			{ key: 'outstanding', label: 'Outstanding', type: 'money' },
+			{ key: 'status', label: 'Status', type: 'tag', tag: (v, r) => (r.overdue ? ['Overdue', 't-bad'] : plain(INVOICE_TAG)(v)) },
+			{ key: 'due', label: 'Due', type: 'day' },
+			{ key: 'reminders', label: 'Reminders', type: 'tag', tag: yes('On', 'Off') },
+			{ key: 'paid_on', label: 'Paid on', type: 'day' }
+		],
+		sort: 'created',
+		href: collabLink,
+		rowActions: [
+			{
+				label: 'Stop reminders',
+				show: (r) => r.reminders && (r.status === 'sent' || r.status === 'partly_paid'),
+				run: withReason('Stop payment reminders?', 'The brand stops getting the polite reminder emails for this invoice. The creator can turn them back on.', 'Stop reminders', 'admin_invoice_reminders', (r, why) => ({ p_id: r.id, p_on: false, p_reason: why }), 'Reminders off', false)
+			}
+		]
+	},
+	payments: {
+		id: 'payments', kind: 'payments', group: 'Deals', title: 'Payments', noun: 'bank alert', search: 'Payer, reference, invoice, creator, amount',
+		presets: [
+			{ id: 'all', label: 'All', filters: {} },
+			{ id: 'matched', label: 'Matched to an invoice', filters: { status: 'matched' } },
+			{ id: 'unmatched', label: 'Not matched', filters: { status: 'unmatched' } },
+			{ id: 'ignored', label: 'Set aside', filters: { status: 'ignored' } }
+		],
+		filters: [DAYS('created', 'Received')],
+		columns: [
+			{ key: 'created', label: 'Received', type: 'when' },
+			{ key: 'amount', label: 'Amount', type: 'money' },
+			{ key: 'sender', label: 'From' },
+			{ key: 'ref', label: 'Reference', type: 'mono' },
+			{ key: 'status', label: 'Status', type: 'tag', tag: plain({ matched: 't-ok', unmatched: 't-warn', ignored: 't-mute' }) },
+			{ key: 'invoice', label: 'Invoice', type: 'mono', link: collabLink },
+			{ key: 'creator', label: 'Creator', link: creatorLink },
+			{ key: 'note', label: 'Note', wrap: true, nosort: true }
+		],
+		sort: 'created',
+		href: () => null,
+		rowActions: [
+			{
+				label: 'Set aside',
+				show: (r) => r.status === 'unmatched',
+				run: withReason('Set this bank alert aside?', 'It stops showing as a payment waiting to be matched. Nothing is sent to anyone.', 'Set aside', 'admin_bank_alert_ignore', (r, why) => ({ p_id: r.id, p_reason: why }), 'Set aside', false)
+			}
+		]
+	},
+	drafts: {
+		id: 'drafts', kind: 'drafts', group: 'Deals', title: 'Drafts', noun: 'draft', search: 'Collab, brand, creator',
+		presets: [
+			{ id: 'all', label: 'All', filters: {} },
+			{ id: 'pending', label: 'Waiting on brand', filters: { status: 'pending' } },
+			{ id: 'slow', label: 'Waiting 3+ days', filters: { status: 'pending', 'waiting_days:gte': 3 } },
+			{ id: 'approved', label: 'Approved', filters: { status: 'approved' } }
+		],
+		filters: [{ key: 'status', label: 'Status', options: Object.keys(DRAFT_TAG).map((v) => ({ label: label(v), value: v })) }, DAYS('created', 'Sent')],
+		columns: [
+			{ key: 'code', label: 'Collab', type: 'mono', text: (r) => `${r.code} · round ${r.round}` },
+			{ key: 'brand', label: 'Brand' },
+			{ key: 'creator', label: 'Creator', link: creatorLink },
+			{ key: 'status', label: 'Status', type: 'tag', tag: plain(DRAFT_TAG) },
+			{ key: 'comments', label: 'Comments', type: 'num' },
+			{ key: 'submitted_at', label: 'Sent', type: 'ago' },
+			{ key: 'responded_at', label: 'Answered', type: 'ago' }
+		],
+		sort: 'created',
+		href: collabLink
+	},
+	posts: {
+		id: 'posts', kind: 'posts', group: 'Deals', title: 'Scheduled posts', noun: 'post', search: 'Collab, brand, creator, error',
+		presets: [
+			{ id: 'all', label: 'All', filters: {} },
+			{ id: 'scheduled', label: 'Scheduled', filters: { status: 'scheduled' } },
+			{ id: 'failed', label: 'Failed', filters: { status: 'failed' } },
+			{ id: 'hold', label: 'On hold', filters: { status: 'on_hold' } },
+			{ id: 'published', label: 'Published', filters: { status: 'published' } }
+		],
+		filters: [DAYS('created', 'Made')],
+		columns: [
+			{ key: 'publish_at', label: 'Goes out', type: 'when' },
+			{ key: 'code', label: 'Collab', type: 'mono' },
+			{ key: 'brand', label: 'Brand' },
+			{ key: 'creator', label: 'Creator', link: creatorLink },
+			{ key: 'status', label: 'Status', type: 'tag', tag: plain(POST_TAG) },
+			{ key: 'error', label: 'Error', wrap: true, nosort: true },
+			{ key: 'permalink', label: 'Post', nosort: true, text: (r) => (r.permalink ? 'Open' : '—'), link: (r) => r.permalink ?? null }
+		],
+		sort: 'publish_at',
+		href: collabLink,
+		rowActions: [
+			{
+				label: 'Cancel',
+				danger: true,
+				show: (r) => ['scheduled', 'on_hold', 'failed'].includes(r.status),
+				run: withReason('Cancel this post?', "It won't be published. The creator sees it as cancelled by Miracle, with your reason.", 'Cancel post', 'admin_post_cancel', (r, why) => ({ p_id: r.id, p_reason: why }), 'Post cancelled')
+			}
+		]
+	},
+	campaigns: {
+		id: 'campaigns', kind: 'campaigns', group: 'Deals', title: 'Campaigns', noun: 'campaign', search: 'Campaign, workspace, owner email',
+		presets: [
+			{ id: 'all', label: 'All', filters: {} },
+			{ id: 'open', label: 'Open briefs', filters: { open: true } },
+			{ id: 'sent', label: 'Sent', filters: { status: 'sent' } },
+			{ id: 'draft', label: 'Drafts', filters: { status: 'draft' } }
+		],
+		filters: [DAYS('created', 'Made')],
+		columns: [
+			{ key: 'name', label: 'Campaign', sub: 'workspace' },
+			{ key: 'status', label: 'Status', type: 'tag', tag: (v, r) => (r.open ? ['Open brief', 't-ok'] : plain({ sent: 't-info' })(v)) },
+			{ key: 'budget', label: 'Budget', type: 'money' },
+			{ key: 'creators', label: 'Creators', type: 'num' },
+			{ key: 'applications', label: 'Applied', type: 'num' },
+			{ key: 'collabs', label: 'Collabs', type: 'num' },
+			{ key: 'open_until', label: 'Open until', type: 'day' },
+			{ key: 'created', label: 'Made', type: 'day' }
+		],
+		sort: 'created',
+		href: (r) => href('campaigns', r.id)
+	},
+	pools: {
+		id: 'pools', kind: 'pools', group: 'Deals', title: 'Pools', noun: 'pool', search: 'Pool, workspace',
+		presets: [{ id: 'all', label: 'All', filters: {} }, { id: 'used', label: 'Used in a campaign', filters: { 'campaigns:gte': 1 } }],
+		filters: [DAYS('created', 'Made')],
+		columns: [
+			{ key: 'name', label: 'Pool' },
+			{ key: 'workspace', label: 'Workspace', link: (r) => href('workspaces', r.workspace_id) },
+			{ key: 'creators', label: 'Creators', type: 'num' },
+			{ key: 'on_miracle', label: 'On Miracle', type: 'num' },
+			{ key: 'campaigns', label: 'Campaigns', type: 'num' },
+			{ key: 'created', label: 'Made', type: 'day' }
+		],
+		sort: 'created',
+		href: (r) => href('workspaces', r.workspace_id)
+	},
+	retainers: {
+		id: 'retainers', kind: 'retainers', group: 'Deals', title: 'Retainers', noun: 'retainer', search: 'Title, brand, creator, contact',
+		presets: [{ id: 'all', label: 'All', filters: {} }, { id: 'active', label: 'Running', filters: { active: true } }, { id: 'stopped', label: 'Stopped', filters: { active: false } }],
+		filters: [DAYS('created', 'Made')],
+		columns: [
+			{ key: 'title', label: 'Retainer' },
+			{ key: 'brand', label: 'Brand', link: (r) => (r.brand_id ? href('brands', r.brand_id) : null) },
+			{ key: 'creator', label: 'Creator', link: creatorLink },
+			{ key: 'fee', label: 'Fee a month', type: 'money' },
+			{ key: 'months', label: 'Months', type: 'num' },
+			{ key: 'starts_on', label: 'Starts', type: 'day' },
+			{ key: 'collabs', label: 'Collabs made', type: 'num' },
+			{ key: 'active', label: 'State', type: 'tag', tag: yes('Running', 'Stopped') }
+		],
+		sort: 'created',
+		href: creatorLink,
+		rowActions: [
+			{
+				label: 'Stop',
+				danger: true,
+				show: (r) => r.active,
+				run: withReason('Stop this retainer?', 'No new monthly collabs are made from it. Existing collabs stay.', 'Stop', 'admin_retainer_set', (r, why) => ({ p_id: r.id, p_active: false, p_reason: why }), 'Retainer stopped')
+			}
+		]
+	},
+	pitches: {
+		id: 'pitches', kind: 'pitches', group: 'Deals', title: 'Pitches', noun: 'pitch', search: 'Brand, category, email, creator',
+		presets: [
+			{ id: 'all', label: 'All', filters: {} },
+			{ id: 'sent', label: 'Sent', filters: { status: 'sent' } },
+			{ id: 'replied', label: 'Replied', filters: { status: ['replied', 'won'] } },
+			{ id: 'following', label: 'Following up', filters: { auto_follow: true, status: 'sent' } }
+		],
+		filters: [
+			{ key: 'status', label: 'Status', options: ['idea', 'ready', 'sent', 'replied', 'won', 'not_now', 'skipped'].map((v) => ({ label: label(v), value: v })) },
+			DAYS('created', 'Found')
+		],
+		columns: [
+			{ key: 'brand', label: 'Brand', sub: 'email' },
+			{ key: 'creator', label: 'For creator', link: creatorLink },
+			{ key: 'status', label: 'Status', type: 'tag', tag: plain({ sent: 't-info', replied: 't-ok', won: 't-ok', ready: 't-warn', skipped: 't-mute', not_now: 't-mute' }) },
+			{ key: 'followups', label: 'Follow-ups', type: 'num' },
+			{ key: 'auto_follow', label: 'Auto follow-up', type: 'tag', tag: yes('On', 'Off') },
+			{ key: 'sent_at', label: 'Sent', type: 'ago' },
+			{ key: 'replied_at', label: 'Replied', type: 'ago' },
+			{ key: 'created', label: 'Found', type: 'day' }
+		],
+		sort: 'created',
+		href: (r) => (r.collab_id ? href('collabs', r.collab_id) : creatorLink(r)),
+		rowActions: [
+			{
+				label: 'Stop follow-ups',
+				show: (r) => r.auto_follow,
+				run: withReason('Stop follow-ups to this brand?', 'No more automatic follow-up emails go to them for this pitch.', 'Stop', 'admin_pitch_stop', (r, why) => ({ p_id: r.id, p_reason: why }), 'Follow-ups stopped', false)
+			}
+		]
+	}
+};
 
 export const LISTS: Record<string, ListConfig> = {
 	creators: {
@@ -259,11 +576,13 @@ export const LISTS: Record<string, ListConfig> = {
 		presets: [
 			{ id: 'all', label: 'Everything', filters: {} },
 			{ id: 'people', label: 'People', filters: { kind: ['creator', 'brand_login', 'workspace'] } },
+			{ id: 'deals', label: 'Deals', filters: { kind: ['collab', 'campaign', 'brand'] } },
+			{ id: 'messages', label: 'Messages read', filters: { action: 'read_messages' } },
 			{ id: 'support', label: 'Support', filters: { kind: ['ticket'] } },
 			{ id: 'system', label: 'Limits & problems', filters: { kind: ['limits', 'problem'] } }
 		],
 		filters: [
-			{ key: 'kind', label: 'Record', options: ['creator', 'brand_login', 'workspace', 'ticket', 'problem', 'limits'].map((v) => ({ label: label(v), value: v })) },
+			{ key: 'kind', label: 'Record', options: ['creator', 'brand_login', 'workspace', 'collab', 'campaign', 'brand', 'ticket', 'problem', 'limits'].map((v) => ({ label: label(v), value: v })) },
 			DAYS('at', 'When')
 		],
 		columns: [
@@ -279,11 +598,16 @@ export const LISTS: Record<string, ListConfig> = {
 	}
 };
 
+Object.assign(LISTS, DEALS);
+
 export function recordHref(kind: string, id: string | null | undefined): string | null {
 	if (!id) return null;
 	if (kind === 'creator') return href('creators', id);
 	if (kind === 'brand_login') return href('brand-logins', id);
 	if (kind === 'workspace') return href('workspaces', id);
+	if (kind === 'collab') return href('collabs', id);
+	if (kind === 'brand') return href('brands', id);
+	if (kind === 'campaign') return href('campaigns', id);
 	if (kind === 'ticket') return href('support');
 	if (kind === 'problem') return href('problems');
 	return null;

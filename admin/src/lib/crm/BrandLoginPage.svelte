@@ -94,7 +94,7 @@
 					{#if !b.collabs.length}<div class="card-empty">No collabs yet.</div>{:else}
 						<table class="tbl">
 							<thead><tr><th>Code</th><th>Creator</th><th>Stage</th><th class="r">Fee</th><th>Created</th></tr></thead>
-							<tbody>{#each b.collabs.slice(0, 6) as k (k.id)}<tr><td class="mono">{k.code}</td><td>{#if k.creator_id}<a href={href('creators', k.creator_id)}>{k.creator}</a>{:else}—{/if}</td><td><span class="tag {STAGE_TAG[k.stage] ?? 't-mute'}">{STAGE_LABEL[k.stage] ?? k.stage}</span></td><td class="r mono">{inrShort(k.fee)}</td><td>{day(k.at)}</td></tr>{/each}</tbody>
+							<tbody>{#each b.collabs.slice(0, 6) as k (k.id)}<tr><td><a class="mono" href={href('collabs', k.id)}>{k.code}</a></td><td>{#if k.creator_id}<a href={href('creators', k.creator_id)}>{k.creator}</a>{:else}—{/if}</td><td><span class="tag {STAGE_TAG[k.stage] ?? 't-mute'}">{STAGE_LABEL[k.stage] ?? k.stage}</span></td><td class="r mono">{inrShort(k.fee)}</td><td>{day(k.at)}</td></tr>{/each}</tbody>
 						</table>
 					{/if}
 				</section>
@@ -104,7 +104,7 @@
 					{#if !b.collabs.length}<div class="card-empty">No collabs yet.</div>{:else}
 						<table class="tbl">
 							<thead><tr><th>Code</th><th>Creator</th><th>Stage</th><th class="r">Fee</th><th>Pay</th><th>Created</th></tr></thead>
-							<tbody>{#each b.collabs as k (k.id)}<tr><td class="mono">{k.code}</td><td>{#if k.creator_id}<a href={href('creators', k.creator_id)}>{k.creator}</a>{:else}—{/if}</td><td><span class="tag {STAGE_TAG[k.stage] ?? 't-mute'}">{STAGE_LABEL[k.stage] ?? k.stage}</span></td><td class="r mono">{inrShort(k.fee)}</td><td>{label(k.pay)}</td><td>{day(k.at)}</td></tr>{/each}</tbody>
+							<tbody>{#each b.collabs as k (k.id)}<tr><td><a class="mono" href={href('collabs', k.id)}>{k.code}</a></td><td>{#if k.creator_id}<a href={href('creators', k.creator_id)}>{k.creator}</a>{:else}—{/if}</td><td><span class="tag {STAGE_TAG[k.stage] ?? 't-mute'}">{STAGE_LABEL[k.stage] ?? k.stage}</span></td><td class="r mono">{inrShort(k.fee)}</td><td>{label(k.pay)}</td><td>{day(k.at)}</td></tr>{/each}</tbody>
 						</table>
 					{/if}
 				</section>
@@ -114,7 +114,7 @@
 					{#if !b.companies.length}<div class="card-empty">Not linked to any company yet.</div>{:else}
 						<table class="tbl">
 							<thead><tr><th>Company</th><th>Creator</th><th>Workspace</th></tr></thead>
-							<tbody>{#each b.companies as x (x.id)}<tr><td class="w5">{x.name}</td><td>{#if x.creator_id}<a href={href('creators', x.creator_id)}>{x.creator}</a>{:else}—{/if}</td><td><a href={href('workspaces', x.workspace)}>{b.workspaces.find((w: R) => w.id === x.workspace)?.name ?? 'Open'}</a></td></tr>{/each}</tbody>
+							<tbody>{#each b.companies as x (x.id)}<tr><td><a class="w5" href={href('brands', x.id)}>{x.name}</a></td><td>{#if x.creator_id}<a href={href('creators', x.creator_id)}>{x.creator}</a>{:else}—{/if}</td><td><a href={href('workspaces', x.workspace)}>{b.workspaces.find((w: R) => w.id === x.workspace)?.name ?? 'Open'}</a></td></tr>{/each}</tbody>
 						</table>
 					{/if}
 				</section>

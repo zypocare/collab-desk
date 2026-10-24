@@ -21,8 +21,10 @@
 		if (kind === 'creator') return href('creators', x.id);
 		if (kind === 'brand_login') return href('brand-logins', x.id);
 		if (kind === 'workspace') return href('workspaces', x.id);
-		if (kind === 'brand') return href('brands');
-		if ((kind === 'collab' || kind === 'invoice') && x.creator) return href('creators', x.creator);
+		if (kind === 'brand') return href('brands', x.id);
+		if (kind === 'collab') return href('collabs', x.id);
+		if (kind === 'invoice' && x.collab) return href('collabs', x.collab);
+		if (kind === 'invoice' && x.creator) return href('creators', x.creator);
 		if (kind === 'ticket') return href('support');
 		return href('dashboard');
 	}

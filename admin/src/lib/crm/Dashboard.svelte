@@ -155,7 +155,7 @@
 					<div class="stack" aria-hidden="true">{#each stages as s (s.s)}<span style:width="{(s.n / stageTotal) * 100}%" style:background={STAGE_COLOR[s.s]}></span>{/each}</div>
 					<div class="stg">
 						{#each stages as s (s.s)}
-							<div class="sg"><span class="sl"><i style:background={STAGE_COLOR[s.s]}></i>{STAGE_LABEL[s.s]}</span><b class="mono">{num(s.n)}</b><small class="mono muted">{inrShort(s.value)}</small></div>
+							<a class="sg" href={href('collabs')}><span class="sl"><i style:background={STAGE_COLOR[s.s]}></i>{STAGE_LABEL[s.s]}</span><b class="mono">{num(s.n)}</b><small class="mono muted">{inrShort(s.value)}</small></a>
 						{/each}
 					</div>
 				</div>
@@ -226,7 +226,8 @@
 	.r { text-align: right; }
 	.stack { display: flex; height: 12px; border-radius: 6px; overflow: hidden; background: #f1efeb; margin-bottom: 14px; }
 	.stg { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 8px; }
-	.sg { display: grid; gap: 1px; padding: 9px 11px; border: 1px solid var(--line-soft); border-radius: 8px; }
+	.sg { display: grid; gap: 1px; padding: 9px 11px; border: 1px solid var(--line-soft); border-radius: 8px; color: var(--ink); }
+	a.sg:hover { border-color: var(--line-strong); text-decoration: none; color: var(--ink); }
 	.sl { display: flex; align-items: center; gap: 6px; font-size: 12.5px; }
 	.sl i { width: 8px; height: 8px; border-radius: 2px; }
 	.sg b { font-size: 17px; font-weight: 500; }

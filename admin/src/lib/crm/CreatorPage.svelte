@@ -152,14 +152,14 @@
 						</dl>
 					</section>
 				{/if}
-				<Timeline kinds={KINDS} events={c.timeline.map((e: R) => ({ ...e, title: e.title, text: e.kind === 'money' ? inr(Number(e.text)) : e.text }))} />
+				<Timeline kinds={KINDS} events={c.timeline.map((e: R) => ({ ...e, href: e.collab ? href('collabs', e.collab) : null, text: e.kind === 'money' ? inr(Number(e.text)) : e.text }))} />
 			{:else if tab === 'collabs'}
 				<section class="card tbl-wrap">
 					<div class="card-h"><h2 class="card-t">Collabs</h2><span class="muted sm">latest 25</span></div>
 					{#if !c.collabs.length}<div class="card-empty">No collabs yet.</div>{:else}
 						<table class="tbl">
 							<thead><tr><th>Code</th><th>Brand</th><th>Stage</th><th class="r">Fee</th><th>Pay</th><th>Live date</th><th>Created</th></tr></thead>
-							<tbody>{#each c.collabs as k (k.id)}<tr><td class="mono">{k.code}</td><td>{k.brand ?? '—'}</td><td><span class="tag {STAGE_TAG[k.stage] ?? 't-mute'}">{STAGE_LABEL[k.stage] ?? k.stage}</span></td><td class="r mono">{inrShort(k.fee)}</td><td>{label(k.pay)}</td><td>{day(k.live)}</td><td>{day(k.at)}</td></tr>{/each}</tbody>
+							<tbody>{#each c.collabs as k (k.id)}<tr><td><a class="mono" href={href('collabs', k.id)}>{k.code}</a></td><td>{k.brand ?? '—'}</td><td><span class="tag {STAGE_TAG[k.stage] ?? 't-mute'}">{STAGE_LABEL[k.stage] ?? k.stage}</span></td><td class="r mono">{inrShort(k.fee)}</td><td>{label(k.pay)}</td><td>{day(k.live)}</td><td>{day(k.at)}</td></tr>{/each}</tbody>
 						</table>
 					{/if}
 				</section>
@@ -169,7 +169,7 @@
 					{#if !c.brands.length}<div class="card-empty">No brands yet.</div>{:else}
 						<table class="tbl">
 							<thead><tr><th>Brand</th><th>Category</th><th class="r">Collabs</th><th class="r">Paid</th><th class="r">Brand logins</th></tr></thead>
-							<tbody>{#each c.brands as b (b.id)}<tr><td><b class="w5">{b.name}</b></td><td>{b.category ?? '—'}</td><td class="r mono">{num(b.collabs)}</td><td class="r mono">{inrShort(b.paid)}</td><td class="r mono">{num(b.logins)}</td></tr>{/each}</tbody>
+							<tbody>{#each c.brands as b (b.id)}<tr><td><a class="w5" href={href('brands', b.id)}>{b.name}</a></td><td>{b.category ?? '—'}</td><td class="r mono">{num(b.collabs)}</td><td class="r mono">{inrShort(b.paid)}</td><td class="r mono">{num(b.logins)}</td></tr>{/each}</tbody>
 						</table>
 					{/if}
 				</section>
@@ -179,7 +179,7 @@
 					{#if !c.invoices.length}<div class="card-empty">No invoices yet.</div>{:else}
 						<table class="tbl">
 							<thead><tr><th>Invoice</th><th>Collab</th><th class="r">Total</th><th class="r">Received</th><th>Status</th><th>Due</th><th>Paid on</th></tr></thead>
-							<tbody>{#each c.invoices as i (i.id)}<tr><td class="mono">{i.number}</td><td class="mono">{i.collab ?? '—'}</td><td class="r mono">{inr(i.total)}</td><td class="r mono">{inr(i.received)}</td><td><span class="tag {i.status === 'paid' ? 't-ok' : i.status === 'partly_paid' ? 't-warn' : 't-mute'}">{label(i.status)}</span></td><td>{day(i.due)}</td><td>{day(i.paid_on)}</td></tr>{/each}</tbody>
+							<tbody>{#each c.invoices as i (i.id)}<tr><td class="mono">{#if i.collab_id}<a href={href('collabs', i.collab_id)}>{i.number}</a>{:else}{i.number}{/if}</td><td class="mono">{i.collab ?? '—'}</td><td class="r mono">{inr(i.total)}</td><td class="r mono">{inr(i.received)}</td><td><span class="tag {i.status === 'paid' ? 't-ok' : i.status === 'partly_paid' ? 't-warn' : 't-mute'}">{label(i.status)}</span></td><td>{day(i.due)}</td><td>{day(i.paid_on)}</td></tr>{/each}</tbody>
 						</table>
 					{/if}
 				</section>
