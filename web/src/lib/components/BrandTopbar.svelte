@@ -150,7 +150,7 @@
 		{/if}
 	</header>
 	{#if segs && signedIn}
-		<nav class="m-seg" aria-label="{group?.label} pages" style="--n:{segs.length};--i:{Math.max(0, segs.findIndex((t) => t.on))}">
+		<nav class="m-seg" class:m-seg-many={segs.length > 4} aria-label="{group?.label} pages" style="--n:{segs.length};--i:{Math.max(0, segs.findIndex((t) => t.on))}">
 			{#each segs as t (t.href)}<a href={t.href} aria-current={t.on ? 'page' : undefined}>{t.label}</a>{/each}
 		</nav>
 	{/if}

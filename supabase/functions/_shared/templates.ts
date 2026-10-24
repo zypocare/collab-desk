@@ -578,6 +578,30 @@ ${ok ? url(s, '/') : studio()}`,
 
   // Creator sign-ups: a new request for the people who run Miracle, then a welcome or a kind no.
   // ---------------------------------------------------------------- support
+  // ---------------------------------------------------------------- turnaround (brand teams)
+  if (kind === 'tat_overdue' || kind === 'tat_escalated') {
+    const late = Number(p.hours_over) || 0;
+    const overBy = late >= 48 ? `${Math.round(late / 24)} days` : `${Math.max(1, late)} hour${late === 1 ? '' : 's'}`;
+    const link = url(s, p.code ? `/brand/r/${encodeURIComponent(String(p.code))}` : '/brand/business/turnaround');
+    const what = `${String(p.label ?? 'A handoff')} for ${String(p.creator ?? 'a creator')} (${String(p.code ?? '')})`;
+    const escalated = kind === 'tat_escalated';
+    return {
+      subject: escalated ? `Still waiting: ${what}` : `Overdue: ${what}`,
+      html: layout(
+        s,
+        escalated ? 'This one is still waiting' : 'This is past its turnaround time',
+        `${P(`${esc(what)} is ${esc(overBy)} past the time your team set for it.`)}
+         ${escalated ? P(`It's with ${esc(String(p.owner ?? 'its owner'))}. You're getting this as the backup or the team's admin, so you can pick it up or hand it to someone else.`) : P('Open it to answer, or ask your admin to hand it to someone else on the team.')}`,
+        { label: 'Open it', href: link },
+        { to: 'app', why: 'your team asked Miracle to flag late handoffs', preheader: `${String(p.label ?? 'A handoff')} is ${overBy} past due` },
+      ),
+      text: `${what} is ${overBy} past the time your team set for it.${escalated ? ` It's with ${String(p.owner ?? 'its owner')}.` : ''}
+
+Open it: ${link}
+
+Turnaround alerts can be switched off in Business › Turnaround.`,
+    };
+  }
   if (kind === 'support_reply') {
     const link = url(s, String(p.link ?? '/studio/help'));
     const ref = `#${p.number}`;

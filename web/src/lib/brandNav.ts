@@ -27,9 +27,10 @@ export function brandGroups(onApp: boolean): BrandGroup[] {
 				{ href: '/brand/campaigns', label: 'Campaigns' },
 				{ href: '/brand/business/calendar', label: 'Calendar' },
 				{ href: '/brand/business/content', label: 'Content' },
+				{ href: '/brand/business/turnaround', label: 'Turnaround' },
 				{ href: '/brand/autopilots', label: 'Autopilots' }
 			],
-			also: ['/brand/campaigns', '/brand/business/calendar', '/brand/business/content', '/brand/autopilots']
+			also: ['/brand/campaigns', '/brand/business/calendar', '/brand/business/content', '/brand/business/turnaround', '/brand/autopilots']
 		},
 		{
 			// Like the creator's Money: the overview (Reports) first, then Payments and Shipping.
@@ -69,6 +70,7 @@ export function deskTabs(onApp: boolean, url: { pathname: string; searchParams: 
 		brandGroups(onApp)[1].tabs ?? [],
 		[
 			{ href: '/brand/campaigns', label: 'Campaigns' },
+			{ href: '/brand/business/turnaround', label: 'Turnaround' },
 			{ href: '/brand/autopilots', label: 'Autopilots' }
 		],
 		[

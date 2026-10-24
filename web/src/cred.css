@@ -2138,6 +2138,15 @@
   .wk2-more .ic { width: 16px; height: 16px; color: var(--ink-3); }
 }
 
+/* ===== PHONE: a section with five or more tabs scrolls sideways instead of squeezing the labels ===== */
+@media (max-width: 760px) {
+  [data-side] .m-seg.m-seg-many { grid-auto-columns: max-content; overflow-x: auto; padding: 0 4px 4px 0; border: 0; scrollbar-width: none; }
+  [data-side] .m-seg.m-seg-many::-webkit-scrollbar { display: none; }
+  [data-side] .m-seg.m-seg-many a { padding: 0 16px; white-space: nowrap; border-top: 1px solid var(--line-strong); border-bottom: 1px solid var(--line-strong); }
+  [data-side] .m-seg.m-seg-many a:first-child { border-left: 1px solid var(--line-strong); }
+  [data-side] .m-seg.m-seg-many a:last-child { border-right: 1px solid var(--line-strong); }
+}
+
 /* ===== PHONE: an off switch reads as a switch (a filled track with the knob on the left), not an empty
    box. On stays the gradient block. ===== */
 @media (max-width: 760px) {

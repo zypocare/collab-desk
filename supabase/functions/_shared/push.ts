@@ -297,6 +297,13 @@ export function pushForBrand(kind: string, p: Record<string, unknown>, creatorNa
       return { pref: 'drafts', msg: { title: `Draft to approve · ${who}`, body: `Draft ${p.round} for ${code} is ready for your review.`, url: request, tag: `draft-${code}` } };
     case 'draft_nudge':
       return { pref: 'drafts', msg: { title: `Draft to approve · ${who}`, body: `Draft ${p.round} for ${code} is still waiting for you.`, url: request, tag: `draft-${code}` } };
+    case 'tat_overdue':
+    case 'tat_escalated': {
+      const stage = String(p.stage ?? '');
+      const pref: BrandPref = stage === 'draft_review' ? 'drafts' : stage === 'message_reply' ? 'messages' : stage === 'payment' ? 'invoices' : 'quotes';
+      const title = kind === 'tat_escalated' ? `Still waiting: ${String(p.label ?? 'a handoff')}` : `Overdue: ${String(p.label ?? 'a handoff')}`;
+      return { pref, msg: { title, body: `${String(p.creator ?? '')}${code ? ` · ${code}` : ''}`.replace(/^ · /, ''), url: request, tag: `tat-${code}-${stage}` } };
+    }
     case 'case_study_ask':
       return { pref: 'drafts', msg: { title: `${who} wrote a case study about your collab`, body: String(p.title ?? '').slice(0, 140), url: request, tag: `case-${code}` } };
     case 'support_reply':

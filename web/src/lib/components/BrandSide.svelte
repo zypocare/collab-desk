@@ -23,7 +23,7 @@
 		{ href: '/brand', label: 'Today', icon: 'home', on: path === '/brand' },
 		{ href: '/brand/inbox', label: 'Inbox', icon: 'inbox', on: on('/brand/inbox') },
 		{ href: '/brand/requests', label: 'Collabs', icon: 'board', on: on('/brand/requests', '/brand/creators', '/brand/creator', '/brand/r', '/brand/new') },
-		{ href: '/brand/campaigns', label: 'Campaigns', icon: 'send', on: on('/brand/campaigns', '/brand/autopilots') },
+		{ href: '/brand/campaigns', label: 'Campaigns', icon: 'send', on: on('/brand/campaigns', '/brand/autopilots', '/brand/business/turnaround') },
 		{ href: '/brand/business/calendar', label: 'Calendar', icon: 'cal', on: on('/brand/business/calendar') },
 		{ href: '/brand/business/content', label: 'Content', icon: 'film', on: on('/brand/business/content') },
 		{ href: '/brand/business/money', label: 'Money', icon: 'wallet', on: on('/brand/business/money', '/brand/business/shipping') },
