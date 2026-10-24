@@ -83,7 +83,11 @@ async function build(env: PageEnv, url: URL): Promise<Response> {
 	const what = niche ? `${cap(nL)} creators` : 'Creators';
 	const where = city ? ` in ${cap(cL)}` : ' in India';
 	const title = `${what}${where} for brand collabs · Miracle`;
-	const desc = `${found.total} ${niche ? nL.toLowerCase() + ' ' : ''}creator${found.total === 1 ? '' : 's'}${where}, with live Instagram numbers, starting prices and reviews. Send a collab request in a minute; brands pay creators directly, no commission.`;
+	const desc = found.total
+		? `${found.total} ${niche ? nL.toLowerCase() + ' ' : ''}creator${found.total === 1 ? '' : 's'}${where}, with live Instagram numbers, starting prices and reviews. Send a collab request in a minute; brands pay creators directly, no commission.`
+		: `Find Instagram creators${where} by niche and city, with live Instagram numbers, audience health, starting prices and reviews. Book a collab in a minute; brands pay creators directly, no commission.`;
+	// The main page is always for search engines; an empty niche or city page, a page past the end or a search isn't.
+	const main = !niche && !city && !q && !pageN;
 	const path = `/creators${niche ? `/${niche}` : ''}${city ? `/in/${city}` : ''}`;
 	const canonical = `${SITE}${path}${pageN ? `?page=${pageN}` : ''}`;
 
@@ -117,7 +121,7 @@ async function build(env: PageEnv, url: URL): Promise<Response> {
 </section>
 <section class="wrap">
 	${q ? `<p class="note">${found.total} result${found.total === 1 ? '' : 's'} for “${esc(q)}”. <a href="${esc(path)}">Clear</a></p>` : ''}
-	${cards ? `<div class="grid">${cards}</div>` : `<div class="empty"><h2>Nobody here yet</h2><p>${q ? 'Try fewer words, or another niche or city.' : 'Creators join every week. Look at all creators, or list yourself.'}</p><p><a class="btn" href="/creators">All creators</a></p></div>`}
+	${cards ? `<div class="grid">${cards}</div>` : main ? OPENING : `<div class="empty"><h2>Nobody here yet</h2><p>${q ? 'Try fewer words, or another niche or city.' : 'Creators join every week. Look at all creators, or list yourself.'}</p><p><a class="btn" href="/creators">All creators</a></p></div>`}
 	${nav}
 </section>
 <section class="wrap cta">
@@ -125,8 +129,23 @@ async function build(env: PageEnv, url: URL): Promise<Response> {
 	<a class="btn grad" href="${APP}/signup?as=creator">Join as a creator</a>
 </section>
 <section class="wrap tools"><span class="eb">Free tools</span><a href="${SITE}/tools/rate-calculator">Instagram rate calculator →</a><a href="${SITE}/tools/engagement-calculator">Engagement rate calculator →</a></section>`;
-	return html(page({ title, desc, canonical, noindex: !!q || !found.items.length, body, ld }));
+	return html(page({ title, desc, canonical, noindex: !main && (!!q || !found.items.length), body, ld }));
 }
+
+// The main page before the first creators switch their listing on: what the directory is, for both sides.
+const OPENING = `<div class="opening">
+	<div class="op-card"><span class="eb">For brands</span><h2>Creators who <em>deliver.</em></h2>
+		<p>Every creator here chose to be listed. You see their real Instagram reach and audience, an audience health check, what they charge and what brands say about them, and you book them in a minute. You pay creators directly; Miracle takes no commission.</p>
+		<p><a class="btn" href="${SITE}/find-influencers-india">How it works for brands</a></p></div>
+	<div class="op-card"><span class="eb">For creators</span><h2>Get listed <em>free.</em></h2>
+		<p>Switch on your listing in Miracle (Settings › Get found by brands) and brands find you here by niche and city, with a verified tick when your Instagram is connected. Never your email or phone.</p>
+		<p><a class="btn grad" href="${APP}/signup?as=creator">Join as a creator</a></p></div>
+</div>
+<div class="op-more"><span class="eb">Guides</span>
+	<a href="${SITE}/guides/how-to-find-influencers-india">How to find the right influencers in India →</a>
+	<a href="${SITE}/guides/how-to-get-brand-deals-instagram-india">How to get brand deals on Instagram →</a>
+	<a href="${SITE}/guides/how-much-to-charge-instagram-reel-india">How much to charge for a reel →</a>
+</div>`;
 
 function card(c: Card) {
 	const stats = [
@@ -242,7 +261,10 @@ h3{margin:0;display:flex;align-items:center;gap:6px;font-size:17px;font-weight:6
 .foot{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-top:12px;border-top:1px dashed var(--line-2);font-size:14px;color:var(--ink-2)}.foot b{color:var(--ink)}.go{font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink)}
 .langs{display:flex;flex-wrap:wrap;gap:6px}.langs span{padding:3px 10px;border-radius:99px;background:var(--surface-2);font-size:12px;color:var(--ink-3)}
 .pager{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0 30px;color:var(--ink-3)}
-.empty{display:grid;gap:12px;justify-items:start;padding:50px 0}.empty p{margin:0;color:var(--ink-3)}
+.empty{display:grid;gap:12px;justify-items:start;padding:50px 0}
+.opening{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;padding:10px 0 20px}.op-card{display:grid;gap:12px;align-content:start;padding:26px;border-radius:24px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line-2)}.op-card p{margin:0;color:var(--ink-2)}
+.op-more{display:flex;flex-wrap:wrap;gap:10px 24px;align-items:center;padding:10px 0 20px}.op-more a{color:var(--ink-2)}
+@media (max-width:760px){.opening{grid-template-columns:minmax(0,1fr)}}.empty p{margin:0;color:var(--ink-3)}
 .cta{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:20px;margin-top:30px;padding-top:34px;padding-bottom:34px;border-top:1px solid var(--line)}.cta>div{display:grid;gap:10px;max-width:560px}.cta p{margin:0;color:var(--ink-3)}
 .tools{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:center;padding-bottom:30px}.tools a{color:var(--ink-2)}
 .foot-site{display:flex;flex-wrap:wrap;gap:10px 20px;padding-top:24px;padding-bottom:calc(env(safe-area-inset-bottom,0px) + 30px);border-top:1px solid var(--line);font-size:13px;color:var(--ink-3)}.foot-site a{color:var(--ink-3)}
