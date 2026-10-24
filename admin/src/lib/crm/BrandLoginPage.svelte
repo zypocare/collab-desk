@@ -122,7 +122,7 @@
 				<section class="card tbl-wrap">
 					<div class="card-h"><h2 class="card-t">Support tickets</h2><a href={href('support')}>Open support</a></div>
 					{#if !b.support.length}<div class="card-empty">No tickets.</div>{:else}
-						<table class="tbl"><tbody>{#each b.support as t (t.id)}<tr><td class="mono">#{t.number}</td><td>{t.subject}</td><td><span class="tag t-mute">{label(t.status)}</span></td><td>{ago(t.at)}</td></tr>{/each}</tbody></table>
+						<table class="tbl"><tbody>{#each b.support as t (t.id)}<tr><td class="mono"><a href={href('support', t.id)}>#{t.number}</a></td><td>{t.subject}</td><td><span class="tag t-mute">{label(t.status)}</span></td><td>{ago(t.at)}</td></tr>{/each}</tbody></table>
 					{/if}
 				</section>
 				<section class="card tbl-wrap">

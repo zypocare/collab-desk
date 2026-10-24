@@ -65,7 +65,7 @@
 	};
 	function feedHref(e: D): string | null {
 		if (e.link === 'outbox') return null;
-		if (e.link === 'ticket') return href('support');
+		if (e.link === 'ticket') return href('support', e.id);
 		return recordHref(e.link, e.id);
 	}
 </script>

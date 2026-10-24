@@ -233,7 +233,7 @@
 					{#if !c.support.length}<div class="card-empty">No tickets.</div>{:else}
 						<table class="tbl">
 							<thead><tr><th>#</th><th>Subject</th><th>Status</th><th>Updated</th></tr></thead>
-							<tbody>{#each c.support as t (t.id)}<tr><td class="mono">#{t.number}</td><td>{t.subject}</td><td><span class="tag {t.status === 'solved' ? 't-ok' : t.status === 'open' ? 't-warn' : 't-info'}">{label(t.status)}</span></td><td>{ago(t.at)}</td></tr>{/each}</tbody>
+							<tbody>{#each c.support as t (t.id)}<tr><td class="mono"><a href={href('support', t.id)}>#{t.number}</a></td><td>{t.subject}</td><td><span class="tag {t.status === 'solved' ? 't-ok' : t.status === 'open' ? 't-warn' : 't-info'}">{label(t.status)}</span></td><td>{ago(t.at)}</td></tr>{/each}</tbody>
 						</table>
 					{/if}
 				</section>

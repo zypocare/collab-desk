@@ -216,6 +216,7 @@
 			<h1>{config.title} <span class="mono muted">{num(total)}</span></h1>
 		</div>
 		<div class="lv-acts">
+			{#if config.create}<button class="btn" disabled={acting} onclick={() => run({ run: () => config.create!.run() }, [])}><Icon name="plus" />{config.create.label}</button>{/if}
 			<button class="btn" onclick={exportCsv}><Icon name="download" />Export CSV</button>
 			<button class="btn pri" onclick={saveView}><Icon name="plus" />Save view</button>
 		</div>

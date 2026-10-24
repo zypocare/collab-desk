@@ -17,9 +17,10 @@
 	import Admins from './crm/Admins.svelte';
 	import Palette from './crm/Palette.svelte';
 	import { LISTS } from './crm/lists.ts';
-	import ProblemsTab from './ProblemsTab.svelte';
-	import SafetyTab from './SafetyTab.svelte';
-	import SupportTab from './SupportTab.svelte';
+	import TicketPage from './crm/TicketPage.svelte';
+	import ProblemPage from './crm/ProblemPage.svelte';
+	import SafetyPage from './crm/SafetyPage.svelte';
+	import AutopilotsPage from './crm/AutopilotsPage.svelte';
 
 	let { email, onsignout }: { email: string; onsignout: () => void } = $props();
 
@@ -54,11 +55,30 @@
 			]
 		},
 		{
+			label: 'Automation',
+			items: [
+				{ id: 'autopilots', label: 'Autopilots', icon: 'spark' },
+				{ id: 'autopilot-items', label: 'Autopilot items', icon: 'list' },
+				{ id: 'dm', label: 'DM auto-replies', icon: 'send' }
+			]
+		},
+		{
 			label: 'Trust',
 			items: [
 				{ id: 'support', label: 'Support', icon: 'mail', badge: () => queue.support_unread ?? 0 },
 				{ id: 'safety', label: 'Safety', icon: 'shield', badge: () => queue.safety ?? 0, warn: true },
+				{ id: 'bans', label: 'Bans', icon: 'x' },
+				{ id: 'blocks', label: 'Blocks', icon: 'pause' },
 				{ id: 'problems', label: 'Problems', icon: 'alert', badge: () => queue.problems_new ?? 0 }
+			]
+		},
+		{
+			label: 'Growth',
+			items: [
+				{ id: 'directory', label: 'Directory', icon: 'users' },
+				{ id: 'cases', label: 'Case studies', icon: 'note' },
+				{ id: 'pages', label: 'Creator pages', icon: 'external' },
+				{ id: 'reels', label: 'Reel swaps', icon: 'refresh' }
 			]
 		},
 		{
@@ -76,7 +96,6 @@
 		}
 	];
 	const screens = NAV.flatMap((g) => g.items.map((i) => ({ label: i.label, href: href(i.id) })));
-	const LEGACY: Record<string, [string, string]> = { support: ['Trust', 'Support'], safety: ['Trust', 'Safety'], problems: ['Trust', 'Problems'] };
 
 	let queue = $state<Record<string, number>>({});
 	let flagsOff = $state(0);
@@ -158,6 +177,14 @@
 				<BrandPage id={route.id} />
 			{:else if route.section === 'campaigns' && route.id}
 				<CampaignPage id={route.id} />
+			{:else if route.section === 'support' && route.id}
+				<TicketPage id={route.id} onchange={loadQueue} />
+			{:else if route.section === 'problems' && route.id}
+				<ProblemPage id={route.id} onchange={loadQueue} />
+			{:else if route.section === 'safety' && route.id}
+				<SafetyPage id={route.id} onchange={loadQueue} />
+			{:else if route.section === 'autopilots'}
+				<AutopilotsPage />
 			{:else if route.section === 'controls'}
 				<Controls onflags={(n) => (flagsOff = n)} />
 			{:else if route.section === 'jobs'}
@@ -166,11 +193,6 @@
 				<Admins />
 			{:else if LISTS[route.section]}
 				{#key route.section}<ListView config={LISTS[route.section]} onchange={loadQueue} />{/key}
-			{:else if LEGACY[route.section]}
-				<header class="lh"><div class="eb">{LEGACY[route.section][0]}</div><h1>{LEGACY[route.section][1]}</h1></header>
-				{#if route.section === 'support'}<SupportTab onload={(n) => (queue = { ...queue, support_unread: n })} />
-				{:else if route.section === 'safety'}<SafetyTab onload={(s) => (queue = { ...queue, safety: s.targets.filter((t) => t.open).length })} />
-				{:else}<ProblemsTab onload={(p) => (queue = { ...queue, problems_new: p.new_today })} />{/if}
 			{:else}
 				<div class="card card-empty">This page doesn't exist. <a href={href('dashboard')}>Go to the dashboard</a></div>
 			{/if}
@@ -210,9 +232,6 @@
 	.live i { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); }
 	.burger { display: none; width: 36px; padding: 0; }
 	.main { padding: 22px var(--gut) 56px; width: 100%; max-width: 1480px; }
-	.lh { margin-bottom: 18px; }
-	.lh .eb { font-size: 12.5px; color: var(--ink-3); margin-bottom: 3px; }
-	.lh h1 { font-size: 24px; }
 	.side-scrim { display: none; }
 
 	@media (max-width: 900px) {

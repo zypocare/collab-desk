@@ -25,7 +25,7 @@
 		if (kind === 'collab') return href('collabs', x.id);
 		if (kind === 'invoice' && x.collab) return href('collabs', x.collab);
 		if (kind === 'invoice' && x.creator) return href('creators', x.creator);
-		if (kind === 'ticket') return href('support');
+		if (kind === 'ticket') return href('support', x.id);
 		return href('dashboard');
 	}
 

@@ -41,6 +41,8 @@ export type ListConfig = {
 	href?: (row: Row) => string | null;
 	bulk?: Action[];
 	rowActions?: Action[];
+	/** A button by the title that makes a new record (for example a ban). */
+	create?: { label: string; run: () => Promise<boolean | void> };
 };
 
 const status = (v: string): [string, string] => [STATUS_LABEL[v] ?? label(v), STATUS_TAG[v] ?? 't-mute'];
@@ -527,6 +529,293 @@ const SYSTEM: Record<string, ListConfig> = {
 	}
 };
 
+const TICKET_TAG: Record<string, string> = { open: 't-bad', waiting: 't-info', solved: 't-ok' };
+const TICKET_LABEL: Record<string, string> = { open: 'Your turn', waiting: 'Waiting on them', solved: 'Solved' };
+const CATEGORY: Record<string, string> = { collabs: 'Collabs', money: 'Money', instagram: 'Instagram', account: 'Account', bug: 'Bug', idea: 'Idea', brand: 'Booking', other: 'Other' };
+export const REASON: Record<string, string> = {
+	pay_to_work: 'Asking creators to pay', fake: 'Fake brand', not_paid: "Didn't pay", abuse: 'Rude or threatening', spam: 'Spam',
+	not_posted: "Got paid, didn't post", fake_followers: 'Fake followers', no_approval: 'Posted without approval', other: 'Something else'
+};
+const SOURCE: Record<string, string> = { app: 'App', server: 'Server', jobs: 'Emails & jobs' };
+async function addBan() {
+	const value = await askText({ title: 'Ban an email or a UPI ID', body: "A banned email can't sign up as a brand, send requests or messages, or ask questions on a creator's page. A banned UPI ID can't be sent in messages.", ok: 'Next', input: { label: 'Email or UPI ID', placeholder: 'name@example.com or name@okbank', required: true } });
+	if (value === null) return false;
+	// A UPI ID has no dot after the @ (name@okaxis); an email does.
+	const k = /^[^@\s]+@[a-z]{2,}$/i.test(value.trim()) ? 'upi' : 'email';
+	const reason = await askText({ title: `Ban the ${k === 'upi' ? 'UPI ID' : 'email'} ${value.trim()}?`, ok: 'Ban', danger: true, input: { label: 'Why (for the audit trail)', required: true } });
+	if (reason === null) return false;
+	const { error } = await supabase.rpc('admin_ban_set', { p_kind: k, p_value: value, p_add: true, p_reason: reason });
+	if (error) {
+		toast(errMessage(error), true);
+		return false;
+	}
+	toast(`${value.trim()} is banned`);
+	return true;
+}
+async function directoryList(rows: Row[], on: boolean) {
+	const reason = await askText({
+		title: on ? `List ${rows.length === 1 ? rows[0].name : rows.length + ' creators'} in the directory?` : `Take ${rows.length === 1 ? rows[0].name : rows.length + ' creators'} out of the directory?`,
+		body: on ? 'Brands browsing the directory will find them.' : 'Brands stop finding them in the directory. Their pages still work.',
+		ok: on ? 'List' : 'Take out',
+		input: { label: 'Reason (for the audit trail)' }
+	});
+	if (reason === null) return false;
+	let n = 0;
+	for (const r of rows) {
+		const { error } = await supabase.rpc('admin_creator_directory', { p_id: r.id, p_listed: on, p_reason: reason });
+		if (error) toast(`${r.name}: ${errMessage(error)}`, true);
+		else n++;
+	}
+	if (n) toast(on ? `Listed ${n}` : `Took out ${n}`);
+	return n > 0;
+}
+
+const TRUST: Record<string, ListConfig> = {
+	support: {
+		id: 'support', kind: 'tickets', group: 'Trust', title: 'Support', noun: 'ticket', search: 'Number, subject, email, name, creator',
+		presets: [
+			{ id: 'open', label: 'Your turn', filters: { status: 'open' } },
+			{ id: 'unread', label: 'Unread', filters: { unread: true } },
+			{ id: 'urgent', label: 'Urgent', filters: { priority: 'urgent', status: ['open', 'waiting'] } },
+			{ id: 'waiting', label: 'Waiting on them', filters: { status: 'waiting' } },
+			{ id: 'solved', label: 'Solved', filters: { status: 'solved' } },
+			{ id: 'all', label: 'All', filters: {} }
+		],
+		filters: [
+			{ key: 'side', label: 'From', options: [{ label: 'Creators', value: 'creator' }, { label: 'Brands', value: 'brand' }, { label: 'Others', value: 'other' }] },
+			{ key: 'category', label: 'About', options: Object.entries(CATEGORY).map(([v, l]) => ({ label: l, value: v })) },
+			DAYS('created', 'Opened')
+		],
+		columns: [
+			{ key: 'number', label: 'Ticket', text: (r) => `#${r.number} ${r.subject}`, sub: 'email' },
+			{ key: 'status', label: 'Status', type: 'tag', tag: (v, r) => (r.unread ? ['Unread', 't-bad'] : [TICKET_LABEL[v] ?? label(v), TICKET_TAG[v] ?? 't-mute']) },
+			{ key: 'priority', label: 'Priority', type: 'tag', tag: (v) => (v === 'urgent' ? ['Urgent', 't-bad'] : ['Normal', 't-mute']) },
+			{ key: 'category', label: 'About', text: (r) => CATEGORY[r.category] ?? label(r.category) },
+			{ key: 'side', label: 'From', text: (r) => (r.side === 'creator' ? `Creator${r.creator ? ' · ' + r.creator : ''}` : label(r.side)), link: (r) => (r.creator_id ? href('creators', r.creator_id) : r.user_id && r.side === 'brand' ? href('brand-logins', r.user_id) : null) },
+			{ key: 'messages', label: 'Messages', type: 'num' },
+			{ key: 'rating', label: 'Rating', text: (r) => (r.rating ? '★'.repeat(r.rating) : '—') },
+			{ key: 'updated', label: 'Updated', type: 'ago' },
+			{ key: 'created', label: 'Opened', type: 'day' }
+		],
+		sort: 'updated',
+		href: (r) => href('support', r.id)
+	},
+	safety: {
+		id: 'safety', kind: 'safety', group: 'Trust', title: 'Safety', noun: 'reported account', search: 'Name, kind, reason',
+		presets: [
+			{ id: 'open', label: 'To look at', filters: { open: true } },
+			{ id: 'paused', label: 'Paused by themselves', filters: { auto_paused: true } },
+			{ id: 'brands', label: 'Brands', filters: { kind: 'brand' } },
+			{ id: 'creators', label: 'Creators', filters: { kind: 'creator' } },
+			{ id: 'all', label: 'All', filters: {} }
+		],
+		filters: [{ key: 'reason', label: 'Reason', options: Object.entries(REASON).map(([v, l]) => ({ label: l, value: v })) }, DAYS('created', 'Last report')],
+		columns: [
+			{ key: 'name', label: 'Reported', sub: 'kind' },
+			{ key: 'open', label: 'Status', type: 'tag', tag: (v, r) => (r.state === 'closed' ? ['Closed', 't-mute'] : r.auto_paused ? ['Paused itself', 't-bad'] : v ? ['To look at', 't-warn'] : ['Done', 't-ok']) },
+			{ key: 'reason', label: 'Mostly', text: (r) => REASON[r.reason] ?? label(r.reason) },
+			{ key: 'reports', label: 'Reports', type: 'num' },
+			{ key: 'people', label: 'From people', type: 'num' },
+			{ key: 'state', label: 'Account', text: (r) => (r.state === 'no_login' ? 'No login (added by a creator)' : label(r.state)) },
+			{ key: 'created', label: 'Last report', type: 'ago' }
+		],
+		sort: 'created',
+		href: (r) => href('safety', r.key)
+	},
+	bans: {
+		id: 'bans', kind: 'bans', group: 'Trust', title: 'Bans', noun: 'ban', search: 'Email, UPI ID, reason',
+		presets: [{ id: 'all', label: 'All', filters: {} }, { id: 'email', label: 'Emails', filters: { kind: 'email' } }, { id: 'upi', label: 'UPI IDs', filters: { kind: 'upi' } }],
+		filters: [DAYS('created', 'Banned')],
+		columns: [
+			{ key: 'value', label: 'Banned', type: 'mono' },
+			{ key: 'kind', label: 'Kind', type: 'tag', tag: (v) => [v === 'upi' ? 'UPI ID' : 'Email', 't-mute'] },
+			{ key: 'reason', label: 'Why', wrap: true },
+			{ key: 'created', label: 'Banned', type: 'day' }
+		],
+		sort: 'created',
+		href: () => null,
+		create: { label: 'Ban an email or UPI ID', run: addBan },
+		rowActions: [
+			{ label: 'Lift ban', run: withReason('Lift this ban?', 'The email can be used again, or the UPI ID can be sent in messages again.', 'Lift ban', 'admin_ban_set', (r, why) => ({ p_kind: r.kind, p_value: r.value, p_add: false, p_reason: why }), 'Ban lifted', false) }
+		]
+	},
+	blocks: {
+		id: 'blocks', kind: 'blocks', group: 'Trust', title: 'Blocks', noun: 'block', search: 'Creator, workspace, brand',
+		presets: [{ id: 'all', label: 'All', filters: {} }, { id: 'creators', label: 'Creators blocking brands', filters: { side: 'creator' } }, { id: 'brands', label: 'Brands blocking creators', filters: { side: 'brand' } }],
+		filters: [DAYS('created', 'Blocked')],
+		columns: [
+			{ key: 'side', label: 'Who blocked', text: (r) => (r.side === 'creator' ? `Creator · ${r.creator ?? '—'}` : `Brand · ${r.workspace ?? r.brand ?? '—'}`), link: (r) => (r.side === 'creator' ? creatorLink(r) : r.workspace_id ? href('workspaces', r.workspace_id) : null) },
+			{ key: 'name', label: 'Blocked', text: (r) => (r.side === 'creator' ? (r.workspace ?? r.brand ?? r.name ?? '—') : (r.creator ?? r.name ?? '—')),
+				link: (r) => (r.side === 'creator' ? (r.workspace_id ? href('workspaces', r.workspace_id) : r.brand_id ? href('brands', r.brand_id) : null) : creatorLink(r)) },
+			{ key: 'created', label: 'Blocked', type: 'day' }
+		],
+		sort: 'created',
+		href: () => null
+	},
+	problems: {
+		id: 'problems', kind: 'problems', group: 'Trust', title: 'Problems', noun: 'problem', search: 'Error, screen, release',
+		presets: [
+			{ id: 'open', label: 'Open', filters: { status: 'open' } },
+			{ id: 'new', label: 'New today', filters: { new: true, status: 'open' } },
+			{ id: 'fixed', label: 'Fixed', filters: { status: 'fixed' } },
+			{ id: 'ignored', label: 'Ignored', filters: { status: 'ignored' } },
+			{ id: 'all', label: 'All', filters: {} }
+		],
+		filters: [{ key: 'source', label: 'Where', options: Object.entries(SOURCE).map(([v, l]) => ({ label: l, value: v })) }, DAYS('created', 'Last seen')],
+		columns: [
+			{ key: 'message', label: 'Problem', sub: 'place', wrap: true },
+			{ key: 'status', label: 'Status', type: 'tag', tag: (v, r) => (r.new && v === 'open' ? ['New', 't-bad'] : plain({ open: 't-warn', fixed: 't-ok', ignored: 't-mute' })(v)) },
+			{ key: 'source', label: 'Where', text: (r) => SOURCE[r.source] ?? r.source },
+			{ key: 'week', label: '7 days', type: 'num' },
+			{ key: 'people', label: 'People (7 days)', type: 'num' },
+			{ key: 'times', label: 'All time', type: 'num' },
+			{ key: 'release', label: 'Release', type: 'mono' },
+			{ key: 'created', label: 'Last seen', type: 'ago' }
+		],
+		sort: 'created',
+		href: (r) => href('problems', r.id)
+	}
+};
+
+const CASE_TAG: Record<string, string> = { published: 't-ok', asked: 't-warn', draft: 't-mute', declined: 't-bad' };
+const GROWTH: Record<string, ListConfig> = {
+	directory: {
+		id: 'directory', kind: 'directory', group: 'Growth', title: 'Directory', noun: 'creator', search: 'Name, email, page, niche, city',
+		presets: [
+			{ id: 'listed', label: 'Listed', filters: { listed: true } },
+			{ id: 'ready', label: 'Ready to list', filters: { listed: false, instagram: true, has_bio: true } },
+			{ id: 'unlisted', label: 'Not listed', filters: { listed: false } },
+			{ id: 'all', label: 'All active', filters: {} }
+		],
+		filters: [{ key: 'instagram', label: 'Instagram', options: [{ label: 'Linked', value: true }, { label: 'Not linked', value: false }] }],
+		columns: [
+			{ key: 'name', label: 'Creator', sub: 'slug' },
+			{ key: 'listed', label: 'Directory', type: 'tag', tag: yes('Listed', 'Not listed') },
+			{ key: 'niche', label: 'Niche · city', text: (r) => [r.niche, r.city].filter(Boolean).join(' · ') || '—' },
+			{ key: 'followers', label: 'Followers', type: 'compact' },
+			{ key: 'has_bio', label: 'Bio', type: 'tag', tag: yes('Yes', 'Missing') },
+			{ key: 'cases', label: 'Case studies', type: 'num' },
+			{ key: 'collabs', label: 'Wrapped collabs', type: 'num' },
+			{ key: 'views_30d', label: 'Page views (30d)', type: 'num' }
+		],
+		sort: 'views_30d',
+		href: (r) => href('creators', r.id),
+		bulk: [
+			{ label: 'List', show: (r) => !r.listed, run: (rows) => directoryList(rows, true) },
+			{ label: 'Take out', show: (r) => r.listed, run: (rows) => directoryList(rows, false) }
+		],
+		rowActions: [
+			{ label: 'List', show: (r) => !r.listed, run: (rows) => directoryList(rows, true) },
+			{ label: 'Take out', show: (r) => r.listed, run: (rows) => directoryList(rows, false) }
+		]
+	},
+	cases: {
+		id: 'cases', kind: 'cases', group: 'Growth', title: 'Case studies', noun: 'case study', search: 'Title, creator, brand, collab',
+		presets: [
+			{ id: 'all', label: 'All', filters: {} },
+			{ id: 'published', label: 'Published', filters: { status: 'published' } },
+			{ id: 'asked', label: 'Waiting on brand', filters: { status: 'asked' } },
+			{ id: 'draft', label: 'Drafts', filters: { status: 'draft' } }
+		],
+		filters: [DAYS('created', 'Updated')],
+		columns: [
+			{ key: 'title', label: 'Case study', text: (r) => r.title || 'Untitled' },
+			{ key: 'creator', label: 'Creator', link: creatorLink },
+			{ key: 'brand', label: 'Brand' },
+			{ key: 'code', label: 'Collab', type: 'mono', link: collabLink },
+			{ key: 'status', label: 'Status', type: 'tag', tag: plain(CASE_TAG) },
+			{ key: 'published_at', label: 'Published', type: 'day' }
+		],
+		sort: 'created',
+		href: collabLink,
+		rowActions: [
+			{ label: 'Unpublish', danger: true, show: (r) => r.status === 'published',
+				run: withReason('Unpublish this case study?', 'It comes off the creator’s page and goes back to a draft they can edit.', 'Unpublish', 'admin_case_unpublish', (r, why) => ({ p_id: r.id, p_reason: why }), 'Unpublished') }
+		]
+	},
+	pages: {
+		id: 'pages', kind: 'pages', group: 'Growth', title: 'Creator pages', noun: 'page', search: 'Name, email, page address',
+		presets: [{ id: 'all', label: 'All active', filters: {} }, { id: 'fans', label: 'With fans', filters: { 'fans:gte': 1 } }, { id: 'quiet', label: 'No views in 30 days', filters: { views_30d: 0 } }],
+		filters: [],
+		columns: [
+			{ key: 'name', label: 'Creator', sub: 'slug' },
+			{ key: 'views_30d', label: 'Views (30d)', type: 'num' },
+			{ key: 'fans', label: 'Fans', type: 'num' },
+			{ key: 'unsubscribed', label: 'Unsubscribed', type: 'num' },
+			{ key: 'broadcasts', label: 'Emails to fans', type: 'num' },
+			{ key: 'links', label: 'Links', type: 'num' },
+			{ key: 'link_clicks', label: 'Link clicks', type: 'num' },
+			{ key: 'qr_scans', label: 'QR scans', type: 'num' }
+		],
+		sort: 'views_30d',
+		href: (r) => href('creators', r.id)
+	},
+	reels: {
+		id: 'reels', kind: 'reels', group: 'Growth', title: 'Reel swaps', noun: 'reel swap', search: 'Creators, idea',
+		presets: [{ id: 'all', label: 'All', filters: {} }, { id: 'pending', label: 'Waiting', filters: { status: 'pending' } }, { id: 'accepted', label: 'Accepted', filters: { status: 'accepted' } }],
+		filters: [DAYS('created', 'Asked')],
+		columns: [
+			{ key: 'from', label: 'Asked by', link: (r) => href('creators', r.from_id) },
+			{ key: 'to', label: 'Asked', link: (r) => href('creators', r.to_id) },
+			{ key: 'idea', label: 'Idea', wrap: true, nosort: true },
+			{ key: 'status', label: 'Status', type: 'tag', tag: plain({ pending: 't-warn', accepted: 't-ok', declined: 't-mute', cancelled: 't-mute' }) },
+			{ key: 'post_at', label: 'Post on', type: 'day' },
+			{ key: 'created', label: 'Asked', type: 'day' }
+		],
+		sort: 'created',
+		href: () => null
+	}
+};
+
+const ITEM_TAG2: Record<string, string> = { pending: 't-warn', done: 't-ok', auto: 't-info', skipped: 't-mute' };
+const AUTOMATION: Record<string, ListConfig> = {
+	'autopilot-items': {
+		id: 'autopilot-items', kind: 'autopilot_items', group: 'Automation', title: 'Autopilot items', noun: 'item', search: 'What it did, agent, workspace',
+		presets: [
+			{ id: 'pending', label: 'Waiting for approval', filters: { status: 'pending' } },
+			{ id: 'auto', label: 'Done by itself', filters: { status: 'auto' } },
+			{ id: 'done', label: 'Approved', filters: { status: 'done' } },
+			{ id: 'skipped', label: 'Skipped', filters: { status: 'skipped' } },
+			{ id: 'all', label: 'All', filters: {} }
+		],
+		filters: [{ key: 'kind', label: 'Agent', options: ['shortlist', 'followup', 'draft', 'negotiate', 'rebook', 'watch', 'invite'].map((v) => ({ label: label(v), value: v })) }, DAYS('created', 'Made')],
+		columns: [
+			{ key: 'created', label: 'When', type: 'when' },
+			{ key: 'kind', label: 'Agent', type: 'tag', tag: (v) => [label(v), 't-acc'] },
+			{ key: 'title', label: 'What', wrap: true },
+			{ key: 'workspace', label: 'Workspace', link: (r) => href('workspaces', r.workspace_id) },
+			{ key: 'status', label: 'Status', type: 'tag', tag: (v) => [v === 'pending' ? 'Waiting' : label(v), ITEM_TAG2[v] ?? 't-mute'] },
+			{ key: 'note', label: 'Note', wrap: true, nosort: true }
+		],
+		sort: 'created',
+		href: (r) => (r.collab_id ? href('collabs', r.collab_id) : r.campaign_id ? href('campaigns', r.campaign_id) : href('workspaces', r.workspace_id)),
+		rowActions: [
+			{ label: 'Skip', danger: true, show: (r) => r.status === 'pending',
+				run: withReason('Skip this autopilot item?', 'It won’t go ahead. The workspace sees it skipped by Miracle, with your reason.', 'Skip', 'admin_autopilot_item_skip', (r, why) => ({ p_id: r.id, p_reason: why }), 'Skipped') }
+		]
+	},
+	dm: {
+		id: 'dm', kind: 'dm_rules', group: 'Automation', title: 'DM auto-replies', noun: 'rule', search: 'Keyword, reply, creator',
+		presets: [{ id: 'active', label: 'On', filters: { active: true } }, { id: 'failing', label: 'With failures', filters: { 'failed:gte': 1 } }, { id: 'all', label: 'All', filters: {} }],
+		filters: [DAYS('created', 'Made')],
+		columns: [
+			{ key: 'keyword', label: 'Keyword', type: 'mono' },
+			{ key: 'reply', label: 'Reply', wrap: true, nosort: true },
+			{ key: 'creator', label: 'Creator', link: creatorLink },
+			{ key: 'active', label: 'State', type: 'tag', tag: yes('On', 'Off') },
+			{ key: 'sent', label: 'Sent', type: 'num' },
+			{ key: 'failed', label: 'Failed', type: 'num' },
+			{ key: 'last_error', label: 'Last error', wrap: true, nosort: true }
+		],
+		sort: 'created',
+		href: creatorLink,
+		rowActions: [
+			{ label: 'Turn off', danger: true, show: (r) => r.active,
+				run: withReason('Turn this auto-reply off?', 'Comments with this keyword stop getting the automatic DM. The creator can turn it back on.', 'Turn off', 'admin_dm_rule_off', (r, why) => ({ p_id: r.id, p_reason: why }), 'Rule off') }
+		]
+	}
+};
+
 export const LISTS: Record<string, ListConfig> = {
 	creators: {
 		id: 'creators',
@@ -698,7 +987,7 @@ export const LISTS: Record<string, ListConfig> = {
 			{ id: 'system', label: 'Switches, jobs & limits', filters: { kind: ['flag', 'limits', 'job', 'outbox', 'admins', 'problem'] } }
 		],
 		filters: [
-			{ key: 'kind', label: 'Record', options: ['creator', 'brand_login', 'workspace', 'collab', 'campaign', 'brand', 'ticket', 'problem', 'flag', 'limits', 'job', 'outbox', 'admins'].map((v) => ({ label: label(v), value: v })) },
+			{ key: 'kind', label: 'Record', options: ['creator', 'brand_login', 'workspace', 'collab', 'campaign', 'brand', 'ticket', 'problem', 'ban', 'flag', 'limits', 'job', 'outbox', 'admins'].map((v) => ({ label: label(v), value: v })) },
 			DAYS('at', 'When')
 		],
 		columns: [
@@ -714,7 +1003,7 @@ export const LISTS: Record<string, ListConfig> = {
 	}
 };
 
-Object.assign(LISTS, DEALS, SYSTEM);
+Object.assign(LISTS, DEALS, SYSTEM, TRUST, GROWTH, AUTOMATION);
 
 export function recordHref(kind: string, id: string | null | undefined): string | null {
 	if (kind === 'limits') return href('controls');
@@ -729,8 +1018,9 @@ export function recordHref(kind: string, id: string | null | undefined): string 
 	if (kind === 'job') return href('jobs');
 	if (kind === 'outbox') return href('outbox');
 	if (kind === 'admins') return href('admins');
-	if (kind === 'ticket') return href('support');
-	if (kind === 'problem') return href('problems');
+	if (kind === 'ticket') return href('support', id);
+	if (kind === 'problem') return href('problems', id);
+	if (kind === 'ban') return href('bans');
 	return null;
 }
 
