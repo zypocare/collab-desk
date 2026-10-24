@@ -39,6 +39,7 @@
 	import AutopilotSettings from '#lib/components/AutopilotSettings.svelte';
 	import CommentDmSettings from '#lib/components/CommentDmSettings.svelte';
 	import GetFound from '#lib/components/GetFound.svelte';
+	import GetFoundCard from '#lib/components/GetFoundCard.svelte';
 	import { agency } from '#lib/agency.svelte.ts';
 	import TeamSettings from '#lib/components/TeamSettings.svelte';
 	import DeleteAccount from '#lib/components/DeleteAccount.svelte';
@@ -168,7 +169,7 @@
 
 	// Settings are split into a few sections and only the one she picks is shown.
 	// On phones the menu is its own screen: tap a section, and "All settings" (or Back) returns.
-	type Sec = 'profile' | 'links' | 'rates' | 'bookings' | 'offers' | 'autopilot' | 'payments' | 'reviews' | 'alerts' | 'team' | 'blocked' | 'account';
+	type Sec = 'profile' | 'found' | 'links' | 'rates' | 'bookings' | 'offers' | 'autopilot' | 'payments' | 'reviews' | 'alerts' | 'team' | 'blocked' | 'account';
 	const autoOn = $derived([s.autopilot_packages, s.autopilot_counter, s.autopilot_nudge, s.autopilot_brief, s.autopilot_review].filter(Boolean).length);
 	const hasPay = $derived(!!(s.upi_id || s.bank_details));
 	const sections = $derived<{ id: Sec; label: string; icon: string; sub: string; warn?: string }[]>([
@@ -179,6 +180,7 @@
 			sub: studio.ig?.connected ? `@${studio.ig.username} connected` : 'Connect Instagram for live stats',
 			warn: studio.ig?.connected ? undefined : 'Instagram not connected'
 		},
+		{ id: 'found', label: 'Get found by brands', icon: 'search', sub: s.bio?.trim() ? 'Visits, about you, where brands look' : 'Add a line about you' },
 		{ id: 'links', label: 'Links & fan list', icon: 'link', sub: s.fan_list_on ? 'Links for followers · fan list on' : 'Links for followers · fan list off' },
 		{ id: 'rates', label: 'Rates & packages', icon: 'rupee', sub: `${offered.length} content types · ${studio.packages.filter((k) => k.active).length} packages` },
 		{
@@ -230,7 +232,7 @@
 	// Phone: My page settings in CRED's layout. Who she is, a few swipe cards, a quick card, then the
 	// sections in small groups and what she has earned at the bottom.
 	const GROUPS: { label: string; ids: Sec[] }[] = [
-		{ label: 'Your page', ids: ['profile', 'rates', 'reviews'] },
+		{ label: 'Your page', ids: ['profile', 'found', 'links', 'rates', 'reviews'] },
 		{ label: 'Bookings & money', ids: ['bookings', 'offers', 'payments'] },
 		{ label: 'How your desk works', ids: ['autopilot', 'alerts', 'team'] },
 		{ label: 'Account', ids: ['blocked', 'account'] }
@@ -331,7 +333,7 @@
 					<button class="btn primary" onclick={() => copyText(link, 'Link copied')}><Icon name="copy" />Copy</button>
 				</Ticket>
 			</div>
-			<div class="cs-gf"><GetFound {link} /></div>
+			<GetFoundCard onopen={() => open('found')} />
 			{#each GROUPS as g (g.label)}
 				<div class="cs-h">{g.label}</div>
 				{#each g.ids.map(byId) as x (x.id)}
@@ -429,6 +431,8 @@
 								<InsightLinks />
 							{/if}
 						</section>
+					{:else if active === 'found'}
+						<GetFound {link} />
 					{:else if active === 'links'}
 						<PageLinks />
 						<FanList />

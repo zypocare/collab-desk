@@ -187,6 +187,7 @@
 	const SECTIONS: Record<string, string> = {
 		profile: 'Edit profile',
 		links: 'Links & fan list',
+		found: 'Get found',
 		rates: 'Rates & packages',
 		bookings: 'Bookings & barter',
 		offers: 'Pricing & offers',

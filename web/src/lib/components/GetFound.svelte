@@ -2,32 +2,26 @@
 	import { onMount } from 'svelte';
 	import { askAi } from '../ai';
 	import { checkups, loadCheckups } from '../checkup.svelte';
+	import { loadPageViews, pageViews, summarise } from '../pageViews.svelte';
 	import { saveSettings, studio } from '../studio.svelte';
-	import { supabase } from '../supabase';
 	import { copyText, toast } from '../ui.svelte';
 	import Icon from './Icon.svelte';
 
-	// Get found: her "about" line (on her page, in link previews and what search engines and AI assistants
-	// read), an Instagram bio and the words brands search for; and who visited her page, from where.
+	// Get found: who opened her page and from where; her "about" line (on her page, in link previews and
+	// what search engines and AI assistants read), with an AI draft and an Instagram bio; and three more
+	// places brands look for creators.
 	let { link }: { link: string } = $props();
 	const s = $derived(studio.settings!);
 	let bio = $state('');
-	let views = $state<{ day: string; source: string; views: number }[]>([]);
 	let ai = $state<{ bio: string; ig_bio: string; keywords: string[]; missing: string[] } | null>(null);
 	let busy = $state(false);
-	onMount(async () => {
+	onMount(() => {
 		bio = studio.settings?.bio ?? '';
-		const since = new Date(Date.now() - 30 * 864e5).toISOString().slice(0, 10);
-		const { data } = await supabase.from('page_views').select('day, source, views').gte('day', since);
-		views = (data ?? []) as typeof views;
+		if (!pageViews.loaded) loadPageViews();
 		if (!checkups.loaded) loadCheckups();
 	});
-	const total = $derived(views.reduce((a, v) => a + v.views, 0));
-	const sources = $derived(
-		Object.entries(views.reduce<Record<string, number>>((a, v) => ((a[v.source] = (a[v.source] ?? 0) + v.views), a), {}))
-			.sort((a, b) => b[1] - a[1])
-			.slice(0, 5)
-	);
+	const sum = $derived(summarise(pageViews.rows, 4));
+	const max = $derived(Math.max(1, ...sum.sources.map((x) => x.views)));
 	const igLink = $derived(`${link}?utm_source=instagram`);
 	async function write() {
 		busy = true;
@@ -57,47 +51,68 @@
 		await saveSettings({ bio });
 		toast('Saved. It shows on your page and in link previews.', 'check');
 	}
+	const STEPS = $derived([
+		{ icon: 'link', t: 'Your Instagram link', p: 'Use this link in your bio, so visits from Instagram show up above.', act: 'Copy link', run: () => copyText(igLink, 'Link copied. Paste it in Instagram › Edit profile › Links.') },
+		{ icon: 'search', t: "Instagram's creator marketplace", p: 'Professional dashboard › Branded content: turn on being found by brands, and add your categories.' },
+		{ icon: 'film', t: 'YouTube creator partnerships', p: 'If you post on YouTube: YouTube Studio › Earn › Creator partnerships, and opt in.' }
+	]);
 </script>
 
 <section class="panel gf rv" aria-labelledby="gf-t">
-	<div class="panel-h"><h2 id="gf-t">Get found</h2><small>{total ? `${total} page view${total === 1 ? '' : 's'} in 30 days` : 'Views show here once people open your page'}</small></div>
+	<div class="panel-h"><h2 id="gf-t">Get found</h2><small>where brands find you</small></div>
 	<div class="gf-b">
-		{#if sources.length}
-			<div class="gf-src" aria-label="Where visitors came from">
-				{#each sources as [src, n] (src)}<span><b>{n}</b>{src === 'direct' ? 'typed or shared' : src}</span>{/each}
+		<div class="gf-card gf-visits">
+			<span class="gf-eb">Visits · last 30 days</span>
+			<div class="gf-vm">
+				<div class="gf-n"><b>{sum.total}</b><small>{sum.total === 1 ? 'page view' : 'page views'}</small></div>
+				{#if sum.sources.length}
+					<div class="gf-bars">
+						{#each sum.sources as x (x.key)}
+							<div class="gf-bar"><span>{x.label}</span><b>{x.views}</b><i style="width:{Math.max(5, (x.views / max) * 100)}%"></i></div>
+						{/each}
+					</div>
+				{:else}
+					<p class="gf-hint">Views show here once people open your page.</p>
+				{/if}
 			</div>
-		{/if}
-		<div class="f">
-			<label for="gf-bio">About you <span class="hint">(on your page, in link previews and what search engines read)</span></label>
-			<textarea class="inp" id="gf-bio" rows="3" maxlength="400" placeholder="e.g. Bengaluru skincare and home-decor reels in Kannada and English, for women 22-35. A fit for beauty, home and festive brands." bind:value={bio} onchange={() => save(bio)}></textarea>
 		</div>
-		{#if ai}
-			<div class="gf-ai">
-				<span class="lbl-t">Suggested</span>
-				<p>{ai.bio}</p>
-				<div class="row"><button class="btn sm primary" onclick={() => save(ai!.bio)}>Use on my page</button></div>
-				{#if ai.ig_bio}
-					<span class="lbl-t">Instagram bio</span>
-					<p>{ai.ig_bio}</p>
-					<div class="row"><button class="btn sm" onclick={() => copyText(ai!.ig_bio, 'Copied. Paste it in Instagram › Edit profile › Bio.')}><Icon name="copy" />Copy</button></div>
-				{/if}
-				{#if ai.keywords.length}
-					<span class="lbl-t">What brands search for</span>
-					<div class="gf-kw">{#each ai.keywords as k (k)}<span>{k}</span>{/each}</div>
-					<small class="hint">Use these words in your captions, bio and highlights. Instagram's and YouTube's own search for brands match on them.</small>
-				{/if}
-				{#if ai.missing.length}<small class="hint">Brands also look for: {ai.missing.join(' · ')}</small>{/if}
+
+		<div class="gf-card">
+			<label class="gf-eb" for="gf-bio">About you</label>
+			<p class="gf-hint">On your page, in link previews, and what Google and AI assistants read about you.</p>
+			<textarea class="gf-in" id="gf-bio" rows="3" maxlength="400" placeholder="e.g. Bengaluru skincare and home-decor reels in Kannada and English, for women 22–35." bind:value={bio} onchange={() => save(bio)}></textarea>
+			<div class="gf-row">
+				<small class="gf-hint">{bio.length}/400</small>
+				{#if !ai}<button class="btn sm" onclick={write} disabled={busy}>{#if busy}<span class="spinner"></span>Writing…{:else}<Icon name="spark" />Write it with AI{/if}</button>{/if}
 			</div>
-		{:else}
-			<button class="btn sm" onclick={write} disabled={busy}>{#if busy}<span class="spinner"></span>Writing…{:else}<Icon name="spark" />Write it with AI{/if}</button>
-		{/if}
+			{#if ai}
+				<div class="gf-ai">
+					<span class="gf-eb">Suggested</span>
+					<p>{ai.bio}</p>
+					<div class="gf-row"><button class="btn sm primary" onclick={() => save(ai!.bio)}>Use on my page</button><button class="btn sm" onclick={write} disabled={busy}>{#if busy}<span class="spinner"></span>{:else}<Icon name="refresh" />{/if}Another</button></div>
+					{#if ai.ig_bio}
+						<span class="gf-eb">Instagram bio</span>
+						<p>{ai.ig_bio}</p>
+						<div class="gf-row"><button class="btn sm" onclick={() => copyText(ai!.ig_bio, 'Copied. Paste it in Instagram › Edit profile › Bio.')}><Icon name="copy" />Copy</button></div>
+					{/if}
+					{#if ai.keywords.length}
+						<span class="gf-eb">What brands search for</span>
+						<div class="gf-kw">{#each ai.keywords as k (k)}<span>{k}</span>{/each}</div>
+						<small class="gf-hint">Use these words in your captions, bio and highlights.</small>
+					{/if}
+					{#if ai.missing.length}<small class="gf-hint">Brands also look for: {ai.missing.join(' · ')}</small>{/if}
+				</div>
+			{/if}
+		</div>
+
 		<div class="gf-steps">
-			<span class="lbl-t">Three more places brands look</span>
-			<ol>
-				<li><b>Your Instagram link.</b> Use <button class="lnk" onclick={() => copyText(igLink, 'Link copied. Paste it in Instagram › Edit profile › Links.')}>{igLink.replace(/^https?:\/\//, '')}</button> so the visits from Instagram show above.</li>
-				<li><b>Instagram's creator marketplace.</b> In Instagram, Professional dashboard › Branded content: turn on being found by brands, and add your categories.</li>
-				<li><b>YouTube creator partnerships.</b> If you post on YouTube: YouTube Studio › Earn › Creator partnerships, and opt in.</li>
-			</ol>
+			<span class="gf-eb">Three more places brands look</span>
+			{#each STEPS as st, i (st.t)}
+				<div class="gf-step">
+					<span class="gf-num">{i + 1}</span>
+					<div class="gf-st"><b>{st.t}</b><small>{st.p}</small>{#if st.run}<button class="btn sm" onclick={st.run}><Icon name="copy" />{st.act}</button>{/if}</div>
+				</div>
+			{/each}
 		</div>
 	</div>
 </section>
@@ -108,33 +123,108 @@
 		gap: 14px;
 		padding: 0 18px 18px;
 	}
-	.gf-b > .btn {
-		justify-self: start;
-	}
-	.gf-src {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 8px;
-	}
-	.gf-src span {
-		display: inline-flex;
-		gap: 6px;
-		align-items: baseline;
-		padding: 6px 10px;
-		border-radius: 99px;
+	.gf-card {
+		display: grid;
+		gap: 10px;
+		padding: 16px;
+		border-radius: 18px;
 		background: var(--surface-2);
-		font-size: 12.5px;
+	}
+	.gf-eb {
+		font-size: 11px;
+		font-weight: 700;
+		letter-spacing: 0.17em;
+		text-transform: uppercase;
+		color: var(--ink-3);
+	}
+	.gf-hint {
+		margin: 0;
+		font-size: 13px;
+		line-height: 1.45;
+		color: var(--ink-3);
+	}
+	.gf-vm {
+		display: grid;
+		grid-template-columns: auto minmax(0, 1fr);
+		gap: 20px;
+		align-items: center;
+	}
+	.gf-n {
+		display: grid;
+		gap: 2px;
+		min-width: 76px;
+	}
+	.gf-n b {
+		font: 400 46px/1 var(--f-serif, Georgia, serif);
+		font-variant-numeric: tabular-nums;
+	}
+	.gf-n small {
+		font-size: 12px;
+		color: var(--ink-3);
+	}
+	.gf-bars {
+		display: grid;
+		gap: 9px;
+		min-width: 0;
+	}
+	.gf-bar {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) auto;
+		row-gap: 4px;
+		column-gap: 8px;
+		font-size: 13px;
+	}
+	.gf-bar span {
+		overflow: hidden;
+		white-space: nowrap;
+		text-overflow: ellipsis;
 		color: var(--ink-2);
 	}
-	.gf-src b {
+	.gf-bar b {
+		font-weight: 600;
+		font-variant-numeric: tabular-nums;
+	}
+	.gf-bar i {
+		grid-column: 1 / -1;
+		height: 4px;
+		border-radius: 99px;
+		background: linear-gradient(90deg, var(--g1), var(--g2));
+	}
+	.gf-in {
+		width: 100%;
+		min-height: 96px;
+		padding: 12px 14px;
+		border: 0;
+		border-radius: 12px;
+		background: var(--surface);
+		box-shadow: inset 0 0 0 1px var(--line);
 		color: var(--ink);
+		font: 400 15.5px/1.5 var(--f-body, system-ui);
+		resize: vertical;
+		box-sizing: border-box;
+	}
+	.gf-in::placeholder {
+		color: var(--ink-3);
+		opacity: 0.8;
+	}
+	.gf-in:focus {
+		outline: 0;
+		box-shadow: inset 0 0 0 1.5px var(--g2);
+	}
+	.gf-row {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		justify-content: space-between;
+		gap: 10px;
 	}
 	.gf-ai {
 		display: grid;
 		gap: 8px;
 		padding: 14px;
 		border-radius: 14px;
-		background: var(--surface-2);
+		background: var(--surface);
+		box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--g1) 35%, transparent);
 	}
 	.gf-ai p {
 		margin: 0;
@@ -148,19 +238,46 @@
 	.gf-kw span {
 		padding: 4px 10px;
 		border-radius: 99px;
-		box-shadow: inset 0 0 0 1px var(--line-strong);
+		box-shadow: inset 0 0 0 1px var(--line-strong, var(--line));
 		font-size: 12.5px;
 	}
-	.gf-steps ol {
+	.gf-steps {
 		display: grid;
-		gap: 8px;
-		margin: 6px 0 0;
-		padding-left: 18px;
-		font-size: 13px;
-		line-height: 1.5;
-		color: var(--ink-2);
+		gap: 10px;
 	}
-	.gf-steps b {
-		color: var(--ink);
+	.gf-step {
+		display: grid;
+		grid-template-columns: auto minmax(0, 1fr);
+		gap: 12px;
+		padding: 14px 16px;
+		border-radius: 16px;
+		box-shadow: inset 0 0 0 1px var(--line);
+	}
+	.gf-num {
+		display: grid;
+		place-items: center;
+		width: 28px;
+		height: 28px;
+		border-radius: 50%;
+		background: var(--ink);
+		color: var(--bg);
+		font: 700 13px/1 var(--f-body, system-ui);
+	}
+	.gf-st {
+		display: grid;
+		gap: 4px;
+		justify-items: start;
+		min-width: 0;
+	}
+	.gf-st b {
+		font-size: 15px;
+	}
+	.gf-st small {
+		font-size: 13px;
+		line-height: 1.45;
+		color: var(--ink-3);
+	}
+	.gf-st .btn {
+		margin-top: 6px;
 	}
 </style>
