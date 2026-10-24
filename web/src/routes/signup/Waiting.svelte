@@ -34,7 +34,7 @@
 			<div class="wt-tip"><span>1</span><p><b>Switch Instagram to a professional account</b> (Creator or Business). It's free: Settings, then Account type and tools. Miracle needs it for live stats.</p></div>
 			<div class="wt-tip"><span>2</span><p><b>Note your usual rates</b> for a Reel, a Story and a post. You'll add them on your first day.</p></div>
 			<div class="wt-tip"><span>3</span><p><b>Think of your link name.</b> Short and close to your handle works best.</p></div>
-			<span class="su-hint wt-q">Questions? contact@miracleapp.live</span>
+			<span class="su-hint wt-q">Questions? support@miracleapp.live</span>
 		</aside>
 	{/if}
 </div>

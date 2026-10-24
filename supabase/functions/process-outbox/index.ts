@@ -12,6 +12,8 @@ import { reportProblem } from '../_shared/problems.ts';
 const PUSH_ONLY = new Set(['insights_viewed', 'ig_dm', 'ig_collab', 'month_summary', 'comment_dm']);
 // Mails to a brand that come from the app itself, so replies don't go to the creator.
 const FROM_APP = new Set(['brief_application', 'brief_digest', 'support_reply']);
+// Miracle's support inbox: replies to support mail go there, and the team's ticket mail comes there.
+const SUPPORT_INBOX = Deno.env.get('SUPPORT_EMAIL') ?? 'support@miracleapp.live';
 
 const CRON_SECRET = Deno.env.get('CRON_SECRET') ?? '';
 
@@ -131,6 +133,9 @@ Deno.serve(async (req) => {
         cc: toOwner && row.kind !== 'new_device' && !row.kind.startsWith('support_') ? teamCc : undefined,
         ...mail,
         ...(row.creator_id == null ? (creator.replyTo ? { replyTo: creator.replyTo } : {}) : toOwner || !ownerEmail || FROM_APP.has(row.kind) ? {} : { replyTo: ownerEmail }),
+        // Support: a reply to the person comes back to the support inbox; a ticket in the support inbox
+        // answers straight to the person who raised it.
+        ...(row.kind === 'support_reply' ? { replyTo: SUPPORT_INBOX } : (row.kind === 'support_new' || row.kind === 'support_user_reply') && p.email ? { replyTo: String(p.email) } : {}),
       });
       await supabase.from('outbox').update({ status: 'sent', sent_at: new Date().toISOString(), last_error: null }).eq('id', row.id);
       sent++;

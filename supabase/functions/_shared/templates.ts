@@ -577,7 +577,7 @@ Miracle support`,
          ${quoteBox(who, p.body)}
          ${P(`Their email: ${esc(p.email)}`)}`,
         { label: 'Open the Support tab', href: admin },
-        { to: 'app', why: `you're a ${s.app_name} admin` },
+        { to: 'app', why: `it came to ${s.app_name} support. Reply to this email to answer them directly, or answer in the Support tab so it stays on the ticket` },
       ),
       text: `${isNew ? 'New ticket' : 'Reply on ticket'} ${ref}: ${p.subject}
 From ${who}, ${p.email}

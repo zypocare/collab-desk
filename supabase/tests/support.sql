@@ -24,7 +24,8 @@ select :'t'::jsonb ->> 'id' as t_id \gset
 insert into results select 'A ticket gets a number', (:'t'::jsonb ->> 'number')::int >= 1001, :'t'::jsonb ->> 'number';
 insert into results select 'From the creator side', :'t'::jsonb ->> 'side' = 'creator' and (:'t'::jsonb ->> 'creator_id')::int = 1, null;
 insert into results select 'Only her own file is kept', jsonb_array_length(:'t'::jsonb -> 'messages' -> 0 -> 'files') = 1 and :'t'::jsonb -> 'messages' -> 0 -> 'files' -> 0 ->> 'name' = 'shot.png', null;
-insert into results select 'The team is told by email', exists (select 1 from public.outbox where kind = 'support_new' and to_email = 'support-admin@test.dev' and payload ->> 'number' = :'t'::jsonb ->> 'number'), null;
+insert into results select 'The support inbox is told by email', exists (select 1 from public.outbox where kind = 'support_new' and to_email = 'support@miracleapp.live' and payload ->> 'number' = :'t'::jsonb ->> 'number'), null;
+insert into results select 'Not the admins'' own emails', not exists (select 1 from public.outbox where kind like 'support_%' and to_email = 'support-admin@test.dev'), null;
 
 set local role authenticated;
 insert into results select 'It''s in her list', (select jsonb_array_length(public.support_mine()) = 1), null;

@@ -342,7 +342,8 @@ export const ARTICLES: Article[] = [
 		keywords: ['sign in', 'login', 'log in', 'code', 'otp', 'not received', 'email', 'fingerprint', 'passkey', 'face id', 'locked out', 'spam'],
 		body: [
 			{ p: 'Miracle has no passwords: type your email and we send a 6-digit code. On a phone or laptop you use often, you can turn on fingerprint (or face) sign-in.' },
-			{ list: ['Check spam and the Promotions tab for the code; it comes from Miracle.', 'Codes expire after a few minutes; ask for a new one.', 'Typed a different email than usual? Each email is a separate account.', 'Too many tries? Wait a few minutes before trying again.'] }
+			{ list: ['Check spam and the Promotions tab for the code; it comes from Miracle.', 'Codes expire after a few minutes; ask for a new one.', 'Typed a different email than usual? Each email is a separate account.', 'Too many tries? Wait a few minutes before trying again.'] },
+			{ tip: 'Still locked out? Email support@miracleapp.live from the address you sign in with.' }
 		]
 	},
 	{
@@ -376,10 +377,11 @@ export const ARTICLES: Article[] = [
 		summary: 'Raise a ticket and we’ll reply in the app and by email.',
 		category: 'account',
 		audience: 'all',
-		keywords: ['support', 'help', 'contact', 'ticket', 'complaint', 'bug', 'problem', 'talk to someone', 'human', 'call'],
+		keywords: ['support', 'help', 'contact', 'ticket', 'complaint', 'bug', 'problem', 'talk to someone', 'human', 'call', 'email', 'support email'],
 		body: [
 			{ p: 'If the articles and Ask Miracle don’t solve it, raise a ticket from Help › Contact support. Add a screenshot if you can: the app adds your phone and app version for us.' },
-			{ p: 'We usually reply within a working day (urgent problems with payments or sign-in first). You’ll get an alert and an email; reply in the ticket to keep everything together. You can mark it solved yourself.' }
+			{ p: 'We usually reply within a working day (urgent problems with payments or sign-in first). You’ll get an alert and an email; reply in the ticket to keep everything together. You can mark it solved yourself.' },
+			{ tip: 'Can’t sign in to raise a ticket? Email support@miracleapp.live from the address you use on Miracle.' }
 		]
 	}
 ];

@@ -59,7 +59,7 @@
 		});
 		if (err) {
 			busy = false;
-			return (error = err.code === '23505' ? `@${handle} is already on Miracle. If it's yours, write to contact@miracleapp.live and we'll sort it out.` : errMessage(err));
+			return (error = err.code === '23505' ? `@${handle} is already on Miracle. If it's yours, write to support@miracleapp.live and we'll sort it out.` : errMessage(err));
 		}
 		await refreshAccount();
 		busy = false;

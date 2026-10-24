@@ -271,6 +271,7 @@
 							<button type="button" class="lg-lnk" onclick={() => ((step = 'email'), (code = ''))}>Send a new code</button>
 						{/if}
 					</div>
+					<p class="lg-help">No code, or still stuck? Write to <a href="mailto:support@miracleapp.live">support@miracleapp.live</a></p>
 				</form>
 			{/if}
 		</div>
@@ -342,6 +343,8 @@
 	.lg-alt { display: flex; justify-content: space-between; gap: 12px; margin-top: 4px; font-size: 13.5px; color: var(--ink-3); }
 	.lg-lnk { border: 0; padding: 0; background: none; color: var(--ink-2); font: inherit; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
 	.lg-lnk:hover { color: var(--ink); }
+	.lg-help { margin: 6px 0 0; font-size: 12.5px; color: var(--ink-3); }
+	.lg-help a { color: var(--ink-2); }
 	.lg-join { width: min(440px, 100%); display: grid; gap: 12px; }
 	.lg-join-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 	.lg-sm { height: 48px; margin-top: 0; font-size: 12px; letter-spacing: 0.1em; text-decoration: none; }
