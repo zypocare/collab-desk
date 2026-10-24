@@ -9,6 +9,7 @@
 // Only public data, with the website's own public key.
 
 import type { PageEnv } from './page';
+import { SITE_FOOTER, SITE_FOOTER_CSS } from './siteFooter';
 
 declare const caches: { default: { match: (k: Request) => Promise<Response | undefined>; put: (k: Request, r: Response) => Promise<void> } };
 type Ctx = { waitUntil: (p: Promise<unknown>) => void };
@@ -218,10 +219,10 @@ function page(p: { title: string; desc: string; canonical: string; noindex: bool
 <link rel="icon" href="${SITE}/icon.svg"><meta name="theme-color" content="#110D11">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
 ${p.ld ? `<script type="application/ld+json">${JSON.stringify(p.ld).replace(/</g, '\\u003c')}</script>` : ''}
-<style>${CSS}</style></head><body>
+<style>${CSS}${SITE_FOOTER_CSS}</style></head><body>
 <header class="top wrap"><a class="logo" href="${SITE}/"><img src="${SITE}/icon.svg" alt="" width="30" height="30"><b>Miracle</b></a><nav><a href="/creators">Find creators</a><a href="${SITE}/tools/rate-calculator">Free tools</a><a class="btn sm" href="${APP}/signup?as=creator">Join free</a></nav></header>
 <main>${p.body}</main>
-<footer class="wrap foot-site"><span>© Zyposoft Technologies Private Limited</span><a href="${SITE}/privacy">Privacy</a><a href="${SITE}/terms">Terms</a><a href="${SITE}/">miracleapp.live</a></footer>
+${SITE_FOOTER}
 </body></html>`;
 }
 
@@ -267,6 +268,5 @@ h3{margin:0;display:flex;align-items:center;gap:6px;font-size:17px;font-weight:6
 @media (max-width:760px){.opening{grid-template-columns:minmax(0,1fr)}}.empty p{margin:0;color:var(--ink-3)}
 .cta{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:20px;margin-top:30px;padding-top:34px;padding-bottom:34px;border-top:1px solid var(--line)}.cta>div{display:grid;gap:10px;max-width:560px}.cta p{margin:0;color:var(--ink-3)}
 .tools{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:center;padding-bottom:30px}.tools a{color:var(--ink-2)}
-.foot-site{display:flex;flex-wrap:wrap;gap:10px 20px;padding-top:24px;padding-bottom:calc(env(safe-area-inset-bottom,0px) + 30px);border-top:1px solid var(--line);font-size:13px;color:var(--ink-3)}.foot-site a{color:var(--ink-3)}
 @media (max-width:640px){.top nav a:not(.btn){display:none}.top nav a[href="/creators"]{display:inline}.hero{padding-top:28px}.search{flex-direction:column}.search input{flex:none}.grid{grid-template-columns:minmax(0,1fr)}}
 `;

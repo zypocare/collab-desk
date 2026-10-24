@@ -1,7 +1,7 @@
 // Builds the website's content pages into site/: the public help centre (from the app's own help
 // articles), landing pages, guides, a 404 page, the shared stylesheet and the sitemap.
 // Run from the repo:  node site/build/build.mjs   (Node 22.6+ reads the app's TypeScript directly)
-import { mkdirSync, writeFileSync, readdirSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ARTICLES, CATEGORIES } from '../../web/src/lib/help/articles.ts';
@@ -10,6 +10,7 @@ import { LANDING } from './landing.mjs';
 import { GUIDES } from './guides.mjs';
 import { pricingPage, refundPage } from './pricing.mjs';
 import { waitlistPage } from './waitlist.mjs';
+import { DIRECTORY_FOOTER, footerCss, SITE_FOOTER } from './footer.mjs';
 
 const OUT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const write = (rel, html) => {
@@ -187,6 +188,27 @@ write('pricing.html', pricingPage());
 write('waitlist.html', waitlistPage());
 write('refund-policy.html', refundPage());
 write('assets/site.css', CSS.trim() + '\n');
+
+// ------------------------------------------------------------------ the same footer on the hand-written pages
+// Home, legal, sign-in and the calculators keep their own markup; their footer and its CSS are stamped in here
+// between markers, so every page's footer stays the same. The creator directory (in the web app's worker) gets
+// a copy too.
+const HAND = ['index.html', 'privacy.html', 'terms.html', 'data-deletion.html', 'signin.html', 'tools/rate-calculator.html', 'tools/engagement-calculator.html'];
+const FOOT_A = '<!-- site footer -->', FOOT_B = '<!-- /site footer -->';
+const CSS_TAG = `<style id="sf-css">${footerCss.trim()}</style>`;
+for (const rel of HAND) {
+	const f = join(OUT, rel);
+	const raw = readFileSync(f, 'utf8');
+	const crlf = raw.includes('\r\n');
+	let h = raw.replace(/\r\n/g, '\n');
+	const block = `${FOOT_A}\n${SITE_FOOTER}\n${FOOT_B}`;
+	if (h.includes(FOOT_A)) h = h.slice(0, h.indexOf(FOOT_A)) + block + h.slice(h.indexOf(FOOT_B) + FOOT_B.length);
+	else if (/<footer[\s>][\s\S]*?<\/footer>/.test(h)) h = h.replace(/<footer[\s>][\s\S]*?<\/footer>/, () => block);
+	else h = h.replace(/<\/body>/, () => `${block}\n</body>`);
+	h = /<style id="sf-css">[\s\S]*?<\/style>/.test(h) ? h.replace(/<style id="sf-css">[\s\S]*?<\/style>/, () => CSS_TAG) : h.replace('</head>', () => `${CSS_TAG}\n</head>`);
+	if (h !== raw.replace(/\r\n/g, '\n')) writeFileSync(f, crlf ? h.replace(/\n/g, '\r\n') : h);
+}
+writeFileSync(join(OUT, '../web/worker/siteFooter.ts'), `// Written by site/build/build.mjs from site/build/footer.mjs: the website's footer, for the creator directory.\n// Don't edit by hand; change footer.mjs and run \`node site/build/build.mjs\`.\nexport const SITE_FOOTER = ${JSON.stringify(DIRECTORY_FOOTER)};\nexport const SITE_FOOTER_CSS = ${JSON.stringify(footerCss.trim())};\n`);
 
 const fixed = [['/', 'weekly', 1.0], ['/creators', 'daily', 0.9], ['/pricing', 'monthly', 0.9], ['/waitlist', 'weekly', 0.8], ['/refund-policy', 'yearly', 0.3], ['/tools/rate-calculator', 'monthly', 0.8], ['/tools/engagement-calculator', 'monthly', 0.8], ['/privacy', 'yearly', 0.2], ['/terms', 'yearly', 0.2], ['/data-deletion', 'yearly', 0.2]];
 const today = new Date().toISOString().slice(0, 10);

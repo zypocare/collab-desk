@@ -1,6 +1,7 @@
 // The website's content pages (landing pages, guides, help, pricing, waitlist): one look, the same header
 // and footer as the home page, and the tags search engines read. Everything is plain HTML written by
 // build.mjs; the only scripts are the help search, the pricing switch and the waitlist form.
+import { footerCss, SITE_FOOTER } from './footer.mjs';
 
 export const SITE = 'https://www.miracleapp.live';
 export const APP = 'https://app.miracleapp.live';
@@ -71,16 +72,7 @@ ${json}
 ${crumbs.length ? `<nav class="crumbs wrap" aria-label="You are here"><a href="/">Miracle</a>${crumbs.map((c, i) => (i === crumbs.length - 1 ? ` <span>›</span> <span aria-current="page">${esc(c.name)}</span>` : ` <span>›</span> <a href="${c.path}">${esc(c.name)}</a>`)).join('')}</nav>` : ''}
 ${body}
 </main>
-<footer class="foot"><div class="wrap">
-  <div class="foot-cols">
-    <div class="f-brand"><a class="brand" href="/" aria-label="Miracle home"><img src="/icon.svg" alt="" width="34" height="34"><b>Miracle</b></a><p>Brand collaborations, handled, for creators, the brands they work with and the managers who run it all. Made in Bengaluru.</p><p class="f-tag">No commission on any deal. Brands pay creators directly.</p></div>
-    <nav aria-label="For creators"><b>Creators</b><a href="/get-brand-deals">Get brand deals</a><a href="/pitch-brands">Pitch brands with AI</a><a href="/link-in-bio-for-creators">Link in bio that books deals</a><a href="/influencer-media-kit">Live media kit</a><a href="/influencer-rate-card">Rates and quotes</a><a href="/brand-collaboration-management">Manage collabs</a><a href="/get-paid-by-brands">Get paid on time</a></nav>
-    <nav aria-label="For brands and agencies"><b>Brands &amp; agencies</b><a href="/find-influencers-india">Find influencers in India</a><a href="/creators">Creator directory</a><a href="/influencer-marketing-no-commission">No-commission campaigns</a><a href="/influencer-agency-software">For agencies and managers</a><a href="${JOIN_BRAND}">Join as a brand</a></nav>
-    <nav aria-label="Learn"><b>Learn</b><a href="/guides">Guides</a><a href="/help">Help centre</a><a href="/tools/rate-calculator">Rate calculator</a><a href="/tools/engagement-calculator">Engagement calculator</a></nav>
-    <nav aria-label="Company"><b>Company</b><a href="/pricing">Pricing</a><a href="/waitlist">Waitlist</a><a href="mailto:contact@miracleapp.live">Contact us</a><a href="mailto:support@miracleapp.live">Support</a><a href="/refund-policy">Refunds &amp; cancellation</a></nav>
-  </div>
-  <div class="f-bot"><span>© 2026 Miracle is a product of Zyposoft Technologies Private Limited, #7, Nisarga Layout, Chikkalsandra, Bangalore 560061, India.</span><span class="f-links"><a href="/terms">Terms</a><a href="/privacy">Privacy</a><a href="/data-deletion">Data deletion</a></span></div>
-</div></footer>
+${SITE_FOOTER}
 </body>
 </html>
 `;
@@ -289,23 +281,12 @@ h1 em,h2 em{font-style:italic;background:var(--grad);-webkit-background-clip:tex
 .perks li>i{display:grid;place-items:center;width:38px;height:38px;border-radius:50%;background:var(--grad);color:#fff;font:italic 400 19px/1 var(--f-display)}
 .perks b{display:block;color:var(--ink);margin-bottom:2px}.perks span{font-size:14.5px;color:var(--ink-3)}
 
-/* Footer (as on the home page) */
-.foot{margin-top:10px;padding-top:64px;padding-bottom:calc(env(safe-area-inset-bottom,0px) + 30px);border-top:1px solid var(--line);background:#09070A;color:var(--ink-3);font-size:14.5px}
-.foot-cols{display:grid;grid-template-columns:1.5fr repeat(4,minmax(0,1fr));gap:36px 30px}
-.foot nav{display:grid;align-content:start}
-.foot nav b{display:block;margin-bottom:12px;color:var(--ink);font-weight:600;font-size:12.5px;letter-spacing:.16em;text-transform:uppercase}
-.foot nav a{display:block;padding:5px 0;color:var(--ink-3);text-decoration:none;transition:color .2s}.foot a:hover{color:var(--ink)}
-.f-brand p{margin:16px 0 0;max-width:32ch}.f-brand .f-tag{margin-top:10px;font-size:13.5px}
-.f-bot{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px 24px;margin-top:52px;padding-top:24px;border-top:1px solid var(--line);font-size:13px}
-.f-links{display:flex;flex-wrap:wrap;gap:8px 22px}.f-links a{color:var(--ink-3);text-decoration:none}
-
 @media (max-width:1100px){.nav{gap:18px}.signin{display:none}}
 @media (max-width:980px){
   .nav{display:none}.menu{display:block}.bar .btn.sm{margin-left:auto}.signin{display:none}
   .lhero-in,.wl-in,.split{grid-template-columns:minmax(0,1fr)}.split .sec-h{position:static}
   .lhero-v{order:2}.feats,.tiles,.hcats{grid-template-columns:repeat(2,minmax(0,1fr))}.flow{grid-template-columns:repeat(2,minmax(0,1fr))}
   .adoc{grid-template-columns:minmax(0,1fr);gap:0}.aside{display:none}
-  .foot-cols{grid-template-columns:repeat(2,minmax(0,1fr))}.f-brand{grid-column:1/-1}
   .cta{grid-template-columns:minmax(0,1fr)}
 }
 @media (max-width:640px){
@@ -323,4 +304,4 @@ h1 em,h2 em{font-style:italic;background:var(--grad);-webkit-background-clip:tex
   .dev{width:min(270px,68vw)}
 }
 @media (max-width:380px){.bar .btn.sm{padding:0 12px;letter-spacing:.08em}}
-`;
+` + footerCss;
