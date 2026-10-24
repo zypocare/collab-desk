@@ -120,15 +120,26 @@
 	const dayName = (d: Date, i: number) => (i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : d.toLocaleDateString('en-IN', { weekday: 'long' }));
 	const NUM = ['No', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten'];
 	const picked = $derived(week[pick]);
-	// Her collab slots this calendar week (Monday to Sunday), the same count her brand page uses.
+	// Her collab slots, Monday to Sunday, the same weeks and count as her brand page and Settings. The days
+	// above run into next week, so both weeks show: this one (to Sunday) and the next.
 	const cap = $derived(Math.max(1, s.weekly_capacity ?? 3));
-	const booked = $derived.by(() => {
+	const slotWeeks = $derived.by(() => {
 		const m = new Date(T);
 		m.setDate(m.getDate() - ((m.getDay() + 6) % 7));
-		const from = iso(m), to = iso(new Date(m.getTime() + 7 * 864e5));
-		return list.filter((c) => ['confirmed', 'creating', 'live'].includes(c.stage) && (c.live_date ?? c.draft_date ?? c.preferred_live ?? '') >= from && (c.live_date ?? c.draft_date ?? c.preferred_live ?? '') < to).length;
+		return [0, 1].map((k) => {
+			const start = new Date(m.getTime() + k * 7 * 864e5);
+			const from = iso(start), to = iso(new Date(start.getTime() + 7 * 864e5));
+			const n = list.filter((c) => ['confirmed', 'creating', 'live'].includes(c.stage) && (c.live_date ?? c.draft_date ?? c.preferred_live ?? '') >= from && (c.live_date ?? c.draft_date ?? c.preferred_live ?? '') < to).length;
+			const day = (d: Date) => d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+			return { k, label: k ? 'Next week' : 'This week', range: k ? `from ${day(start)}` : `to ${day(new Date(start.getTime() + 6 * 864e5))}`, n };
+		});
 	});
-	const slotNote = $derived(booked >= cap ? 'Fully booked: brands see this week as full.' : cap - booked === 1 && cap > 1 ? 'One slot open: brands see this week as limited.' : `${cap - booked} slots open this week.`);
+	// The note speaks about next week once this one is nearly over (Saturday and Sunday).
+	const slotNote = $derived.by(() => {
+		const w = new Date(T).getDay() % 6 === 0 ? slotWeeks[1] : slotWeeks[0];
+		const which = w.k ? 'next week' : 'this week';
+		return w.n >= cap ? `Fully booked ${which}: brands see it as full.` : cap - w.n === 1 && cap > 1 ? `One slot open ${which}: brands see it as limited.` : `${cap - w.n} slots open ${which}.`;
+	});
 	// The moving line under the circles (CRED's "cashback disbursed today"): today in numbers.
 	const ticker = $derived(
 		[
@@ -281,8 +292,14 @@
 		{:else}A free week. <em>Make it count.</em>{/if}
 	</p>
 	<a class="wk2-cap" href="/studio/settings?s=bookings">
-		<span class="wk2-cap-h"><small>Collab slots this week</small><b>{Math.min(booked, cap)} <span>of {cap} booked</span></b></span>
-		<span class="wk2-bar" style="--n:{Math.min(cap, 10)}">{#each Array.from({ length: Math.min(cap, 10) }, (_, k) => k) as k (k)}<i class:on={k < booked}></i>{/each}</span>
+		<span class="wk2-cap-h"><small>Collab slots</small></span>
+		{#each slotWeeks as w (w.k)}
+			<span class="wk2-cap-w">
+				<span class="wk2-cap-l"><b>{w.label}</b> <span>{w.range}</span></span>
+				<b class="wk2-cap-n">{Math.min(w.n, cap)} <span>of {cap}</span></b>
+				<span class="wk2-bar" style="--n:{Math.min(cap, 10)}">{#each Array.from({ length: Math.min(cap, 10) }, (_, k) => k) as k (k)}<i class:on={k < w.n}></i>{/each}</span>
+			</span>
+		{/each}
 		<small>{slotNote}</small>
 	</a>
 	<div class="wk2-days" role="group" aria-label="Pick a day">
