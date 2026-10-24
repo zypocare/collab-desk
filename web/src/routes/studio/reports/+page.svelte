@@ -100,7 +100,7 @@
 		</div>
 	</div>
 	<div class="md-tiles">
-		<div class="md-tile"><small>Invoiced</small><b class="num">{inrS(r.total.taxable)}</b><span>{r.total.invoices} invoice{r.total.invoices === 1 ? '' : 's'}, before GST</span></div>
+		<div class="md-tile"><small>Invoiced</small><b class="num">{inrS(r.total.taxable)}</b><span>{r.total.invoices} invoice{r.total.invoices === 1 ? '' : 's'}{s.gst_registered ? ', before GST' : ''}</span></div>
 		<div class="md-tile"><small>Average fee</small><b class="num">{d.avgFee === null ? '—' : inrS(d.avgFee)}</b><span>per paid collab</span></div>
 		<div class="md-tile"><small>Deals won</small><b class="num">{d.wonCount}</b><span>{d.winRate === null ? 'requests this year' : `${pct(d.winRate)} win rate`}</span></div>
 		<div class="md-tile"><small>Products</small><b class="num">{inrS(r.total.barter)}</b><span>value of barter received</span></div>
@@ -193,8 +193,8 @@
 <section class="panel rv" style="--i:9">
 	<div class="panel-h"><h2>For your accountant</h2><small>CSV files open in Excel and Google Sheets</small></div>
 	<div class="export-list">
-		<button class="export" onclick={exportRegister}><Icon name="layers" /><div><b>Invoice register</b><small>Every invoice with GSTIN, taxable value, CGST/SGST/IGST, TDS and payment. Useful for GST returns.</small></div></button>
-		<button class="export" onclick={exportMonthly}><Icon name="cal" /><div><b>Monthly summary</b><small>Invoiced, GST, received, TDS, barter, costs and what you kept, each month.</small></div></button>
+		<button class="export" onclick={exportRegister}><Icon name="layers" /><div><b>Invoice register</b><small>Every invoice with its amounts, TDS and payment, ready for your accountant.</small></div></button>
+		<button class="export" onclick={exportMonthly}><Icon name="cal" /><div><b>Monthly summary</b><small>Invoiced, received, TDS, barter, costs and what you kept, each month.</small></div></button>
 		<button class="export" onclick={exportBrands}><Icon name="users" /><div><b>Brand summary</b><small>Totals per brand, including missing TDS certificates.</small></div></button>
 	</div>
 </section>

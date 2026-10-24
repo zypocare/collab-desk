@@ -165,13 +165,13 @@
 					</article>
 				{/each}
 			</div>
-			<p class="hint pb-fine">Paid securely through Razorpay (UPI AutoPay, cards, net banking). Renews by itself; stop any time and keep it to the end of what you paid. GST invoice by email.</p>
+			<p class="hint pb-fine">Paid securely through Razorpay (UPI AutoPay, cards, net banking). Renews by itself; stop any time and keep it to the end of what you paid. Invoice by email.</p>
 		</section>
 	{/if}
 
 	{#if p.payments.length}
 		<section class="panel rv">
-			<div class="panel-h"><h2>Payments</h2><small>GST invoices from Zyposoft Technologies</small></div>
+			<div class="panel-h"><h2>Payments</h2><small>{side === 'brand' ? 'GST invoices from Zyposoft Technologies' : 'invoices from Zyposoft Technologies'}</small></div>
 			<ul class="pb-pay">
 				{#each p.payments as y (y.id)}
 					<li><span><b>{y.invoice_no}</b><small>{day(y.paid_at)} · {y.period === 'year' ? 'yearly' : 'monthly'}</small></span><span class="pb-amt"><b class="num">{inr(y.amount)}</b>{#if y.token}<a class="btn sm ghost" href="/bill/{y.token}" target="_blank" rel="noopener"><Icon name="arrow" />Invoice</a>{/if}</span></li>

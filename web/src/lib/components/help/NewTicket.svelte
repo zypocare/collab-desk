@@ -101,7 +101,7 @@
 
 	<label class="nt-f">
 		<span>In a few words</span>
-		<input class="nt-in" bind:value={subject} maxlength="140" placeholder={side === 'brand' ? 'e.g. Can’t accept a quote' : 'e.g. Invoice shows the wrong GST'} />
+		<input class="nt-in" bind:value={subject} maxlength="140" placeholder={side === 'brand' ? 'e.g. Can’t accept a quote' : 'e.g. A brand hasn’t paid my invoice'} />
 	</label>
 
 	<label class="nt-f">

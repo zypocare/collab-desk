@@ -50,7 +50,7 @@
 <a class="back rv" href="/studio/money"><Icon name="back" />Money</a>
 <header class="ph rv">
 	<div>
-		<div class="eb">{fy.label} · GST, TDS and barter</div>
+		<div class="eb">{fy.label} · {s?.gst_registered ? 'GST, TDS and barter' : 'Earnings, TDS and barter'}</div>
 		<h1>Your <em>tax desk</em></h1>
 	</div>
 	<div class="acts">
@@ -67,12 +67,12 @@
 
 <div class="tx">
 	<section class="panel tx-card rv" style="--i:1" aria-labelledby="tx-gst">
-		<div class="panel-h"><h2 id="tx-gst">GST</h2><small>{s?.gst_registered ? `Registered${s.gstin ? ` · ${s.gstin}` : ''}` : 'Not registered'}</small></div>
+		<div class="panel-h"><h2 id="tx-gst">{s?.gst_registered ? 'GST' : 'What you earned'}</h2><small>{s?.gst_registered ? `Registered${s.gstin ? ` · ${s.gstin}` : ''}` : fy.label}</small></div>
 		<div class="tx-b">
-			<div class="tx-big"><b class="num">{inr(t.total)}</b><small>turnover in {fy.label}, counting barter at its value</small></div>
-			{#if !s?.gst_registered}
+			<div class="tx-big"><b class="num">{inr(t.total)}</b><small>{s?.gst_registered ? `turnover in ${fy.label}, counting barter at its value` : 'earned this year, barter counted at its value'}</small></div>
+			{#if !s?.gst_registered && share >= 0.8}
 				<div class="tx-bar" role="img" aria-label="{Math.round(share * 100)}% of the GST limit"><i style="width:{share * 100}%" class:hot={share >= 0.8}></i></div>
-				<p class="hint">{share >= 1 ? `Over the ${inr(limit)} limit: register for GST within 30 days and charge 18% from then on.` : share >= 0.8 ? `Close to the ${inr(limit)} limit (${inr(limit - t.total)} to go). Start your GST registration now; it takes a few weeks.` : `${inr(limit - t.total)} to go before you need GST (the limit is ${inr(limit)} a year).`}</p>
+				<p class="hint">{share >= 1 ? `Over the ${inr(limit)} limit: register for GST within 30 days and charge 18% from then on.` : share >= 0.8 ? `Close to the ${inr(limit)} limit (${inr(limit - t.total)} to go). Start your GST registration now; it takes a few weeks.` : ''}</p>
 			{/if}
 			<dl class="tx-dl">
 				<dt>Fees invoiced</dt><dd>{inr(t.fees)}</dd>
@@ -80,7 +80,7 @@
 				<dt>Barter (products, stays)</dt><dd>{inr(t.barter)}</dd>
 				{#if t.other}<dt>Other income (YouTube, affiliate…)</dt><dd>{inr(t.other)}</dd>{/if}
 			</dl>
-			<small class="hint">{t.other ? 'Income from outside Miracle comes from Money › Other income.' : 'YouTube, affiliate and platform income count too: add them in Money › Other income.'}</small>
+			<small class="hint">{t.other ? 'Income from outside Miracle comes from Money › Other income.' : 'YouTube, affiliate and platform income count too: add them in Money › Other income.'}{!s?.gst_registered && share < 0.8 ? ` No GST needed until ${inr(limit)} a year; this page warns you when you get close.` : ''}</small>
 		</div>
 	</section>
 

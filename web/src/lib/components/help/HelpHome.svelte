@@ -57,7 +57,7 @@
 			<h1 id="hh-t">How can we <em>help?</em></h1>
 			<form class="hh-search" onsubmit={ask} role="search">
 				<Icon name="search" />
-				<input bind:value={q} placeholder={side === 'brand' ? 'e.g. how do I pay a creator?' : 'e.g. my invoice shows the wrong GST'} aria-label="Search help, or ask a question" maxlength="300" />
+				<input bind:value={q} placeholder={side === 'brand' ? 'e.g. how do I pay a creator?' : 'e.g. a brand hasn’t paid my invoice'} aria-label="Search help, or ask a question" maxlength="300" />
 				{#if q.trim().length >= 4}<button class="hh-ask" disabled={asking}>{#if asking}<span class="spinner"></span>{:else}<Icon name="spark" />{/if}Ask</button>{/if}
 			</form>
 			<small class="hh-note">Search the guides, or tap Ask and Miracle's AI answers from them.</small>

@@ -55,7 +55,7 @@ const COMPARE = {
 		['Deals', null],
 		['Requests, collab board, calendar and drafts', true, true],
 		['Quotes brands accept online', '3 a month', 'Unlimited'],
-		['GST invoices with UPI QR', '3 a month', 'Unlimited'],
+		['Invoices with a UPI QR', '3 a month', 'Unlimited'],
 		['Offer check and fair-rate advice (AI)', true, true],
 		['Autopilots', null],
 		['Pitch autopilot: brands found and pitched for you', false, true],

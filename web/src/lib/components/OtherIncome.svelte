@@ -71,7 +71,7 @@
 				<div class="f"><label for="oi-tds">TDS deducted (₹) <span class="hint">(if any)</span></label><input class="inp num" id="oi-tds" type="number" inputmode="decimal" min="0" bind:value={f.tds} /></div>
 				<div class="f"><label for="oi-date">Received on</label><input class="inp" id="oi-date" type="date" bind:value={f.received_on} /></div>
 				<div class="f"><label for="oi-note">Note <span class="hint">(optional)</span></label><input class="inp" id="oi-note" maxlength="200" placeholder="e.g. September payout" bind:value={f.note} /></div>
-				<div class="oi-go"><button class="btn grad" disabled={busy}>{busy ? 'Saving…' : 'Save'}</button><small class="hint">Counted in your year's total and on the tax desk (GST limit and TDS).</small></div>
+				<div class="oi-go"><button class="btn grad" disabled={busy}>{busy ? 'Saving…' : 'Save'}</button><small class="hint">Counted in your year's total, so your earnings show everything.</small></div>
 			</form>
 		{/if}
 

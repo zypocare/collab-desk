@@ -12,7 +12,7 @@
 	let i = $state(0);
 	const SLIDES = [
 		{ img: '/intro/screen-offer.webp', eb: 'Close better deals', t: 'Know what to', em: 'say yes to.', p: 'Every request scored. Every agreement checked before you sign.' },
-		{ img: '/intro/screen-paid.webp', eb: 'Get paid on time', t: 'No more chasing', em: 'brands.', p: 'GST invoices with UPI, reminders that go by themselves, and a formal demand when needed.' },
+		{ img: '/intro/screen-paid.webp', eb: 'Get paid on time', t: 'No more chasing', em: 'brands.', p: 'Invoices with a UPI QR, reminders that go by themselves, and a formal demand when needed.' },
 		{ img: '/intro/screen-grow.webp', eb: 'Your AI desk', t: 'It works', em: 'while you create.', p: 'Know what to post next. Turn on autopilots: they ask you first, or just do it.' }
 	];
 	const read = (k: string, store: Storage) => {

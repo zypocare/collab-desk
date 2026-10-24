@@ -152,14 +152,14 @@ export const ARTICLES: Article[] = [
 	// ------------------------------------------------------------------ money
 	{
 		slug: 'gst-invoices',
-		title: 'Make GST invoices',
-		summary: 'Invoices with your GSTIN, SAC code and the brand’s details, in one tap.',
+		title: 'Make an invoice',
+		summary: 'An invoice with your UPI QR and the brand’s details, in one tap. GST only if you’re registered.',
 		category: 'money',
 		audience: 'creator',
-		keywords: ['invoice', 'gst', 'gstin', 'sac', 'tax invoice', 'bill', 'wrong gst', 'not registered', 'pan', 'download invoice'],
+		keywords: ['invoice', 'bill', 'upi', 'qr', 'download invoice', 'gst', 'gstin', 'not registered', 'pan', 'wrong gst'],
 		body: [
-			{ steps: ['Open Settings › Invoices & payments and add your legal name, PAN, and GSTIN if you’re registered (with your GST rate, usually 18%).', 'Add your UPI ID or bank account, to print on invoices.', 'On a collab, tap Create invoice. Miracle fills in the brand, the agreed fee and GST.'] },
-			{ p: 'Not registered for GST? Leave GSTIN empty and invoices go out without GST. Fixing details later? Update Settings, then make the invoice again.' }
+			{ steps: ['Open Settings › Invoices & payments and add your name and your UPI ID or bank account, to print on invoices.', 'On a collab, tap Create invoice. Miracle fills in the brand, the agreed fee and a UPI QR for the exact amount.', 'Send it: the brand gets it by email, and Miracle reminds them politely until it’s paid.'] },
+			{ p: 'Most creators aren’t registered for GST, and that’s fine: your invoices simply go out without it. Registered? Switch on “Registered for GST” in the same settings and add your GSTIN, and Miracle adds the GST for you.' }
 		],
 		links: [{ label: 'Invoices & payments', href: '/studio/settings?s=payments' }]
 	},

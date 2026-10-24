@@ -162,7 +162,7 @@ export const LANDING = [
 		h1: ['No more chasing ', 'brands.'],
 		lede: 'Late payments are the part of brand deals creators hate most. Miracle sends the invoice, follows up politely on your behalf and tells you the moment the brand says they’ve paid.',
 		features: [
-			['Invoices in a tap', 'Made from the agreed quote, with your payment details (and GST if you’re registered).'],
+			['Invoices in a tap', 'Made from the agreed quote, with your UPI QR and payment details, so the brand can pay in a minute.'],
 			['Polite reminders', 'Before the due date, on it and after, so you don’t have to write awkward messages.'],
 			['Paid? Confirm it', 'The brand reports the payment with its reference; you confirm it arrived.'],
 			['When it’s really late', 'Step-by-step help to send a formal demand, then an MSME complaint or legal notice, ready to send.'],
