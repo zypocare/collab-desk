@@ -6,7 +6,9 @@ delete from private.job_config;
 insert into auth.users(id, email) values ('00000000-0000-0000-0000-000000009901', 'workflow-owner@example.test');
 update public.creator_settings set creator_email = 'workflow-owner@example.test',
   autopilot_packages = false, autopilot_invoice = false, autopilot_dates = false,
-  autopilot_track = false, autopilot_counter = false, autopilot_nudge = false, autopilot_brief = false;
+  autopilot_track = false, autopilot_counter = false, autopilot_nudge = false, autopilot_brief = false
+-- Only the first creator: others (the demo, ones the browser tests signed up) can't share her email.
+where id = (select min(id) from public.creator_settings);
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-000000009901","email":"workflow-owner@example.test","role":"authenticated"}', true);
 
 create temporary table workflow_fixtures as

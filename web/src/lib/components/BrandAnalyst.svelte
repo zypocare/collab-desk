@@ -14,7 +14,8 @@
 	let asked = $state('');
 	let busy = $state(false);
 	let error = $state('');
-	let sales: SalesRow[] | null = null;
+	// Sales for this report's own dates, so return on spend divides the period's sales by the period's fees.
+	let sales: { key: string; rows: SalesRow[] } | null = null;
 	// A new period: the old reading no longer fits.
 	$effect(() => {
 		void period;
@@ -27,8 +28,9 @@
 		busy = true;
 		error = '';
 		try {
-			sales ??= await loadSales().catch(() => []);
-			reading = await explainReport(reportFacts(report, sales), company, period, q.trim());
+			const key = `${report.from}:${report.to}`;
+			if (sales?.key !== key) sales = { key, rows: await loadSales(report.from, report.to).catch(() => []) };
+			reading = await explainReport(reportFacts(report, sales.rows), company, period, q.trim());
 			asked = q.trim();
 			question = '';
 		} catch (e) {

@@ -4,7 +4,8 @@
 import { supabase } from './supabase';
 import { errMessage } from './util';
 
-export type SalesRow = { collab: string; creator: string; creator_id: number; brand: string; code: string; clicks: number; orders: number; revenue: number; fee: number; stage: string };
+/** undated: orders that can't be placed in a period (no order date, or typed in by hand); only set for a period. */
+export type SalesRow = { collab: string; creator: string; creator_id: number; brand: string; code: string; clicks: number; orders: number; revenue: number; fee: number; stage: string; undated?: number };
 export type Order = { ref: string; date: string; amount: number; code: string };
 
 /** A CSV file as rows of cells (quotes, commas and line breaks inside quotes handled). */
@@ -84,8 +85,9 @@ export async function importOrders(text: string) {
 	return { ...(data as { imported: number; matched: number; unmatched_codes: string[] }), source, withCode: orders.filter((o) => o.code).length };
 }
 
-export async function loadSales() {
-	const { data, error } = await supabase.rpc('brand_sales');
+/** All-time sales per tracked link, or only orders dated from–to (both yyyy-mm-dd) for a report period. */
+export async function loadSales(from?: string, to?: string) {
+	const { data, error } = await supabase.rpc('brand_sales', from && to ? { p_from: from, p_to: to } : {});
 	if (error) throw new Error(errMessage(error));
 	return (data as SalesRow[]) ?? [];
 }

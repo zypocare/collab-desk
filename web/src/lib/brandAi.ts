@@ -14,6 +14,7 @@ const r2 = (n: number) => Math.round(n * 100) / 100;
 export function reportFacts(r: Report, sales: SalesRow[] = []) {
 	const k = r.kpi;
 	const salesBy = new Map<number, { orders: number; revenue: number }>();
+	const undated = sales.reduce((n, s) => n + (s.undated ?? 0), 0);
 	for (const s of sales) {
 		const t = salesBy.get(s.creator_id) ?? { orders: 0, revenue: 0 };
 		t.orders += s.orders;
@@ -36,6 +37,8 @@ export function reportFacts(r: Report, sales: SalesRow[] = []) {
 				rating: c.rating, orders: s?.orders ?? null, sales: s?.revenue ?? null, roas: s && c.fees ? r2(s.revenue / c.fees) : null
 			};
 		}),
+		// Sales are orders dated inside this period, matched by promo code; fees are this period's too.
+		sales_note: `Orders dated ${r.from} to ${r.to}, matched to creators by promo code.${undated ? ` ${undated} order${undated === 1 ? '' : 's'} had no date and ${undated === 1 ? 'is' : 'are'} not counted.` : ''}`,
 		campaigns: r.campaigns.slice(0, 6).map((c) => ({ name: c.name, budget: c.budget, creators_asked: c.asked, creators_agreed: c.agreed, fees_agreed: c.spent, views: c.views })),
 		months: r.by_month.slice(-6),
 		rights: r.content,

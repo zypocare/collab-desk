@@ -6,7 +6,8 @@ import { supabase } from './supabase';
 import { errMessage } from './util';
 
 export type Studio = { id: number; name: string; handle: string; slug: string; role: string; photo: string | null; current: boolean };
-export type RosterDeal = { id: string; code: string; brand: string; fee: number; paid_on: string | null; settled: boolean };
+/** pct: the commission on this deal. term: 'rate' when locked at the rate of the time, 'deal' when set for this deal, null while it follows the current rate. */
+export type RosterDeal = { id: string; code: string; brand: string; fee: number; paid_on: string | null; settled: boolean; pct: number; term: 'rate' | 'deal' | null };
 export type RosterCreator = {
 	id: number;
 	slug: string;
@@ -56,6 +57,11 @@ export async function loadRoster() {
 
 export async function setSplit(creator: number, pct: number) {
 	const { error } = await supabase.rpc('agency_set', { p_creator: creator, p_pct: pct, p_collab: null, p_settled: false });
+	if (error) throw new Error(errMessage(error));
+}
+/** A commission for one deal on its own terms. */
+export async function setDealPct(collab: string, pct: number) {
+	const { error } = await supabase.rpc('agency_deal_pct', { p_collab: collab, p_pct: pct });
 	if (error) throw new Error(errMessage(error));
 }
 export async function setSettled(creator: number, collab: string, settled: boolean) {

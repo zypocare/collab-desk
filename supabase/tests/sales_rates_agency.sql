@@ -1,5 +1,5 @@
 -- Run: docker exec -i supabase_db_Influence psql -U postgres -d postgres -At < supabase/tests/sales_rates_agency.sql
--- Sales tracking, the rate benchmark and agency mode (migration 131). Runs in one transaction and rolls back.
+-- Sales tracking, the rate benchmark and agency mode (migrations 131 and 146). Runs in one transaction and rolls back.
 \set ON_ERROR_STOP 1
 begin;
 
@@ -36,6 +36,12 @@ select x as srow from jsonb_array_elements(public.brand_sales()) x limit 1 \gset
 insert into results select 'Importing the same order again doesn''t double it', (:'srow'::jsonb ->> 'orders')::int = 2, :'srow';
 insert into results select 'Her sales add up', (:'srow'::jsonb ->> 'revenue')::numeric = 3799, null;
 insert into results select 'The brand sees its fee next to the sales', (:'srow'::jsonb ->> 'fee')::numeric = 20000, null;
+-- A period counts orders by their date (#1001 lost its date on the re-import, so it's undated).
+select x as prow from jsonb_array_elements(public.brand_sales('2026-10-01', '2026-10-31')) x limit 1 \gset
+insert into results select 'In a period, only orders dated in it count', (:'prow'::jsonb ->> 'orders')::int = 1 and (:'prow'::jsonb ->> 'revenue')::numeric = 2500, :'prow';
+insert into results select 'Orders with no date are counted apart', (:'prow'::jsonb ->> 'undated')::int = 1, null;
+select x as nrow from jsonb_array_elements(public.brand_sales('2026-11-01', '2026-11-30')) x limit 1 \gset
+insert into results select 'A period with no orders has no sales', (:'nrow'::jsonb ->> 'orders')::int = 0 and (:'nrow'::jsonb ->> 'revenue')::numeric = 0, :'nrow';
 insert into results select 'The brand only sees its own orders', (select count(*) = 4 from public.brand_orders), null;
 reset role;
 insert into results select 'Her link shows the imported sales', (select sales = 2 and sales_by = 'brand' and sales_note like 'Imported from Shopify%' from public.collab_links where collab_id = :'col'), null;

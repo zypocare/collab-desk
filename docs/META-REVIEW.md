@@ -3,7 +3,7 @@
 Until Meta approves the app, only Instagram accounts with a role on it (testers) can connect.
 App Review grants **Advanced Access**, so any creator with a professional account can connect.
 
-Where things stand (22 Oct 2026):
+Where things stand (24 Oct 2026):
 
 | Step | Status |
 | --- | --- |
@@ -13,7 +13,7 @@ Where things stand (22 Oct 2026):
 | Privacy and data-deletion pages name Zyposoft | Done (www.miracleapp.live) |
 | Return address `https://qzsfuvcxpqaavmwkxutt.supabase.co/functions/v1/instagram-auth` | Added |
 | Demo creator `demo.miracleapp.live` with @memes_unlimited_official connected | Done |
-| App Review request with 5 permissions | **To submit** |
+| App Review request with 5 permissions (instagram_business_basic, _manage_insights, _manage_messages, _content_publish, public_profile) | **Submitted 23 Oct 2026, review in progress** (Meta says most finish within 20 days) |
 
 Until approval, add each new creator as a tester: developers.facebook.com → your app → **App roles →
 Roles → Add people → Instagram Tester**. The creator accepts at instagram.com → **Settings → Apps and

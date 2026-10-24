@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { loadRoster, setSettled, setSplit, useCreator, type RosterCreator } from '#lib/agency.svelte.ts';
+	import { loadRoster, setDealPct, setSettled, setSplit, useCreator, type RosterCreator, type RosterDeal } from '#lib/agency.svelte.ts';
 	import { rosterDeck } from '#lib/agencyDeck.ts';
 	import { studio } from '#lib/studio.svelte.ts';
 	import { toast } from '#lib/ui.svelte.ts';
@@ -25,8 +25,12 @@
 		}
 		loaded = true;
 	});
+	// Each deal at its own percentage: the one it was agreed at, not today's rate.
 	const ledger = $derived(
-		roster.flatMap((r) => r.deals.map((d) => ({ r, d, commission: Math.round((Number(d.fee) * r.pct) / 100), net: Number(d.fee) - Math.round((Number(d.fee) * r.pct) / 100) })))
+		roster.flatMap((r) => r.deals.map((d) => {
+			const commission = Math.round((Number(d.fee) * Number(d.pct)) / 100);
+			return { r, d, commission, net: Number(d.fee) - commission };
+		}))
 	);
 	const totals = $derived(ledger.reduce((a, x) => ({ gross: a.gross + Number(x.d.fee), commission: a.commission + x.commission, open: a.open + (x.d.settled ? 0 : x.commission) }), { gross: 0, commission: 0, open: 0 }));
 	function toggle(id: number) {
@@ -37,8 +41,24 @@
 	}
 	async function pct(r: RosterCreator, v: string) {
 		const n = Math.max(0, Math.min(50, Number(v) || 0));
-		await setSplit(r.id, n).catch((e) => toast(errMessage(e), 'alert'));
-		r.pct = n;
+		try {
+			await setSplit(r.id, n);
+			// Paid deals are locked at the old rate on the server; reload to show their terms.
+			roster = await loadRoster();
+			toast(`${n}% from now on. Deals already paid keep their own rate.`, 'check');
+		} catch (e) {
+			toast(errMessage(e), 'alert');
+		}
+	}
+	async function dealPct(d: RosterDeal, v: string) {
+		const n = Math.max(0, Math.min(50, Number(v) || 0));
+		try {
+			await setDealPct(d.id, n);
+			d.pct = n;
+			d.term = 'deal';
+		} catch (e) {
+			toast(errMessage(e), 'alert');
+		}
 	}
 	async function settle(r: RosterCreator, id: string, on: boolean) {
 		await setSettled(r.id, id, on).catch((e) => toast(errMessage(e), 'alert'));
@@ -122,19 +142,20 @@
 				</div>
 				<div class="ro-tw">
 					<table class="ro-t">
-						<thead><tr><th>Deal</th><th>Paid</th><th>Fee</th><th>Commission</th><th>To creator</th><th>Settled</th></tr></thead>
+						<thead><tr><th>Deal</th><th>Paid</th><th>Fee</th><th>Rate</th><th>Commission</th><th>To creator</th><th>Settled</th></tr></thead>
 						<tbody>
 							{#each ledger as x (x.d.id)}
 								<tr>
 									<td><b>{x.r.name}</b><small>{x.d.brand} · {x.d.code}</small></td>
 									<td>{fmt(x.d.paid_on)}</td>
 									<td class="num">{inr(x.d.fee)}</td>
+									<td class="ro-rate"><input class="inp num" type="number" min="0" max="50" step="0.5" value={x.d.pct} onchange={(e) => dealPct(x.d, (e.currentTarget as HTMLInputElement).value)} aria-label="Commission on {x.d.code}, in percent" />%<small>{x.d.term === 'deal' ? 'this deal' : x.d.term === 'rate' ? 'locked' : 'current'}</small></td>
 									<td class="num">{inr(x.commission)}</td>
 									<td class="num">{inr(x.net)}</td>
 									<td><input type="checkbox" class="cbx" checked={x.d.settled} onchange={(e) => settle(x.r, x.d.id, (e.currentTarget as HTMLInputElement).checked)} aria-label="Commission on {x.d.code} settled" /></td>
 								</tr>
 							{:else}
-								<tr><td colspan="6" class="hint">No paid deals in the last 12 months.</td></tr>
+								<tr><td colspan="7" class="hint">No paid deals in the last 12 months.</td></tr>
 							{/each}
 						</tbody>
 					</table>
@@ -208,7 +229,7 @@
 	}
 	.ro-t {
 		width: 100%;
-		min-width: 560px;
+		min-width: 640px;
 		border-collapse: collapse;
 		font-size: 13px;
 	}
@@ -229,5 +250,16 @@
 	.ro-t td small {
 		display: block;
 		color: var(--ink-3);
+	}
+	.ro-rate {
+		white-space: nowrap;
+	}
+	.ro-rate input {
+		width: 58px;
+		height: 30px;
+		margin-right: 3px;
+	}
+	.ro-t .ro-rate small {
+		font-size: 11px;
 	}
 </style>
