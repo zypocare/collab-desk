@@ -57,7 +57,7 @@
 					<span class="bx-eb">Do next</span>
 					<ol class="ba-next">{#each reading.next as n (n)}<li>{n}</li>{/each}</ol>
 				{/if}
-				<small class="ba-fine">Written by AI from this period's numbers. Check anything important before acting on it.</small>
+				<small class="ba-fine">Written by AI from this period's numbers{report.by_creator.length > 40 ? `: the 40 creators with the biggest fees one by one, the other ${report.by_creator.length - 40} added up` : ''}. Sales count orders dated in the period. Check anything important before acting on it.</small>
 			</div>
 		{:else}
 			<button class="btn grad ba-go" onclick={() => run()} disabled={busy}>{#if busy}<span class="spinner"></span>Reading your numbers…{:else}<Icon name="spark" />Explain these results{/if}</button>

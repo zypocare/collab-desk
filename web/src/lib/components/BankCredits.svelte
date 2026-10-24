@@ -18,7 +18,7 @@
 	<section class="panel rv" style="--i:4;margin-bottom:18px">
 		<div class="panel-h">
 			<h2>Bank credits</h2>
-			<small>{unmatched.length ? `${unmatched.length} to check` : 'all matched'} · from your bank's emails</small>
+			<small>{unmatched.length ? `${unmatched.length} to check` : 'all matched'} · matched from your bank's credit emails, not a check with the bank</small>
 		</div>
 		{#each unmatched as a (a.id)}
 			<div class="alert-row">

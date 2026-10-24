@@ -579,7 +579,7 @@
 						{#if quote.status === 'accepted' && advanceDue}
 							<div class="adv-card">
 								<b>Ask for the {inr(advanceDue)} advance</b>
-								<small>Sends {c.brand.name} an advance invoice with your UPI QR and bank details. When it lands in your bank, Miracle marks it paid{quote.wait_advance ? ' and the shoot is on' : ''}.</small>
+								<small>Sends {c.brand.name} an advance invoice with your UPI QR and bank details. When your bank's credit email matches it, or you mark it paid, it counts as paid{quote.wait_advance ? ' and the shoot is on' : ''}.</small>
 								<button class="btn primary" onclick={() => (invoiceOpen = {})}>Send the advance invoice</button>
 							</div>
 						{:else if quote.status === 'accepted' && quote.wait_advance && advanceWaiting}

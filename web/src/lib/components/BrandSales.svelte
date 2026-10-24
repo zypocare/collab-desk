@@ -1,12 +1,12 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { importOrders, loadSales, perSale, roas, type SalesRow } from '../brandSales';
+	import { importOrders, loadSales, perSale, salesPerFee, type SalesRow } from '../brandSales';
 	import { toast } from '../ui.svelte';
 	import { inr } from '../util';
 	import Icon from './Icon.svelte';
 
-	// Sales from creators' codes: import orders, then each creator's orders, sales, cost per sale and
-	// return on spend. Tracking only.
+	// Sales from creators' codes: import orders, then each creator's orders, sales, fee per sale and sales
+	// per rupee of fee. Tracking only. Every number says where it comes from (imported orders, link taps).
 	let rows = $state<SalesRow[]>([]);
 	let loaded = $state(false);
 	let busy = $state(false);
@@ -49,12 +49,12 @@
 		<div class="bs-k">
 			<div><small>Sales</small><b class="num">{inr(tot.revenue)}</b></div>
 			<div><small>Orders</small><b class="num">{tot.orders}</b></div>
-			<div><small>Return on spend</small><b class="num">{x(roas(tot))}</b></div>
-			<div><small>Cost per sale</small><b class="num">{perSale(tot) === null ? '—' : inr(perSale(tot))}</b></div>
+			<div><small>Sales per ₹1 of creator fees</small><b class="num">{x(salesPerFee(tot))}</b></div>
+			<div><small>Creator fee per sale</small><b class="num">{perSale(tot) === null ? '—' : inr(perSale(tot))}</b></div>
 		</div>
 		<div class="bs-tw">
 			<table class="bs-t">
-				<thead><tr><th>Creator</th><th>Code</th><th>Clicks</th><th>Orders</th><th>Sales</th><th>Fee</th><th>Per sale</th><th>Return</th></tr></thead>
+				<thead><tr><th>Creator</th><th>Code</th><th>Link taps</th><th>Orders</th><th>Sales</th><th>Fee</th><th>Fee per sale</th><th>Sales ÷ fee</th></tr></thead>
 				<tbody>
 					{#each rows as r (r.collab)}
 						<tr>
@@ -65,7 +65,7 @@
 							<td class="num">{inr(r.revenue)}</td>
 							<td class="num">{inr(r.fee)}</td>
 							<td class="num">{perSale(r) === null ? '—' : inr(perSale(r))}</td>
-							<td class="num" class:good={(roas(r) ?? 0) >= 1}>{x(roas(r))}</td>
+							<td class="num" class:good={(salesPerFee(r) ?? 0) >= 1}>{x(salesPerFee(r))}</td>
 						</tr>
 					{/each}
 				</tbody>
@@ -74,7 +74,11 @@
 	{:else if loaded}
 		<p class="hint bs-note">Give each creator a promo code (it's on the request page), then import your orders: in Shopify, Orders › Export; in WooCommerce, Orders › Export CSV. Orders with a creator's code count as their sales.</p>
 	{/if}
-	<small class="hint bs-note">Only codes and totals are read; customer details in the file aren't stored.</small>
+	<small class="hint bs-note">
+		Where these come from: <b>orders</b> and <b>sales</b> are the orders you imported that used a creator's code, all time;
+		<b>link taps</b> are taps on the tracked link, not people or purchases. <b>Sales ÷ fee</b> counts only what you paid the creator,
+		not product, shipping, ads or agency costs. Only codes and totals are read; customer details in the file aren't stored.
+	</small>
 </section>
 
 <style>

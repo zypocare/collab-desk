@@ -1167,7 +1167,9 @@ Return ONLY JSON: {"headline": "one line, under 14 words, the story of the month
 /** A brand's results in plain words: what stands out, and what to do next (or the answer to its question). */
 async function brandAsk(x: Run, b: Record<string, unknown>) {
 	const clip = (v: unknown, n: number) => String(v ?? '').replace(/\s+/g, ' ').trim().slice(0, n);
-	const facts = JSON.stringify(b.facts ?? {}).slice(0, 7000);
+	// Never cut the data silently: if it's too long, the analyst is told so and says it.
+	const all = JSON.stringify(b.facts ?? {});
+	const facts = all.length > 16000 ? `${all.slice(0, 16000)} …(cut short: the rest of the data didn't fit)` : all;
 	const question = clip(b.question, 300);
 	const reply = await chat(
 		x,
@@ -1176,7 +1178,7 @@ async function brandAsk(x: Run, b: Record<string, unknown>) {
  "points": ["3 to 5 findings, one sentence each, each quoting the real number from the data"],
  "next": ["2 or 3 concrete next steps that name the creators or campaigns from the data"],
  "answer": "${question ? 'a direct answer to the question in 2 to 4 sentences, using the numbers' : ''}"}
-Rules: use only numbers in the data and never invent any; compare creators by cost per view, engagement, sales and rating; when there is too little data to judge (few posts, no views yet), say so plainly instead of guessing. Write rupees the Indian way (₹1,20,000 or ₹1.2 lakh). Brands pay creators directly; never suggest paying or holding money through the app. Speak to the brand as "you" ("you paid", "your creators"). Simple English, no jargon.`,
+Rules: use only numbers in the data and never invent any; coverage says how many creators and campaigns are listed one by one out of the total, and others adds up the rest: when not everything is listed, or the data was cut short, say in the headline or a point that you looked at the biggest ones, and never make claims about "all" creators from part of them; sales_per_fee_rupee is sales divided by creator fees only, not the full campaign cost (product, shipping, ads, agency), so call it "sales per rupee of creator fees", never ROI or profit; sales_note says which orders count; compare creators by cost per view, engagement, sales and rating; when there is too little data to judge (few posts, no views yet), say so plainly instead of guessing. Write rupees the Indian way (₹1,20,000 or ₹1.2 lakh). Brands pay creators directly; never suggest paying or holding money through the app. Speak to the brand as "you" ("you paid", "your creators"). Simple English, no jargon.`,
 		`Brand: ${clip(b.company, 60)}. Period: ${clip(b.period, 40)}.${question ? `\nQuestion: ${question}` : ''}\nData: ${facts}`,
 		900
 	);

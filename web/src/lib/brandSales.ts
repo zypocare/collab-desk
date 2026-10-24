@@ -92,6 +92,7 @@ export async function loadSales(from?: string, to?: string) {
 	return (data as SalesRow[]) ?? [];
 }
 
-/** Cost per sale and return on spend (sales ÷ fee), or null when there's nothing to divide. */
+/** Creator fee per sale, and sales per rupee of creator fee (sales ÷ fee), or null when there's nothing to
+ * divide. Both use the creator's fee only, not the campaign's full cost (product, shipping, ads, agency). */
 export const perSale = (r: Pick<SalesRow, 'fee' | 'orders'>) => (r.orders > 0 && r.fee > 0 ? r.fee / r.orders : null);
-export const roas = (r: Pick<SalesRow, 'fee' | 'revenue'>) => (r.fee > 0 && r.revenue > 0 ? r.revenue / r.fee : null);
+export const salesPerFee = (r: Pick<SalesRow, 'fee' | 'revenue'>) => (r.fee > 0 && r.revenue > 0 ? r.revenue / r.fee : null);

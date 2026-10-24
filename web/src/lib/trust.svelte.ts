@@ -62,7 +62,7 @@ export function brandChips(r: PayRecord | undefined, ownGstin: string | null | u
 	else {
 		const n = r.invoices;
 		const parts = [];
-		if (n) parts.push(`From ${n} invoice${n === 1 ? '' : 's'} paid to creators on Miracle in the last year${r.by_bank ? `, ${r.by_bank === n ? 'all' : r.by_bank} checked against bank alerts` : ''}. ${r.on_time} paid on time.`);
+		if (n) parts.push(`From ${n} invoice${n === 1 ? '' : 's'} paid to creators on Miracle in the last year${r.by_bank ? `, ${r.by_bank === n ? 'all' : r.by_bank} matched to the creator's bank credit email` : ''}. ${r.on_time} paid on time.`);
 		if (r.after_demand) parts.push(`${r.after_demand} ${r.after_demand === 1 ? 'was' : 'were'} paid after a formal demand.`);
 		if (r.late_now) parts.push(`${r.late_now} unpaid past the due date right now.`);
 		line = parts.join(' ');

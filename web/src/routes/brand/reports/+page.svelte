@@ -93,7 +93,7 @@
 	<section class="md-hero rv" aria-label={label}>
 		<div class="mesh" aria-hidden="true"></div>
 		<div class="md-main">
-			<span class="bx-eb">Paid to creators · {label}</span>
+			<span class="bx-eb">Paid to creators · {label} <em class="src" title="From the creators' invoices to you: paid ones count as paid">invoices</em></span>
 			<b class="md-big num" use:countUp={{ value: k.spent, money: true }}>{inr(k.spent)}</b>
 			<div class="md-sub">
 				{#if spentChange !== null}<span class="md-chip" class:down={spentChange < 0}>{spentChange >= 0 ? '+' : ''}{spentChange}% vs the period before</span>{/if}
@@ -101,9 +101,9 @@
 			</div>
 		</div>
 		<div class="md-tiles">
-			<a class="md-tile" href="/brand/business/content"><small>Views</small><b class="num">{compact(k.views)}</b><span>{viewsChange !== null ? `${viewsChange >= 0 ? '+' : ''}${viewsChange}% · ` : ''}{k.posts} post{k.posts === 1 ? '' : 's'}</span></a>
-			<a class="md-tile" href="/brand/business/content"><small>Cost per view</small><b class="num">{cpv === null ? '—' : `₹${cpv.toFixed(2)}`}</b><span>{engagement === null ? 'from the posts' : `${(engagement * 100).toFixed(1)}% engagement`}</span></a>
-			<a class="md-tile" href="/brand/requests"><small>Requests</small><b class="num">{k.collabs}</b><span>{k.live} live · {k.talks} in talks</span></a>
+			<a class="md-tile" href="/brand/business/content"><small>Views <em class="src" title="Instagram's numbers for the collab posts, refreshed every day">Instagram</em></small><b class="num">{compact(k.views)}</b><span>{viewsChange !== null ? `${viewsChange >= 0 ? '+' : ''}${viewsChange}% · ` : ''}{k.posts} post{k.posts === 1 ? '' : 's'}</span></a>
+			<a class="md-tile" href="/brand/business/content"><small>Cost per view <em class="src" title="Creator fees for posts that went live, divided by Instagram's views">fees ÷ views</em></small><b class="num">{cpv === null ? '—' : `₹${cpv.toFixed(2)}`}</b><span>{engagement === null ? 'from the posts' : `${(engagement * 100).toFixed(1)}% engagement`}</span></a>
+			<a class="md-tile" href="/brand/requests"><small>Requests <em class="src" title="Requests you sent in Miracle">Miracle</em></small><b class="num">{k.collabs}</b><span>{k.live} live · {k.talks} in talks</span></a>
 			<a class="md-tile" href="/brand/creators"><small>Creators</small><b class="num">{k.creators}</b><span>{k.rebooked} booked again</span></a>
 		</div>
 	</section>
@@ -228,6 +228,20 @@
 {/if}
 
 <style>
+	/* Where a number comes from: a small tag beside its label (hover for the detail). */
+	.src {
+		margin-left: 6px;
+		padding: 1px 6px;
+		border-radius: 999px;
+		border: 1px solid var(--line-strong);
+		font-size: 9.5px;
+		font-style: normal;
+		font-weight: 700;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+		vertical-align: 1px;
+		opacity: 0.75;
+	}
 	.br-bar {
 		display: flex;
 		flex-wrap: wrap;
