@@ -344,6 +344,8 @@ export type Settings = {
 	accepting: boolean;
 	/** Listed in Discover, where brands on Miracle look for creators. */
 	listed?: boolean;
+	/** Also in the public creator directory on the website (www.miracleapp.live/creators), for anyone and search engines. */
+	directory_listed?: boolean;
 	show_rates: boolean;
 	monthly_goal: number;
 	rates: Record<string, number>;

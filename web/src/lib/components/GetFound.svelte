@@ -9,7 +9,9 @@
 
 	// Get found: who opened her page and from where; her "about" line (on her page, in link previews and
 	// what search engines and AI assistants read), with an AI draft and an Instagram bio; and three more
-	// places brands look for creators.
+	// places brands look for creators. And the public creator directory on the website, which she
+	// switches on herself (it also lists her in Discover).
+	const DIR = 'https://www.miracleapp.live/creators';
 	let { link }: { link: string } = $props();
 	const s = $derived(studio.settings!);
 	let bio = $state('');
@@ -51,6 +53,20 @@
 		await saveSettings({ bio });
 		toast('Saved. It shows on your page and in link previews.', 'check');
 	}
+	const verified = $derived(!!studio.ig?.connected);
+	const dirSlug = (t: string | null | undefined) => (t ?? '').trim().toLowerCase().replace(/&/g, 'and').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+	const dirLink = $derived.by(() => {
+		const n = dirSlug((s.niche ?? '').split(',')[0]);
+		const c = dirSlug(s.city);
+		return `${DIR}${n ? `/${n}` : ''}${c ? `/in/${c}` : ''}`;
+	});
+	let dirBusy = $state(false);
+	async function setDirectory(on: boolean) {
+		dirBusy = true;
+		await saveSettings(on ? { directory_listed: true, listed: true } : { directory_listed: false });
+		dirBusy = false;
+		toast(on ? 'You are in the creator directory. It can take a few minutes to show.' : 'You are no longer in the creator directory', on ? 'check' : 'info');
+	}
 	const STEPS = $derived([
 		{ icon: 'link', t: 'Your Instagram link', p: 'Use this link in your bio, so visits from Instagram show up above.', act: 'Copy link', run: () => copyText(igLink, 'Link copied. Paste it in Instagram › Edit profile › Links.') },
 		{ icon: 'search', t: "Instagram's creator marketplace", p: 'Professional dashboard › Branded content: turn on being found by brands, and add your categories.' },
@@ -75,6 +91,19 @@
 					<p class="gf-hint">Views show here once people open your page.</p>
 				{/if}
 			</div>
+		</div>
+
+		<div class="gf-card gf-dir">
+			<div class="gf-row">
+				<span class="gf-eb">Creator directory</span>
+				<input type="checkbox" class="tgl" checked={!!s.directory_listed} disabled={dirBusy} aria-label="Show me in the creator directory" onchange={(e) => setDirectory((e.currentTarget as HTMLInputElement).checked)} />
+			</div>
+			<p class="gf-hint">Show your page on miracleapp.live/creators, where brands and Google find creators by niche and city. It shows your name, niche, city, about line, starting price, reviews{verified ? ' and your Instagram numbers' : ''}. Never your email or phone.</p>
+			<div class="gf-dir-v" class:on={verified}>
+				<Icon name={verified ? 'check' : 'info'} />
+				<small>{#if verified}<b>Verified.</b> Your Instagram is connected, so your numbers show with a blue tick, and you're shown first.{:else}Connect Instagram in Settings to show your followers, engagement and views with a blue tick. Verified creators are shown first.{/if}</small>
+			</div>
+			{#if s.directory_listed}<a class="btn sm" href={dirLink} target="_blank" rel="noopener"><Icon name="arrow" />See your listing</a>{/if}
 		</div>
 
 		<div class="gf-card">
@@ -189,6 +218,37 @@
 		height: 4px;
 		border-radius: 99px;
 		background: linear-gradient(90deg, var(--g1), var(--g2));
+	}
+	.gf-dir {
+		justify-items: start;
+	}
+	.gf-dir .gf-row {
+		width: 100%;
+	}
+	.gf-dir-v {
+		display: grid;
+		grid-template-columns: auto minmax(0, 1fr);
+		gap: 10px;
+		align-items: start;
+		padding: 10px 12px;
+		border-radius: 12px;
+		background: var(--surface);
+		color: var(--ink-3);
+	}
+	.gf-dir-v :global(.ic) {
+		width: 17px;
+		height: 17px;
+		margin-top: 1px;
+	}
+	.gf-dir-v.on :global(.ic) {
+		color: #5aa7ff;
+	}
+	.gf-dir-v small {
+		font-size: 13px;
+		line-height: 1.45;
+	}
+	.gf-dir-v b {
+		color: var(--ink);
 	}
 	.gf-in {
 		width: 100%;

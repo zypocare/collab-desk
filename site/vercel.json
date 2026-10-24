@@ -1,3 +1,7 @@
 {
-  "cleanUrls": true
+  "cleanUrls": true,
+  "rewrites": [
+    { "source": "/creators", "destination": "https://app.miracleapp.live/creators" },
+    { "source": "/creators/:path*", "destination": "https://app.miracleapp.live/creators/:path*" }
+  ]
 }

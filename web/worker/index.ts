@@ -6,6 +6,7 @@
 // no billing attached, set as the GEMINI_API_KEY secret), with emails and phone numbers removed.
 
 import { brandPage, qrScan } from './page';
+import { directory } from './directory';
 
 type Env = {
 	ASSETS: { fetch: (req: Request) => Promise<Response> };
@@ -38,6 +39,8 @@ export default {
 		if (url.hostname === 'miracleapp.live' || url.hostname === 'www.miracleapp.live') return fetch(req);
 		if (url.pathname.startsWith('/q/')) return qrScan(req, env, url);
 		if (url.pathname === '/' && req.method === 'GET') return brandPage(req, env, url, ctx);
+		// The public creator directory (the website shows it at www.miracleapp.live/creators).
+		if ((url.pathname === '/creators' || url.pathname.startsWith('/creators/')) && req.method === 'GET') return directory(req, env, url, ctx);
 		if (!url.pathname.startsWith('/api/ai/')) return env.ASSETS.fetch(req);
 		if (req.method !== 'POST') return json({ error: 'Use POST.' }, 405);
 		try {

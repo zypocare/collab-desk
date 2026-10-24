@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="en-IN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Instagram engagement rate calculator · Miracle</title>
+<meta name="description" content="Work out an Instagram engagement rate by followers and by views, and see how it compares with accounts of the same size. Free, for creators and brands.">
+<link rel="canonical" href="https://www.miracleapp.live/tools/engagement-calculator">
+<meta property="og:title" content="Instagram engagement rate calculator">
+<meta property="og:description" content="Engagement by followers and by views, compared with accounts your size. Free.">
+<meta property="og:url" content="https://www.miracleapp.live/tools/engagement-calculator">
+<meta property="og:image" content="https://www.miracleapp.live/og.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@500&family=Instrument+Serif:ital@0;1&display=swap">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Instagram engagement rate calculator","url":"https://www.miracleapp.live/tools/engagement-calculator","applicationCategory":"BusinessApplication","operatingSystem":"Any","offers":{"@type":"Offer","price":"0","priceCurrency":"INR"},"publisher":{"@type":"Organization","name":"Miracle","url":"https://www.miracleapp.live"}}</script>
+<style>
+/* Free tools: the website's night colours, a form on the left and the answer on the right. */
+:root{
+  color-scheme:dark;
+  --bg:#110D11; --surface:#1A151A; --surface-2:#231D23; --line:#2E262E; --line-2:#3E343E;
+  --ink:#F4EEF2; --ink-2:#C9BFC6; --ink-3:#A39AA1;
+  --g1:#9C7BFF; --g2:#F25A90; --g3:#FFAE6B; --ok:#6FD08C; --warn:#EFB35A;
+  --grad:linear-gradient(115deg,var(--g1),var(--g2) 52%,var(--g3));
+  --f-display:'Instrument Serif',Georgia,'Times New Roman',serif;
+  --f-body:'Geist',ui-sans-serif,system-ui,-apple-system,'Segoe UI',sans-serif;
+  --f-mono:'Geist Mono',ui-monospace,Consolas,monospace;
+}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(60% 40% at 10% 0%,rgba(156,123,255,.2),transparent 70%),radial-gradient(50% 35% at 95% 15%,rgba(242,90,144,.14),transparent 70%),var(--bg);background-attachment:fixed;color:var(--ink-2);font:400 16px/1.6 var(--f-body);-webkit-font-smoothing:antialiased}
+a{color:var(--ink)}
+:focus-visible{outline:2px solid var(--g3);outline-offset:3px}
+.wrap{width:min(1120px,100%);margin:0 auto;padding-left:max(18px,env(safe-area-inset-left,0px));padding-right:max(18px,env(safe-area-inset-right,0px))}
+.top{position:sticky;top:0;z-index:3;background:color-mix(in oklab,var(--bg) 90%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+.bar{display:flex;align-items:center;justify-content:space-between;gap:16px;height:68px}
+.brand{display:flex;align-items:center;gap:10px;color:var(--ink);text-decoration:none}.brand img{width:32px;height:32px}.brand b{font:italic 400 27px/1 var(--f-display)}
+.bar nav{display:flex;gap:20px;font-size:14px}.bar nav a{color:var(--ink-3);text-decoration:none}.bar nav a:hover,.bar nav a[aria-current]{color:var(--ink)}
+.eb{font:700 11.5px/1 var(--f-body);letter-spacing:.28em;text-transform:uppercase;color:var(--ink-3)}
+h1{margin:14px 0 14px;font:400 clamp(44px,7vw,78px)/.98 var(--f-display);color:var(--ink);letter-spacing:-.015em;text-wrap:balance}
+h1 em,h2 em{font-style:italic;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;padding-right:.08em}
+h2{margin:0 0 10px;font:400 clamp(30px,4vw,42px)/1.05 var(--f-display);color:var(--ink);text-wrap:balance}
+h3{margin:0 0 6px;font:600 17px/1.3 var(--f-body);color:var(--ink)}
+.hero{padding-top:52px;padding-bottom:30px}.lede{max-width:62ch;margin:0;font-size:18px}
+.tool{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);gap:20px;align-items:start;padding-bottom:40px}
+.panel{display:grid;gap:18px;padding:24px;border-radius:24px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--line-2)}
+.field{display:grid;gap:7px;align-content:start;min-width:0}.field label,.field legend{font-size:14px;font-weight:600;color:var(--ink)}.field small{font-size:13px;color:var(--ink-3)}
+.two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+input[type=number],input[type=text],select{width:100%;height:50px;padding:0 14px;border:0;border-radius:12px;background:#0c090c;box-shadow:inset 0 0 0 1px var(--line-2);color:var(--ink);font:500 16px var(--f-body);outline:0;appearance:none;-webkit-appearance:none}
+select{background-image:linear-gradient(45deg,transparent 50%,var(--ink-3) 50%),linear-gradient(135deg,var(--ink-3) 50%,transparent 50%);background-position:calc(100% - 20px) 22px,calc(100% - 15px) 22px;background-size:5px 5px;background-repeat:no-repeat;padding-right:36px}
+input:focus,select:focus{box-shadow:inset 0 0 0 1.5px var(--g2)}
+fieldset{margin:0;padding:0;border:0;display:grid;gap:8px;min-width:0}
+.seg{display:flex;flex-wrap:wrap;gap:8px}.seg label{display:inline-flex;align-items:center;padding:9px 14px;border-radius:99px;box-shadow:inset 0 0 0 1px var(--line-2);font-size:14px;font-weight:500;color:var(--ink-2);cursor:pointer}
+.seg input{position:absolute;opacity:0;pointer-events:none}.seg input:checked+span{color:var(--bg)}.seg label:has(input:checked){background:var(--ink);box-shadow:none;color:var(--bg)}.seg label:has(input:focus-visible){outline:2px solid var(--g3);outline-offset:2px}
+.out{position:sticky;top:88px;display:grid;gap:16px;padding:26px;border-radius:24px;background:radial-gradient(120% 70% at 0% 0%,rgba(242,90,144,.16),transparent 60%),var(--surface);box-shadow:inset 0 0 0 1px var(--line-2)}
+.big{font:400 clamp(46px,6vw,64px)/1 var(--f-display);color:var(--ink);font-variant-numeric:tabular-nums}
+.range{font-size:15px}.range b{color:var(--ink)}
+.rows{display:grid;gap:0;border-top:1px dashed var(--line-2)}.rows div{display:flex;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px dashed var(--line-2);font-size:14.5px}.rows b{color:var(--ink);font-variant-numeric:tabular-nums;white-space:nowrap}
+.formula{padding:14px 16px;border-radius:14px;background:#0c090c;font:500 13px/1.7 var(--f-mono);color:var(--ink-2);overflow-wrap:anywhere}
+.note{font-size:13px;color:var(--ink-3);margin:0}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:50px;padding:14px 22px;line-height:1.3;text-align:center;border:0;background:var(--grad);color:#fff;font:700 13px/1 var(--f-body);letter-spacing:.12em;text-transform:uppercase;text-decoration:none;cursor:pointer;box-shadow:4px 4px 0 #6a4bc9;transition:transform .12s,box-shadow .12s}
+.btn:hover{transform:translate(-2px,-2px)}.btn:active{transform:translate(4px,4px);box-shadow:none}
+.btn.ghost{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--line-2),4px 4px 0 var(--line)}
+.how{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;padding-bottom:40px}.how>div{padding:20px;border-radius:20px;box-shadow:inset 0 0 0 1px var(--line)}.how p{margin:0;font-size:14.5px}
+.table{overflow-x:auto;border-radius:16px;box-shadow:inset 0 0 0 1px var(--line)}table{width:100%;border-collapse:collapse;font-size:14px;min-width:0}th,td{padding:11px 14px;text-align:left;border-bottom:1px solid var(--line)}th{color:var(--ink);font-weight:600}tr:last-child td{border-bottom:0}td.n{font-variant-numeric:tabular-nums;color:var(--ink)}
+.prose{padding-bottom:40px}.prose p{max-width:72ch;margin:0 0 14px}.prose .table{max-width:760px}
+.cta{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:20px;padding-top:34px;padding-bottom:40px;border-top:1px solid var(--line)}.cta>div{max-width:580px}.cta p{margin:0}
+.foot{display:flex;flex-wrap:wrap;gap:12px 24px;justify-content:space-between;padding-top:24px;padding-bottom:calc(env(safe-area-inset-bottom,0px) + 36px);border-top:1px solid var(--line);font-size:13.5px;color:var(--ink-3)}.foot a{color:var(--ink-2);text-decoration:none}
+@media (max-width:860px){.tool{grid-template-columns:minmax(0,1fr)}.out{position:static}.how{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:560px){.bar nav{gap:14px;font-size:13px}.bar nav a.hide-s{display:none}.brand b{font-size:24px}.two{grid-template-columns:minmax(0,1fr)}.panel,.out{padding:18px}th,td{padding:10px}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="bar wrap">
+    <a class="brand" href="/" aria-label="Miracle home"><img src="/icon.svg" alt=""><b>Miracle</b></a>
+    <nav aria-label="Free tools"><a href="/creators">Find creators</a><a class="hide-s" href="/tools/rate-calculator">Rate calculator</a><a href="/tools/engagement-calculator" aria-current="page">Engagement</a></nav>
+  </div>
+</header>
+
+<main>
+  <section class="hero wrap">
+    <span class="eb">Free tool · for creators and brands</span>
+    <h1>Engagement rate, <em>worked out.</em></h1>
+    <p class="lede">Put in the numbers from your last few posts (or any creator's) to get the engagement rate brands look at, by followers and by views, and how it compares with accounts of the same size.</p>
+  </section>
+
+  <section class="tool wrap" aria-label="Engagement rate calculator">
+    <form class="panel" id="f" autocomplete="off">
+      <div class="two">
+        <div class="field"><label for="followers">Followers</label><input id="followers" type="number" inputmode="numeric" min="0" step="1" value="25000"></div>
+        <div class="field"><label for="posts">Posts you're counting</label><input id="posts" type="number" inputmode="numeric" min="1" step="1" value="1"><small>Totals from your last 6 to 12 posts give the truest number.</small></div>
+      </div>
+      <div class="two">
+        <div class="field"><label for="likes">Likes</label><input id="likes" type="number" inputmode="numeric" min="0" step="1" value="700"></div>
+        <div class="field"><label for="comments">Comments</label><input id="comments" type="number" inputmode="numeric" min="0" step="1" value="40"></div>
+      </div>
+      <div class="two">
+        <div class="field"><label for="saves">Saves <small>(optional)</small></label><input id="saves" type="number" inputmode="numeric" min="0" step="1" placeholder="0"></div>
+        <div class="field"><label for="shares">Shares <small>(optional)</small></label><input id="shares" type="number" inputmode="numeric" min="0" step="1" placeholder="0"></div>
+      </div>
+      <div class="field"><label for="views">Views <small>(optional, for reels)</small></label><input id="views" type="number" inputmode="numeric" min="0" step="1" placeholder="e.g. 9000"><small>Saves, shares and views are in Instagram › the post › View insights. Only the account owner can see them.</small></div>
+    </form>
+
+    <aside class="out" aria-live="polite">
+      <span class="eb">Engagement rate · by followers</span>
+      <div class="big" id="o-er">0%</div>
+      <div class="range" id="o-verdict"></div>
+      <div class="rows">
+        <div><span>Interactions a post</span><b id="o-int">0</b></div>
+        <div><span>By views (reels)</span><b id="o-erv">–</b></div>
+        <div><span>Usual for <span id="o-tier">this size</span></span><b id="o-band">–</b></div>
+        <div><span>Comments for every 100 likes</span><b id="o-cl">–</b></div>
+      </div>
+      <div class="formula" id="o-formula"></div>
+      <p class="note">The usual ranges are rough working bands for Instagram, not a survey, and vary by niche: comedy and memes run high, luxury and finance run lower. A rate far above the band on a big account can also mean giveaways or engagement groups.</p>
+      <a class="btn" href="/tools/rate-calculator" id="o-next">What should I charge?</a>
+    </aside>
+  </section>
+
+  <section class="how wrap" aria-label="How it works">
+    <div><span class="eb">By followers</span><h3>The number most brands ask for</h3><p>Likes, comments, saves and shares a post, divided by followers, as a percentage. Easy to check for any public account, so it's what brands compare.</p></div>
+    <div><span class="eb">By views</span><h3>The truer one for reels</h3><p>Reels reach people who don't follow you, so dividing by views says how much the people who saw it cared. Brands that buy reels look at this more and more.</p></div>
+    <div><span class="eb">Saves and shares</span><h3>What brands value most</h3><p>A save or share means someone wants to come back or tell a friend. If you can, include them: they show the post worked, not just that it was seen.</p></div>
+  </section>
+
+  <section class="wrap prose">
+    <h2>What's <em>usual</em></h2>
+    <p>Engagement by followers falls as accounts grow. These are the bands this calculator compares with:</p>
+    <div class="table"><table>
+      <thead><tr><th>Followers</th><th>Usual range</th><th>Strong above</th></tr></thead>
+      <tbody>
+        <tr><td>Under 10K</td><td class="n">3% to 6%</td><td class="n">6%</td></tr>
+        <tr><td>10K to 50K</td><td class="n">2% to 4.5%</td><td class="n">4.5%</td></tr>
+        <tr><td>50K to 1L</td><td class="n">1.5% to 3.5%</td><td class="n">3.5%</td></tr>
+        <tr><td>1L to 5L</td><td class="n">1.2% to 2.8%</td><td class="n">2.8%</td></tr>
+        <tr><td>Over 5L</td><td class="n">0.8% to 2%</td><td class="n">2%</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section class="cta wrap">
+    <div><span class="eb">Miracle</span><h2>Live numbers, <em>no screenshots.</em></h2><p>Connect Instagram to Miracle and your page shows your real engagement, views and audience, updated every day, with a verified tick in the creator directory. Free, no commission.</p></div>
+    <a class="btn" href="https://app.miracleapp.live/signup?as=creator">Join free</a>
+  </section>
+</main>
+
+<footer class="foot wrap">
+  <span>© 2026 Zyposoft Technologies Private Limited, Bangalore, India</span>
+  <span><a href="/">miracleapp.live</a> · <a href="/creators">Find creators</a> · <a href="/tools/rate-calculator">Rate calculator</a> · <a href="/privacy">Privacy</a> · <a href="/terms">Terms</a></span>
+</footer>
+
+<script>
+(function () {
+  var BANDS = [[10000, 'under 10K', 3, 6], [50000, '10K to 50K', 2, 4.5], [100000, '50K to 1L', 1.5, 3.5], [500000, '1L to 5L', 1.2, 2.8], [Infinity, 'over 5L', 0.8, 2]];
+  var $ = function (id) { return document.getElementById(id); };
+  var num = function (id) { return Math.max(0, Number($(id).value) || 0); };
+  var pct = function (n) { return (n >= 10 ? n.toFixed(1) : n.toFixed(2)).replace(/\.?0+$/, '') + '%'; };
+  function run() {
+    var followers = num('followers'), posts = Math.max(1, num('posts') || 1);
+    var likes = num('likes'), comments = num('comments'), saves = num('saves'), shares = num('shares'), views = num('views');
+    var total = likes + comments + saves + shares;
+    var per = total / posts;
+    var er = followers ? (per / followers) * 100 : 0;
+    var b = BANDS.find(function (x) { return followers < x[0]; });
+    $('o-er').textContent = pct(er);
+    $('o-int').textContent = Math.round(per).toLocaleString('en-IN');
+    $('o-erv').textContent = views ? pct((total / views) * 100) : '–';
+    $('o-tier').textContent = b[1];
+    $('o-band').textContent = b[2] + '% to ' + b[3] + '%';
+    $('o-cl').textContent = likes ? (comments / likes * 100).toFixed(1) : '–';
+    var v = !followers ? 'Add your followers to see how you compare.'
+      : er >= b[3] * 1.8 ? '<b>Unusually high</b> for an account this size. Great if it is real; brands may check for giveaways or engagement groups.'
+      : er >= b[3] ? '<b>Strong.</b> Above the usual range for your size, so you can ask for the top of your rate.'
+      : er >= b[2] ? '<b>Healthy.</b> In the usual range for accounts your size.'
+      : '<b>Below the usual range</b> for your size. Hooks in the first second, replies to comments and posts people save tend to lift it.';
+    $('o-verdict').innerHTML = v;
+    $('o-formula').textContent = '(' + [likes, comments, saves, shares].map(function (n) { return n.toLocaleString('en-IN'); }).join(' + ') + ') ÷ ' + posts + ' post' + (posts === 1 ? '' : 's') + ' ÷ ' + followers.toLocaleString('en-IN') + ' followers × 100 = ' + pct(er);
+    $('o-next').href = '/tools/rate-calculator?followers=' + followers + '&er=' + er.toFixed(1) + (views ? '&views=' + Math.round(views / posts) : '');
+  }
+  $('f').addEventListener('input', run);
+  $('f').addEventListener('submit', function (e) { e.preventDefault(); });
+  run();
+})();
+</script>
+</body>
+</html>

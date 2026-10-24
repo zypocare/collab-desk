@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /signin
+
+Sitemap: https://www.miracleapp.live/sitemap.xml
+Sitemap: https://www.miracleapp.live/creators/sitemap.xml
