@@ -2359,5 +2359,14 @@
   [data-side] .cmdk-who { font-weight: 500; color: var(--ink-2); }
   [data-side] .cmdk-grp .cmdk-l small { display: block; margin-top: 2px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 12.5px; }
   [data-side] .cmdk-chev { display: grid; flex: none; color: var(--ink-3); }
-  [data-side] .cmdk-chev .ic { width: 18px; height: 18px; }
+  [data-side] .cmdk-chev .ic { width: 18px; height: 18px; transition: transform .25s; }
+  [data-side] .cmdk-chev.open .ic { transform: rotate(90deg); }
+  /* A folded next step: the count, and the brands inside it once open. */
+  [data-side] .cmdk-n { flex: none; min-width: 26px; height: 24px; padding: 0 7px; border-radius: 999px; display: grid; place-items: center; background: color-mix(in oklab, var(--g2) 18%, transparent); color: #ff8fb1; font-size: 12px; font-weight: 700; }
+  [data-side] .cmdk-sub { border-top: 1px solid var(--line); background: color-mix(in oklab, var(--ink) 3%, var(--surface)); }
+  [data-side] .cmdk-sub .cmdk-it { min-height: 58px; padding-left: 26px; }
+  [data-side] .cmdk-sub .cmdk-ic { width: 34px; height: 34px; border-radius: 11px !important; }
+  /* The search bar: square, NeoPOP, like the buttons. */
+  [data-side] .cmdk-in { border-radius: 0 !important; height: 52px; border: 1.5px solid var(--line-strong); background: var(--surface); }
+  [data-side] .cmdk-in:focus-within { border-color: var(--ink); box-shadow: 4px 4px 0 var(--g2); }
 }

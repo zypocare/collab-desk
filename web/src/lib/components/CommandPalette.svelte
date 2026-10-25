@@ -7,6 +7,7 @@
 	import { ui } from '../ui.svelte';
 	import { stageLabel } from '../util';
 	import Icon from './Icon.svelte';
+	import { phone } from '../phone.svelte';
 
 	// Ctrl+K (or "/"): find any collab, brand or page, or run an action, from the keyboard.
 	type Item = { id: string; group: string; label: string; sub?: string; icon: string; hay: string; run: () => void };
@@ -80,6 +81,22 @@
 		const k = label.indexOf(' · ');
 		return k < 0 ? [label, ''] : [label.slice(0, k), label.slice(k + 3)];
 	};
+	// On a phone, the same next step for several brands folds into one row (Send quote · 11 brands) that
+	// opens to each brand, so the list reads as groups instead of repeats.
+	let unfolded = $state<string[]>([]);
+	type Row = { it: Item; i: number };
+	const clusters = (rows: Row[]) => {
+		const out: { lead: string; rows: Row[] }[] = [];
+		for (const r of rows) {
+			const lead = parts(r.it.label)[0];
+			const hit = out.find((x) => x.lead === lead);
+			if (hit) hit.rows.push(r);
+			else out.push({ lead, rows: [r] });
+		}
+		return out;
+	};
+	const fold = (g: { group: string; items: Row[] }) => phone.on && !q.trim() && g.group === 'Next steps';
+	const toggle = (lead: string) => (unfolded = unfolded.includes(lead) ? unfolded.filter((x) => x !== lead) : [...unfolded, lead]);
 	const results = $derived.by(() => {
 		const words = q.toLowerCase().split(/\s+/).filter(Boolean);
 		const hits = words.length ? items.filter((it) => words.every((w) => it.hay.toLowerCase().includes(w) || it.label.toLowerCase().includes(w))) : items.filter((it) => it.group !== 'Collabs' && it.group !== 'Brands');
@@ -114,6 +131,16 @@
 
 <svelte:window onkeydown={globalKey} />
 
+{#snippet row(it: Item, i: number, inside = false)}
+	{@const [lead, who] = inside ? [parts(it.label)[1] || it.label, ''] : parts(it.label)}
+	<button id="cmdk-{it.id}" class="cmdk-it" role="option" aria-selected={i === active} onmouseenter={() => (active = i)} onclick={() => run(it)}>
+		<span class="cmdk-ic"><Icon name={it.icon} /></span>
+		<span class="cmdk-l"><b>{lead}{#if who}<span class="cmdk-who">{` · ${who}`}</span>{/if}</b>{#if it.sub}<small>{it.sub}</small>{/if}</span>
+		{#if i === active}<kbd>↵</kbd>{/if}
+		<span class="cmdk-chev" aria-hidden="true"><Icon name="chev" /></span>
+	</button>
+{/snippet}
+
 {#if open}
 	<div class="dialog-scrim cmdk-scrim" role="presentation" use:portal onclick={(e) => e.target === e.currentTarget && (open = false)}>
 		<div class="cmdk" role="dialog" aria-modal="true" aria-label="Search and actions">
@@ -127,15 +154,26 @@
 				{#each sections as g (g.group)}
 					<div class="cmdk-g">{g.group}</div>
 					<div class="cmdk-grp t-{GROUP_TONE[g.group] ?? ''}">
-						{#each g.items as { it, i } (it.id)}
-							{@const [lead, who] = parts(it.label)}
-							<button id="cmdk-{it.id}" class="cmdk-it" role="option" aria-selected={i === active} onmouseenter={() => (active = i)} onclick={() => run(it)}>
-								<span class="cmdk-ic"><Icon name={it.icon} /></span>
-								<span class="cmdk-l"><b>{lead}{#if who}<span class="cmdk-who">{` · ${who}`}</span>{/if}</b>{#if it.sub}<small>{it.sub}</small>{/if}</span>
-								{#if i === active}<kbd>↵</kbd>{/if}
-								<span class="cmdk-chev" aria-hidden="true"><Icon name="chev" /></span>
-							</button>
-						{/each}
+						{#if fold(g)}
+							{#each clusters(g.items) as cl (cl.lead)}
+								{#if cl.rows.length < 3}
+									{#each cl.rows as { it, i } (it.id)}{@render row(it, i)}{/each}
+								{:else}
+									{@const open = unfolded.includes(cl.lead)}
+									<button class="cmdk-it cmdk-cl" aria-expanded={open} onclick={() => toggle(cl.lead)}>
+										<span class="cmdk-ic"><Icon name={cl.rows[0].it.icon} /></span>
+										<span class="cmdk-l"><b>{cl.lead}<span class="cmdk-who">{` · ${cl.rows.length} brands`}</span></b><small>{cl.rows.map((r) => parts(r.it.label)[1]).slice(0, 3).join(', ')}{cl.rows.length > 3 ? ` and ${cl.rows.length - 3} more` : ''}</small></span>
+										<span class="cmdk-n">{cl.rows.length}</span>
+										<span class="cmdk-chev" class:open aria-hidden="true"><Icon name="chev" /></span>
+									</button>
+									{#if open}
+										<div class="cmdk-sub">{#each cl.rows as { it, i } (it.id)}{@render row(it, i, true)}{/each}</div>
+									{/if}
+								{/if}
+							{/each}
+						{:else}
+							{#each g.items as { it, i } (it.id)}{@render row(it, i)}{/each}
+						{/if}
 					</div>
 				{:else}
 					<div class="cmdk-empty">Nothing matches “{q}”.</div>
