@@ -213,7 +213,7 @@
 			<div class="panel-h"><h2>Ready to post</h2><small>approved by the brand</small></div>
 			{#each toPost as c (c.id)}
 				<PostCard {c} focus={page.url.searchParams.get('post') === c.code} />
-			{:else}<p class="hint ct-none">Approved drafts land here, with the caption ready to copy.</p>{/each}
+			{:else}<div class="ct-empty"><span class="ct-empty-ic" aria-hidden="true"><Icon name="send" /></span><span><b>Nothing to post yet</b><small>Approved drafts land here, with the caption ready to copy.</small></span></div>{/each}
 		</section>
 		<section class="panel rv" style="--i:3">
 			<div class="panel-h"><h2>With the brand</h2><small>drafts waiting for review</small></div>
@@ -224,7 +224,7 @@
 					<span><b>{c.brand.name}</b><small>Draft {dr?.round} sent {relWord(diff(dr?.submitted_at.slice(0, 10) ?? todayIso()))}</small></span>
 					<Icon name="chevR" />
 				</button>
-			{:else}<p class="hint ct-none">Nothing waiting on brands.</p>{/each}
+			{:else}<div class="ct-empty"><span class="ct-empty-ic v" aria-hidden="true"><Icon name="clock" /></span><span><b>Nothing waiting on brands</b><small>Drafts you send for approval wait here until the brand replies.</small></span></div>{/each}
 		</section>
 		{#if waitingProduct.length}
 			<section class="panel rv" style="--i:4">
