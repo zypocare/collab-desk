@@ -2246,3 +2246,33 @@
   [data-side] .cs-grp .cs-ico { animation: mc-tile 5s ease-in-out infinite; animation-delay: calc(var(--k, 0) * .35s); }
   @keyframes mc-tile { 0%, 86%, 100% { box-shadow: inset 0 0 0 1px var(--line); color: var(--ink); } 92% { box-shadow: inset 0 0 0 1px var(--g2), 0 0 16px -2px color-mix(in oklab, var(--g2) 70%, transparent); color: var(--g2); } }
 }
+
+/* ---------- The collab's stage bar, alive: no dot. Done stages share one flowing gradient and get a tick;
+   the current one glows with a light running through it; a new stage fills in from the left. ---------- */
+@media all {
+  [data-desk] .drawer .sh .sh-step .sh-dot { position: relative; overflow: hidden; height: 8px; border-radius: 5px; }
+  [data-desk] .drawer .sh .sh-step.on .sh-dot { box-shadow: 0 0 14px -2px color-mix(in oklab, var(--g2) 75%, transparent); transform-origin: left center; animation: sh-fill .9s cubic-bezier(.2, .9, .25, 1) both; }
+  [data-desk] .drawer .sh .sh-step.on .sh-dot::after { content: ''; display: block !important; position: absolute; top: 0; bottom: 0; left: -40%; width: 40%; height: auto; border-radius: 0; background: linear-gradient(90deg, transparent, color-mix(in oklab, var(--g2) 90%, transparent), transparent); animation: sh-run 1.6s ease-in-out infinite; }
+  [data-desk] .drawer .sh .sh-step.past .sh-l::before { content: ''; display: inline-block; width: 7px; height: 4px; margin: 0 5px 2px 1px; border-left: 2px solid var(--ok); border-bottom: 2px solid var(--ok); transform: rotate(-45deg); }
+  @keyframes sh-fill { from { transform: scaleX(0); } }
+  @keyframes sh-run { to { left: 100%; } }
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-desk] .drawer .sh .sh-step.on .sh-dot, [data-desk] .drawer .sh .sh-step.on .sh-dot::after { animation: none; }
+}
+
+/* ---------- Today's money card grows into the Money screen (lively.ts names both ends) ---------- */
+@media (max-width: 760px) {
+  [data-side] .m-hero { position: relative; }
+  [data-side] .m-hero .hc-go { position: absolute; inset: 0; z-index: 1; border-radius: inherit; }
+  [data-side] .m-hero .hc-in { position: relative; z-index: 2; pointer-events: none; }
+  [data-side] .m-hero .hc-in a { pointer-events: auto; }
+  html.mc-money .md-hero { view-transition-name: mc-money; }
+  ::view-transition-group(mc-money) { z-index: 4; animation-duration: .55s; animation-timing-function: cubic-bezier(.2, .9, .25, 1); }
+  ::view-transition-old(mc-money), ::view-transition-new(mc-money) { height: 100%; object-fit: cover; }
+  /* While the card carries over, Today sinks back and dims, and the Money screen fades in behind the card. */
+  html.mc-money[data-nav]::view-transition-old(root) { animation: mc-away .45s cubic-bezier(.2, .9, .25, 1) both; }
+  html.mc-money[data-nav]::view-transition-new(root) { animation: mc-come .5s cubic-bezier(.2, .9, .25, 1) .12s both; }
+  @keyframes mc-away { to { transform: scale(.92); opacity: 0; filter: blur(4px); } }
+  @keyframes mc-come { from { opacity: 0; transform: translateY(18px); } }
+}

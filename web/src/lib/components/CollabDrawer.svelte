@@ -8,7 +8,7 @@
 	import { collabFacts } from '../ai';
 	import CollabLink from './CollabLink.svelte';
 	import { money } from '../currency';
-	import { tick } from 'svelte';
+	import { tick, untrack } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { goBackOr } from '../back';
 	import {
@@ -47,6 +47,9 @@
 		stageIndex
 	} from '../util';
 	import Icon from './Icon.svelte';
+	import RequestReveal from './RequestReveal.svelte';
+	import DealMoment from './DealMoment.svelte';
+	import { phone } from '../phone.svelte';
 	import { toast } from '../ui.svelte';
 	import { supabase } from '../supabase';
 	import { captionStarter, nextStep, replySuggestions, suggestDates } from '../suggest';
@@ -217,6 +220,49 @@
 	});
 	const advanceWaiting = $derived(!!c && !['advance', 'paid'].includes(c.pay_status) && !c.invoices.some((i) => i.kind === 'advance' && i.status === 'paid'));
 	let quoteOpen = $state<{ base?: Quote; editing: boolean; preset?: { advance_pct: number } } | null>(null);
+
+	// Phone moments: a new request opens as a sealed card (once per request on this phone), and an accepted
+	// quote gets its "It's a deal" sheet (once per quote, within a week of the yes).
+	const mark = (k: string) => {
+		try {
+			localStorage.setItem(k, '1');
+		} catch {
+			/* storage blocked */
+		}
+	};
+	const marked = (k: string) => {
+		try {
+			return localStorage.getItem(k) === '1';
+		} catch {
+			return true;
+		}
+	};
+	let reveal = $state(false);
+	let deal = $state<Quote | null>(null);
+	$effect(() => {
+		const id = c?.id, stage = c?.stage, got = c?.received_on;
+		if (!page || !phone.on || !id) return;
+		untrack(() => {
+			const fresh = !!got && Date.now() - new Date(got).getTime() < 30 * 864e5;
+			reveal = stage === 'request' && fresh && !marked(`mc-seal-${id}`);
+		});
+	});
+	$effect(() => {
+		const q = c?.quotes[0];
+		if (!page || !phone.on || !q || q.status !== 'accepted') return;
+		untrack(() => {
+			const recent = !!q.responded_at && Date.now() - new Date(q.responded_at).getTime() < 7 * 864e5;
+			if (recent && !marked(`mc-deal-${q.id}`)) deal = q;
+		});
+	});
+	function endReveal() {
+		if (c) mark(`mc-seal-${c.id}`);
+		reveal = false;
+	}
+	function endDeal() {
+		if (deal) mark(`mc-deal-${deal.id}`);
+		deal = null;
+	}
 	let invoiceOpen = $state<{ editing?: Invoice } | null>(null);
 	let paymentOpen = $state<Invoice | null>(null);
 	const issuedInvoices = $derived(c ? c.invoices.filter((i) => i.status !== 'draft' && i.status !== 'cancelled') : []);
@@ -427,6 +473,12 @@
 			<button class="icon-btn" onclick={close} aria-label={page ? 'Back' : 'Close'} bind:this={closeBtn}><Icon name={page ? 'back' : 'x'} /></button>
 		</header>
 
+		{#if reveal && c}
+			<RequestReveal {c} onclose={endReveal} onquote={() => (endReveal(), (quoteOpen = { editing: false }))} ondecline={() => (endReveal(), declineIt())} />
+		{/if}
+		{#if deal && c}
+			<DealMoment {c} q={deal} advance={advanceDue} onclose={endDeal} onadvance={() => (endDeal(), (invoiceOpen = {}))} />
+		{/if}
 		<div class="dr-b">
 			{#if scam}
 				<div class="dr-scam" role="alert">

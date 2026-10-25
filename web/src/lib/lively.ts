@@ -29,13 +29,16 @@ export function lively() {
 	onNavigate((nav) => {
 		const card = lastCard;
 		lastCard = null;
-		if (!(document as DocVT).startViewTransition || REDUCED || IOS || !onPhone() || !nav.to) return;
-		if (!card?.isConnected || !nav.to.url.pathname.startsWith('/studio/c/')) return;
-		card.style.viewTransitionName = 'cr-card';
+		if (!(document as DocVT).startViewTransition || REDUCED || IOS || !onPhone() || !nav.to || !card?.isConnected) return;
 		const root = document.documentElement;
-		root.classList.add('cr-grow');
+		// Today's money card grows into the Money screen's card.
+		const toMoney = card.matches('.m-hero') && nav.to.url.pathname === '/studio/money';
+		if (!toMoney && !nav.to.url.pathname.startsWith('/studio/c/')) return;
+		const name = toMoney ? 'mc-money' : 'cr-card', cls = toMoney ? 'mc-money' : 'cr-grow';
+		card.style.viewTransitionName = name;
+		root.classList.add(cls);
 		// A cancelled navigation (another tap first) still clears the grow, without an error.
-		const done = () => setTimeout(() => root.classList.remove('cr-grow'), 700);
+		const done = () => setTimeout(() => (root.classList.remove(cls), card.isConnected && (card.style.viewTransitionName = '')), 700);
 		nav.complete.then(done, done);
 	});
 
@@ -55,6 +58,7 @@ export function lively() {
 			el.dataset.press = '';
 			pressed = el;
 			if (el.matches('.wc')) lastCard = el;
+			else if (el.matches('.m-hero')) lastCard = el;
 		};
 		const up = () => {
 			if (pressed) delete pressed.dataset.press;

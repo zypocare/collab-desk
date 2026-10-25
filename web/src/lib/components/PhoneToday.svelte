@@ -189,6 +189,7 @@
 
 <section class="hero-card glow m-hero" aria-label="Money this month">
 	<div class="mesh" aria-hidden="true"></div>
+	<a class="hc-go" href="/studio/money" aria-label="Open Money"></a>
 	<div class="hc-in">
 		<div class="hc-top"><span class="hc-eb">Received in {monthName}</span>{#if goal}<a class="glass-chip" href="/studio/settings?s=payments"><Icon name="spark" />Goal {inrS(goal)}</a>{/if}</div>
 		<div class="hc-main">
