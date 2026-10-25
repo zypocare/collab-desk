@@ -186,8 +186,8 @@
 		<section class="panel imp-row rv" style="--i:{Math.min(i, 6)}">
 			<div class="imp-num">{i + 1}</div>
 			<header class="imp-h">
-				{#if r.brand.trim()}<Mono name={r.brand} />{:else}<span class="imp-n">{i + 1}</span>{/if}
-				<span class="imp-ht"><b>{r.brand.trim() || `Collab ${i + 1}`}</b><small>{r.what || 'Content'} · {typeLabel(r.type)}{r.type !== 'barter' && Number(r.fee) ? ` · ${inr(Number(r.fee))}` : ''} · {whereLabel(r.where)}</small></span>
+				{#if r.brand.trim()}<Mono name={r.brand} />{:else}<span class="imp-n" aria-hidden="true"><Icon name="board" /></span>{/if}
+				<span class="imp-ht"><b>{r.brand.trim() || (rows.length > 1 ? `Collab ${i + 1}` : 'New collab')}</b><small>{r.what || 'Content'} · {typeLabel(r.type)}{r.type !== 'barter' && Number(r.fee) ? ` · ${inr(Number(r.fee))}` : ''} · {whereLabel(r.where)}</small></span>
 				<button class="imp-x" aria-label="Remove collab {i + 1}" onclick={() => (rows = rows.filter((x) => x.id !== r.id))}><Icon name="x" /></button>
 			</header>
 			<div class="imp-grid">

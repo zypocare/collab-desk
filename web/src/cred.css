@@ -2178,6 +2178,11 @@
   [data-side] .imp-seg button[aria-selected="true"] { background: var(--ink); color: var(--bg); }
   [data-side] .imp-say { margin: 10px 4px 0; font-size: 13.5px; line-height: 1.45; color: var(--ink-3); }
   [data-side] .imp-row { gap: 14px; padding: 16px 16px 14px; border-radius: 22px; }
+  /* Before a brand is typed: a quiet icon tile (like the Settings rows), not a filled number. */
+  [data-side] .imp-h .imp-n { width: 44px; height: 44px; border-radius: 14px; background: var(--surface-2); box-shadow: inset 0 0 0 1px var(--line-strong); color: var(--ink-2); }
+  [data-side] .imp-h .imp-n .ic { width: 20px; height: 20px; stroke-width: 1.7; }
+  [data-side] .imp-h .mono { width: 44px; height: 44px; border-radius: 14px; }
+  [data-side] .imp-ht b { font: 400 24px/1.05 var(--f-serif, Georgia, serif); font-style: italic; letter-spacing: -.01em; }
   [data-side] .imp-grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 4px 14px !important; }
   [data-side] .imp-grid > * { grid-column: 1 / -1; min-width: 0; }
   [data-side] .imp-grid > .f.half { grid-column: auto; }
