@@ -52,11 +52,12 @@
 	</div>
 	{#if plan}
 		<div class="ct-plan">
+			<span class="ct-plan-l">Shoot day</span>
 			{#if !c.shoot_date}
 				<button class="btn sm" onclick={() => updateCollab(c.id, { shoot_date: sug })}><Icon name="cal" />Shoot {fmt(sug)}</button>
 				<span class="hint">or</span>
 			{/if}
-			<DatePicker size="sm" ariaLabel="Shoot day for {c.brand.name}" placeholder="Pick a shoot day" value={c.shoot_date} onchange={(v) => updateCollab(c.id, { shoot_date: v || null })} />
+			<DatePicker size="sm" ariaLabel="Shoot day for {c.brand.name}" placeholder={c.shoot_date ? "Pick a shoot day" : "Another day"} value={c.shoot_date} onchange={(v) => updateCollab(c.id, { shoot_date: v || null })} />
 		</div>
 	{/if}
 	{#if open}
