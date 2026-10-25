@@ -65,6 +65,21 @@
 		return out;
 	});
 
+	// The results by section, each item keeping its place in the list (for the arrow keys).
+	const sections = $derived.by(() => {
+		const out: { group: string; items: { it: Item; i: number }[] }[] = [];
+		results.forEach((it, i) => {
+			const last = out[out.length - 1];
+			if (last && last.group === it.group) last.items.push({ it, i });
+			else out.push({ group: it.group, items: [{ it, i }] });
+		});
+		return out;
+	});
+	const GROUP_TONE: Record<string, string> = { 'Next steps': 'p', Actions: 'a', Collabs: 'v', Brands: 'v', Pages: '' };
+	const parts = (label: string) => {
+		const k = label.indexOf(' · ');
+		return k < 0 ? [label, ''] : [label.slice(0, k), label.slice(k + 3)];
+	};
 	const results = $derived.by(() => {
 		const words = q.toLowerCase().split(/\s+/).filter(Boolean);
 		const hits = words.length ? items.filter((it) => words.every((w) => it.hay.toLowerCase().includes(w) || it.label.toLowerCase().includes(w))) : items.filter((it) => it.group !== 'Collabs' && it.group !== 'Brands');
@@ -109,13 +124,19 @@
 				<button type="button" class="cmdk-cancel" onclick={() => (open = false)}>Cancel</button>
 			</div>
 			<div class="cmdk-list" id="cmdk-list" role="listbox" bind:this={list}>
-				{#each results as it, i (it.id)}
-					{#if i === 0 || results[i - 1].group !== it.group}<div class="cmdk-g">{it.group}</div>{/if}
-					<button id="cmdk-{it.id}" class="cmdk-it" role="option" aria-selected={i === active} onmouseenter={() => (active = i)} onclick={() => run(it)}>
-						<span class="cmdk-ic"><Icon name={it.icon} /></span>
-						<span class="cmdk-l"><b>{it.label}</b>{#if it.sub}<small>{it.sub}</small>{/if}</span>
-						{#if i === active}<kbd>↵</kbd>{/if}
-					</button>
+				{#each sections as g (g.group)}
+					<div class="cmdk-g">{g.group}</div>
+					<div class="cmdk-grp t-{GROUP_TONE[g.group] ?? ''}">
+						{#each g.items as { it, i } (it.id)}
+							{@const [lead, who] = parts(it.label)}
+							<button id="cmdk-{it.id}" class="cmdk-it" role="option" aria-selected={i === active} onmouseenter={() => (active = i)} onclick={() => run(it)}>
+								<span class="cmdk-ic"><Icon name={it.icon} /></span>
+								<span class="cmdk-l"><b>{lead}{#if who}<span class="cmdk-who">{` · ${who}`}</span>{/if}</b>{#if it.sub}<small>{it.sub}</small>{/if}</span>
+								{#if i === active}<kbd>↵</kbd>{/if}
+								<span class="cmdk-chev" aria-hidden="true"><Icon name="chev" /></span>
+							</button>
+						{/each}
+					</div>
 				{:else}
 					<div class="cmdk-empty">Nothing matches “{q}”.</div>
 				{/each}

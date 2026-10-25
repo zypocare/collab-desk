@@ -2334,3 +2334,30 @@
   [data-desk][data-side] .ct-mini small { display: block; margin-top: 3px; font-size: 12.5px; color: var(--ink-3); }
   [data-desk][data-side] .ct-mini > .ic { width: 18px; height: 18px; color: var(--ink-3); }
 }
+
+/* ---------- Search and actions: sections as grouped cards, like the Settings menu ---------- */
+.cmdk-grp { display: contents; }
+.cmdk-chev { display: none; }
+@media (max-width: 760px) {
+  [data-side] .cmdk-list { padding: 0 14px 30px; }
+  [data-side] .cmdk-g { padding: 24px 6px 10px; }
+  [data-side] .cmdk-grp { display: block; overflow: hidden; border-radius: 22px; border: 1px solid var(--line); background: var(--surface); }
+  [data-side] .cmdk-grp .cmdk-it { width: 100%; min-height: 66px; gap: 14px; padding: 10px 14px 10px 12px; border-bottom: 0; }
+  [data-side] .cmdk-grp .cmdk-it + .cmdk-it { border-top: 1px solid var(--line); }
+  [data-side] .cmdk-grp .cmdk-ic { width: 42px; height: 42px; flex: none; border: 0; border-radius: 13px !important; background: var(--surface-2) !important; box-shadow: inset 0 0 0 1px var(--line); color: var(--ink) !important; }
+  [data-side] .cmdk-grp.t-p .cmdk-ic { background: color-mix(in oklab, var(--g2) 18%, var(--surface)) !important; box-shadow: none; color: #ff8fb1 !important; }
+  [data-side] .cmdk-grp.t-a .cmdk-ic { background: color-mix(in oklab, var(--g3) 16%, var(--surface)) !important; box-shadow: none; color: var(--g3) !important; }
+  [data-side] .cmdk-grp.t-v .cmdk-ic { background: color-mix(in oklab, var(--g1) 18%, var(--surface)) !important; box-shadow: none; color: #c9b6ff !important; }
+  /* No keyboard on a phone: the first row isn't "selected", so no special tile. */
+  [data-side] .cmdk-grp.t-p .cmdk-it[aria-selected="true"] .cmdk-ic { background: color-mix(in oklab, var(--g2) 18%, var(--surface)) !important; color: #ff8fb1 !important; }
+  [data-side] .cmdk-grp.t-a .cmdk-it[aria-selected="true"] .cmdk-ic { background: color-mix(in oklab, var(--g3) 16%, var(--surface)) !important; color: var(--g3) !important; }
+  [data-side] .cmdk-grp.t-v .cmdk-it[aria-selected="true"] .cmdk-ic { background: color-mix(in oklab, var(--g1) 18%, var(--surface)) !important; color: #c9b6ff !important; }
+  [data-side] .cmdk-grp:not([class*="t-p"]):not([class*="t-a"]):not([class*="t-v"]) .cmdk-it[aria-selected="true"] .cmdk-ic { background: var(--surface-2) !important; color: var(--ink) !important; }
+  [data-side] .cmdk-grp .cmdk-ic .ic { width: 19px; height: 19px; }
+  [data-side] .cmdk-grp .cmdk-l { flex: 1; min-width: 0; }
+  [data-side] .cmdk-grp .cmdk-l b { display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 15px; font-weight: 600; }
+  [data-side] .cmdk-who { font-weight: 500; color: var(--ink-2); }
+  [data-side] .cmdk-grp .cmdk-l small { display: block; margin-top: 2px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 12.5px; }
+  [data-side] .cmdk-chev { display: grid; flex: none; color: var(--ink-3); }
+  [data-side] .cmdk-chev .ic { width: 18px; height: 18px; }
+}
