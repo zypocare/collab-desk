@@ -295,8 +295,8 @@
 		{#each slotWeeks as w (w.k)}
 			<span class="wk2-cap-w">
 				<span class="wk2-cap-l"><b>{w.label}</b><span>{w.range}</span></span>
-				<b class="wk2-cap-n">{Math.min(w.n, cap)}<span>/{cap}</span></b>
-				<span class="wk2-bar" style="--n:{Math.min(cap, 10)}">{#each Array.from({ length: Math.min(cap, 10) }, (_, k) => k) as k (k)}<i class:on={k < w.n}></i>{/each}</span>
+				<b class="wk2-cap-n" style="--k:{w.k}">{Math.min(w.n, cap)}<span>/{cap}</span></b>
+				<span class="wk2-bar" style="--n:{Math.min(cap, 10)}">{#each Array.from({ length: Math.min(cap, 10) }, (_, k) => k) as k (k)}<i class:on={k < w.n} class:next={k === w.n && w.k === 0} style="--k:{k}"></i>{/each}</span>
 			</span>
 		{/each}
 		<span class="wk2-cap-f"><span>{slotNote}</span><span class="wk2-edit">Change<Icon name="chevR" /></span></span>
