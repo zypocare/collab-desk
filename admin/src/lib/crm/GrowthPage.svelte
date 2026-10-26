@@ -145,6 +145,7 @@
 		return out;
 	});
 	const maxDay = $derived(Math.max(1, ...days.map((x) => x.sent)));
+	const LINE: Record<string, string> = { ready: '#f2994a', approved: '#3a67d8', sent: '#6b3fd4', followed: '#6b3fd4', joined: '#1d6b45', skipped: '#dad3df', unsubscribed: '#d4296a' };
 	const TAG: Record<string, [string, string]> = {
 		ready: ['Waiting', 't-warn'], approved: ['Queued', 't-info'], sent: ['Sent', 't-acc'], followed: ['Followed up', 't-acc'],
 		joined: ['Joined', 't-ok'], skipped: ['Skipped', 't-mute'], unsubscribed: ['Unsubscribed', 't-bad']
@@ -154,7 +155,6 @@
 <div class="gr">
 	<header class="wh">
 		<div>
-			<div class="eb">Growth</div>
 			<h1>Growth Autopilot</h1>
 			<p class="muted lead">Finds Indian creators who show a business email on a public page, writes each a short invitation, and sends them 10 AM to 6 PM, a few minutes apart, with one follow-up. Anyone can unsubscribe in one tap.</p>
 		</div>
@@ -255,55 +255,76 @@
 		</div>
 	{/if}
 
-	<div class="card tbl-wrap">
-		{#if !d}
-			<div class="ld"><span class="spinner"></span></div>
-		{:else if !rows.length}
-			<div class="card-empty">{tab === 'ready' ? (active ? 'Nothing here yet: the creators from the search that is running appear here when it finishes.' : d.rows.length ? 'Nothing waiting. New creators come every morning at 9, or press "Find creators now".' : 'No creators found yet. Press "Find creators now".') : 'Nobody here yet.'}</div>
-		{:else}
-			<table class="tbl">
-				<thead><tr>
-					<th class="ck"><input type="checkbox" aria-label="Pick everyone shown" checked={allPicked} onchange={() => (picked = Object.fromEntries(rows.map((r) => [r.id, !allPicked])))} /></th>
-					<th>Creator</th><th>Niche · city</th><th>Email · seen on</th><th>The email</th><th>Status</th><th></th>
-				</tr></thead>
-				<tbody>
-					{#each rows as r (r.id)}
-						<tr class:sel={picked[r.id]}>
-							<td class="ck"><input type="checkbox" aria-label="Pick {r.name}" bind:checked={picked[r.id]} /></td>
-							<td><b class="w5">{r.name}</b>{#if r.handle}<a class="d" href="https://instagram.com/{r.handle}" target="_blank" rel="noopener">@{r.handle}</a>{/if}{#if r.followers}<small class="d">~{num(r.followers)} followers</small>{/if}</td>
-							<td>{[r.niche, r.city].filter(Boolean).join(' · ') || '—'}{#if r.why}<small class="d">{r.why}</small>{/if}</td>
-							<td class="mono sm">{r.email}{#if r.source_url}<a class="d" href={r.source_url} target="_blank" rel="noopener">{host(r.source_url)}</a>{/if}</td>
-							<td><button class="lnk" onclick={() => edit(r)} aria-expanded={open === r.id}>{r.subject}</button></td>
-							<td>
-								<span class="tag {TAG[r.status]?.[1] ?? 't-mute'}">{TAG[r.status]?.[0] ?? r.status}</span>
-								{#if r.joined_at}<small class="d">{day(r.joined_at)}</small>{:else if r.clicked_at}<small class="d">opened the link {ago(r.clicked_at)}</small>{:else if r.followed_at}<small class="d">{ago(r.followed_at)}</small>{:else if r.sent_at}<small class="d">{ago(r.sent_at)}</small>{:else}<small class="d">found {day(r.found_on)}</small>{/if}
-							</td>
-							<td class="r">
-								{#if r.status === 'ready'}<button class="btn sm pri" onclick={() => act([r.id], 'approve')}>Approve</button>{/if}
-							</td>
-						</tr>
-						{#if open === r.id}
-							<tr class="mail-row"><td></td><td colspan="6">
-								<div class="mail">
-									<label>Subject<input class="inp" bind:value={draft.subject} disabled={!['ready', 'approved', 'skipped'].includes(r.status)} /></label>
-									<label>Email<textarea class="inp" rows="9" bind:value={draft.body} disabled={!['ready', 'approved', 'skipped'].includes(r.status)}></textarea></label>
-									<small class="muted">Added below it: the "Get your free page" link, the sender name, and the unsubscribe line.</small>
-									{#if ['ready', 'approved', 'skipped'].includes(r.status)}<div class="row"><button class="btn" onclick={() => (open = '')}>Cancel</button><button class="btn pri" onclick={() => saveEdit(r.id)}>Save email</button>{#if r.status === 'ready'}<button class="btn" onclick={() => act([r.id], 'skip')}>Skip</button>{/if}</div>{/if}
-								</div>
-							</td></tr>
-						{/if}
-					{/each}
-				</tbody>
-			</table>
-		{/if}
-	</div>
+	{#if !d}
+		<div class="card"><div class="ld"><span class="spinner"></span></div></div>
+	{:else if !rows.length}
+		<div class="card card-empty">{tab === 'ready' ? (active ? 'Nothing here yet: the creators from the search that is running appear here when it finishes.' : d.rows.length ? 'Nothing waiting. New creators come every morning at 9, or press "Find creators now".' : 'No creators found yet. Press "Find creators now".') : 'Nobody here yet.'}</div>
+	{:else}
+		<div class="pickall"><label><input type="checkbox" checked={allPicked} onchange={() => (picked = Object.fromEntries(rows.map((r) => [r.id, !allPicked])))} /> Pick all {num(rows.length)} shown</label></div>
+		<div class="leads">
+			{#each rows as r (r.id)}
+				<article class="card lift lc" class:sel={picked[r.id]} style:border-bottom-color={LINE[r.status] ?? '#dad3df'}>
+					<div class="ld-top">
+						<input type="checkbox" aria-label="Pick {r.name}" bind:checked={picked[r.id]} />
+						<span class="tag {TAG[r.status]?.[1] ?? 't-mute'}"><i class="pd"></i>{TAG[r.status]?.[0] ?? r.status}</span>
+						{#if r.niche}<span class="nich">{r.niche}</span>{/if}
+					</div>
+					<div class="ld-t">
+						<h2>{r.name}</h2>
+						<span>{[r.handle ? '@' + r.handle : '', r.city, r.followers ? `~${num(r.followers)} followers` : ''].filter(Boolean).join(' · ')}</span>
+					</div>
+					<div class="ld-s">
+						<div><small>Email seen on</small>{#if r.source_url}<a href={r.source_url} target="_blank" rel="noopener">{host(r.source_url)}</a>{:else}<b>—</b>{/if}</div>
+						<div><small>Subject</small><button class="lnk sbj" onclick={() => edit(r)} aria-expanded={open === r.id}>{r.subject}</button></div>
+					</div>
+					{#if r.why}<p class="why">{r.why}</p>{/if}
+					{#if open === r.id}
+						<div class="mail">
+							<label>Subject<input class="inp" bind:value={draft.subject} disabled={!['ready', 'approved', 'skipped'].includes(r.status)} /></label>
+							<label>Email<textarea class="inp" rows="8" bind:value={draft.body} disabled={!['ready', 'approved', 'skipped'].includes(r.status)}></textarea></label>
+							<small class="muted">Added below it: the "Get your free page" link, the sender name, and the unsubscribe line.</small>
+							{#if ['ready', 'approved', 'skipped'].includes(r.status)}<div class="row"><button class="btn sm" onclick={() => (open = '')}>Cancel</button><button class="btn sm pri" onclick={() => saveEdit(r.id)}>Save email</button></div>{/if}
+						</div>
+					{/if}
+					<div class="ld-f">
+						<span class="muted">{#if r.joined_at}Joined {day(r.joined_at)}{:else if r.clicked_at}Opened the link {ago(r.clicked_at)}{:else if r.followed_at}Followed up {ago(r.followed_at)}{:else if r.sent_at}Emailed {ago(r.sent_at)}{:else}Found {day(r.found_on)} · {r.email}{/if}</span>
+						<span class="ld-a">
+							{#if r.status === 'ready'}<button class="btn sm" onclick={() => act([r.id], 'skip')}>Skip</button><button class="btn sm pri" onclick={() => act([r.id], 'approve')}>Approve</button>
+							{:else if r.status === 'approved'}<button class="btn sm" onclick={() => act([r.id], 'skip')}>Hold back</button>
+							{:else if r.status === 'skipped'}<button class="btn sm" onclick={() => act([r.id], 'approve')}>Approve</button>{/if}
+						</span>
+					</div>
+				</article>
+			{/each}
+		</div>
+	{/if}
 </div>
 
 <style>
 	.gr { display: flex; flex-direction: column; gap: 14px; }
 	.wh { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 12px; }
-	.eb { font-size: 12.5px; color: var(--ink-3); margin-bottom: 3px; }
-	h1 { font-size: 24px; }
+	h1 { font-size: 28px; font-weight: 800; letter-spacing: -.02em; }
+	.pickall { font-size: 12.5px; color: var(--ink-3); }
+	.pickall label { display: inline-flex; align-items: center; gap: 8px; }
+	.leads { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 330px), 1fr)); gap: 18px; align-items: start; }
+	.lc { display: flex; flex-direction: column; gap: 13px; padding: 18px 20px; border-bottom: 3px solid; }
+	.lc.sel { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+	.ld-top { display: flex; align-items: center; gap: 10px; }
+	.ld-top .pd { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+	.nich { font-size: 13.5px; font-weight: 600; color: var(--ink-3); }
+	.ld-t { display: grid; gap: 4px; }
+	.ld-t h2 { font-size: 19px; font-weight: 700; }
+	.ld-t span { font-size: 13px; color: var(--ink-3); }
+	.ld-s { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--line-soft); border-radius: 12px; background: var(--surface-2); }
+	.ld-s > div { display: grid; gap: 3px; padding: 11px 14px; min-width: 0; }
+	.ld-s > div + div { border-left: 1px solid var(--line-soft); }
+	.ld-s small { font-size: 12px; color: var(--ink-3); }
+	.ld-s a, .ld-s b, .sbj { font-size: 13.5px; font-weight: 700; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left; }
+	.sbj { text-decoration: underline; text-decoration-color: var(--line-strong); text-underline-offset: 3px; }
+	.why { font-size: 13px; line-height: 1.5; color: var(--ink-2); }
+	.ld-f { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding-top: 10px; border-top: 1px solid var(--line-soft); font-size: 12.5px; }
+	.ld-f .muted { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+	.ld-a { display: flex; gap: 6px; flex: none; }
 	.lead { margin-top: 4px; font-size: 13.5px; max-width: 720px; }
 	.acts { display: flex; gap: 8px; }
 	.ld { padding: 40px; display: grid; place-items: center; }
@@ -356,16 +377,12 @@
 	.ck { width: 36px; }
 	.w5 { font-weight: 500; }
 	.d { display: block; font-size: 12px; color: var(--ink-3); }
-	a.d:hover { color: var(--accent); }
 	.lnk { border: 0; background: none; padding: 0; color: var(--ink); text-align: left; font: inherit; text-decoration: underline; text-decoration-color: var(--line-strong); text-underline-offset: 3px; cursor: pointer; }
 	.lnk:hover { color: var(--accent); }
 	.r { text-align: right; }
-	.mail-row td { background: var(--surface-2); }
 	.mail { display: grid; gap: 10px; max-width: 720px; padding: 6px 0 10px; }
 	.mail label { display: grid; gap: 4px; font-size: 12.5px; color: var(--ink-2); }
 	.mail textarea { font: 13.5px/1.5 inherit; resize: vertical; }
 	.mail .row { padding: 0; }
-	.tbl tbody tr:hover td { background: var(--surface-2); }
-	.tbl tr.sel td { background: #f4f0fd; }
 	@media (max-width: 640px) { .fields { grid-template-columns: 1fr; } }
 </style>

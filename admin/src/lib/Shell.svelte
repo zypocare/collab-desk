@@ -27,15 +27,17 @@
 	import InvoicesPage from './crm/InvoicesPage.svelte';
 	import WaitlistPage from './crm/WaitlistPage.svelte';
 	import GrowthPage from './crm/GrowthPage.svelte';
+	import SignupsBoard from './crm/SignupsBoard.svelte';
 
 	let { email, onsignout }: { email: string; onsignout: () => void } = $props();
 
-	// The left menu. Sections arrive phase by phase; only the ones that work are listed.
+	// The sections (tabs in the top bar) and their pages (the icon rail on the left).
 	type Item = { id: string; label: string; icon: string; badge?: () => number; warn?: boolean };
-	const NAV: { label: string; items: Item[] }[] = [
-		{ label: 'Overview', items: [{ id: 'dashboard', label: 'Dashboard', icon: 'grid' }] },
+	const NAV: { label: string; icon: string; items: Item[] }[] = [
+		{ label: 'Overview', icon: 'grid', items: [{ id: 'dashboard', label: 'Dashboard', icon: 'grid' }] },
 		{
 			label: 'People',
+			icon: 'users',
 			items: [
 				{ id: 'signups', label: 'Sign-ups', icon: 'inbox', badge: () => queue.signups ?? 0 },
 				{ id: 'creators', label: 'Creators', icon: 'user' },
@@ -46,6 +48,7 @@
 		},
 		{
 			label: 'Deals',
+			icon: 'board',
 			items: [
 				{ id: 'brands', label: 'Brands', icon: 'board' },
 				{ id: 'collabs', label: 'Collabs', icon: 'spark' },
@@ -62,6 +65,7 @@
 		},
 		{
 			label: 'Automation',
+			icon: 'spark',
 			items: [
 				{ id: 'autopilots', label: 'Autopilots', icon: 'spark' },
 				{ id: 'autopilot-items', label: 'Autopilot items', icon: 'list' },
@@ -70,6 +74,7 @@
 		},
 		{
 			label: 'Trust',
+			icon: 'shield',
 			items: [
 				{ id: 'support', label: 'Support', icon: 'mail', badge: () => queue.support_unread ?? 0 },
 				{ id: 'safety', label: 'Safety', icon: 'shield', badge: () => queue.safety ?? 0, warn: true },
@@ -80,6 +85,7 @@
 		},
 		{
 			label: 'Growth',
+			icon: 'send',
 			items: [
 				{ id: 'growth', label: 'Growth Autopilot', icon: 'send' },
 				{ id: 'waitlist', label: 'Waitlist', icon: 'clock' },
@@ -91,6 +97,7 @@
 		},
 		{
 			label: 'Billing',
+			icon: 'rupee',
 			items: [
 				{ id: 'billing', label: 'Overview', icon: 'rupee' },
 				{ id: 'plans', label: 'Plans & settings', icon: 'note' },
@@ -101,6 +108,7 @@
 		},
 		{
 			label: 'System',
+			icon: 'key',
 			items: [
 				{ id: 'controls', label: 'Switches & limits', icon: 'shield', badge: () => flagsOff, warn: true },
 				{ id: 'quotas', label: 'Daily quotas', icon: 'chart' },
@@ -115,6 +123,11 @@
 		}
 	];
 	const screens = NAV.flatMap((g) => g.items.map((i) => ({ label: i.label, href: href(i.id) })));
+	// The section of the page that's open (record pages belong to their list's section).
+	const group = $derived(NAV.find((g) => g.items.some((i) => i.id === route.section)) ?? NAV[0]);
+	const groupBadge = (g: (typeof NAV)[number]) => g.items.reduce((a, i) => a + (i.badge?.() ?? 0), 0);
+	let me = $state(false);
+	const initials = $derived(email.split('@')[0].split(/[._-]/).map((x) => x[0] ?? '').join('').slice(0, 2).toUpperCase() || 'A');
 
 	let queue = $state<Record<string, number>>({});
 	let flagsOff = $state(0);
@@ -124,7 +137,6 @@
 		if (c.data) flagsOff = (c.data as { flags: { on: boolean }[] }).flags.filter((f) => !f.on).length;
 	}
 	let palette = $state(false);
-	let menu = $state(false);
 	onMount(() => {
 		loadQueue();
 		const t = setInterval(loadQueue, 120_000);
@@ -139,7 +151,7 @@
 	$effect(() => {
 		void route.section;
 		void route.id;
-		menu = false;
+		me = false;
 	});
 	const isMac = typeof navigator !== 'undefined' && /mac|iphone|ipad/i.test(navigator.platform);
 	const current = $derived(route.section);
@@ -148,42 +160,48 @@
 <svelte:window onkeydown={onKey} />
 
 <div class="app">
-	<aside class="side" class:open={menu} aria-label="Sections">
-		<div class="brand">
-			<Logo size={26} /><b>Miracle</b><small>Admin</small>
-			<button class="x" aria-label="Close menu" onclick={() => (menu = false)}><Icon name="x" /></button>
-		</div>
-		<nav>
+	<header class="top">
+		<a class="brand" href={href('dashboard')} aria-label="Miracle admin, the dashboard"><Logo size={26} /><b>Miracle</b><span class="bar"></span><span class="adm">Admin</span></a>
+		<nav class="tabs" aria-label="Sections">
 			{#each NAV as g (g.label)}
-				<div class="ng">{g.label}</div>
-				{#each g.items as it (it.id)}
-					{@const n = it.badge?.() ?? 0}
-					<a class="ni" class:on={current === it.id} href={href(it.id)} aria-current={current === it.id ? 'page' : undefined}>
-						<Icon name={it.icon} /><span>{it.label}</span>
-						{#if n}<i class="nb" class:warn={it.warn}>{n}</i>{/if}
-					</a>
-				{/each}
+				{@const n = groupBadge(g)}
+				<a class:on={group === g} href={href(g.items[0].id)} aria-current={group === g ? 'page' : undefined}>{g.label}{#if n}<i class="tb" class:warn={g.items.some((x) => x.warn && (x.badge?.() ?? 0))}>{n}</i>{/if}</a>
 			{/each}
 		</nav>
-		<div class="me">
-			<span class="who" title={email}>{email}</span>
-			<button class="so" onclick={onsignout}><Icon name="logout" />Sign out</button>
+		<div class="tools">
+			{#if flagsOff}<a class="tag t-warn live" href={href('controls')}>{flagsOff} switch{flagsOff === 1 ? '' : 'es'} off</a>{:else}<span class="live ok" title="Live data"><i></i>Live</span>{/if}
+			<button class="ib peach" aria-label="Go to any page" title="Go to… ({isMac ? '⌘' : 'Ctrl'} K)" onclick={() => (palette = true)}><Icon name="plus" /></button>
+			<button class="ib" aria-label="Search" title="Search ({isMac ? '⌘' : 'Ctrl'} K)" onclick={() => (palette = true)}><Icon name="search" /></button>
+			<a class="ib" href={href('support')} aria-label="Support inbox">
+				<Icon name="mail" />{#if queue.support_unread}<span class="dot"></span>{/if}
+			</a>
+			<div class="me-w">
+				<button class="av" aria-label="Your account" aria-expanded={me} onclick={() => (me = !me)}>{initials}</button>
+				{#if me}
+					<div class="me-m">
+						<span class="who" title={email}>{email}</span>
+						<button class="btn sm" onclick={onsignout}><Icon name="logout" />Sign out</button>
+					</div>
+				{/if}
+			</div>
 		</div>
-	</aside>
-	{#if menu}<div class="side-scrim" role="presentation" onclick={() => (menu = false)}></div>{/if}
+	</header>
 
 	<div class="body">
-		<header class="top">
-			<button class="btn ghost burger" aria-label="Open menu" onclick={() => (menu = true)}><Icon name="menu" /></button>
-			<button class="search" onclick={() => (palette = true)}>
-				<Icon name="search" /><span>Search creators, brands, collabs, invoices, tickets…</span><kbd>{isMac ? '⌘' : 'Ctrl'} K</kbd>
-			</button>
-			{#if flagsOff}<a class="tag t-warn live" href={href('controls')}>{flagsOff} switch{flagsOff === 1 ? '' : 'es'} off</a>{:else}<span class="tag t-ok live"><i></i>Live data</span>{/if}
-		</header>
-
+		<nav class="rail" aria-label="{group.label} pages">
+			{#each group.items as it (it.id)}
+				{@const n = it.badge?.() ?? 0}
+				<a class="ri" class:on={current === it.id} href={href(it.id)} aria-current={current === it.id ? 'page' : undefined} title={it.label}>
+					<span class="rico"><Icon name={it.icon} />{#if n}<i class="nb" class:warn={it.warn}>{n}</i>{/if}</span>
+					<span class="rl">{it.label}</span>
+				</a>
+			{/each}
+		</nav>
 		<main class="main">
 			{#if route.section === 'dashboard'}
 				<Dashboard onqueue={(q) => (queue = q)} />
+			{:else if route.section === 'signups'}
+				<SignupsBoard openId={route.id} onchange={loadQueue} />
 			{:else if route.section === 'creators' && route.id}
 				<CreatorPage id={route.id} onchange={loadQueue} />
 			{:else if route.section === 'brand-logins' && route.id}
@@ -234,44 +252,53 @@
 <Palette bind:open={palette} {screens} />
 
 <style>
-	.app { display: flex; min-height: 100vh; }
-	.side { position: sticky; top: 0; height: 100vh; width: 236px; flex: none; background: var(--side); color: var(--side-ink); display: flex; flex-direction: column; padding: 12px 10px; overflow-y: auto; scrollbar-width: thin; }
-	.brand { display: flex; align-items: center; gap: 9px; padding: 6px 10px 10px; color: #fff; }
-	.brand b { font-size: 15px; font-weight: 700; }
-	.brand small { font: 500 10.5px var(--f-mono); color: var(--side-mute); border: 1px solid #3a333f; border-radius: 4px; padding: 1px 5px; }
-	.x { display: none; margin-left: auto; border: 0; background: none; color: var(--side-ink); width: 32px; height: 32px; }
-	nav { flex: 1; }
-	.ng { font-size: 10.5px; font-weight: 600; letter-spacing: .09em; text-transform: uppercase; color: var(--side-mute); padding: 14px 10px 6px; }
-	.ni { display: flex; align-items: center; gap: 10px; height: 32px; padding: 0 10px; border-radius: 6px; color: var(--side-ink); font-size: 13.5px; text-decoration: none; }
-	.ni:hover { color: #fff; background: #221d27; text-decoration: none; }
-	.ni.on { background: var(--side-2); color: #fff; }
-	.ni :global(.ic) { width: 16px; height: 16px; opacity: .85; }
-	.ni span { flex: 1; min-width: 0; }
-	.nb { font: 500 11px var(--f-mono); font-style: normal; color: var(--side); background: #e9b949; border-radius: 9px; padding: 1px 6px; }
-	.nb.warn { background: #ff9b91; }
-	.me { border-top: 1px solid #2b2531; margin-top: 12px; padding: 12px 10px 4px; display: grid; gap: 8px; }
-	.who { font-size: 12.5px; color: var(--side-mute); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-	.so { display: inline-flex; align-items: center; gap: 8px; border: 1px solid #3a333f; background: none; color: var(--side-ink); height: 30px; padding: 0 10px; border-radius: 6px; font-size: 12.5px; justify-self: start; }
-	.so:hover { color: #fff; border-color: #574e5e; }
-	.body { flex: 1; min-width: 0; display: flex; flex-direction: column; }
-	.top { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; gap: 12px; padding: 10px var(--gut); background: var(--surface); border-bottom: 1px solid var(--line); }
-	.search { flex: 1 1 320px; max-width: 620px; display: flex; align-items: center; gap: 10px; height: 36px; padding: 0 12px; border: 1px solid var(--line-strong); border-radius: 8px; background: var(--bg); color: var(--ink-3); font-size: 13.5px; text-align: left; min-width: 0; }
-	.search span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-	.search:hover { border-color: #c4bdb3; }
-	kbd { font: 500 11px var(--f-mono); color: var(--ink-2); border: 1px solid var(--line-strong); border-radius: 4px; padding: 1px 6px; background: var(--surface); }
-	.live { margin-left: auto; }
-	.live i { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); }
-	.burger { display: none; width: 36px; padding: 0; }
-	.main { padding: 22px var(--gut) 56px; width: 100%; max-width: 1480px; }
-	.side-scrim { display: none; }
+	.app { min-height: 100vh; display: flex; flex-direction: column; background: var(--bg); }
+	.top { position: sticky; top: 0; z-index: 30; display: flex; align-items: center; gap: 16px; padding: 10px 20px; background: var(--side); color: #fff; }
+	.brand { display: flex; align-items: center; gap: 10px; color: #fff; flex: none; }
+	.brand:hover { text-decoration: none; color: #fff; }
+	.brand b { font-size: 17px; font-weight: 800; letter-spacing: -.01em; }
+	.brand .bar { width: 1px; height: 20px; background: #463a47; }
+	.brand .adm { font-size: 15px; font-weight: 600; color: #d9cfd8; }
+	.tabs { display: flex; gap: 3px; padding: 4px; border-radius: 12px; background: var(--side-2); margin: 0 auto; overflow-x: auto; scrollbar-width: none; max-width: 100%; }
+	.tabs a { display: inline-flex; align-items: center; gap: 7px; height: 34px; padding: 0 13px; border-radius: 9px; font-size: 13.5px; font-weight: 600; color: var(--side-ink); white-space: nowrap; }
+	.tabs a:hover { color: #fff; text-decoration: none; }
+	.tabs a.on { background: #3a2e3b; color: #fff; }
+	.tb { display: inline-grid; place-items: center; min-width: 20px; height: 20px; padding: 0 6px; border-radius: 6px; font: 700 11px var(--f-body); font-style: normal; background: #f2994a; color: var(--side); }
+	.tb.warn { background: #f25a90; color: #fff; }
+	.tools { display: flex; align-items: center; gap: 8px; flex: none; }
+	.ib { position: relative; width: 38px; height: 38px; border-radius: 10px; display: grid; place-items: center; border: 0; background: var(--side-2); color: #fff; }
+	.ib:hover { background: #3a2e3b; text-decoration: none; color: #fff; }
+	.ib.peach { background: var(--peach); color: var(--side); }
+	.ib.peach:hover { background: #ffc08b; color: var(--side); }
+	.ib :global(.ic) { width: 18px; height: 18px; }
+	.dot { position: absolute; top: 8px; right: 9px; width: 8px; height: 8px; border-radius: 50%; background: #f25a90; }
+	.live { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; margin-right: 4px; }
+	.live.ok { color: #8fd9ad; }
+	.live.ok i { width: 7px; height: 7px; border-radius: 50%; background: #3ecf8e; box-shadow: 0 0 0 4px rgba(62, 207, 142, .18); }
+	.me-w { position: relative; }
+	.av { width: 38px; height: 38px; border-radius: 50%; border: 0; display: grid; place-items: center; background: var(--grad); color: #fff; font-weight: 800; font-size: 13px; }
+	.me-m { position: absolute; right: 0; top: 46px; z-index: 40; display: grid; gap: 10px; padding: 14px; min-width: 240px; background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); }
+	.me-m .who { font-size: 13px; color: var(--ink-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+	.me-m .btn { justify-self: start; }
+	.body { flex: 1; display: flex; min-width: 0; }
+	.rail { position: sticky; top: 58px; align-self: flex-start; height: calc(100vh - 58px); width: 84px; flex: none; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 14px 6px; background: var(--surface); border-right: 1px solid var(--line); overflow-y: auto; scrollbar-width: none; }
+	.ri { width: 72px; display: grid; justify-items: center; gap: 4px; padding: 8px 2px; border-radius: 12px; color: var(--ink-3); text-align: center; }
+	.ri:hover { background: var(--surface-2); color: var(--ink); text-decoration: none; }
+	.ri.on { background: var(--accent-soft); color: var(--accent-2); }
+	.rico { position: relative; display: grid; place-items: center; width: 24px; height: 24px; }
+	.rico :global(.ic) { width: 20px; height: 20px; }
+	.rl { font-size: 10.5px; font-weight: 600; line-height: 1.2; }
+	.nb { position: absolute; top: -6px; right: -12px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; display: grid; place-items: center; font: 700 10.5px var(--f-body); font-style: normal; background: #f2994a; color: var(--side); }
+	.nb.warn { background: #f25a90; color: #fff; }
+	.main { flex: 1; min-width: 0; padding: 26px var(--gut) 56px; max-width: 1480px; }
 
 	@media (max-width: 900px) {
-		.side { position: fixed; left: 0; top: 0; z-index: 60; transform: translateX(-100%); transition: transform .2s; box-shadow: 0 0 40px rgba(0, 0, 0, .3); }
-		.side.open { transform: none; }
-		.side-scrim { display: block; position: fixed; inset: 0; z-index: 55; background: rgba(23, 19, 27, .4); }
-		.x { display: grid; place-items: center; }
-		.burger { display: inline-flex; }
+		.top { flex-wrap: wrap; gap: 10px; padding: 10px 14px; }
+		.tabs { order: 3; width: 100%; margin: 0; }
+		.tools { margin-left: auto; }
 		.live { display: none; }
-		kbd { display: none; }
+		.body { flex-direction: column; }
+		.rail { position: sticky; top: 0; height: auto; width: 100%; flex-direction: row; justify-content: flex-start; overflow-x: auto; padding: 8px 10px; border-right: 0; border-bottom: 1px solid var(--line); z-index: 20; }
+		.ri { flex: none; }
 	}
 </style>

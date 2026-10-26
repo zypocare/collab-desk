@@ -113,7 +113,14 @@
 				]
 			: []
 	);
-	const color = $derived(c ? (STATUS_TAG[c.status] === 't-ok' ? '#1d6b45' : c.status === 'pending' ? '#7a4f00' : '#6b6570') : '#6b6570');
+	const color = $derived(c ? (STATUS_TAG[c.status] === 't-ok' ? '#1d6b45' : c.status === 'pending' ? '#b4600a' : '#6b6570') : '#6b6570');
+	// Where they are on the way from asking to join to their first paid invoice.
+	const journey = $derived.by(() => {
+		if (!c) return [];
+		// Each step on its own (Instagram can be disconnected after collabs began).
+		const done = [true, c.status === 'active' || c.status === 'paused', !!c.instagram?.connected, Number(c.stats.collabs) > 0, Number(c.stats.paid) > 0];
+		return ['Asked to join', 'Approved', 'Instagram linked', 'First collab', 'First paid'].map((name, i) => ({ name, done: done[i] }));
+	});
 </script>
 
 {#if err}
@@ -150,6 +157,10 @@
 	<div class="rec">
 		<div class="main">
 			{#if tab === 'overview'}
+				<section class="card jr">
+					<div class="jr-h"><h2 class="card-t">Journey</h2><span class="muted sm">{journey.filter((s) => s.done).length} of 5</span></div>
+					<div class="jr-s">{#each journey as s (s.name)}<div class:done={s.done}><span>{s.name}</span><i></i></div>{/each}</div>
+				</section>
 				<section class="stats">
 					<div class="card st"><small>Collabs</small><b class="mono">{num(c.stats.collabs)}</b><span>{num(c.stats.open)} open now</span></div>
 					<div class="card st"><small>Paid to them</small><b class="mono">{inr0(c.stats.paid)}</b><span>{inrShort(c.stats.paid_month)} this month</span></div>
@@ -292,9 +303,17 @@
 	.main { flex: 999 1 540px; min-width: 0; display: flex; flex-direction: column; gap: 16px; }
 	.side { flex: 1 1 290px; min-width: 0; display: flex; flex-direction: column; gap: 16px; }
 	.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+	.jr { padding: 16px 18px; display: grid; gap: 14px; }
+	.jr-h { display: flex; justify-content: space-between; align-items: center; }
+	.jr-s { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; }
+	.jr-s > div { display: grid; gap: 8px; font-size: 12.5px; font-weight: 600; color: #b7adb6; }
+	.jr-s i { height: 4px; border-radius: 4px; background: var(--line); }
+	.jr-s .done { color: var(--ink); }
+	.jr-s .done i { background: var(--accent); }
+	@media (max-width: 560px) { .jr-s { grid-template-columns: 1fr 1fr; } }
 	.st { padding: 12px 14px; display: grid; gap: 2px; }
 	.st small { color: var(--ink-3); font-size: 12px; }
-	.st b { font-size: 20px; font-weight: 500; }
+	.st b { font-size: 22px; font-weight: 800; letter-spacing: -.02em; }
 	.st span { color: var(--ink-3); font-size: 11.5px; }
 	.sm { font-size: 12px; }
 	.w5 { font-weight: 500; }

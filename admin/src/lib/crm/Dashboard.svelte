@@ -19,9 +19,14 @@
 	let err = $state('');
 	let busy = $state(false);
 
+	// The cards at the top also read the website and the Growth Autopilot.
+	let site = $state<D | null>(null);
+	let grow = $state<D | null>(null);
 	async function load() {
 		busy = true;
 		supabase.rpc('admin_quotas').then(({ data }) => data && (quota = data as D));
+		supabase.rpc('admin_site_stats', { p_days: days }).then(({ data }) => data && (site = data as D));
+		supabase.rpc('admin_growth').then(({ data }) => data && (grow = data as D));
 		const { data, error } = await supabase.rpc('admin_dashboard', { p_days: days });
 		busy = false;
 		err = error ? errMessage(error) : '';
@@ -35,18 +40,6 @@
 	});
 
 	const RANGES = [[7, '7 days'], [30, '30 days'], [90, '90 days'], [0, 'All time']] as const;
-	const period = $derived(days ? `vs the ${days} days before` : 'since launch');
-	function delta(cur: number, prev: number | undefined): [string, string] {
-		if (!days || prev === undefined) return ['', 't-mute'];
-		if (!prev) return cur ? ['new', 't-ok'] : ['—', 't-mute'];
-		const p = Math.round(((cur - prev) / prev) * 100);
-		return [`${p >= 0 ? '+' : ''}${p}%`, p > 0 ? 't-ok' : p < 0 ? 't-bad' : 't-mute'];
-	}
-	const dl = $derived(
-		d
-			? { collabs: delta(d.kpis.collabs.cur, d.kpis.collabs.prev), paid: delta(Number(d.kpis.paid.cur), Number(d.kpis.paid.prev)), ai: delta(Number(d.kpis.ai.cur), Number(d.kpis.ai.prev)) }
-			: { collabs: ['', ''], paid: ['', ''], ai: ['', ''] }
-	);
 	const q = $derived(d?.queue ?? {});
 	const h = $derived(d?.health ?? {});
 	const STAGES = ['request', 'negotiating', 'confirmed', 'creating', 'live', 'wrapped', 'paused', 'cancelled', 'declined'];
@@ -67,6 +60,30 @@
 	const FEED_TAG: Record<string, [string, string]> = {
 		admin: ['Admin', 't-mute'], collab: ['Collab', 't-acc'], signup: ['Sign-up', 't-warn'], email: ['Email', 't-bad'], support: ['Support', 't-info']
 	};
+	// The six cards at the top: what each part of Miracle is doing, and where to look closer.
+	type Deck = { pill: string; tone: string; kind: string; title: string; meta: string; a: string; aL: string; b: string; bL: string; barL: string; barV: string; pct: number; line: string; foot: string; cta: string; to?: string; scroll?: string };
+	const pct = (a: number, b: number) => (b ? Math.max(0, Math.min(100, Math.round((a / b) * 100))) : 0);
+	const span = $derived(days ? `in the last ${days} days` : 'ever');
+	const deck = $derived.by((): Deck[] => {
+		if (!d) return [];
+		const cf = d.creator_funnel, bf = d.brand_funnel, sw = d.stages ?? {};
+		const open = ['request', 'negotiating', 'confirmed', 'creating', 'live'].reduce((a, s) => a + (sw[s]?.n ?? 0), 0);
+		const wrapped = sw.wrapped?.n ?? 0;
+		const g = grow?.counts ?? {}, gs = grow?.settings ?? {};
+		const searching = ((grow?.runs ?? []) as D[]).some((r) => !r.finished_at && r.batch_id);
+		const jobs = d.health?.jobs;
+		return [
+			{ pill: q.signups ? `${num(q.signups)} waiting` : 'All caught up', tone: q.signups ? 't-warn' : 't-ok', kind: 'Creators', title: 'Creator sign-ups', meta: `Asked to join ${span}`, a: num(cf.signed_up), aL: 'Asked to join', b: num(cf.approved), bL: 'Approved', barL: 'Approved', barV: `${pct(Number(cf.approved), Number(cf.signed_up))}%`, pct: pct(Number(cf.approved), Number(cf.signed_up)), line: '#f2994a', foot: q.signups ? `Oldest waiting ${ago(q.signups_oldest)}` : 'Nobody waiting', cta: 'Pipeline', to: href('signups') },
+			{ pill: site ? 'Live' : '…', tone: 't-ok', kind: 'Website', title: 'www.miracleapp.live', meta: 'Counted without cookies', a: num(site?.visits), aL: 'Visits', b: num(site?.clicks), bL: 'Join clicks', barL: 'Visits to sign-ups', barV: site && Number(site.visits) ? `${Math.round((Number(site.signups) / Number(site.visits)) * 1000) / 10}%` : '—', pct: site ? pct(Number(site.signups) * 10, Number(site.visits)) : 0, line: '#0b877d', foot: `${num(site?.signups)} sign-ups ${span}`, cta: 'Report', scroll: 'site' },
+			{ pill: searching ? 'Searching' : gs.on ? 'On' : 'Off', tone: searching || gs.on ? 't-acc' : 't-mute', kind: 'Growth', title: 'Growth Autopilot', meta: gs.mode === 'auto' ? 'Auto: emails go out by themselves' : 'Approve: emails wait for you', a: num(g.waiting), aL: 'Waiting for you', b: num(g.sent_today), bL: 'Emailed today', barL: 'Claude credit this month', barV: `$${Number(grow?.month_cost ?? 0).toFixed(2)} of $200`, pct: pct(Number(grow?.month_cost ?? 0), 200), line: '#6b3fd4', foot: `${num(g.joined)} joined from invitations`, cta: 'Open', to: href('growth') },
+			{ pill: `${num(bf.signed_up)} new`, tone: 't-bad', kind: 'Brands', title: 'Brand funnel', meta: `Brand accounts made ${span}`, a: num(bf.signed_up), aL: 'Signed up', b: num(bf.asked), bL: 'Asked a creator', barL: 'Asked a creator', barV: `${pct(Number(bf.asked), Number(bf.signed_up))}%`, pct: pct(Number(bf.asked), Number(bf.signed_up)), line: '#d4296a', foot: `${num(bf.paid)} paid a creator`, cta: 'Brands', to: href('brand-logins') },
+			{ pill: `${num(open)} open`, tone: 't-info', kind: 'Deals', title: 'Collab pipeline', meta: 'Every collab, by stage', a: inrShort(Number(sw.live?.value ?? 0)) === '—' ? '₹0' : inrShort(Number(sw.live?.value ?? 0)), aL: 'Live now', b: inrShort(Number(d.kpis.paid.cur)) === '—' ? '₹0' : inrShort(Number(d.kpis.paid.cur)), bL: `Paid ${span}`, barL: 'Wrapped', barV: `${num(wrapped)} of ${num(open + wrapped)}`, pct: pct(wrapped, open + wrapped), line: '#3a67d8', foot: `${num(sw.request?.n ?? 0)} new requests waiting`, cta: 'Collabs', to: href('collabs') },
+			{ pill: jobs?.failed || d.queue.problems_new ? 'Needs a look' : 'All good', tone: jobs?.failed || d.queue.problems_new ? 't-bad' : 't-ok', kind: 'System', title: 'System health', meta: 'Jobs, email, Instagram, problems', a: num(jobs?.runs), aL: 'Jobs in 24 hours', b: num(jobs?.failed), bL: 'Failed', barL: 'Email delivery', barV: d.kpis.emails.cur ? `${100 - pct(Number(d.kpis.emails.failed), Number(d.kpis.emails.cur))}%` : '—', pct: d.kpis.emails.cur ? 100 - pct(Number(d.kpis.emails.failed), Number(d.kpis.emails.cur)) : 0, line: '#1d6b45', foot: `${num(d.health?.outbox_pending)} emails waiting to send`, cta: 'Jobs', to: href('jobs') }
+		];
+	});
+	function scrollTo(id: string) {
+		document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+	}
 	function feedHref(e: D): string | null {
 		if (e.link === 'outbox') return null;
 		if (e.link === 'ticket') return href('support', e.id);
@@ -76,9 +93,17 @@
 
 <div class="db">
 	<header class="db-h">
-		<div>
-			<div class="eb">Overview</div>
-			<h1>Dashboard</h1>
+		<div class="db-t">
+			<h1>Overview</h1>
+			{#if d}
+				<div class="dots">
+					<span style:color="#1d6b45">● <b>{num(d.kpis.creators.now)}</b> active creator{d.kpis.creators.now === 1 ? '' : 's'}</span>
+					<span style:color="#f2994a">● <b>{num(q.signups)}</b> waiting</span>
+					<span style:color="#6b3fd4">● <b>{num(d.kpis.brand_logins.now)}</b> brand logins</span>
+					<span style:color="#3a67d8">● <b>{num(d.kpis.collabs.cur)}</b> collabs started {days ? `in ${days} days` : ''}</span>
+					<span style:color="#b4600a">● <b>{num(d.kpis.ai.today)}</b> AI calls today</span>
+				</div>
+			{/if}
 		</div>
 		<div class="db-acts">
 			{#if busy}<span class="spinner muted"></span>{/if}
@@ -86,6 +111,7 @@
 				{#each RANGES as [v, name] (v)}<button class:on={days === v} aria-pressed={days === v} onclick={() => (days = v)}>{name}</button>{/each}
 			</div>
 			<button class="btn" onclick={load}><Icon name="refresh" />Refresh</button>
+			<a class="btn pri" href={href('growth')}><Icon name="search" />Find creators</a>
 		</div>
 	</header>
 
@@ -94,35 +120,21 @@
 	{#if !d}
 		<div class="ld"><span class="spinner"></span></div>
 	{:else}
-		{@const k = d.kpis}
-		<section class="kpis" aria-label="Key numbers">
-			<a class="card kpi" href={href('creators')}>
-				<small>Active creators</small><b class="mono">{num(k.creators.now)}</b>
-				<span><span class="tag t-ok">+{num(k.creators.cur)}</span> approved {days ? `in ${days} days` : 'in all'}</span>
-			</a>
-			<a class="card kpi" href={href('brand-logins')}>
-				<small>Brand logins</small><b class="mono">{num(k.brand_logins.now)}</b>
-				<span><span class="tag t-ok">+{num(k.brand_logins.cur)}</span> new {days ? `in ${days} days` : ''}</span>
-			</a>
-			<div class="card kpi">
-				<small>Collabs started</small><b class="mono">{num(k.collabs.cur)}</b>
-				<span>{#if dl.collabs[0]}<span class="tag {dl.collabs[1]}">{dl.collabs[0]}</span>{/if} {period}</span>
-			</div>
-			<div class="card kpi">
-				<small>Paid brand → creator</small><b class="mono">{inrShort(k.paid.cur) === '—' ? '₹0' : inrShort(k.paid.cur)}</b>
-				<span>{#if dl.paid[0]}<span class="tag {dl.paid[1]}">{dl.paid[0]}</span>{/if} direct, no cut</span>
-			</div>
-			<div class="card kpi">
-				<small>Emails sent</small><b class="mono">{num(k.emails.cur)}</b>
-				<span>{#if k.emails.failed}<span class="tag t-bad">{num(k.emails.failed)} failed</span>{:else}<span class="tag t-ok">none failed</span>{/if}</span>
-			</div>
-			<div class="card kpi">
-				<small>AI calls</small><b class="mono">{num(k.ai.cur)}</b>
-				<span>{#if dl.ai[0]}<span class="tag {dl.ai[1]}">{dl.ai[0]}</span>{/if} {num(k.ai.today)} today</span>
-			</div>
+		<section class="deck" aria-label="Miracle at a glance">
+			{#each deck as c (c.title)}
+				<article class="card lift dk" style:border-bottom-color={c.line}>
+					<div class="dk-top"><span class="tag {c.tone}"><i class="pd"></i>{c.pill}</span><span class="dk-k">{c.kind}</span></div>
+					<div class="dk-t"><h2>{c.title}</h2><span>{c.meta}</span></div>
+					<div class="dk-s"><div><b>{c.a}</b><small>{c.aL}</small></div><div><b>{c.b}</b><small>{c.bL}</small></div></div>
+					<div class="dk-p"><div><span>{c.barL}</span><b>{c.barV}</b></div><span class="dk-bar"><i style:width="{c.pct}%" style:background={c.line}></i></span></div>
+					<div class="dk-f"><span>{c.foot}</span>{#if c.to}<a href={c.to}>{c.cta} ›</a>{:else if c.scroll}<button class="lnk" onclick={() => scrollTo(c.scroll!)}>{c.cta} ›</button>{/if}</div>
+				</article>
+			{/each}
 		</section>
 
+		<div id="site">
 		<SiteStats {days} />
+		</div>
 
 		{#if quota}
 			<section class="card">
@@ -209,20 +221,37 @@
 
 <style>
 	.db { display: flex; flex-direction: column; gap: 16px; }
-	.db-h { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px; }
-	.eb { font-size: 12.5px; color: var(--ink-3); margin-bottom: 3px; }
-	h1 { font-size: 24px; }
+	.db-h { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 14px; }
+	.db-t { display: grid; gap: 8px; }
+	h1 { font-size: 28px; font-weight: 800; letter-spacing: -.02em; }
+	.dots { display: flex; flex-wrap: wrap; gap: 14px; font-size: 12.5px; font-weight: 500; }
+	.dots b { color: var(--ink); }
+	.deck { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 330px), 1fr)); gap: 18px; }
+	.dk { display: flex; flex-direction: column; gap: 14px; padding: 18px 20px; border-bottom: 3px solid; }
+	.dk-top { display: flex; align-items: center; gap: 10px; }
+	.dk-top .pd { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+	.dk-k { font-size: 13.5px; font-weight: 600; color: var(--ink-3); }
+	.dk-t { display: grid; gap: 4px; }
+	.dk-t h2 { font-size: 19px; font-weight: 700; }
+	.dk-t span { font-size: 13px; color: var(--ink-3); }
+	.dk-s { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--line-soft); border-radius: 12px; background: var(--surface-2); }
+	.dk-s > div { display: grid; gap: 2px; padding: 12px 14px; min-width: 0; }
+	.dk-s > div + div { border-left: 1px solid var(--line-soft); }
+	.dk-s b { font-size: 22px; font-weight: 800; letter-spacing: -.02em; }
+	.dk-s small { font-size: 12.5px; color: var(--ink-3); }
+	.dk-p { display: grid; gap: 8px; }
+	.dk-p > div { display: flex; justify-content: space-between; font-size: 12.5px; color: var(--ink-3); }
+	.dk-p b { color: var(--ink); }
+	.dk-bar { height: 6px; border-radius: 6px; background: #eeeaf1; overflow: hidden; }
+	.dk-bar i { display: block; height: 100%; border-radius: 6px; min-width: 2px; }
+	.dk-f { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 13px; color: var(--ink-3); padding-top: 2px; }
+	.dk-f a, .dk-f .lnk { font-weight: 700; color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
+	#site { scroll-margin-top: 80px; }
 	.db-acts { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
-	.seg { display: inline-flex; border: 1px solid var(--line-strong); border-radius: 7px; overflow: hidden; background: var(--surface); }
-	.seg button { height: 32px; padding: 0 12px; border: 0; background: none; font-size: 13px; font-weight: 500; color: var(--ink-2); }
+	.seg { display: inline-flex; padding: 3px; border: 1px solid var(--line); border-radius: 11px; background: var(--surface); }
+	.seg button { height: 32px; padding: 0 12px; border: 0; border-radius: 8px; background: none; font-size: 13px; font-weight: 600; color: var(--ink-3); }
 	.seg button.on { background: var(--ink); color: #fff; }
 	.ld { padding: 60px; display: grid; place-items: center; }
-	.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
-	.kpi { padding: 14px 16px; display: flex; flex-direction: column; gap: 5px; color: var(--ink); }
-	a.kpi:hover { border-color: var(--line-strong); text-decoration: none; color: var(--ink); }
-	.kpi small { font-size: 12.5px; color: var(--ink-3); }
-	.kpi b { font-size: 25px; font-weight: 500; letter-spacing: -.02em; }
-	.kpi > span { font-size: 12px; color: var(--ink-3); display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 	.two { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 400px), 1fr)); gap: 16px; }
 	.sm { font-size: 12px; }
 	.qrow { display: flex; align-items: center; gap: 12px; padding: 10px 16px; border-top: 1px solid var(--line-soft); color: var(--ink); font-size: 13.5px; }

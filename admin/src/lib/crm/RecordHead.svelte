@@ -48,19 +48,21 @@
 </header>
 
 <style>
-	.rh { background: var(--surface); border-bottom: 1px solid var(--line); padding: 16px var(--gut) 0; margin: -22px calc(-1 * var(--gut)) 0; }
+	.rh { background: var(--surface); border-bottom: 1px solid var(--line); padding: 18px var(--gut) 16px; margin: -26px calc(-1 * var(--gut)) 0; }
 	.crumb { font-size: 12.5px; margin-bottom: 12px; }
 	.rh-row { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; justify-content: space-between; padding-bottom: 14px; }
 	.who { display: flex; gap: 14px; align-items: center; min-width: 0; }
-	.av { width: 48px; height: 48px; border-radius: 50%; color: #fff; display: grid; place-items: center; font-weight: 600; font-size: 16px; flex: none; }
-	.av.sq { border-radius: 10px; }
+	.av { width: 60px; height: 60px; border-radius: 50%; color: #fff; display: grid; place-items: center; font-weight: 800; font-size: 20px; flex: none; }
+	.av.sq { border-radius: 14px; }
 	.who-t { min-width: 0; }
 	.t-line { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
-	h1 { font-size: 21px; overflow-wrap: anywhere; }
+	h1 { font-size: 23px; font-weight: 800; letter-spacing: -.02em; overflow-wrap: anywhere; }
 	.sub { margin-top: 3px; font-size: 13px; color: var(--ink-3); display: flex; flex-wrap: wrap; gap: 4px 14px; }
 	.acts { display: flex; flex-wrap: wrap; gap: 8px; }
-	.tabs { display: flex; gap: 20px; overflow-x: auto; scrollbar-width: thin; }
-	.tabs button { height: 40px; padding: 0 2px; border: 0; border-bottom: 2px solid transparent; background: none; color: var(--ink-2); font-weight: 500; font-size: 13.5px; white-space: nowrap; }
-	.tabs button.on { color: var(--ink); border-bottom-color: var(--accent); }
+	.tabs { display: flex; flex-wrap: wrap; gap: 8px; }
+	.tabs button { height: 36px; padding: 0 14px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--ink-2); font-weight: 600; font-size: 13px; white-space: nowrap; }
+	.tabs button:hover { border-color: var(--line-strong); }
+	.tabs button.on { background: var(--ink); border-color: var(--ink); color: #fff; }
+	.tabs button.on .mono { color: #d9cfd8; }
 	.tabs .mono { font-size: 11.5px; margin-left: 3px; }
 </style>
