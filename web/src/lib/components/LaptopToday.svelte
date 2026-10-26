@@ -224,7 +224,7 @@
 		<section class="l-ai">
 			<div class="l-ai-in">
 				<div class="l-ai-top">
-					<span class="l-orb" aria-hidden="true"><i></i><i></i><i></i></span>
+					<span class="ai-mark" aria-hidden="true"><i></i><svg viewBox="0 0 24 24"><path d="M12 2.5c.7 4.6 3.9 7.8 8.5 8.5-4.6.7-7.8 3.9-8.5 8.5-.7-4.6-3.9-7.8-8.5-8.5 4.6-.7 7.8-3.9 8.5-8.5z"/><path class="s2" d="M19 15.5c.25 1.6 1.4 2.75 3 3-1.6.25-2.75 1.4-3 3-.25-1.6-1.4-2.75-3-3 1.6-.25 2.75-1.4 3-3z"/></svg></span>
 					<span class="l-cap">Desk AI{forYou ? ` · ${forYou} for you` : ''}</span>
 					{#if left !== null}<span class="l-free">{left}% free</span>{/if}
 				</div>

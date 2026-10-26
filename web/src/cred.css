@@ -2370,3 +2370,13 @@
   [data-side] .cmdk-in { border-radius: 0 !important; height: 52px; border: 1.5px solid var(--line-strong); background: var(--surface); }
   [data-side] .cmdk-in:focus-within { border-color: var(--ink); box-shadow: 4px 4px 0 var(--g2); }
 }
+
+/* ---------- Desk AI's mark: the app's AI sparkle in a gradient tile, twinkling (was a dark ball in a ring) ---------- */
+.ai-mark { position: relative; flex: none; display: grid; place-items: center; width: 32px; height: 32px; border-radius: 10px; background: linear-gradient(135deg, var(--g1), var(--g2) 55%, var(--g3)); box-shadow: 0 6px 18px -6px color-mix(in oklab, var(--g2) 75%, transparent), inset 0 1px 0 rgba(255, 255, 255, .25); }
+.ai-mark i { position: absolute; inset: -6px; z-index: -1; border-radius: 14px; background: radial-gradient(circle, color-mix(in oklab, var(--g2) 45%, transparent), transparent 70%); animation: ai-glow 3.2s ease-in-out infinite; }
+.ai-mark svg { width: 19px; height: 19px; fill: #fff; animation: ai-twinkle 3.2s ease-in-out infinite; }
+.ai-mark svg .s2 { opacity: .85; transform-origin: 19px 18.5px; animation: ai-small 3.2s ease-in-out infinite; }
+@keyframes ai-glow { 0%, 100% { opacity: .5; transform: scale(.95); } 50% { opacity: 1; transform: scale(1.12); } }
+@keyframes ai-twinkle { 0%, 100% { transform: scale(1) rotate(0); } 50% { transform: scale(.88) rotate(12deg); } }
+@keyframes ai-small { 0%, 100% { transform: scale(.6); opacity: .5; } 50% { transform: scale(1.15); opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .ai-mark i, .ai-mark svg, .ai-mark svg .s2 { animation: none; } }

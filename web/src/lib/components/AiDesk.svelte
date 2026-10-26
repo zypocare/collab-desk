@@ -148,7 +148,7 @@
 {#if phone}
 	<section class="hs dk2">
 		<header class="dk2-h">
-			<span class="dk2-orb" aria-hidden="true"><i></i><i></i><i></i></span>
+			<span class="ai-mark" aria-hidden="true"><i></i><svg viewBox="0 0 24 24"><path d="M12 2.5c.7 4.6 3.9 7.8 8.5 8.5-4.6.7-7.8 3.9-8.5 8.5-.7-4.6-3.9-7.8-8.5-8.5 4.6-.7 7.8-3.9 8.5-8.5z"/><path class="s2" d="M19 15.5c.25 1.6 1.4 2.75 3 3-1.6.25-2.75 1.4-3 3-.25-1.6-1.4-2.75-3-3 1.6-.25 2.75-1.4 3-3z"/></svg></span>
 			<span class="dk2-eb">Desk AI</span>
 			{#if forYou}<span class="dk2-eb dk2-mute">· {forYou} for you</span>{/if}
 			{#if left}<span class="dk2-left" title={leftTitle}><svg viewBox="0 0 36 36" aria-hidden="true"><circle cx="18" cy="18" r="14" /><circle class="dk2-arc" cx="18" cy="18" r="14" style="stroke-dasharray:{(88 * left.pct) / 100} 88" /></svg>{left.pct}% free</span>{/if}
