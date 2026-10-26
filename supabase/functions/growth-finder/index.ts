@@ -46,6 +46,18 @@ Deno.serve(async (req) => {
     if (ok !== true) return reply({ error: 'Only Miracle admins can do this.' }, 403);
   }
 
+  // An admin stops a Claude search that seems stuck: the batch is cancelled and the run closed.
+  const cancel = Number(url.searchParams.get('cancel'));
+  if (manual && cancel > 0) {
+    const { data: run } = await db.from('growth_runs').select('id, batch_id, finished_at').eq('id', cancel).maybeSingle();
+    if (!run || (run as { finished_at: string | null }).finished_at) return reply({ error: 'That search has already finished.' }, 404);
+    const batch = (run as { batch_id: string | null }).batch_id;
+    let note = '';
+    if (batch && CLAUDE_KEY) await claude().messages.batches.cancel(batch).catch((e) => (note = ` (${claudeError(e)})`));
+    await db.from('growth_runs').update({ error: `cancelled by an admin${note}`, finished_at: new Date().toISOString() }).eq('id', cancel);
+    return reply({ cancelled: true });
+  }
+
   // Claude's batches that have finished: read, check, write, queue (in the background; the job doesn't wait).
   if (url.searchParams.get('collect') === '1') {
     background(collect(db, site));
@@ -153,6 +165,12 @@ async function collect(db: Db, site: string) {
     try {
       const client = claude();
       const batch = await client.messages.batches.retrieve(run.batch_id!);
+      // What Claude says, kept on the run for the panel (and to tell a slow search from a stuck one).
+      const n = batch.request_counts;
+      await db.from('growth_runs').update({
+        batch_status: batch.processing_status === 'ended' ? `ended: ${n.succeeded} done, ${n.errored} failed, ${n.expired} expired, ${n.canceled} cancelled` : batch.processing_status === 'canceling' ? 'being cancelled' : 'Claude is still searching',
+        checked_at: new Date().toISOString(),
+      }).eq('id', run.id);
       if (batch.processing_status !== 'ended') {
         // Batches finish within 24 hours; one still going after that is given up on.
         if (Date.now() - Date.parse(run.at) > 26 * 3600e3) await finish({ error: "Claude didn't finish within a day" });

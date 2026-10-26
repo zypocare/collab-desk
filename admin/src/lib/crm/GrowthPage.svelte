@@ -56,6 +56,16 @@
 	}
 	// The search runs in the background (up to about two and a half minutes): the page checks every few seconds
 	// until that run has finished, then says what it found.
+	// A Claude search that seems stuck: cancel it (Claude stops, nothing more is spent) so a new one can start.
+	async function cancelSearch(id: number) {
+		if (!(await ask({ title: 'Cancel this search?', body: 'Claude stops searching and nothing more is spent on it. You can start a new search straight after.', ok: 'Cancel search', danger: true }))) return;
+		busy = 'cancel';
+		const { error } = await supabase.functions.invoke(`growth-finder?cancel=${id}`, { body: {} });
+		busy = '';
+		if (error) return toast(errMessage(error), true);
+		toast('Search cancelled');
+		await load();
+	}
 	async function findNow() {
 		busy = 'find';
 		const { data, error } = await supabase.functions.invoke('growth-finder', { body: {} });
@@ -172,7 +182,9 @@
 				<div class="st">
 					<b>{active.engine === 'claude' ? 'Claude is searching for creators' : 'Searching for creators'} · started {ago(active.at)}</b>
 					<small class="muted">{active.engine === 'claude' ? 'This usually takes a few minutes, sometimes up to an hour. The creators it finds appear below under "Waiting for you". You can close this page; nothing more is spent while it waits.' : 'This takes about two minutes. The creators it finds appear below under "Waiting for you".'}</small>
+					{#if active.checked_at}<small class="chk">Last check {ago(active.checked_at)}: {active.batch_status || 'no answer yet'}</small>{/if}
 				</div>
+				{#if active.engine === 'claude'}<button class="btn sm" onclick={() => cancelSearch(active.id)} disabled={!!busy}>Cancel search</button>{/if}
 			</section>
 		{/if}
 		<section class="state card" class:on={s.on}>
@@ -213,7 +225,7 @@
 						{#each d.runs as r (r.id)}
 							<li>
 								<span class="mono muted">{ago(r.at)}</span>
-								<span class="rn">{#if !r.finished_at && r.batch_id}Claude is searching…{:else if !r.finished_at && Date.now() - Date.parse(r.at) < 200_000}Searching…{:else if !r.finished_at}Stopped: took too long{:else}{r.added ? `${r.added} found` : 'none added'}{/if}{r.manual ? ' · by hand' : ''}{#if r.error}<small class="d">{r.error}</small>{/if}</span>
+								<span class="rn">{#if !r.finished_at && r.batch_id}Claude is searching…{#if r.checked_at}<small class="d">checked {ago(r.checked_at)}: {r.batch_status}</small>{/if}{:else if !r.finished_at && Date.now() - Date.parse(r.at) < 200_000}Searching…{:else if !r.finished_at}Stopped: took too long{:else}{r.added ? `${r.added} found` : 'none added'}{/if}{r.manual ? ' · by hand' : ''}{#if r.error}<small class="d">{r.error}</small>{/if}</span>
 								<span class="tag {r.engine === 'claude' ? 't-acc' : 't-mute'}">{r.engine === 'claude' ? 'Claude' : 'Gemini'}</span>
 								<span class="mono">{r.engine === 'claude' ? `$${Number(r.cost_usd).toFixed(2)}` : 'free'}</span>
 							</li>
@@ -331,6 +343,8 @@
 	.state { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 14px 16px; }
 	.searching { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-color: var(--accent); background: var(--accent-soft); }
 	.searching .st b { color: var(--accent-2); }
+	.searching .st { flex: 1; }
+	.chk { font-size: 12px; color: var(--accent-2); font-weight: 600; }
 	.pulse { position: relative; width: 14px; height: 14px; flex: none; border-radius: 50%; background: var(--accent); }
 	.pulse i { position: absolute; inset: 0; border-radius: 50%; background: var(--accent); animation: gp-ping 1.6s cubic-bezier(0, 0, .2, 1) infinite; }
 	@keyframes gp-ping { 75%, 100% { transform: scale(2.4); opacity: 0; } }
