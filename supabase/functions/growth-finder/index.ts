@@ -1,13 +1,14 @@
-// Growth Autopilot (migration 163), once a day (9 AM India) from the database cron job, or "Find now" in the admin
-// panel. Finds Indian creators who show a business email on a public page, opens that page to see the email there
-// itself (anything it can't confirm is dropped), writes a short personal invitation for each, and queues them:
-// waiting for approval in the panel, or approved straight away in "auto" mode. private.growth_send_due sends them
-// in working hours, a few minutes apart.
+// Growth Autopilot (migration 163), at 9 AM India from the database cron job (when the queue is running low), or
+// "Find now" in the admin panel. Finds Indian creators who show a business email on a public page, opens that page to
+// see the email there itself (anything it can't confirm is dropped), writes a short personal invitation for each, and
+// queues them: waiting for approval in the panel, or approved straight away in "auto" mode. private.growth_send_due
+// sends them in working hours, two minutes apart, up to the daily number; the rest wait for the next days.
 //
 // * With GROWTH_ANTHROPIC_API_KEY set (Miracle's monthly API credit; nothing else uses this key), Claude Opus 5.5
-//   searches the web through the Message Batches API: no time limit and half price. This call hands the search
-//   over and answers at once; ?collect=1 (every 5 minutes while one is pending, migration 166) picks up what
-//   Claude found. Only one search runs at a time, so repeated clicks never pay twice.
+//   searches the web through the Message Batches API: no time limit and half price. One search is one request for
+//   each niche, side by side in the same batch, and Claude writes each creator's subject and opening line as it goes.
+//   This call hands the search over and answers at once; ?collect=1 (every 5 minutes while one is pending,
+//   migration 166) picks up what Claude found. Only one search runs at a time, so repeated clicks never pay twice.
 // * Without the key, Gemini with Google Search runs inside this call, within the platform's time limit.
 //   ?dry=1   (Gemini) find and write, save nothing
 //   ?site=   where the AI lives (local testing)
@@ -19,13 +20,17 @@ const CLAUDE_KEY = Deno.env.get('GROWTH_ANTHROPIC_API_KEY') ?? '';
 const CLAUDE_MODEL = 'claude-opus-5-5';
 // Batch list prices, for the panel's running total: half of $4 / $20 per million tokens; web search $10 per 1,000.
 const PRICE = { input: 2 / 1e6, output: 10 / 1e6, search: 10 / 1000 };
-type Spend = { input: number; output: number; searches: number };
+// One search: this many creators asked for in each niche, at most this many niches.
+const PER_NICHE = 12, MAX_NICHES = 8;
+const NICHES = ['fashion', 'beauty', 'food', 'travel', 'lifestyle', 'fitness'];
+type Params = Anthropic.Messages.MessageCreateParamsNonStreaming;
 
 const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type' };
-type Found = { name: string; handle: string; email: string; email_source: string; website: string; niche: string; city: string; followers: number | null; why: string };
+type Found = { name: string; handle: string; email: string; email_source: string; website: string; niche: string; city: string; followers: number | null; why: string; subject?: string; opening?: string };
 type Settings = { on: boolean; mode: 'approve' | 'auto'; daily: number; niches: string[]; cities: string[]; min_followers: number; max_followers: number; offer: string };
 type Db = ReturnType<typeof admin>;
-type Run = { id: number; at: string; batch_id: string | null; request: Anthropic.Messages.MessageCreateParamsNonStreaming | null; cost_usd: number | string; asked: number };
+// request: the batch's requests still going, by custom_id (a single request on older runs).
+type Run = { id: number; at: string; batch_id: string | null; request: Record<string, Params> | Params | null; cost_usd: number | string; asked: number | null; confirmed: number | null; added: number | null };
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
@@ -67,7 +72,9 @@ Deno.serve(async (req) => {
   const ctx = await context(db);
   if ('error' in ctx) return reply({ error: ctx.error }, 500);
   if (!ctx.s.on && !manual && !dry) return reply({ skipped: 'the Growth Autopilot is off' });
-  if (!ctx.want) return reply({ skipped: ctx.waiting ? `${ctx.waiting} still waiting for approval` : 'today is done' });
+  // The morning search skips itself while two days' sending is still waiting; "Find now" stops at a week's worth.
+  const enough = ctx.s.daily * (manual ? 7 : 2);
+  if (ctx.backlog >= enough) return reply({ skipped: `${ctx.backlog} creators are already waiting to be emailed, about ${Math.round(ctx.backlog / ctx.s.daily)} days of sending. Search again when fewer are waiting.` });
 
   if (CLAUDE_KEY && !dry) {
     // One search at a time: a click while Claude is still searching doesn't start (or pay for) another.
@@ -77,10 +84,10 @@ Deno.serve(async (req) => {
     const { data: run, error } = await db.from('growth_runs').insert({ engine: 'claude', manual }).select('id').single();
     if (error || !run) return reply({ error: error?.message ?? 'Could not start the search.' }, 500);
     const id = (run as { id: number }).id;
-    const request = claudeRequest(ctx.s, Math.min(10, ctx.want + 2), [...ctx.seenHandle]);
+    const requests = claudeRequests(ctx.s, [...ctx.seenHandle]);
     try {
-      const batch = await claude().messages.batches.create({ requests: [{ custom_id: `run-${id}`, params: request }] });
-      await db.from('growth_runs').update({ batch_id: batch.id, request }).eq('id', id);
+      const batch = await claude().messages.batches.create({ requests: Object.entries(requests).map(([custom_id, params]) => ({ custom_id, params })) });
+      await db.from('growth_runs').update({ batch_id: batch.id, request: requests }).eq('id', id);
       return reply({ started: true, run: id, engine: 'claude', batch: true }, 202);
     } catch (e) {
       const why = claudeError(e);
@@ -120,46 +127,55 @@ async function context(db: Db) {
     db.from('waitlist').select('email, instagram'),
   ]);
   const all = leads ?? [];
-  // Never more than a day's worth waiting or found today.
-  const waiting = all.filter((l) => l.status === 'ready').length;
-  const foundToday = all.filter((l) => l.found_on === today).length;
-  const want = Math.max(0, s.daily - Math.max(waiting, foundToday));
+  // Creators still to be emailed: waiting for approval, or approved and not sent yet.
+  const backlog = all.filter((l) => l.status === 'ready' || l.status === 'approved').length;
+  // Gemini searches within the time limit, so it asks for about two days' worth at most.
+  const want = Math.max(1, Math.min(s.daily, s.daily * 2 - backlog));
   const seenEmail = new Set([...all.map((l) => l.email), ...(sup ?? []).map((x) => x.email), ...(creators ?? []).map((c) => c.creator_email ?? ''), ...(wl ?? []).map((w) => w.email ?? '')].map((e) => String(e).toLowerCase()).filter(Boolean));
   const seenHandle = new Set([...all.map((l) => l.handle), ...(creators ?? []).map((c) => c.handle ?? ''), ...(wl ?? []).map((w) => w.instagram ?? '')].map((h) => String(h).replace(/^@+/, '').toLowerCase()).filter(Boolean));
-  return { s, today, want, waiting, seenEmail, seenHandle };
+  return { s, today, want, backlog, seenEmail, seenHandle };
 }
 type Ctx = Exclude<Awaited<ReturnType<typeof context>>, { error: string }>;
 
 // ---------- Claude, through the Message Batches API ----------
 const claude = () => new Anthropic({ apiKey: CLAUDE_KEY, maxRetries: 1 });
 
-/** The search Claude runs: web search to find creators, web fetch to open the page and see the email on it. */
-function claudeRequest(s: Settings, count: number, known: string[]): Anthropic.Messages.MessageCreateParamsNonStreaming {
+/** One search: a request for each niche, all in the same batch, by custom_id. */
+function claudeRequests(s: Settings, known: string[]): Record<string, Params> {
+  const niches = (s.niches.length ? s.niches : NICHES).slice(0, MAX_NICHES);
+  return Object.fromEntries(niches.map((n, i) => [`n${i}`, claudeRequest(s, n, PER_NICHE, known)]));
+}
+
+/** The search Claude runs for one niche: web search to find creators, web fetch to open the page and see the email on it. */
+function claudeRequest(s: Settings, niche: string, count: number, known: string[]): Params {
   const system = `You find Indian Instagram creators for Miracle to invite. Miracle is a free tool for creators' brand deals: a rate-card page brands book from, quotes, invoices and payment reminders.
 Use web search to find real, active creators, then open the page that shows their email (web fetch) to check it is really there.
 Who counts:
-- posts about ${s.niches.length ? s.niches.join(', ') : 'fashion, beauty, food, travel, lifestyle or fitness'}${s.cities.length ? `, based in or around ${s.cities.join(', ')}` : ', anywhere in India'};
+- posts mainly about the niche in the request${s.cities.length ? `, based in or around ${s.cities.join(', ')}` : ', anywhere in India'};
 - roughly ${s.min_followers.toLocaleString('en-IN')} to ${s.max_followers.toLocaleString('en-IN')} Instagram followers (micro and mid creators, not celebrities);
-- does brand collaborations, and publishes a business or collaboration email on a public web page you opened: their own website, a media kit, a link-in-bio page, a creator directory or an article. An email that only appears inside Instagram does not count.
+- does brand collaborations, and publishes a business or collaboration email on a public web page you opened. Look on their own pages first (their website, link-in-bio page or media kit); a creator directory or an article only when their own pages don't show it. An email that only appears inside Instagram does not count.
+Search widely: different phrasings, sub-topics of the niche and Indian cities, so the list isn't only the first results.
 Never include anyone in the exclude list. Never invent a person, a handle or an email: only what you saw on a page. Fewer real creators are better than more guesses.
-When you are done, reply with ONLY a JSON array and nothing else. Each item: {"name", "handle" (Instagram, without @), "email" (exactly as published), "email_source" (the https:// page where you saw the email, not instagram.com), "website" (their own site or link page, or ""), "niche", "city", "followers" (a number, your best estimate), "why" (one line under 18 words about their content)}.`;
+For each creator also write the start of a short, warm invitation from Miracle's founder: a subject and an opening line about something real you saw in their content. Plain words, no flattery clichés, no emojis, nothing you didn't see.
+When you are done, reply with ONLY a JSON array and nothing else. Each item: {"name" (the name they go by, not a single letter), "handle" (Instagram, without @), "email" (exactly as published), "email_source" (the https:// page where you saw the email, not instagram.com), "website" (their own site or link page, or ""), "niche", "city", "followers" (a number, your best estimate), "why" (one line under 18 words about their content), "subject" (under 8 words, lower case like a note from a person), "opening" (one or two sentences, under 45 words, about their content)}.`;
   return {
     model: CLAUDE_MODEL,
     max_tokens: 16000,
     output_config: { effort: 'medium' },
     system,
     tools: [
-      { type: 'web_search_20260209', name: 'web_search', max_uses: 8, user_location: { type: 'approximate', country: 'IN' } },
-      { type: 'web_fetch_20260209', name: 'web_fetch', max_uses: 12 },
+      { type: 'web_search_20260209', name: 'web_search', max_uses: 10, user_location: { type: 'approximate', country: 'IN' } },
+      { type: 'web_fetch_20260209', name: 'web_fetch', max_uses: 16 },
     ],
-    messages: [{ role: 'user', content: `Find ${count} creators.\nExclude (already known): ${known.slice(-300).join(', ') || 'none'}` }],
-  } as unknown as Anthropic.Messages.MessageCreateParamsNonStreaming;
+    messages: [{ role: 'user', content: `Find ${count} creators who post about ${niche}.\nExclude (already known): ${known.slice(-300).join(', ') || 'none'}` }],
+  } as unknown as Params;
 }
 
-/** Every finished batch: a paused search carries on in a new batch; a finished one is checked, written and queued. */
+/** Every finished batch: each niche's creators are checked, written and queued; the searches that paused part-way
+ * carry on together in a new batch, and the run stays open until the last one is done. */
 async function collect(db: Db, site: string) {
   if (!CLAUDE_KEY) return;
-  const { data } = await db.from('growth_runs').select('id, at, batch_id, request, cost_usd, asked').eq('engine', 'claude').not('batch_id', 'is', null).is('finished_at', null).order('at');
+  const { data } = await db.from('growth_runs').select('id, at, batch_id, request, cost_usd, asked, confirmed, added').eq('engine', 'claude').not('batch_id', 'is', null).is('finished_at', null).order('at');
   for (const run of (data ?? []) as Run[]) {
     const finish = (patch: Record<string, unknown>) => db.from('growth_runs').update({ ...patch, seconds: Math.round((Date.now() - Date.parse(run.at)) / 1000), finished_at: new Date().toISOString() }).eq('id', run.id);
     try {
@@ -168,7 +184,7 @@ async function collect(db: Db, site: string) {
       // What Claude says, kept on the run for the panel (and to tell a slow search from a stuck one).
       const n = batch.request_counts;
       await db.from('growth_runs').update({
-        batch_status: batch.processing_status === 'ended' ? `ended: ${n.succeeded} done, ${n.errored} failed, ${n.expired} expired, ${n.canceled} cancelled` : batch.processing_status === 'canceling' ? 'being cancelled' : 'Claude is still searching',
+        batch_status: batch.processing_status === 'ended' ? `ended: ${n.succeeded} done, ${n.errored} failed, ${n.expired} expired, ${n.canceled} cancelled` : batch.processing_status === 'canceling' ? 'being cancelled' : `Claude is still searching (${n.processing} of ${n.processing + n.succeeded + n.errored + n.expired + n.canceled} niches going)`,
         checked_at: new Date().toISOString(),
       }).eq('id', run.id);
       if (batch.processing_status !== 'ended') {
@@ -176,43 +192,59 @@ async function collect(db: Db, site: string) {
         if (Date.now() - Date.parse(run.at) > 26 * 3600e3) await finish({ error: "Claude didn't finish within a day" });
         continue;
       }
-      let message: Anthropic.Messages.Message | null = null;
-      let failed = '';
+      const asked: Record<string, Params> = run.request && 'messages' in run.request ? { [`run-${run.id}`]: run.request as Params } : (run.request as Record<string, Params> | null) ?? {};
+      const next: Record<string, Params> = {};
+      const creators: Found[] = [];
+      const notes: string[] = [];
+      let spent = Number(run.cost_usd), said = '';
       for await (const r of await client.messages.batches.results(run.batch_id!)) {
-        if (r.result.type === 'succeeded') message = r.result.message;
-        else failed = r.result.type === 'errored' ? `Claude: ${(r.result.error as { error?: { message?: string } })?.error?.message ?? 'the search failed'}` : `Claude: the search was ${r.result.type}`;
+        if (r.result.type !== 'succeeded') {
+          notes.push(r.result.type === 'errored' ? `Claude: ${(r.result.error as { error?: { message?: string } })?.error?.message ?? 'a search failed'}` : `Claude: a search was ${r.result.type}`);
+          continue;
+        }
+        const message = r.result.message;
+        spent += cost(message.usage);
+        // Paused part-way: that niche carries on in the next batch (the pause_turn pattern).
+        const params = asked[r.custom_id];
+        if (message.stop_reason === 'pause_turn' && params) {
+          next[r.custom_id] = { ...params, messages: [...params.messages, { role: 'assistant', content: message.content }] } as Params;
+          continue;
+        }
+        if (message.stop_reason === 'refusal') {
+          notes.push('Claude declined a search');
+          continue;
+        }
+        const text = message.content.map((b) => (b.type === 'text' ? b.text : '')).join('');
+        const got = parseCreators(text);
+        if (!got.length && text) said = text;
+        creators.push(...got);
       }
-      if (!message) {
-        await finish({ error: failed || 'Claude returned nothing' });
-        continue;
-      }
-      const u = message.usage as { input_tokens: number; output_tokens: number; cache_creation_input_tokens?: number | null; cache_read_input_tokens?: number | null; server_tool_use?: { web_search_requests?: number } | null };
-      const cost = Math.round((Number(run.cost_usd) + (u.input_tokens + (u.cache_creation_input_tokens ?? 0) + (u.cache_read_input_tokens ?? 0)) * PRICE.input + u.output_tokens * PRICE.output + (u.server_tool_use?.web_search_requests ?? 0) * PRICE.search) * 100) / 100;
-      // Paused part-way: the same turn carries on in a new batch (the pause_turn pattern).
-      if (message.stop_reason === 'pause_turn' && run.request) {
-        const request = { ...run.request, messages: [...run.request.messages, { role: 'assistant', content: message.content }] } as Anthropic.Messages.MessageCreateParamsNonStreaming;
-        const next = await client.messages.batches.create({ requests: [{ custom_id: `run-${run.id}`, params: request }] });
-        await db.from('growth_runs').update({ batch_id: next.id, request, cost_usd: cost }).eq('id', run.id);
-        continue;
-      }
-      if (message.stop_reason === 'refusal') {
-        await finish({ cost_usd: cost, error: 'Claude declined the search' });
-        continue;
-      }
-      const text = message.content.map((b) => (b.type === 'text' ? b.text : '')).join('');
-      const creators = parseCreators(text);
       const ctx = await context(db);
       if ('error' in ctx) {
-        await finish({ cost_usd: cost, error: ctx.error });
+        await finish({ cost_usd: round(spent), error: ctx.error });
         continue;
       }
-      const out = await queue(db, site, ctx, creators, Math.max(ctx.want, 1), 30_000);
-      await finish({ cost_usd: cost, asked: creators.length, confirmed: out.confirmed, added: out.added, error: out.error ?? (creators.length ? '' : `Claude found no creators with a public email this time${text ? `: ${text.replace(/\s+/g, ' ').slice(0, 140)}` : ''}`) });
+      // What this round found goes in now, so it shows in the panel while the paused niches carry on.
+      const out = creators.length ? await queue(db, site, ctx, creators, { writeWait: 30_000 }) : { added: 0, confirmed: 0, error: undefined };
+      const totals = { cost_usd: round(spent), asked: (run.asked ?? 0) + creators.length, confirmed: (run.confirmed ?? 0) + out.confirmed, added: (run.added ?? 0) + out.added };
+      if (Object.keys(next).length) {
+        const more = await client.messages.batches.create({ requests: Object.entries(next).map(([custom_id, params]) => ({ custom_id, params })) });
+        await db.from('growth_runs').update({ ...totals, batch_id: more.id, request: next, batch_status: `Claude is still searching (${Object.keys(next).length} niches going)` }).eq('id', run.id);
+        continue;
+      }
+      await finish({ ...totals, error: totals.added ? '' : out.error ?? notes[0] ?? (totals.asked ? '' : `Claude found no creators with a public email this time${said ? `: ${said.replace(/\s+/g, ' ').slice(0, 140)}` : ''}`) });
     } catch (e) {
       await finish({ error: claudeError(e) });
     }
   }
 }
+
+/** What one answer cost, at batch prices (web fetch costs only its tokens). */
+function cost(usage: Anthropic.Messages.Usage) {
+  const u = usage as { input_tokens: number; output_tokens: number; cache_creation_input_tokens?: number | null; cache_read_input_tokens?: number | null; server_tool_use?: { web_search_requests?: number } | null };
+  return (u.input_tokens + (u.cache_creation_input_tokens ?? 0) + (u.cache_read_input_tokens ?? 0)) * PRICE.input + u.output_tokens * PRICE.output + (u.server_tool_use?.web_search_requests ?? 0) * PRICE.search;
+}
+const round = (usd: number) => Math.round(usd * 100) / 100;
 
 function claudeError(e: unknown) {
   if (e instanceof Anthropic.AuthenticationError) return 'the Claude key was refused: check GROWTH_ANTHROPIC_API_KEY';
@@ -241,12 +273,15 @@ function parseCreators(text: string): Found[] {
       city: String(x.city ?? '').trim().slice(0, 60),
       followers: Math.round(Number(x.followers) || 0) || null,
       why: String(x.why ?? '').trim().slice(0, 160),
+      subject: String(x.subject ?? '').replace(/\s+/g, ' ').trim().slice(0, 80),
+      opening: String(x.opening ?? '').trim().slice(0, 400),
     }))
-    .filter((x) => x.name && /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/.test(x.email));
+    .filter((x) => x.name.length > 1 && /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/.test(x.email));
 }
 
 // ---------- after the search, the same for both: check each page, write each email, queue ----------
-async function queue(db: Db, site: string, ctx: Ctx, creators: Found[], want: number, writeWait: number, dry = false): Promise<{ added: number; confirmed: number; error?: string; rows?: unknown[] }> {
+async function queue(db: Db, site: string, ctx: Ctx, creators: Found[], o: { want?: number; writeWait: number; dry?: boolean }): Promise<{ added: number; confirmed: number; error?: string; rows?: unknown[] }> {
+  const { want = Infinity, writeWait, dry = false } = o;
   const { s, today, seenEmail, seenHandle } = ctx;
   const fresh = creators.filter((c) => {
     const ok = !seenEmail.has(c.email) && !(c.handle && seenHandle.has(c.handle)) && !BAD.test(c.email);
@@ -258,18 +293,21 @@ async function queue(db: Db, site: string, ctx: Ctx, creators: Found[], want: nu
   const checked = await Promise.all(fresh.map(async (c) => ({ c, src: await seenOn(c) })));
   const found = checked.filter((x) => x.src).slice(0, want).map((x) => ({ ...x.c, email_source: x.src }));
   if (!found.length) return { added: 0, confirmed: 0, error: creators.length ? `${creators.length} creator${creators.length === 1 ? '' : 's'} found, but none of their emails could be confirmed on a public page` : undefined };
-  // An email for each, all at once (the standard email when one isn't back in time).
-  const written = await Promise.all(found.map((c) =>
+  // An email for each: Claude's own subject and opening when it wrote them, else the AI writes one (all at once), else
+  // the standard email.
+  const written = await Promise.all(found.map((c) => (c.subject && c.opening) || !writeWait ? null :
     ai<{ subject: string; body: string }>(db, site, 'growthmail', { name: c.name, handle: c.handle, niche: c.niche, city: c.city, about_them: c.why, offer: s.offer }, writeWait)));
   const slots = sendTimes(found.length);
   const rows = found.map((c, k) => {
     const w = written[k] as { subject?: string; body?: string } | null;
-    const first = c.name.split(' ')[0] || 'there';
+    const word = c.name.split(' ')[0];
+    const first = word.length > 1 ? word : 'there';
+    const pitch = `Miracle is a free tool for creators: a brand page with your rates and live Instagram numbers, quotes brands accept online, invoices with a UPI QR, and reminders that chase late payments for you. Brands pay you directly; we never take a cut.${s.offer ? `\n\n${s.offer}` : ''}\n\nWould you like to try it?`;
     return {
       name: c.name, handle: c.handle, email: c.email, website: c.website, source_url: c.email_source, niche: c.niche, city: c.city, followers: c.followers, why: c.why,
-      subject: w?.subject?.trim() || `your brand deals, simpler`,
-      body: w?.body?.trim() ||
-        `Hi ${first},\n\nI came across your ${c.niche || ''} content${c.city ? ` from ${c.city}` : ''} and loved it.\n\nMiracle is a free tool for creators: a brand page with your rates and live Instagram numbers, quotes brands accept online, GST-ready invoices with a UPI QR, and reminders that chase late payments for you. Brands pay you directly; we never take a cut.${s.offer ? `\n\n${s.offer}` : ''}\n\nWould you like to try it?`,
+      subject: (c.opening && c.subject) || w?.subject?.trim() || `your brand deals, simpler`,
+      body: (c.subject && c.opening ? `Hi ${first},\n\n${c.opening}\n\n${pitch}` : '') || w?.body?.trim() ||
+        `Hi ${first},\n\nI came across your ${c.niche || ''} content${c.city ? ` from ${c.city}` : ''} and loved it.\n\n${pitch}`,
       status: s.mode === 'auto' ? 'approved' : 'ready', found_on: today, send_after: slots[k],
     };
   });
@@ -309,7 +347,7 @@ async function geminiSearch(db: Db, site: string, ctx: Ctx, started: number, dry
       return { added: 0, error: why };
     }
     const wait = Math.max(8_000, Math.min(25_000, TOTAL - (Date.now() - started) - 10_000));
-    const out = await queue(db, site, ctx, found, ctx.want, wait, dry);
+    const out = await queue(db, site, ctx, found, { want: ctx.want, writeWait: wait, dry });
     await finish({ asked: found.length, confirmed: out.confirmed, added: out.added, error: out.error ?? '' });
     return { ...out, asked: found.length, engine: 'gemini' };
   } catch (e) {

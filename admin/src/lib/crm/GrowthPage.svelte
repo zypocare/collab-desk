@@ -46,7 +46,7 @@
 	}
 	async function power() {
 		const on = !d?.settings?.on;
-		if (on && !(await ask({ title: 'Switch the Growth Autopilot on?', body: `Every day it finds up to ${d?.settings?.daily} creators. ${d?.settings?.mode === 'auto' ? 'In Auto mode their emails go out by themselves, 10 AM to 6 PM.' : 'In Approve mode nothing is sent until you approve it here.'}`, ok: 'Switch on' }))) return;
+		if (on && !(await ask({ title: 'Switch the Growth Autopilot on?', body: `Each search looks in every niche and finds dozens of creators; up to ${d?.settings?.daily} emails go out a day and the rest wait their turn. ${d?.settings?.mode === 'auto' ? 'In Auto mode their emails go out by themselves, 10 AM to 6 PM.' : 'In Approve mode nothing is sent until you approve it here.'}`, ok: 'Switch on' }))) return;
 		await save({ on }, on ? 'Growth Autopilot on' : 'Growth Autopilot off');
 	}
 	async function mode(m: 'approve' | 'auto') {
@@ -191,7 +191,7 @@
 			<span class="dot" aria-hidden="true"></span>
 			<div class="st">
 				<b>{s.on ? 'On' : 'Off'} · {s.mode === 'auto' ? 'Auto: emails go out by themselves' : 'Approve: nothing goes out until you approve it'}</b>
-				<small class="muted">{s.on ? `Finds up to ${s.daily} creators every day at 9 AM. ${num(c.sent_today)} of ${s.daily} sent today.` : 'Switch it on to find creators every morning. "Find creators now" works either way.'}</small>
+				<small class="muted">{s.on ? `Searches at 9 AM when fewer than ${num(s.daily * 2)} creators are waiting. ${num(c.sent_today)} of ${s.daily} sent today.` : 'Switch it on to find creators every morning. "Find creators now" works either way.'}</small>
 			</div>
 			<div class="seg" role="group" aria-label="Mode">
 				<button class:on={s.mode === 'approve'} onclick={() => mode('approve')}>Approve</button>
@@ -237,7 +237,7 @@
 			<form class="card set" onsubmit={saveForm}>
 				<div class="card-h"><h2 class="card-t">Who to find, and how to write</h2></div>
 				<div class="fields">
-					<label>Creators a day<input class="inp" type="number" min="1" max="60" bind:value={f.daily} /></label>
+					<label>Emails a day<input class="inp" type="number" min="1" max="60" bind:value={f.daily} /></label>
 					<label>Follow up after (days)<input class="inp" type="number" min="2" max="14" bind:value={f.follow_up_days} /></label>
 					<label class="wide">Niches <small class="muted">comma separated</small><input class="inp" bind:value={f.niches} /></label>
 					<label class="wide">Cities <small class="muted">empty: all of India</small><input class="inp" placeholder="e.g. Bangalore, Mumbai" bind:value={f.cities} /></label>
@@ -270,7 +270,7 @@
 	{#if !d}
 		<div class="card"><div class="ld"><span class="spinner"></span></div></div>
 	{:else if !rows.length}
-		<div class="card card-empty">{tab === 'ready' ? (active ? 'Nothing here yet: the creators from the search that is running appear here when it finishes.' : d.rows.length ? 'Nothing waiting. New creators come every morning at 9, or press "Find creators now".' : 'No creators found yet. Press "Find creators now".') : 'Nobody here yet.'}</div>
+		<div class="card card-empty">{tab === 'ready' ? (active ? 'Nothing here yet: the creators from the search that is running appear here when it finishes.' : d.rows.length ? 'Nothing waiting. A new search runs at 9 AM when the queue is low, or press "Find creators now".' : 'No creators found yet. Press "Find creators now".') : 'Nobody here yet.'}</div>
 	{:else}
 		<div class="pickall"><label><input type="checkbox" checked={allPicked} onchange={() => (picked = Object.fromEntries(rows.map((r) => [r.id, !allPicked])))} /> Pick all {num(rows.length)} shown</label></div>
 		<div class="leads">
