@@ -5,7 +5,7 @@
 	import Mono from './Mono.svelte';
 
 	// Inside the AI assistant card on Today: possible collabs spotted in her Instagram DMs and not on
-	// the board yet. The three most likely show; the rest are one tap away in Messages.
+	// the board yet. The three most likely show; all of them are one tap away in Possible collabs.
 	const SHOW = 3;
 	// Likely collabs first, then the maybes; newest first within each.
 	const leads = $derived([...studio.leads].sort((a, b) => Number(b.collab_flag === 'likely') - Number(a.collab_flag === 'likely')));
@@ -40,6 +40,6 @@
 				</li>
 			{/each}
 		</ul>
-		{#if more > 0}<a class="ail-more" href="/studio/inbox">+{more} more possible collab{more === 1 ? '' : 's'} in Messages<Icon name="chevR" /></a>{/if}
+		<a class="ail-more" href="/studio/possible-collabs">{more > 0 ? `+${more} more · ` : ''}All possible collabs<Icon name="chevR" /></a>
 	</div>
 {/if}

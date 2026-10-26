@@ -235,7 +235,7 @@ export function pushFor(kind: string, p: Record<string, unknown>): Push | null {
     case 'month_summary':
       return { title: `Your ${String(p.label ?? 'month')} in review is ready`, body: 'What you earned, what worked, and what to charge next.', url: `/studio/reports?m=${String(p.month ?? '')}`, tag: `month-${String(p.month ?? '')}` };
     case 'ig_collab':
-      return { title: `${String(p.brand || '@' + String(p.from ?? ''))} may want a collab`, body: `${String(p.text ?? '')} · Instagram DM`, url: `/studio/inbox/ig/${encodeURIComponent(String(p.igsid ?? ''))}`, tag: `igc-${String(p.igsid ?? '')}` };
+      return { title: `${String(p.brand || '@' + String(p.from ?? ''))} may want a collab`, body: `${String(p.text ?? '')} · Instagram DM`, url: `/studio/possible-collabs?lead=${encodeURIComponent(String(p.igsid ?? ''))}`, tag: `igc-${String(p.igsid ?? '')}` };
     case 'ig_dm':
       return { title: `Instagram DM from @${String(p.from ?? '')}`, body: String(p.text ?? ''), url: `/studio/inbox/ig/${encodeURIComponent(String(p.igsid ?? ''))}`, tag: `ig-${String(p.igsid ?? '')}` };
     case 'comment_dm':

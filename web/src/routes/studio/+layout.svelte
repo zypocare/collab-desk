@@ -39,7 +39,7 @@
 	// desk: laptop sidebar only (phones reach Messages from the top bar).
 	const NAV: { href: string; label: string; short?: string; icon: string; tabs?: Tab[]; also?: string[]; desk?: boolean }[] = [
 		{ href: '/studio', label: 'Today', icon: 'home' },
-		{ href: '/studio/collabs', label: 'Collabs', icon: 'board', tabs: [{ href: '/studio/collabs', label: 'Board' }, { href: '/studio/brands', label: 'Brands' }, { href: '/studio/pitches', label: 'Pitches' }], also: ['/studio/c/', '/studio/import'] },
+		{ href: '/studio/collabs', label: 'Collabs', icon: 'board', tabs: [{ href: '/studio/collabs', label: 'Board' }, { href: '/studio/brands', label: 'Brands' }, { href: '/studio/pitches', label: 'Pitches' }, { href: '/studio/possible-collabs', label: 'From DMs' }], also: ['/studio/c/', '/studio/import'] },
 		{ href: '/studio/inbox', label: 'Messages', icon: 'inbox', desk: true },
 		{ href: '/studio/content', label: 'Plan', icon: 'cal', tabs: [{ href: '/studio/content', label: 'Content' }, { href: '/studio/calendar', label: 'Calendar' }, { href: '/studio/grow', label: 'Grow' }], also: ['/studio/grow/'] },
 		{ href: '/studio/money', label: 'Money', icon: 'wallet', tabs: [{ href: '/studio/money', label: 'Overview' }, { href: '/studio/payments', label: 'Payments' }, { href: '/studio/reports', label: 'Reports' }] },
@@ -185,6 +185,7 @@
 		'/studio/collabs': 'Collabs',
 		'/studio/brands': 'Brands',
 		'/studio/pitches': 'Pitches',
+		'/studio/possible-collabs': 'Possible collabs',
 		'/studio/content': 'Content',
 		'/studio/calendar': 'Plan',
 		'/studio/money': 'Money',
@@ -326,7 +327,7 @@
 		{ href: '/studio', label: 'Today', icon: 'home', on: [] },
 		{ href: '/studio/inbox', label: 'Inbox', icon: 'inbox', on: ['/studio/inbox'] },
 		{ href: '/studio/alerts', label: 'Alerts', icon: 'bell', on: ['/studio/alerts'] },
-		{ href: '/studio/collabs', label: 'Collabs', icon: 'board', on: ['/studio/collabs', '/studio/brands', '/studio/pitches', '/studio/c/', '/studio/import', '/studio/share', '/studio/rights'] },
+		{ href: '/studio/collabs', label: 'Collabs', icon: 'board', on: ['/studio/collabs', '/studio/brands', '/studio/pitches', '/studio/possible-collabs', '/studio/c/', '/studio/import', '/studio/share', '/studio/rights'] },
 		{ href: '/studio/calendar', label: 'Calendar', icon: 'cal', on: ['/studio/calendar'] },
 		{ href: '/studio/content', label: 'Content', icon: 'film', on: ['/studio/content', '/studio/instagram'] },
 		{ href: '/studio/grow', label: 'Grow', icon: 'spark', on: ['/studio/grow'] },

@@ -123,6 +123,7 @@
 			<div class="ib-empty"><Icon name="send" /><b>Instagram DMs here</b><span>Allow DMs on <a class="lnk" href="/studio/settings?s=profile">Profile &amp; Instagram</a> and brand DMs, including message requests, show up here.</span></div>
 		{:else}
 			{#if igCollabs}<button class="ib-filter" class:on={collabsOnly} onclick={() => (collabsOnly = !collabsOnly)}><Icon name="spark" />{igCollabs} look{igCollabs === 1 ? 's' : ''} like a collab{collabsOnly ? ' · show all' : ''}</button>{/if}
+			{#if igCollabs}<a class="ail-more ib-all" href="/studio/possible-collabs">All possible collabs, in one place<Icon name="chevR" /></a>{/if}
 			{#each igShown as t (t.igsid)}
 				<a class="ib-row" class:unread={t.unread > 0} class:on={current === `/studio/inbox/ig/${t.igsid}`} href="/studio/inbox/ig/{t.igsid}">
 					<span class="ib-av" class:ring={t.unread > 0}>{#if t.picture}<img src={t.picture} alt="" referrerpolicy="no-referrer" />{:else}<Mono name={t.username || 'IG'} />{/if}</span>

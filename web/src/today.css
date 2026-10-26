@@ -551,6 +551,7 @@
 	.ib .ib-empty b { color: var(--ink); font-size: 16px; }
 	.ib .ib-filter { display: inline-flex; align-items: center; gap: 6px; margin: 10px 22px 4px; height: 32px; padding: 0 14px; border-radius: 999px; border: 1px solid color-mix(in oklab, var(--g2) 40%, transparent); background: none; color: var(--g2); font: 600 13px var(--f-body, inherit); cursor: pointer; }
 	.ib .ib-filter.on { background: var(--g2); color: #fff; }
+	.ib .ib-all { margin: 0 22px 4px; padding: 6px 0; font-size: 13px; }
 	.ib .ib-filter .ic { width: 14px; height: 14px; }
 	.ib .ib-private { display: flex; gap: 6px; align-items: center; margin: 12px 22px 0; font-size: 12.5px; color: var(--ink-3); }
 	.ib .ib-private .ic { width: 14px; height: 14px; flex: none; }

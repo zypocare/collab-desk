@@ -185,7 +185,7 @@
 				</div>
 				{/key}
 			</div>
-			{#if studio.leads.length > 3}<a class="ail-more" href="/studio/inbox">+{studio.leads.length - 3} more possible collabs in Messages<Icon name="chevR" /></a>{/if}
+			<a class="ail-more" href="/studio/possible-collabs">{studio.leads.length > 3 ? `+${studio.leads.length - 3} more · ` : ''}All possible collabs<Icon name="chevR" /></a>
 		{/if}
 
 		{#if open.length}
