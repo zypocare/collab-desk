@@ -5,8 +5,9 @@
 	import type { Collab } from '../types';
 	import Icon from './Icon.svelte';
 
-	// Top of Today on a phone: a row of collab tickets, each with the brand's full name. Collabs that
-	// need her come first; the rest of the active ones follow.
+	// Pending Instagram collabs take the home row. Otherwise, show
+	// collabs that need her first, followed by the rest of the active ones.
+	const leads = $derived([...studio.leads].sort((a, b) => Number(b.collab_flag === 'likely') - Number(a.collab_flag === 'likely')));
 	const need = $derived([...new Map(tasks(studio.collabs).map((t) => [t.c.id, t])).values()]);
 	const rest = $derived(studio.collabs.filter((c) => !need.some((t) => t.c.id === c.id) && !['wrapped', 'declined', 'cancelled'].includes(c.stage)));
 	// Short amounts (₹85k) so the next-step chip beside it fits on a narrow card.
@@ -22,23 +23,32 @@
 	// new requests and messages are "do this now" (amber), never "late"; red is for missed dates and unpaid money
 	const tone = (t: Task) => (t.kind === 'new' || t.kind === 'msg' ? 'now' : t.d < 0 || t.kind === 'pay' ? 'late' : t.d === 0 ? 'now' : '');
 	const all = $derived([
-		...need.map((t) => ({ c: t.c, href: t.kind === 'msg' ? `/studio/inbox/${t.c.code}` : `/studio/c/${t.c.code}`, line: t.title, pill: status(t), tone: tone(t) })),
-		...rest.map((c) => ({ c, href: `/studio/c/${c.code}`, line: delivText(c.deliverables), pill: stageLabel(c.stage), tone: c.stage === 'live' ? 'ok' : '' }))
+		...need.map((t) => ({ id: t.c.id, name: t.c.brand.name, money: fee(t.c), href: t.kind === 'msg' ? `/studio/inbox/${t.c.code}` : `/studio/c/${t.c.code}`, line: t.title, pill: status(t), tone: tone(t) })),
+		...rest.map((c) => ({ id: c.id, name: c.brand.name, money: fee(c), href: `/studio/c/${c.code}`, line: delivText(c.deliverables), pill: stageLabel(c.stage), tone: c.stage === 'live' ? 'ok' : '' }))
 	]);
+	const shown = $derived(leads.length ? leads.map((l) => ({
+		id: `dm-${l.igsid}`,
+		name: /^([^:@][^:]{0,40}):\s/.exec(l.collab_hint)?.[1].trim() || l.name || (l.username ? `@${l.username}` : 'Instagram'),
+		money: 'From DM',
+		href: `/studio/inbox/ig/${l.igsid}`,
+		line: l.collab_hint || 'Asking about working together',
+		pill: 'Review',
+		tone: 'now'
+	})) : all);
 </script>
 
 <section class="tix" aria-label="Your collabs">
 	<div class="tix-h">
 		<span>Your collabs</span>
-		{#if all.length}<a href="/studio/collabs">See all</a>{/if}
+		{#if shown.length}<a href="/studio/collabs">See all</a>{/if}
 	</div>
 	<div class="tix-row">
-		{#each all as k (k.c.id)}
-			<a class="tix-t tone-{k.tone || 'calm'}" href={k.href} aria-label="{k.c.brand.name}: {k.line}, {fee(k.c)}, {k.pill}">
-				<b class="tix-n">{k.c.brand.name}</b>
+		{#each shown as k (k.id)}
+			<a class="tix-t tone-{k.tone || 'calm'}" href={k.href} aria-label="{k.name}: {k.line}, {k.money}, {k.pill}">
+				<b class="tix-n">{k.name}</b>
 				<span class="tix-l">{k.line}</span>
 				<i class="tix-cut" aria-hidden="true"></i>
-				<span class="tix-f"><strong>{fee(k.c)}</strong><em>{k.pill}</em></span>
+				<span class="tix-f"><strong>{k.money}</strong><em>{k.pill}</em></span>
 			</a>
 		{:else}
 			<!-- Nothing active yet: ways to get the first collabs in. -->
