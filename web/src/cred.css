@@ -2408,3 +2408,16 @@
   [data-side] .wk2-more-t b { display: block; font-size: 15px; font-weight: 600; }
   [data-side] .wk2-more-t small { display: block; margin-top: 2px; font-size: 12.5px; color: var(--ink-3); }
 }
+
+/* ---------- Plan › Content tickets, borderless: one clean card, clean notches, no outlined buttons ---------- */
+@media (max-width: 760px) {
+  [data-desk][data-side] .ct-row { border: 0 !important; background: linear-gradient(180deg, color-mix(in oklab, var(--ink) 3%, var(--surface)), var(--surface)) !important; box-shadow: 0 24px 40px -28px rgba(0, 0, 0, .85) !important; }
+  [data-desk][data-side] .ct-plan { border-top: 1.5px dashed color-mix(in oklab, var(--ink) 13%, transparent) !important; }
+  [data-desk][data-side] .ct-plan::before, [data-desk][data-side] .ct-plan::after { border: 0 !important; clip-path: none !important; width: 22px; height: 22px; top: -11px; background: var(--bg) !important; }
+  [data-desk][data-side] .ct-plan::before { left: -11px; }
+  [data-desk][data-side] .ct-plan::after { right: -11px; }
+  [data-desk][data-side] .ct-main > .btn, [data-desk][data-side] .ct-main > .btn:active { box-shadow: none !important; background: var(--surface-2) !important; }
+  [data-desk][data-side] .ct-plan .sel.date { box-shadow: none !important; }
+  [data-desk][data-side] .ct-meta span { background: color-mix(in oklab, var(--ink) 6%, transparent); }
+  [data-desk][data-side] .ct-empty, [data-desk][data-side] .ct-mini { border: 0 !important; box-shadow: 0 24px 40px -28px rgba(0, 0, 0, .85); }
+}
