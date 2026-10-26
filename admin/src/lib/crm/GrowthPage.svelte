@@ -110,6 +110,14 @@
 
 	const s = $derived(d?.settings ?? {});
 	const lastEngine = $derived(((d?.runs ?? []) as R[])[0]?.engine ?? '');
+	// A search still going: Claude's batch (minutes, at most an hour), or a Gemini run in its first few minutes.
+	const active = $derived(((d?.runs ?? []) as R[]).find((r) => !r.finished_at && (r.batch_id || Date.now() - Date.parse(r.at) < 200_000)) ?? null);
+	// While one is going the page keeps itself up to date, so its creators appear without a reload.
+	$effect(() => {
+		if (!active) return;
+		const t = setInterval(load, 30_000);
+		return () => clearInterval(t);
+	});
 	const c = $derived(d?.counts ?? {});
 	const TABS = [['ready', 'Waiting for you'], ['approved', 'Queued'], ['sent', 'Sent'], ['joined', 'Joined'], ['other', 'Skipped · unsubscribed']] as const;
 	const inTab = (r: R, t: string) => (t === 'sent' ? r.status === 'sent' || r.status === 'followed' : t === 'other' ? r.status === 'skipped' || r.status === 'unsubscribed' : r.status === t);
@@ -151,13 +159,22 @@
 			<p class="muted lead">Finds Indian creators who show a business email on a public page, writes each a short invitation, and sends them 10 AM to 6 PM, a few minutes apart, with one follow-up. Anyone can unsubscribe in one tap.</p>
 		</div>
 		<div class="acts">
-			<button class="btn" onclick={findNow} disabled={!!busy}>{#if busy === 'find'}<span class="spinner"></span>{:else}<Icon name="search" />{/if}Find creators now</button>
+			<button class="btn" onclick={findNow} disabled={!!busy || !!active}>{#if busy === 'find' || active}<span class="spinner"></span>{:else}<Icon name="search" />{/if}{active ? 'Searching…' : 'Find creators now'}</button>
 			{#if d}<button class="btn {s.on ? '' : 'pri'}" onclick={power} disabled={!!busy}><Icon name={s.on ? 'pause' : 'play'} />{s.on ? 'Switch off' : 'Switch on'}</button>{/if}
 		</div>
 	</header>
 	{#if err}<p class="err">{err}</p>{/if}
 
 	{#if d}
+		{#if active}
+			<section class="card searching" role="status">
+				<span class="pulse" aria-hidden="true"><i></i></span>
+				<div class="st">
+					<b>{active.engine === 'claude' ? 'Claude is searching for creators' : 'Searching for creators'} · started {ago(active.at)}</b>
+					<small class="muted">{active.engine === 'claude' ? 'This usually takes a few minutes, sometimes up to an hour. The creators it finds appear below under "Waiting for you". You can close this page; nothing more is spent while it waits.' : 'This takes about two minutes. The creators it finds appear below under "Waiting for you".'}</small>
+				</div>
+			</section>
+		{/if}
 		<section class="state card" class:on={s.on}>
 			<span class="dot" aria-hidden="true"></span>
 			<div class="st">
@@ -242,7 +259,7 @@
 		{#if !d}
 			<div class="ld"><span class="spinner"></span></div>
 		{:else if !rows.length}
-			<div class="card-empty">{tab === 'ready' ? (d.rows.length ? 'Nothing waiting. New creators come every morning at 9, or press "Find creators now".' : 'No creators found yet. Press "Find creators now".') : 'Nobody here yet.'}</div>
+			<div class="card-empty">{tab === 'ready' ? (active ? 'Nothing here yet: the creators from the search that is running appear here when it finishes.' : d.rows.length ? 'Nothing waiting. New creators come every morning at 9, or press "Find creators now".' : 'No creators found yet. Press "Find creators now".') : 'Nobody here yet.'}</div>
 		{:else}
 			<table class="tbl">
 				<thead><tr>
@@ -291,6 +308,12 @@
 	.acts { display: flex; gap: 8px; }
 	.ld { padding: 40px; display: grid; place-items: center; }
 	.state { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 14px 16px; }
+	.searching { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-color: var(--accent); background: var(--accent-soft); }
+	.searching .st b { color: var(--accent-2); }
+	.pulse { position: relative; width: 14px; height: 14px; flex: none; border-radius: 50%; background: var(--accent); }
+	.pulse i { position: absolute; inset: 0; border-radius: 50%; background: var(--accent); animation: gp-ping 1.6s cubic-bezier(0, 0, .2, 1) infinite; }
+	@keyframes gp-ping { 75%, 100% { transform: scale(2.4); opacity: 0; } }
+	@media (prefers-reduced-motion: reduce) { .pulse i { animation: none; } }
 	.state .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--ink-3); flex: none; }
 	.state.on .dot { background: #2c7a45; box-shadow: 0 0 0 4px rgba(44, 122, 69, .15); }
 	.st { display: grid; gap: 2px; flex: 1; min-width: 220px; }
