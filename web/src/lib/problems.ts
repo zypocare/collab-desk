@@ -121,12 +121,17 @@ export function initProblems() {
 	});
 }
 
+// The same missing file often fails twice (the router's error and the page's): the first one reloads,
+// and the second, a moment later while the old page is still going, mustn't be taken for a failed reload.
+let reloading = false;
 export function reloadOnce(e: unknown) {
+	if (reloading) return;
 	try {
 		const last = Number(sessionStorage.getItem('cd-reloaded') ?? 0);
 		if (Date.now() - last > 60_000) {
 			// Expected after a deploy, and the reload fixes it: not a problem worth reporting.
 			sessionStorage.setItem('cd-reloaded', String(Date.now()));
+			reloading = true;
 			location.reload();
 			return;
 		}
