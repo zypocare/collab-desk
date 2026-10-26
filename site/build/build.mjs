@@ -11,6 +11,7 @@ import { GUIDES } from './guides.mjs';
 import { pricingPage, refundPage } from './pricing.mjs';
 import { waitlistPage } from './waitlist.mjs';
 import { DIRECTORY_FOOTER, footerCss, SITE_FOOTER } from './footer.mjs';
+import { STATS_SCRIPT } from './stats.mjs';
 
 const OUT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const write = (rel, html) => {
@@ -195,6 +196,7 @@ write('assets/site.css', CSS.trim() + '\n');
 // a copy too.
 const HAND = ['index.html', 'privacy.html', 'terms.html', 'data-deletion.html', 'signin.html', 'tools/rate-calculator.html', 'tools/engagement-calculator.html'];
 const FOOT_A = '<!-- site footer -->', FOOT_B = '<!-- /site footer -->';
+const STATS_A = '<!-- site stats -->', STATS_B = '<!-- /site stats -->';
 const CSS_TAG = `<style id="sf-css">${footerCss.trim()}</style>`;
 for (const rel of HAND) {
 	const f = join(OUT, rel);
@@ -206,6 +208,9 @@ for (const rel of HAND) {
 	else if (/<footer[\s>][\s\S]*?<\/footer>/.test(h)) h = h.replace(/<footer[\s>][\s\S]*?<\/footer>/, () => block);
 	else h = h.replace(/<\/body>/, () => `${block}\n</body>`);
 	h = /<style id="sf-css">[\s\S]*?<\/style>/.test(h) ? h.replace(/<style id="sf-css">[\s\S]*?<\/style>/, () => CSS_TAG) : h.replace('</head>', () => `${CSS_TAG}\n</head>`);
+	// The visitor counter (stats.mjs), between its own markers, just before </body>.
+	const stats = `${STATS_A}\n${STATS_SCRIPT}\n${STATS_B}`;
+	h = h.includes(STATS_A) ? h.slice(0, h.indexOf(STATS_A)) + stats + h.slice(h.indexOf(STATS_B) + STATS_B.length) : h.replace(/<\/body>/, () => `${stats}\n</body>`);
 	if (h !== raw.replace(/\r\n/g, '\n')) writeFileSync(f, crlf ? h.replace(/\n/g, '\r\n') : h);
 }
 writeFileSync(join(OUT, '../web/worker/siteFooter.ts'), `// Written by site/build/build.mjs from site/build/footer.mjs: the website's footer, for the creator directory.\n// Don't edit by hand; change footer.mjs and run \`node site/build/build.mjs\`.\nexport const SITE_FOOTER = ${JSON.stringify(DIRECTORY_FOOTER)};\nexport const SITE_FOOTER_CSS = ${JSON.stringify(footerCss.trim())};\n`);

@@ -71,5 +71,18 @@
   </div>
   <div class="sf-bot"><span>© 2026 Miracle is a product of Zyposoft Technologies Private Limited, #7, Nisarga Layout, Chikkalsandra, Bangalore 560061, India.</span><span class="sf-links"><a href="/terms">Terms</a><a href="/privacy">Privacy</a><a href="/data-deletion">Data deletion</a></span></div>
 </div><div class="sf-giant" aria-hidden="true">Miracle</div></footer>
+<script>(()=>{try{
+if(navigator.webdriver||/bot|crawl|spider|preview|lighthouse|headless/i.test(navigator.userAgent))return;
+const U="https://qzsfuvcxpqaavmwkxutt.supabase.co/rest/v1/rpc/site_hit",K="sb_publishable_UaW1ryl2S-gvm7worjrHJw_Hjr9k3wj";
+const send=(k,l)=>fetch(U,{method:'POST',keepalive:true,headers:{apikey:K,authorization:'Bearer '+K,'content-type':'application/json'},body:JSON.stringify({p_kind:k,p_path:location.pathname,p_source:src,p_label:l||''})}).catch(()=>{});
+let src=new URLSearchParams(location.search).get('utm_source')||'';
+if(!src&&document.referrer){try{const h=new URL(document.referrer).hostname.replace(/^www\./,'');if(!/(^|\.)miracleapp\.live$/.test(h))src=h}catch(e){}}
+let first=true;try{first=!sessionStorage.getItem('mc-src');if(first)sessionStorage.setItem('mc-src',src||'direct');else src=sessionStorage.getItem('mc-src')||src}catch(e){}
+send(first?'visit':'view');
+document.addEventListener('click',(e)=>{const a=e.target&&e.target.closest&&e.target.closest('a[href],button[type=submit]');if(!a)return;
+const h=a.getAttribute('href')||(a.closest('form')&&a.closest('form').getAttribute('action'))||'';
+if(/signin|login/.test(h))return send('click','sign in');
+if(/signup|waitlist/.test(h))send('click','join · '+(/as=brand/.test(h)?'brand':/as=agency/.test(h)?'agency':'creator'));},{capture:true});
+}catch(e){}})();</script>
 </body>
 </html>

@@ -6,6 +6,7 @@
 	import Icon from '../Icon.svelte';
 	import { recordHref } from './lists.ts';
 	import QuotaBars, { quotasOf } from './QuotaBars.svelte';
+	import SiteStats from './SiteStats.svelte';
 
 	// How Miracle is doing: key numbers for a period, what's waiting on an admin, both funnels, the collab
 	// pipeline, money that moved between brands and creators, system health and the latest events.
@@ -120,6 +121,8 @@
 				<span>{#if dl.ai[0]}<span class="tag {dl.ai[1]}">{dl.ai[0]}</span>{/if} {num(k.ai.today)} today</span>
 			</div>
 		</section>
+
+		<SiteStats {days} />
 
 		{#if quota}
 			<section class="card">

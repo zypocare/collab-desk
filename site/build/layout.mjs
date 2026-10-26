@@ -2,6 +2,7 @@
 // and footer as the home page, and the tags search engines read. Everything is plain HTML written by
 // build.mjs; the only scripts are the help search, the pricing switch and the waitlist form.
 import { footerCss, SITE_FOOTER } from './footer.mjs';
+import { STATS_SCRIPT } from './stats.mjs';
 
 export const SITE = 'https://www.miracleapp.live';
 export const APP = 'https://app.miracleapp.live';
@@ -73,6 +74,7 @@ ${crumbs.length ? `<nav class="crumbs wrap" aria-label="You are here"><a href="/
 ${body}
 </main>
 ${SITE_FOOTER}
+${STATS_SCRIPT}
 </body>
 </html>
 `;
