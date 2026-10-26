@@ -290,7 +290,7 @@
 	.rl { font-size: 10.5px; font-weight: 600; line-height: 1.2; }
 	.nb { position: absolute; top: -6px; right: -12px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; display: grid; place-items: center; font: 700 10.5px var(--f-body); font-style: normal; background: #f2994a; color: var(--side); }
 	.nb.warn { background: #f25a90; color: #fff; }
-	.main { flex: 1; min-width: 0; padding: 26px var(--gut) 56px; max-width: 1480px; }
+	.main { flex: 1; min-width: 0; padding: 26px var(--gut) 56px; }
 
 	@media (max-width: 900px) {
 		.top { flex-wrap: wrap; gap: 10px; padding: 10px 14px; }
