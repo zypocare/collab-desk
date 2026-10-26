@@ -32,7 +32,7 @@
 		money: 'From DM',
 		href: `/studio/inbox/ig/${l.igsid}`,
 		line: l.collab_hint || 'Asking about working together',
-		pill: 'Review',
+		pill: 'Review DM',
 		tone: 'now'
 	})) : all);
 </script>
@@ -44,11 +44,11 @@
 	</div>
 	<div class="tix-row">
 		{#each shown as k (k.id)}
-			<a class="tix-t tone-{k.tone || 'calm'}" href={k.href} aria-label="{k.name}: {k.line}, {k.money}, {k.pill}">
+			<a class="tix-t tone-{k.tone || 'calm'}" class:tix-dm={leads.length > 0} href={k.href} aria-label="{k.name}: {k.line}, {k.money}, {k.pill}">
 				<b class="tix-n">{k.name}</b>
 				<span class="tix-l">{k.line}</span>
 				<i class="tix-cut" aria-hidden="true"></i>
-				<span class="tix-f"><strong>{k.money}</strong><em>{k.pill}</em></span>
+				<span class="tix-f"><strong>{k.money}</strong><em>{#if leads.length}<i class="tix-attention" aria-hidden="true"></i>{/if}{k.pill}</em></span>
 			</a>
 		{:else}
 			<!-- Nothing active yet: ways to get the first collabs in. -->

@@ -345,6 +345,57 @@
 		background: color-mix(in oklab, var(--bad) 16%, transparent);
 		color: var(--bad);
 	}
+	/* DM leads breathe in the theme's pink; the inset glow stays inside the ticket mask. */
+	.tix .tix-dm {
+		--tint: color-mix(in oklab, var(--accent) 14%, transparent);
+		position: relative;
+	}
+	.tix .tix-dm::after {
+		content: '';
+		position: absolute;
+		inset: 0;
+		border-radius: inherit;
+		pointer-events: none;
+		box-shadow: inset 0 0 0 1.5px color-mix(in oklab, var(--accent) 80%, transparent),
+			inset 0 0 22px color-mix(in oklab, var(--accent) 22%, transparent);
+		opacity: .35;
+		animation: tix-dm-breathe 3s ease-in-out infinite;
+	}
+	.tix .tix-dm .tix-f {
+		gap: 4px;
+	}
+	.tix .tix-dm .tix-f strong {
+		font-size: 12px;
+		color: var(--ink-2);
+	}
+	.tix .tix-dm .tix-f em {
+		display: inline-flex;
+		align-items: center;
+		gap: 5px;
+		flex-shrink: 0;
+		padding-inline: 7px;
+		background: color-mix(in oklab, var(--accent) 14%, transparent);
+		color: var(--accent);
+	}
+	.tix .tix-attention {
+		width: 6px;
+		height: 6px;
+		flex: none;
+		border-radius: 50%;
+		background: currentColor;
+		animation: tix-dm-dot 3s ease-in-out infinite;
+	}
+	@keyframes tix-dm-breathe {
+		0%, 100% { opacity: .25; }
+		50% { opacity: 1; }
+	}
+	@keyframes tix-dm-dot {
+		0%, 100% { opacity: .65; box-shadow: 0 0 0 0 color-mix(in oklab, var(--accent) 18%, transparent); }
+		50% { opacity: 1; box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 18%, transparent); }
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.tix .tix-dm::after, .tix .tix-attention { animation: none; }
+	}
 	.tix .tix-tip {
 		height: 120px;
 		-webkit-mask: none;
