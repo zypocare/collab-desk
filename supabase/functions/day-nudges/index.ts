@@ -123,7 +123,8 @@ async function nudgeFor(db: ReturnType<typeof admin>, s: Settings, url: URL, dry
   const msg = { title: line.title, body: line.body, url: kind === 'work' ? fact?.url ?? '/studio' : kind === 'night' ? '/studio/calendar' : '/studio', tag: 'day-nudge', plain: true, ownerOnly: true, keep: false };
   if (dry) return { dry: true, hour, kind, fact, source, msg };
   const res = await pushToCreator(db, s.id, msg);
-  await db.from('fun_nudges_sent').insert({ creator_id: s.id, kind, topic: fact?.topic ?? kind, title: line.title, body: line.body, source, norm: norm(line.title + ' ' + line.body) });
+  // A line used again replaces its old row (one row per wording), so it counts as fresh from now.
+  await db.from('fun_nudges_sent').upsert({ creator_id: s.id, kind, topic: fact?.topic ?? kind, title: line.title, body: line.body, source, norm: norm(line.title + ' ' + line.body), sent_at: new Date().toISOString() }, { onConflict: 'creator_id,norm' });
   return { ...res, hour, kind, source, title: line.title };
 }
 
@@ -159,7 +160,10 @@ function pickWritten(kind: Kind, fact: Fact | null, vars: Record<string, string>
       const l = { title: fill(o, v), body: fill(c, v) };
       if (!tooSame(l, past)) return l;
     }
-  return null;
+  // Everything has gone out before: the line she saw longest ago, rather than going quiet for the hour.
+  const seen = (l: Line) => past.findIndex((p) => norm(p.title + ' ' + p.body) === norm(l.title + ' ' + l.body));
+  const oldest = [...shuffled].sort((a, b) => seen(b) - seen(a))[0];
+  return oldest ?? null;
 }
 // For the written lines only the exact words matter (they were written to be different).
 const tooSame = (l: Line, past: Line[]) => past.some((p) => norm(p.title + ' ' + p.body) === norm(l.title + ' ' + l.body));

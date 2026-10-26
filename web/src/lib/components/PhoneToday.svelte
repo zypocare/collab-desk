@@ -133,6 +133,11 @@
 		const which = w.k ? 'next week' : 'this week';
 		return w.n >= cap ? `Fully booked ${which}: brands see it as full.` : cap - w.n === 1 && cap > 1 ? `One slot open ${which}: brands see it as limited.` : `${cap - w.n} slots open ${which}.`;
 	});
+	// The same, as a short status for the card's corner: green open, amber one left, pink full.
+	const slotState = $derived.by(() => {
+		const w = new Date(T).getDay() % 6 === 0 ? slotWeeks[1] : slotWeeks[0];
+		return w.n >= cap ? { t: 'Full', k: 'full' } : cap - w.n === 1 && cap > 1 ? { t: 'One left', k: 'low' } : { t: `${cap - w.n} open`, k: 'open' };
+	});
 	// The moving line under the circles (CRED's "cashback disbursed today"): today in numbers.
 	const ticker = $derived(
 		[
@@ -286,17 +291,21 @@
 		{:else}A free week. <em>Make it count.</em>{/if}
 	</p>
 	<a class="wk2-cap" href="/studio/settings?s=bookings">
-		<span class="wk2-cap-h"><small>Collab slots</small></span>
+		<span class="wk2-cap-h"><small>Collab slots</small><span class="wk2-st {slotState.k}"><i></i>{slotState.t}</span></span>
 		{#each slotWeeks as w (w.k)}
 			<span class="wk2-cap-w">
-				<span class="wk2-cap-l"><b>{w.label}</b> <span>{w.range}</span></span>
-				<b class="wk2-cap-n">{Math.min(w.n, cap)} <span>of {cap}</span></b>
+				<span class="wk2-cap-l"><b>{w.label}</b><span>{w.range}</span></span>
+				<b class="wk2-cap-n">{Math.min(w.n, cap)}<span>/{cap}</span></b>
 				<span class="wk2-bar" style="--n:{Math.min(cap, 10)}">{#each Array.from({ length: Math.min(cap, 10) }, (_, k) => k) as k (k)}<i class:on={k < w.n}></i>{/each}</span>
 			</span>
 		{/each}
-		<small>{slotNote}</small>
+		<span class="wk2-cap-f"><span>{slotNote}</span><span class="wk2-edit">Change<Icon name="chevR" /></span></span>
 	</a>
-	<a class="wk2-more" href="/studio/calendar">See the week day by day<Icon name="chevR" /></a>
+	<a class="wk2-more" href="/studio/calendar">
+		<span class="wk2-more-ic" aria-hidden="true"><Icon name="cal" /></span>
+		<span class="wk2-more-t"><b>See the week day by day</b><small>Shoots, drafts and posts by date</small></span>
+		<Icon name="chevR" />
+	</a>
 </section>
 
 
