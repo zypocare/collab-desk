@@ -5,6 +5,7 @@
 	import { toast } from '../ui.svelte';
 	import { errMessage, inr } from '../util';
 	import Icon from './Icon.svelte';
+	import InviteCard from './InviteCard.svelte';
 
 	// Plan & billing: what this account is on, what the free plan has left this month, and (on the website
 	// and web app only) the plans to buy through Razorpay, monthly or yearly.
@@ -132,6 +133,8 @@
 			</div>
 		{/if}
 	</section>
+
+	{#if side === 'creator'}<InviteCard />{/if}
 
 	{#if !sell}
 		<p class="hint pb-note">Plan changes aren't available in this app.</p>

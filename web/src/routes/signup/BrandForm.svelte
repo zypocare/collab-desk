@@ -2,6 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { auth } from '#lib/auth.svelte.ts';
 	import { supabase } from '#lib/supabase.ts';
+	import { claimInvite } from '#lib/invite.ts';
 	import type { Account } from '#lib/types.ts';
 	import { CATS, errMessage, phoneOk } from '#lib/util.ts';
 
@@ -52,6 +53,7 @@
 			return (error = errMessage(err));
 		}
 		auth.account = data as Account;
+		await claimInvite('brand', f.name.trim());
 		goto('/brand', { replaceState: true });
 	}
 </script>

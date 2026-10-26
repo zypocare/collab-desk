@@ -7,6 +7,7 @@
 	import type { Agreement } from '#lib/types.ts';
 	import { fmtLong, fmtTime, inr, payTerms, plural, usageLabel } from '#lib/util.ts';
 	import Icon from '#lib/components/Icon.svelte';
+	import BrandInvite from '#lib/components/BrandInvite.svelte';
 
 	let a = $state<Agreement | null>(null);
 	let loaded = $state(false);
@@ -113,6 +114,7 @@
 					{#if fp}<p class="hint">Document fingerprint (SHA-256): <span class="id">{fp}</span></p>{/if}
 				</footer>
 			</article>
+			<BrandInvite creator={a.creator.name} from="agreement" />
 		{/if}
 	</div>
 </div>

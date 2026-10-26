@@ -3,6 +3,7 @@
 	import { refreshAccount } from '#lib/auth.svelte.ts';
 	import { LANGUAGES } from '#lib/languages.ts';
 	import { supabase } from '#lib/supabase.ts';
+	import { claimInvite } from '#lib/invite.ts';
 	import type { CreatorRequest } from '#lib/types.ts';
 	import { errMessage } from '#lib/util.ts';
 
@@ -61,6 +62,7 @@
 			busy = false;
 			return (error = err.code === '23505' ? `@${handle} is already on Miracle. If it's yours, write to support@miracleapp.live and we'll sort it out.` : errMessage(err));
 		}
+		await claimInvite('creator', f.name.trim());
 		await refreshAccount();
 		busy = false;
 	}

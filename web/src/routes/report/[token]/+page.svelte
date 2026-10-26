@@ -7,6 +7,7 @@
 	import { countUp } from '#lib/ui.svelte.ts';
 	import { compact, fmtLong, localDay } from '#lib/util.ts';
 	import Icon from '#lib/components/Icon.svelte';
+	import BrandInvite from '#lib/components/BrandInvite.svelte';
 
 	let r = $state<ReportFull | null>(null);
 	let pdfBusy = $state(false);
@@ -102,6 +103,7 @@
 					</div>
 				{/each}
 			</section>
+			<BrandInvite creator={r.creator.name} from="report" />
 			<p class="foot">Figures are Instagram's own numbers for organic activity, taken {fmtLong(localDay(r.generated_at))}. Instagram can take up to 48 hours to update them. "—" means Instagram doesn't share that number.</p>
 		{/if}
 	</div>

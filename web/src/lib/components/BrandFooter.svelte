@@ -4,6 +4,7 @@
 	import { pub } from '../publicPage.svelte';
 	import { appAddress, isAppHost } from '../creatorHost';
 	import Logo from './Logo.svelte';
+	import { inviteLink } from '../invite';
 
 	// The foot of every brand-side page, like her page's: Miracle, who gets paid, the way back, and sign-in.
 	const name = $derived(pub.data?.display_name ?? '');
@@ -29,8 +30,9 @@
 			<a href="/studio">Back to studio</a>
 		{:else}
 			<a href="/login">Sign in</a>
+			{#if !onApp}<a href={inviteLink('brand', 'brand_footer')}>Run your creator collabs on Miracle, free</a>{/if}
 		{/if}
-		<a href={appAddress('/signup?as=creator')}>Are you a creator? Get your own page</a>
+		<a href={onApp ? appAddress('/signup?as=creator') : inviteLink('creator', 'brand_footer')}>Are you a creator? Get your own page</a>
 	</div>
 </footer>
 

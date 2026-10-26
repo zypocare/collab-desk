@@ -603,6 +603,28 @@ Every friend who joins with your link moves you up: ${share}
 Waitlist members get first access to the 100 founding places (half price yearly). Pricing: https://www.miracleapp.live/pricing`,
     };
   }
+  // ---------------------------------------------------------------- invite and earn
+  if (kind === 'invite_reward') {
+    const who = String(p.who ?? '') || (p.as === 'brand' ? 'A brand you invited' : 'A creator you invited');
+    const until = p.until ? new Date(String(p.until)).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Asia/Kolkata' }) : '';
+    const link = url(s, '/studio/settings?s=plan');
+    const what = p.as === 'brand' ? 'sent their first request on Miracle' : 'joined Miracle';
+    return {
+      subject: 'You earned a free month of Creator Pro',
+      html: layout(
+        s,
+        'A month of Pro, on us',
+        `${P(`<b>${esc(who)}</b> ${what} with your link. Thank you for bringing them.`)}
+         ${P(`Creator Pro is yours${until ? ` until <b>${esc(until)}</b>` : ' for another month'}: every autopilot, unlimited collabs, and reminders that chase payments for you.`)}
+         ${P('Each creator or brand who joins with your link adds another month, up to 6 a year.')}`,
+        { label: 'Share your link again', href: link },
+        { to: 'app', why: 'someone joined Miracle with your invite link', preheader: `${who} ${what} with your link` },
+      ),
+      text: `${who} ${what} with your link. Creator Pro is yours${until ? ` until ${until}` : ' for another month'}.
+
+Share your link again: ${link}`,
+    };
+  }
   // ---------------------------------------------------------------- Miracle's own plans
   if (kind === 'plan_receipt' || kind === 'plan_ending' || kind === 'plan_ended') {
     const planLink = url(s, p.side === 'brand' ? '/brand/settings?s=plan' : '/studio/settings?s=plan');

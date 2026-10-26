@@ -230,6 +230,8 @@ export function pushFor(kind: string, p: Record<string, unknown>): Push | null {
       return { title: `${brand} shipped the product`, body: [p.carrier, p.tracking].filter(Boolean).join(' · '), url: open(code), tag: code };
     case 'usage_ext_requested':
       return { title: `${brand} wants to extend usage`, body: `${p.days} more days for ${inr(p.price)}`, url: open(code), tag: code };
+    case 'invite_reward':
+      return { title: 'You earned a month of Creator Pro', body: `${String(p.who ?? 'Someone you invited')} joined Miracle with your link.`, url: '/studio/settings?s=plan', tag: 'invite-reward' };
     case 'month_summary':
       return { title: `Your ${String(p.label ?? 'month')} in review is ready`, body: 'What you earned, what worked, and what to charge next.', url: `/studio/reports?m=${String(p.month ?? '')}`, tag: `month-${String(p.month ?? '')}` };
     case 'ig_collab':

@@ -3,6 +3,7 @@
 	import { supabase } from '#lib/supabase.ts';
 	import { confetti } from '#lib/ui.svelte.ts';
 	import { errMessage, firstName } from '#lib/util.ts';
+	import BrandInvite from '#lib/components/BrandInvite.svelte';
 
 	// A brand leaves a quick review after a collab (one-tap link from email, no sign-in).
 	type Info = { state: 'open' | 'used' | 'expired' | 'missing'; code: string; brand: string; contact: string; creator: string };
@@ -51,6 +52,7 @@
 			<h1>Thank <em>you</em></h1>
 			<p class="lead">Your review helps other brands decide. {creator} will be glad to hear it.</p>
 			<a class="btn" href="/">See {creator}'s page</a>
+			<BrandInvite creator={info.creator} from="review" />
 		{:else if info.state !== 'open'}
 			<h1>{info.state === 'used' ? 'Already reviewed' : info.state === 'expired' ? 'Link expired' : 'Link not valid'}</h1>
 			<p class="lead">{info.state === 'used' ? 'Thanks, your review is already in.' : 'You can still reach out from your request page.'}</p>

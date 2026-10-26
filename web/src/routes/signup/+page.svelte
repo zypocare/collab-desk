@@ -11,6 +11,7 @@
 	import Waiting from './Waiting.svelte';
 	import ChooseLink from './ChooseLink.svelte';
 	import { isNative } from '#lib/native.ts';
+	import { keepInvite } from '#lib/invite.ts';
 	import './signup.css';
 
 	// Sign-up on Miracle's own address (app.miracleapp.live/signup), linked from every Join button on the website.
@@ -26,6 +27,8 @@
 		} catch {
 			/* storage blocked */
 		}
+	// Opened from a creator's invite (her page, invoice or quote): she's thanked once they've joined.
+	keepInvite(page.url.searchParams.get('invite'));
 	const chosen = asked === 'brand' || asked === 'creator';
 	let as = $state<'creator' | 'brand'>(chosen ? asked : stored());
 	// In the phone app or the installed web app, the logo stays here instead of opening the website inside it.

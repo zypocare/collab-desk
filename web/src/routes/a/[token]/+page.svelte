@@ -9,6 +9,7 @@
 	import type { DraftComment, QuoteItem } from '#lib/types.ts';
 	import DraftPlayer from '#lib/components/DraftPlayer.svelte';
 	import Icon from '#lib/components/Icon.svelte';
+	import BrandInvite from '#lib/components/BrandInvite.svelte';
 	import ExpectedResults from '#lib/components/ExpectedResults.svelte';
 	import { loadPublicPage, pub } from '#lib/publicPage.svelte.ts';
 	import { onMount } from 'svelte';
@@ -124,6 +125,7 @@
 			<p>{info.kind === 'counter' ? (done === 'yes' ? `Thank you! Your request now moves up ${creator}'s list. You'll get a quote by email to confirm.` : `No problem. ${creator} will reply within ${info.counter?.reply_time}.`) : done === 'changes' ? `${creator} will get back to you with an update.` : info.kind === 'quote' ? `Thank you! ${creator} has been told and the collaboration is confirmed. You'll get the agreement by email.` : `Thank you! ${creator} will go ahead and post it.`}</p>
 			<a class="btn" href="/brand/r/{info.code}">See your request</a>
 		</div>
+		<BrandInvite creator={info.creator} from="accepted" />
 	{:else if info.state !== 'open'}
 		<div class="empty-card">
 			<h2>{info.state === 'used' ? 'Already answered' : info.state === 'closed' ? 'Already answered' : info.state === 'expired' ? 'This link has expired' : 'This link is not valid'}</h2>

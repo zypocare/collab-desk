@@ -9,6 +9,7 @@
 	import { downloadMediaKit } from '#lib/mediaKitPdf.ts';
 	import { pageSlug, supabase } from '#lib/supabase.ts';
 	import { appAddress } from '#lib/creatorHost.ts';
+	import { inviteLink } from '#lib/invite.ts';
 	import type { PublicPage } from '#lib/types.ts';
 	import Logo from '#lib/components/Logo.svelte';
 	import PublicLinks from '#lib/components/PublicLinks.svelte';
@@ -960,7 +961,7 @@
 				{:else if !isCreator}
 					<a class="mp-me" href="/login" style="color:var(--ink-2)">Sign in</a>
 				{/if}
-				<a href={appAddress('/signup?as=creator')} style="color:var(--ink-2)">Are you a creator? Get your own page</a>
+				<a href={inviteLink('creator', 'creator_page')} style="color:var(--ink-2)">Are you a creator? Get your own page</a>
 			</div>
 		</footer>
 	{:else}

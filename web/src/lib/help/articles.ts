@@ -431,6 +431,7 @@ export const ARTICLES: Article[] = [
 			{ p: 'Everyone starts with 14 days of Pro, no card needed. When it ends you stay on the free plan unless you pick one; nothing you made is deleted.' },
 			{ steps: ['Open Settings › Plan & billing.', 'Pick a plan, monthly or yearly.', 'Pay on the web with UPI, a card or net banking (through Razorpay).', 'You get a receipt and an invoice by email, and the plan is on everywhere, the phone app too.'] },
 			{ p: 'Plans renew by themselves. Stop renewing in Plan & billing at any time: the plan stays on until the end of what you paid for. A first payment can be refunded within 7 days.' },
+			{ p: 'Invite and earn: your link is in Plan & billing. Every creator who joins with it (once Miracle approves them) and every brand that sends its first request after signing up from your page, invoices or quotes gives you a free month of Creator Pro, up to 6 months a year.' },
 			{ tip: 'There’s never a commission on deals, on any plan. Brands pay creators directly.' }
 		],
 		links: [{ label: 'Plan & billing', href: '/studio/settings?s=plan' }]
