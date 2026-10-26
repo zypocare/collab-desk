@@ -71,10 +71,11 @@
 			await load();
 			return toast(r.skipped || r.error || (r.added ? `${r.added} found` : 'Nothing new found'), !r.added);
 		}
-		toast('Searching in the background. Results appear here in about two minutes.');
-		const until = Date.now() + 200_000;
+		// Claude (a batch) usually takes a few minutes, at most an hour; Gemini about two minutes.
+		toast(r.batch ? 'Claude is searching. This usually takes a few minutes; creators appear here when it’s done, and you can close this page.' : 'Searching in the background. Results appear here in about two minutes.');
+		const until = Date.now() + (r.batch ? 600_000 : 200_000);
 		while (Date.now() < until) {
-			await new Promise((ok) => setTimeout(ok, 8000));
+			await new Promise((ok) => setTimeout(ok, r.batch ? 20000 : 8000));
 			await load();
 			const run = ((d?.runs ?? []) as R[]).find((x) => x.id === r.run);
 			if (run?.finished_at) {
@@ -84,7 +85,7 @@
 			}
 		}
 		busy = '';
-		toast('The search took too long and was stopped. Try again, or narrow the niches or cities.', true);
+		toast(r.batch ? 'Claude is still searching. Check back later: creators appear here when it’s done.' : 'The search took too long and was stopped. Try again, or narrow the niches or cities.', !r.batch);
 	}
 	async function act(ids: string[], action: 'approve' | 'skip' | 'never') {
 		if (!ids.length) return;
@@ -195,7 +196,7 @@
 						{#each d.runs as r (r.id)}
 							<li>
 								<span class="mono muted">{ago(r.at)}</span>
-								<span class="rn">{#if !r.finished_at && Date.now() - Date.parse(r.at) < 200_000}Searching…{:else if !r.finished_at}Stopped: took too long{:else}{r.added ? `${r.added} found` : 'none added'}{/if}{r.manual ? ' · by hand' : ''}{#if r.error}<small class="d">{r.error}</small>{/if}</span>
+								<span class="rn">{#if !r.finished_at && r.batch_id}Claude is searching…{:else if !r.finished_at && Date.now() - Date.parse(r.at) < 200_000}Searching…{:else if !r.finished_at}Stopped: took too long{:else}{r.added ? `${r.added} found` : 'none added'}{/if}{r.manual ? ' · by hand' : ''}{#if r.error}<small class="d">{r.error}</small>{/if}</span>
 								<span class="tag {r.engine === 'claude' ? 't-acc' : 't-mute'}">{r.engine === 'claude' ? 'Claude' : 'Gemini'}</span>
 								<span class="mono">{r.engine === 'claude' ? `$${Number(r.cost_usd).toFixed(2)}` : 'free'}</span>
 							</li>
