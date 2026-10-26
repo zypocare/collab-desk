@@ -425,7 +425,9 @@ export const ARTICLES: Article[] = [
 		audience: 'all',
 		keywords: ['plan', 'plans', 'pro', 'free', 'trial', 'price', 'pricing', 'billing', 'subscription', 'renew', 'cancel', 'refund', 'invoice', 'receipt', 'agency', 'upgrade', 'razorpay'],
 		body: [
-			{ p: 'Miracle has a free plan with no time limit. Creators get 3 quotes, 3 invoices and 5 pitches a month; brands get 3 requests and 1 campaign a month. Pro removes the limits and turns on the autopilots: Creator Pro is ₹299 a month, Brand Pro ₹1,999 a month, and Agency ₹4,999 a month. A yearly plan is about two months free.' },
+			{ p: 'Miracle has a free plan with no time limit, enough to run your collabs. Creators on Free run 5 collabs at a time, send unlimited invoices (with a small “Sent with Miracle” line), remind brands with one tap, check 1 offer a day and send 5 pitches a month. Brands on Free open 10 full creator profiles a day and send 3 requests and 1 campaign a month.' },
+			{ p: 'Pro removes the limits and puts the autopilots to work. Creator Pro (₹299 a month) adds unlimited collabs and offer checks, reminders that go by themselves, the formal demand letter and MSME complaint, invoices and a page without the Miracle line, and one teammate. Brand Pro (₹1,999 a month) and Agency (₹4,999 a month) unlock everything for brands and for agencies. A yearly plan is about two months free.' },
+			{ tip: 'A collab counts from the first quote you send until it’s wrapped, declined, cancelled or paused. Creators a brand has worked with never count towards its 10 profiles a day.' },
 			{ p: 'Everyone starts with 14 days of Pro, no card needed. When it ends you stay on the free plan unless you pick one; nothing you made is deleted.' },
 			{ steps: ['Open Settings › Plan & billing.', 'Pick a plan, monthly or yearly.', 'Pay on the web with UPI, a card or net banking (through Razorpay).', 'You get a receipt and an invoice by email, and the plan is on everywhere, the phone app too.'] },
 			{ p: 'Plans renew by themselves. Stop renewing in Plan & billing at any time: the plan stays on until the end of what you paid for. A first payment can be refunded within 7 days.' },

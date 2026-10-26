@@ -43,6 +43,8 @@ export type InvoiceView = {
 	claim_ref?: string;
 	claim_on?: string | null;
 	claim_at?: string | null;
+	/** A free plan's invoice: "Sent with Miracle" at its foot. */
+	miracle_line?: boolean;
 };
 
 export type Invoice = Omit<InvoiceView, 'token' | 'number'> & {

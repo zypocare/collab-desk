@@ -20,15 +20,18 @@
 
 	const PERKS: Record<string, string[]> = {
 		creator_pro: [
-			'Every autopilot: invoices, dates, tracking links, nudges and counters',
-			'Pitch autopilot: new brands found and pitched for you',
-			'Unlimited quotes, invoices and pitches',
-			'Payment reminders and bank-credit matching',
-			'A live insights page to send brands',
-			'Your team: manager, assistant, accountant',
+			'Unlimited collabs at a time (Free runs 5)',
+			'Every autopilot, including the pitch autopilot',
+			'Automatic payment reminders and bank-credit matching',
+			'The formal demand letter and MSME complaint, written for you',
+			'Check every offer (Free checks 1 a day)',
+			'Invoices and your page without the Miracle line',
+			'A live insights page for brands and your fan list',
+			'One teammate: your manager or assistant',
 			'6× the daily AI'
 		],
 		brand_pro: [
+			'Every creator profile in full (Free opens 10 a day)',
 			'Unlimited requests and campaigns',
 			'Open briefs that creators apply to',
 			'Brand autopilots and competitor watch',
@@ -38,17 +41,18 @@
 			'3× the daily AI'
 		],
 		agency: [
-			'Pro for every creator you manage',
-			'Pro for your own brand team',
+			'Creator Pro for every creator you manage',
+			'Brand Pro for your own brand team',
 			'Switch between client workspaces',
 			'Roster, commission ledger and pitch decks',
 			'15 seats'
 		]
 	};
 	const FREE: Record<string, string> = {
-		quotes_month: 'quotes this month',
-		invoices_month: 'invoices this month',
+		active_collabs: 'collabs in progress',
+		offer_checks_day: 'offer checks today',
 		pitches_month: 'pitches this month',
+		profiles_day: 'full profiles today',
 		requests_month: 'requests this month',
 		campaigns_month: 'campaigns this month',
 		ai_day: 'AI used today',

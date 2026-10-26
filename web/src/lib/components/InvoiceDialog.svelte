@@ -2,6 +2,7 @@
 	import { portal } from '../portal';
 	import { onMount, untrack } from 'svelte';
 	import { saveBrand, saveInvoice, studio } from '../studio.svelte';
+	import { ensurePlan, hasFeature } from '../plan.svelte';
 	import type { Collab } from '../types';
 	import { INDIAN_STATES, KIND_LABEL, type Invoice, type InvoiceItem } from '../invoice';
 	import { acceptedQuote, delivText, inr, parse, rel, todayIso, iso, usageLabel } from '../util';
@@ -104,6 +105,7 @@
 		tdsRate = 0;
 	}
 	onMount(() => {
+		ensurePlan();
 		if (!editing && cur !== 'INR') useCurrency(cur);
 	});
 	/** Invoices are exact to the cent (quotes are rounded; invoices follow them). */
@@ -246,7 +248,7 @@
 			<div class="f"><label for="iv-to">Also email to <span class="hint">(accounts team)</span></label><input class="inp" id="iv-to" type="email" placeholder="accounts@brand.com" bind:value={sendTo} /></div>
 			<div class="f"><label for="iv-notes">Note on invoice <span class="hint">(optional)</span></label><input class="inp" id="iv-notes" bind:value={notes} /></div>
 		</div>
-		<label class="check-row"><input type="checkbox" class="cbx" bind:checked={autoRemind} /><span>Send polite payment reminders automatically</span></label>
+		<label class="check-row"><input type="checkbox" class="cbx" bind:checked={autoRemind} /><span>Send polite payment reminders automatically{#if !hasFeature('reminders')} <a class="lnk" href="/studio/settings?s=plan">on Creator Pro</a>{/if}</span></label>
 
 		<div class="q-total">
 			<div><span class="lbl">Invoice total</span><b class="num">{money(total, cur)}</b></div>

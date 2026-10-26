@@ -121,6 +121,7 @@ export default {
 			const t = await take(req, env, kind, est);
 			if (t === 'auth') return json({ error: 'Sign in again to use AI.' }, 403);
 			if (t === 'free') return json({ error: FREE_USED_UP }, 429);
+			if (t.startsWith('Miracle Pro: ')) return json({ error: t }, 429);
 			if (t === 'ok') {
 				const x: Run = { env, gemini: false, neurons: 0 };
 				try {
@@ -176,8 +177,10 @@ async function rpc(req: Request, env: Env, fn: string, args: Record<string, unkn
 	return r?.ok ? ((await r.json().catch(() => null)) as Record<string, unknown> | null) : null;
 }
 /** Signed in as the creator, and room left in Cloudflare's free amount today? */
-async function take(req: Request, env: Env, kind: string, cost: number): Promise<'ok' | 'budget' | 'auth' | 'free'> {
+async function take(req: Request, env: Env, kind: string, cost: number): Promise<'ok' | 'budget' | 'auth' | 'free' | `Miracle Pro: ${string}`> {
 	const res = await rpc(req, env, 'ai_take2', { p_kind: kind, p_cost: cost });
+	// A free plan's own allowance for this kind (one offer check a day): its message, with the way to more.
+	if (res?.reason === 'plan') return `Miracle Pro: ${String(res.msg ?? 'This is on Creator Pro.')}`;
 	// The free plan's daily AI is used up (not the shared allowance): say so, with the way to more.
 	if (res?.capped && /_free$/.test(String(res.plan ?? ''))) return 'free';
 	return res?.ok ? 'ok' : res?.reason === 'budget' ? 'budget' : 'auth';

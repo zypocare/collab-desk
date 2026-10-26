@@ -201,6 +201,13 @@ export async function invoicePdf(inv: InvoiceView): Promise<Uint8Array> {
 	].filter(Boolean);
 	for (const f of footer) for (const l of wrap(f, reg, 9, W - 2 * M)) (text(l, M, y, 9, reg, MUTED), (y -= 12));
 
+	// A free plan's invoices carry a small line at the foot (Pro takes it off).
+	if (inv.miracle_line) {
+		const t = 'Sent with Miracle · miracleapp.live';
+		const last = doc.getPage(doc.getPageCount() - 1);
+		last.drawText(t, { x: (W - reg.widthOfTextAtSize(t, 7.5)) / 2, y: M / 2, size: 7.5, font: reg, color: MUTED });
+	}
+
 	// ---- stamp ----
 	if (inv.status === 'paid' || inv.status === 'cancelled') {
 		const label = inv.status === 'paid' ? `PAID${inv.paid_on ? ' · ' + dateText(inv.paid_on) : ''}` : 'CANCELLED';

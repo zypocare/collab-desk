@@ -122,3 +122,13 @@ export async function stopRenewal(agency = false) {
 	await billing({ action: 'cancel', agency });
 	await loadPlan();
 }
+
+let asked = false;
+/** The plan, loaded once and quietly, for screens that only need to know what's on. */
+export function ensurePlan() {
+	if (asked || plan.loaded) return;
+	asked = true;
+	loadPlan().catch(() => (asked = false));
+}
+/** Has this account got a paid feature? Until the plan has loaded, yes, so no lock flashes up. */
+export const hasFeature = (f: string) => !plan.data || (plan.data.features ?? []).includes(f);

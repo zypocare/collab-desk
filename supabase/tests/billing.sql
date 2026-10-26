@@ -1,5 +1,5 @@
 -- Run: docker exec -i supabase_db_Influence psql -U postgres -d postgres -At < supabase/tests/billing.sql
--- Paid plans (migration 154): trials, the free plan's limits, Agency cover, buying through Razorpay events,
+-- Paid plans (migrations 154 and 161): trials, the free plan's limits, Agency cover, buying through Razorpay events,
 -- lapsing, and the admin. Runs in one transaction and rolls back.
 \set ON_ERROR_STOP 1
 begin;
@@ -37,29 +37,41 @@ insert into results select 'When the trial lapses, its paid switches go off', no
 select set_config('request.jwt.claims', '{}', true), set_config('request.headers', '{}', true);
 insert into public.brands (creator_id, name) values (:cid, 'Free Brand') returning id as fb \gset
 insert into public.collabs (creator_id, brand_id, code, stage, fee, notify_brand)
-select :cid, :'fb', '', 'negotiating', 1000 * g, false from generate_series(1, 5) g;
+select :cid, :'fb', '', 'negotiating', 1000 * g, false from generate_series(1, 6) g;
 select set_config('request.jwt.claims', json_build_object('email', 'bill@test.dev', 'sub', :'c_uid', 'role', 'authenticated')::text, true);
 select set_config('request.headers', json_build_object('x-creator', 'billtest')::text, true);
 create temp table cs as select id, row_number() over (order by fee) as n from public.collabs where creator_id = :cid;
+select set_config('my.cid0', :'cid', true);
 grant select on cs to authenticated;
 set local role authenticated;
--- Quotes for three collabs are fine (and a second version for the first doesn't count again).
-insert into public.quotes (collab_id, creator_id, status, sent_at) select id, :cid, 'sent', now() from cs where n <= 3;
-insert into results select 'Three quotes go out on Free', (select count(*) = 3 from public.quotes where creator_id = :cid), null;
+-- Five collabs at a time on Free (migration 161): quotes for five go (a second version doesn't count again).
+insert into public.quotes (collab_id, creator_id, status, sent_at) select id, :cid, 'sent', now() from cs where n <= 5;
+insert into results select 'Quotes for five collabs go out on Free', (select count(*) = 5 from public.quotes where creator_id = :cid), null;
 do $$ begin
   insert into public.quotes (collab_id, creator_id, status, sent_at, version) select id, (select creator_id from public.collabs where id = cs.id), 'sent', now(), 2 from cs where n = 1;
 exception when others then insert into caught values ('q-again', sqlerrm); end $$;
 insert into results select 'A new version to the same collab still goes', not exists (select 1 from caught where k = 'q-again'), (select msg from caught where k = 'q-again');
 do $$ begin
-  insert into public.quotes (collab_id, creator_id, status, sent_at) select id, (select creator_id from public.collabs where id = cs.id), 'sent', now() from cs where n = 4;
-exception when others then insert into caught values ('q4', sqlerrm); end $$;
-insert into results select 'The fourth collab''s quote asks for Pro', (select msg like 'Miracle Pro:%' from caught where k = 'q4'), (select msg from caught where k = 'q4');
--- Invoices: three a month.
-insert into public.invoices (collab_id, creator_id, status, sent_at) select id, :cid, 'sent', now() from cs where n <= 3;
+  insert into public.quotes (collab_id, creator_id, status, sent_at) select id, (select creator_id from public.collabs where id = cs.id), 'sent', now() from cs where n = 6;
+exception when others then insert into caught values ('q6', sqlerrm); end $$;
+insert into results select 'A sixth collab in progress asks for Pro', (select msg like 'Miracle Pro:%5 collabs at a time%' from caught where k = 'q6'), (select msg from caught where k = 'q6');
+reset role;
+update public.collabs set stage = 'wrapped' where id = (select id from cs where n = 2);
+set local role authenticated;
 do $$ begin
-  insert into public.invoices (collab_id, creator_id, status, sent_at) select id, (select creator_id from public.collabs where id = cs.id), 'sent', now() from cs where n = 4;
-exception when others then insert into caught values ('inv4', sqlerrm); end $$;
-insert into results select 'The fourth invoice of the month asks for Pro', (select msg like 'Miracle Pro:%' from caught where k = 'inv4'), null;
+  insert into public.quotes (collab_id, creator_id, status, sent_at) select id, (select creator_id from public.collabs where id = cs.id), 'sent', now() from cs where n = 6;
+exception when others then insert into caught values ('q6b', sqlerrm); end $$;
+insert into results select 'Once one is wrapped, the sixth goes', not exists (select 1 from caught where k = 'q6b'), (select msg from caught where k = 'q6b');
+-- Invoices: unlimited on Free.
+insert into public.invoices (collab_id, creator_id, status, sent_at) select id, :cid, 'sent', now() from cs where n <= 4;
+insert into results select 'Free: four invoices in a month all go', (select count(*) = 4 from public.invoices where creator_id = :cid and status = 'sent'), null;
+select public_token as itok from public.invoices where creator_id = :cid limit 1 \gset
+insert into results select 'A free plan''s invoice carries the Miracle line', (public.public_invoice(:'itok') ->> 'miracle_line')::boolean, null;
+-- The formal demand letter is Pro (the reminders stay free).
+do $$ begin
+  insert into public.payment_demands (invoice_id, step, kind) select id, 3, 'demand' from public.invoices where creator_id = current_setting('my.cid0')::int limit 1;
+exception when others then insert into caught values ('demand', sqlerrm); end $$;
+insert into results select 'Free: the formal demand letter asks for Pro', (select msg like 'Miracle Pro:%' from caught where k = 'demand'), (select msg from caught where k = 'demand');
 -- Paid switches.
 reset role;
 select set_config('my.cid', :'cid', true);
@@ -81,10 +93,16 @@ insert into results select 'Free: past 1,500 it stops with "budget"', not (:'a2'
 insert into public.app_limit_overrides (key, subject_kind, subject, value, reason, set_by) values ('ai_day', 'creator', :'cid'::text, 5000, 'test', 'test');
 set local role authenticated;
 select public.ai_take2('caption', 400) as a3 \gset
+-- Check the offer: one a day on Free, asked before any AI runs.
+select public.ai_take2('offercheck', 700) as o1 \gset
+insert into public.offer_checks (collab_id, source, result) select id, '{}', '{}' from cs where n = 1;
+select public.ai_take2('offercheck', 700) as o2 \gset
 select public.my_plan() as p1 \gset
 reset role;
+insert into results select 'Free: the first offer check of the day runs', (:'o1'::jsonb ->> 'ok')::boolean, :'o1';
+insert into results select 'Free: a second one asks for Pro, before any AI', :'o2'::jsonb ->> 'reason' = 'plan' and :'o2'::jsonb ->> 'msg' like '%1 offer a day%', :'o2';
 insert into results select 'An admin override beats the plan''s cap', (:'a3'::jsonb ->> 'ok')::boolean, :'a3';
-insert into results select 'My plan shows what''s used', (:'p1'::jsonb -> 'usage' ->> 'quotes_month')::int = 3 and (:'p1'::jsonb -> 'usage' ->> 'invoices_month')::int = 3, (:'p1'::jsonb -> 'usage')::text;
+insert into results select 'My plan shows what''s used', (:'p1'::jsonb -> 'usage' ->> 'active_collabs')::int = 5 and (:'p1'::jsonb -> 'usage' ->> 'offer_checks_day')::int = 1 and (:'p1'::jsonb -> 'limits' ->> 'active_collabs')::int = 5, (:'p1'::jsonb -> 'usage')::text;
 
 -- ================================================================== 3. Buying: intent, Razorpay events
 set local role authenticated;
@@ -168,9 +186,27 @@ do $$ begin insert into public.brand_autopilots (owner, negotiate) values (curre
 do $$ begin insert into public.brand_campaigns (owner, name, open) values (current_setting('my.t')::uuid, 'Open call', true); exception when others then insert into caught values ('open', sqlerrm); end $$;
 do $$ begin insert into public.brand_team_members (owner, email, role) values (current_setting('my.t')::uuid, 'mate@test.dev', 'member'); exception when others then insert into caught values ('bseat', sqlerrm); end $$;
 do $$ begin insert into public.brand_orders (owner, order_ref, amount) values (current_setting('my.t')::uuid, '#1', 100); exception when others then insert into caught values ('sales', sqlerrm); end $$;
+-- (eleven listed creators to open)
+reset role;
+select set_config('request.jwt.claims', '{}', true), set_config('request.headers', '{}', true);
+insert into public.creator_settings (creator_email, handle, slug, display_name, code_prefix, invoice_prefix, status, slug_chosen, niche)
+select 'pv' || g || '@test.dev', 'pvtest' || g, 'pvtest' || g, 'PV ' || g, 'P' || chr(64 + g::int), 'PV' || g, 'active', true, 'Food' from generate_series(1, 11) g;
+create temp table pv as select id, row_number() over (order by id) as n from public.creator_settings where creator_email like 'pv%@test.dev';
+grant select on pv to authenticated;
+select set_config('request.jwt.claims', json_build_object('email', 'trialbrand@test.dev', 'sub', :'t_uid', 'role', 'authenticated')::text, true);
+select set_config('request.headers', json_build_object('x-creator', (select slug from public.creator_settings where id = 1))::text, true);
 set local role authenticated;
+select bool_and((public.brand_profile_open(id::integer) ->> 'ok')::boolean) as ten from (select id from pv where n <= 10 order by n) x \gset
+select public.brand_profile_open((select id::integer from pv where n = 3)) as again \gset
+select public.brand_profile_open((select id::integer from pv where n = 11)) as eleventh \gset
+select public.brand_profile_open(1) as worked \gset
 select public.my_plan() as bp \gset
 reset role;
+insert into results select 'Free brand: ten full profiles a day open', :'ten'::boolean, null;
+insert into results select 'the same creator again that day doesn''t count', (:'again'::jsonb ->> 'ok')::boolean, :'again';
+insert into results select 'the eleventh asks for Brand Pro', not (:'eleventh'::jsonb ->> 'ok')::boolean and :'eleventh'::jsonb ->> 'msg' like '%10 full creator profiles%', :'eleventh';
+insert into results select 'creators the brand has worked with never count', (:'worked'::jsonb ->> 'ok')::boolean, :'worked';
+insert into results select 'The brand''s plan shows the profiles opened today', (:'bp'::jsonb -> 'usage' ->> 'profiles_day')::int = 10, (:'bp'::jsonb -> 'usage')::text;
 insert into results select 'Free brand: three requests a month go', (select count(*) = 3 from public.collabs where brand_id = :'tb'), null;
 insert into results select 'the fourth asks for Brand Pro', (select msg like 'Miracle Pro:%' from caught where k = 'req4'), (select msg from caught where k = 'req4');
 insert into results select 'Free brand: autopilots, open briefs, team and sales tracking ask for Pro',

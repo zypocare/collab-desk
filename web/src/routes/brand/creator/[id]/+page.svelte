@@ -6,7 +6,7 @@
 	import { discover, loadDiscover, rateCreator } from '#lib/brand.svelte.ts';
 	import { addressFor } from '#lib/creatorHost.ts';
 	import { fit, NO_FILTERS, reelRate, similar } from '#lib/fit.ts';
-	import { pageSlug } from '#lib/supabase.ts';
+	import { pageSlug, supabase } from '#lib/supabase.ts';
 	import { toast } from '#lib/ui.svelte.ts';
 	import { compact, errMessage, firstName, fmt, hueOf, inrS } from '#lib/util.ts';
 	import AddToPool from '#lib/components/AddToPool.svelte';
@@ -19,6 +19,7 @@
 	import Gauge from '#lib/components/charts/Gauge.svelte';
 	import ReportMenu from '#lib/components/ReportMenu.svelte';
 	import HealthCard from '#lib/components/HealthCard.svelte';
+	import ProNote from '#lib/components/ProNote.svelte';
 	import { healthChips } from '#lib/health.ts';
 	import { goto } from '$app/navigation';
 
@@ -32,6 +33,18 @@
 		if (!discover.loaded) loadDiscover();
 	});
 	const c = $derived(discover.list.find((x) => x.id === id) ?? null);
+	// A free brand team opens 10 full profiles a day (creators it has worked with never count).
+	let gate = $state<{ id: number; ok: boolean; msg: string } | null>(null);
+	$effect(() => {
+		const want = id;
+		if (!acct || !want) return;
+		supabase.rpc('brand_profile_open', { p_creator: want }).then(({ data, error }) => {
+			const r = error ? null : (data as { ok: boolean; msg?: string } | null);
+			gate = { id: want, ok: r?.ok !== false, msg: r?.msg ?? '' };
+		});
+	});
+	const opened = $derived(!acct || gate?.id === id);
+	const locked = $derived(gate?.id === id && !gate.ok);
 	const ft = $derived(c ? fit(c, NO_FILTERS, category) : null);
 	const like = $derived(c ? similar(c, discover.list.filter((x) => x.listed)) : []);
 	const at = (slug: string, path: string) => (slug === pageSlug ? path : addressFor(slug, path));
@@ -113,6 +126,11 @@
 		</div>
 	</header>
 
+	{#if locked}
+		<div class="rv" style="margin:8px 0 24px"><ProNote side="brand" title="See every creator in full" body={gate?.msg || 'The free plan opens 10 full creator profiles a day.'} /></div>
+	{:else if !opened}
+		<div class="loader" style="min-height:24vh"><span class="ring"><span></span></span></div>
+	{:else}
 	<div class="md-grid">
 		<!-- Fit -->
 		<section class="md-card rv" style="--i:1">
@@ -192,6 +210,7 @@
 			</div>
 		</section>
 	</div>
+	{/if}
 
 	<!-- Creators like them: the app's tickets. -->
 	{#if like.length}

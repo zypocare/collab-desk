@@ -3,6 +3,8 @@
 	import { byCode, studio } from '#lib/studio.svelte.ts';
 	import { checkOffer, loadOffer, offers, sendOfferReply, type OfferCheck } from '#lib/offer.svelte.ts';
 	import { copyText, toast } from '#lib/ui.svelte.ts';
+	import { upgradeNeeded, upgradeText } from '#lib/plan.svelte.ts';
+	import ProNote from '#lib/components/ProNote.svelte';
 	import { delivText, inr } from '#lib/util.ts';
 	import Icon from '#lib/components/Icon.svelte';
 	import QuoteDialog from '#lib/components/QuoteDialog.svelte';
@@ -85,7 +87,7 @@
 					<span>{files.length ? files.map((f) => f.name).join(', ') : 'Choose the agreement (PDF, or up to 4 photos)'}</span>
 				</label>
 				<div class="f"><label for="of-text">Or paste the text <span class="hint">(optional)</span></label><textarea class="inp" id="of-text" rows="6" placeholder="Paste the agreement, or the terms from their email" bind:value={text}></textarea></div>
-				{#if offers.error}<p class="err">{offers.error}</p>{/if}
+				{#if offers.error && upgradeNeeded(offers.error)}<ProNote title="Check every offer" body={upgradeText(offers.error)} />{:else if offers.error}<p class="err">{offers.error}</p>{/if}
 				<div class="row">
 					{#if check}<button class="btn ghost" onclick={() => (changing = false)}>Cancel</button>{/if}
 					<button class="btn grad" onclick={run} disabled={offers.running}>{#if offers.running}<span class="spinner"></span>Reading the offer…{:else}<Icon name="spark" />Check it{/if}</button>

@@ -1,29 +1,29 @@
 // The pricing page and the refund and cancellation policy. Prices match billing_plans in the database
-// (supabase/migrations/20261024000154_billing.sql); change both together.
+// (supabase/migrations/20261024000154_billing.sql, the set in 20261026000161_free_paid_set.sql); change both together.
 import { esc, JOIN, JOIN_BRAND, JOIN_LABEL, md, page, PRELAUNCH } from './layout.mjs';
 
 export const PLANS = [
 	{
 		who: 'For creators',
-		free: { name: 'Free', price: '₹0', perks: ['Your brand page brands book you from', 'Requests, collab board and calendar', 'Listed in the creator directory', '3 quotes, 3 invoices and 5 pitches a month', 'A little AI every day'] },
+		free: { name: 'Free', price: '₹0', perks: ['Your brand page brands book you from', 'Requests, collab board and calendar', '5 collabs at a time, unlimited invoices with a UPI QR', 'One-tap payment reminders', '1 offer check a day and 5 pitches a month', 'A little AI every day'] },
 		paid: {
 			name: 'Creator Pro',
 			month: 299,
 			year: 2999,
 			founding: 1499,
-			perks: ['Every autopilot: invoices, dates, tracking links, nudges, counters', 'Pitch autopilot: new brands found and pitched for you', 'Unlimited quotes, invoices and pitches', 'Payment reminders and bank-credit matching', 'A live insights page to send brands', 'Your team: manager, assistant, accountant', '6× the daily AI'],
+			perks: ['Unlimited collabs, offer checks and pitches', 'Every autopilot, including the pitch autopilot', 'Reminders that go by themselves, and bank-credit matching', 'The formal demand letter and MSME complaint, written for you', 'Invoices and your page without the Miracle line', 'A live insights page to send brands', 'One teammate: your manager or assistant', '6× the daily AI'],
 			join: JOIN
 		}
 	},
 	{
 		who: 'For brands',
-		free: { name: 'Free', price: '₹0', perks: ['Find creators with real audience health', '3 requests and 1 campaign a month', 'Briefs, drafts, approvals and reports', 'Pay creators directly, no commission', 'A little AI every day'] },
+		free: { name: 'Free', price: '₹0', perks: ['Find creators with real audience health', '10 full creator profiles a day', '3 requests and 1 campaign a month', 'Briefs, drafts, approvals and reports', 'Pay creators directly, no commission', 'A little AI every day'] },
 		paid: {
 			name: 'Brand Pro',
 			month: 1999,
 			year: 19999,
 			founding: 9999,
-			perks: ['Unlimited requests and campaigns', 'Open briefs that creators apply to', 'Brand autopilots and competitor watch', 'Sales tracking from your store', 'Turnaround owners, targets and escalation', 'A team of 5 with approvals', '3× the daily AI'],
+			perks: ['Every creator profile in full', 'Unlimited requests and campaigns', 'Open briefs that creators apply to', 'Brand autopilots and competitor watch', 'Sales tracking from your store', 'Turnaround owners, targets and escalation', 'A team of 5 with approvals', '3× the daily AI'],
 			join: JOIN_BRAND
 		}
 	}
@@ -52,25 +52,31 @@ const COMPARE = {
 		['Live Instagram numbers and media kit', true, true],
 		['Listed in the creator directory', true, true],
 		['Live insights page to send brands', false, true],
+		['Your page without “Made with Miracle”', false, true],
 		['Deals', null],
 		['Requests, collab board, calendar and drafts', true, true],
-		['Quotes brands accept online', '3 a month', 'Unlimited'],
-		['Invoices with a UPI QR', '3 a month', 'Unlimited'],
-		['Offer check and fair-rate advice (AI)', true, true],
+		['Collabs at a time (from the first quote to wrapped)', '5', 'Unlimited'],
+		['Invoices with a UPI QR', 'Unlimited', 'Unlimited'],
+		['Invoices without the “Sent with Miracle” line', false, true],
+		['Offer check: AI reads the agreement against your rates', '1 a day', 'Unlimited'],
+		['Getting paid', null],
+		['Payment reminders you send with one tap', true, true],
+		['Reminders that go by themselves, and bank-credit matching', false, true],
+		['Formal demand letter and MSME complaint', false, true],
 		['Autopilots', null],
 		['Pitch autopilot: brands found and pitched for you', false, true],
 		['Pitches you send yourself', '5 a month', 'Unlimited'],
 		['Invoices, dates and tracking links on their own', false, true],
-		['Payment reminders and bank-credit matching', false, true],
 		['Nudges, counters for low offers, rebook offers', false, true],
 		['Team and AI', null],
-		['Team: manager, assistant, accountant', false, 'Up to 5'],
+		['Team: your manager or assistant', false, '1 teammate'],
 		['Daily AI (captions, scripts, replies, checks)', 'A little', '6×'],
 		['No commission on any deal', true, true]
 	],
 	brand: [
 		['Finding creators', null],
 		['Discover with audience health and filters', true, true],
+		['Full creator profiles (audience, fit, history)', '10 a day', 'Unlimited'],
 		['Creator pools and shortlists', true, true],
 		['Working with creators', null],
 		['Requests to creators', '3 a month', 'Unlimited'],

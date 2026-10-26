@@ -163,7 +163,25 @@
 					{#if inv.tax_mode === 'export'}<p class="hint">Supply meant for export under LUT without payment of IGST{inv.seller.lut_arn ? ` (LUT ARN ${inv.seller.lut_arn})` : ''}.</p>{:else if !inv.seller.gst_registered}<p class="hint">The supplier is not registered under GST, so no GST is charged.</p>{/if}
 					<p class="hint">{inv.seller.footer}</p>
 				</footer>
+				{#if inv.miracle_line}<a class="inv-mir no-print" href="https://www.miracleapp.live/get-brand-deals?utm_source=invoice" target="_blank" rel="noopener">Sent with <b>Miracle</b> · free invoices for creators</a>{/if}
 			</article>
 		{/if}
 	</div>
 </div>
+
+<style>
+	.inv-mir {
+		display: block;
+		margin-top: 18px;
+		text-align: center;
+		font-size: 12px;
+		color: var(--ink-3);
+		text-decoration: none;
+	}
+	.inv-mir b {
+		color: var(--ink-2);
+	}
+	.inv-mir:hover b {
+		color: var(--accent);
+	}
+</style>

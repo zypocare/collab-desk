@@ -5,6 +5,8 @@
 	import type { Collab, Quote, QuoteItem } from '../types';
 	import { KINDS, USAGE, fmt, inr, iso, parse, usageOption, payTerms, plural, quoteTotal, rel } from '../util';
 	import Icon from './Icon.svelte';
+	import ProNote from './ProNote.svelte';
+	import { loadPlan, plan } from '../plan.svelte';
 	import { quoteOptions, suggestTerms, usageFee as usageFeeFor, type QuoteOption } from '../suggest';
 	import Select from './Select.svelte';
 	import { loadBench, rangeFor } from '../benchmark.svelte';
@@ -15,6 +17,11 @@
 	let { c, base, editing = false, preset, onclose }: { c: Collab; base?: Quote; editing?: boolean; preset?: Preset; onclose: () => void } = $props();
 
 	const rates = studio.settings?.rates ?? {};
+	// The free plan runs 5 collabs at a time: say so before she sends a quote for a 6th.
+	loadPlan().catch(() => {});
+	const cap = $derived(plan.data && (plan.data.rank ?? 1) === 1 ? plan.data.limits?.active_collabs : undefined);
+	const counted = $derived(c.quotes.some((q) => q.status === 'sent' || q.status === 'accepted' || q.status === 'changes'));
+	const full = $derived(cap != null && !counted && (plan.data?.usage.active_collabs ?? 0) >= cap);
 	// The form starts from a copy of the previous version (or the deliverables priced with her rate card).
 	const start = untrack(() => ({ base, c }));
 	let items = $state<QuoteItem[]>(
@@ -279,6 +286,7 @@
 			<div><span class="lbl">Total</span><b class="num">{money(total, cur)}</b>{#if foreign}<small> ≈ {inr(total * fx)}</small>{/if}</div>
 			<small>{payTerms({ advance_pct: advance, pay_days: payDays })}{waitAdvance && advance > 0 ? ' · work starts once it arrives' : ''}{exclusivity ? ` · ${exclusivity} days exclusivity` : ''}</small>
 		</div>
+		{#if full}<ProNote title="Run more than {cap} collabs at a time" body="You have {cap} collabs in progress, the free plan's most. Wrap one up to send this quote, or go Pro for unlimited." />{/if}
 		{#if !c.contact_email}<p class="err">Add the brand's email in the panel first, so they can receive and accept the quote.</p>{/if}
 
 		<div class="row">

@@ -6,9 +6,12 @@
 	import { addDays, daysLate, demandLetter, legalNotice, letterPdf, loadDemands, msmeFrom, samadhaanFields, sendDemand, type Demand } from '#lib/demand.ts';
 	import { loadBrandTrust, trust } from '#lib/trust.svelte.ts';
 	import { copyText, toast } from '#lib/ui.svelte.ts';
-	import { fmt, inr, todayIso } from '#lib/util.ts';
+	import { errMessage, fmt, inr, todayIso } from '#lib/util.ts';
+	import { ensurePlan, hasFeature } from '#lib/plan.svelte.ts';
+	import { supabase } from '#lib/supabase.ts';
 	import Icon from '#lib/components/Icon.svelte';
 	import PaymentDialog from '#lib/components/PaymentDialog.svelte';
+	import ProNote from '#lib/components/ProNote.svelte';
 
 	// Getting paid, step by step: two reminders go by themselves, then a formal demand and, after 45
 	// days, an MSME complaint or a legal notice. Steps 3 and 4 always wait for her.
@@ -26,7 +29,7 @@
 	let paying = $state(false);
 	const today = todayIso();
 	const final = addDays(today, 7);
-	onMount(() => loadBrandTrust());
+	onMount(() => (loadBrandTrust(), ensurePlan()));
 	$effect(() => {
 		const id = inv?.id;
 		if (id) loadDemands(id).then((d) => (demands = d));
@@ -36,7 +39,11 @@
 	const due = $derived(inv ? balanceDue(inv) : 0);
 	const usual = $derived(c ? trust.brands[c.brand_id]?.avg_days : null);
 	const s = $derived(studio.settings!);
-	const auto = $derived(!!inv?.auto_remind && !!s?.reminders_enabled);
+	// On the free plan the reminders are hers to send (one tap); Pro sends them, and writes steps 3 and 4.
+	const autoPlan = $derived(hasFeature('reminders'));
+	const auto = $derived(!!inv?.auto_remind && !!s?.reminders_enabled && autoPlan);
+	const letters = $derived(hasFeature('demand_letters'));
+	const off = $derived(autoPlan ? 'Reminders are off for this invoice' : 'Send it yourself below, or let Creator Pro send it');
 	// The reminders sent for this invoice, from the collab's history.
 	const sent = $derived(c && inv ? c.events.filter((e) => e.kind === 'reminder' && inv.number && e.text.includes(inv.number) && /reminder/i.test(e.text)).map((e) => e.at.slice(0, 10)).sort() : []);
 	const after = (d: string | null | undefined) => (inv?.due_date ? sent.filter((x) => x >= (d ?? inv.due_date!)) : sent);
@@ -90,6 +97,15 @@
 		if (!who) return;
 		await copyText(samadhaanFields(who).map(([k, v]) => `${k}: ${v}`).join('\n'), 'Copied. Paste them into the MSME Samadhaan form.');
 	}
+	let reminding = $state(false);
+	async function remindNow() {
+		if (!c) return;
+		reminding = true;
+		const { data, error } = await supabase.rpc('send_reminders', { p_ids: [c.id] });
+		reminding = false;
+		if (error) return toast(`Couldn't send: ${errMessage(error)}`, 'alert');
+		toast((data as { payment: number }).payment ? `Reminder sent to ${c.brand.name}` : `${c.brand.name} was reminded today already.`, (data as { payment: number }).payment ? 'send' : 'alert');
+	}
 	async function pause() {
 		if (!inv) return;
 		await setInvoiceFlags(inv, { auto_remind: !inv.auto_remind });
@@ -123,11 +139,11 @@
 		<section class="lp-steps rv" style="--i:1">
 			<div class="lp-s" class:done={step1}>
 				<span class="lp-n">{#if step1}✓{:else}1{/if}</span>
-				<span class="lp-b"><b>Friendly reminder</b><small>{step1 ? `Sent by Miracle${step1On ? ` on ${fmt(step1On)}` : ''}` : auto ? `Goes by itself on ${fmt(addDays(inv.due_date ?? today, 3))}` : 'Reminders are off for this invoice'}</small></span>
+				<span class="lp-b"><b>Friendly reminder</b><small>{step1 ? `Sent by Miracle${step1On ? ` on ${fmt(step1On)}` : ''}` : auto ? `Goes by itself on ${fmt(addDays(inv.due_date ?? today, 3))}` : off}</small></span>
 			</div>
 			<div class="lp-s" class:done={step2}>
 				<span class="lp-n">{#if step2}✓{:else}2{/if}</span>
-				<span class="lp-b"><b>Firm reminder with a date</b><small>{step2 ? `Sent by Miracle${step2On ? ` on ${fmt(step2On)} · "please pay by ${fmt(addDays(step2On, 7))}"` : ''}` : auto ? `Goes by itself on ${fmt(addDays(inv.due_date ?? today, 7))}` : 'Reminders are off for this invoice'}</small></span>
+				<span class="lp-b"><b>Firm reminder with a date</b><small>{step2 ? `Sent by Miracle${step2On ? ` on ${fmt(step2On)} · "please pay by ${fmt(addDays(step2On, 7))}"` : ''}` : auto ? `Goes by itself on ${fmt(addDays(inv.due_date ?? today, 7))}` : off}</small></span>
 			</div>
 			<div class="lp-s" class:done={!!demand} class:on={active === 3 && step3Ready}>
 				<span class="lp-n">{#if demand}✓{:else}3{/if}</span>
@@ -137,7 +153,9 @@
 						<small>{demand.via === 'email' ? 'Emailed' : demand.via === 'whatsapp' ? 'Sent on WhatsApp' : 'Downloaded'} on {fmt(demand.sent_at.slice(0, 10))}{demand.final_date ? ` · final date ${fmt(demand.final_date)}` : ''}</small>
 					{:else}
 						<small>A signed letter (PDF) to {c.brand.name} and their accounts team: the invoice, the agreement they accepted, and a final date, 7 days away.{step3Ready ? '' : ` From ${fmt(addDays(inv.due_date ?? today, 10))}.`}</small>
-						{#if step3Ready && inv.status !== 'paid'}
+						{#if step3Ready && inv.status !== 'paid' && !letters}
+							<span class="lp-pro"><ProNote title="Send the formal demand" body="A signed letter with a final date, written for you from the invoice and the agreement they accepted." /></span>
+						{:else if step3Ready && inv.status !== 'paid'}
 							<span class="lp-acts"><button class="btn primary" onclick={() => openStep(3)} aria-expanded={open === 3}>Review and send</button><button class="btn" onclick={whatsapp} disabled={busy}>WhatsApp</button></span>
 						{/if}
 					{/if}
@@ -161,7 +179,8 @@
 						<small>{fourth.kind === 'msme' ? 'MSME complaint prepared' : 'Legal notice downloaded'} on {fmt(fourth.sent_at.slice(0, 10))}</small>
 					{:else}
 						<small>{step4Ready ? 'Now open.' : `From ${fmt(msmeDay)}.`} With Udyam registration, buyers must pay within 45 days, with interest after that; Miracle fills in the MSME Samadhaan answers for you. Without it, a legal notice template.</small>
-						{#if step4Ready && inv.status !== 'paid'}<span class="lp-acts"><button class="btn primary" onclick={() => openStep(4)} aria-expanded={open === 4}>{s.udyam_no ? 'Prepare the MSME complaint' : 'Prepare the legal notice'}</button></span>{/if}
+						{#if step4Ready && inv.status !== 'paid' && !letters}<span class="lp-pro"><ProNote title={s.udyam_no ? 'File the MSME complaint' : 'Send the legal notice'} body={s.udyam_no ? 'Miracle fills in every MSME Samadhaan answer for you.' : 'A legal notice template, filled in from the invoice.'} /></span>
+						{:else if step4Ready && inv.status !== 'paid'}<span class="lp-acts"><button class="btn primary" onclick={() => openStep(4)} aria-expanded={open === 4}>{s.udyam_no ? 'Prepare the MSME complaint' : 'Prepare the legal notice'}</button></span>{/if}
 					{/if}
 					{#if open === 4 && who}
 						<div class="lp-sheet">
@@ -178,11 +197,16 @@
 				</span>
 			</div>
 		</section>
-		<small class="hint lp-note">Reminders 1 and 2 go by themselves (<a href="/studio/settings?s=payments">Settings › Invoices &amp; payments</a>). Steps 3 and 4 always wait for you.</small>
+		{#if !autoPlan && late > 0 && inv.status !== 'paid'}
+			<ProNote title="Let reminders go by themselves" body="Creator Pro sends both reminders on time and matches the money when it lands in your bank." />
+		{:else}
+			<small class="hint lp-note">Reminders 1 and 2 go by themselves (<a href="/studio/settings?s=payments">Settings › Invoices &amp; payments</a>). Steps 3 and 4 always wait for you.</small>
+		{/if}
 		{#if inv.status === 'sent' || inv.status === 'partly_paid'}
 			<div class="lp-foot">
 				<button class="btn" onclick={() => (paying = true)}>They paid</button>
-				<button class="btn" onclick={pause}>{inv.auto_remind ? 'Pause steps' : 'Turn steps back on'}</button>
+				{#if !auto}<button class="btn" onclick={remindNow} disabled={reminding}>{#if reminding}<span class="spinner"></span>{:else}<Icon name="send" />{/if}Send a reminder now</button>{/if}
+				{#if autoPlan}<button class="btn" onclick={pause}>{inv.auto_remind ? 'Pause steps' : 'Turn steps back on'}</button>{/if}
 			</div>
 		{/if}
 	</div>
@@ -194,6 +218,10 @@
 		display: grid;
 		gap: 14px;
 		max-width: 680px;
+	}
+	.lp-pro {
+		display: block;
+		margin-top: 10px;
 	}
 	.lp-hero {
 		display: grid;

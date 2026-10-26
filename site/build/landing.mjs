@@ -26,7 +26,7 @@ export const LANDING = [
 		faq: [
 			['How many followers do I need to get brand deals?', 'There’s no minimum. Brands book nano and micro creators (from a few thousand followers) for their trust and engagement. What matters most is a clear niche, steady reach and a page that makes booking easy.'],
 			['Does Miracle take a cut of my deals?', 'No. Brands pay you directly by UPI or bank transfer and Miracle takes no commission, on any plan.'],
-			['What’s free and what’s Pro?', 'Your page, the directory listing, requests, offer checks and the collab board are free, with 3 quotes, 3 invoices and 5 pitches a month. Creator Pro (₹299 a month, 14 days free) adds the autopilots, unlimited quotes and invoices, results reports and your team. [See pricing](/pricing).'],
+			['What’s free and what’s Pro?', 'Your page, the directory listing, requests, the collab board and unlimited invoices are free, with 5 collabs at a time, 1 offer check a day and 5 pitches a month. Creator Pro (₹299 a month, 14 days free) adds the autopilots, unlimited collabs, reminders that go by themselves and a teammate. [See pricing](/pricing).'],
 			['Will the AI send pitches without asking me?', 'Only if you choose auto. By default each pitch waits for you to approve it, and a brand is never pitched twice.'],
 			['Can I use Miracle if brands already DM me?', 'Yes. Miracle reads brand DMs on connected Instagram accounts, flags the ones that look like a collab, and turns them into requests you can quote on.']
 		],
@@ -271,7 +271,7 @@ export const LANDING = [
 		fh: 'Built for people who *run talent.*',
 		features: [
 			['Every creator, one switch', 'Creators add you as their manager; you see all of them on one roster and switch between their desks in a tap.'],
-			['Pro for everyone', 'Every creator you manage and your own brand team get Pro: the autopilots, unlimited quotes and invoices, reminders.'],
+			['Pro for everyone', 'Every creator you manage and your own brand team get Pro: the autopilots, unlimited collabs, reminders that go by themselves.'],
 			['Commission ledger', 'Your cut on every deal at the rate it was agreed, what’s settled and what isn’t. Tracking only; no money moves through Miracle.'],
 			['Pitch decks from your roster', 'Pick creators for a brand and get a deck with their live numbers, rates and best work, ready to send.'],
 			['Client workspaces', 'Working inside several brands’ teams? Each is its own workspace, and no client ever sees another’s requests or money.'],

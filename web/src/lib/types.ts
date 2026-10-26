@@ -484,6 +484,8 @@ export type PublicPage = {
 	/** Case studies the brands approved. */
 	cases?: import('./caseStudy').PublicCase[];
 	fan_list?: { pitch: string | null } | null;
+	/** Creator Pro: her page without "Made with Miracle". */
+	white_label?: boolean;
 	barter: { mode: 'open' | 'selective' | 'closed'; min_value: number; reply_time: string; slots_left: number | null } | null;
 	worked_with: string[];
 	instagram: {

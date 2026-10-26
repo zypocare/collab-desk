@@ -8,6 +8,8 @@
 	import PayPill from '#lib/components/PayPill.svelte';
 	import Segmented from '#lib/components/Segmented.svelte';
 	import BankCredits from '#lib/components/BankCredits.svelte';
+	import ProNote from '#lib/components/ProNote.svelte';
+	import { ensurePlan, hasFeature } from '#lib/plan.svelte.ts';
 	import { tdsToCollect } from '#lib/tds.ts';
 	import { supabase } from '#lib/supabase.ts';
 	import { money } from '#lib/currency.ts';
@@ -83,6 +85,9 @@
 		toast(r.payment ? `${r.payment} payment reminder${r.payment > 1 ? 's' : ''} sent${r.skipped ? `. ${r.skipped} were reminded today already` : ''}` : 'Everyone was reminded today already.', r.payment ? 'send' : 'alert');
 		await reloadCollabs();
 	}
+	// Free plan and a brand is late: the moment automatic reminders are worth it.
+	ensurePlan();
+	const autoPlan = $derived(hasFeature('reminders'));
 	// Opened from the notification's "Remind brands" button.
 	let fromPush = false;
 	$effect(() => {
@@ -129,6 +134,7 @@
 			</div>
 		</div>
 	</section>
+	{#if nOd && !autoPlan}<div class="rv" style="margin:14px 0"><ProNote title="Turn on automatic reminders" body={`${nOd} invoice${nOd === 1 ? ' is' : 's are'} overdue. Creator Pro chases them on time, every time, and matches the money when it lands.`} /></div>{/if}
 	<BankCredits />
 	<div class="m-stages" role="tablist" aria-label="Filter payments">
 		{#each [['all', 'All'], ['due', 'Due'], ['overdue', 'Overdue'], ['paid', 'Paid']] as const as [k, label] (k)}
