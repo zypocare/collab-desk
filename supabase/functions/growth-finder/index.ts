@@ -58,13 +58,19 @@ Deno.serve(async (req) => {
   const found: Found[] = [];
   const exclude = [...seenHandle].slice(-300);
   let asked = 0, confirmed = 0, lastErr: unknown = null;
-  for (let round = 0; round < 3 && found.length < want && Date.now() - started < 80_000; round++) {
+  // Small searches (a Google search for a few creators answers in well under a minute), as many rounds as fit:
+  // the whole run must finish inside the function's time limit.
+  for (let round = 0; round < 5 && found.length < want; round++) {
+    const left = 105_000 - (Date.now() - started);
+    if (left < 25_000) break;
     const r = await ai<{ creators?: Found[]; error?: string }>(db, site, 'growthscout', {
-      count: Math.min(20, want - found.length + 8), niches: s.niches, cities: s.cities, min_followers: s.min_followers, max_followers: s.max_followers, exclude,
-    });
+      count: Math.min(8, want - found.length + 3), niches: s.niches, cities: s.cities, min_followers: s.min_followers, max_followers: s.max_followers, exclude,
+    }, Math.min(75_000, left));
     if (!r?.creators?.length) {
       lastErr = r;
-      break;
+      // One more try after a failed round, then stop.
+      if (round > 0 || !r?.error || /Not allowed|needs Gemini/.test(r.error)) break;
+      continue;
     }
     asked += r.creators.length;
     const fresh = r.creators.filter((c) => {
@@ -87,7 +93,10 @@ Deno.serve(async (req) => {
       }
     }
   }
-  if (!found.length && !asked) return reply({ error: 'No creators came back from the search.', detail: lastErr }, 502);
+  if (!found.length && !asked) {
+    const why = (lastErr as { error?: string } | null)?.error ?? 'no answer';
+    return reply({ error: `No creators came back from the search: ${why}`, detail: lastErr }, 502);
+  }
 
   // An email for each, written five at a time.
   const written = await Promise.all(found.map((c, k) => new Promise((r) => setTimeout(r, Math.floor(k / 5) * 1500)).then(() =>
@@ -112,18 +121,31 @@ Deno.serve(async (req) => {
   return reply({ added: rows.length, asked, confirmed, ...(rows.length ? {} : { skipped: 'none of the emails found could be confirmed on a public page' }), creators: rows.map((r) => `${r.name} <${r.email}>`) });
 });
 
-/** The AI job with a single-use pass (no creator: the free Gemini allowance, nothing counted against anyone). */
-async function ai<T>(db: ReturnType<typeof admin>, site: string, kind: string, payload: Record<string, unknown>): Promise<T | null> {
+/** The AI job with a single-use pass (no creator: the free Gemini allowance, nothing counted against anyone).
+ * When it doesn't answer, { error } says why (the pass, a timeout, or the AI's own message). */
+async function ai<T>(db: ReturnType<typeof admin>, site: string, kind: string, payload: Record<string, unknown>, wait = 60_000): Promise<(T & { error?: string }) | null> {
   const ticket = crypto.randomUUID() + crypto.randomUUID();
   const { error } = await db.from('ai_tickets').insert({ token: ticket, kind });
-  if (error) return null;
-  const r = await fetch(`${site}/api/ai/${kind}`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json', 'x-ai-ticket': ticket, apikey: Deno.env.get('SUPABASE_ANON_KEY') ?? '' },
-    body: JSON.stringify(payload),
-    signal: AbortSignal.timeout(100_000),
-  }).catch(() => null);
-  return ((await r?.json().catch(() => null)) as T | null) ?? null;
+  if (error) return { error: `couldn't make the AI pass: ${error.message}` } as T & { error: string };
+  const t0 = Date.now();
+  let r: Response;
+  try {
+    r = await fetch(`${site}/api/ai/${kind}`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-ai-ticket': ticket, apikey: Deno.env.get('SUPABASE_ANON_KEY') ?? '' },
+      body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(wait),
+    });
+  } catch (e) {
+    const timedOut = e instanceof DOMException && e.name === 'TimeoutError';
+    return { error: timedOut ? `the AI took longer than ${Math.round(wait / 1000)} seconds` : `couldn't reach the AI (${e instanceof Error ? e.message : String(e)})` } as T & { error: string };
+  }
+  const text = await r.text().catch(() => '');
+  try {
+    return JSON.parse(text) as T & { error?: string };
+  } catch {
+    return { error: `the AI answered ${r.status} after ${Math.round((Date.now() - t0) / 1000)} seconds: ${text.replace(/\s+/g, ' ').slice(0, 160)}` } as T & { error: string };
+  }
 }
 
 /** From 10 AM (or now, if later) a few minutes apart: the order they go out in. */

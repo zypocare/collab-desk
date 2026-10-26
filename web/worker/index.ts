@@ -484,7 +484,7 @@ Return ONLY a JSON array of objects, nothing else.`;
 	const user = `Exclude (already known): ${skip.join(', ') || 'none'}`;
 	let reply = '';
 	try {
-		reply = await gemini(x.env, system, user, 5000, 0.7, true);
+		reply = await gemini(x.env, system, user, Math.min(5000, 800 + n * 280), 0.7, true);
 	} catch (e) {
 		throw new Error(`Google Search with Gemini failed: ${String((e as Error)?.message ?? e).slice(0, 300)}`);
 	}
