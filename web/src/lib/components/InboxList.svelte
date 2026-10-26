@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { onMount } from 'svelte';
-	import { studio } from '../studio.svelte';
+	import { knownBrandHandle, studio } from '../studio.svelte';
 	import { supabase } from '../supabase';
 	import { toast, ui } from '../ui.svelte';
 	import { firstName, stageLabel, unreadFor } from '../util';
@@ -42,7 +42,8 @@
 		};
 	});
 	const igUnread = $derived(igThreads.reduce((a, t) => a + (t.unread || 0), 0));
-	const isCollab = (t: IgT) => (t.collab_flag === 'likely' || t.collab_flag === 'maybe') && !t.collab_id;
+	// The same rule as the Desk AI card: a chat with a brand already on the board isn't a new collab.
+	const isCollab = (t: IgT) => (t.collab_flag === 'likely' || t.collab_flag === 'maybe') && !t.collab_id && !knownBrandHandle(t.username || '');
 	const igCollabs = $derived(igThreads.filter(isCollab).length);
 	const igShown = $derived(
 		igThreads

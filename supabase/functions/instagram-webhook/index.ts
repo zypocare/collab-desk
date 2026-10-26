@@ -121,7 +121,25 @@ Deno.serve(async (req) => {
         // A chat about a collab: keep the message (hers too), alert for theirs.
         await db.from('ig_threads').update({ last_text: text.slice(0, 300), last_at: at, ...(fromMe ? {} : { last_from_them_at: at, unread: (thread.unread ?? 0) + 1 }) }).eq('creator_id', creator).eq('igsid', igsid);
         await db.from('ig_dms').upsert({ creator_id: creator, mid: m.mid, igsid, from_me: fromMe, text, attachments: m.attachments ?? [], created_at: at });
-        if (!fromMe) await db.from('outbox').insert({ creator_id: creator, kind: 'ig_dm', to_email: '', payload: { from: thread.username || 'Someone', text: text.slice(0, 140), igsid } });
+        if (fromMe) continue;
+        // Not on the board yet (a possible collab): read the new message too. A brand that sends offers
+        // often (a new campaign every few weeks) gets the new offer in its summary and in the alert,
+        // instead of the last one.
+        if (!thread.collab_id && m.text) {
+          const job = (async () => {
+            const v = await verdict(db, creator, text, { token, igsid, me });
+            if (v.flag) {
+              const hint = v.hint || ruleHint(text, thread.username || 'someone');
+              await db.from('ig_threads').update({ collab_hint: hint, collab_flag: v.flag === 'likely' || thread.collab_flag === 'likely' ? 'likely' : 'maybe' }).eq('creator_id', creator).eq('igsid', igsid);
+              await db.from('outbox').insert({ creator_id: creator, kind: 'ig_collab', to_email: '', payload: { from: thread.username || 'Someone', brand: v.brand, text: hint, igsid } });
+            } else {
+              await db.from('outbox').insert({ creator_id: creator, kind: 'ig_dm', to_email: '', payload: { from: thread.username || 'Someone', text: text.slice(0, 140), igsid } });
+            }
+          })().catch((e) => console.error('[collab recheck]', e));
+          (globalThis as unknown as { EdgeRuntime?: { waitUntil: (p: Promise<unknown>) => void } }).EdgeRuntime?.waitUntil(job);
+          continue;
+        }
+        await db.from('outbox').insert({ creator_id: creator, kind: 'ig_dm', to_email: '', payload: { from: thread.username || 'Someone', text: text.slice(0, 140), igsid } });
         continue;
       }
       // Anything else: her own messages and chats she marked "Not a collab" are never kept.

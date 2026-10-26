@@ -14,11 +14,21 @@ export async function addLeadAsCollab(igsid: string, username: string, name = ''
 	ui.newCollab = true;
 }
 
-/** The brand's latest words in each of these chats (only chats already flagged as possible collabs). */
+/** The brand's latest message in each of these chats (only chats already flagged as possible collabs).
+ * One look per chat, so a busy chat never pushes out another chat's newest line; a photo, video or
+ * voice note with no words says so instead of falling back to an older message. */
 export async function lastBrandLines(igsids: string[]): Promise<Record<string, string>> {
 	if (!igsids.length) return {};
-	const { data } = await supabase.from('ig_dms').select('igsid, text, from_me, created_at').in('igsid', igsids).eq('from_me', false).order('created_at', { ascending: false }).limit(40);
+	const rows = await Promise.all(
+		igsids.map((id) => supabase.from('ig_dms').select('igsid, text, attachments').eq('igsid', id).eq('from_me', false).order('created_at', { ascending: false }).limit(1).maybeSingle())
+	);
 	const out: Record<string, string> = {};
-	for (const m of data ?? []) if (!out[m.igsid] && String(m.text ?? '').trim()) out[m.igsid] = String(m.text).trim();
+	for (const { data: m } of rows) {
+		if (!m) continue;
+		const text = String(m.text ?? '').trim();
+		const kinds = ((m.attachments as { type?: string }[] | null) ?? []).map((a) => String(a?.type ?? ''));
+		out[m.igsid] = text || (kinds.some((k) => k.includes('video')) ? 'Sent a video' : kinds.some((k) => k.includes('audio')) ? 'Sent a voice note' : kinds.length ? 'Sent a photo or file' : '');
+		if (!out[m.igsid]) delete out[m.igsid];
+	}
 	return out;
 }

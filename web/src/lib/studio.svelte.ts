@@ -269,6 +269,23 @@ export const priorityOf = (c: Collab): Priority | null => {
 	};
 };
 
+/** An Instagram handle that belongs to a brand she already has a collab going with: its handle, or her
+ * name for the brand plus a usual ending (@sunveda.in, @sunveda_official for "Sunveda"). Only a whole
+ * match counts, so @brandelevate isn't taken for a brand called "Brand". The Messages count and the
+ * Desk AI card both use this, so they always agree. */
+export function knownBrandHandle(u: string) {
+	const norm = (x: string) => x.toLowerCase().replace(/[^a-z0-9]/g, '');
+	const h = norm(u);
+	if (!h) return false;
+	const ENDS = ['', 'in', 'india', 'official', 'store', 'shop', 'co', 'hq', 'brand', 'world'];
+	return studio.brands.some((br) => {
+		if (!studio.collabs.some((c) => c.brand_id === br.id && !['declined', 'cancelled', 'wrapped'].includes(c.stage))) return false;
+		if (br.instagram && norm(br.instagram) === h) return true;
+		const n = norm(br.name);
+		return n.length >= 4 && ENDS.some((e) => h === n + e);
+	});
+}
+
 /** Instagram chats that look like a collab and aren't on the board yet. */
 export async function loadLeads() {
 	let { data } = await supabase
@@ -279,13 +296,7 @@ export async function loadLeads() {
 		.order('last_at', { ascending: false, nullsFirst: false })
 		.limit(12);
 	if (data) {
-		// Not a new collab if that brand already has one going (by handle, or a clearly matching name:
-		// @sunveda.in and "Sunveda").
-		const norm = (x: string) => x.toLowerCase().replace(/[^a-z0-9]/g, '');
-		const busy = studio.brands.filter((br) => studio.collabs.some((c) => c.brand_id === br.id && c.stage !== 'declined'));
-		const known = (u: string) =>
-			busy.some((br) => (br.instagram && norm(br.instagram) === norm(u)) || (norm(br.name).length >= 4 && norm(u).startsWith(norm(br.name))));
-		data = (data as typeof studio.leads).filter((t) => !known(t.username || ''));
+		data = (data as typeof studio.leads).filter((t) => !knownBrandHandle(t.username || ''));
 		// A possible collab that wasn't there before: chime and say so (not on the first load).
 		const fresh = (data as typeof studio.leads).filter((t) => !seenLeads.has(t.igsid));
 		if (leadsLoaded && fresh.length) speak(fresh.length === 1 ? 'You might have a new collab.' : `You might have ${fresh.length} new collabs.`);
