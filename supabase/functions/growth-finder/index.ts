@@ -64,45 +64,66 @@ Deno.serve(async (req) => {
 
   const site = String(url.searchParams.get('site') || Deno.env.get('APP_URL') || 'https://app.miracleapp.live').replace(/\/$/, '');
   const started = Date.now();
+  const engine = CLAUDE_KEY ? 'claude' : 'gemini';
+  // Every run is kept from the moment it starts (migration 165), so one stopped part-way still shows in the panel.
+  const { data: run } = dry ? { data: null } : await db.from('growth_runs').insert({ engine, manual }).select('id').single();
+  const job = search({ db, s, want, today, site, started, engine, manual, dry, seenEmail, seenHandle, runId: (run as { id: number } | null)?.id ?? null });
+  if (dry) return reply(await job);
+  // The search carries on after this answer (the panel refreshes until it's done), so no gateway time limit cuts it off.
+  const rt = (globalThis as { EdgeRuntime?: { waitUntil(p: Promise<unknown>): void } }).EdgeRuntime;
+  if (rt) {
+    rt.waitUntil(job);
+    return reply({ started: true, run: (run as { id: number } | null)?.id ?? null, engine }, 202);
+  }
+  return reply(await job);
+});
+
+// The whole run must end inside the platform's time limit (about 150 seconds): searching gets up to 85 of them,
+// checking pages and writing the emails the rest.
+const TOTAL = 135_000, SEARCH = 85_000;
+
+type Job = {
+  db: ReturnType<typeof admin>; s: Settings; want: number; today: string; site: string; started: number; engine: 'claude' | 'gemini';
+  manual: boolean; dry: boolean; seenEmail: Set<string>; seenHandle: Set<string>; runId: number | null;
+};
+async function search(x: Job): Promise<Record<string, unknown>> {
+  const { db, s, want, today, site, started, engine, dry, seenEmail, seenHandle } = x;
   const found: Found[] = [];
   const exclude = [...seenHandle].slice(-300);
   let asked = 0, confirmed = 0, lastErr: unknown = null;
-  const engine = CLAUDE_KEY ? 'claude' : 'gemini';
   const spend: Spend = { input: 0, output: 0, searches: 0 };
   const usd = () => Math.round((spend.input * PRICE.input + spend.output * PRICE.output + spend.searches * PRICE.search) * 100) / 100;
-  // Every run is kept, so the panel can show what it found and what it cost.
-  const log = async (added: number, error = '') => {
-    if (dry) return;
-    await db.from('growth_runs').insert({ engine, manual, added, asked, confirmed, cost_usd: engine === 'claude' ? usd() : 0, seconds: Math.round((Date.now() - started) / 1000), error: error.slice(0, 300) });
+  const finish = async (added: number, error = '') => {
+    if (dry || !x.runId) return;
+    await db.from('growth_runs').update({ added, asked, confirmed, cost_usd: engine === 'claude' ? usd() : 0, seconds: Math.round((Date.now() - started) / 1000), error: error.slice(0, 300), finished_at: new Date().toISOString() }).eq('id', x.runId);
   };
-  // Small searches (a Google search for a few creators answers in well under a minute), as many rounds as fit:
-  // the whole run must finish inside the function's time limit.
-  for (let round = 0; round < 5 && found.length < want; round++) {
-    const left = 105_000 - (Date.now() - started);
-    if (left < 25_000) break;
-    const ask = { count: Math.min(8, want - found.length + 3), niches: s.niches, cities: s.cities, min_followers: s.min_followers, max_followers: s.max_followers, exclude };
-    const r = CLAUDE_KEY
-      ? await claudeScout(ask, Math.min(100_000, left), spend)
-      : await ai<{ creators?: Found[]; error?: string }>(db, site, 'growthscout', ask, Math.min(75_000, left));
-    if (!r?.creators?.length) {
-      lastErr = r;
-      // One more try after a failed round, then stop.
-      if (round > 0 || !r?.error || /Not allowed|needs Gemini/.test(r.error)) break;
-      continue;
-    }
-    asked += r.creators.length;
-    const fresh = r.creators.filter((c) => {
-      const ok = !seenEmail.has(c.email) && !(c.handle && seenHandle.has(c.handle)) && !BAD.test(c.email);
-      seenEmail.add(c.email);
-      if (c.handle) {
-        seenHandle.add(c.handle);
-        exclude.push(c.handle);
+  try {
+    // Small searches (a handful of creators each), as many rounds as fit the search time.
+    for (let round = 0; round < 4 && found.length < want; round++) {
+      const left = SEARCH - (Date.now() - started);
+      if (left < 30_000) break;
+      const ask = { count: Math.min(6, want - found.length + 2), niches: s.niches, cities: s.cities, min_followers: s.min_followers, max_followers: s.max_followers, exclude };
+      const r = CLAUDE_KEY
+        ? await claudeScout(ask, Math.min(70_000, left), spend)
+        : await ai<{ creators?: Found[]; error?: string }>(db, site, 'growthscout', ask, Math.min(65_000, left));
+      if (!r?.creators?.length) {
+        lastErr = r;
+        // One more try after a failed round, then stop.
+        if (round > 0 || !r?.error || /Not allowed|needs Gemini|key was refused|credit/.test(r.error)) break;
+        continue;
       }
-      return ok;
-    });
-    // The email must really be on the page given (or their own site): six pages at a time.
-    for (let i = 0; i < fresh.length && found.length < want; i += 6) {
-      const checked = await Promise.all(fresh.slice(i, i + 6).map(async (c) => ({ c, src: await seenOn(c) })));
+      asked += r.creators.length;
+      const fresh = r.creators.filter((c) => {
+        const ok = !seenEmail.has(c.email) && !(c.handle && seenHandle.has(c.handle)) && !BAD.test(c.email);
+        seenEmail.add(c.email);
+        if (c.handle) {
+          seenHandle.add(c.handle);
+          exclude.push(c.handle);
+        }
+        return ok;
+      });
+      // The email must really be on the page given (or their own site): every page at once.
+      const checked = await Promise.all(fresh.map(async (c) => ({ c, src: await seenOn(c) })));
       for (const { c, src } of checked) {
         if (src && found.length < want) {
           confirmed++;
@@ -110,39 +131,42 @@ Deno.serve(async (req) => {
         }
       }
     }
-  }
-  if (!found.length && !asked) {
-    const why = (lastErr as { error?: string } | null)?.error ?? 'no answer';
-    await log(0, why);
-    return reply({ error: `No creators came back from the search: ${why}`, detail: lastErr, engine, cost_usd: usd() }, 502);
-  }
+    if (!found.length) {
+      const why = asked ? `${asked} creator${asked === 1 ? '' : 's'} found, but none of their emails could be confirmed on a public page` : `no creators came back from the search: ${(lastErr as { error?: string } | null)?.error ?? 'no answer'}`;
+      await finish(0, why);
+      return { added: 0, asked, confirmed, engine, cost_usd: usd(), error: why };
+    }
 
-  // An email for each, written five at a time.
-  const written = await Promise.all(found.map((c, k) => new Promise((r) => setTimeout(r, Math.floor(k / 5) * 1500)).then(() =>
-    ai<{ subject: string; body: string }>(db, site, 'growthmail', { name: c.name, handle: c.handle, niche: c.niche, city: c.city, about_them: c.why, offer: s.offer }))));
-  const slots = sendTimes(found.length);
-  const rows = found.map((c, k) => {
-    const w = written[k] as { subject?: string; body?: string } | null;
-    const first = c.name.split(' ')[0] || 'there';
-    return {
-      name: c.name, handle: c.handle, email: c.email, website: c.website, source_url: c.email_source, niche: c.niche, city: c.city, followers: c.followers, why: c.why,
-      subject: w?.subject?.trim() || `your brand deals, simpler`,
-      body: w?.body?.trim() ||
-        `Hi ${first},\n\nI came across your ${c.niche || ''} content${c.city ? ` from ${c.city}` : ''} and loved it.\n\nMiracle is a free tool for creators: a brand page with your rates and live Instagram numbers, quotes brands accept online, GST-ready invoices with a UPI QR, and reminders that chase late payments for you. Brands pay you directly; we never take a cut.${s.offer ? `\n\n${s.offer}` : ''}\n\nWould you like to try it?`,
-      status: s.mode === 'auto' ? 'approved' : 'ready', found_on: today, send_after: slots[k],
-    };
-  });
-  if (dry) return reply({ dry: true, want, asked, confirmed, engine, cost_usd: usd(), seconds: Math.round((Date.now() - started) / 1000), rows });
-  if (rows.length) {
+    // An email for each, all at once, inside the time that's left (the standard email if one isn't back in time).
+    const wait = Math.max(8_000, Math.min(25_000, TOTAL - (Date.now() - started) - 10_000));
+    const written = await Promise.all(found.map((c) =>
+      ai<{ subject: string; body: string }>(db, site, 'growthmail', { name: c.name, handle: c.handle, niche: c.niche, city: c.city, about_them: c.why, offer: s.offer }, wait)));
+    const slots = sendTimes(found.length);
+    const rows = found.map((c, k) => {
+      const w = written[k] as { subject?: string; body?: string } | null;
+      const first = c.name.split(' ')[0] || 'there';
+      return {
+        name: c.name, handle: c.handle, email: c.email, website: c.website, source_url: c.email_source, niche: c.niche, city: c.city, followers: c.followers, why: c.why,
+        subject: w?.subject?.trim() || `your brand deals, simpler`,
+        body: w?.body?.trim() ||
+          `Hi ${first},\n\nI came across your ${c.niche || ''} content${c.city ? ` from ${c.city}` : ''} and loved it.\n\nMiracle is a free tool for creators: a brand page with your rates and live Instagram numbers, quotes brands accept online, GST-ready invoices with a UPI QR, and reminders that chase late payments for you. Brands pay you directly; we never take a cut.${s.offer ? `\n\n${s.offer}` : ''}\n\nWould you like to try it?`,
+        status: s.mode === 'auto' ? 'approved' : 'ready', found_on: today, send_after: slots[k],
+      };
+    });
+    if (dry) return { dry: true, want, asked, confirmed, engine, cost_usd: usd(), seconds: Math.round((Date.now() - started) / 1000), rows };
     const { error } = await db.from('growth_leads').insert(rows);
     if (error) {
-      await log(0, error.message);
-      return reply({ error: error.message }, 500);
+      await finish(0, error.message);
+      return { error: error.message };
     }
+    await finish(rows.length);
+    return { added: rows.length, asked, confirmed, engine, cost_usd: usd(), creators: rows.map((r) => `${r.name} <${r.email}>`) };
+  } catch (e) {
+    const m = e instanceof Error ? e.message : String(e);
+    await finish(0, `stopped: ${m}`);
+    return { error: m };
   }
-  await log(rows.length, rows.length ? '' : 'none of the emails found could be confirmed on a public page');
-  return reply({ added: rows.length, asked, confirmed, engine, cost_usd: usd(), ...(rows.length ? {} : { skipped: 'none of the emails found could be confirmed on a public page' }), creators: rows.map((r) => `${r.name} <${r.email}>`) });
-});
+}
 
 /** The AI job with a single-use pass (no creator: the free Gemini allowance, nothing counted against anyone).
  * When it doesn't answer, { error } says why (the pass, a timeout, or the AI's own message). */
@@ -171,18 +195,18 @@ async function ai<T>(db: ReturnType<typeof admin>, site: string, kind: string, p
   }
 }
 
-/** Claude with web search (and web fetch, to open a page and see the email on it). A long search can pause
+/** Claude with web search (Miracle then opens each page itself to see the email on it). A long search can pause
  * part-way (pause_turn): the turn is handed back and it carries on, inside the time given. */
 async function claudeScout(p: { count: number; niches: string[]; cities: string[]; min_followers: number; max_followers: number; exclude: string[] }, wait: number, spend: Spend): Promise<{ creators?: Found[]; error?: string }> {
   const client = new Anthropic({ apiKey: CLAUDE_KEY, maxRetries: 1 });
   const deadline = Date.now() + wait;
   const system = `You find Indian Instagram creators for Miracle to invite. Miracle is a free tool for creators' brand deals: a rate-card page brands book from, quotes, invoices and payment reminders.
-Use web search to find real, active creators, then open the page that shows their email to check it is really there.
+Use web search to find real, active creators whose business email appears on a public page in the results.
 Who counts:
 - posts about ${p.niches.length ? p.niches.join(', ') : 'fashion, beauty, food, travel, lifestyle or fitness'}${p.cities.length ? `, based in or around ${p.cities.join(', ')}` : ', anywhere in India'};
 - roughly ${p.min_followers.toLocaleString('en-IN')} to ${p.max_followers.toLocaleString('en-IN')} Instagram followers (micro and mid creators, not celebrities);
-- does brand collaborations, and publishes a business or collaboration email on a public web page you opened yourself: their own website, a media kit, a link-in-bio page, a creator directory or an article. An email that only appears inside Instagram does not count.
-Never include anyone in the exclude list. Never invent a person, a handle or an email: only what you saw on a page. Fewer real creators are better than more guesses.
+- does brand collaborations, and publishes a business or collaboration email on a public web page: their own website, a media kit, a link-in-bio page, a creator directory or an article. An email that only appears inside Instagram does not count.
+Never include anyone in the exclude list. Never invent a person, a handle or an email: only what you saw in the results. Fewer real creators are better than more guesses. Be quick: a few searches, then answer.
 When you are done, reply with ONLY a JSON array and nothing else. Each item: {"name", "handle" (Instagram, without @), "email" (exactly as published), "email_source" (the https:// page where you saw the email, not instagram.com), "website" (their own site or link page, or ""), "niche", "city", "followers" (a number, your best estimate), "why" (one line under 18 words about their content)}.`;
   const messages: Anthropic.Beta.BetaMessageParam[] = [
     { role: 'user', content: `Find ${p.count} creators.\nExclude (already known): ${p.exclude.slice(-300).join(', ') || 'none'}` },
@@ -200,8 +224,7 @@ When you are done, reply with ONLY a JSON array and nothing else. Each item: {"n
         output_config: { effort: 'medium' },
         system,
         tools: [
-          { type: 'web_search_20260209', name: 'web_search', max_uses: 8, user_location: { type: 'approximate', country: 'IN' } },
-          { type: 'web_fetch_20260209', name: 'web_fetch', max_uses: 12 },
+          { type: 'web_search_20260209', name: 'web_search', max_uses: 5, user_location: { type: 'approximate', country: 'IN' } },
         ],
         messages,
       } as unknown as Anthropic.Beta.Messages.MessageCreateParamsNonStreaming;
@@ -281,7 +304,7 @@ function emailsIn(html: string) {
 }
 async function get(u: string): Promise<string> {
   try {
-    const r = await fetch(u, { headers: { 'user-agent': 'Mozilla/5.0 (compatible; Miracle/1.0; +https://www.miracleapp.live)', accept: 'text/html' }, redirect: 'follow', signal: AbortSignal.timeout(8000) });
+    const r = await fetch(u, { headers: { 'user-agent': 'Mozilla/5.0 (compatible; Miracle/1.0; +https://www.miracleapp.live)', accept: 'text/html' }, redirect: 'follow', signal: AbortSignal.timeout(6000) });
     if (!r.ok || !(r.headers.get('content-type') ?? '').includes('html')) return '';
     return (await r.text()).slice(0, 1_000_000);
   } catch {

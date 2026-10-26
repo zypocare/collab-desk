@@ -54,20 +54,37 @@
 		if (m === 'auto' && !(await ask({ title: 'Send without approval?', body: 'New creators found each day are emailed by themselves, and everything waiting now is queued too. You can switch back any time.', ok: 'Switch to Auto' }))) return;
 		await save({ mode: m }, m === 'auto' ? 'Auto: emails go out by themselves' : 'Approve: emails wait for you');
 	}
+	// The search runs in the background (up to about two and a half minutes): the page checks every few seconds
+	// until that run has finished, then says what it found.
 	async function findNow() {
 		busy = 'find';
-		toast('Searching… this takes a minute or two.');
 		const { data, error } = await supabase.functions.invoke('growth-finder', { body: {} });
-		busy = '';
 		if (error) {
+			busy = '';
 			const ctx = (error as { context?: Response }).context;
 			const j = ctx ? await ctx.json().catch(() => null) : null;
 			return toast((j as R | null)?.error ?? errMessage(error), true);
 		}
 		const r = data as R;
-		const spent = r.engine === 'claude' && r.cost_usd ? ` · about $${Number(r.cost_usd).toFixed(2)} of Claude credit` : '';
-		toast((r.added ? `${r.added} creator${r.added === 1 ? '' : 's'} found` : r.skipped || r.error || 'Nothing new found') + spent, !r.added);
-		await load();
+		if (!r.started) {
+			busy = '';
+			await load();
+			return toast(r.skipped || r.error || (r.added ? `${r.added} found` : 'Nothing new found'), !r.added);
+		}
+		toast('Searching in the background. Results appear here in about two minutes.');
+		const until = Date.now() + 200_000;
+		while (Date.now() < until) {
+			await new Promise((ok) => setTimeout(ok, 8000));
+			await load();
+			const run = ((d?.runs ?? []) as R[]).find((x) => x.id === r.run);
+			if (run?.finished_at) {
+				busy = '';
+				const spent = run.engine === 'claude' && Number(run.cost_usd) ? ` · about $${Number(run.cost_usd).toFixed(2)} of Claude credit` : '';
+				return toast((run.added ? `${run.added} creator${run.added === 1 ? '' : 's'} found` : run.error || 'Nothing new found') + spent, !run.added);
+			}
+		}
+		busy = '';
+		toast('The search took too long and was stopped. Try again, or narrow the niches or cities.', true);
 	}
 	async function act(ids: string[], action: 'approve' | 'skip' | 'never') {
 		if (!ids.length) return;
@@ -178,7 +195,7 @@
 						{#each d.runs as r (r.id)}
 							<li>
 								<span class="mono muted">{ago(r.at)}</span>
-								<span class="rn">{r.added ? `${r.added} found` : 'none added'}{r.manual ? ' · by hand' : ''}{#if r.error}<small class="d">{r.error}</small>{/if}</span>
+								<span class="rn">{#if !r.finished_at && Date.now() - Date.parse(r.at) < 200_000}Searching…{:else if !r.finished_at}Stopped: took too long{:else}{r.added ? `${r.added} found` : 'none added'}{/if}{r.manual ? ' · by hand' : ''}{#if r.error}<small class="d">{r.error}</small>{/if}</span>
 								<span class="tag {r.engine === 'claude' ? 't-acc' : 't-mute'}">{r.engine === 'claude' ? 'Claude' : 'Gemini'}</span>
 								<span class="mono">{r.engine === 'claude' ? `$${Number(r.cost_usd).toFixed(2)}` : 'free'}</span>
 							</li>
