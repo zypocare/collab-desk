@@ -125,7 +125,7 @@
 	</div>
 	{#if error}<p class="su-err" role="alert">{error}</p>{/if}
 	<div class="su-row">
-		<button class="su-neo su-go" disabled={busy}>{busy ? 'Sending…' : request ? 'Send again for review' : 'Send for review'}</button>
+		<button class="su-neo su-go" disabled={busy}>{busy ? 'Setting up…' : request ? 'Send again' : 'Create my page'}</button>
 		<span class="su-hint">You can change all of this later in Settings.</span>
 	</div>
 </form>

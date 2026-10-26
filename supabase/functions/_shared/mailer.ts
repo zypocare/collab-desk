@@ -24,13 +24,17 @@ function sender(prefix: string, label: string): Sender | null {
 }
 
 const senders = [sender('SMTP', 'main'), sender('SMTP2', 'backup')].filter((s): s is Sender => s !== null);
+// The Growth Autopilot's invitations go from their own address when one is set up (GROWTH_SMTP_*), so the
+// app's own mail (quotes, invoices, sign-in codes) keeps its good name with inboxes.
+const growthSender = sender('GROWTH_SMTP', 'growth');
 
 export const mailConfigured = senders.length > 0;
 
-export async function sendMail(mail: Mail): Promise<void> {
-  if (!senders.length) throw new Error('SMTP is not configured (set SMTP_HOST).');
+export async function sendMail(mail: Mail, only?: Sender[]): Promise<void> {
+  const use = only ?? senders;
+  if (!use.length) throw new Error('SMTP is not configured (set SMTP_HOST).');
   const errors: string[] = [];
-  for (const s of senders) {
+  for (const s of use) {
     try {
       await s.transport.sendMail({
         from: { name: mail.fromName || s.fromName, address: s.fromAddress },
@@ -51,3 +55,6 @@ export async function sendMail(mail: Mail): Promise<void> {
   }
   throw new Error(errors.join(' | '));
 }
+
+/** A Growth Autopilot invitation: from its own address when there is one, else the app's. */
+export const sendGrowthMail = (mail: Mail) => sendMail(mail, growthSender ? [growthSender] : undefined);

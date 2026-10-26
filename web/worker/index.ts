@@ -47,32 +47,32 @@ export default {
 		try {
 			const kind = url.pathname.slice('/api/ai/'.length);
 			if (kind === 'status') return json(await status(req, env));
-			if (!['dm', 'reply', 'caption', 'pitch', 'classify', 'fit', 'summary', 'negotiate', 'script', 'nudge', 'ask', 'voice', 'embed', 'cheer', 'scout', 'reelcheck', 'growplan', 'checkup', 'offercheck', 'precheck', 'getfound', 'brandask', 'brandbrief', 'safety', 'helpask', 'compwatch', 'casestudy'].includes(kind)) return json({ error: 'Unknown.' }, 404);
+			if (!['dm', 'reply', 'caption', 'pitch', 'classify', 'fit', 'summary', 'negotiate', 'script', 'nudge', 'ask', 'voice', 'embed', 'cheer', 'scout', 'reelcheck', 'growplan', 'checkup', 'offercheck', 'precheck', 'getfound', 'brandask', 'brandbrief', 'safety', 'helpask', 'compwatch', 'casestudy', 'growthscout', 'growthmail'].includes(kind)) return json({ error: 'Unknown.' }, 404);
 			const body = (await req.json()) as Record<string, unknown>;
 			const job = (x: Run) =>
-				kind === 'cheer' ? cheer(x, body) : kind === 'scout' ? scout(x, body) : kind === 'dm' ? readDm(x, body) : kind === 'reply' ? replies(x, body) : kind === 'pitch' ? pitch(x, body) : kind === 'classify' ? classify(x, body) : kind === 'fit' ? fit(x, body) : kind === 'summary' ? summary(x, body) : kind === 'negotiate' ? creatorOf(req, env).then((me) => negotiate(x, body, me)) : kind === 'script' ? script(x, body) : kind === 'nudge' ? nudge(x, body) : kind === 'ask' ? creatorOf(req, env).then((me) => ask(x, body, me)) : kind === 'voice' ? voice(x, body) : kind === 'embed' ? embed(x, body) : kind === 'reelcheck' ? reelCheck(x, body) : kind === 'growplan' ? growPlan(x, body) : kind === 'checkup' ? checkup(x, body) : kind === 'safety' ? safety(x, body) : kind === 'helpask' ? helpAsk(x, body) : kind === 'compwatch' ? compWatch(x, body) : kind === 'casestudy' ? caseStudy(x, body) : kind === 'offercheck' ? offerCheck(x, body) : kind === 'precheck' ? preCheck(x, body) : kind === 'getfound' ? getFound(x, body) : kind === 'brandask' ? brandAsk(x, body) : kind === 'brandbrief' ? brandBrief(x, body) : creatorOf(req, env).then((me) => caption(x, body, me));
+				kind === 'cheer' ? cheer(x, body) : kind === 'scout' ? scout(x, body) : kind === 'dm' ? readDm(x, body) : kind === 'reply' ? replies(x, body) : kind === 'pitch' ? pitch(x, body) : kind === 'classify' ? classify(x, body) : kind === 'fit' ? fit(x, body) : kind === 'summary' ? summary(x, body) : kind === 'negotiate' ? creatorOf(req, env).then((me) => negotiate(x, body, me)) : kind === 'script' ? script(x, body) : kind === 'nudge' ? nudge(x, body) : kind === 'ask' ? creatorOf(req, env).then((me) => ask(x, body, me)) : kind === 'voice' ? voice(x, body) : kind === 'embed' ? embed(x, body) : kind === 'reelcheck' ? reelCheck(x, body) : kind === 'growplan' ? growPlan(x, body) : kind === 'checkup' ? checkup(x, body) : kind === 'safety' ? safety(x, body) : kind === 'helpask' ? helpAsk(x, body) : kind === 'compwatch' ? compWatch(x, body) : kind === 'casestudy' ? caseStudy(x, body) : kind === 'growthscout' ? growthScout(x, body) : kind === 'growthmail' ? growthMail(x, body) : kind === 'offercheck' ? offerCheck(x, body) : kind === 'precheck' ? preCheck(x, body) : kind === 'getfound' ? getFound(x, body) : kind === 'brandask' ? brandAsk(x, body) : kind === 'brandbrief' ? brandBrief(x, body) : creatorOf(req, env).then((me) => caption(x, body, me));
 
 			// Checking an incoming Instagram DM comes from the DM webhook with a single-use pass, and the
 			// hourly fun nudge from its job the same way. DMs stay on Cloudflare (never sent to Google);
 			// the fun nudges are written by Gemini first (wittier), Cloudflare if Gemini can't.
 			// The daily pitch finder comes the same way for finding brands (Gemini with Google Search) and
 			// writing their pitches (Gemini first).
-			if (kind === 'classify' || kind === 'cheer' || kind === 'scout' || kind === 'compwatch' || ((kind === 'pitch' || kind === 'checkup' || kind === 'safety') && req.headers.get('x-ai-ticket'))) {
+			if (kind === 'classify' || kind === 'cheer' || kind === 'scout' || kind === 'compwatch' || kind === 'growthscout' || kind === 'growthmail' || ((kind === 'pitch' || kind === 'checkup' || kind === 'safety') && req.headers.get('x-ai-ticket'))) {
 				const allowed = await takeTicket(req, env, kind);
 				if (allowed !== true) return json({ error: allowed }, 403);
 				let why = env.GEMINI_API_KEY ? '' : 'no Gemini key';
-				if ((kind === 'cheer' || kind === 'scout' || kind === 'compwatch') && env.GEMINI_API_KEY) {
+				if ((kind === 'cheer' || kind === 'scout' || kind === 'compwatch' || kind === 'growthscout') && env.GEMINI_API_KEY) {
 					try {
 						return json({ ...(await job({ env, gemini: true, neurons: 0 })), by: 'gemini' });
 					} catch (e) {
 						// Which key Cloudflare holds, by its last four characters and length only (as AI Studio shows it).
 						const k = (env.GEMINI_API_KEY ?? '').trim().replace(/^["']+|["']+$/g, '');
-						why = `${String((e as Error)?.message ?? e).slice(0, kind === 'scout' ? 1200 : 140)} (key …${k.slice(-4)}, ${k.length} characters)`;
+						why = `${String((e as Error)?.message ?? e).slice(0, kind === 'scout' || kind === 'growthscout' ? 1200 : 140)} (key …${k.slice(-4)}, ${k.length} characters)`;
 						// Finding brands only works with Gemini (it searches Google): say what went wrong.
 					}
 				}
 				// Pitches: Cloudflare first (Gemini's small free allowance stays for the nudges and the brand search).
-				if (kind === 'pitch' && env.GEMINI_API_KEY) {
+				if ((kind === 'pitch' || kind === 'growthmail') && env.GEMINI_API_KEY) {
 					try {
 						return json({ ...(await job({ env, gemini: false, neurons: 0 })), by: 'cloudflare' });
 					} catch {
@@ -461,6 +461,70 @@ Return ONLY JSON: {"subject": "...", "body": "..."} (body is plain text with bla
 	// An empty or cut-off answer counts as no answer (the server's run then tries the other AI).
 	if (!subject || text.length < 60) throw new Error(`No clear answer from the AI: ${reply.replace(/\s+/g, ' ').slice(0, 160)}`);
 	return { subject, body: text };
+}
+
+// ---------- 4b. Growth Autopilot: creators for Miracle to invite, and the email to each ----------
+// Gemini with Google Search finds Indian creators who show a business email on a public page; the server
+// job then opens that page and keeps only emails it can see there itself.
+async function growthScout(x: Run, b: Record<string, unknown>) {
+	if (!x.gemini) throw new Error('Finding creators needs Gemini with Google Search.');
+	const n = Math.min(20, Math.max(1, Math.round(Number(b.count) || 12)));
+	const list = (v: unknown) => (Array.isArray(v) ? v : []).map((t) => String(t ?? '').trim().slice(0, 40)).filter(Boolean);
+	const niches = list(b.niches), cities = list(b.cities);
+	const skip = list(b.exclude).slice(0, 300);
+	const min = Number(b.min_followers) || 5000, max = Number(b.max_followers) || 100000;
+	const system = `You find Indian Instagram creators to invite to Miracle, a free tool for creators' brand deals (rate card page, quotes, invoices, payment reminders). Use Google Search.
+Find ${n} real, active Indian Instagram creators who:
+- post about ${niches.length ? niches.join(', ') : 'fashion, beauty, food, travel, lifestyle or fitness'}${cities.length ? `, based in or around ${cities.join(', ')}` : ', anywhere in India'};
+- have roughly ${min.toLocaleString('en-IN')} to ${max.toLocaleString('en-IN')} followers (micro and mid creators, not celebrities);
+- do brand collaborations, and publish a business or collaboration email on a public web page you can see in search results: their own website, a media kit, a link-in-bio page, a creator directory or an article. Not just in the Instagram bio.
+Never include anyone in the exclude list, and no duplicates. Never invent a person, a handle or an email: only what you saw in the search results.
+For each give: "name", "handle" (Instagram, without @), "email" (exactly as published), "email_source" (the https:// page where that email is shown, not instagram.com), "website" (their own site or link page, or ""), "niche", "city", "followers" (a number, your best estimate), "why" (one line, under 18 words, about their content).
+Return ONLY a JSON array of objects, nothing else.`;
+	const user = `Exclude (already known): ${skip.join(', ') || 'none'}`;
+	let reply = '';
+	try {
+		reply = await gemini(x.env, system, user, 5000, 0.7, true);
+	} catch (e) {
+		throw new Error(`Google Search with Gemini failed: ${String((e as Error)?.message ?? e).slice(0, 300)}`);
+	}
+	const a = reply.indexOf('['), z = reply.lastIndexOf(']');
+	let raw: Record<string, unknown>[] = [];
+	try {
+		raw = a >= 0 && z > a ? (JSON.parse(reply.slice(a, z + 1)) as Record<string, unknown>[]) : [];
+	} catch {
+		raw = [];
+	}
+	const creators = raw
+		.map((r) => ({
+			name: String(r.name ?? '').trim().slice(0, 80),
+			handle: String(r.handle ?? '').replace(/^@+/, '').trim().toLowerCase().slice(0, 30),
+			email: String(r.email ?? '').trim().toLowerCase().slice(0, 120),
+			email_source: String(r.email_source ?? '').trim().slice(0, 300),
+			website: String(r.website ?? '').trim().slice(0, 300),
+			niche: String(r.niche ?? '').trim().slice(0, 60),
+			city: String(r.city ?? '').trim().slice(0, 60),
+			followers: Math.round(Number(r.followers) || 0) || null,
+			why: String(r.why ?? '').trim().slice(0, 160)
+		}))
+		.filter((r) => r.name && /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/.test(r.email));
+	if (!creators.length) throw new Error(`No creators came back: ${reply.replace(/\s+/g, ' ').slice(0, 160)}`);
+	return { creators };
+}
+
+async function growthMail(x: Run, b: Record<string, unknown>) {
+	const reply = await chat(
+		x,
+		`You write a short, personal first email from the Miracle team to an Indian Instagram creator, inviting them to try Miracle. Miracle is free for creators: a brand page with their rate card and live Instagram numbers that brands book from, quotes brands accept online, GST-ready invoices with a UPI QR, and reminders that chase late payments. Brands pay creators directly; Miracle never takes a commission.
+Write like a person, not a marketer: 70 to 110 words, warm and specific. Open with one genuine line about their content (only from the facts given; never invent numbers, brands or posts). Then one or two lines on what Miracle saves them (chasing payments, sending rates, invoices). Mention the offer if one is given. End with a soft question. Do NOT include any link, sign-off name or unsubscribe line (they are added after). Plain text, blank lines between paragraphs. Address them by first name.
+Return ONLY JSON: {"subject": "under 8 words, lowercase-friendly, no emojis, no clickbait", "body": "..."}`,
+		JSON.stringify(b).slice(0, 2000),
+		1400
+	);
+	const j = firstJson(reply) ?? {};
+	const subject = String(j.subject ?? '').trim(), text = String(j.body ?? '').trim();
+	if (!subject || text.length < 60) throw new Error(`No clear answer from the AI: ${reply.replace(/\s+/g, ' ').slice(0, 160)}`);
+	return { subject: subject.slice(0, 120), body: text.slice(0, 1500) };
 }
 
 // ---------- 5. Does an Instagram DM look like a brand collaboration? ----------

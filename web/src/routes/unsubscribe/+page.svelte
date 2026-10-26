@@ -6,10 +6,15 @@
 	import Logo from '#lib/components/Logo.svelte';
 
 	// "Leave this list" from a creator's email to her fans: one tap, no sign-in. The link carries a token
-	// that only that email had.
-	let step = $state<'working' | 'done' | 'unknown'>('working');
+	// that only that email had. ?g= is an invitation from Miracle itself (the Growth Autopilot).
+	let step = $state<'working' | 'done' | 'unknown' | 'miracle'>('working');
 	let who = $state('');
 	onMount(async () => {
+		const g = page.url.searchParams.get('g') ?? '';
+		if (g) {
+			const { data } = await supabase.rpc('growth_unsubscribe', { p_token: g });
+			return (step = (data as { ok?: boolean } | null)?.ok ? 'miracle' : 'unknown');
+		}
 		const t = page.url.searchParams.get('t') ?? '';
 		if (!/^[0-9a-f-]{36}$/i.test(t)) return (step = 'unknown');
 		const { data } = await supabase.rpc('fan_unsubscribe', { p_token: t });
@@ -29,6 +34,9 @@
 		<Logo size={34} />
 		{#if step === 'working'}
 			<p>One moment…</p>
+		{:else if step === 'miracle'}
+			<h1>You won't hear from us <em>again</em></h1>
+			<p>Sorry for the bother. Miracle won't email you again. If you ever want a free page for your brand deals, it's at miracleapp.live.</p>
 		{:else if step === 'done'}
 			<h1>You've left {who ? `${who}'s` : 'the'} <em>list</em></h1>
 			<p>You won't get these emails any more. You can join again from {who ? `${who}'s` : 'the'} page any time.</p>

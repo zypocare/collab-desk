@@ -22,7 +22,7 @@ export const LANDING = [
 			['Proof that wins the next deal', 'A week after a post goes live, a results report with Instagram’s own numbers goes to the brand in one tap. Reviews from brands show on your page.', true],
 			['Never miss an enquiry', 'Requests from your page, email and Instagram DMs land in one place, with a phone alert. Away for a while? Brands are told when you’re back.']
 		],
-		steps: ['Hold your page address on the waitlist (yourname.miracleapp.live).', 'Connect Instagram so brands see your real reach and audience.', 'Add two or three packages, like a reel, or a reel with stories.', 'Put the link in your bio, and switch on the pitch autopilot.'],
+		steps: ['Sign up free and pick your page address (yourname.miracleapp.live).', 'Connect Instagram so brands see your real reach and audience.', 'Add two or three packages, like a reel, or a reel with stories.', 'Put the link in your bio, and switch on the pitch autopilot.'],
 		faq: [
 			['How many followers do I need to get brand deals?', 'There’s no minimum. Brands book nano and micro creators (from a few thousand followers) for their trust and engagement. What matters most is a clear niche, steady reach and a page that makes booking easy.'],
 			['Does Miracle take a cut of my deals?', 'No. Brands pay you directly by UPI or bank transfer and Miracle takes no commission, on any plan.'],
@@ -277,7 +277,7 @@ export const LANDING = [
 			['Client workspaces', 'Working inside several brands’ teams? Each is its own workspace, and no client ever sees another’s requests or money.'],
 			['Turnaround clocks', 'An owner and a deadline for every reply, quote, draft and payment, with escalation before a client notices.', 'agency']
 		],
-		steps: ['Join the waitlist as an agency.', 'Ask each creator to add you as their manager.', 'Join your brand clients’ teams, or bring your own.', 'Set your commission and turnaround targets.'],
+		steps: ['Sign up free as an agency.', 'Ask each creator to add you as their manager.', 'Join your brand clients’ teams, or bring your own.', 'Set your commission and turnaround targets.'],
 		faq: [
 			['How much is the Agency plan?', '₹4,999 a month, or ₹49,999 a year (founding members pay ₹24,999 a year). It includes Pro for every creator you manage, your own brand team and 15 seats. [See pricing](/pricing).'],
 			['Does Miracle take a share of our commission?', 'No. Brands pay creators directly, you settle your commission with your creators as you do today, and Miracle only keeps the ledger.'],

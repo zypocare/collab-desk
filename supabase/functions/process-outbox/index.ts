@@ -2,7 +2,7 @@
 // Called by the database (trigger right after an email is queued, plus a cron retry every 5 minutes).
 // It is not public: callers must send the shared secret in the x-cron-secret header.
 import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2';
-import { mailConfigured, sendMail } from '../_shared/mailer.ts';
+import { mailConfigured, sendGrowthMail, sendMail } from '../_shared/mailer.ts';
 import { render, type Settings as MailSettings } from '../_shared/templates.ts';
 import { pushFor, pushForBrand, pushToBrandUser, pushToCreator } from '../_shared/push.ts';
 import { settingsOf, teamCopies, type Settings } from '../_shared/creators.ts';
@@ -12,7 +12,7 @@ import { planInvoicePdf, type PlanInvoice } from '../_shared/planInvoicePdf.ts';
 // Alerts only: a brand opening her insights link.
 const PUSH_ONLY = new Set(['insights_viewed', 'ig_dm', 'ig_collab', 'month_summary', 'comment_dm']);
 // Mails to a brand that come from the app itself, so replies don't go to the creator.
-const FROM_APP = new Set(['brief_application', 'brief_digest', 'support_reply', 'tat_overdue', 'tat_escalated', 'plan_receipt', 'plan_ending', 'plan_ended', 'waitlist_welcome', 'invite_reward']);
+const FROM_APP = new Set(['brief_application', 'brief_digest', 'support_reply', 'tat_overdue', 'tat_escalated', 'plan_receipt', 'plan_ending', 'plan_ended', 'waitlist_welcome', 'invite_reward', 'growth_invite']);
 // Miracle's support inbox: replies to support mail go there, and the team's ticket mail comes there.
 const SUPPORT_INBOX = Deno.env.get('SUPPORT_EMAIL') ?? 'support@miracleapp.live';
 
@@ -133,7 +133,7 @@ Deno.serve(async (req) => {
       // Every mail comes from "Miracle"; replies from anyone but her reach her inbox
       // (not the open-brief mails to a brand: those are from the app, not from the creator who applied).
       const toOwner = String(row.to_email).toLowerCase() === ownerEmail;
-      await sendMail({
+      await (row.kind === 'growth_invite' ? sendGrowthMail : sendMail)({
         attachments,
         to: row.to_email,
         cc: toOwner && row.kind !== 'new_device' && !row.kind.startsWith('support_') ? teamCc : undefined,
@@ -142,6 +142,8 @@ Deno.serve(async (req) => {
         // Support: a reply to the person comes back to the support inbox; a ticket in the support inbox
         // answers straight to the person who raised it.
         ...(row.kind === 'support_reply' ? { replyTo: SUPPORT_INBOX } : (row.kind === 'support_new' || row.kind === 'support_user_reply') && p.email ? { replyTo: String(p.email) } : {}),
+        // A Growth Autopilot invitation: from a person's name, replies to the support inbox, one-tap unsubscribe.
+        ...(row.kind === 'growth_invite' ? { fromName: String(p.sender_name || 'Team Miracle'), replyTo: String(p.reply_to || SUPPORT_INBOX), headers: { 'List-Unsubscribe': `<${String(p.unsubscribe ?? '')}>` } } : {}),
       });
       await supabase.from('outbox').update({ status: 'sent', sent_at: new Date().toISOString(), last_error: null }).eq('id', row.id);
       sent++;

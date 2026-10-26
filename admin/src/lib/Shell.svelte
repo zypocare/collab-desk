@@ -26,6 +26,7 @@
 	import PlansPage from './crm/PlansPage.svelte';
 	import InvoicesPage from './crm/InvoicesPage.svelte';
 	import WaitlistPage from './crm/WaitlistPage.svelte';
+	import GrowthPage from './crm/GrowthPage.svelte';
 
 	let { email, onsignout }: { email: string; onsignout: () => void } = $props();
 
@@ -80,6 +81,7 @@
 		{
 			label: 'Growth',
 			items: [
+				{ id: 'growth', label: 'Growth Autopilot', icon: 'send' },
 				{ id: 'waitlist', label: 'Waitlist', icon: 'clock' },
 				{ id: 'directory', label: 'Directory', icon: 'users' },
 				{ id: 'cases', label: 'Case studies', icon: 'note' },
@@ -210,6 +212,8 @@
 				<PlansPage />
 			{:else if route.section === 'plan-invoices'}
 				<InvoicesPage />
+			{:else if route.section === 'growth'}
+				<GrowthPage />
 			{:else if route.section === 'waitlist'}
 				<WaitlistPage />
 			{:else if route.section === 'controls'}

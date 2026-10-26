@@ -113,3 +113,6 @@ select id, received_on::timestamptz + interval '10 hours', 'stage', 'Request rec
 
 -- The outbox trigger is not useful for sample data.
 delete from public.outbox;
+
+-- Tests keep approving creators by hand (live approves new sign-ups straight away: Growth Autopilot, migration 163).
+update public.growth_settings set auto_approve = false where id = 1;

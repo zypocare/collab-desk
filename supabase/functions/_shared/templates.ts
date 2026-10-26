@@ -603,6 +603,34 @@ Every friend who joins with your link moves you up: ${share}
 Waitlist members get first access to the 100 founding places (half price yearly). Pricing: https://www.miracleapp.live/pricing`,
     };
   }
+  // ---------------------------------------------------------------- Growth Autopilot: an invitation from Miracle
+  // Written like a person's email, not a newsletter: plain text, and the plainest HTML.
+  if (kind === 'growth_invite') {
+    const first = String(p.name ?? '').trim().split(/\s+/)[0] || 'there';
+    const link = String(p.link ?? 'https://app.miracleapp.live/signup?as=creator');
+    const unsub = String(p.unsubscribe ?? '');
+    const from = String(p.sender_name ?? 'Team Miracle');
+    const site = (() => {
+      try {
+        return new URL(String(p.source ?? '')).hostname.replace(/^www\./, '');
+      } catch {
+        return '';
+      }
+    })();
+    const body = p.follow
+      ? `Hi ${first},\n\nJust bringing this back up in case it got buried. Miracle gives you a page brands book you from, invoices with a UPI QR, and reminders that chase payments for you, free.\n\nIt takes two minutes to set up.`
+      : String(p.body ?? '').trim();
+    const foot = `You're getting this ${p.follow ? 'note' : 'one-off email'} because your business email is public${site ? ` on ${site}` : ''}.${unsub ? ` Not interested? Unsubscribe: ${unsub}` : ''}`;
+    const text = `${body}\n\nYour free page: ${link}\n\n${from}\nMiracle · miracleapp.live\n\n--\n${foot}`;
+    const para = (t: string) => `<p style="margin:0 0 14px">${esc(t).replace(/\n/g, '<br>')}</p>`;
+    const html = `<div style="font:15px/1.55 -apple-system,Segoe UI,Roboto,Arial,sans-serif;color:#1f171c;max-width:560px">
+${body.split(/\n{2,}/).map(para).join('\n')}
+<p style="margin:0 0 14px"><a href="${esc(link)}" style="color:#c8255e;font-weight:600">Get your free page</a></p>
+<p style="margin:0 0 22px">${esc(from)}<br><span style="color:#6b6168">Miracle · miracleapp.live</span></p>
+<p style="margin:0;font-size:12px;color:#8a7f87">You're getting this ${p.follow ? 'note' : 'one-off email'} because your business email is public${site ? ` on ${esc(site)}` : ''}.${unsub ? ` Not interested? <a href="${esc(unsub)}" style="color:#8a7f87">Unsubscribe</a>.` : ''}</p>
+</div>`;
+    return { subject: String(p.subject ?? 'your brand deals, simpler'), html, text };
+  }
   // ---------------------------------------------------------------- invite and earn
   if (kind === 'invite_reward') {
     const who = String(p.who ?? '') || (p.as === 'brand' ? 'A brand you invited' : 'A creator you invited');

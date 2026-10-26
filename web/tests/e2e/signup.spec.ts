@@ -33,7 +33,8 @@ test('a creator signs up and waits for review', async ({ page }) => {
 	await page.fill('#cf-city', 'Bengaluru');
 	await page.click('button.su-chip:has-text("Travel")');
 	await page.selectOption('#cf-f', 'Under 10K');
-	await page.click('button:has-text("Send for review")');
+	await page.click('button:has-text("Create my page")');
+	// (The test database approves by hand; live approves straight away, migration 163.)
 	await expect(page.getByText('is in.')).toBeVisible();
 	noErrors();
 });

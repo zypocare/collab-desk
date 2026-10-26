@@ -3,6 +3,8 @@
 -- dashboard and the logged People actions. Runs in one transaction and rolls back.
 \set ON_ERROR_STOP 1
 begin;
+-- These checks are for approving creators by hand (migration 163 can approve them straight away).
+update public.growth_settings set auto_approve = false where id = 1;
 
 create temp table results (check_name text, ok boolean, detail text) on commit drop;
 grant all on results to authenticated, anon;

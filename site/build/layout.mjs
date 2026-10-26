@@ -7,7 +7,7 @@ export const SITE = 'https://www.miracleapp.live';
 export const APP = 'https://app.miracleapp.live';
 // Before launch (Meta's review and the Play Store), every Join goes to the waitlist. At launch, point these back to
 // `${APP}/signup?as=creator` and `${APP}/signup?as=brand`.
-export const PRELAUNCH = true;
+export const PRELAUNCH = false;
 export const JOIN = PRELAUNCH ? '/waitlist?as=creator' : `${APP}/signup?as=creator`;
 export const JOIN_BRAND = PRELAUNCH ? '/waitlist?as=brand' : `${APP}/signup?as=brand`;
 export const JOIN_AGENCY = PRELAUNCH ? '/waitlist?as=agency' : `${APP}/signup?as=brand`;

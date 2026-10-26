@@ -12,6 +12,7 @@
 	import ChooseLink from './ChooseLink.svelte';
 	import { isNative } from '#lib/native.ts';
 	import { keepInvite } from '#lib/invite.ts';
+	import { supabase } from '#lib/supabase.ts';
 	import './signup.css';
 
 	// Sign-up on Miracle's own address (app.miracleapp.live/signup), linked from every Join button on the website.
@@ -29,6 +30,9 @@
 		}
 	// Opened from a creator's invite (her page, invoice or quote): she's thanked once they've joined.
 	keepInvite(page.url.searchParams.get('invite'));
+	// Opened from a Growth Autopilot email: the admin panel sees it was clicked.
+	const g = page.url.searchParams.get('g');
+	if (g && /^[0-9a-f]{32}$/.test(g)) supabase.rpc('growth_seen', { p_token: g }).then(() => {});
 	const chosen = asked === 'brand' || asked === 'creator';
 	let as = $state<'creator' | 'brand'>(chosen ? asked : stored());
 	// In the phone app or the installed web app, the logo stays here instead of opening the website inside it.
