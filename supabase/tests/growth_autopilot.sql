@@ -97,5 +97,17 @@ insert into results select 'Switching to auto queues what was waiting, and the s
   :'g1'::jsonb -> 'settings' ->> 'niches';
 insert into results select 'The panel counts what happened', (:'g1'::jsonb -> 'counts' ->> 'joined')::int = 1 and (:'g1'::jsonb -> 'counts' ->> 'unsubscribed')::int = 1 and (:'g1'::jsonb -> 'counts' ->> 'clicked')::int = 1, :'g1'::jsonb ->> 'counts';
 
+-- Each search is kept, with what Claude cost this month (migration 164).
+insert into public.growth_runs (engine, added, cost_usd) values ('claude', 4, 0.42), ('claude', 0, 0.18), ('gemini', 2, 0);
+insert into public.growth_runs (engine, added, cost_usd, at) values ('claude', 5, 9.99, now() - interval '40 days');
+set local role authenticated;
+select public.admin_growth() as g2 \gset
+reset role;
+insert into results select 'The panel shows the last runs and this month''s Claude cost', (:'g2'::jsonb ->> 'month_cost')::numeric = 0.60 and jsonb_array_length(:'g2'::jsonb -> 'runs') = 4, :'g2'::jsonb ->> 'month_cost';
+set local role authenticated;
+do $$ begin perform count(*) from public.growth_runs; exception when others then insert into caught values ('runs', sqlerrm); end $$;
+reset role;
+insert into results select 'Nobody reads the runs table directly', exists (select 1 from caught where k = 'runs' and msg like '%permission denied%'), (select msg from caught where k = 'runs');
+
 select case when ok then 'PASS' else 'FAIL' end, check_name, coalesce(detail, '') from results;
 rollback;

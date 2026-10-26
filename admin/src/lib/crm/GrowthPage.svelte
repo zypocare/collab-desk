@@ -65,7 +65,8 @@
 			return toast((j as R | null)?.error ?? errMessage(error), true);
 		}
 		const r = data as R;
-		toast(r.added ? `${r.added} creator${r.added === 1 ? '' : 's'} found` : r.skipped || r.error || 'Nothing new found', !r.added);
+		const spent = r.engine === 'claude' && r.cost_usd ? ` · about $${Number(r.cost_usd).toFixed(2)} of Claude credit` : '';
+		toast((r.added ? `${r.added} creator${r.added === 1 ? '' : 's'} found` : r.skipped || r.error || 'Nothing new found') + spent, !r.added);
 		await load();
 	}
 	async function act(ids: string[], action: 'approve' | 'skip' | 'never') {
@@ -90,6 +91,7 @@
 	}
 
 	const s = $derived(d?.settings ?? {});
+	const lastEngine = $derived(((d?.runs ?? []) as R[])[0]?.engine ?? '');
 	const c = $derived(d?.counts ?? {});
 	const TABS = [['ready', 'Waiting for you'], ['approved', 'Queued'], ['sent', 'Sent'], ['joined', 'Joined'], ['other', 'Skipped · unsubscribed']] as const;
 	const inTab = (r: R, t: string) => (t === 'sent' ? r.status === 'sent' || r.status === 'followed' : t === 'other' ? r.status === 'skipped' || r.status === 'unsubscribed' : r.status === t);
@@ -159,6 +161,7 @@
 		</section>
 
 		<div class="two">
+			<div class="col">
 			<section class="card">
 				<div class="card-h"><h2 class="card-t">Sent by day</h2><span class="muted sm">last 30 days · green: signed up</span></div>
 				<div class="chart" role="img" aria-label="Invitations sent per day for the last 30 days">
@@ -166,6 +169,24 @@
 				</div>
 				<div class="axis muted"><span>{day(days[0].day)}</span><span>today</span></div>
 			</section>
+			<section class="card">
+				<div class="card-h"><h2 class="card-t">Last searches</h2><span class="muted sm">{lastEngine === 'claude' ? 'Claude Opus 5.5' : lastEngine === 'gemini' ? 'Gemini' : ''}{d.month_cost ? ` · about $${Number(d.month_cost).toFixed(2)} of Claude credit this month` : ''}</span></div>
+				{#if !(d.runs ?? []).length}
+					<div class="card-empty">No searches yet.</div>
+				{:else}
+					<ul class="runs">
+						{#each d.runs as r (r.id)}
+							<li>
+								<span class="mono muted">{ago(r.at)}</span>
+								<span class="rn">{r.added ? `${r.added} found` : 'none added'}{r.manual ? ' · by hand' : ''}{#if r.error}<small class="d">{r.error}</small>{/if}</span>
+								<span class="tag {r.engine === 'claude' ? 't-acc' : 't-mute'}">{r.engine === 'claude' ? 'Claude' : 'Gemini'}</span>
+								<span class="mono">{r.engine === 'claude' ? `$${Number(r.cost_usd).toFixed(2)}` : 'free'}</span>
+							</li>
+						{/each}
+					</ul>
+				{/if}
+			</section>
+			</div>
 			<form class="card set" onsubmit={saveForm}>
 				<div class="card-h"><h2 class="card-t">Who to find, and how to write</h2></div>
 				<div class="fields">
@@ -268,6 +289,12 @@
 	.chart .b { position: relative; flex: 1; background: var(--accent); border-radius: 2px 2px 0 0; min-width: 3px; opacity: .85; overflow: hidden; }
 	.chart .b i { position: absolute; left: 0; right: 0; bottom: 0; background: #2c7a45; }
 	.axis { display: flex; justify-content: space-between; padding: 0 16px 12px; font-size: 11.5px; }
+	.col { display: grid; gap: 16px; }
+	.runs { list-style: none; margin: 0; padding: 4px 16px 10px; }
+	.runs li { display: grid; grid-template-columns: 76px 1fr auto 52px; gap: 10px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--line-soft); font-size: 13px; }
+	.runs li:last-child { border-bottom: 0; }
+	.runs .rn { min-width: 0; }
+	.runs .mono:last-child { text-align: right; }
 	.set { padding-bottom: 14px; }
 	.fields { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 12px; padding: 4px 16px 10px; }
 	.fields label { display: grid; gap: 4px; font-size: 12.5px; color: var(--ink-2); }
