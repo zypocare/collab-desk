@@ -346,13 +346,13 @@ async function ai<T>(db: Db, site: string, kind: string, payload: Record<string,
   }
 }
 
-/** From 10 AM (or now, if later) a few minutes apart: the order they go out in. */
+/** From 10 AM (or now, if later), 2 minutes apart (the sending job runs every 2 minutes): the order they go out in. */
 function sendTimes(n: number) {
   const out: string[] = [];
-  let t = Math.max(Date.now() + 10 * 60e3, Date.parse(`${todayIST()}T10:00:00+05:30`));
+  let t = Math.max(Date.now() + 2 * 60e3, Date.parse(`${todayIST()}T10:00:00+05:30`));
   for (let i = 0; i < n; i++) {
     out.push(new Date(t).toISOString());
-    t += 20 * 60e3;
+    t += 2 * 60e3;
   }
   return out;
 }
