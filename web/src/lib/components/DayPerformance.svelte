@@ -11,7 +11,7 @@
 	const max = $derived(Math.max(1, ...performance.weekdays.map((d) => d.typical ?? 0)));
 	const metric = $derived(performance.metric ?? 'views');
 	const windowMax = $derived(Math.max(1, ...day.windows.map((w) => w.typical)));
-	const tones = ['var(--g3)', 'var(--g1)', 'var(--g2)', 'var(--m2)', 'var(--m3)', 'var(--g2)', 'var(--g1)'];
+	const tones = ['var(--g3)', 'var(--g1)', 'var(--g2)', 'var(--g3)', 'var(--g1)', 'var(--g2)', 'var(--g1)'];
 </script>
 
 <section class="wdp" id="growth-day-performance" aria-labelledby="weekday-performance-title">

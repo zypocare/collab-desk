@@ -44,7 +44,7 @@
 		const lo = Math.min(...v), hi = Math.max(...v), span = hi - lo || 1;
 		return v.map((y, i) => `${i ? 'L' : 'M'}${((i / (v.length - 1)) * 400).toFixed(1)} ${(64 - ((y - lo) / span) * 54).toFixed(1)}`).join(' ');
 	});
-	const thumb = (u: string, i: number) => (u ? `background-image:url("${u}")` : `background:linear-gradient(160deg,var(--m${(i % 6) + 1}),#1c151c)`);
+	const thumb = (u: string, i: number) => (u ? `background-image:url("${u}")` : `background:linear-gradient(160deg,var(--g${(i % 3) + 1}),var(--hero))`);
 	const cap = (c: string | null | undefined, n = 44) => (c || 'Reel').split('\n')[0].slice(0, n);
 	const boostText = $derived(boost ? `Boost: ${cap(boost.m.caption, 60)}\nAudience: ${aud.text || 'my followers’ cities and ages'}\nBudget: ₹${budget} a day for 3 days\nGoal: more profile visits` : '');
 	async function boostIt() {
@@ -279,14 +279,14 @@
 		padding: 4px 10px 4px 6px;
 		border-radius: 99px;
 		background: color-mix(in oklab, var(--ok) 22%, transparent);
-		color: color-mix(in oklab, var(--ok) 70%, #fff);
+		color: color-mix(in oklab, var(--ok) 70%, var(--hero-ink));
 		font-size: 13px;
 		font-weight: 700;
 		font-variant-numeric: tabular-nums;
 	}
 	.pg-gain.down {
 		background: color-mix(in oklab, var(--bad) 22%, transparent);
-		color: color-mix(in oklab, var(--bad) 70%, #fff);
+		color: color-mix(in oklab, var(--bad) 70%, var(--hero-ink));
 	}
 	.pg-gain :global(.ic) {
 		width: 15px;
@@ -342,7 +342,7 @@
 	}
 	.pg-stats i.ok {
 		opacity: 1;
-		color: color-mix(in oklab, var(--ok) 70%, #fff);
+		color: color-mix(in oklab, var(--ok) 70%, var(--hero-ink));
 	}
 	/* Tools */
 	.pg-tools {
@@ -469,7 +469,7 @@
 		align-items: baseline;
 		gap: 8px;
 		padding: 14px 16px 12px;
-		background: linear-gradient(115deg, color-mix(in oklab, var(--g1) 55%, #1c121a), color-mix(in oklab, var(--g2) 55%, #1c121a));
+		background: linear-gradient(115deg, color-mix(in oklab, var(--g1) 55%, var(--hero)), color-mix(in oklab, var(--g2) 55%, var(--hero)));
 		color: #fff;
 	}
 	.pg-stub b {
@@ -836,8 +836,8 @@
 	.pg { gap: 26px; }
 	.pg .pg-hero {
 		position: relative; isolation: isolate; overflow: hidden; border-radius: 28px;
-		border: 1px solid color-mix(in oklab, var(--g1) 40%, transparent); color: #fff;
-		background: radial-gradient(100% 110% at 0% 0%, color-mix(in oklab, var(--g2) 40%, transparent), transparent 65%), radial-gradient(90% 120% at 110% 70%, color-mix(in oklab, var(--g1) 52%, transparent), transparent 70%), linear-gradient(140deg, #29132a, #160f22);
+		border: 1px solid color-mix(in oklab, var(--g1) 40%, transparent); color: var(--hero-ink);
+		background: radial-gradient(100% 110% at 0% 0%, color-mix(in oklab, var(--g2) 40%, transparent), transparent 65%), radial-gradient(90% 120% at 110% 70%, color-mix(in oklab, var(--g1) 52%, transparent), transparent 70%), linear-gradient(140deg, color-mix(in oklab, var(--g2) 10%, var(--hero)), var(--hero));
 		box-shadow: 0 14px 36px -26px color-mix(in oklab, var(--g2) 85%, transparent);
 	}
 	.pg-h-in { padding: 22px 20px 18px; }
@@ -846,17 +846,17 @@
 	.pg-orbit { position: absolute; z-index: 1; top: 48px; right: 18px; width: 86px; height: 86px; display: grid; place-items: center; pointer-events: none; }
 	.pg-orbit span { position: absolute; inset: 0; border-radius: 50%; background: conic-gradient(from 0deg, var(--g1), transparent 27%, var(--g2) 50%, var(--g3) 72%, transparent 90%, var(--g1)); mask: radial-gradient(closest-side, transparent calc(100% - 2px), #000 calc(100% - 1px)); animation: pg-orbit-turn 24s linear infinite; }
 	.pg-orbit i { position: absolute; inset: 10px; border: 1px solid rgba(255, 255, 255, .16); border-radius: 50%; background: radial-gradient(circle at 30% 30%, color-mix(in oklab, var(--g2) 35%, transparent), color-mix(in oklab, var(--g1) 20%, transparent)); box-shadow: 0 0 30px -10px var(--g1); }
-	.pg-orbit :global(svg) { position: relative; width: 28px; height: 28px; color: #ffe0ed; }
+	.pg-orbit :global(svg) { position: relative; width: 28px; height: 28px; color: var(--hero-ink); }
 	.pg-line { height: 58px; }
 	.pg-fill { fill: url(#grow-chart-fill); }
-	.pg-stroke { stroke: #ff9cc6; stroke-width: 2.5; filter: drop-shadow(0 0 5px color-mix(in oklab, var(--g2) 75%, transparent)); stroke-dasharray: 1; animation: pg-line-draw 1.2s ease-out both; }
+	.pg-stroke { stroke: var(--g2); stroke-width: 2.5; filter: drop-shadow(0 0 5px color-mix(in oklab, var(--g2) 75%, transparent)); stroke-dasharray: 1; animation: pg-line-draw 1.2s ease-out both; }
 	.pg-stats { border: 1px solid rgba(255, 255, 255, .12); border-radius: 16px; background: rgba(255, 255, 255, .05); }
 	.pg-stats span { padding: 12px; }
 	.pg-stats span + span { padding-left: 12px; }
 	.pg-stats small { opacity: .8; }
-	.pg-stats b { margin-top: 2px; color: #ffe2ce; font-size: 26px; }
-	.pg-stats span:nth-child(2) b { color: #ffc5e0; }
-	.pg-stats span:nth-child(3) b { color: #d6caff; }
+	.pg-stats b { margin-top: 2px; color: color-mix(in oklab, var(--g3) 55%, var(--hero-ink)); font-size: 26px; }
+	.pg-stats span:nth-child(2) b { color: color-mix(in oklab, var(--g2) 45%, var(--hero-ink)); }
+	.pg-stats span:nth-child(3) b { color: color-mix(in oklab, var(--g1) 45%, var(--hero-ink)); }
 	.pg-tool { border-radius: 21px; border: 1px solid color-mix(in oklab, var(--hue) 28%, var(--line)); background: radial-gradient(130% 120% at 100% 0%, color-mix(in oklab, var(--hue) 27%, transparent), transparent 70%), var(--surface); box-shadow: 0 8px 24px -22px var(--hue); }
 	.pg-ti { border: 1px solid color-mix(in oklab, var(--hue) 36%, transparent); background: linear-gradient(140deg, color-mix(in oklab, var(--hue) 35%, transparent), color-mix(in oklab, var(--hue) 9%, var(--surface))); box-shadow: inset 0 1px 0 color-mix(in oklab, var(--hue) 32%, transparent); }
 	.pg-tool b { font-size: 21px; font-style: italic; }
@@ -864,14 +864,14 @@
 	.pg-idea { border: 1px solid color-mix(in oklab, var(--g1) 32%, var(--line)); background: radial-gradient(120% 90% at 100% 0%, color-mix(in oklab, var(--g1) 15%, transparent), transparent 70%), var(--surface); }
 	.pg-idea:nth-child(3n + 2) { border-color: color-mix(in oklab, var(--g2) 32%, var(--line)); background: radial-gradient(120% 90% at 100% 0%, color-mix(in oklab, var(--g2) 15%, transparent), transparent 70%), var(--surface); }
 	.pg-idea:nth-child(3n + 3) { border-color: color-mix(in oklab, var(--g3) 32%, var(--line)); background: radial-gradient(120% 90% at 100% 0%, color-mix(in oklab, var(--g3) 15%, transparent), transparent 70%), var(--surface); }
-	.pg-stub { background: linear-gradient(115deg, color-mix(in oklab, var(--g1) 65%, #211125), color-mix(in oklab, var(--g2) 55%, #211125)); }
-	.pg-idea:nth-child(3n + 2) .pg-stub { background: linear-gradient(115deg, color-mix(in oklab, var(--g2) 60%, #211125), color-mix(in oklab, var(--g3) 45%, #211125)); }
-	.pg-idea:nth-child(3n + 3) .pg-stub { background: linear-gradient(115deg, color-mix(in oklab, var(--g3) 55%, #211125), color-mix(in oklab, var(--g1) 55%, #211125)); }
+	.pg-stub { background: linear-gradient(115deg, color-mix(in oklab, var(--g1) 65%, var(--hero)), color-mix(in oklab, var(--g2) 55%, var(--hero))); }
+	.pg-idea:nth-child(3n + 2) .pg-stub { background: linear-gradient(115deg, color-mix(in oklab, var(--g2) 60%, var(--hero)), color-mix(in oklab, var(--g3) 45%, var(--hero))); }
+	.pg-idea:nth-child(3n + 3) .pg-stub { background: linear-gradient(115deg, color-mix(in oklab, var(--g3) 55%, var(--hero)), color-mix(in oklab, var(--g1) 55%, var(--hero))); }
 	.pg-stub b { font-size: 30px; font-style: italic; }
 	.pg-ib b { font-size: 23px; }
 	.pg-reel { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .14), 0 8px 22px -20px var(--g2); }
 	.pg-tip { border: 1px solid color-mix(in oklab, var(--g2) 23%, var(--line)); background: radial-gradient(120% 100% at 0% 0%, color-mix(in oklab, var(--g2) 14%, transparent), transparent 70%), var(--surface); }
-	.pg-tn { color: #fff; background: linear-gradient(140deg, color-mix(in oklab, var(--g1) 75%, #241227), color-mix(in oklab, var(--g2) 70%, #241227)); border-radius: 9px; }
+	.pg-tn { color: var(--hero-ink); background: linear-gradient(140deg, color-mix(in oklab, var(--g1) 75%, var(--hero)), color-mix(in oklab, var(--g2) 70%, var(--hero))); border-radius: 9px; }
 	.pg-hrow { border: 1px solid color-mix(in oklab, var(--g1) 22%, var(--line)); background: radial-gradient(100% 140% at 100% 0%, color-mix(in oklab, var(--g1) 20%, transparent), transparent 70%), var(--surface); }
 	.pg-peer { border: 1px solid color-mix(in oklab, var(--g1) 24%, var(--line)); background: radial-gradient(100% 80% at 50% 0%, color-mix(in oklab, var(--g1) 18%, transparent), transparent 70%), var(--surface); }
 	.pg-boost { border: 1px solid color-mix(in oklab, var(--g3) 30%, var(--line)); background: radial-gradient(120% 90% at 0% 0%, color-mix(in oklab, var(--g3) 25%, transparent), transparent 70%), var(--surface); }

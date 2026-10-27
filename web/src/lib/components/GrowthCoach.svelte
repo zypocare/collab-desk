@@ -174,7 +174,7 @@
 		.gc-tabs button:nth-child(1) :global(svg) { color: var(--g1); }
 		.gc-tabs button:nth-child(2) :global(svg) { color: var(--g2); }
 		.gc-tabs button:nth-child(3) :global(svg) { color: var(--g3); }
-		.gc-tabs button[aria-selected="true"] { color: #fff; background: linear-gradient(120deg, color-mix(in oklab, var(--goal) 72%, #26102b), color-mix(in oklab, var(--g2) 65%, #26102b)); box-shadow: 0 4px 14px -6px color-mix(in oklab, var(--goal) 80%, transparent); }
+		.gc-tabs button[aria-selected="true"] { color: var(--bg); background: var(--ink); box-shadow: 0 4px 14px -6px color-mix(in oklab, var(--goal) 80%, transparent); }
 		.gc-tabs button[aria-selected="true"] :global(svg) { color: inherit; }
 		.gc-panel { position: relative; margin-top: 12px; padding: 18px 16px 4px; border-radius: 18px; border: 1px solid color-mix(in oklab, var(--goal) 26%, var(--line)); background: radial-gradient(110% 80% at 100% 0%, color-mix(in oklab, var(--goal) 16%, transparent), transparent 70%), color-mix(in oklab, var(--surface) 85%, transparent); animation: gc-arrive .28s ease-out both; }
 		.gc h3 { max-width: 24ch; font: italic 400 27px/1.1 var(--f-serif, Georgia, serif); letter-spacing: -.01em; margin-bottom: 10px; }
@@ -183,7 +183,7 @@
 		.gc-link { color: var(--goal); min-height: 42px; }
 		.gc-schedule { padding: 12px; border: 1px solid color-mix(in oklab, var(--g3) 25%, var(--line)); border-radius: 14px; background: linear-gradient(110deg, color-mix(in oklab, var(--g3) 12%, transparent), color-mix(in oklab, var(--g2) 7%, transparent)); }
 		.gc-schedule > :global(svg) { color: var(--g3); }
-		.gc .gc-actions .primary { background: linear-gradient(110deg, color-mix(in oklab, var(--g1) 78%, #29122d), color-mix(in oklab, var(--g2) 75%, #29122d)); color: #fff; border: 0; box-shadow: 3px 3px 0 color-mix(in oklab, var(--g2) 60%, #29122d); background-size: 150% 100%; transition: background-position .3s, transform .15s; }
+		.gc .gc-actions .primary { background: var(--ink); color: var(--bg); border: 0; box-shadow: 3px 3px 0 var(--accent); background-size: 150% 100%; transition: background-position .3s, transform .15s; }
 		.gc .gc-actions .primary:active { transform: translate(3px, 3px); box-shadow: none; background-position: 100% 0; }
 		.gc .gc-copy { border-color: color-mix(in oklab, var(--goal) 35%, var(--line)); color: var(--goal); background: color-mix(in oklab, var(--goal) 8%, var(--surface)); }
 	}
