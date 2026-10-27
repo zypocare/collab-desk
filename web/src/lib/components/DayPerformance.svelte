@@ -11,6 +11,7 @@
 	const max = $derived(Math.max(1, ...performance.weekdays.map((d) => d.typical ?? 0)));
 	const metric = $derived(performance.metric ?? 'views');
 	const windowMax = $derived(Math.max(1, ...day.windows.map((w) => w.typical)));
+	const tones = ['var(--g3)', 'var(--g1)', 'var(--g2)', 'var(--m2)', 'var(--m3)', 'var(--g2)', 'var(--g1)'];
 </script>
 
 <section class="wdp" id="growth-day-performance" aria-labelledby="weekday-performance-title">
@@ -26,13 +27,13 @@
 		<thead><tr><th scope="col">Day</th><th scope="col">Typical {metric}</th><th scope="col">Best time · IST</th></tr></thead>
 		<tbody>
 			{#each performance.weekdays as d (d.day)}
-				<tr class:wdp-selected={selected === d.day}>
+				<tr class:wdp-selected={selected === d.day} style="--day-tone:{tones[d.day]}">
 					<th scope="row"><button class="wdp-day" aria-pressed={selected === d.day} aria-expanded={selected === d.day && showWindows} aria-controls="weekday-window-detail" onclick={() => { selected = d.day; showWindows = true; }}><span>{d.short}</span><small>{d.posts} post{d.posts === 1 ? '' : 's'}</small></button></th>
-					<td><strong>{d.typical !== null ? compact(d.typical) : '—'}</strong>
+					<td class="wdp-result"><strong>{d.typical !== null ? compact(d.typical) : '—'}</strong><span class="wdp-mobile-label">typical {metric}</span>
 						<div class="wdp-meter" aria-hidden="true"><i style="width:{((d.typical ?? 0) / max) * 100}%"></i></div>
 						{#if d.lift !== null}<small class:wdp-up={d.lift > 0}>{d.lift > 0 ? '+' : ''}{d.lift}% vs usual</small>{:else if d.posts}<small>Early data</small>{/if}
 					</td>
-					<td>{#if d.bestTime}<b class="wdp-time">{d.bestTime.label}</b><small>{d.bestTime.posts} supporting posts</small>
+					<td class="wdp-post-time">{#if d.bestTime}<span class="wdp-mobile-label">Post around</span><b class="wdp-time">{d.bestTime.label}</b><small>{d.bestTime.posts} supporting posts</small>
 						{:else}<span class="wdp-not-yet">No time yet</span>{#if d.posts}<small>More posts needed</small>{/if}{/if}
 					</td>
 				</tr>
@@ -101,6 +102,7 @@
 	.wdp-window > b { font-size: 15px; }
 	.wdp-window b small { display: inline; }
 	.wdp-best { border-color: var(--accent); }
+	.wdp-mobile-label { display: none; }
 	@media (max-width: 760px) {
 		.wdp { padding: 18px; margin-bottom: 0; }
 		.wdp-head { flex-direction: column; gap: 6px; }
@@ -115,4 +117,33 @@
 		.wdp-detail { padding: 0 12px; }
 		.wdp-windows { grid-template-columns: 1fr; }
 	}
+	@media (max-width: 760px) {
+		.wdp { padding: 18px; border: 1px solid color-mix(in oklab, var(--g1) 25%, var(--line)); background: radial-gradient(100% 35% at 100% 0%, color-mix(in oklab, var(--g1) 18%, transparent), transparent 70%), var(--surface); }
+		.wdp h2 { font-size: 31px; letter-spacing: -.02em; }
+		.wdp-eyebrow { color: var(--g2); }
+		.wdp-table, .wdp-table tbody { display: block; }
+		.wdp-table colgroup { display: none; }
+		.wdp-table thead { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+		.wdp-table tbody { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+		.wdp-table tbody tr { display: grid; grid-template-columns: minmax(0, 1fr); align-content: start; gap: 10px; padding: 13px; border-radius: 19px; border: 1px solid color-mix(in oklab, var(--day-tone) 30%, var(--line)); background: radial-gradient(120% 90% at 100% 0%, color-mix(in oklab, var(--day-tone) 23%, transparent), transparent 70%), var(--surface); }
+		.wdp-table tbody tr.wdp-selected { border-color: var(--day-tone); box-shadow: 0 6px 20px -12px color-mix(in oklab, var(--day-tone) 70%, transparent), inset 0 0 0 1px color-mix(in oklab, var(--day-tone) 28%, transparent); background: radial-gradient(130% 100% at 100% 0%, color-mix(in oklab, var(--day-tone) 34%, transparent), transparent 75%), color-mix(in oklab, var(--day-tone) 6%, var(--surface)); }
+		.wdp-table tbody th, .wdp-table td { padding: 0; border: 0; }
+		.wdp-day { min-height: 38px; padding: 0; width: 100%; display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 4px; }
+		.wdp-day span { font: italic 400 25px/1 var(--f-serif, Georgia, serif); color: var(--day-tone); }
+		.wdp-day[aria-pressed="true"] span { color: var(--day-tone); }
+		.wdp-table strong { font: 400 27px/1 var(--f-serif, Georgia, serif); }
+		.wdp-mobile-label { display: block; color: var(--ink-3); font-size: 10px; line-height: 1.4; margin-top: 3px; }
+		.wdp-meter { margin: 6px 0 4px; }
+		.wdp-meter i { background: linear-gradient(90deg, var(--day-tone, var(--g1)), var(--g2)); transform-origin: left; animation: wdp-fill .6s ease-out both; }
+		.wdp-time { font-size: 17px; color: var(--ink); }
+		.wdp-post-time { padding-top: 9px !important; border-top: 1px solid color-mix(in oklab, var(--day-tone) 20%, var(--line)) !important; }
+		.wdp-table tbody tr:last-child { grid-column: 1 / -1; grid-template-columns: minmax(0, .8fr) minmax(0, 1fr) minmax(0, 1fr); align-items: center; }
+		.wdp-table tbody tr:last-child .wdp-day { display: grid; }
+		.wdp-table tbody tr:last-child .wdp-post-time { padding-top: 0 !important; border-top: 0 !important; }
+		.wdp-detail { border-color: color-mix(in oklab, var(--g1) 30%, var(--line)); background: linear-gradient(120deg, color-mix(in oklab, var(--g1) 12%, transparent), color-mix(in oklab, var(--g2) 7%, transparent)); }
+		.wdp-detail[open] > summary > :global(svg), .wdp-method[open] > summary > :global(svg) { transform: rotate(180deg); }
+		.wdp-best { background: radial-gradient(100% 90% at 100% 0%, color-mix(in oklab, var(--g2) 16%, transparent), transparent 70%), var(--surface); }
+	}
+	@keyframes wdp-fill { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+	@media (prefers-reduced-motion: reduce) { .wdp-meter i { animation: none; } }
 </style>

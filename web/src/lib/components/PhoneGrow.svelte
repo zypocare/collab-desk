@@ -65,6 +65,7 @@
 	<!-- The growth meter -->
 	<section class="hero-card glow pg-hero rv" aria-label="Your growth">
 		<div class="mesh" aria-hidden="true"></div>
+		<div class="pg-orbit" aria-hidden="true"><span></span><i></i><Icon name="spark" /></div>
 		<div class="pg-h-in">
 			<div class="pg-h-top">
 				<span class="pg-eb">Followers · 30 days</span>
@@ -72,7 +73,7 @@
 			</div>
 			<b class="pg-big" use:countUp={{ value: st.followers ?? 0 }}>{fmtN(st.followers ?? 0)}</b>
 			{#if line}
-				<svg class="pg-line" viewBox="0 0 400 64" preserveAspectRatio="none" role="img" aria-label="Followers over the last 30 days"><path d="{line} L400 64 L0 64 Z" class="pg-fill"></path><path d={line} class="pg-stroke"></path></svg>
+				<svg class="pg-line" viewBox="0 0 400 64" preserveAspectRatio="none" role="img" aria-label="Followers over the last 30 days"><defs><linearGradient id="grow-chart-fill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="var(--g2)" stop-opacity=".42" /><stop offset="100%" stop-color="var(--g1)" stop-opacity="0" /></linearGradient></defs><path d="{line} L400 64 L0 64 Z" class="pg-fill"></path><path d={line} pathLength="1" class="pg-stroke"></path></svg>
 			{/if}
 			<div class="pg-stats">
 				<span><small>Reel views</small><b>{compact(st.views)}</b>{#if st.viewsUp !== null}<i class:ok={(st.viewsUp ?? 0) >= 0}>{up(st.viewsUp)}</i>{/if}</span>
@@ -831,4 +832,52 @@
 			background-position: -300% 0;
 		}
 	}
+	/* Grow carries the same plum, cerise and peach signature as Today. */
+	.pg { gap: 26px; }
+	.pg .pg-hero {
+		position: relative; isolation: isolate; overflow: hidden; border-radius: 28px;
+		border: 1px solid color-mix(in oklab, var(--g1) 40%, transparent); color: #fff;
+		background: radial-gradient(100% 110% at 0% 0%, color-mix(in oklab, var(--g2) 40%, transparent), transparent 65%), radial-gradient(90% 120% at 110% 70%, color-mix(in oklab, var(--g1) 52%, transparent), transparent 70%), linear-gradient(140deg, #29132a, #160f22);
+		box-shadow: 0 14px 36px -26px color-mix(in oklab, var(--g2) 85%, transparent);
+	}
+	.pg-h-in { padding: 22px 20px 18px; }
+	.pg-big { font-size: 64px; padding-right: 90px; margin-top: 6px; }
+	.pg-eb { opacity: .9; }
+	.pg-orbit { position: absolute; z-index: 1; top: 48px; right: 18px; width: 86px; height: 86px; display: grid; place-items: center; pointer-events: none; }
+	.pg-orbit span { position: absolute; inset: 0; border-radius: 50%; background: conic-gradient(from 0deg, var(--g1), transparent 27%, var(--g2) 50%, var(--g3) 72%, transparent 90%, var(--g1)); mask: radial-gradient(closest-side, transparent calc(100% - 2px), #000 calc(100% - 1px)); animation: pg-orbit-turn 24s linear infinite; }
+	.pg-orbit i { position: absolute; inset: 10px; border: 1px solid rgba(255, 255, 255, .16); border-radius: 50%; background: radial-gradient(circle at 30% 30%, color-mix(in oklab, var(--g2) 35%, transparent), color-mix(in oklab, var(--g1) 20%, transparent)); box-shadow: 0 0 30px -10px var(--g1); }
+	.pg-orbit :global(svg) { position: relative; width: 28px; height: 28px; color: #ffe0ed; }
+	.pg-line { height: 58px; }
+	.pg-fill { fill: url(#grow-chart-fill); }
+	.pg-stroke { stroke: #ff9cc6; stroke-width: 2.5; filter: drop-shadow(0 0 5px color-mix(in oklab, var(--g2) 75%, transparent)); stroke-dasharray: 1; animation: pg-line-draw 1.2s ease-out both; }
+	.pg-stats { border: 1px solid rgba(255, 255, 255, .12); border-radius: 16px; background: rgba(255, 255, 255, .05); }
+	.pg-stats span { padding: 12px; }
+	.pg-stats span + span { padding-left: 12px; }
+	.pg-stats small { opacity: .8; }
+	.pg-stats b { margin-top: 2px; color: #ffe2ce; font-size: 26px; }
+	.pg-stats span:nth-child(2) b { color: #ffc5e0; }
+	.pg-stats span:nth-child(3) b { color: #d6caff; }
+	.pg-tool { border-radius: 21px; border: 1px solid color-mix(in oklab, var(--hue) 28%, var(--line)); background: radial-gradient(130% 120% at 100% 0%, color-mix(in oklab, var(--hue) 27%, transparent), transparent 70%), var(--surface); box-shadow: 0 8px 24px -22px var(--hue); }
+	.pg-ti { border: 1px solid color-mix(in oklab, var(--hue) 36%, transparent); background: linear-gradient(140deg, color-mix(in oklab, var(--hue) 35%, transparent), color-mix(in oklab, var(--hue) 9%, var(--surface))); box-shadow: inset 0 1px 0 color-mix(in oklab, var(--hue) 32%, transparent); }
+	.pg-tool b { font-size: 21px; font-style: italic; }
+	.pg-sh h2 { font-size: 28px; }
+	.pg-idea { border: 1px solid color-mix(in oklab, var(--g1) 32%, var(--line)); background: radial-gradient(120% 90% at 100% 0%, color-mix(in oklab, var(--g1) 15%, transparent), transparent 70%), var(--surface); }
+	.pg-idea:nth-child(3n + 2) { border-color: color-mix(in oklab, var(--g2) 32%, var(--line)); background: radial-gradient(120% 90% at 100% 0%, color-mix(in oklab, var(--g2) 15%, transparent), transparent 70%), var(--surface); }
+	.pg-idea:nth-child(3n + 3) { border-color: color-mix(in oklab, var(--g3) 32%, var(--line)); background: radial-gradient(120% 90% at 100% 0%, color-mix(in oklab, var(--g3) 15%, transparent), transparent 70%), var(--surface); }
+	.pg-stub { background: linear-gradient(115deg, color-mix(in oklab, var(--g1) 65%, #211125), color-mix(in oklab, var(--g2) 55%, #211125)); }
+	.pg-idea:nth-child(3n + 2) .pg-stub { background: linear-gradient(115deg, color-mix(in oklab, var(--g2) 60%, #211125), color-mix(in oklab, var(--g3) 45%, #211125)); }
+	.pg-idea:nth-child(3n + 3) .pg-stub { background: linear-gradient(115deg, color-mix(in oklab, var(--g3) 55%, #211125), color-mix(in oklab, var(--g1) 55%, #211125)); }
+	.pg-stub b { font-size: 30px; font-style: italic; }
+	.pg-ib b { font-size: 23px; }
+	.pg-reel { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .14), 0 8px 22px -20px var(--g2); }
+	.pg-tip { border: 1px solid color-mix(in oklab, var(--g2) 23%, var(--line)); background: radial-gradient(120% 100% at 0% 0%, color-mix(in oklab, var(--g2) 14%, transparent), transparent 70%), var(--surface); }
+	.pg-tn { color: #fff; background: linear-gradient(140deg, color-mix(in oklab, var(--g1) 75%, #241227), color-mix(in oklab, var(--g2) 70%, #241227)); border-radius: 9px; }
+	.pg-hrow { border: 1px solid color-mix(in oklab, var(--g1) 22%, var(--line)); background: radial-gradient(100% 140% at 100% 0%, color-mix(in oklab, var(--g1) 20%, transparent), transparent 70%), var(--surface); }
+	.pg-peer { border: 1px solid color-mix(in oklab, var(--g1) 24%, var(--line)); background: radial-gradient(100% 80% at 50% 0%, color-mix(in oklab, var(--g1) 18%, transparent), transparent 70%), var(--surface); }
+	.pg-boost { border: 1px solid color-mix(in oklab, var(--g3) 30%, var(--line)); background: radial-gradient(120% 90% at 0% 0%, color-mix(in oklab, var(--g3) 25%, transparent), transparent 70%), var(--surface); }
+	.pg-empty { border-style: solid; border-color: color-mix(in oklab, var(--g1) 22%, var(--line)); background: radial-gradient(120% 130% at 0% 0%, color-mix(in oklab, var(--g1) 11%, transparent), transparent 70%), var(--surface); }
+	.pg-empty > :global(svg) { box-sizing: content-box; width: 22px; height: 22px; padding: 9px; border-radius: 12px; background: color-mix(in oklab, var(--g1) 15%, transparent); color: var(--g1); }
+	@keyframes pg-orbit-turn { to { transform: rotate(360deg); } }
+	@keyframes pg-line-draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+	@media (prefers-reduced-motion: reduce) { .pg-orbit span, .pg-stroke, .pg-idea.sk { animation: none; } }
 </style>

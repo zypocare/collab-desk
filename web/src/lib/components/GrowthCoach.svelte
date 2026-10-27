@@ -57,9 +57,9 @@
 	].join('\n\n'));
 </script>
 
-<section class="gc" aria-labelledby="growth-coach-title">
+<section class="gc" style="--goal:{active === 'reach' ? 'var(--g1)' : active === 'followers' ? 'var(--g2)' : 'var(--g3)'}" aria-labelledby="growth-coach-title">
 	<header class="gc-head">
-		<div><span class="gc-eyebrow">Growth coach</span><h2 id="growth-coach-title">Your growth plan</h2></div>
+		<div><span class="gc-eyebrow"><Icon name="spark" />Growth coach</span><h2 id="growth-coach-title">Your growth plan</h2></div>
 		<span class="gc-sample">{focus.reels} reels · 90 days</span>
 	</header>
 	<div class="gc-summary">
@@ -93,6 +93,8 @@
 	.gc { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(240px, 1fr); column-gap: 28px; row-gap: 18px; padding: 24px; margin-bottom: 22px; border: 1px solid var(--line); border-radius: 24px; background: radial-gradient(ellipse at top left, color-mix(in oklab, var(--g1) 7%, transparent), transparent 60%), var(--surface); }
 	.gc-head { grid-column: 1 / -1; display: flex; align-items: start; justify-content: space-between; gap: 12px; }
 	.gc-eyebrow { font-size: 11px; font-weight: 700; color: var(--accent); letter-spacing: .08em; }
+	.gc-eyebrow { display: inline-flex; align-items: center; gap: 6px; }
+	.gc-eyebrow :global(svg) { width: 14px; height: 14px; }
 	.gc h2 { margin: 5px 0 0; font: 400 28px/1.15 var(--f-serif, Georgia, serif); }
 	.gc-sample { color: var(--ink-3); font-size: 12px; line-height: 1.5; padding-top: 4px; white-space: nowrap; }
 	.gc-summary { grid-column: 2; grid-row: 2; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; padding-bottom: 16px; border-bottom: 1px solid var(--line); }
@@ -154,4 +156,37 @@
 		.gc-summary { gap: 12px; }
 		.gc-tabs button { gap: 4px; font-size: 11px; }
 	}
+	@media (max-width: 760px) {
+		.gc {
+			border: 1px solid color-mix(in oklab, var(--g1) 32%, var(--line));
+			background: radial-gradient(100% 55% at 0% 0%, color-mix(in oklab, var(--g1) 25%, transparent), transparent 70%), radial-gradient(100% 45% at 100% 100%, color-mix(in oklab, var(--g2) 16%, transparent), transparent 70%), var(--surface);
+			box-shadow: 0 14px 38px -28px color-mix(in oklab, var(--g1) 65%, transparent);
+		}
+		.gc h2 { font-size: 31px; letter-spacing: -.025em; }
+		.gc-eyebrow { color: var(--g2); }
+		.gc-summary { gap: 10px; padding: 0; border: 0; }
+		.gc-summary > div { padding: 12px; border: 1px solid color-mix(in oklab, var(--g1) 22%, var(--line)); border-radius: 16px; background: linear-gradient(145deg, color-mix(in oklab, var(--g1) 18%, transparent), color-mix(in oklab, var(--g1) 4%, transparent)); }
+		.gc-summary > div + div { border-color: color-mix(in oklab, var(--g2) 22%, var(--line)); background: linear-gradient(145deg, color-mix(in oklab, var(--g2) 16%, transparent), color-mix(in oklab, var(--g3) 5%, transparent)); }
+		.gc-summary b { font: 400 32px/1.1 var(--f-serif, Georgia, serif); }
+		.gc-summary b.gc-pending { font-size: 14px; line-height: 2.5; font-family: var(--f-body, sans-serif); }
+		.gc-tabs { padding: 4px; gap: 4px; border-radius: 15px; border-color: color-mix(in oklab, var(--goal) 25%, var(--line)); background: color-mix(in oklab, var(--surface) 75%, transparent); }
+		.gc-tabs button { min-height: 42px; border-radius: 11px; color: var(--ink-2); transition: color .2s, background .2s, box-shadow .2s; }
+		.gc-tabs button:nth-child(1) :global(svg) { color: var(--g1); }
+		.gc-tabs button:nth-child(2) :global(svg) { color: var(--g2); }
+		.gc-tabs button:nth-child(3) :global(svg) { color: var(--g3); }
+		.gc-tabs button[aria-selected="true"] { color: #fff; background: linear-gradient(120deg, color-mix(in oklab, var(--goal) 72%, #26102b), color-mix(in oklab, var(--g2) 65%, #26102b)); box-shadow: 0 4px 14px -6px color-mix(in oklab, var(--goal) 80%, transparent); }
+		.gc-tabs button[aria-selected="true"] :global(svg) { color: inherit; }
+		.gc-panel { position: relative; margin-top: 12px; padding: 18px 16px 4px; border-radius: 18px; border: 1px solid color-mix(in oklab, var(--goal) 26%, var(--line)); background: radial-gradient(110% 80% at 100% 0%, color-mix(in oklab, var(--goal) 16%, transparent), transparent 70%), color-mix(in oklab, var(--surface) 85%, transparent); animation: gc-arrive .28s ease-out both; }
+		.gc h3 { max-width: 24ch; font: italic 400 27px/1.1 var(--f-serif, Georgia, serif); letter-spacing: -.01em; margin-bottom: 10px; }
+		.gc-panel > p { font-size: 13px; line-height: 1.6; }
+		.gc-links { gap: 0 14px; }
+		.gc-link { color: var(--goal); min-height: 42px; }
+		.gc-schedule { padding: 12px; border: 1px solid color-mix(in oklab, var(--g3) 25%, var(--line)); border-radius: 14px; background: linear-gradient(110deg, color-mix(in oklab, var(--g3) 12%, transparent), color-mix(in oklab, var(--g2) 7%, transparent)); }
+		.gc-schedule > :global(svg) { color: var(--g3); }
+		.gc .gc-actions .primary { background: linear-gradient(110deg, color-mix(in oklab, var(--g1) 78%, #29122d), color-mix(in oklab, var(--g2) 75%, #29122d)); color: #fff; border: 0; box-shadow: 3px 3px 0 color-mix(in oklab, var(--g2) 60%, #29122d); background-size: 150% 100%; transition: background-position .3s, transform .15s; }
+		.gc .gc-actions .primary:active { transform: translate(3px, 3px); box-shadow: none; background-position: 100% 0; }
+		.gc .gc-copy { border-color: color-mix(in oklab, var(--goal) 35%, var(--line)); color: var(--goal); background: color-mix(in oklab, var(--goal) 8%, var(--surface)); }
+	}
+	@keyframes gc-arrive { from { opacity: .5; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+	@media (prefers-reduced-motion: reduce) { .gc-panel { animation: none; } }
 </style>
