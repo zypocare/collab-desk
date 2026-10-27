@@ -1,9 +1,16 @@
 // Saving a file the app made (PDFs, CSVs, zips, calendar files). A normal download link doesn't work
 // in the iPhone/iPad Home Screen app, so there the share sheet opens instead ("Save to Files", Mail,
-// WhatsApp…). Everywhere else it's a plain download.
+// WhatsApp…). The native app uses the phone's file saver; other browsers use a download link.
 import { isIOS } from './back';
+import { isNative, saveNativeFile } from './native';
+import { toast } from './ui.svelte';
 
 export async function saveBlob(blob: Blob, name: string) {
+	if (isNative()) {
+		const result = await saveNativeFile(blob, name);
+		if (result === 'saved') toast('Saved to Downloads', 'download');
+		return;
+	}
 	if (isIOS() && typeof navigator.share === 'function') {
 		const file = new File([blob], name, { type: blob.type || 'application/octet-stream' });
 		if (navigator.canShare?.({ files: [file] })) {

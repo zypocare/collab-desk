@@ -14,6 +14,7 @@
 	let inv = $state<InvoiceView | null>(null);
 	let loaded = $state(false);
 	let busy = $state(false);
+	let qrOpen = $state(false);
 
 	onMount(async () => {
 		const { data } = await supabase.rpc('public_invoice', { p_token: page.params.token });
@@ -51,13 +52,13 @@
 	}
 
 	async function download() {
-		if (!inv) return;
+		if (!inv || busy) return;
 		busy = true;
 		try {
 			const { downloadInvoicePdf } = await import('#lib/invoicePdf.ts');
 			await downloadInvoicePdf(inv);
 		} catch (e) {
-			toast(`Couldn't make the PDF: ${errMessage(e)}`, 'alert');
+			toast(`Couldn't save the PDF: ${errMessage(e)}`, 'alert');
 		}
 		busy = false;
 	}
@@ -67,7 +68,7 @@
 
 <svelte:head><title>{inv ? `Invoice ${inv.number}` : 'Invoice'}</title><meta name="robots" content="noindex" /></svelte:head>
 
-<div class="page">
+<div class="page invoice-page">
 	<div class="wrap doc-wrap">
 		{#if !loaded}
 			<div class="loader" style="min-height:50vh"><span class="ring"><span></span></span></div>
@@ -76,7 +77,7 @@
 		{:else}
 			<div class="doc-tools no-print">
 				<span class="pill tint {INVOICE_STATUS[inv.status].k}">{INVOICE_STATUS[inv.status].label}</span>
-				<button class="btn primary" disabled={busy} onclick={download}>{#if busy}<span class="spinner"></span>{:else}<Icon name="arrow" />{/if}Download PDF</button>
+				<button class="btn primary" disabled={busy} onclick={download}>{#if busy}<span class="spinner"></span>{:else}<Icon name="download" />{/if}{busy ? 'Saving PDF…' : 'Download PDF'}</button>
 			</div>
 
 			{#if due > 0 && inv.status !== 'cancelled'}
@@ -88,12 +89,15 @@
 						{#if upi}
 							<div class="pay-actions">
 								{#if isMobile}<a class="btn grad lg" href={upi}><Icon name="send" />Pay with UPI app</a>{/if}
-								<button class="btn" onclick={() => copyText(inv!.seller.upi_id, 'UPI ID copied')}><Icon name="copy" />{inv.seller.upi_id}</button>
+								<button class="btn upi-copy" onclick={() => copyText(inv!.seller.upi_id, 'UPI ID copied')} aria-label={`Copy UPI ID ${inv.seller.upi_id}`}><Icon name="copy" /><span>{inv.seller.upi_id}</span></button>
 							</div>
 						{/if}
 					</div>
 					{#if upi}
-						<UpiQr upiId={inv.seller.upi_id} name={inv.seller.name} amount={due} note={`Invoice ${inv.number}`} />
+						<div class="pay-qr">
+							<button class="qr-toggle" aria-expanded={qrOpen} aria-controls="invoice-upi-qr" onclick={() => (qrOpen = !qrOpen)}><Icon name="qr" />{qrOpen ? 'Hide payment QR' : 'Scan or download payment QR'}<Icon name={qrOpen ? 'chevU' : 'chevD'} /></button>
+							<div id="invoice-upi-qr" class="qr-content" class:expanded={qrOpen}><UpiQr upiId={inv.seller.upi_id} name={inv.seller.name} amount={due} note={`Invoice ${inv.number}`} /></div>
+						</div>
 					{/if}
 				</section>
 				{#if inv.claim_at}
@@ -138,9 +142,9 @@
 					</div>
 				</section>
 				<div style="overflow-x:auto">
-					<table class="doc-table">
+					<table class="doc-table" aria-label="Invoice items and totals">
 						<thead><tr><th>Description</th><th>Qty</th><th>Rate</th><th>Amount</th></tr></thead>
-						<tbody>{#each inv.items as it, i (i)}<tr><td>{it.description}</td><td>{it.qty}</td><td>{cm(it.rate)}</td><td>{cm(it.qty * it.rate)}</td></tr>{/each}</tbody>
+						<tbody>{#each inv.items as it, i (i)}<tr><td>{it.description}</td><td data-label="Qty">{it.qty}</td><td data-label="Rate">{cm(it.rate)}</td><td data-label="Amount">{cm(it.qty * it.rate)}</td></tr>{/each}</tbody>
 						<tfoot>
 							<tr class="sub"><td colspan="3">Subtotal</td><td>{cm(inv.subtotal)}</td></tr>
 							{#if inv.tax_mode === 'intra'}
@@ -169,3 +173,59 @@
 		{/if}
 	</div>
 </div>
+
+<style>
+	.pay-qr { position: relative; }
+	.qr-toggle { display: none; }
+	@media screen and (max-width: 640px) {
+		.invoice-page .doc-wrap { padding: calc(env(safe-area-inset-top, 0px) + 16px) max(16px, env(safe-area-inset-right, 0px)) calc(env(safe-area-inset-bottom, 0px) + 32px) max(16px, env(safe-area-inset-left, 0px)); }
+		.invoice-page .doc-tools { gap: 12px; margin-bottom: 16px; flex-wrap: nowrap; }
+		.invoice-page .doc-tools .btn { min-height: 44px; padding: 10px 14px; font-size: 14px; }
+		.invoice-page .pay-card { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; padding: 20px; border-radius: 22px; margin-bottom: 12px; }
+		.invoice-page .pay-main { gap: 6px; }
+		.invoice-page .pay-main .num { font-size: 38px; }
+		.invoice-page .pay-main small { font-size: 13px; line-height: 1.5; }
+		.invoice-page .pay-actions { display: grid; gap: 10px; margin-top: 12px; }
+		.invoice-page .pay-actions .btn { width: 100%; min-width: 0; min-height: 44px; padding: 10px 12px; font-size: 14px; }
+		.upi-copy span { white-space: normal; overflow-wrap: anywhere; min-width: 0; }
+		.pay-qr { border-top: 1px solid color-mix(in oklab, var(--hero-ink) 14%, transparent); padding-top: 14px; }
+		.qr-toggle { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 32px; padding: 0; border: 0; background: none; color: var(--hero-ink); font-size: 13px; text-align: left; }
+		.qr-toggle :global(.ic:last-child) { margin-left: auto; }
+		.qr-content { display: none; }
+		.qr-content.expanded { display: block; padding-top: 16px; }
+		.invoice-page .claim-link { margin: 0 0 20px; text-align: center; }
+		.invoice-page .claim-link .btn { width: 100%; min-height: 44px; font-size: 14px; }
+		.invoice-page .inv-doc { padding: 20px 16px; border-radius: 22px; font-size: 14px; overflow-wrap: anywhere; }
+		.invoice-page .doc-h { display: grid; gap: 18px; padding-bottom: 16px; }
+		.invoice-page .doc-h .eb { font-size: 11px; letter-spacing: .1em; }
+		.invoice-page .doc-h h1 { font-size: 26px; margin-bottom: 6px; }
+		.invoice-page .doc-h small { display: block; font-size: 12px; line-height: 1.6; }
+		.invoice-page .inv-meta { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+		.invoice-page .inv-meta > div:last-child { grid-column: 1 / -1; }
+		.invoice-page .inv-meta dt { font-size: 11px; }
+		.invoice-page .inv-meta dd { font-size: 13px; }
+		.invoice-page .doc-parties { padding: 16px 0; }
+		.invoice-page .doc-parties > div { padding: 12px; }
+		.invoice-page .doc-parties b { font-size: 16px; }
+		.invoice-page .doc-parties small { font-size: 12px; }
+		.invoice-page .doc-table { display: block; font-size: 14px; }
+		.invoice-page .doc-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+		.invoice-page .doc-table tbody, .invoice-page .doc-table tfoot { display: block; }
+		.invoice-page .doc-table tbody tr { display: grid; grid-template-columns: minmax(0, .5fr) repeat(2, minmax(0, 1fr)); gap: 10px; padding: 14px 0; border-bottom: 1px solid var(--line); }
+		.invoice-page .doc-table tbody td { display: block; min-width: 0; border: 0; padding: 0; text-align: left; white-space: normal; overflow-wrap: anywhere; }
+		.invoice-page .doc-table tbody td:first-child { grid-column: 1 / -1; font-weight: 600; }
+		.invoice-page .doc-table tbody td::before { content: attr(data-label); display: block; color: var(--ink-3); font-size: 11px; font-weight: 400; margin-bottom: 3px; }
+		.invoice-page .doc-table tbody td:first-child::before { display: none; }
+		.invoice-page .doc-table tbody td:last-child { text-align: right; font-weight: 600; }
+		.invoice-page .doc-table tfoot tr { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, auto); gap: 12px; padding: 12px 0; border-top: 1px solid var(--line); }
+		.invoice-page .doc-table tfoot tr:first-child { border-top: 0; }
+		.invoice-page .doc-table tfoot tr:not(.sub) { border-top-color: var(--ink); }
+		.invoice-page .doc-table tfoot td { display: block; min-width: 0; padding: 0; border: 0; font-size: 16px; white-space: normal; overflow-wrap: anywhere; }
+		.invoice-page .doc-table tfoot tr.sub td { font-size: 13px; border: 0; }
+		.invoice-page .doc-table tfoot td:first-child { text-align: left; }
+		.invoice-page .doc-sign { margin-top: 20px; font-size: 12px; }
+		.invoice-page .inv-doc > .hint { font-size: 12px; }
+		.invoice-page .claim-card { align-items: flex-start; }
+		.invoice-page .claim-card small { overflow-wrap: anywhere; }
+	}
+</style>

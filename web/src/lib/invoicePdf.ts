@@ -224,5 +224,5 @@ export async function invoicePdf(inv: InvoiceView): Promise<Uint8Array> {
 export async function downloadInvoicePdf(inv: InvoiceView) {
 	const bytes = await invoicePdf(inv);
 	const blob = new Blob([bytes as BlobPart], { type: 'application/pdf' });
-	void saveBlob(blob, `${inv.number.replace(/\//g, '-')}.pdf`);
+	await saveBlob(blob, `${inv.number.replace(/\//g, '-')}.pdf`);
 }

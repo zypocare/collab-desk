@@ -13,6 +13,32 @@ export const isNative = () => !!cap()?.isNativePlatform?.();
 export const nativePlatform = () => (isNative() ? (cap()?.getPlatform?.() ?? 'web') : 'web');
 const plugin = (name: string) => cap()?.Plugins?.[name] as Plugin | undefined;
 
+/** Save generated files through the phone, since WebViews cannot download blob links. */
+export async function saveNativeFile(blob: Blob, filename: string): Promise<'saved' | 'shared' | 'cancelled'> {
+	const files = plugin('FileSharer');
+	if (!files?.save) throw new Error('Update Miracle to save files in the app, or open this page in your browser to download.');
+	const base64Data = await new Promise<string>((resolve, reject) => {
+		const reader = new FileReader();
+		reader.onload = () => resolve(String(reader.result).split(',')[1]);
+		reader.onerror = () => reject(new Error('Could not prepare the file for saving.'));
+		reader.readAsDataURL(blob);
+	});
+	try {
+		// Android 7–9 requires broad storage access for public folders. Use its share sheet instead.
+		const androidVersion = Number(navigator.userAgent.match(/Android (\d+)/)?.[1] ?? 0);
+		const share = nativePlatform() === 'android' && androidVersion > 0 && androidVersion < 10;
+		const action = share ? files.share : files.save;
+		await (action as (options: { filename: string; base64Data: string; contentType: string; android: { saveDirectory: string } }) => Promise<unknown>)({
+			filename, base64Data, contentType: blob.type || 'application/octet-stream', android: { saveDirectory: 'downloads' }
+		});
+		return share || nativePlatform() === 'ios' ? 'shared' : 'saved';
+	} catch (error) {
+		// Closing iPhone's Save/Share sheet is a normal cancellation.
+		if ((error as { code?: string })?.code === 'USER_CANCELLED' || (error as Error)?.message === 'USER_CANCELLED') return 'cancelled';
+		throw error;
+	}
+}
+
 const OWN = /(^|\.)miracleapp\.live$/;
 // The website (miracleapp.live, www.) is not part of the app: it opens in the browser.
 const WEBSITE = /^(www\.)?miracleapp\.live$/;
