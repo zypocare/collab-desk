@@ -3,7 +3,8 @@
 // (the growth autopilot), collab reels with other creators, and which reel is worth boosting on Instagram.
 // Nothing here buys followers or likes.
 import { askAi } from './ai';
-import { bestSlot, slotLabel, postingEvidence, nextSlots } from './postTime';
+import { growthFocus, isReel } from '../../../supabase/functions/_shared/growth.ts';
+import { slotLabel, postingEvidence, nextSlots } from './postTime';
 export { bestSlot, slotLabel, nextSlots } from './postTime';
 import { studio, saveSettings } from './studio.svelte';
 import { supabase } from './supabase';
@@ -43,7 +44,6 @@ export async function loadGrow() {
 // ---------------------------------------------------------------- her numbers
 type Media = IgMedia & { avg_watch_ms?: number | null };
 const DAY = 864e5;
-const isReel = (m: Media) => m.product_type === 'REELS' || m.media_type === 'VIDEO';
 const within = (m: Media, from: number, to: number) => {
 	const t = Date.parse(m.posted_at);
 	return t >= Date.now() - from * DAY && t < Date.now() - to * DAY;
@@ -57,7 +57,7 @@ export function stats(media: Media[], hist: { day: string; followers: number }[]
 	const reels = last.filter(isReel);
 	const watched = reels.filter((m) => (m.avg_watch_ms ?? 0) > 0);
 	const now = ig?.followers ?? hist[hist.length - 1]?.followers ?? null;
-	const monthAgo = hist.find((h) => Date.parse(h.day) >= Date.now() - 31 * DAY)?.followers ?? null;
+	const monthAgo = [...hist].filter((h) => Date.parse(h.day) <= Date.now() - 30 * DAY && Date.parse(h.day) >= Date.now() - 33 * DAY).sort((a, b) => b.day.localeCompare(a.day))[0]?.followers ?? null;
 	return {
 		followers: now,
 		gained: now !== null && monthAgo !== null ? now - monthAgo : null,
@@ -68,14 +68,6 @@ export function stats(media: Media[], hist: { day: string; followers: number }[]
 		sharesUp: pct(sum(last, (m) => m.shares), sum(prev, (m) => m.shares)),
 		watch: watched.length ? sum(watched, (m) => m.avg_watch_ms) / watched.length / 1000 : null
 	};
-}
-
-/** Followers gained in the two days after a post went up (from the daily follower count). */
-function lift(m: Media, hist: { day: string; followers: number }[]) {
-	const d = m.posted_at.slice(0, 10);
-	const before = [...hist].reverse().find((h) => h.day < d)?.followers;
-	const after = hist.find((h) => Date.parse(h.day) >= Date.parse(d) + 2 * DAY)?.followers;
-	return before !== undefined && after !== undefined ? after - before : null;
 }
 
 // Formats, from words in the caption.
@@ -99,31 +91,9 @@ export type Insight = { text: string; bold: string };
 /** What's working: plain sentences from her own numbers (only the ones the numbers support). */
 export function insights(media: Media[], hist: { day: string; followers: number }[]): Insight[] {
 	const out: Insight[] = [];
-	const reels = media.filter(isReel).filter((m) => reach(m) > 0);
-	// Watch time.
-	const w = reels.filter((m) => (m.avg_watch_ms ?? 0) > 0).sort((a, b) => (a.avg_watch_ms ?? 0) - (b.avg_watch_ms ?? 0));
-	if (w.length >= 6) {
-		const mid = (w[Math.floor(w.length / 2)].avg_watch_ms ?? 0) / 1000;
-		const hi = w.filter((m) => (m.avg_watch_ms ?? 0) / 1000 >= mid);
-		const lo = w.filter((m) => (m.avg_watch_ms ?? 0) / 1000 < mid);
-		const r = sum(hi, reach) / hi.length / Math.max(1, sum(lo, reach) / Math.max(1, lo.length));
-		if (r >= 1.3) out.push({ bold: `${Math.round(mid)} seconds or more`, text: `Reels people watch for {b} got ${r.toFixed(1)}× the views. Get to the point fast.` });
-	}
-	// Formats.
-	const base = shareRate(reels);
-	const fm = FORMATS.map(([name]) => ({ name, list: reels.filter((m) => formatOf(m) === name) }))
-		.filter((f) => f.list.length >= 2)
-		.map((f) => ({ ...f, r: base > 0 ? shareRate(f.list) / base : 0 }))
-		.sort((a, b) => b.r - a.r)[0];
-	if (fm && fm.r >= 1.3) out.push({ bold: fm.name, text: `{b} reels get ${fm.r.toFixed(1)}× your usual shares and saves, and shares are what bring new people.` });
-	// New followers after a reel.
-	const lifts = reels.filter((m) => within(m, 60, 2)).map((m) => ({ m, n: lift(m, hist) })).filter((x) => (x.n ?? 0) > 0).sort((a, b) => (b.n ?? 0) - (a.n ?? 0));
-	if (lifts[0] && (lifts[0].n ?? 0) >= 50) {
-		const c = (lifts[0].m.caption || 'One reel').split('\n')[0].slice(0, 50);
-		out.push({ bold: `+${(lifts[0].n ?? 0).toLocaleString('en-IN')} followers`, text: `“${c}” came with {b} in the two days after it went up.` });
-	}
-	// Best time.
-	const s = bestSlot(media);
+	const focus = growthFocus(media, hist);
+	if (focus.reach.kind !== 'experiment') out.push({ bold: focus.reach.kind === 'repeat' ? 'Shares and saves' : 'Watch time', text: `{b}: ${focus.reach.evidence}` });
+	const s = focus.slot;
 	if (s) out.push({ bold: slotLabel(s), text: `Try posting {b}. ${postingEvidence(s)}` });
 	return out.slice(0, 4);
 }
@@ -173,19 +143,22 @@ export async function planWeek(force = false) {
 	if (!force && weekIdeas().length) return;
 	grow.planning = true;
 	try {
-		const top = topReels(media, 6).map((m) => ({ caption: (m.caption ?? '').slice(0, 140), views: reach(m), shares: m.shares ?? 0, saves: m.saves ?? 0, format: formatOf(m) }));
-		const s = bestSlot(media);
-		const r = await askAi<{ ideas: { title: string; why: string }[] }>('growplan', { niche: studio.settings?.niche ?? '', city: studio.settings?.city ?? '', top, best_time: s ? slotLabel(s) : '', posting_evidence: s ? postingEvidence(s) : '', month: new Date().toLocaleString('en-IN', { month: 'long' }) });
-		if (force) {
-			const old = weekIdeas().filter((p) => p.status === 'idea').map((p) => p.id);
-			if (old.length) await supabase.from('content_plans').update({ status: 'dropped' }).in('id', old);
-		}
+		const top = topReels(media, 6).map((m) => ({ caption: (m.caption ?? '').slice(0, 140), views: m.views, reach: m.reach, shares: m.shares, saves: m.saves, format: formatOf(m) }));
+		const focus = growthFocus(media, studio.followersHistory);
+		const s = focus.slot;
+		const old = force ? weekIdeas().filter((p) => p.status === 'idea').map((p) => p.id) : [];
+		const r = await askAi<{ ideas: { title: string; why: string }[] }>('growplan', { niche: studio.settings?.niche ?? '', city: studio.settings?.city ?? '', top, growth_focus: { goal: 'reach, relevant followers and brand collaborations', reach: focus.reach, recent: focus.recent, previous: focus.previous, follower_change: focus.followerChange }, best_time: s ? slotLabel(s) : '', posting_evidence: s ? postingEvidence(s) : '', month: new Date().toLocaleString('en-IN', { month: 'long' }) });
+		if (!r.ideas?.length) throw new Error('No new reel ideas came back. Please try again.');
 		const slots = nextSlots(media, r.ideas.length);
 		const auto = studio.settings?.grow_mode === 'auto';
 		const { error } = await supabase.from('content_plans').insert(
 			r.ideas.map((i, k) => ({ title: i.title, why: i.why, post_at: slots[k]?.toISOString() ?? null, status: auto ? 'planned' : 'idea', source: 'autopilot', week: weekOf() }))
 		);
 		if (error) throw error;
+		if (old.length) {
+			const { error: replaceError } = await supabase.from('content_plans').update({ status: 'dropped' }).in('id', old).eq('status', 'idea');
+			if (replaceError) toast('New ideas are ready. Some earlier ideas could not be replaced.', 'alert');
+		}
 		await loadGrow();
 		if (auto) toast("This week's 3 reel ideas are in your Calendar", 'cal');
 	} catch (e) {

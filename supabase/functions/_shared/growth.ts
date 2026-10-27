@@ -1,4 +1,4 @@
-import { postingTimeInsights, slotLabel } from './postingTime.ts';
+import { postingTimeInsights, slotLabel, nextSlots, type PostingSlot } from './postingTime.ts';
 export { bestSlot, slotLabel } from './postingTime.ts';
 
 // The growth check-up's numbers: why a creator isn't growing and what to change, from her own reels,
@@ -60,7 +60,7 @@ const median = (a: number[]) => {
   const m = Math.floor(s.length / 2);
   return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
 };
-export const isReel = (m: Media) => m.product_type === 'REELS' || (m.media_type === 'VIDEO' && m.product_type !== 'STORY');
+export const isReel = (m: Pick<Media, 'product_type' | 'media_type'>) => m.product_type !== 'STORY' && (m.product_type === 'REELS' || m.media_type === 'VIDEO');
 const isStory = (m: Media) => m.product_type === 'STORY';
 const per1k = (n: number | null | undefined, v: number) => (v > 0 ? ((n ?? 0) / v) * 1000 : 0);
 const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -72,6 +72,86 @@ const sameCity = (a: string, b: string) => {
   return !!a && !!b && n(a) === n(b);
 };
 const reach = (m: Media) => m.views || m.reach || 0;
+
+export type CoachMedia = Pick<Media, 'id' | 'caption' | 'product_type' | 'media_type' | 'posted_at' | 'views' | 'permalink'> &
+  Partial<Pick<Media, 'reach' | 'shares' | 'saves' | 'avg_watch_ms'>>;
+export type GrowthFocus = {
+  reels: number;
+  recent: { posts: number; typicalViews: number | null };
+  previous: { posts: number; typicalViews: number | null };
+  change: number | null;
+  followerChange: number | null;
+  followerDays: number | null;
+  reach: { kind: 'repeat' | 'watch' | 'experiment'; title: string; evidence: string; test: string; example: { id: string; caption: string; url: string } | null };
+  slot: PostingSlot | null;
+  nextPost: string | null;
+};
+const measured = (n: unknown): n is number => typeof n === 'number' && Number.isFinite(n) && n >= 0;
+const instagramUrl = (value: string | null) => {
+  try {
+    const url = new URL(value ?? '');
+    return url.protocol === 'https:' && (url.hostname === 'instagram.com' || url.hostname.endsWith('.instagram.com')) ? url.href : '';
+  } catch { return ''; }
+};
+
+/** Growth actions from the same measured results used for planning, not generic promises.
+ * Compare two 30-day cohorts ending three days ago, so the newest reels can settle.
+ * Account follower movement is kept separate from individual reel performance.
+ */
+export function growthFocus(media: CoachMedia[], history: Day[], now = Date.now()): GrowthFocus {
+  const reels = media.filter(isReel).filter((m) => measured(m.views) &&
+    Date.parse(m.posted_at) >= now - 90 * DAY && Date.parse(m.posted_at) <= now - 3 * DAY);
+  const period = (from: number, to: number) => {
+    const list = reels.filter((m) => Date.parse(m.posted_at) >= now - from * DAY && Date.parse(m.posted_at) < now - to * DAY);
+    return { posts: list.length, typicalViews: list.length >= 3 ? Math.round(median(list.map((m) => m.views!))) : null };
+  };
+  const recent = period(33, 3), previous = period(63, 33);
+  const baseline = reels.length ? median(reels.map((m) => m.views!)) : 0;
+  const rates = reels.filter((m) => m.views! > 0 && measured(m.shares) && measured(m.saves)).map((m) => ({ m, rate: ((m.shares! + m.saves!) / m.views!) * 1000 }));
+  const usualRate = rates.length >= 6 ? median(rates.map((x) => x.rate)) : null;
+  const candidate = [...rates].filter(({ m }) => m.views! >= baseline / 2 && m.shares! + m.saves! >= 3)
+    .sort((a, b) => b.rate - a.rate || a.m.id.localeCompare(b.m.id))[0];
+  let action: GrowthFocus['reach'] = {
+    kind: 'experiment', title: reels.length < 6 ? 'Build your first comparison' : 'Test one new opening',
+    evidence: reels.length < 6 ? `${reels.length} settled reel${reels.length === 1 ? '' : 's'} with views. Six are needed to compare repeatable patterns.` : `No clear repeat candidate across ${reels.length} settled reels yet.`,
+    test: 'Keep the topic and format similar. Change the first sentence in your next reel, then compare views, shares and saves after three days.', example: null
+  };
+  if (usualRate !== null && candidate && candidate.rate > usualRate * 1.25) {
+    const { m, rate } = candidate;
+    action = {
+      kind: 'repeat', title: 'Repeat the approach people kept or shared',
+      evidence: `This reel had ${rate.toFixed(1)} shares + saves per 1,000 views; your typical reel had ${usualRate.toFixed(1)} (based on ${rates.length} reels).`,
+      test: 'Reuse its topic and structure with a fresh example. Keep that approach for two reels; use the third to test one new opening.',
+      example: { id: m.id, caption: (m.caption || 'Your reel').split('\n')[0].slice(0, 100), url: instagramUrl(m.permalink) }
+    };
+  } else {
+    const watched = reels.filter((m) => measured(m.avg_watch_ms) && m.avg_watch_ms! > 0).sort((a, b) => a.avg_watch_ms! - b.avg_watch_ms! || a.id.localeCompare(b.id));
+    const half = Math.floor(watched.length / 2);
+    if (watched.length >= 6) {
+      const low = median(watched.slice(0, half).map((m) => m.views!));
+      const high = median(watched.slice(half).map((m) => m.views!));
+      if (low > 0 && high / low >= 1.25) action = {
+        kind: 'watch', title: 'Test a stronger first few seconds',
+        evidence: `The half of your reels watched longer had ${(high / low).toFixed(1)}× the typical views (${watched.length} reels compared).`,
+        test: 'Show the result first, then explain how you got there. Keep the topic similar and compare watch time and views after three days.', example: null
+      };
+    }
+  }
+  const today = new Date(now + 330 * 60e3).toISOString().slice(0, 10);
+  const target = new Date(now - 28 * DAY + 330 * 60e3).toISOString().slice(0, 10);
+  const hist = history.filter((h) => measured(h.followers) && Number.isFinite(Date.parse(h.day)) && h.day <= today).sort((a, b) => a.day.localeCompare(b.day));
+  const last = hist[hist.length - 1];
+  const before = hist.filter((h) => h.day <= target).at(-1);
+  const validHistory = !!last && !!before && Date.parse(today) - Date.parse(last.day) <= 3 * DAY && Date.parse(target) - Date.parse(before.day) <= 3 * DAY;
+  const slot = postingTimeInsights(media, now).recommendation;
+  return {
+    reels: reels.length, recent, previous,
+    change: recent.typicalViews !== null && previous.typicalViews !== null && previous.typicalViews > 0 ? Math.round((recent.typicalViews / previous.typicalViews - 1) * 100) : null,
+    followerChange: validHistory ? last.followers - before.followers : null,
+    followerDays: validHistory ? Math.round((Date.parse(last.day) - Date.parse(before.day)) / DAY) : null,
+    reach: action, slot, nextPost: slot ? nextSlots(media, 1, now)[0]?.toISOString() ?? null : null
+  };
+}
 
 export const boostBudget = (followers: number | null) => ((followers ?? 0) >= 100000 ? 500 : (followers ?? 0) >= 20000 ? 300 : 200);
 

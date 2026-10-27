@@ -7,6 +7,7 @@
 	import { compact } from '../util';
 	import Avatar from './Avatar.svelte';
 	import HealthCard from './HealthCard.svelte';
+	import GrowthCoach from './GrowthCoach.svelte';
 	import Icon from './Icon.svelte';
 
 	// Grow on the phone: an app, not an article. The growth meter on top, the tools as tiles, then what to
@@ -103,6 +104,8 @@
 			<small>{boost ? '1 reel worth boosting' : 'When a reel takes off'}</small>
 		</button>
 	</div>
+
+	<GrowthCoach />
 
 	<!-- This week: the autopilot's three reels -->
 	<section class="pg-sec rv" style="--i:2">

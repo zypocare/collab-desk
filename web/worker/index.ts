@@ -786,9 +786,9 @@ Give 3 to 5 checks covering: length versus her avg watch time (a reel much longe
 async function growPlan(x: Run, b: Record<string, unknown>) {
 	const reply = await chat(
 		x,
-		`You plan next week's Instagram Reels for an Indian creator, from what already works for HER (her top reels with their views, shares and saves, her niche, her best posting times). Suggest exactly 3 reels she can shoot easily, each like one of her proven formats but fresh (new angle, new product type, a seasonal hook for India this time of year). No fake claims, no buying engagement, no trends you can't name confidently. Any posting-time advice must use only best_time and posting_evidence from the shared engine. If they are empty, do not invent a personal best time. Never turn historical lift into a promised growth probability.
-Return ONLY JSON: {"ideas": [{"title": "under 9 words, the reel itself", "why": "under 12 words: which of her reels or numbers it builds on"}]}`,
-		JSON.stringify(b).slice(0, 3500),
+		`You plan next week's Instagram Reels for an Indian creator, from what already works for HER (her top reels with their views, shares and saves, her niche, her best posting times). Suggest exactly 3 reels she can shoot easily: two repeat the topic or structure supported by growth_focus.reach and her examples, with a fresh angle; one tests a single change such as a different opening. If the evidence is still thin, describe all three as tests rather than proven winners. Give each a clear audience and a useful payoff. Include a natural reason to follow a continuing series; a brand example must fit her actual niche without inventing sponsorships. growth_focus contains measured results; never claim account follower changes were caused by a specific reel. No fake claims, no buying engagement, no trends you can't name confidently. Any posting-time advice must use only best_time and posting_evidence from the shared engine. If they are empty, do not invent a personal best time. Never turn historical lift into a promised growth probability.
+Return ONLY JSON: {"ideas": [{"title": "under 9 words, the reel itself", "why": "under 20 words, start Repeat: or Test:, name the real evidence or single change; measure views, shares or saves"}]}`,
+		JSON.stringify(b).slice(0, 6500),
 		500
 	);
 	const j = firstJson(reply) ?? {};

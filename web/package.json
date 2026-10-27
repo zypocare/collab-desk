@@ -11,7 +11,7 @@
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"test:e2e": "playwright test",
-		"test:workflow": "node --experimental-strip-types --test tests/unit/pagination.test.ts tests/unit/deliverables.test.ts tests/unit/postingTime.test.ts",
+		"test:workflow": "node --experimental-strip-types --test tests/unit/pagination.test.ts tests/unit/deliverables.test.ts tests/unit/postingTime.test.ts tests/unit/growthCoach.test.ts",
 		"test:upi": "node --experimental-strip-types --test tests/unit/upi.test.ts",
 		"test:dm": "node --experimental-strip-types tests/dm/run.ts"
 	},
