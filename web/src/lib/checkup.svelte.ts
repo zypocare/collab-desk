@@ -1,7 +1,7 @@
 // The growth check-up: why she isn't growing and what to change, from her own reels and audience.
 // It's made on the server (the growth-checkup function): by itself every two weeks, with a phone alert
 // and an email, or now when she asks. Here: loading it, ticking actions off, and the actions' buttons.
-import { bestSlot } from './grow.svelte';
+import { schedulingSlot } from './postTime';
 import { studio } from './studio.svelte';
 import { supabase } from './supabase';
 import type { IgMedia } from './types';
@@ -97,8 +97,8 @@ export async function setDone(run: Run, key: string, on: boolean) {
 
 /** The festival reels: planned 2 days before each, at her best time. */
 export async function planMoments(run: Run, a: Action) {
-	const slot = bestSlot(studio.media);
-	const hour = slot?.hour ?? 19, minute = slot?.minute ?? 30;
+	const slot = schedulingSlot(studio.media);
+	const { hour, minute } = slot;
 	const rows = run.data.moments.map((m) => {
 		const d = new Date(m.date + 'T00:00:00Z');
 		const at = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() - 2, hour, minute) - 330 * 60e3;
@@ -112,8 +112,9 @@ export async function planMoments(run: Run, a: Action) {
 
 /** One reel of her best topic a week, for four weeks, on her best day and time. */
 export async function planWeekly(run: Run, a: Action) {
-	const slot = bestSlot(studio.media);
-	const day = slot?.days[0] ?? 4, hour = slot?.hour ?? 19, minute = slot?.minute ?? 30;
+	const slot = schedulingSlot(studio.media);
+	const day = slot.days[0] ?? new Date(Date.now() + 330 * 60e3).getUTCDay();
+	const { hour, minute } = slot;
 	const rows = [];
 	const today = new Date(Date.now() + 330 * 60e3);
 	let first = (day - today.getUTCDay() + 7) % 7 || 7;

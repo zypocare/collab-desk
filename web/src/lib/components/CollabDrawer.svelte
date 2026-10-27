@@ -67,7 +67,7 @@
 	import DecisionCard from './DecisionCard.svelte';
 	import Select from './Select.svelte';
 	import DatePicker from './DatePicker.svelte';
-	import { bestTime, timeLabel, timeOptions } from '../postTime';
+	import { bestSlot, slotLabel, postingEvidence, timeLabel, timeOptions } from '../postTime';
 	import DraftPlayer from './DraftPlayer.svelte';
 	import CollabCosts from './CollabCosts.svelte';
 	import CollabFiles from './CollabFiles.svelte';
@@ -367,7 +367,7 @@
 	// ---- next step: one button that moves the collab forward ----
 	const next = $derived(c ? nextStep(c) : null);
 	const dates = $derived(c && studio.settings ? suggestDates(c, studio.settings, studio.collabs) : null);
-	const best = $derived(bestTime(studio.media));
+	const best = $derived(bestSlot(studio.media));
 	const missingBrief = $derived(c ? briefMissing(c) : []);
 	let askBusy = $state(false);
 	async function askBrief() {
@@ -703,7 +703,7 @@
 				{#if best && !noPost(c) && c.live_date && !['live', 'wrapped', 'declined'].includes(c.stage) && c.live_time?.slice(0, 5) !== best.value}
 					<div class="date-sug">
 						<Icon name="spark" />
-						<span><em class="ds-eb">Your best time</em>{best.label}<small>Your posts then get {best.lift}% more interactions.</small></span>
+						<span><em class="ds-eb">Your best time</em>{slotLabel(best)}<small>{postingEvidence(best)}</small></span>
 						<button class="btn sm" onclick={() => best && save('live_time', best.value)}>Use {timeLabel(best.value)}</button>
 					</div>
 				{/if}

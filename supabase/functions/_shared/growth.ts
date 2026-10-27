@@ -1,3 +1,6 @@
+import { postingTimeInsights, slotLabel } from './postingTime.ts';
+export { bestSlot, slotLabel } from './postingTime.ts';
+
 // The growth check-up's numbers: why a creator isn't growing and what to change, from her own reels,
 // follower history and audience. Pure functions (no database, no AI): the growth-checkup function
 // gathers the data and the AI's reading of her captions, and stores what this returns.
@@ -61,10 +64,6 @@ export const isReel = (m: Media) => m.product_type === 'REELS' || (m.media_type 
 const isStory = (m: Media) => m.product_type === 'STORY';
 const per1k = (n: number | null | undefined, v: number) => (v > 0 ? ((n ?? 0) / v) * 1000 : 0);
 const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-const istParts = (iso: string) => {
-  const d = new Date(Date.parse(iso) + 330 * 60e3);
-  return { day: d.getUTCDay(), hour: d.getUTCHours(), minute: d.getUTCMinutes() };
-};
 const pct = (x: number) => Math.round(x * 100);
 const fmt = (n: number) => (n >= 10000 ? `${Math.round(n / 1000)}K` : n.toLocaleString('en-IN'));
 const KARNATAKA = /bengaluru|bangalore|mysuru|mysore|mangaluru|mangalore|hubli|hubballi|belagavi|belgaum|udupi|karnataka/i;
@@ -74,31 +73,6 @@ const sameCity = (a: string, b: string) => {
 };
 const reach = (m: Media) => m.views || m.reach || 0;
 
-/** Her best days and time to post (India time), from how her own posts did. */
-export function bestSlot(media: Media[]) {
-  const posts = media.filter((m) => m.posted_at && reach(m) > 0);
-  if (posts.length < 6) return null;
-  const avg = posts.reduce((a, m) => a + reach(m), 0) / posts.length;
-  const byDay = new Map<number, number[]>();
-  const byHour = new Map<number, number[]>();
-  for (const m of posts) {
-    const p = istParts(m.posted_at);
-    byDay.set(p.day, [...(byDay.get(p.day) ?? []), reach(m)]);
-    const h = Math.floor(p.hour / 2) * 2;
-    byHour.set(h, [...(byHour.get(h) ?? []), reach(m)]);
-  }
-  const rank = (m: Map<number, number[]>) => [...m.entries()].filter(([, v]) => v.length >= 2).map(([k, v]) => ({ k, avg: v.reduce((a, b) => a + b, 0) / v.length })).sort((a, b) => b.avg - a.avg);
-  const days = rank(byDay).slice(0, 2).map((d) => d.k);
-  const bucket = rank(byHour)[0]?.k ?? 18;
-  if (!days.length) return null;
-  const times = posts.map((m) => istParts(m.posted_at)).filter((p) => Math.floor(p.hour / 2) * 2 === bucket).map((p) => p.hour * 60 + Math.round(p.minute / 30) * 30);
-  const common = [...new Set(times)].sort((x, y) => times.filter((t) => t === y).length - times.filter((t) => t === x).length)[0] ?? bucket * 60 + 30;
-  return { days, hour: Math.floor(common / 60) % 24, minute: common % 60, lift: Math.round(((rank(byDay)[0].avg - avg) / avg) * 100) };
-}
-export const slotLabel = (s: NonNullable<ReturnType<typeof bestSlot>>) => {
-  const h = ((s.hour + 11) % 12) + 1;
-  return `${s.days.map((d) => WEEKDAYS[d]).join(' and ')} at ${h}:${s.minute ? '30' : '00'} ${s.hour < 12 ? 'am' : 'pm'}`;
-};
 export const boostBudget = (followers: number | null) => ((followers ?? 0) >= 100000 ? 500 : (followers ?? 0) >= 20000 ? 300 : 200);
 
 // Days her audience celebrates (dates are fixed or known for this year). Regional ones need her region.
@@ -166,15 +140,12 @@ export function analyse({ media, hist, ai, city, languages, followers, demograph
   const tagLed = reels.filter((m) => /^\s*(#\w+\s*){1,}/.test(m.caption ?? '') || ((m.caption ?? '').slice(0, 90).match(/#\w+/g)?.length ?? 0) >= 3);
   const sentence = reels.filter((m) => !tagLed.includes(m));
   const caption = tagLed.length >= 2 && sentence.length >= 2 ? { sentence: Math.round(median(sentence.map(v))), tags: Math.round(median(tagLed.map(v))) } : null;
-  // Days.
-  const byDay = new Map<number, number[]>();
-  for (const m of reels) {
-    const k = istParts(m.posted_at).day;
-    byDay.set(k, [...(byDay.get(k) ?? []), v(m)]);
-  }
-  const ranked = [...byDay.entries()].filter(([, l]) => l.length >= 2).map(([k, l]) => ({ k, med: median(l) })).sort((a, b) => b.med - a.med);
-  const slot = bestSlot(media);
-  const days = ranked.length >= 3 ? { best: slot ? slotLabel(slot) : `${WEEKDAYS[ranked[0].k]}s`, worst: WEEKDAYS[ranked[ranked.length - 1].k] } : null;
+  // Use the same timing evidence as the studio and the scheduled growth plans.
+  const timing = postingTimeInsights(media);
+  const slot = timing.recommendation;
+  const rankedDays = timing.days.filter((d) => d.posts >= 2).sort((a, b) => b.typical - a.typical);
+  const worst = rankedDays.length >= 3 ? WEEKDAYS[['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(rankedDays[rankedDays.length - 1].k)] : null;
+  const days = slot ? { best: slotLabel(slot), worst } : null;
   // Topics (the AI grouped the captions; the numbers are hers).
   const byId = new Map(reels.map((m) => [m.id, m]));
   const topics: Topic[] = ai.topics

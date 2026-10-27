@@ -1,3 +1,4 @@
+import type { PostingInsights } from '../../../supabase/functions/_shared/postingTime.ts';
 // Profile insights brands ask for, as stored by the Instagram sync (ig_account.insights).
 export type FormatStats = {
 	posts: number;
@@ -16,7 +17,7 @@ export type FormatStats = {
 	share_rate?: number | null;
 };
 export type Topic = { k: string; posts: number; med_views: number | null; avg_views: number | null; med_reach: number | null };
-export type TimeBucket = { k: string; posts: number; med_reach: number | null };
+export type TimeBucket = { k: string; posts: number; med_reach?: number | null; typical?: number };
 export type BestTime = { posts: number; bands: TimeBucket[]; days: TimeBucket[]; best_band: string | null; best_day: string | null };
 export type Month = { month: string; followers: number | null; reach: number | null; views: number | null; engaged: number | null; er: number | null; reels_er: number | null };
 /** How many posts an average is based on: those Instagram gave figures for (older syncs: all looked at). */
@@ -30,7 +31,7 @@ export type InsightsData = {
 	growth?: { d30: number | null; d90: number | null };
 	sponsored?: { sponsored: FormatStats; regular: FormatStats } | null;
 	topics?: Topic[];
-	best_time?: BestTime | null;
+	best_time?: (BestTime & Partial<Pick<PostingInsights, 'version' | 'metric' | 'recommendation'>>) | null;
 };
 export type TopPost = { permalink: string; thumbnail_url: string; media_type: string; product_type: string; views: number | null; reach: number | null; interactions: number | null; likes: number | null; comments: number | null; posted_at: string };
 export type PublicInsights = {

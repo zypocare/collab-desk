@@ -1,3 +1,4 @@
+import { POSTING_MEDIA_LIMIT } from '../_shared/postingTime.ts';
 // The growth check-up, made on the server. Every morning it makes a new one for each creator whose
 // last check-up is two weeks old (or who never had one) and has enough reels, then tells her by phone
 // alert and email. She can also ask for one now from Grow ("Run it again").
@@ -60,7 +61,7 @@ Deno.serve(async (req) => {
 async function checkupFor(db: Db, s: Settings, auto: boolean) {
   const [acct, media, hist, prev] = await Promise.all([
     db.from('ig_account').select('connected, followers, demographics').eq('id', s.id).maybeSingle(),
-    db.from('ig_media').select('id, caption, media_type, product_type, permalink, posted_at, views, reach, likes, saves, shares, avg_watch_ms').eq('creator_id', s.id).order('posted_at', { ascending: false }).limit(100),
+    db.from('ig_media').select('id, caption, media_type, product_type, permalink, posted_at, views, reach, likes, saves, shares, avg_watch_ms').eq('creator_id', s.id).order('posted_at', { ascending: false }).limit(POSTING_MEDIA_LIMIT),
     db.from('ig_followers_history').select('day, followers').eq('creator_id', s.id).order('day', { ascending: true }).limit(120),
     db.from('growth_checkups').select('done').eq('creator_id', s.id).order('created_at', { ascending: false }).limit(1).maybeSingle(),
   ]);

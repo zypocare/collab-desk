@@ -3,6 +3,7 @@
 	import { goto } from '$app/navigation';
 	import { askAi } from '#lib/ai.ts';
 	import { insights, nextSlots, bestSlot, slotLabel, stats } from '#lib/grow.svelte.ts';
+	import { postingEvidence } from '#lib/postTime.ts';
 	import { loadInstagram, studio } from '#lib/studio.svelte.ts';
 	import { supabase } from '#lib/supabase.ts';
 	import { copyText, toast } from '#lib/ui.svelte.ts';
@@ -70,6 +71,7 @@
 				avg_watch_s: st.watch ? Math.round(st.watch * 10) / 10 : 0,
 				best_formats: insights(studio.media, studio.followersHistory).map((t) => t.bold),
 				best_time: s ? slotLabel(s) : '',
+			posting_evidence: s ? postingEvidence(s) : '',
 				niche: studio.settings?.niche ?? ''
 			});
 			if (lineOnly && res) res = { ...res, line: r.line || res.line };
@@ -164,7 +166,7 @@
 				<div class="rc-go">
 					{#if studio.ig?.connected}<button class="btn primary" onclick={() => schedule(true)} disabled={!!busy}>{#if busy === 'post'}<span class="spinner"></span>{:else}<Icon name="send" />{/if}Schedule for {slotText}</button>{/if}
 					<button class="btn" onclick={() => schedule(false)} disabled={!!busy}>{#if busy === 'plan'}<span class="spinner"></span>{:else}<Icon name="cal" />{/if}Just add to Calendar</button>
-					<small class="hint">{studio.ig?.connected ? 'Your best time. Miracle posts it to Instagram for you, as it does for brand drafts.' : 'Connect Instagram to have Miracle post it for you.'}</small>
+					<small class="hint">{studio.ig?.connected ? (bestSlot(studio.media) ? 'Your suggested time from your own posts. Miracle posts it to Instagram for you.' : 'A starter time while we gather enough posting data. Miracle posts it to Instagram for you.') : 'Connect Instagram to have Miracle post it for you.'}</small>
 				</div>
 			{/if}
 		</div>

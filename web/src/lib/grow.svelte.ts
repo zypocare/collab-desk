@@ -3,6 +3,8 @@
 // (the growth autopilot), collab reels with other creators, and which reel is worth boosting on Instagram.
 // Nothing here buys followers or likes.
 import { askAi } from './ai';
+import { bestSlot, slotLabel, postingEvidence, nextSlots } from './postTime';
+export { bestSlot, slotLabel, nextSlots } from './postTime';
 import { studio, saveSettings } from './studio.svelte';
 import { supabase } from './supabase';
 import type { IgAccount, IgMedia } from './types';
@@ -91,53 +93,7 @@ const shareRate = (list: Media[]) => {
 	return v > 0 ? sum(list, (m) => (m.shares ?? 0) + (m.saves ?? 0)) / v : 0;
 };
 
-const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-const istParts = (iso: string) => {
-	const d = new Date(Date.parse(iso) + 330 * 60e3);
-	return { day: d.getUTCDay(), hour: d.getUTCHours() };
-};
 const reach = (m: Media) => m.views || m.reach || 0;
-
-/** Her best days and hour to post (India time), from how her own posts did. */
-export function bestSlot(media: Media[]) {
-	const posts = media.filter((m) => m.posted_at && reach(m) > 0);
-	if (posts.length < 6) return null;
-	const avg = posts.reduce((a, m) => a + reach(m), 0) / posts.length;
-	const byDay = new Map<number, number[]>();
-	const byHour = new Map<number, number[]>();
-	for (const m of posts) {
-		const p = istParts(m.posted_at);
-		byDay.set(p.day, [...(byDay.get(p.day) ?? []), reach(m)]);
-		const h = Math.floor(p.hour / 2) * 2;
-		byHour.set(h, [...(byHour.get(h) ?? []), reach(m)]);
-	}
-	const rank = (m: Map<number, number[]>) => [...m.entries()].filter(([, v]) => v.length >= 2).map(([k, v]) => ({ k, avg: v.reduce((a, b) => a + b, 0) / v.length })).sort((a, b) => b.avg - a.avg);
-	const days = rank(byDay).slice(0, 2).map((d) => d.k);
-	const bucket = rank(byHour)[0]?.k ?? 18;
-	if (!days.length) return null;
-	// Inside her best two hours: the time she actually posts most, to the half hour.
-	const times = posts.map((m) => new Date(Date.parse(m.posted_at) + 330 * 60e3)).filter((d) => Math.floor(d.getUTCHours() / 2) * 2 === bucket).map((d) => d.getUTCHours() * 60 + Math.round(d.getUTCMinutes() / 30) * 30);
-	const common = [...new Set(times)].sort((x, y) => times.filter((t) => t === y).length - times.filter((t) => t === x).length)[0] ?? bucket * 60 + 30;
-	return { days, hour: Math.floor(common / 60) % 24, minute: common % 60, lift: Math.round(((rank(byDay)[0].avg - avg) / avg) * 100) };
-}
-export const slotLabel = (s: NonNullable<ReturnType<typeof bestSlot>>) => {
-	const h = ((s.hour + 11) % 12) + 1;
-	return `${s.days.map((d) => WEEKDAYS[d]).join(' and ')} at ${h}:${s.minute ? '30' : '00'} ${s.hour < 12 ? 'am' : 'pm'}`;
-};
-
-/** The next n posting times in the coming week, on her best days and hour (India time). */
-export function nextSlots(media: Media[], n = 3): Date[] {
-	const s = bestSlot(media) ?? { days: [4, 0, 6], hour: 19, minute: 30, lift: 0 };
-	const days = s.days.length >= 2 ? s.days : [...s.days, 6];
-	const out: Date[] = [];
-	for (let i = 1; out.length < n && i <= 21; i++) {
-		const d = new Date(Date.now() + i * DAY + 330 * 60e3);
-		if (!days.includes(d.getUTCDay()) && i < 14) continue;
-		const at = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), s.hour, s.minute) - 330 * 60e3;
-		out.push(new Date(at));
-	}
-	return out;
-}
 
 export type Insight = { text: string; bold: string };
 /** What's working: plain sentences from her own numbers (only the ones the numbers support). */
@@ -168,7 +124,7 @@ export function insights(media: Media[], hist: { day: string; followers: number 
 	}
 	// Best time.
 	const s = bestSlot(media);
-	if (s) out.push({ bold: slotLabel(s), text: `Your posts do best on {b}${s.lift > 10 ? ` (${s.lift}% more reach than your average)` : ''}.` });
+	if (s) out.push({ bold: slotLabel(s), text: `Try posting {b}. ${postingEvidence(s)}` });
 	return out.slice(0, 4);
 }
 
@@ -219,7 +175,7 @@ export async function planWeek(force = false) {
 	try {
 		const top = topReels(media, 6).map((m) => ({ caption: (m.caption ?? '').slice(0, 140), views: reach(m), shares: m.shares ?? 0, saves: m.saves ?? 0, format: formatOf(m) }));
 		const s = bestSlot(media);
-		const r = await askAi<{ ideas: { title: string; why: string }[] }>('growplan', { niche: studio.settings?.niche ?? '', city: studio.settings?.city ?? '', top, best_time: s ? slotLabel(s) : '', month: new Date().toLocaleString('en-IN', { month: 'long' }) });
+		const r = await askAi<{ ideas: { title: string; why: string }[] }>('growplan', { niche: studio.settings?.niche ?? '', city: studio.settings?.city ?? '', top, best_time: s ? slotLabel(s) : '', posting_evidence: s ? postingEvidence(s) : '', month: new Date().toLocaleString('en-IN', { month: 'long' }) });
 		if (force) {
 			const old = weekIdeas().filter((p) => p.status === 'idea').map((p) => p.id);
 			if (old.length) await supabase.from('content_plans').update({ status: 'dropped' }).in('id', old);

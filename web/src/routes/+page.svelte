@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { slotLabel } from '#lib/postTime.ts';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { onMount, tick } from 'svelte';
@@ -279,16 +280,12 @@
 		if (!a || !b || a < b * 0.8) return null;
 		return { a, b, better: a >= b };
 	});
-	const DAY: Record<string, string> = { Sun: 'Sunday', Mon: 'Monday', Tue: 'Tuesday', Wed: 'Wednesday', Thu: 'Thursday', Fri: 'Friday', Sat: 'Saturday' };
 	const best = $derived.by(() => {
 		const bt = ins?.insights?.best_time;
-		const days = bt?.days?.filter((d) => d.med_reach) ?? [];
-		if (days.length < 2) return null;
-		const max = Math.max(...days.map((d) => d.med_reach ?? 0));
-		const bestDay = bt?.best_day ?? days.find((d) => d.med_reach === max)?.k ?? '';
-		const band = bt?.best_band?.split(' ')[0].toLowerCase() ?? '';
-		const when = { morning: 'mornings', afternoon: 'afternoons', evening: 'evenings', night: 'nights' }[band] ?? '';
-		return { day: DAY[bestDay] ?? bestDay, when, days: (bt?.days ?? []).map((d) => ({ k: d.k, h: Math.round(((d.med_reach ?? 0) / max) * 100), best: d.k === bestDay })) };
+		const slot = bt?.recommendation;
+		if (!slot) return null;
+		const max = Math.max(1, ...bt.days.map((d) => d.typical ?? 0));
+		return { label: slotLabel(slot), days: bt.days.map((d) => ({ k: d.k, h: Math.round(((d.typical ?? 0) / max) * 100), best: d.k === bt.best_day })) };
 	});
 	const reelStats = $derived.by(() => {
 		const r = ins?.insights?.formats?.reels;
@@ -887,7 +884,7 @@
 							{/if}
 							{#if best}
 								<article class="mp-cell" style="--sp:{bento.time}" data-r="3" use:rv>
-									<span class="mp-eb" style="font-size:10.5px">Best time to post</span><h3>{#if best.when}{best.day} <span class="mp-gt">{best.when}</span>{:else}<span class="mp-gt">{best.day}s</span>{/if}</h3>
+									<span class="mp-eb" style="font-size:10.5px">Best time to post</span><h3><span class="mp-gt">{best.label}</span></h3>
 									<div class="mp-days">
 										{#each best.days as d (d.k)}<div class:mp-best={d.best}><i style="height:{d.h}%"></i>{d.k}</div>{/each}
 									</div>

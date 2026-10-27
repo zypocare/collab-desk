@@ -1,3 +1,4 @@
+import { postingTimeInsights, POSTING_MEDIA_LIMIT } from './postingTime.ts';
 // The Instagram sync: account numbers, posts and their insights, go-live detection with the disclosure
 // check, and 7-day results reports for brands.
 import type { SupabaseClient } from 'npm:@supabase/supabase-js@2';
@@ -155,7 +156,7 @@ export async function runSync(db: SupabaseClient, creator: number, opts: SyncOpt
     ]);
     // Her most recent posts of each kind (whatever their dates: she may not have posted lately).
     const { data: m90 } = await db.from('ig_media').select('id, caption, media_type, product_type, posted_at, views, reach, interactions, likes, comments, saves, shares, avg_watch_ms')
-      .eq('creator_id', creator).order('posted_at', { ascending: false }).limit(200);
+      .eq('creator_id', creator).order('posted_at', { ascending: false }).limit(POSTING_MEDIA_LIMIT);
     type Post = NonNullable<typeof m90>[number];
     const nums = (xs: (number | null | undefined)[]) => xs.filter((x): x is number => typeof x === 'number');
     const median = (xs: (number | null | undefined)[]) => {
@@ -220,20 +221,8 @@ export async function runSync(db: SupabaseClient, creator: number, opts: SyncOpt
       return { k, posts: xs.length, med_views: st.med_views, avg_views: st.avg_views, med_reach: st.med_reach };
     }).filter((x) => x.posts >= 2 && x.med_views !== null).sort((a, b) => b.med_views! - a.med_views!).slice(0, 6);
 
-    // When posts reach the most people (India time): by day of the week and time of day.
-    const ist = (iso: string) => new Date(Date.parse(iso) + 5.5 * 3600e3);
-    const BANDS: [string, (h: number) => boolean][] = [
-      ['Morning (6am-12pm)', (h) => h >= 6 && h < 12], ['Afternoon (12-5pm)', (h) => h >= 12 && h < 17],
-      ['Evening (5-9pm)', (h) => h >= 17 && h < 21], ['Night (9pm-6am)', (h) => h >= 21 || h < 6],
-    ];
-    const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    const withReach = feed.filter((r) => r.reach !== null).slice(0, 60);
-    const bucket = (k: string, xs: Post[]) => ({ k, posts: xs.length, med_reach: round(median(xs.map((r) => r.reach))) });
-    const bands = BANDS.map(([k, f]) => bucket(k, withReach.filter((r) => f(ist(r.posted_at).getUTCHours())))).filter((b) => b.posts > 0);
-    const days = DAYS.map((k, i) => bucket(k, withReach.filter((r) => ist(r.posted_at).getUTCDay() === i))).filter((b) => b.posts > 0);
-    const best = (xs: { k: string; posts: number; med_reach: number | null }[]) =>
-      xs.filter((x) => x.posts >= 2 && x.med_reach !== null).sort((a, b) => b.med_reach! - a.med_reach!)[0]?.k ?? null;
-    const best_time = withReach.length >= 6 ? { posts: withReach.length, bands, days, best_band: best(bands), best_day: best(days) } : null;
+    // Store the same recommendation and evidence used by Grow and collab scheduling.
+    const best_time = postingTimeInsights(m90 ?? [], now.getTime());
 
     const followersOn = async (daysAgo: number) =>
       // The count on (or just before) that day; nothing if the history doesn't go back that far yet.
@@ -246,7 +235,7 @@ export async function runSync(db: SupabaseClient, creator: number, opts: SyncOpt
     };
 
     // Monthly snapshot (this month, updated each sync), and last month from the 30 days before if missing.
-    const monthOf = (d: Date) => `${ist(d.toISOString()).toISOString().slice(0, 7)}-01`;
+    const monthOf = (d: Date) => `${istDate(d.toISOString()).slice(0, 7)}-01`;
     const t30 = cur as Record<string, number>, p30 = prev as Record<string, number>;
     await db.from('ig_monthly').upsert({
       creator_id: creator, month: monthOf(now), followers: p.followers_count, reach: t30.reach ?? null, views: t30.views ?? null, engaged: t30.accounts_engaged ?? null,

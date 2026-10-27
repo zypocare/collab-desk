@@ -741,7 +741,7 @@ ${sources.length ? `Messages, emails, briefs and notes that may answer the quest
 // The first frame (a small JPEG) is read by the vision model; the length, caption and her own numbers
 // (how long people watch her reels, which formats work) decide the rest. Advice only, never a promise of views.
 async function reelCheck(x: Run, b: Record<string, unknown>) {
-	const facts = { seconds: Number(b.seconds) || 0, caption: String(b.caption ?? '').slice(0, 600), avg_watch_s: Number(b.avg_watch_s) || 0, best_formats: b.best_formats ?? [], best_time: String(b.best_time ?? ''), niche: String(b.niche ?? '') };
+	const facts = { seconds: Number(b.seconds) || 0, caption: String(b.caption ?? '').slice(0, 600), avg_watch_s: Number(b.avg_watch_s) || 0, best_formats: b.best_formats ?? [], best_time: String(b.best_time ?? ''), posting_evidence: String(b.posting_evidence ?? ''), niche: String(b.niche ?? '') };
 	let frame = '';
 	const image = String(b.frame ?? '');
 	if (image.startsWith('data:image/') && !x.gemini) {
@@ -768,7 +768,7 @@ async function reelCheck(x: Run, b: Record<string, unknown>) {
 	}
 	const reply = await chat(
 		x,
-		`You are a short-video coach for an Indian Instagram creator. Check one Reel before she posts it, using ONLY these facts and the first-frame description. Compare with HER numbers (avg_watch_s = how long people watch her reels on average; best_formats = formats that get her the most shares/saves). Be specific and kind, plain English. Never promise views or followers.
+		`You are a short-video coach for an Indian Instagram creator. Check one Reel before she posts it, using ONLY these facts and the first-frame description. Compare with HER numbers (avg_watch_s = how long people watch her reels on average; best_formats = formats that get her the most shares/saves). Be specific and kind, plain English. Never promise views or followers. Posting times and their evidence come only from best_time and posting_evidence, supplied by the shared posting-time engine. Never invent a different time, percentage or growth probability; if best_time is empty, skip timing advice.
 Return ONLY JSON: {"score": 0-100, "verdict": "short line like 'Good, fix 2 things first'", "checks": [{"ok": true|false, "title": "under 8 words", "detail": "one or two sentences"}], "line": "a scroll-stopping first caption line under 14 words, in her voice, matching the reel"}.
 Give 3 to 5 checks covering: length versus her avg watch time (a reel much longer than people watch loses them; if seconds is 0 skip it), the first second (from the frame), text covered by Instagram's buttons, the caption's first line, and whether it matches a format that works for her. Score lower for each real problem.`,
 		JSON.stringify({ ...facts, first_frame: frame || 'not available' }),
@@ -786,7 +786,7 @@ Give 3 to 5 checks covering: length versus her avg watch time (a reel much longe
 async function growPlan(x: Run, b: Record<string, unknown>) {
 	const reply = await chat(
 		x,
-		`You plan next week's Instagram Reels for an Indian creator, from what already works for HER (her top reels with their views, shares and saves, her niche, her best posting times). Suggest exactly 3 reels she can shoot easily, each like one of her proven formats but fresh (new angle, new product type, a seasonal hook for India this time of year). No fake claims, no buying engagement, no trends you can't name confidently.
+		`You plan next week's Instagram Reels for an Indian creator, from what already works for HER (her top reels with their views, shares and saves, her niche, her best posting times). Suggest exactly 3 reels she can shoot easily, each like one of her proven formats but fresh (new angle, new product type, a seasonal hook for India this time of year). No fake claims, no buying engagement, no trends you can't name confidently. Any posting-time advice must use only best_time and posting_evidence from the shared engine. If they are empty, do not invent a personal best time. Never turn historical lift into a promised growth probability.
 Return ONLY JSON: {"ideas": [{"title": "under 9 words, the reel itself", "why": "under 12 words: which of her reels or numbers it builds on"}]}`,
 		JSON.stringify(b).slice(0, 3500),
 		500
@@ -813,7 +813,7 @@ async function checkup(x: Run, b: Record<string, unknown>) {
  "ideal": {"gender": "women" | "men" | "everyone", "age_from": number, "age_to": number, "city": "the city her content is mostly for, or '' if not local"},
  "bio": "a one-line Instagram bio under 60 characters saying who it's for and what they get, built on her best topics",
  "repeat": "one sentence: the format of her best reel to repeat, from its caption (hook first, then what)"}
-Rules: 3 to 6 topics; every reel id in exactly one topic; put reels that fit nothing in a topic named "Everything else". Base "ideal" on who her topics are made for (e.g. home decor and festival looks for women 22-40 in her city). Use only the captions; never invent facts.`,
+Rules: 3 to 6 topics; every reel id in exactly one topic; put reels that fit nothing in a topic named "Everything else". Base "ideal" on who her topics are made for (e.g. home decor and festival looks for women 22-40 in her city). Use only the captions; never invent facts. Do not infer posting times, weekdays or growth probabilities; the shared posting-time engine supplies scheduling advice separately.`,
 		JSON.stringify({ niche: b.niche ?? '', city: b.city ?? '', languages: b.languages ?? [], reels: reels.map((r) => ({ id: String(r.id), caption: String(r.caption ?? '').slice(0, 120), views: Number(r.views) || 0 })) }),
 		1200
 	);

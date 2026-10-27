@@ -1,25 +1,20 @@
 <script lang="ts">
 	import { sponsoredLine, type InsightsData } from '../insights';
 	import { studio } from '../studio.svelte';
+	import { postingTimeInsights, slotLabel, postingEvidence } from '../postTime';
 	import { compact } from '../util';
 	import Icon from './Icon.svelte';
-	import { phone } from '../phone.svelte';
 
 	// What her own numbers say about planning content: when to post, what works, what people keep.
 	const ins = $derived((studio.ig?.insights ?? null) as InsightsData | null);
-	const bt = $derived(ins?.best_time ?? null);
+	const bt = $derived(postingTimeInsights(studio.media));
 	const topics = $derived(ins?.topics ?? []);
 	const reels = $derived(ins?.formats?.reels ?? null);
 	const spLine = $derived(sponsoredLine(ins?.sponsored ?? null));
-	const bandMax = $derived(Math.max(1, ...(bt?.bands ?? []).map((b) => b.med_reach ?? 0)));
-	const dayMax = $derived(Math.max(1, ...(bt?.days ?? []).map((b) => b.med_reach ?? 0)));
+	const bandMax = $derived(Math.max(1, ...(bt?.bands ?? []).map((b) => b.typical)));
+	const dayMax = $derived(Math.max(1, ...(bt?.days ?? []).map((b) => b.typical)));
 	const topMax = $derived(Math.max(1, ...topics.map((t) => t.med_views ?? 0)));
-	const DAY_PLURAL: Record<string, string> = { Sun: 'Sundays', Mon: 'Mondays', Tue: 'Tuesdays', Wed: 'Wednesdays', Thu: 'Thursdays', Fri: 'Fridays', Sat: 'Saturdays' };
-	const bandPhrase = (b: string) => (b.startsWith('Night') ? 'at night' : `in the ${b.split(' (')[0].toLowerCase()}`);
-	const has = $derived(!!(bt?.best_band || topics.length || reels?.save_rate != null || spLine));
-	// Phone: the best day and time as words to put in the serif line.
-	const bestDay = $derived(bt?.best_day ? DAY_PLURAL[bt.best_day] ?? bt.best_day : '');
-	const bestBand = $derived(bt?.best_band ? bandPhrase(bt.best_band) : '');
+	const has = $derived(!!(bt.recommendation || topics.length || reels?.save_rate != null || spLine));
 	const pct = (v: number | null | undefined, max: number) => Math.max(6, Math.round(((v ?? 0) / max) * 100));
 </script>
 
@@ -27,28 +22,28 @@
 	<!-- Phone: CRED's look. Each tip a card: a line in serif, then the numbers as capsules or a ranking. -->
 	<section class="hs tp">
 		<header class="hs-h"><h2>Content tips</h2><span class="tp-from">from your own posts</span></header>
-		{#if bt?.best_band || bt?.best_day}
+		{#if bt.recommendation}
 			<article class="tp-card">
 				<span class="tp-eb"><i><Icon name="cal" /></i>Best time to post</span>
-				<p class="tp-say">Your posts travel furthest{#if bestDay}{' '}on <em>{bestDay}</em>{/if}{#if bestBand}{bestDay ? ',' : ''} {bestBand.split(' ').slice(0, -1).join(' ')} <em>{bestBand.split(' ').slice(-1)[0]}</em>{/if}.</p>
+				<p class="tp-say">Try posting <em>{slotLabel(bt.recommendation)}</em>.</p>
 				<div class="tp-cols tp-bands">
 					{#each bt.bands as b (b.k)}
 						<div class="tp-col" class:best={b.k === bt.best_band}>
-							<b>{compact(b.med_reach)}</b>
-							<span class="tp-track"><i style="height:{pct(b.med_reach, bandMax)}%"></i></span>
-							<span class="tp-lbl">{b.k.split(' (')[0]}<small>{b.k.match(/\((.*)\)/)?.[1] ?? ''}</small></span>
+							<b>{compact(b.typical)}</b>
+							<span class="tp-track"><i style="height:{pct(b.typical, bandMax)}%"></i></span>
+							<span class="tp-lbl">{b.k.split('–')[0]}<small>to {b.k.split('–')[1]}</small></span>
 						</div>
 					{/each}
 				</div>
 				<div class="tp-cols tp-days">
 					{#each bt.days as dd (dd.k)}
 						<div class="tp-col" class:best={dd.k === bt.best_day} title="{dd.posts} posts">
-							<span class="tp-track"><i style="height:{pct(dd.med_reach, dayMax)}%"></i></span>
+							<span class="tp-track"><i style="height:{pct(dd.typical, dayMax)}%"></i></span>
 							<span class="tp-lbl">{dd.k}</span>
 						</div>
 					{/each}
 				</div>
-				<small class="tp-hint">Typical reach by when you posted (India time), from your last {bt.posts} posts.</small>
+				<small class="tp-hint">{postingEvidence(bt.recommendation)}</small>
 			</article>
 		{/if}
 		{#if topics.length}
@@ -86,3 +81,11 @@
 		{/if}
 	</section>
 {/if}
+
+<style>
+	.tp-bands {
+		grid-auto-columns: minmax(76px, 1fr);
+		overflow-x: auto;
+		padding-bottom: 8px;
+	}
+</style>

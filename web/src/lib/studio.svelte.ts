@@ -1,3 +1,4 @@
+import { POSTING_MEDIA_LIMIT } from './postTime';
 // The creator's data: loads everything once, keeps it live with realtime, and saves edits.
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import type { Priority } from './priority';
@@ -821,7 +822,7 @@ export async function ignoreAlert(a: BankAlert) {
 export async function loadInstagram() {
 	const [acct, media, hist] = await Promise.all([
 		supabase.from('ig_account').select('*').single(),
-		supabase.from('ig_media').select('*').order('posted_at', { ascending: false }).limit(40),
+		supabase.from('ig_media').select('*').order('posted_at', { ascending: false }).limit(POSTING_MEDIA_LIMIT),
 		supabase.from('ig_followers_history').select('*').order('day', { ascending: false }).limit(60)
 	]);
 	if (acct.error && isNetworkError(acct.error)) return;
