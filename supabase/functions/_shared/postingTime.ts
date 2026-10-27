@@ -8,6 +8,16 @@ export type PostingMedia = {
   reach?: number | null;
 };
 export type TimeBucket = { k: string; posts: number; typical: number };
+export type WeekdayPerformance = {
+  day: number;
+  name: string;
+  short: string;
+  posts: number;
+  typical: number | null;
+  lift: number | null;
+  windows: (TimeBucket & { from: number })[];
+  bestTime: { value: string; label: string; window: string; posts: number; typical: number } | null;
+};
 export type PostingSlot = {
   days: number[];
   hour: number;
@@ -28,6 +38,7 @@ export type PostingInsights = {
   best_band: string | null;
   best_day: string | null;
   recommendation: PostingSlot | null;
+  weekdays: WeekdayPerformance[];
 };
 
 const DAY = 864e5;
@@ -46,6 +57,9 @@ const clock = (minutes: number) => {
   return `${(hour + 11) % 12 + 1}:${String(minutes % 60).padStart(2, '0')} ${hour < 12 ? 'AM' : 'PM'}`;
 };
 const windowLabel = (hour: number) => `${clock(hour * 60)}–${clock((hour + 2) * 60)}`;
+const emptyWeekdays = (): WeekdayPerformance[] => [1, 2, 3, 4, 5, 6, 0].map((day) => ({
+  day, name: WEEKDAYS[day], short: SHORT_DAYS[day], posts: 0, typical: null, lift: null, windows: [], bestTime: null
+}));
 
 /** Last 90 days, excluding Stories and the newest 3 days while their results are still growing.
  * At least 6 comparable posts and 3 per candidate window; medians reduce one viral post's influence.
@@ -56,8 +70,10 @@ export function postingTimeInsights(media: PostingMedia[], now = Date.now()): Po
     .slice(0, POSTING_MEDIA_LIMIT)
     .filter((m) => m.product_type !== 'STORY' && Number.isFinite(Date.parse(m.posted_at)) &&
       Date.parse(m.posted_at) >= now - 90 * DAY && Date.parse(m.posted_at) <= now - 3 * DAY);
-  const metric = (['views', 'reach'] as const).find((key) => recent.filter((m) => measured(m[key])).length >= 6) ?? null;
-  const result: PostingInsights = { version: 1, metric, posts: 0, bands: [], days: [], best_band: null, best_day: null, recommendation: null };
+  const metrics = ['views', 'reach'] as const;
+  const metric = metrics.find((key) => recent.filter((m) => measured(m[key])).length >= 6) ??
+    metrics.find((key) => recent.some((m) => measured(m[key]))) ?? null;
+  const result: PostingInsights = { version: 1, metric, posts: 0, bands: [], days: [], best_band: null, best_day: null, recommendation: null, weekdays: emptyWeekdays() };
   if (!metric) return result;
   const posts = recent.filter((m) => measured(m[metric])).map((m) => {
     const d = new Date(Date.parse(m.posted_at) + IST);
@@ -77,25 +93,47 @@ export function postingTimeInsights(media: PostingMedia[], now = Date.now()): Po
   const hours = buckets('hour');
   const ranked = (xs: typeof days) => xs.filter((x) => x.posts >= 2)
     .sort((a, b) => b.typical - a.typical || b.posts - a.posts || a.key - b.key);
+  // Both overall and per-weekday times use the same supported windows and rounding.
+  const observedTime = (list: typeof posts, hour: number) => {
+    const times = new Map<number, number>();
+    for (const p of list.filter((p) => Math.floor(p.hour / 2) * 2 === hour)) {
+      const minutes = Math.min(hour * 60 + 90, Math.round((p.hour * 60 + p.minute) / 30) * 30);
+      times.set(minutes, (times.get(minutes) ?? 0) + 1);
+    }
+    const common = [...times].sort((a, b) => b[1] - a[1] || a[0] - b[0])[0][0];
+    return { hour: Math.floor(common / 60), minute: common % 60,
+      value: `${String(Math.floor(common / 60)).padStart(2, '0')}:${String(common % 60).padStart(2, '0')}`, label: clock(common) };
+  };
   result.days = days.map((d) => ({ k: SHORT_DAYS[d.key], posts: d.posts, typical: d.typical }));
   result.bands = hours.map((h) => ({ k: windowLabel(h.key), posts: h.posts, typical: h.typical }));
+  result.weekdays = result.weekdays.map((day) => {
+    const list = posts.filter((p) => p.day === day.day);
+    if (!list.length) return day;
+    const typical = median(list.map((p) => p.value));
+    const windows = buckets('hour', list);
+    const winner = ranked(windows.filter((w) => w.posts >= 3 && w.typical > 0))[0];
+    return {
+      ...day, posts: list.length, typical,
+      lift: list.length >= 3 && baseline > 0 ? Math.round((typical / baseline - 1) * 100) : null,
+      windows: windows.map((w) => ({ k: windowLabel(w.key), from: w.key, posts: w.posts, typical: w.typical })),
+      bestTime: posts.length >= 6 && winner ? {
+        ...observedTime(list, winner.key), window: windowLabel(winner.key), posts: winner.posts, typical: winner.typical
+      } : null
+    };
+  });
+  // Small samples can show descriptive performance, but cannot produce personal timing advice.
+  if (posts.length < 6) return result;
   const winner = ranked(hours.filter((h) => h.posts >= 3))[0];
   // No percentage or personal recommendation when the baseline is zero or there is no clear lift.
   if (!winner || baseline <= 0 || winner.typical / baseline < 1.1) return result;
   // Recommend a weekday with this time only when that combination has actually performed well.
   const inWindow = posts.filter((p) => Math.floor(p.hour / 2) * 2 === winner.key);
   const bestDays = ranked(buckets('day', inWindow)).filter((d) => d.typical > baseline).slice(0, 2).map((d) => d.key);
-  const times = new Map<number, number>();
-  for (const p of inWindow) {
-    const minutes = Math.min(winner.key * 60 + 90, Math.round((p.hour * 60 + p.minute) / 30) * 30);
-    times.set(minutes, (times.get(minutes) ?? 0) + 1);
-  }
-  const common = [...times].sort((a, b) => b[1] - a[1] || a[0] - b[0])[0][0];
+  const time = observedTime(inWindow, winner.key);
   result.best_band = windowLabel(winner.key);
   result.best_day = bestDays.length ? SHORT_DAYS[bestDays[0]] : null;
   result.recommendation = {
-    days: bestDays, hour: Math.floor(common / 60), minute: common % 60,
-    value: `${String(Math.floor(common / 60)).padStart(2, '0')}:${String(common % 60).padStart(2, '0')}`,
+    days: bestDays, hour: time.hour, minute: time.minute, value: time.value,
     window: result.best_band, metric, lift: Math.round((winner.typical / baseline - 1) * 100),
     posts: winner.posts, totalPosts: posts.length
   };

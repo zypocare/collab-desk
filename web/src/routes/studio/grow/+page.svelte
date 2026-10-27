@@ -11,6 +11,7 @@
 	import HealthCard from '#lib/components/HealthCard.svelte';
 	import PhoneGrow from '#lib/components/PhoneGrow.svelte';
 	import GrowthCoach from '#lib/components/GrowthCoach.svelte';
+	import DayPerformance from '#lib/components/DayPerformance.svelte';
 
 	// Grow: real followers and views from what already works for her. Her numbers, what's working, this
 	// week's reel ideas (the growth autopilot), collab reels with other creators, and a reel worth boosting.
@@ -169,6 +170,8 @@
 			{/if}
 		</section>
 	</div>
+
+	<DayPerformance />
 
 	<div class="gr-grid">
 		<!-- Collab reels -->

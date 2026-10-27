@@ -8,6 +8,7 @@
 	import Avatar from './Avatar.svelte';
 	import HealthCard from './HealthCard.svelte';
 	import GrowthCoach from './GrowthCoach.svelte';
+	import DayPerformance from './DayPerformance.svelte';
 	import Icon from './Icon.svelte';
 
 	// Grow on the phone: an app, not an article. The growth meter on top, the tools as tiles, then what to
@@ -173,6 +174,8 @@
 			<div class="pg-empty"><Icon name="film" /><span><b>Post a few reels</b><small>This fills in with what brings you new people.</small></span></div>
 		{/if}
 	</section>
+
+	<DayPerformance />
 
 	<!-- Audience health, folded -->
 	<section class="pg-sec rv" style="--i:4" bind:this={healthEl}>

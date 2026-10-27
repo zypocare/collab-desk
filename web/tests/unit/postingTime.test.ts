@@ -140,3 +140,84 @@ test('starter scheduling stays usable without claiming a personalized recommenda
   assert.equal(slots.length, 3);
   assert.ok(slots.every((d) => new Date(d.getTime() + IST).getUTCHours() === 19));
 });
+
+test('weekday performance always includes Monday to Sunday, including empty days', () => {
+  const empty = postingTimeInsights([], NOW);
+  assert.deepEqual(empty.weekdays.map((d) => d.name), ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']);
+  assert.ok(empty.weekdays.every((d) => d.posts === 0 && d.typical === null && d.bestTime === null));
+  const r = postingTimeInsights(sample(), NOW);
+  assert.equal(r.weekdays.find((d) => d.day === 1)?.posts, 2);
+  assert.equal(r.weekdays.find((d) => d.day === 0)?.posts, 0);
+});
+
+test('each weekday chooses its own observed time, even on a weaker weekday', () => {
+  const mondays = ['2026-09-28', '2026-10-05', '2026-10-12'];
+  const rows = [
+    ...mondays.map((d) => post(d, '14:00', 30)),
+    ...mondays.map((d) => post(d, '19:30', 80)),
+    ...['2026-10-01', '2026-10-08', '2026-10-15'].map((d) => post(d, '18:30', 2000))
+  ];
+  const r = postingTimeInsights(rows, NOW);
+  const monday = r.weekdays.find((d) => d.day === 1)!;
+  const thursday = r.weekdays.find((d) => d.day === 4)!;
+  assert.equal(r.recommendation?.value, '18:30');
+  assert.equal(monday.typical, 55);
+  assert.equal(monday.bestTime?.value, '19:30');
+  assert.equal(monday.bestTime?.posts, 3);
+  assert.equal(monday.bestTime?.typical, 80);
+  assert.ok(monday.lift! < 0);
+  assert.equal(thursday.bestTime?.value, '18:30');
+  assert.equal(monday.windows.length, 2);
+});
+
+test('daily recommendations cannot borrow samples from other weekdays', () => {
+  const r = postingTimeInsights(sample(), NOW);
+  // The overall evening window has four posts, but only two each on Thursday and Friday.
+  assert.ok(r.recommendation);
+  assert.equal(r.weekdays.find((d) => d.day === 4)?.bestTime, null);
+  assert.equal(r.weekdays.find((d) => d.day === 5)?.bestTime, null);
+});
+
+test('small samples show descriptive weekday results without inventing a time', () => {
+  const rows = ['2026-09-28', '2026-10-05', '2026-10-12'].map((d) => post(d, '19:30', 100));
+  const r = postingTimeInsights(rows, NOW);
+  assert.equal(r.posts, 3);
+  assert.equal(r.metric, 'views');
+  assert.equal(r.weekdays[0].posts, 3);
+  assert.equal(r.weekdays[0].typical, 100);
+  assert.equal(r.weekdays[0].bestTime, null);
+  assert.equal(r.recommendation, null);
+});
+
+test('daily medians include measured zeros and do not suggest an all-zero window', () => {
+  const rows = sample().map((p) => ({ ...p, views: 0 }));
+  const r = postingTimeInsights(rows, NOW);
+  assert.equal(r.weekdays[0].typical, 0);
+  assert.equal(r.weekdays[0].lift, null);
+  assert.ok(r.weekdays.every((d) => d.bestTime === null));
+});
+
+test('weekday boundaries and midnight rounding use India time', () => {
+  const rows = [
+    ...['2026-09-28', '2026-10-05', '2026-10-12'].map((d) => post(d, '00:10', 1000)),
+    ...['2026-09-29', '2026-10-06', '2026-10-13'].map((d) => post(d, '23:55', 100))
+  ];
+  const r = postingTimeInsights(rows, NOW);
+  assert.equal(r.weekdays.find((d) => d.day === 1)?.bestTime?.value, '00:00');
+  assert.equal(r.weekdays.find((d) => d.day === 2)?.bestTime?.value, '23:30');
+  assert.equal(r.weekdays.find((d) => d.day === 0)?.posts, 0);
+  assert.equal(r.weekdays.find((d) => d.day === 1)?.bestTime?.label, '12:00 AM');
+});
+
+test('weekday performance uses the same metric fallback as the overall engine', () => {
+  const rows = [
+    ...['2026-09-28', '2026-10-05', '2026-10-12'].map((d) => post(d, '19:30', null, 1000)),
+    ...['2026-09-29', '2026-10-06', '2026-10-13'].map((d) => post(d, '10:00', null, 100))
+  ];
+  const r = postingTimeInsights(rows, NOW);
+  assert.equal(r.metric, 'reach');
+  assert.equal(r.weekdays[0].typical, 1000);
+  assert.equal(r.weekdays[0].bestTime?.value, '19:30');
+  assert.equal(r.weekdays[1].bestTime?.value, '10:00');
+  assert.deepEqual(r.weekdays, postingTimeInsights(rows.toReversed(), NOW).weekdays);
+});
