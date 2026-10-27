@@ -832,13 +832,10 @@
 			background-position: -300% 0;
 		}
 	}
-	/* Grow carries the same plum, cerise and peach signature as Today. */
+	/* Keep the Content card's shared hero background and mesh; only Grow's layout is local. */
 	.pg { gap: 26px; }
 	.pg .pg-hero {
 		position: relative; isolation: isolate; overflow: hidden; border-radius: 28px;
-		border: 1px solid color-mix(in oklab, var(--g1) 40%, transparent); color: var(--hero-ink);
-		background: radial-gradient(100% 110% at 0% 0%, color-mix(in oklab, var(--g2) 40%, transparent), transparent 65%), radial-gradient(90% 120% at 110% 70%, color-mix(in oklab, var(--g1) 52%, transparent), transparent 70%), linear-gradient(140deg, color-mix(in oklab, var(--g2) 10%, var(--hero)), var(--hero));
-		box-shadow: 0 14px 36px -26px color-mix(in oklab, var(--g2) 85%, transparent);
 	}
 	.pg-h-in { padding: 22px 20px 18px; }
 	.pg-big { font-size: 64px; padding-right: 90px; margin-top: 6px; }
@@ -850,13 +847,11 @@
 	.pg-line { height: 58px; }
 	.pg-fill { fill: url(#grow-chart-fill); }
 	.pg-stroke { stroke: var(--g2); stroke-width: 2.5; filter: drop-shadow(0 0 5px color-mix(in oklab, var(--g2) 75%, transparent)); stroke-dasharray: 1; animation: pg-line-draw 1.2s ease-out both; }
-	.pg-stats { border: 1px solid rgba(255, 255, 255, .12); border-radius: 16px; background: rgba(255, 255, 255, .05); }
+	.pg-stats { border: 1px solid color-mix(in oklab, var(--hero-ink) 12%, transparent); border-radius: 16px; background: color-mix(in oklab, var(--hero-ink) 6%, transparent); }
 	.pg-stats span { padding: 12px; }
 	.pg-stats span + span { padding-left: 12px; }
 	.pg-stats small { opacity: .8; }
-	.pg-stats b { margin-top: 2px; color: color-mix(in oklab, var(--g3) 55%, var(--hero-ink)); font-size: 26px; }
-	.pg-stats span:nth-child(2) b { color: color-mix(in oklab, var(--g2) 45%, var(--hero-ink)); }
-	.pg-stats span:nth-child(3) b { color: color-mix(in oklab, var(--g1) 45%, var(--hero-ink)); }
+	.pg-stats b { margin-top: 2px; color: var(--hero-ink); font-size: 26px; }
 	.pg-tool { border-radius: 21px; border: 1px solid color-mix(in oklab, var(--hue) 28%, var(--line)); background: radial-gradient(130% 120% at 100% 0%, color-mix(in oklab, var(--hue) 27%, transparent), transparent 70%), var(--surface); box-shadow: 0 8px 24px -22px var(--hue); }
 	.pg-ti { border: 1px solid color-mix(in oklab, var(--hue) 36%, transparent); background: linear-gradient(140deg, color-mix(in oklab, var(--hue) 35%, transparent), color-mix(in oklab, var(--hue) 9%, var(--surface))); box-shadow: inset 0 1px 0 color-mix(in oklab, var(--hue) 32%, transparent); }
 	.pg-tool b { font-size: 21px; font-style: italic; }
