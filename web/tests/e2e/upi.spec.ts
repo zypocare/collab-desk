@@ -52,8 +52,8 @@ test('phone invoices keep payment compact and show readable items without sidewa
 		await page.setViewportSize({ width, height: 844 });
 		await page.goto('/invoice/test-invoice');
 		await expect(page.locator('.inv-doc h1')).toHaveText('Niveditha Prakash');
-		await expect(page.locator('.upi-qr')).not.toBeVisible();
-		expect((await page.locator('.inv-doc').boundingBox())!.y).toBeLessThan(530);
+		await expect(page.locator('.upi-qr')).toBeVisible();
+		await expect(page.getByRole('button', { name: 'Hide payment QR' })).toHaveAttribute('aria-expanded', 'true');
 		await noSidewaysScroll(page);
 		await expect(page.locator('.doc-table tbody tr')).toHaveCSS('display', 'grid');
 		await expect(page.getByRole('link', { name: 'Pay with UPI app' })).toBeVisible();
@@ -62,6 +62,8 @@ test('phone invoices keep payment compact and show readable items without sidewa
 			await noSidewaysScroll(page);
 			await page.screenshot({ path: test.info().outputPath(`invoice-${width}-${theme}.png`), fullPage: true });
 		}
+		await page.getByRole('button', { name: 'Hide payment QR' }).click();
+		await expect(page.locator('.upi-qr')).not.toBeVisible();
 		await page.getByRole('button', { name: 'Scan or download payment QR' }).click();
 		await expect(page.getByRole('img', { name: /UPI QR code/ })).toBeVisible();
 		await noSidewaysScroll(page);
@@ -106,7 +108,7 @@ test('native invoice PDF and QR go to the phone saver and wait for completion', 
 	await page.evaluate(() => (window as any).__finishSave({ uri: 'content://downloads/invoice' }));
 	await expect(page.getByRole('button', { name: 'Download PDF' })).toBeEnabled();
 	await expect(page.locator('.toasts')).toContainText('Saved to Downloads');
-	await page.getByRole('button', { name: 'Scan or download payment QR' }).click();
+	await expect(page.locator('.upi-qr')).toBeVisible();
 	await page.getByRole('button', { name: 'Download UPI QR' }).click();
 	await expect.poll(() => page.evaluate(() => (window as any).__savedFiles.length)).toBe(2);
 	const qrFile = await page.evaluate(() => (window as any).__savedFiles[1]);

@@ -14,7 +14,7 @@
 	let inv = $state<InvoiceView | null>(null);
 	let loaded = $state(false);
 	let busy = $state(false);
-	let qrOpen = $state(false);
+	let qrOpen = $state(true);
 
 	onMount(async () => {
 		const { data } = await supabase.rpc('public_invoice', { p_token: page.params.token });
