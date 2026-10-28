@@ -11,6 +11,18 @@
 	const show = (k: SectionKey) => !hide.has(k);
 
 	const kpis = $derived(insightKpis(d));
+	// Reels engagement both ways (public_insights / my_insights, migration 177): her own Reels and her collab Reels,
+	// each over the last 10. A side shows once it has at least 3 Reels.
+	type Side = { posts: number; er: number | null; avg_interactions: number | null };
+	const split = $derived((d as PublicInsights & { reels_split?: { own: Side; collab: Side } }).reels_split ?? null);
+	const sides = $derived(
+		split
+			? [
+					{ k: 'Engagement · own Reels', s: split.own, sub: 'her own Reels' },
+					{ k: 'Engagement · collab Reels', s: split.collab, sub: 'brand collab Reels' }
+				].filter((x) => x.s && x.s.er !== null && x.s.posts >= 3)
+			: []
+	);
 	const mix = $derived(engageMix(d));
 	const mixMax = $derived(Math.max(1, ...mix.map((x) => x.v)));
 	const formats = $derived(formatRows(d));
@@ -48,6 +60,15 @@
 			</span>
 		</div>
 	{/each}
+	{#if show('sponsored')}
+		{#each sides as x, i (x.k)}
+			<div class="ins-kpi glow rv" style="--i:{kpis.length + i + 1}">
+				<small>{x.k}</small>
+				<b>{x.s.er}%</b>
+				<span>last {x.s.posts} {x.sub}</span>
+			</div>
+		{/each}
+	{/if}
 </div>
 {#if bench}<p class="ins-bench rv"><Icon name="check" />{bench}</p>{/if}
 
