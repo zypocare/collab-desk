@@ -1410,6 +1410,7 @@
   [data-desk] .m-week .hc-foot{grid-template-columns:repeat(3,minmax(0,1fr))}
   [data-desk] .m-week .hc-foot > div:last-child{grid-column:auto}
   [data-desk] .m-pipe .hc-foot b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  [data-desk] .m-pipe .hc-foot.four{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 
 /* ===== LAPTOP FRAME: page headers, the top-right buttons and tabs, cards, tables and lists ===== */
@@ -2443,4 +2444,11 @@
   [data-side] .wk2-more > .ic { transition: transform .25s; }
   [data-side] .wk2-more:active > .ic { transform: translateX(4px); }
   @media (prefers-reduced-motion: reduce) { [data-side] .wk2-bar i.on, [data-side] .wk2-bar i.on::after, [data-side] .wk2-bar i.next, [data-side] .wk2-cap-n { animation: none; } }
+}
+/* Narrow phones (iPhone 15 and smaller): the collab's stage bar has six columns of about 55px, and a passed stage's
+   tick pushed "Creating" and "Agreed" onto a second line. There the filled bar alone says a stage is done, and every
+   label stays on one line under its bar. */
+@media (max-width: 480px) {
+  [data-desk] .drawer .sh .sh-step.past .sh-l::before { display: none; }
+  [data-desk] .drawer .sh .sh-l { white-space: nowrap; }
 }
