@@ -158,6 +158,8 @@ export type Collab = {
 	retainer_id?: string | null;
 	links?: CollabLink[];
 	referred_by?: string | null;
+	/** The marketing or PR agency that sent it for the brand ('' when the brand wrote itself). */
+	via_agency?: string;
 	qr_id?: string | null;
 	retainer_month?: string | null;
 	contact_name: string;

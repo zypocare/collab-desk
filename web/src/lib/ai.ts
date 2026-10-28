@@ -42,9 +42,13 @@ export function shrinkImage(file: File, max = 1280): Promise<string> {
 }
 
 export type DmFields = {
+	/** The marketing or PR agency writing for the brand, when it is one. */
+	agency?: string;
 	brand?: string; instagram?: string; contact?: string; email?: string; phone?: string; type?: string | null; fee?: number;
 	product?: string; product_value?: number; deliverables?: { kind: string; qty: number }[]; preferred_live?: string; usage?: string; summary?: string;
 };
+/** A whole message read: the agency (when one wrote for its client) and each separate collab in it. */
+export type DmRead = { agency: string; collabs: DmFields[] };
 const KINDS = ['Reel', 'Story', 'Static post', 'Carousel', 'UGC video', 'Shoot'];
 
 /** What the AI read, in the same shape as the pattern-based reader (AI wins where it found something). */

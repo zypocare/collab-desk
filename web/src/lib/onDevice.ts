@@ -1,7 +1,7 @@
 // Reading a DM with the AI built into Chrome (Gemini Nano), on the phone or laptop itself: free,
 // works offline, and the message never leaves the device. Used only when the model is already
 // downloaded; everywhere else the cloud reader runs as before.
-import type { DmFields } from './ai';
+import type { DmFields, DmRead } from './ai';
 
 type Session = { prompt: (text: string, o?: { responseConstraint?: unknown; signal?: AbortSignal }) => Promise<string>; destroy: () => void };
 type LM = {
@@ -25,7 +25,7 @@ export function onDeviceReady() {
 }
 
 const KINDS = ['Reel', 'Story', 'Static post', 'Carousel', 'UGC video', 'Shoot'];
-const SCHEMA = {
+const COLLAB = {
 	type: 'object',
 	properties: {
 		brand: { type: 'string' },
@@ -43,9 +43,11 @@ const SCHEMA = {
 	},
 	required: ['brand', 'fee', 'deliverables']
 };
+// The agency writing for a brand (when it's one), and one item per separate collab in the message.
+const SCHEMA = { type: 'object', properties: { agency: { type: 'string' }, collabs: { type: 'array', items: COLLAB } }, required: ['agency', 'collabs'] };
 
 /** The DM's details, or null when the built-in model isn't there or couldn't answer. */
-export async function readDmOnDevice(text: string, handle: string): Promise<DmFields | null> {
+export async function readDmOnDevice(text: string, handle: string): Promise<DmRead | null> {
 	if (!(await onDeviceReady())) return null;
 	let s: Session | null = null;
 	try {
@@ -56,13 +58,14 @@ export async function readDmOnDevice(text: string, handle: string): Promise<DmFi
 				{
 					role: 'system',
 					content: `You read messages that brands send an Indian Instagram creator (@${handle}) and pull out the collab details. Messages may be in English, Hindi written in English letters (Hinglish), or a mix. Today is ${today}.
-Rules: fee is the money offered in rupees as a number (30k = 30000, 1.5 lakh = 150000, "20 hazaar" = 20000), 0 if none. type: "paid" for money only, "barter" for products/gifts only, "hybrid" for both, "" if unclear. deliverables: kinds from ${KINDS.join(', ')}; Hinglish counts ek=1, do=2, teen=3, char=4, paanch=5; a video for Instagram is a Reel. preferred_live: the go-live date as YYYY-MM-DD ("25 tak" = the 25th of this month, or next month if it has passed), "" if none. brand: the company name, not a person. Leave anything not in the message as "" or 0. Never invent details.`
+Rules: fee is the money offered in rupees as a number (30k = 30000, 1.5 lakh = 150000, "20 hazaar" = 20000), 0 if none. type: "paid" for money only, "barter" for products/gifts only, "hybrid" for both, "" if unclear. deliverables: kinds from ${KINDS.join(', ')}; Hinglish counts ek=1, do=2, teen=3, char=4, paanch=5; a video for Instagram is a Reel. preferred_live: the go-live date as YYYY-MM-DD ("25 tak" = the 25th of this month, or next month if it has passed), "" if none. brand: the company name, not a person. agency: when a marketing, PR or influencer agency writes for its client brand, the agency's name (and each brand is the client, never the agency), else "". collabs: one item per separate collab (two brands, or two campaigns each with its own content and fee, are two items, each with only its own details); one brand asking for several pieces is one item. Leave anything not in the message as "" or 0. Never invent details.`
 				}
 			]
 		});
 		const out = await s.prompt(text.slice(0, 4000), { responseConstraint: SCHEMA, signal: AbortSignal.timeout(25_000) });
-		const f = JSON.parse(out) as DmFields;
-		return f && typeof f === 'object' ? f : null;
+		const r = JSON.parse(out) as { agency?: string; collabs?: DmFields[] };
+		const collabs = (r?.collabs ?? []).filter((c) => c && typeof c === 'object');
+		return collabs.length ? { agency: String(r.agency ?? '').trim(), collabs } : null;
 	} catch {
 		return null;
 	} finally {

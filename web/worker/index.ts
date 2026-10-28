@@ -421,18 +421,22 @@ async function readDm(x: Run, b: Record<string, unknown>) {
 	const reply = await chat(
 		x,
 		`You help an Indian Instagram creator log brand collaboration requests. Today is ${today}. From the conversation, return ONLY a JSON object:
-{"brand": "brand name", "instagram": "brand handle without @", "contact": "person's name", "email": "", "phone": "",
+{"agency": "the marketing, PR or influencer agency writing on a brand's behalf, or \"\"",
+ "collabs": [{"brand": "brand name", "instagram": "brand handle without @", "contact": "person's name", "email": "", "phone": "",
  "type": "paid" | "hybrid" | "barter" | null, "fee": number in rupees (0 if not said),
  "product": "what they send, if anything", "product_value": number in rupees,
  "deliverables": [{"kind": "Reel" | "Story" | "Static post" | "Carousel" | "UGC video" | "Shoot", "qty": number}],
  "preferred_live": "YYYY-MM-DD" or "", "usage": "Organic only" | "Paid usage 30 days" | "Paid usage 90 days" | "",
- "summary": "one sentence: what the brand wants"}
-Rules: "hybrid" = money plus product; "barter" = product only (vouchers, gift cards, a free stay or meal count as product). "product" is only what the CREATOR RECEIVES; never something the brand asks her to send (screenshots, insights, contact details, rates). A "video" for Instagram means a Reel. Mention store visits or events in the summary. "30k" = 30000, "1.5L" = 150000. The creator's own handle is ${String(b.handle ?? '')}; never use it as the brand. Leave fields empty when not mentioned. Use only facts in the text.`,
+ "summary": "one sentence: what the brand wants"}]}
+Rules: Agencies often write for their clients ("we're XYZ Media, reaching out for our client Mamaearth"): then "agency" is the agency and each "brand" is the client the content is for, never the agency. One item in "collabs" per separate collab: two brands, or two separate campaigns with their own content and fee, are two items (each with only its own content, fee, dates and product); one brand asking for several pieces in one campaign is one item. Contact, email and phone are the person writing (the agency's, when it's an agency), on every item. "hybrid" = money plus product; "barter" = product only (vouchers, gift cards, a free stay or meal count as product). "product" is only what the CREATOR RECEIVES; never something the brand asks her to send (screenshots, insights, contact details, rates). A "video" for Instagram means a Reel. Mention store visits or events in the summary. "30k" = 30000, "1.5L" = 150000. The creator's own handle is ${String(b.handle ?? '')}; never use it as the brand. Leave fields empty when not mentioned. Use only facts in the text.`,
 		text,
-		600
+		1200
 	);
 	const j = firstJson(reply) ?? {};
-	return { transcript: image ? text : '', fields: j };
+	// Older answers came as a single collab; either way the first one is "fields".
+	const collabs = (Array.isArray(j.collabs) ? j.collabs : [j]).filter((c): c is Record<string, unknown> => !!c && typeof c === 'object').slice(0, 6);
+	const agency = String(j.agency ?? '').trim().slice(0, 80);
+	return { transcript: image ? text : '', agency, collabs, fields: { ...(collabs[0] ?? {}), agency } };
 }
 
 // ---------- 2. Reply drafts for a brand chat ----------

@@ -545,7 +545,7 @@
 						saveBrand(c.brand_id, { name: v });
 					}}
 				/>
-				<div class="dr-sub"><span class="id">{c.code}</span> · {TYPE_LABEL[c.type]} · received {fmt(c.received_on)}{#if c.referred_by && studio.brands.find((b) => b.id === c.referred_by)} · <span class="ref-by"><Icon name="users" />Referred by {studio.brands.find((b) => b.id === c.referred_by)?.name}</span>{/if}</div>
+				<div class="dr-sub"><span class="id">{c.code}</span>{#if c.via_agency} · <span class="via">via {c.via_agency}</span>{/if} · {TYPE_LABEL[c.type]} · received {fmt(c.received_on)}{#if c.referred_by && studio.brands.find((b) => b.id === c.referred_by)} · <span class="ref-by"><Icon name="users" />Referred by {studio.brands.find((b) => b.id === c.referred_by)?.name}</span>{/if}</div>
 				<BrandTrust {c} onquote={() => (quoteOpen = { base: quote, editing: false, preset: { advance_pct: 50 } })} />
 			</div>
 			<button class="icon-btn dr-more-btn" onclick={openMore} aria-label="More" aria-expanded={moreOpen}><Icon name="more" /></button>
@@ -680,6 +680,10 @@
 					<div class="f">
 						<label for="f-cat">Category</label>
 						<Select id="f-cat" value={c.brand.category} options={CATS.map((cat) => ({ value: cat, label: cat }))} onchange={(v) => c && saveBrand(c.brand_id, { category: v })} />
+					</div>
+					<div class="f">
+						<label for="f-agency">Through an agency <span class="hint">(optional)</span></label>
+						<input class="inp" id="f-agency" value={c.via_agency ?? ''} placeholder="Agency name" onchange={(e) => save('via_agency', val(e).trim())} />
 					</div>
 					<div class="f">
 						<label for="f-handle">Brand Instagram</label>

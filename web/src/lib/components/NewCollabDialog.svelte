@@ -5,7 +5,7 @@
 	import { supabase } from '../supabase';
 	import { parseDm } from '../parseDm';
 	import { toast, ui } from '../ui.svelte';
-	import { askAi, mergeDm, shrinkImage } from '../ai';
+	import { askAi, mergeDm, shrinkImage, type DmFields, type DmRead } from '../ai';
 	import { delivText, emailOk, errMessage, inr, iso, KINDS, parse, rel, todayIso, TYPE_LABEL, USAGE, usageOption } from '../util';
 	import type { CollabType } from '../types';
 	import AiThinking from './AiThinking.svelte';
@@ -67,10 +67,22 @@
 	}
 
 	// Read the message as she types or pastes it (plain rules), with what the AI read on top.
-	let aiFields = $state<Parameters<typeof mergeDm>[1]>(null);
+	// What the AI read: each separate collab in the message (an agency often asks for two brands at once), and the
+	// agency when one wrote for its client. She adds them one after another; "which" is the one on screen.
+	let reads = $state<DmFields[]>([]);
+	let agencyRead = $state('');
+	let which = $state(0);
+	let addedIds = $state<string[]>([]);
+	const many = $derived(reads.length > 1);
 	let aiBusy = $state(false);
 	let aiNote = $state('');
-	const parsed = $derived(mergeDm(pasted.trim().length > 10 ? parseDm(pasted, studio.settings?.handle ?? '') : null, aiFields));
+	// The plain-words reader sees the whole message as one, so with several collabs only the AI's split is used.
+	const parsed = $derived(many ? mergeDm(null, reads[which] ?? null) : mergeDm(pasted.trim().length > 10 ? parseDm(pasted, studio.settings?.handle ?? '') : null, reads[0] ?? null));
+	function useRead(r: DmRead) {
+		reads = r.collabs;
+		agencyRead = r.agency;
+		if (!agencyTouched && r.agency) agency = r.agency;
+	}
 	async function readWithAi(image?: string) {
 		aiBusy = true;
 		aiNote = image ? 'Reading the screenshot…' : 'Reading their messages…';
@@ -78,16 +90,16 @@
 		if (!image) {
 			const f = await readDmOnDevice(pasted, studio.settings?.handle ?? '');
 			if (f) {
-				aiFields = f;
+				useRead(f);
 				aiNote = '';
 				aiBusy = false;
 				return;
 			}
 		}
 		try {
-			const r = await askAi<{ transcript: string; fields: Parameters<typeof mergeDm>[1] }>('dm', { text: image ? '' : pasted, image: image ?? '', handle: studio.settings?.handle ?? '' });
+			const r = await askAi<{ transcript: string; fields: DmFields; collabs?: DmFields[]; agency?: string }>('dm', { text: image ? '' : pasted, image: image ?? '', handle: studio.settings?.handle ?? '' });
 			if (r.transcript) pasted = r.transcript;
-			aiFields = r.fields;
+			useRead({ agency: String(r.agency ?? r.fields?.agency ?? ''), collabs: r.collabs?.length ? r.collabs : r.fields ? [r.fields] : [] });
 		} catch (e) {
 			toast((e as Error).message, 'alert');
 		}
@@ -131,14 +143,18 @@
 		(e.currentTarget as HTMLInputElement).value = '';
 	}
 	function fromPaste() {
-		if (pasted.trim().length > 20 && !aiFields && !aiBusy) readWithAi();
+		if (pasted.trim().length > 20 && !reads.length && !aiBusy) readWithAi();
 		go('ask');
 	}
 	$effect(() => {
 		if (nameTouched) return;
 		if (parsed?.brand) name = studio.brands.find((b) => b.name.toLowerCase() === parsed.brand.toLowerCase())?.name ?? parsed.brand;
-		else if (igBrand && !name) name = igBrand;
+		else if (igBrand && !name && !agencyRead) name = igBrand;
 	});
+	// The agency, when a marketing or PR agency wrote for the brand: kept on the collab beside the brand.
+	let agency = $state('');
+	let agencyTouched = $state(false);
+	let agencyOpen = $state(false);
 	const known = $derived(!!name.trim() && studio.brands.some((b) => b.name.toLowerCase() === name.trim().toLowerCase()));
 
 	// The deal she's adding: what they asked for until she moves on from the first step, hers after that.
@@ -214,7 +230,9 @@
 		if (replyTouched || step !== 'when') return;
 		const who = (parsed?.contact ?? '').split(' ')[0];
 		const what = [delivText(f.deliv.filter((d) => d.qty > 0)), paidPart && f.fee ? `for ${inr(f.fee)}` : '', f.live ? `live on ${day(f.live)}` : ''].filter(Boolean).join(' ');
-		replyText = f.agreed ? `Hi${who ? ' ' + who : ''}! Happy to do this: ${what}. I'll send the details shortly.` : `Hi${who ? ' ' + who : ''}! Thanks for reaching out, I'd love to work on this. Let me send you my quote shortly.`;
+		replyText = many
+			? `Hi${who ? ' ' + who : ''}! Thanks for these. Happy to work on ${reads.map((r) => r.brand).filter(Boolean).join(' and ') || 'both'}. I'll send the details for each shortly.`
+			: f.agreed ? `Hi${who ? ' ' + who : ''}! Happy to do this: ${what}. I'll send the details shortly.` : `Hi${who ? ' ' + who : ''}! Thanks for reaching out, I'd love to work on this. Let me send you my quote shortly.`;
 	});
 
 	async function notCollab() {
@@ -246,13 +264,15 @@
 				brief: p?.brief ?? '',
 				live_date: f.live || null,
 				draft_date: f.draft || null,
-				stage: f.agreed ? 'confirmed' : 'negotiating'
+				stage: f.agreed ? 'confirmed' : 'negotiating',
+				via_agency: agency.trim()
 			},
 			deliverables: deliv.length ? deliv : [{ kind: 'Reel', qty: 1 }],
 			instagram: p?.instagram || igUser
 		});
-		if (c && fromIg) {
-			await supabase.from('ig_threads').update({ collab_id: c.id }).eq('igsid', fromIg);
+		const last = !many || which >= reads.length - 1;
+		if (c && fromIg && !addedIds.length) await supabase.from('ig_threads').update({ collab_id: c.id }).eq('igsid', fromIg);
+		if (c && fromIg && last) {
 			// The reply goes in the background: the collab opens straight away.
 			if (reply && replyText.trim())
 				supabase.functions
@@ -260,10 +280,23 @@
 					.then(({ error }) => error && toast("The Instagram reply didn't go: reply from the chat.", 'alert'));
 		}
 		busy = false;
-		if (c) {
-			close();
-			ui.openCollab = c.id;
+		if (!c) return;
+		addedIds = [...addedIds, c.id];
+		if (!last) {
+			// The next collab in the same message: a fresh sheet, filled from what was read for it.
+			toast(`${name.trim()} added. Next: ${reads[which + 1]?.brand || 'the next one'}`, 'check');
+			which++;
+			seeded = false;
+			nameTouched = false;
+			draftTouched = false;
+			pickLive = pickDraft = false;
+			Object.assign(f, { type: 'paid', deliv: [{ kind: 'Reel', qty: 1 }], fee: 0, product: '', productValue: 0, usage: 'Organic only', live: '', draft: '', agreed: true });
+			name = '';
+			go('ask');
+			return;
 		}
+		close();
+		ui.openCollab = c.id;
 	}
 	const canNext = $derived(step === 'paste' ? !!(name.trim() || pasted.trim()) : step === 'ask' ? !!name.trim() : true);
 	function next() {
@@ -321,6 +354,14 @@
 					</div>
 					{#if showChat}<pre class="nc-chat">{pasted.trim()}</pre>{/if}
 				{/if}
+				{#if many}
+					<div class="nc-multi" role="group" aria-label="Collabs in this message">
+						<p><b>{reads.length} collabs in this message.</b> Add them one by one.</p>
+						<div class="nc-chips">
+							{#each reads as r, i (i)}<span class="nc-opt sm" class:on={i === which} class:done={i < which} aria-current={i === which ? 'step' : undefined}>{#if i < which}<Icon name="check" />{:else}{i + 1}.{/if} {r.brand || `Collab ${i + 1}`}</span>{/each}
+						</div>
+					</div>
+				{/if}
 				<div class="nc-card">
 					<div class="nc-card-h"><Icon name="spark" /><span class="nc-eb">What they're asking</span>{#if aiBusy}<span class="nc-reading"><AiThinking label="Reading" /></span>{/if}</div>
 					{#each lines as l (l.k)}
@@ -335,7 +376,14 @@
 				<label for="nc-brand2" class="nc-lbl">Brand</label>
 				<input class="nc-brand" id="nc-brand2" list="nc-brands2" placeholder="Brand name" autocomplete="off" bind:value={name} oninput={() => (nameTouched = true)} />
 				<datalist id="nc-brands2">{#each studio.brands as b (b.id)}<option value={b.name}></option>{/each}</datalist>
-				<small class="nc-hint">{name.trim() ? (known ? 'A brand you know: their details are filled in' : 'New brand: their Instagram is saved too') : 'Who is it from?'}</small>
+				<small class="nc-hint">{name.trim() ? (known ? 'A brand you know: their details are filled in' : 'New brand: their Instagram is saved too') : 'Who is the content for?'}</small>
+				{#if agency || agencyOpen}
+					<label for="nc-agency" class="nc-lbl">Sent by an agency</label>
+					<input class="nc-brand nc-agency" id="nc-agency" placeholder="Agency name" autocomplete="off" bind:value={agency} oninput={() => (agencyTouched = true)} />
+					<small class="nc-hint">{agencyRead && agency === agencyRead ? 'Read from their message. ' : ''}The brand is who the content is for; the agency stays on the collab as who you deal with.</small>
+				{:else}
+					<button type="button" class="nc-link nc-agency-add" onclick={() => (agencyOpen = true)}>+ Sent by an agency for this brand?</button>
+				{/if}
 			{:else if step === 'deal'}
 				<div class="nc-head"><span class="nc-eb">{name}</span><h2 id="nc-title" class="nc-h">The deal</h2></div>
 				<div class="nc-group">
@@ -405,13 +453,13 @@
 				<div class="nc-ticket">
 					<div class="nc-band">
 						<span class="nc-tile" aria-hidden="true">{name.trim().charAt(0).toUpperCase()}</span>
-						<span class="nc-tw"><b>{name}</b><small>{delivText(f.deliv.filter((d) => d.qty > 0)) || 'Content to agree'}</small></span>
+						<span class="nc-tw"><b>{name}</b><small>{agency.trim() ? `via ${agency.trim()} · ` : ''}{delivText(f.deliv.filter((d) => d.qty > 0)) || 'Content to agree'}</small></span>
 						{#if paidPart && f.fee}<b class="nc-tm">{inr(f.fee)}</b>{/if}
 					</div>
 					<div class="nc-cut" aria-hidden="true"></div>
 					<div class="nc-tf"><span>{TYPE_LABEL[f.type]} · {usageOption(f.usage)}</span><b>{f.live ? `Live ${day(f.live)}` : 'No date yet'}</b></div>
 				</div>
-				{#if fromIg}
+				{#if fromIg && (!many || which >= reads.length - 1)}
 					<label class="nc-reply">
 						<input type="checkbox" bind:checked={reply} />
 						<span><b>Reply on Instagram</b>{#if reply}<textarea rows="3" bind:value={replyText} oninput={() => (replyTouched = true)} aria-label="Your reply"></textarea>{:else}<small>Send them a quick yes as you add it</small>{/if}</span>
@@ -423,7 +471,7 @@
 		<footer class="nc-foot">
 			<button type="button" class="nc-go" disabled={busy || !canNext} onclick={next}>
 				{#if busy}<span class="spinner"></span>{/if}
-				{step === 'paste' ? 'Next' : step === 'ask' ? 'Looks right · Next' : step === 'deal' ? 'Next: dates' : 'Add collab'}
+				{step === 'paste' ? 'Next' : step === 'ask' ? 'Looks right · Next' : step === 'deal' ? 'Next: dates' : many && which < reads.length - 1 ? `Add & next: ${reads[which + 1]?.brand || 'collab ' + (which + 2)}` : many ? `Add the last one` : 'Add collab'}
 				{#if !busy && step !== 'when'}<Icon name="arrow" />{/if}
 			</button>
 			{#if step === 'ask'}<button type="button" class="nc-text" onclick={notCollab}>{fromIg ? 'Not a collab' : 'Cancel'}</button>{/if}
@@ -544,6 +592,14 @@
 	.nc-go:not(:disabled):active { transform: translate(4px, 4px); box-shadow: 0 0 0 var(--g2); }
 	.nc-go:disabled { opacity: .4; cursor: default; }
 	.nc-go :global(.ic) { width: 18px; height: 18px; }
+	.nc-multi { display: flex; flex-direction: column; gap: 10px; padding: 14px; border: 1px solid color-mix(in oklab, var(--g1) 45%, transparent); background: color-mix(in oklab, var(--g1) 8%, transparent); }
+	.nc-multi p { margin: 0; font-size: 14px; line-height: 1.45; color: var(--ink-2); }
+	.nc-multi b { color: var(--ink); }
+	.nc-opt.sm { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; font-size: 13px; cursor: default; }
+	.nc-opt.sm :global(.ic) { width: 14px; height: 14px; }
+	.nc-opt.done { color: var(--ok); border-color: color-mix(in oklab, var(--ok) 45%, transparent); }
+	.nc-agency { font-size: 22px; height: 46px; }
+	.nc-agency-add { align-self: flex-start; margin-top: -6px; }
 	.nc-text { height: 44px; border: 0; background: none; color: var(--ink-2); font: 600 14px var(--f-body, inherit); cursor: pointer; }
 	/* Short screens (iPhone SE, a laptop window made small): tighter, so most of a step fits at once. */
 	@media (max-height: 700px) {
