@@ -752,7 +752,8 @@ export async function saveInvoice(c: Collab, input: InvoiceInput, issue: boolean
 		return false;
 	}
 	await reloadOne(c.id);
-	toast(issue ? `Invoice ${data?.number} sent to ${c.brand.name}` : 'Invoice saved as draft', issue ? 'send' : 'check');
+	const emailedTo = c.brand.accounts_email || input.send_to || c.contact_email;
+	toast(issue ? (emailedTo ? `Invoice ${data?.number} sent to ${c.brand.name}` : `Invoice ${data?.number} is ready to send on WhatsApp`) : 'Invoice saved as draft', issue ? 'send' : 'check');
 	return true;
 }
 

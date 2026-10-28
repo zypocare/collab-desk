@@ -103,6 +103,8 @@
 
 	// ---- finishing ----
 	let sent = $state<{ number: string; token: string } | null>(null);
+	// Emailed to the brand, or (no email) made for her to send on WhatsApp.
+	let emailed = $state(false);
 	let wentLive = $state(false);
 	async function goLive() {
 		const now = byId(c.id) ?? c;
@@ -117,9 +119,9 @@
 		busy = true;
 		if (mode === 'live') await goLive();
 		if (withInvoice) {
-			const issue = canSend;
-			const ok = await saveInvoice(byId(c.id) ?? c, input(), issue);
-			if (ok && issue) {
+			emailed = canSend;
+			const ok = await saveInvoice(byId(c.id) ?? c, input(), true);
+			if (ok) {
 				const inv = (byId(c.id) ?? c).invoices.filter((i) => i.status === 'sent').sort((a, b) => b.created_at.localeCompare(a.created_at))[0];
 				if (inv) sent = { number: inv.number ?? '', token: inv.public_token };
 			}
@@ -210,7 +212,8 @@
 						<button type="button" class="gl-opt" aria-expanded={pickDue} onclick={() => (pickDue = !pickDue)}><b>Payment due</b><small>{inDays > 0 ? `in ${inDays} days · ` : ''}{day(due)}</small></button>
 						{#if pickDue}<div class="gl-pick"><DatePicker ariaLabel="Payment due" bind:value={due} min={todayIso()} clearable={false} /></div>{/if}
 						{#if editTo}
-							<div class="gl-opt gl-to"><label for="gl-to"><b>Send to</b></label><input id="gl-to" type="email" class="gl-in" placeholder="accounts@brand.com" bind:value={sendTo} /></div>
+							<div class="gl-opt gl-to"><label for="gl-to"><b>Send to</b></label><input id="gl-to" type="email" class="gl-in" placeholder="accounts@brand.com (optional)" bind:value={sendTo} /></div>
+							{#if !canSend}<p class="gl-hint">No email? Fine: the invoice is made, and you send it on WhatsApp next.</p>{/if}
 						{:else}
 							<button type="button" class="gl-opt" onclick={() => (editTo = true)}><b>Send to</b><small>{sendTo}</small></button>
 						{/if}
@@ -223,12 +226,12 @@
 					<span class="gl-big" aria-hidden="true"><Icon name="check" /></span>
 					<span class="gl-eb">{c.brand.name}</span>
 					<h2 id="gl-title" class="gl-h">{wentLive ? (delivery ? 'Delivered' : "You're live") : 'Invoice sent'}</h2>
-					<p>{#if sent}Invoice {sent.number} for {inr(total)} is with {first || c.brand.name}. Due {day(due)}.{:else if steps.includes('invoice')}The invoice is saved as a draft: add their email to send it.{:else}Nice work.{/if}</p>
+					<p>{#if sent && emailed}Invoice {sent.number} for {inr(total)} is with {first || c.brand.name}. Due {day(due)}.{:else if sent}Invoice {sent.number} for {inr(total)} is ready. Send it on WhatsApp: they pay by UPI or bank transfer from the link.{:else}Nice work.{/if}</p>
 				</div>
 				<ul class="gl-list">
 					{#if wentLive && picked}<li><Icon name="check" />{kindOf(picked)} linked · results come in on their own</li>{/if}
 					{#if wentLive && !delivery}<li><Icon name="check" />Posting checklist saved</li>{/if}
-					{#if sent}<li><Icon name="check" />Invoice sent{remind ? ' · reminders on' : ''}</li><li><Icon name="check" />Shows under Money · Due</li>{/if}
+					{#if sent}<li><Icon name="check" />{emailed ? `Invoice emailed${remind ? ' · reminders on' : ''}` : 'Invoice made · send it on WhatsApp'}</li><li><Icon name="check" />Shows under Money · Due</li>{/if}
 				</ul>
 			{/if}
 		</div>
@@ -240,11 +243,11 @@
 				{#if foreign}
 					<button type="button" class="gl-go" disabled={busy} onclick={more}>{#if busy}<span class="spinner"></span>{/if}Open the invoice form</button>
 				{:else}
-					<button type="button" class="gl-go" disabled={busy} onclick={next}>{#if busy}<span class="spinner"></span>{/if}{mode === 'live' ? (delivery ? 'Mark delivered & ' : 'Mark live & ') : ''}{canSend ? 'send invoice' : 'save invoice'}</button>
+					<button type="button" class="gl-go" disabled={busy} onclick={next}>{#if busy}<span class="spinner"></span>{/if}{mode === 'live' ? (delivery ? 'Mark delivered & ' : 'Mark live & ') : ''}{canSend ? 'send invoice' : 'make invoice'}</button>
 					{#if mode === 'live'}<button type="button" class="gl-text" disabled={busy} onclick={() => finish(false)}>{delivery ? 'Mark delivered' : 'Mark live'}, invoice later</button>{/if}
 				{/if}
 			{:else}
-				{#if sent}<a class="gl-go" href={waShare(c.contact_phone, `Hi${first ? ' ' + first : ''}, here's invoice ${sent.number} for ${inr(total)}, due ${day(due)}. You can pay by UPI or bank transfer here: ${location.origin}/invoice/${sent.token}`)} target="_blank" rel="noopener">Send on WhatsApp too</a>{/if}
+				{#if sent}<a class="gl-go" href={waShare(c.contact_phone, `Hi${first ? ' ' + first : ''}, here's invoice ${sent.number} for ${inr(total)}, due ${day(due)}. You can pay by UPI or bank transfer here: ${location.origin}/invoice/${sent.token}`)} target="_blank" rel="noopener">{emailed ? 'Send on WhatsApp too' : 'Send on WhatsApp'}</a>{/if}
 				<button type="button" class={sent ? 'gl-text' : 'gl-go'} onclick={onclose}>Back to the collab</button>
 			{/if}
 		</footer>

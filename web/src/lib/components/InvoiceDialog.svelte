@@ -5,7 +5,8 @@
 	import { ensurePlan, hasFeature } from '../plan.svelte';
 	import type { Collab } from '../types';
 	import { INDIAN_STATES, KIND_LABEL, type Invoice, type InvoiceItem } from '../invoice';
-	import { acceptedQuote, inr, todayIso } from '../util';
+	import { acceptedQuote, fmt, inr, todayIso, waShare } from '../util';
+	import { copyText } from '../ui.svelte';
 	import { invoiceStart } from '../invoiceDraft';
 	import Icon from './Icon.svelte';
 	import Select from './Select.svelte';
@@ -88,7 +89,9 @@
 	const gst = $derived(taxMode === 'none' || taxMode === 'export' ? 0 : Math.round(subtotal * gstRate) / 100);
 	const total = $derived(subtotal + gst);
 	const tds = $derived(Math.round((subtotal * tdsRate) / 100));
-	const canSend = $derived(!!(c.contact_email || sendTo.trim()));
+	// An email to send it to. Without one the invoice is still made, and she shares its link on WhatsApp.
+	const canSend = $derived(!!(c.contact_email || c.brand.accounts_email || sendTo.trim()));
+	let made = $state<{ number: string; token: string } | null>(null);
 
 	function brandState(v: string) {
 		saveBrand(c.brand_id, { state: v });
@@ -118,8 +121,14 @@
 			editing?.id
 		);
 		busy = false;
-		if (ok) onclose();
+		if (!ok) return;
+		if (issue && !canSend) {
+			const inv = c.invoices.filter((i) => i.status === 'sent').sort((a, b) => b.created_at.localeCompare(a.created_at))[0];
+			if (inv) return void (made = { number: inv.number ?? '', token: inv.public_token });
+		}
+		onclose();
 	}
+	const first = $derived(c.contact_name ? c.contact_name.split(' ')[0] : '');
 	const val = (e: Event) => (e.currentTarget as HTMLInputElement).value;
 </script>
 
@@ -127,6 +136,14 @@
 
 <div class="dialog-scrim" role="presentation" use:portal onclick={(e) => e.target === e.currentTarget && onclose()}>
 	<div class="dialog quote-dialog" role="dialog" aria-modal="true" aria-labelledby="inv-title">
+		{#if made}
+			<h2 id="inv-title">Invoice {made.number} is ready</h2>
+			<p>{c.brand.name} has no email here, so nothing was emailed. Send it on WhatsApp: they can pay by UPI or bank transfer from the link.</p>
+			<div class="row">
+				<button class="btn ghost" onclick={() => made && copyText(`${location.origin}/invoice/${made.token}`, 'Invoice link copied')}><Icon name="copy" />Copy link</button>
+				<a class="btn grad" href={waShare(c.contact_phone, `Hi${first ? ' ' + first : ''}, here's invoice ${made.number} for ${money(total, cur)}${dueDate ? `, due ${fmt(dueDate)}` : ''}. You can pay by UPI or bank transfer here: ${location.origin}/invoice/${made.token}`)} target="_blank" rel="noopener" onclick={onclose}><Icon name="send" />Send on WhatsApp</a>
+			</div>
+		{:else}
 		<h2 id="inv-title">{editing ? 'Edit draft invoice' : 'New invoice'} · {c.brand.name}</h2>
 		<p>Fee {inr(start.fee)}{start.invoicedSoFar ? ` · already invoiced ${inr(start.invoicedSoFar)}` : ''}. {foreign ? `Amounts in ${cur}.` : 'Amounts are before GST.'}</p>
 
@@ -224,14 +241,21 @@
 		{#if foreign && !s.intl_bank_details}<p class="hint warn-text">Add your bank details for international payments (SWIFT) on My page &gt; Invoices &amp; payments.</p>{/if}
 		{#if foreign}{:else if !s.upi_id}<p class="hint warn-text">Add your UPI ID on My page so the invoice shows a QR code.</p>{/if}
 		{#if s.gst_registered && !s.gstin}<p class="hint warn-text">Add your GSTIN on My page before sending GST invoices.</p>{/if}
-		{#if !canSend}<p class="err">Add the brand's email (in the panel) or an accounts email above to send this invoice.</p>{/if}
+		{#if !canSend}<p class="hint inv-noemail"><Icon name="send" />No email for {c.brand.name} yet: the invoice is still made, and you send it on WhatsApp. Add an email above to have it emailed too.</p>{/if}
 
 		<div class="row">
 			<button class="btn ghost" onclick={onclose}>Cancel</button>
 			<button class="btn" disabled={busy || !items.length} onclick={() => submit(false)}>Save draft</button>
-			<button class="btn grad" disabled={busy || !items.length || !canSend || subtotal <= 0} onclick={() => submit(true)}>
-				{#if busy}<span class="spinner"></span>{:else}<Icon name="send" />{/if}Issue and send
+			<button class="btn grad" disabled={busy || !items.length || subtotal <= 0} onclick={() => submit(true)}>
+				{#if busy}<span class="spinner"></span>{:else}<Icon name="send" />{/if}{canSend ? 'Issue and send' : 'Issue invoice'}
 			</button>
 		</div>
+		{#if subtotal <= 0 && items.length}<p class="hint inv-noemail">Add the amount to issue the invoice.</p>{/if}
+		{/if}
 	</div>
 </div>
+
+<style>
+	.inv-noemail { display: flex; align-items: flex-start; gap: 8px; margin: 10px 0 0; }
+	.inv-noemail :global(.ic) { width: 16px; height: 16px; flex: none; margin-top: 2px; }
+</style>
