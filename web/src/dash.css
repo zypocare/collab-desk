@@ -45,6 +45,8 @@
 	.md-tile small { font-size: 12.5px; }
 	.md-tile span { font-size: 12px; }
 	.md-grid { gap: 12px; margin: 0 0 24px; }
+	/* The money facts line sits apart from the first chart card. */
+	.cr-ticker + .md-grid, .cr-rings + .md-grid { margin-top: 18px; }
 	.md-card { padding: 18px 16px; border-radius: 20px; gap: 14px; }
 	.md-h h2 { font-size: 18px; }
 	.md-gauges { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }

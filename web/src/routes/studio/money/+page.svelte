@@ -7,6 +7,7 @@
 	import { countUp } from '#lib/ui.svelte.ts';
 	import { diff, inr, inrS, outstanding, overdue, today } from '#lib/util.ts';
 	import Icon from '#lib/components/Icon.svelte';
+	import RingIcons from '#lib/components/RingIcons.svelte';
 	import Segmented from '#lib/components/Segmented.svelte';
 	import Columns from '#lib/components/charts/Columns.svelte';
 	import Lines from '#lib/components/charts/Lines.svelte';
@@ -77,11 +78,11 @@
 
 
 	<nav class="cr-rings" aria-label="Money shortcuts">
-		<a class="cr-ring" href="/studio/payments"><i><span><Icon name="wallet" /></span></i>{#if lateList.length}<b>{lateList.length} LATE</b>{:else if dueN}<b>{dueN} DUE</b>{/if}<small>Payments</small></a>
-		<a class="cr-ring" href="/studio/reports"><i><span><Icon name="chart" /></span></i><small>Reports</small></a>
-		<a class="cr-ring" href="/studio/payments"><i><span><Icon name="doc" /></span></i><small>Invoices</small></a>
-		<a class="cr-ring" href="/studio/tax"><i><span><Icon name="rupee" /></span></i><small>Tax desk</small></a>
-		<a class="cr-ring" href="/studio/calendar"><i><span><Icon name="cal" /></span></i><small>Due dates</small></a>
+		<a class="cr-ring" style="--rt:var(--g3)" href="/studio/payments"><i><span><RingIcons i={0} icons={['wallet', 'rupee', 'check']} /></span></i>{#if lateList.length}<b>{lateList.length} LATE</b>{:else if dueN}<b>{dueN} DUE</b>{/if}<small>Payments</small></a>
+		<a class="cr-ring" style="--rt:var(--h-request)" href="/studio/reports"><i><span><RingIcons i={1} icons={['chart', 'eye', 'layers']} /></span></i><small>Reports</small></a>
+		<a class="cr-ring" style="--rt:var(--g2)" href="/studio/payments"><i><span><RingIcons i={2} icons={['doc', 'send', 'check']} /></span></i><small>Invoices</small></a>
+		<a class="cr-ring" style="--rt:var(--h-live)" href="/studio/tax"><i><span><RingIcons i={3} icons={['rupee', 'shield', 'scale']} /></span></i><small>Tax desk</small></a>
+		<a class="cr-ring" style="--rt:var(--g1)" href="/studio/calendar"><i><span><RingIcons i={4} icons={['cal', 'clock', 'bell']} /></span></i><small>Due dates</small></a>
 	</nav>
 	{#if facts.length}
 		<div class="cr-ticker" aria-label="Money facts"><div>{#each [0, 1] as k (k)}{#each facts as f, j (j)}<span aria-hidden={k === 1}><b>{f.b}</b>{f.t}</span><span aria-hidden="true">✦</span>{/each}{/each}</div></div>

@@ -141,8 +141,8 @@
 			.map((g) => ({ ...g, sum: g.cs.reduce((a, c) => a + c.fee + c.product_value, 0) }))
 			.filter((g) => g.cs.length && (mstage === 'active' ? ACTIVE.includes(g.s.id) : g.s.id === mstage))
 	);
-	// The pipeline card (phones): what's in play across active collabs, two by two (four don't fit side by side).
-	const PIPE_TILES: [Stage, string][] = [['request', 'New'], ['negotiating', 'In talks'], ['confirmed', 'Confirmed'], ['live', 'Live']];
+	// The pipeline card (phones): a tile per stage of the board, three to a row, from new requests to done.
+	const PIPE_TILES: [Stage, string][] = [['request', 'New'], ['negotiating', 'In talks'], ['confirmed', 'Confirmed'], ['creating', 'Creating'], ['live', 'Live'], ['wrapped', 'Done']];
 	const activeList = $derived(visible.filter((c) => ACTIVE.includes(c.stage)));
 	const activeN = $derived(activeList.length);
 	const pipeValue = $derived(activeList.reduce((a, c) => a + (c.type === 'barter' ? 0 : Number(c.fee) || 0), 0));
@@ -314,7 +314,7 @@
 					{#each pipeStages as st (st.id)}{#if st.n}<i class="st-{st.id}" style="flex:{st.n}"></i>{/if}{/each}
 				</div>
 			{/if}
-			<div class="hc-foot four">
+			<div class="hc-foot six">
 				{#each PIPE_TILES as [id, label] (id)}
 					<button class:on={mstage === id} onclick={() => (mstage = mstage === id ? 'active' : id)}>
 						<small><span class="dt st-{id}"></span>{label}</small><b>{visible.filter((c) => c.stage === id).length}</b>

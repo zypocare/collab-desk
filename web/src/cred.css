@@ -1410,7 +1410,7 @@
   [data-desk] .m-week .hc-foot{grid-template-columns:repeat(3,minmax(0,1fr))}
   [data-desk] .m-week .hc-foot > div:last-child{grid-column:auto}
   [data-desk] .m-pipe .hc-foot b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  [data-desk] .m-pipe .hc-foot.four{grid-template-columns:repeat(2,minmax(0,1fr))}
+  [data-desk] .m-pipe .hc-foot.six{grid-template-columns:repeat(3,minmax(0,1fr))}
 }
 
 /* ===== LAPTOP FRAME: page headers, the top-right buttons and tabs, cards, tables and lists ===== */
@@ -2306,7 +2306,7 @@
   [data-desk][data-side] .ct-main > .btn .ic { width: 16px; height: 16px; }
   [data-desk][data-side] .ct-main > .ct-script .ic { color: var(--g2); }
   [data-desk][data-side] .ct-main > .btn:active { transform: none; box-shadow: inset 0 0 0 1px var(--line-strong); }
-  [data-desk][data-side] .ct-main > .ct-shots[aria-expanded="true"] { background: var(--ink); color: var(--bg); box-shadow: none; }
+  [data-desk][data-side] .ct-main > .ct-shots[aria-expanded="true"] { background: var(--surface-2); color: var(--ink); box-shadow: inset 0 0 0 1.5px var(--ink); }
   /* The torn line, then the shoot day as a chip. */
   [data-desk][data-side] .ct-plan { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; margin: 14px -16px 0; padding: 12px 16px 0; }
   [data-desk][data-side] .ct-plan-l { flex: 1 1 auto; font: 700 10.5px/1.2 var(--f-body, inherit); letter-spacing: .2em; text-transform: uppercase; color: var(--ink-3); }
@@ -2471,3 +2471,7 @@
   [data-desk] .drawer.as-page .dr-b .sec.fold:not(.open) > :not(h3) { display: none !important; }
   [data-desk] .drawer.as-page .dr-b .sec.fold.open { padding-bottom: 16px; }
 }
+
+/* Money shortcuts: each ring carries its own tint, and its icon turns (RingIcons). */
+.cr-ring[style*="--rt"] i > span { background: radial-gradient(circle at 50% 30%, color-mix(in oklab, var(--rt) 30%, var(--surface-2)), var(--surface-2) 72%); color: var(--rt); }
+.cr-ring[style*="--rt"] i .ic { width: 24px; height: 24px; }

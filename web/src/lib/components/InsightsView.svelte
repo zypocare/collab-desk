@@ -51,7 +51,7 @@
 
 <div class="ins-kpis">
 	{#each kpis as k, i (k.k)}
-		<div class="ins-kpi glow rv" style="--i:{i + 1}">
+		<div class="ins-kpi glow rv" class:wide={i === kpis.length - 1 && kpis.length % 2 === 1} style="--i:{i + 1}">
 			<small>{k.k}</small>
 			<b>{k.show ?? (k.pct ? `${k.v}%` : compact(k.v as number))}</b>
 			<span>
@@ -60,14 +60,15 @@
 			</span>
 		</div>
 	{/each}
-	{#if show('sponsored')}
-		{#each sides as x, i (x.k)}
-			<div class="ins-kpi glow rv" style="--i:{kpis.length + i + 1}">
-				<small>{x.k}</small>
-				<b>{x.s.er}%</b>
-				<span>last {x.s.posts} {x.sub}</span>
+	{#if show('sponsored') && sides.length}
+		<div class="ins-kpi glow rv ins-split" style="--i:{kpis.length + 1}">
+			<small>Reels engagement, last 10 of each</small>
+			<div class="ins-split-row">
+				{#each sides as x (x.k)}
+					<span><b>{x.s.er}%</b><em>{x.k.replace('Engagement · ', '')}</em></span>
+				{/each}
 			</div>
-		{/each}
+		</div>
 	{/if}
 </div>
 {#if bench}<p class="ins-bench rv"><Icon name="check" />{bench}</p>{/if}
@@ -75,7 +76,7 @@
 {#if formats.length && show('formats')}
 	<section class="panel rv" style="--i:3;margin-bottom:18px">
 		<div class="panel-h"><h2>By format</h2><small>last 12 of each, leaving out posts under 3 days old</small></div>
-		<div class="table-wrap">
+		<div class="table-wrap ins-tw">
 			<table class="doc-table ins-table">
 				<thead><tr><th>Format</th><th>Based on</th><th>Avg. views</th><th>Avg. reach</th><th>Saved · shared</th><th>Engagement</th></tr></thead>
 				<tbody>
@@ -91,6 +92,19 @@
 					{/each}
 				</tbody>
 			</table>
+		</div>
+		<div class="ins-cards">
+			{#each formats as [key, s] (key)}
+				<div class="ins-fc">
+					<div class="ins-fc-h"><b>{FORMAT_LABEL[key]}</b><small>{s.manual ? 'your numbers' : key === 'stories' ? plural(basedOn(s), 'Story', 'Stories') : plural(basedOn(s), 'post', 'posts')}</small></div>
+					<dl>
+						<div><dt>Avg. views</dt><dd>{s.avg_views ? compact(s.avg_views) : '—'}{#if s.med_views && s.avg_views && s.med_views !== s.avg_views}<small>typical {compact(s.med_views)}</small>{/if}</dd></div>
+						<div><dt>Avg. reach</dt><dd>{s.avg_reach ? compact(s.avg_reach) : '—'}{#if s.med_reach && s.avg_reach && s.med_reach !== s.avg_reach}<small>typical {compact(s.med_reach)}</small>{/if}</dd></div>
+						<div><dt>Saved · shared</dt><dd>{s.save_rate == null && s.share_rate == null ? '—' : [s.save_rate, s.share_rate].map((v) => (v == null ? '—' : `${v}%`)).join(' · ')}</dd></div>
+						<div><dt>Engagement</dt><dd>{key === 'stories' ? (s.avg_interactions ? `${compact(s.avg_interactions)} actions` : '—') : s.er ? `${s.er}%` : '—'}</dd></div>
+					</dl>
+				</div>
+			{/each}
 		</div>
 		<p class="hint ins-foot">"Typical" is the middle post, so one viral post doesn't pull it up. Saved · shared: per 100 accounts reached.</p>
 	</section>
@@ -132,7 +146,7 @@
 	<section class="panel rv" style="--i:5;margin-bottom:18px">
 		<div class="panel-h"><h2>Sponsored vs regular posts</h2><small>typical post of each</small></div>
 		<p class="ins-sp-line">{spLine}.</p>
-		<div class="table-wrap">
+		<div class="table-wrap ins-tw">
 			<table class="doc-table ins-table">
 				<thead><tr><th></th><th>Based on</th><th>Typical reach</th><th>Typical views</th><th>Engagement</th></tr></thead>
 				<tbody>
@@ -140,6 +154,18 @@
 					<tr><td>Regular</td><td>{plural(basedOn(sp.regular), 'post', 'posts')}</td><td>{compact(sp.regular.med_reach)}</td><td>{compact(sp.regular.med_views)}</td><td>{sp.regular.er ?? '—'}%</td></tr>
 				</tbody>
 			</table>
+		</div>
+		<div class="ins-cards">
+			{#each [['Sponsored', sp.sponsored], ['Regular', sp.regular]] as const as [label, x] (label)}
+				<div class="ins-fc">
+					<div class="ins-fc-h"><b>{label}</b><small>{plural(basedOn(x), 'post', 'posts')}</small></div>
+					<dl>
+						<div><dt>Typical reach</dt><dd>{compact(x.med_reach)}</dd></div>
+						<div><dt>Typical views</dt><dd>{compact(x.med_views)}</dd></div>
+						<div><dt>Engagement</dt><dd>{x.er ?? '—'}%</dd></div>
+					</dl>
+				</div>
+			{/each}
 		</div>
 	</section>
 {/if}
@@ -176,3 +202,29 @@
 		</div>
 	</section>
 {/if}
+
+<style>
+	/* The two Reels rates side by side in one card. */
+	.ins-split { grid-column: 1 / -1; }
+	.ins-split-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 6px; }
+	.ins-split-row span { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-width: 0; color: var(--ink); }
+	.ins-split-row b { color: var(--ink); }
+	.ins-split-row span + span { padding-left: 12px; border-left: 1px solid var(--line); }
+	.ins-split-row em { font-style: normal; font-size: 13px; color: var(--ink-3); }
+	/* Cards in place of the tables, on a phone. */
+	.ins-cards { display: none; }
+	.ins-fc { padding: 14px 0; border-top: 1px solid var(--line); }
+	.ins-fc:first-child { border-top: 0; padding-top: 4px; }
+	.ins-fc-h { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+	.ins-fc-h b { font-size: 16px; }
+	.ins-fc-h small { font-size: 12.5px; color: var(--ink-3); }
+	.ins-fc dl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 16px; margin: 0; }
+	.ins-fc dt { font-size: 12px; color: var(--ink-3); }
+	.ins-fc dd { margin: 2px 0 0; font-size: 17px; font-weight: 700; font-variant-numeric: tabular-nums; }
+	.ins-fc dd small { display: block; font-size: 11.5px; font-weight: 500; color: var(--ink-3); }
+	@media (max-width: 640px) {
+		.ins-kpi.wide { grid-column: 1 / -1; }
+		.ins-tw { display: none; }
+		.ins-cards { display: block; padding: 0 16px 4px; }
+	}
+</style>
