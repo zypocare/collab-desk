@@ -89,6 +89,11 @@
 		<Icon name="chevR" />
 	</a>
 
+	<a class="gr-cu rv" href="/studio/grow/insights">
+		<span class="gr-it"><b>All your insights</b><small>Reach, views, engagement, your audience and best posts: everything brands see</small></span>
+		<Icon name="chevR" />
+	</a>
+
 	<!-- The numbers that matter for growth -->
 	<section class="hero-card glow gr-hero rv" aria-label="Your growth">
 		<div class="mesh" aria-hidden="true"></div>

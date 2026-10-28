@@ -85,6 +85,11 @@
 
 	<!-- The tools -->
 	<div class="pg-tools rv" style="--i:1">
+		<a class="pg-tool pg-wide" href="/studio/grow/insights" style="--hue:var(--g1)">
+			<span class="pg-ti"><Icon name="chart" /></span>
+			<b>All your insights</b>
+			<small>Reach, views, audience, your best posts: everything brands see</small>
+		</a>
 		<a class="pg-tool" href="/studio/grow/check" style="--hue:var(--g2)">
 			<span class="pg-ti"><Icon name="film" /></span>
 			<b>Check a reel</b>
@@ -349,6 +354,9 @@
 		display: grid;
 		grid-template-columns: repeat(2, minmax(0, 1fr));
 		gap: 10px;
+	}
+	.pg-wide {
+		grid-column: 1 / -1;
 	}
 	.pg-tool {
 		position: relative;

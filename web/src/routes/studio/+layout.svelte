@@ -206,7 +206,8 @@
 		'/studio/tax': 'Tax desk',
 		'/studio/grow': 'Grow',
 		'/studio/grow/check': 'Check a reel',
-		'/studio/grow/checkup': 'Growth check-up'
+		'/studio/grow/checkup': 'Growth check-up',
+		'/studio/grow/insights': 'Your insights'
 	};
 	const SECTIONS: Record<string, string> = {
 		profile: 'Edit profile',
