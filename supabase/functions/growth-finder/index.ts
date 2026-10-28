@@ -180,6 +180,11 @@ async function collect(db: Db, site: string) {
   const { data } = await db.from('growth_runs').select('id, at, batch_id, request, cost_usd, asked, confirmed, added, found, results_read, reading').eq('engine', 'claude').not('batch_id', 'is', null).is('finished_at', null).order('at').limit(1);
   const run = (data ?? [])[0] as Run | undefined;
   if (!run) return;
+  // One step at a time: a step still going when the next minute's call comes (a slow page, a cold start) keeps it;
+  // two at once would check the same creators and write over each other's progress.
+  const now = new Date().toISOString();
+  const { data: mine } = await db.from('growth_runs').update({ busy_until: new Date(Date.now() + 3 * 60e3).toISOString() }).eq('id', run.id).or(`busy_until.is.null,busy_until.lt."${now}"`).select('id');
+  if (!mine?.length) return;
   const finish = (patch: Record<string, unknown>) => db.from('growth_runs').update({ ...patch, seconds: Math.round((Date.now() - Date.parse(run.at)) / 1000), finished_at: new Date().toISOString() }).eq('id', run.id);
   try {
     if (run.results_read) return await check(db, site, run, finish);
@@ -237,6 +242,8 @@ async function collect(db: Db, site: string) {
     await db.from('growth_runs').update({ ...totals, request: null, results_read: true, batch_status: `Checking ${found.length} creators' pages` }).eq('id', run.id);
   } catch (e) {
     await finish({ error: claudeError(e) });
+  } finally {
+    await db.from('growth_runs').update({ busy_until: null }).eq('id', run.id);
   }
 }
 
@@ -360,8 +367,12 @@ async function queue(db: Db, site: string, ctx: Ctx, creators: Found[], o: { wan
   });
   if (dry) return { added: 0, confirmed: found.length, rows };
   const { error } = await db.from('growth_leads').insert(rows);
-  if (error) return { added: 0, confirmed: found.length, error: error.message };
-  return { added: rows.length, confirmed: found.length };
+  if (!error) return { added: rows.length, confirmed: found.length };
+  if (error.code !== '23505') return { added: 0, confirmed: found.length, error: error.message };
+  // Someone in this batch is already queued (their email is unique): the rest go in one by one.
+  let added = 0;
+  for (const row of rows) if (!(await db.from('growth_leads').insert(row)).error) added++;
+  return { added, confirmed: found.length };
 }
 
 // ---------- Gemini (no Claude key): within the platform's time limit (about 150 seconds) ----------
