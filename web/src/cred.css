@@ -2475,3 +2475,8 @@
 /* Money shortcuts: each ring carries its own tint, and its icon turns (RingIcons). */
 .cr-ring[style*="--rt"] i > span { background: radial-gradient(circle at 50% 30%, color-mix(in oklab, var(--rt) 30%, var(--surface-2)), var(--surface-2) 72%); color: var(--rt); }
 .cr-ring[style*="--rt"] i .ic { width: 24px; height: 24px; }
+/* My page cards: the icon circle is a small turning ring with its own tint, and its icon turns too (RingIcons). */
+[data-side] .cs-ci[style*="--rt"] { width: 38px; height: 38px; padding: 2px; border: 0; background: conic-gradient(from var(--cr-a, 0deg), var(--g3), var(--g2), var(--g1), var(--g3)); animation: cr-turn 5s linear infinite; }
+[data-side] .cs-ci[style*="--rt"] > .ri { border: 2px solid var(--surface); background: radial-gradient(circle at 50% 30%, color-mix(in oklab, var(--rt) 32%, var(--surface-2)), var(--surface-2) 75%); color: var(--rt); }
+[data-side] .cs-ci[style*="--rt"] .ic { width: 17px; height: 17px; }
+@media (prefers-reduced-motion: reduce) { [data-side] .cs-ci[style*="--rt"] { animation: none; } }

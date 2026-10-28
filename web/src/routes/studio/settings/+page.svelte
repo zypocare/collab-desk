@@ -19,6 +19,7 @@
 	import LanguagePicker from '#lib/components/LanguagePicker.svelte';
 	import { rateCheck, suggestRates } from '#lib/rateSuggest.ts';
 	import Icon from '#lib/components/Icon.svelte';
+	import RingIcons from '#lib/components/RingIcons.svelte';
 	import Avatar from '#lib/components/Avatar.svelte';
 	import Ticket from '#lib/components/Ticket.svelte';
 	import { APP_VERSION, BUILD_LABEL } from '#lib/appVersion.ts';
@@ -251,14 +252,14 @@
 	let cardI = $state(0);
 	const onCards = () => cardsEl && (cardI = Math.round(cardsEl.scrollLeft / Math.max(1, cardsEl.clientWidth * 0.86)));
 	const cards = $derived([
-		{ icon: 'link', eb: 'Your link', text: 'Brands request collabs from your link', act: 'Copy link', run: () => copyText(link, 'Link copied. Put it in your Instagram bio.') },
-		{ icon: 'send', eb: 'WhatsApp', text: 'Send brands your rates and request link', act: 'WhatsApp', run: () => window.open(waShare('', `My rates, packages and collab requests: ${link}`), '_blank', 'noopener') },
-		{ icon: 'film', eb: 'Media kit', text: 'Your media kit, ready to send', act: 'Download', run: kit },
-		{ icon: 'qr', eb: 'QR code', text: 'A QR code for events and prints', act: 'Open', run: () => goto('/studio/qr') },
+		{ icon: 'link', icons: ['link', 'copy', 'check'], tint: 'var(--g2)', eb: 'Your link', text: 'Brands request collabs from your link', act: 'Copy link', run: () => copyText(link, 'Link copied. Put it in your Instagram bio.') },
+		{ icon: 'send', icons: ['send', 'mail', 'check'], tint: 'var(--h-live)', eb: 'WhatsApp', text: 'Send brands your rates and request link', act: 'WhatsApp', run: () => window.open(waShare('', `My rates, packages and collab requests: ${link}`), '_blank', 'noopener') },
+		{ icon: 'film', icons: ['film', 'doc', 'download'], tint: 'var(--g3)', eb: 'Media kit', text: 'Your media kit, ready to send', act: 'Download', run: kit },
+		{ icon: 'qr', icons: ['qr', 'image', 'share'], tint: 'var(--h-request)', eb: 'QR code', text: 'A QR code for events and prints', act: 'Open', run: () => goto('/studio/qr') },
 		...(s.show_insights && studio.ig?.connected
 			? [
-					{ icon: 'chart', eb: 'Insights', text: 'Send brands your live insights', act: 'Copy', run: () => copyText(`${link}/insights`, 'Insights link copied') },
-					{ icon: 'share', eb: 'Media kit on WhatsApp', text: 'Your live Instagram numbers, as a link', act: 'WhatsApp', run: () => window.open(waShare('', `My live Instagram numbers (updated every day): ${link}/insights`), '_blank', 'noopener') }
+					{ icon: 'chart', icons: ['chart', 'eye', 'share'], tint: 'var(--g1)', eb: 'Insights', text: 'Send brands your live insights', act: 'Copy', run: () => copyText(`${link}/insights`, 'Insights link copied') },
+					{ icon: 'share', icons: ['share', 'send', 'chart'], tint: 'var(--h-confirmed)', eb: 'Media kit on WhatsApp', text: 'Your live Instagram numbers, as a link', act: 'WhatsApp', run: () => window.open(waShare('', `My live Instagram numbers (updated every day): ${link}/insights`), '_blank', 'noopener') }
 				]
 			: [])
 	]);
@@ -317,8 +318,8 @@
 				<div class="cs-grp cs-roster"><a class="cs-row" href="/studio/roster"><span class="cs-ico"><Icon name="users" /></span><span class="cs-txt"><b>Your Creators</b><small>Roster and switching · {agency.studios.length} creators</small></span><Icon name="chev" class="cs-chev" /></a></div>
 			{/if}
 			<div class="cs-cards" bind:this={cardsEl} onscroll={onCards}>
-				{#each cards as k (k.icon)}
-					<div class="cs-card"><span class="cs-eb"><span class="cs-ci"><Icon name={k.icon} /></span>{k.eb}</span><p>{k.text}</p><button class="cs-cb" onclick={k.run} disabled={k.icon === 'film' && kitBusy}>{#if k.icon === 'film' && kitBusy}<span class="spinner"></span>{:else}{k.act}{/if}</button></div>
+				{#each cards as k, i (k.icon)}
+					<div class="cs-card"><span class="cs-eb"><span class="cs-ci" style="--rt:{k.tint}"><RingIcons {i} icons={k.icons} /></span>{k.eb}</span><p>{k.text}</p><button class="cs-cb" onclick={k.run} disabled={k.icon === 'film' && kitBusy}>{#if k.icon === 'film' && kitBusy}<span class="spinner"></span>{:else}{k.act}{/if}</button></div>
 				{/each}
 			</div>
 			<div class="cs-dots" aria-hidden="true">{#each cards as k, i (k.icon)}<i class:on={i === cardI}></i>{/each}</div>
