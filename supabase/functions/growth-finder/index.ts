@@ -4,7 +4,7 @@
 // queues them: waiting for approval in the panel, or approved straight away in "auto" mode. private.growth_send_due
 // sends them in working hours, two minutes apart, up to the daily number; the rest wait for the next days.
 //
-// * With GROWTH_ANTHROPIC_API_KEY set (Miracle's monthly API credit; nothing else uses this key), Claude Opus 5.5
+// * With GROWTH_ANTHROPIC_API_KEY set (Miracle's monthly API credit; nothing else uses this key), Claude Sonnet 5.5
 //   searches the web through the Message Batches API: no time limit and half price. One search is one request for
 //   each niche, side by side in the same batch, and Claude writes each creator's subject and opening line as it goes.
 //   This call hands the search over and answers at once; ?collect=1 (every 5 minutes while one is pending,
@@ -17,9 +17,13 @@ import Anthropic from 'npm:@anthropic-ai/sdk@0.110.0';
 import { admin, cronAllowed, todayIST } from '../_shared/admin.ts';
 
 const CLAUDE_KEY = Deno.env.get('GROWTH_ANTHROPIC_API_KEY') ?? '';
-const CLAUDE_MODEL = 'claude-opus-5-5';
-// Batch list prices, for the panel's running total: half of $4 / $20 per million tokens; web search $10 per 1,000.
-const PRICE = { input: 2 / 1e6, output: 10 / 1e6, search: 10 / 1000 };
+// Sonnet, not Opus: a wide search on Opus cost about $7 for 14 creators queued. Most of a search's cost is the pages
+// Claude reads, which are read again at every later step, so pages are also capped (FETCH_TOKENS) and fewer.
+const CLAUDE_MODEL = 'claude-sonnet-5-5';
+// Batch list prices, for the panel's running total: half of $2 / $10 per million tokens; web search $10 per 1,000.
+const PRICE = { input: 1 / 1e6, output: 5 / 1e6, search: 10 / 1000 };
+// Each page Claude opens, cut to this many tokens: a contact section, link-in-bio page or media kit fits well inside.
+const FETCH_TOKENS = 6000;
 // One search: this many creators asked for in each niche, at most this many niches.
 const PER_NICHE = 12, MAX_NICHES = 8;
 const NICHES = ['fashion', 'beauty', 'food', 'travel', 'lifestyle', 'fitness'];
@@ -164,8 +168,8 @@ When you are done, reply with ONLY a JSON array and nothing else. Each item: {"n
     output_config: { effort: 'medium' },
     system,
     tools: [
-      { type: 'web_search_20260209', name: 'web_search', max_uses: 10, user_location: { type: 'approximate', country: 'IN' } },
-      { type: 'web_fetch_20260209', name: 'web_fetch', max_uses: 16 },
+      { type: 'web_search_20260209', name: 'web_search', max_uses: 8, user_location: { type: 'approximate', country: 'IN' } },
+      { type: 'web_fetch_20260209', name: 'web_fetch', max_uses: 12, max_content_tokens: FETCH_TOKENS },
     ],
     messages: [{ role: 'user', content: `Find ${count} creators who post about ${niche}.\nExclude (already known): ${known.slice(-300).join(', ') || 'none'}` }],
   } as unknown as Params;

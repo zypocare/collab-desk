@@ -119,6 +119,8 @@
 	}
 
 	const s = $derived(d?.settings ?? {});
+	// What a search should cost on Claude Sonnet: about 35 cents a niche (an estimate; each search's real cost is listed below).
+	const perSearch = $derived(`about $${((s.niches?.length || 6) * 0.35).toFixed(2)}`);
 	const lastEngine = $derived(((d?.runs ?? []) as R[])[0]?.engine ?? '');
 	// A search still going: Claude's batch (minutes, at most an hour), or a Gemini run in its first few minutes.
 	const active = $derived(((d?.runs ?? []) as R[]).find((r) => !r.finished_at && (r.batch_id || Date.now() - Date.parse(r.at) < 200_000)) ?? null);
@@ -191,7 +193,7 @@
 			<span class="dot" aria-hidden="true"></span>
 			<div class="st">
 				<b>{s.on ? 'On' : 'Off'} · {s.mode === 'auto' ? 'Auto: emails go out by themselves' : 'Approve: nothing goes out until you approve it'}</b>
-				<small class="muted">{s.on ? `Searches at 9 AM when fewer than ${num(s.daily * 2)} creators are waiting. ${num(c.sent_today)} of ${s.daily} sent today.` : 'Switch it on to find creators every morning. "Find creators now" works either way.'}</small>
+				<small class="muted">{s.on ? `Searches at 9 AM when fewer than ${num(s.daily * 2)} creators are waiting. ${num(c.sent_today)} of ${s.daily} sent today. A search costs ${perSearch} of Claude credit.` : `Switch it on to find creators every morning. "Find creators now" works either way (${perSearch} of Claude credit a search).`}</small>
 			</div>
 			<div class="seg" role="group" aria-label="Mode">
 				<button class:on={s.mode === 'approve'} onclick={() => mode('approve')}>Approve</button>
