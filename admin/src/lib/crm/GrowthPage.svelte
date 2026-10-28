@@ -180,8 +180,8 @@
 			<section class="card searching" role="status">
 				<span class="pulse" aria-hidden="true"><i></i></span>
 				<div class="st">
-					<b>{active.engine === 'claude' ? 'Claude is searching for creators' : 'Searching for creators'} · started {ago(active.at)}</b>
-					<small class="muted">{active.engine === 'claude' ? 'This usually takes a few minutes, sometimes up to an hour. The creators it finds appear below under "Waiting for you". You can close this page; nothing more is spent while it waits.' : 'This takes about two minutes. The creators it finds appear below under "Waiting for you".'}</small>
+					<b>{active.results_read ? `Claude found ${num(active.asked)} creators: checking their pages` : active.engine === 'claude' ? 'Claude is searching for creators' : 'Searching for creators'} · started {ago(active.at)}</b>
+					<small class="muted">{active.results_read ? 'A few creators every minute: each one\'s page is opened to see the email there, then they appear below under "Waiting for you".' : active.engine === 'claude' ? 'This usually takes a few minutes, sometimes up to an hour. The creators it finds appear below under "Waiting for you". You can close this page; nothing more is spent while it waits.' : 'This takes about two minutes. The creators it finds appear below under "Waiting for you".'}</small>
 					{#if active.checked_at}<small class="chk">Last check {ago(active.checked_at)}: {active.batch_status || 'no answer yet'}</small>{/if}
 				</div>
 				{#if active.engine === 'claude'}<button class="btn sm" onclick={() => cancelSearch(active.id)} disabled={!!busy}>Cancel search</button>{/if}
@@ -225,7 +225,7 @@
 						{#each d.runs as r (r.id)}
 							<li>
 								<span class="mono muted">{ago(r.at)}</span>
-								<span class="rn">{#if !r.finished_at && r.batch_id}Claude is searching…{#if r.checked_at}<small class="d">checked {ago(r.checked_at)}: {r.batch_status}</small>{/if}{:else if !r.finished_at && Date.now() - Date.parse(r.at) < 200_000}Searching…{:else if !r.finished_at}Stopped: took too long{:else}{r.added ? `${r.added} found` : 'none added'}{/if}{r.manual ? ' · by hand' : ''}{#if r.error}<small class="d">{r.error}</small>{/if}</span>
+								<span class="rn">{#if !r.finished_at && r.results_read}Checking creators…{#if r.checked_at}<small class="d">{r.batch_status}</small>{/if}{:else if !r.finished_at && r.batch_id}Claude is searching…{#if r.checked_at}<small class="d">checked {ago(r.checked_at)}: {r.batch_status}</small>{/if}{:else if !r.finished_at && Date.now() - Date.parse(r.at) < 200_000}Searching…{:else if !r.finished_at}Stopped: took too long{:else}{r.added ? `${r.added} found` : 'none added'}{/if}{r.manual ? ' · by hand' : ''}{#if r.error}<small class="d">{r.error}</small>{/if}</span>
 								<span class="tag {r.engine === 'claude' ? 't-acc' : 't-mute'}">{r.engine === 'claude' ? 'Claude' : 'Gemini'}</span>
 								<span class="mono">{r.engine === 'claude' ? `$${Number(r.cost_usd).toFixed(2)}` : 'free'}</span>
 							</li>

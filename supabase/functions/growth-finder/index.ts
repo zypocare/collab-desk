@@ -8,7 +8,7 @@
 //   searches the web through the Message Batches API: no time limit and half price. One search is one request for
 //   each niche, side by side in the same batch, and Claude writes each creator's subject and opening line as it goes.
 //   This call hands the search over and answers at once; ?collect=1 (every 5 minutes while one is pending,
-//   migration 166) picks up what Claude found. Only one search runs at a time, so repeated clicks never pay twice.
+//   migration 166; every minute since 172) picks up what Claude found, a few creators at a time. Only one search runs at a time, so repeated clicks never pay twice.
 // * Without the key, Gemini with Google Search runs inside this call, within the platform's time limit.
 //   ?dry=1   (Gemini) find and write, save nothing
 //   ?site=   where the AI lives (local testing)
@@ -30,7 +30,7 @@ type Found = { name: string; handle: string; email: string; email_source: string
 type Settings = { on: boolean; mode: 'approve' | 'auto'; daily: number; niches: string[]; cities: string[]; min_followers: number; max_followers: number; offer: string };
 type Db = ReturnType<typeof admin>;
 // request: the batch's requests still going, by custom_id (a single request on older runs).
-type Run = { id: number; at: string; batch_id: string | null; request: Record<string, Params> | Params | null; cost_usd: number | string; asked: number | null; confirmed: number | null; added: number | null };
+type Run = { id: number; at: string; batch_id: string | null; request: Record<string, Params> | Params | null; cost_usd: number | string; asked: number | null; confirmed: number | null; added: number | null; found: Found[] | null; results_read: boolean; reading: number };
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
@@ -171,72 +171,91 @@ When you are done, reply with ONLY a JSON array and nothing else. Each item: {"n
   } as unknown as Params;
 }
 
-/** Every finished batch: each niche's creators are checked, written and queued; the searches that paused part-way
- * carry on together in a new batch, and the run stays open until the last one is done. */
+/** One small step for the oldest open search, every minute while one is open (migration 172). Waiting: ask Claude
+ * how the batch is doing. Ended: read its results once, keeping only the creators found (the searches that paused
+ * part-way carry on together in a new batch). Then check and queue those creators a few at a time, so no call does
+ * more than the server allows: checking about 60 creators' pages in one call was cut off, and nothing was saved. */
 async function collect(db: Db, site: string) {
   if (!CLAUDE_KEY) return;
-  const { data } = await db.from('growth_runs').select('id, at, batch_id, request, cost_usd, asked, confirmed, added').eq('engine', 'claude').not('batch_id', 'is', null).is('finished_at', null).order('at');
-  for (const run of (data ?? []) as Run[]) {
-    const finish = (patch: Record<string, unknown>) => db.from('growth_runs').update({ ...patch, seconds: Math.round((Date.now() - Date.parse(run.at)) / 1000), finished_at: new Date().toISOString() }).eq('id', run.id);
-    try {
-      const client = claude();
-      const batch = await client.messages.batches.retrieve(run.batch_id!);
-      // What Claude says, kept on the run for the panel (and to tell a slow search from a stuck one).
-      const n = batch.request_counts;
-      await db.from('growth_runs').update({
-        batch_status: batch.processing_status === 'ended' ? `ended: ${n.succeeded} done, ${n.errored} failed, ${n.expired} expired, ${n.canceled} cancelled` : batch.processing_status === 'canceling' ? 'being cancelled' : `Claude is still searching (${n.processing} of ${n.processing + n.succeeded + n.errored + n.expired + n.canceled} niches going)`,
-        checked_at: new Date().toISOString(),
-      }).eq('id', run.id);
-      if (batch.processing_status !== 'ended') {
-        // Batches finish within 24 hours; one still going after that is given up on.
-        if (Date.now() - Date.parse(run.at) > 26 * 3600e3) await finish({ error: "Claude didn't finish within a day" });
-        continue;
-      }
-      const asked: Record<string, Params> = run.request && 'messages' in run.request ? { [`run-${run.id}`]: run.request as Params } : (run.request as Record<string, Params> | null) ?? {};
-      const next: Record<string, Params> = {};
-      const creators: Found[] = [];
-      const notes: string[] = [];
-      let spent = Number(run.cost_usd), said = '';
-      for await (const r of await client.messages.batches.results(run.batch_id!)) {
-        if (r.result.type !== 'succeeded') {
-          notes.push(r.result.type === 'errored' ? `Claude: ${(r.result.error as { error?: { message?: string } })?.error?.message ?? 'a search failed'}` : `Claude: a search was ${r.result.type}`);
-          continue;
-        }
-        const message = r.result.message;
-        spent += cost(message.usage);
-        // Paused part-way: that niche carries on in the next batch (the pause_turn pattern).
-        const params = asked[r.custom_id];
-        if (message.stop_reason === 'pause_turn' && params) {
-          next[r.custom_id] = { ...params, messages: [...params.messages, { role: 'assistant', content: message.content }] } as Params;
-          continue;
-        }
-        if (message.stop_reason === 'refusal') {
-          notes.push('Claude declined a search');
-          continue;
-        }
-        const text = message.content.map((b) => (b.type === 'text' ? b.text : '')).join('');
-        const got = parseCreators(text);
-        if (!got.length && text) said = text;
-        creators.push(...got);
-      }
-      const ctx = await context(db);
-      if ('error' in ctx) {
-        await finish({ cost_usd: round(spent), error: ctx.error });
-        continue;
-      }
-      // What this round found goes in now, so it shows in the panel while the paused niches carry on.
-      const out = creators.length ? await queue(db, site, ctx, creators, { writeWait: 30_000 }) : { added: 0, confirmed: 0, error: undefined };
-      const totals = { cost_usd: round(spent), asked: (run.asked ?? 0) + creators.length, confirmed: (run.confirmed ?? 0) + out.confirmed, added: (run.added ?? 0) + out.added };
-      if (Object.keys(next).length) {
-        const more = await client.messages.batches.create({ requests: Object.entries(next).map(([custom_id, params]) => ({ custom_id, params })) });
-        await db.from('growth_runs').update({ ...totals, batch_id: more.id, request: next, batch_status: `Claude is still searching (${Object.keys(next).length} niches going)` }).eq('id', run.id);
-        continue;
-      }
-      await finish({ ...totals, error: totals.added ? '' : out.error ?? notes[0] ?? (totals.asked ? '' : `Claude found no creators with a public email this time${said ? `: ${said.replace(/\s+/g, ' ').slice(0, 140)}` : ''}`) });
-    } catch (e) {
-      await finish({ error: claudeError(e) });
+  const { data } = await db.from('growth_runs').select('id, at, batch_id, request, cost_usd, asked, confirmed, added, found, results_read, reading').eq('engine', 'claude').not('batch_id', 'is', null).is('finished_at', null).order('at').limit(1);
+  const run = (data ?? [])[0] as Run | undefined;
+  if (!run) return;
+  const finish = (patch: Record<string, unknown>) => db.from('growth_runs').update({ ...patch, seconds: Math.round((Date.now() - Date.parse(run.at)) / 1000), finished_at: new Date().toISOString() }).eq('id', run.id);
+  try {
+    if (run.results_read) return await check(db, site, run, finish);
+    const client = claude();
+    const batch = await client.messages.batches.retrieve(run.batch_id!);
+    // What Claude says, kept on the run for the panel (and to tell a slow search from a stuck one).
+    const n = batch.request_counts;
+    await db.from('growth_runs').update({
+      batch_status: batch.processing_status === 'ended' ? `ended: ${n.succeeded} done, ${n.errored} failed, ${n.expired} expired, ${n.canceled} cancelled` : batch.processing_status === 'canceling' ? 'being cancelled' : `Claude is still searching (${n.processing} of ${n.processing + n.succeeded + n.errored + n.expired + n.canceled} niches going)`,
+      checked_at: new Date().toISOString(),
+    }).eq('id', run.id);
+    if (batch.processing_status !== 'ended') {
+      // Batches finish within 24 hours; one still going after that is given up on.
+      if (Date.now() - Date.parse(run.at) > 26 * 3600e3) await finish({ error: "Claude didn't finish within a day" });
+      return;
     }
+    // Reading the results is the heavy part: a read that keeps failing ends the search with a reason.
+    if (run.reading >= 5) return void (await finish({ error: "Claude finished, but its results couldn't be read" }));
+    await db.from('growth_runs').update({ reading: run.reading + 1 }).eq('id', run.id);
+    const asked: Record<string, Params> = run.request && 'messages' in run.request ? { [`run-${run.id}`]: run.request as Params } : (run.request as Record<string, Params> | null) ?? {};
+    const next: Record<string, Params> = {};
+    const creators: Found[] = [];
+    const notes: string[] = [];
+    let spent = Number(run.cost_usd), said = '';
+    for await (const r of await client.messages.batches.results(run.batch_id!)) {
+      if (r.result.type !== 'succeeded') {
+        notes.push(r.result.type === 'errored' ? `Claude: ${(r.result.error as { error?: { message?: string } })?.error?.message ?? 'a search failed'}` : `Claude: a search was ${r.result.type}`);
+        continue;
+      }
+      const message = r.result.message;
+      spent += cost(message.usage);
+      // Paused part-way: that niche carries on in the next batch (the pause_turn pattern).
+      const params = asked[r.custom_id];
+      if (message.stop_reason === 'pause_turn' && params) {
+        next[r.custom_id] = { ...params, messages: [...params.messages, { role: 'assistant', content: message.content }] } as Params;
+        continue;
+      }
+      if (message.stop_reason === 'refusal') {
+        notes.push('Claude declined a search');
+        continue;
+      }
+      const text = message.content.map((b) => (b.type === 'text' ? b.text : '')).join('');
+      const got = parseCreators(text);
+      if (!got.length && text) said = text;
+      creators.push(...got);
+    }
+    const found = [...(run.found ?? []), ...creators];
+    const totals = { cost_usd: round(spent), asked: (run.asked ?? 0) + creators.length, found, reading: 0 };
+    if (Object.keys(next).length) {
+      const more = await client.messages.batches.create({ requests: Object.entries(next).map(([custom_id, params]) => ({ custom_id, params })) });
+      await db.from('growth_runs').update({ ...totals, batch_id: more.id, request: next, batch_status: `Claude is still searching (${Object.keys(next).length} niches going)` }).eq('id', run.id);
+      return;
+    }
+    if (!found.length) return void (await finish({ ...totals, request: null, error: notes[0] ?? `Claude found no creators with a public email this time${said ? `: ${said.replace(/\s+/g, ' ').slice(0, 140)}` : ''}` }));
+    await db.from('growth_runs').update({ ...totals, request: null, results_read: true, batch_status: `Checking ${found.length} creators' pages` }).eq('id', run.id);
+  } catch (e) {
+    await finish({ error: claudeError(e) });
   }
+}
+
+// Creators checked and queued per step: each one's page (and their own site) is opened to see the email there.
+const CHECK_STEP = 8;
+
+/** The next few creators of a search Claude has finished: checked, written and queued; the search ends with the last. */
+async function check(db: Db, site: string, run: Run, finish: (patch: Record<string, unknown>) => PromiseLike<unknown>) {
+  const found = run.found ?? [];
+  const now = found.slice(0, CHECK_STEP), rest = found.slice(CHECK_STEP);
+  const ctx = await context(db);
+  if ('error' in ctx) return void (await finish({ error: ctx.error }));
+  const out = now.length ? await queue(db, site, ctx, now, { writeWait: 20_000 }) : { added: 0, confirmed: 0, error: undefined };
+  const totals = { confirmed: (run.confirmed ?? 0) + out.confirmed, added: (run.added ?? 0) + out.added };
+  if (rest.length) {
+    await db.from('growth_runs').update({ ...totals, found: rest, batch_status: `Checking creators' pages: ${rest.length} to go, ${totals.added} added so far` }).eq('id', run.id);
+    return;
+  }
+  await finish({ ...totals, found: [], batch_status: 'done', error: totals.added ? '' : out.error ?? `${run.asked ?? 0} creators found, but none of their emails could be confirmed on a public page` });
 }
 
 /** What one answer cost, at batch prices (web fetch costs only its tokens). */
@@ -417,7 +436,7 @@ async function get(u: string): Promise<string> {
   try {
     const r = await fetch(u, { headers: { 'user-agent': 'Mozilla/5.0 (compatible; Miracle/1.0; +https://www.miracleapp.live)', accept: 'text/html' }, redirect: 'follow', signal: AbortSignal.timeout(6000) });
     if (!r.ok || !(r.headers.get('content-type') ?? '').includes('html')) return '';
-    return (await r.text()).slice(0, 1_000_000);
+    return (await r.text()).slice(0, 400_000);
   } catch {
     return '';
   }
