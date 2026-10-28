@@ -30,7 +30,7 @@ type Found = { name: string; handle: string; email: string; email_source: string
 type Settings = { on: boolean; mode: 'approve' | 'auto'; daily: number; niches: string[]; cities: string[]; min_followers: number; max_followers: number; offer: string };
 type Db = ReturnType<typeof admin>;
 // request: the batch's requests still going, by custom_id (a single request on older runs).
-type Run = { id: number; at: string; batch_id: string | null; request: Record<string, Params> | Params | null; cost_usd: number | string; asked: number | null; confirmed: number | null; added: number | null; found: Found[] | null; results_read: boolean; reading: number };
+type Run = { id: number; at: string; batch_id: string | null; request: Record<string, Params> | Params | null; cost_usd: number | string; asked: number | null; confirmed: number | null; added: number | null; found: Found[] | null; results_read: boolean; reading: number; read_ids: string[] | null; next_requests: Record<string, Params> | null; note: string | null };
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
@@ -171,17 +171,18 @@ When you are done, reply with ONLY a JSON array and nothing else. Each item: {"n
   } as unknown as Params;
 }
 
-/** One small step for the oldest open search, every minute while one is open (migration 172). Waiting: ask Claude
- * how the batch is doing. Ended: read its results once, keeping only the creators found (the searches that paused
- * part-way carry on together in a new batch). Then check and queue those creators a few at a time, so no call does
- * more than the server allows: checking about 60 creators' pages in one call was cut off, and nothing was saved. */
+/** One small step for the oldest open search, every minute while one is open (migrations 172-173). Waiting: ask
+ * Claude how the batch is doing. Ended: read one niche's result per step, keeping only the creators it found (a niche
+ * that paused part-way carries on in a new batch once all are read). Then check and queue those creators a few at a
+ * time. No step does much: reading all six results, or checking about 60 creators' pages, in one call took more than
+ * the server allows, and the call was cut off part-way. */
 async function collect(db: Db, site: string) {
   if (!CLAUDE_KEY) return;
-  const { data } = await db.from('growth_runs').select('id, at, batch_id, request, cost_usd, asked, confirmed, added, found, results_read, reading').eq('engine', 'claude').not('batch_id', 'is', null).is('finished_at', null).order('at').limit(1);
+  const { data } = await db.from('growth_runs').select('id, at, batch_id, request, cost_usd, asked, confirmed, added, found, results_read, reading, read_ids, next_requests, note').eq('engine', 'claude').not('batch_id', 'is', null).is('finished_at', null).order('at').limit(1);
   const run = (data ?? [])[0] as Run | undefined;
   if (!run) return;
   // One step at a time: a step still going when the next minute's call comes (a slow page, a cold start) keeps it;
-  // two at once would check the same creators and write over each other's progress.
+  // two at once would read or check the same things and write over each other's progress.
   const now = new Date().toISOString();
   const { data: mine } = await db.from('growth_runs').update({ busy_until: new Date(Date.now() + 3 * 60e3).toISOString() }).eq('id', run.id).or(`busy_until.is.null,busy_until.lt."${now}"`).select('id');
   if (!mine?.length) return;
@@ -190,56 +191,60 @@ async function collect(db: Db, site: string) {
     if (run.results_read) return await check(db, site, run, finish);
     const client = claude();
     const batch = await client.messages.batches.retrieve(run.batch_id!);
-    // What Claude says, kept on the run for the panel (and to tell a slow search from a stuck one).
     const n = batch.request_counts;
-    await db.from('growth_runs').update({
-      batch_status: batch.processing_status === 'ended' ? `ended: ${n.succeeded} done, ${n.errored} failed, ${n.expired} expired, ${n.canceled} cancelled` : batch.processing_status === 'canceling' ? 'being cancelled' : `Claude is still searching (${n.processing} of ${n.processing + n.succeeded + n.errored + n.expired + n.canceled} niches going)`,
-      checked_at: new Date().toISOString(),
-    }).eq('id', run.id);
+    const total = n.processing + n.succeeded + n.errored + n.expired + n.canceled;
     if (batch.processing_status !== 'ended') {
+      // What Claude says, kept on the run for the panel (and to tell a slow search from a stuck one).
+      await db.from('growth_runs').update({ batch_status: batch.processing_status === 'canceling' ? 'being cancelled' : `Claude is still searching (${n.processing} of ${total} niches going)`, checked_at: now }).eq('id', run.id);
       // Batches finish within 24 hours; one still going after that is given up on.
       if (Date.now() - Date.parse(run.at) > 26 * 3600e3) await finish({ error: "Claude didn't finish within a day" });
       return;
     }
-    // Reading the results is the heavy part: a read that keeps failing ends the search with a reason.
-    if (run.reading >= 5) return void (await finish({ error: "Claude finished, but its results couldn't be read" }));
-    await db.from('growth_runs').update({ reading: run.reading + 1 }).eq('id', run.id);
     const asked: Record<string, Params> = run.request && 'messages' in run.request ? { [`run-${run.id}`]: run.request as Params } : (run.request as Record<string, Params> | null) ?? {};
-    const next: Record<string, Params> = {};
-    const creators: Found[] = [];
-    const notes: string[] = [];
-    let spent = Number(run.cost_usd), said = '';
-    for await (const r of batchResults(client, batch.results_url ?? '')) {
-      if (r.result.type !== 'succeeded') {
-        notes.push(r.result.type === 'errored' ? `Claude: ${(r.result.error as { error?: { message?: string } })?.error?.message ?? 'a search failed'}` : `Claude: a search was ${r.result.type}`);
-        continue;
+    const readIds = run.read_ids ?? [];
+    const next = { ...(run.next_requests ?? {}) };
+    // Every niche read: the paused ones carry on together in a new batch, or the creators found are checked.
+    if (readIds.length >= total) {
+      if (Object.keys(next).length) {
+        const more = await client.messages.batches.create({ requests: Object.entries(next).map(([custom_id, params]) => ({ custom_id, params })) });
+        await db.from('growth_runs').update({ batch_id: more.id, request: next, next_requests: {}, read_ids: [], reading: 0, batch_status: `Claude is still searching (${Object.keys(next).length} niches going)`, checked_at: now }).eq('id', run.id);
+        return;
       }
-      const message = r.result.message;
-      spent += cost(message.usage);
-      // Paused part-way: that niche carries on in the next batch (the pause_turn pattern).
-      const params = asked[r.custom_id];
-      if (message.stop_reason === 'pause_turn' && params) {
-        next[r.custom_id] = { ...params, messages: [...params.messages, { role: 'assistant', content: message.content }] } as Params;
-        continue;
-      }
-      if (message.stop_reason === 'refusal') {
-        notes.push('Claude declined a search');
-        continue;
-      }
-      const text = message.content.map((b) => (b.type === 'text' ? b.text : '')).join('');
-      const got = parseCreators(text);
-      if (!got.length && text) said = text;
-      creators.push(...got);
-    }
-    const found = [...(run.found ?? []), ...creators];
-    const totals = { cost_usd: round(spent), asked: (run.asked ?? 0) + creators.length, found, reading: 0 };
-    if (Object.keys(next).length) {
-      const more = await client.messages.batches.create({ requests: Object.entries(next).map(([custom_id, params]) => ({ custom_id, params })) });
-      await db.from('growth_runs').update({ ...totals, batch_id: more.id, request: next, batch_status: `Claude is still searching (${Object.keys(next).length} niches going)` }).eq('id', run.id);
+      const found = run.found ?? [];
+      if (!found.length) return void (await finish({ request: null, error: run.note || 'Claude found no creators with a public email this time' }));
+      await db.from('growth_runs').update({ request: null, results_read: true, batch_status: `Checking ${found.length} creators' pages`, checked_at: now }).eq('id', run.id);
       return;
     }
-    if (!found.length) return void (await finish({ ...totals, request: null, error: notes[0] ?? `Claude found no creators with a public email this time${said ? `: ${said.replace(/\s+/g, ' ').slice(0, 140)}` : ''}` }));
-    await db.from('growth_runs').update({ ...totals, request: null, results_read: true, batch_status: `Checking ${found.length} creators' pages` }).eq('id', run.id);
+    // A read that keeps failing ends the search with a reason.
+    if (run.reading >= 5) return void (await finish({ error: "Claude finished, but its results couldn't be read" }));
+    await db.from('growth_runs').update({ reading: run.reading + 1 }).eq('id', run.id);
+    const r = await nextResult(client, batch.results_url ?? '', new Set(readIds), total);
+    if (!r) return; // all read (the next step moves on)
+    let note = run.note ?? '', spent = Number(run.cost_usd);
+    const creators: Found[] = [];
+    if (r.result.type !== 'succeeded') {
+      note = r.result.type === 'errored' ? `Claude: ${(r.result.error as { error?: { message?: string } })?.error?.message ?? 'a search failed'}` : `Claude: a search was ${r.result.type}`;
+    } else {
+      const message = r.result.message;
+      spent += cost(message.usage);
+      const params = asked[r.custom_id];
+      if (message.stop_reason === 'pause_turn' && params) {
+        // Paused part-way: that niche carries on in the next batch (the pause_turn pattern).
+        next[r.custom_id] = { ...params, messages: [...params.messages, { role: 'assistant', content: message.content }] } as Params;
+      } else if (message.stop_reason === 'refusal') {
+        note = 'Claude declined a search';
+      } else {
+        const text = message.content.map((b) => (b.type === 'text' ? b.text : '')).join('');
+        creators.push(...parseCreators(text));
+        if (!creators.length && text) note = `Claude found no creators with a public email this time: ${text.replace(/\s+/g, ' ').slice(0, 140)}`;
+      }
+    }
+    const read = [...readIds, r.custom_id];
+    await db.from('growth_runs').update({
+      found: [...(run.found ?? []), ...creators], asked: (run.asked ?? 0) + creators.length, cost_usd: round(spent),
+      read_ids: read, next_requests: next, note, reading: 0, checked_at: now,
+      batch_status: `Reading Claude's results: ${read.length} of ${total} niches`,
+    }).eq('id', run.id);
   } catch (e) {
     await finish({ error: claudeError(e) });
   } finally {
@@ -265,32 +270,51 @@ async function check(db: Db, site: string, run: Run, finish: (patch: Record<stri
   await finish({ ...totals, found: [], batch_status: 'done', error: totals.added ? '' : out.error ?? `${run.asked ?? 0} creators found, but none of their emails could be confirmed on a public page` });
 }
 
-/** A finished batch's results, one per request, read in a single pass. The SDK's own reader (batches.results) copies
- * and rescans everything it has so far for every chunk that arrives, and each niche's result is one very long line
- * with every page Claude read inside it: reading six that way took more processing time than the server allows, so
- * the call was cut off before anything was saved. */
-async function* batchResults(client: Anthropic, url: string): AsyncGenerator<Anthropic.Messages.MessageBatchIndividualResponse> {
+/** The first result of a finished batch whose niche isn't read yet, or null when every one has been. Lines are split
+ * on the raw bytes and only that one line is decoded and parsed: each niche's result is one very long line with every
+ * page Claude read inside it, and the SDK's own reader (batches.results), which copies and rescans everything it has
+ * for every chunk, took far longer than the server allows. A file that ends before every niche is in is an error, so
+ * a cut-off read is tried again instead of being taken as the whole answer. */
+async function nextResult(client: Anthropic, url: string, read: Set<string>, total: number): Promise<Anthropic.Messages.MessageBatchIndividualResponse | null> {
   if (!url) throw new Error('the batch has no results yet');
   const res = (await client.get(url, { headers: { Accept: 'application/binary' }, __binaryResponse: true })) as Response;
   const reader = res.body!.getReader();
   const text = new TextDecoder();
-  let parts: string[] = [];
-  for (;;) {
-    const { value, done } = await reader.read();
-    const chunk = done ? text.decode() : text.decode(value, { stream: true });
-    let from = 0, end: number;
-    while ((end = chunk.indexOf('\n', from)) >= 0) {
-      parts.push(chunk.slice(from, end));
-      const line = parts.join('').trim();
-      parts = [];
-      if (line) yield JSON.parse(line);
-      from = end + 1;
+  let parts: Uint8Array[] = [], size = 0, lines = 0;
+  // The line so far, as one piece; null when it's a niche already read.
+  const line = () => {
+    const all = new Uint8Array(size);
+    let at = 0;
+    for (const p of parts) (all.set(p, at), (at += p.length));
+    parts = [];
+    size = 0;
+    if (!all.length) return null;
+    lines++;
+    const id = /"custom_id"\s*:\s*"([^"]+)"/.exec(text.decode(all.subarray(0, 300)))?.[1];
+    return id && read.has(id) ? null : (JSON.parse(text.decode(all)) as Anthropic.Messages.MessageBatchIndividualResponse);
+  };
+  try {
+    for (;;) {
+      const { value, done } = await reader.read();
+      if (done) {
+        const last = line();
+        if (last) return last;
+        if (lines < total) throw new Error(`Claude's results were cut short (${lines} of ${total} niches)`);
+        return null;
+      }
+      let from = 0, end: number;
+      while ((end = value.indexOf(10, from)) >= 0) {
+        parts.push(value.subarray(from, end));
+        size += end - from;
+        const got = line();
+        if (got) return got;
+        from = end + 1;
+      }
+      if (from < value.length) (parts.push(value.subarray(from)), (size += value.length - from));
     }
-    if (from < chunk.length) parts.push(chunk.slice(from));
-    if (done) break;
+  } finally {
+    await reader.cancel().catch(() => {});
   }
-  const last = parts.join('').trim();
-  if (last) yield JSON.parse(last);
 }
 
 /** What one answer cost, at batch prices (web fetch costs only its tokens). */
