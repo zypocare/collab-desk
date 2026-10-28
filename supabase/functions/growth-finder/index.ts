@@ -178,14 +178,17 @@ When you are done, reply with ONLY a JSON array and nothing else. Each item: {"n
  * the server allows, and the call was cut off part-way. */
 async function collect(db: Db, site: string) {
   if (!CLAUDE_KEY) return;
-  const { data } = await db.from('growth_runs').select('id, at, batch_id, request, cost_usd, asked, confirmed, added, found, results_read, reading, read_ids, next_requests, note').eq('engine', 'claude').not('batch_id', 'is', null).is('finished_at', null).order('at').limit(1);
-  const run = (data ?? [])[0] as Run | undefined;
-  if (!run) return;
+  const { data: open } = await db.from('growth_runs').select('id').eq('engine', 'claude').not('batch_id', 'is', null).is('finished_at', null).order('at').limit(1);
+  const id = (open ?? [])[0]?.id as number | undefined;
+  if (!id) return;
   // One step at a time: a step still going when the next minute's call comes (a slow page, a cold start) keeps it;
-  // two at once would read or check the same things and write over each other's progress.
+  // two at once would read or check the same things and write over each other's progress. The run is read from the
+  // claim itself, so it's never older than the step that held it before.
   const now = new Date().toISOString();
-  const { data: mine } = await db.from('growth_runs').update({ busy_until: new Date(Date.now() + 3 * 60e3).toISOString() }).eq('id', run.id).or(`busy_until.is.null,busy_until.lt."${now}"`).select('id');
-  if (!mine?.length) return;
+  const { data: mine } = await db.from('growth_runs').update({ busy_until: new Date(Date.now() + 3 * 60e3).toISOString() }).eq('id', id).is('finished_at', null).or(`busy_until.is.null,busy_until.lt."${now}"`)
+    .select('id, at, batch_id, request, cost_usd, asked, confirmed, added, found, results_read, reading, read_ids, next_requests, note');
+  const run = (mine ?? [])[0] as Run | undefined;
+  if (!run) return;
   const finish = (patch: Record<string, unknown>) => db.from('growth_runs').update({ ...patch, seconds: Math.round((Date.now() - Date.parse(run.at)) / 1000), finished_at: new Date().toISOString() }).eq('id', run.id);
   try {
     if (run.results_read) return await check(db, site, run, finish);
