@@ -41,7 +41,8 @@ function device() {
 
 // Also a navigation cancelled by another tap, and a page slide the browser skipped for the next one.
 const NOISE = /ResizeObserver loop|Script error|AbortError|The user aborted|cancelled|Load failed$|Failed to fetch$|NetworkError|^navigation aborted|Transition was skipped/i;
-const CHUNK = /Failed to fetch dynamically imported module|Importing a module script failed|error loading dynamically imported module/i;
+/** An old tab after a deploy asking for a script or stylesheet that's gone ("Unable to preload CSS" is the stylesheet one). */
+export const OLD_FILE = /Failed to fetch dynamically imported module|Importing a module script failed|error loading dynamically imported module|Unable to preload CSS/i;
 
 /** Sends one crash; hands back the reference shown to the person (or '' when it isn't worth sending). */
 /** For a support ticket: which phone or browser, the app's version and the last few things they did. */
@@ -83,12 +84,12 @@ export function initProblems() {
 	});
 	addEventListener('error', (ev) => {
 		// An old tab after a deploy asks for files that are gone: load the new version (once).
-		if (CHUNK.test(ev.message ?? '')) return reloadOnce(ev.error ?? ev.message);
+		if (OLD_FILE.test(ev.message ?? '')) return reloadOnce(ev.error ?? ev.message);
 		if (ev.error || ev.message) reportProblem(ev.error ?? ev.message);
 	});
 	addEventListener('unhandledrejection', (ev) => {
 		const r = ev.reason;
-		if (CHUNK.test(String(r?.message ?? r))) return reloadOnce(r);
+		if (OLD_FILE.test(String(r?.message ?? r))) return reloadOnce(r);
 		// Supabase answers (a refused save, a rule) are shown to the person; only real crashes are problems.
 		if (r instanceof Error) reportProblem(r);
 	});
