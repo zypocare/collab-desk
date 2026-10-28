@@ -223,6 +223,31 @@ const out = (r: unknown) => {
 	return (typeof v === 'string' ? v : v && typeof v === 'object' ? JSON.stringify(v) : '').trim();
 };
 /** The first JSON object in a reply (models sometimes wrap it in words or code fences). */
+/** The objects of the first JSON list in a reply, each read on its own (with firstJson's fixes). A whole-list parse
+ * lost every item to one bad character: a line break inside a field, a reply cut off part-way, or search citations
+ * like [1] after the list (whose ']' the old slice ran to). */
+function jsonList(s: string): Record<string, unknown>[] {
+	const out: Record<string, unknown>[] = [];
+	let depth = 0, start = -1, inStr = false, esc = false;
+	for (let i = Math.max(0, s.indexOf('[')); i < s.length; i++) {
+		const ch = s[i];
+		if (inStr) {
+			if (esc) esc = false;
+			else if (ch === '\\') esc = true;
+			else if (ch === '"') inStr = false;
+			continue;
+		}
+		if (ch === '"') inStr = true;
+		else if (ch === '{') {
+			if (depth++ === 0) start = i;
+		} else if (ch === '}' && depth > 0 && --depth === 0) {
+			const o = firstJson(s.slice(start, i + 1));
+			if (o) out.push(o);
+		} else if (ch === ']' && depth === 0 && out.length) break;
+	}
+	return out;
+}
+
 function firstJson(s: string) {
 	const a = s.indexOf('{'), b = s.lastIndexOf('}');
 	if (a < 0 || b <= a) return null;
@@ -488,13 +513,7 @@ Return ONLY a JSON array of objects, nothing else.`;
 	} catch (e) {
 		throw new Error(`Google Search with Gemini failed: ${String((e as Error)?.message ?? e).slice(0, 300)}`);
 	}
-	const a = reply.indexOf('['), z = reply.lastIndexOf(']');
-	let raw: Record<string, unknown>[] = [];
-	try {
-		raw = a >= 0 && z > a ? (JSON.parse(reply.slice(a, z + 1)) as Record<string, unknown>[]) : [];
-	} catch {
-		raw = [];
-	}
+	const raw = jsonList(reply);
 	const creators = raw
 		.map((r) => ({
 			name: String(r.name ?? '').trim().slice(0, 80),
@@ -626,13 +645,7 @@ Return ONLY a JSON array of objects, nothing else.`;
 			reply = await gemini(x.env, system(false), user, 4000, 0.8);
 		}
 	} else reply = await chat(x, system(false), user, 2600, 0.8);
-	const a = reply.indexOf('['), z = reply.lastIndexOf(']');
-	let list: Record<string, unknown>[] = [];
-	try {
-		list = a >= 0 && z > a ? (JSON.parse(reply.slice(a, z + 1)) as Record<string, unknown>[]) : [];
-	} catch {
-		list = [];
-	}
+	const list = jsonList(reply);
 	const brands = list
 		.map((r) => ({ name: String(r.name ?? '').trim().slice(0, 80), website: String(r.website ?? '').trim().slice(0, 200), instagram: String(r.instagram ?? '').replace(/^@+/, '').trim().slice(0, 60), category: String(r.category ?? 'Other').slice(0, 30), why: String(r.why ?? '').trim().slice(0, 160) }))
 		.filter((r) => r.name && /^https?:\/\/[^\s/]+\.[^\s]+/.test(r.website));
@@ -896,13 +909,7 @@ Return ONLY a JSON array: [{"handle": "instagram handle without @", "name": "cre
 		} catch {
 			continue;
 		}
-		const a = reply.indexOf('['), z = reply.lastIndexOf(']');
-		let list: Record<string, unknown>[] = [];
-		try {
-			list = a >= 0 && z > a ? (JSON.parse(reply.slice(a, z + 1)) as Record<string, unknown>[]) : [];
-		} catch {
-			list = [];
-		}
+		const list = jsonList(reply);
 		const own = handle.toLowerCase();
 		const creators = list
 			.map((r) => ({ handle: String(r.handle ?? '').replace(/^@+/, '').trim().toLowerCase().slice(0, 30), name: String(r.name ?? '').trim().slice(0, 120), url: String(r.url ?? '').trim().slice(0, 500), note: String(r.note ?? '').trim().slice(0, 200) }))

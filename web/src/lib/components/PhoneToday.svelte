@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { receivedIn } from '../invoice';
-	import { onMount } from 'svelte';
+	import { onMount, untrack } from 'svelte';
+	import { addLeadAsCollab } from '../leads';
 	import { askPaid, completeFollow, markPaid, markReceived, priorityOf, studio } from '../studio.svelte';
 	import { copyText, countUp, ui } from '../ui.svelte';
 	import {
@@ -84,6 +85,35 @@
 		on();
 		addEventListener('scroll', on, { passive: true });
 		return () => removeEventListener('scroll', on);
+	});
+
+	// A new possible collab spotted in her Instagram DMs opens "Add a collab" with its chat read in, the same as tapping
+	// Add on it: once per chat (remembered on this phone), only here on Today, never over something already open. The
+	// first time, the ones already waiting are only remembered, so old chats don't pop up one after another.
+	const POPPED = 'miracle.leadPopped';
+	$effect(() => {
+		const leads = studio.leads;
+		if (!leads.length || ui.newCollab || ui.openCollab) return;
+		untrack(() => {
+			let seen: string[] | null = null;
+			try {
+				seen = JSON.parse(localStorage.getItem(POPPED) ?? 'null');
+			} catch {
+				/* private mode: fall through */
+			}
+			const remember = (ids: string[]) => {
+				try {
+					localStorage.setItem(POPPED, JSON.stringify(ids.slice(-200)));
+				} catch {
+					/* nothing to keep it in */
+				}
+			};
+			if (!Array.isArray(seen)) return remember(leads.map((l) => l.igsid));
+			const fresh = leads.find((l) => !seen.includes(l.igsid));
+			if (!fresh) return;
+			remember([...seen, fresh.igsid]);
+			addLeadAsCollab(fresh.igsid, fresh.username, fresh.name);
+		});
 	});
 
 	let leaving = $state<string | null>(null);
