@@ -204,7 +204,7 @@ async function collect(db: Db, site: string) {
     const creators: Found[] = [];
     const notes: string[] = [];
     let spent = Number(run.cost_usd), said = '';
-    for await (const r of await client.messages.batches.results(run.batch_id!)) {
+    for await (const r of batchResults(client, batch.results_url ?? '')) {
       if (r.result.type !== 'succeeded') {
         notes.push(r.result.type === 'errored' ? `Claude: ${(r.result.error as { error?: { message?: string } })?.error?.message ?? 'a search failed'}` : `Claude: a search was ${r.result.type}`);
         continue;
@@ -256,6 +256,34 @@ async function check(db: Db, site: string, run: Run, finish: (patch: Record<stri
     return;
   }
   await finish({ ...totals, found: [], batch_status: 'done', error: totals.added ? '' : out.error ?? `${run.asked ?? 0} creators found, but none of their emails could be confirmed on a public page` });
+}
+
+/** A finished batch's results, one per request, read in a single pass. The SDK's own reader (batches.results) copies
+ * and rescans everything it has so far for every chunk that arrives, and each niche's result is one very long line
+ * with every page Claude read inside it: reading six that way took more processing time than the server allows, so
+ * the call was cut off before anything was saved. */
+async function* batchResults(client: Anthropic, url: string): AsyncGenerator<Anthropic.Messages.MessageBatchIndividualResponse> {
+  if (!url) throw new Error('the batch has no results yet');
+  const res = (await client.get(url, { headers: { Accept: 'application/binary' }, __binaryResponse: true })) as Response;
+  const reader = res.body!.getReader();
+  const text = new TextDecoder();
+  let parts: string[] = [];
+  for (;;) {
+    const { value, done } = await reader.read();
+    const chunk = done ? text.decode() : text.decode(value, { stream: true });
+    let from = 0, end: number;
+    while ((end = chunk.indexOf('\n', from)) >= 0) {
+      parts.push(chunk.slice(from, end));
+      const line = parts.join('').trim();
+      parts = [];
+      if (line) yield JSON.parse(line);
+      from = end + 1;
+    }
+    if (from < chunk.length) parts.push(chunk.slice(from));
+    if (done) break;
+  }
+  const last = parts.join('').trim();
+  if (last) yield JSON.parse(last);
 }
 
 /** What one answer cost, at batch prices (web fetch costs only its tokens). */
