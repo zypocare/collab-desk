@@ -5,7 +5,8 @@
 	import { ensurePlan, hasFeature } from '../plan.svelte';
 	import type { Collab } from '../types';
 	import { INDIAN_STATES, KIND_LABEL, type Invoice, type InvoiceItem } from '../invoice';
-	import { acceptedQuote, delivText, inr, parse, rel, todayIso, iso, usageLabel } from '../util';
+	import { acceptedQuote, inr, todayIso } from '../util';
+	import { invoiceStart } from '../invoiceDraft';
 	import Icon from './Icon.svelte';
 	import Select from './Select.svelte';
 	import DatePicker from './DatePicker.svelte';
@@ -14,59 +15,24 @@
 	let { c, editing, onclose }: { c: Collab; editing?: Invoice; onclose: () => void } = $props();
 	const s = studio.settings!;
 
+	// Where a new invoice starts (shared with the going-live sheet); a draft being edited keeps its own values.
 	const start = untrack(() => {
-		const q = acceptedQuote(c);
-		const issued = c.invoices.filter((i) => i.status !== 'draft' && i.status !== 'cancelled');
-		const invoicedSoFar = issued.reduce((a, i) => a + i.subtotal, 0);
-		const hasAdvance = issued.some((i) => i.kind === 'advance');
-		const fee = c.fee || q?.total || 0;
-		let kind: Invoice['kind'] = 'full';
-		let amount = fee;
-		// An advance only makes sense before the content is out; after that it's the full amount.
-		const posted = c.stage === 'live' || c.stage === 'wrapped';
-		if (q && q.advance_pct > 0 && q.advance_pct < 100 && !hasAdvance && invoicedSoFar === 0 && !posted) {
-			kind = 'advance';
-			amount = Math.round((fee * q.advance_pct) / 100);
-		} else if (invoicedSoFar > 0) {
-			kind = 'balance';
-			amount = Math.max(0, fee - invoicedSoFar);
-		}
-		const what = `${delivText(c.deliverables)} for ${c.brand.name}${c.usage && c.usage !== 'Organic only' ? `, ${usageLabel(c.usage).toLowerCase()}` : ''} (${c.code})`;
-		const label = kind === 'advance' ? `Advance (${q?.advance_pct}%)` : kind === 'balance' ? 'Balance' : 'Content collaboration';
-		let due = rel(15);
-		if (kind === 'advance') due = rel(7);
-		else if (q && c.live_date) {
-			const d = parse(c.live_date);
-			d.setDate(d.getDate() + q.pay_days);
-			due = iso(d) < todayIso() ? rel(7) : iso(d);
-		}
-		const sameState = !!c.brand.state && !!s.state && c.brand.state === s.state;
+		const d = invoiceStart(c, s, studio.collabs);
 		return {
-			kind,
-			items: editing?.items?.length ? editing.items.map((i) => ({ ...i })) : [{ description: `${label}: ${what}`, qty: 1, rate: amount }],
-			tax_mode: editing?.tax_mode ?? (s.gst_registered ? (sameState ? 'intra' : 'inter') : 'none'),
-			due: editing?.due_date ?? due,
-			invoicedSoFar,
-			fee,
-			e: editing,
-			accounts: c.brand.accounts_email ?? ''
+			...d,
+			items: editing?.items?.length ? editing.items.map((i) => ({ ...i })) : d.items,
+			tax_mode: editing?.tax_mode ?? d.tax_mode,
+			due: editing?.due_date ?? d.due,
+			e: editing
 		};
 	});
 
 	let kind = $state<Invoice['kind']>(start.e?.kind ?? start.kind);
 	let items = $state<InvoiceItem[]>(start.items);
 	let taxMode = $state<Invoice['tax_mode']>(start.tax_mode as Invoice['tax_mode']);
-	let gstRate = $state(start.e?.gst_rate || s.gst_rate || 18);
-	// Same TDS as this brand's last invoice (brands deduct the same rate every time).
-	const lastForBrand = untrack(() =>
-		studio.collabs
-			.filter((x) => x.brand_id === c.brand_id)
-			.flatMap((x) => x.invoices)
-			.filter((i) => i.status !== 'draft' && i.status !== 'cancelled')
-			.sort((a, b) => b.created_at.localeCompare(a.created_at))[0]
-	);
-	let tdsRate = $state(start.e?.tds_rate ?? lastForBrand?.tds_rate ?? 0);
-	let tdsSection = $state<'194J' | '194C'>(start.e?.tds_section ?? lastForBrand?.tds_section ?? '194J');
+	let gstRate = $state(start.e?.gst_rate || start.gst_rate);
+	let tdsRate = $state(start.e?.tds_rate ?? start.tds_rate);
+	let tdsSection = $state<'194J' | '194C'>(start.e?.tds_section ?? start.tds_section);
 	let issueDate = $state(start.e?.issue_date ?? todayIso());
 	let dueDate = $state(start.due);
 	let sendTo = $state(start.e?.send_to ?? start.accounts);

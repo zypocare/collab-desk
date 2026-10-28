@@ -2452,3 +2452,22 @@
   [data-desk] .drawer .sh .sh-step.past .sh-l::before { display: none; }
   [data-desk] .drawer .sh .sh-l { white-space: nowrap; }
 }
+/* Phone collab page (approved redesign, 28 Oct 2026): the next step is one big card with one big button, and every
+   other part is a row (its name, a short summary, a chevron) that opens on a tap. The stage stays open. */
+@media (max-width: 760px) {
+  [data-desk] .drawer.as-page .next-bar.next-bar { grid-template-columns: minmax(0, 1fr); gap: 14px; margin: 14px 0 18px; padding: 20px; border: 1px solid var(--ink); border-radius: 0; background: var(--surface); box-shadow: 5px 5px 0 var(--g2); }
+  [data-desk] .drawer.as-page .next-bar .nb-ic { display: none; }
+  [data-desk] .drawer.as-page .next-bar.next-bar small { color: var(--g3); }
+  [data-desk] .drawer.as-page .next-bar.next-bar b { font-size: 28px; line-height: 1.08; }
+  [data-desk] .drawer.as-page .next-bar.next-bar .btn { width: 100%; height: 54px; justify-content: center; font-size: 15.5px; font-weight: 800; box-shadow: 4px 4px 0 var(--g1); }
+  [data-desk] .drawer.as-page .dr-b .sec.fold { margin: 0; padding: 0 4px; border-width: 0 0 1px; border-radius: 0; background: transparent; box-shadow: none; }
+  [data-desk] .drawer.as-page .dr-b > .sec:not(.fold) + .sec.fold { margin-top: 10px; border-top-width: 1px; }
+  [data-desk] .drawer.as-page .dr-b .sec.fold > h3 { display: flex; align-items: center; gap: 10px; min-height: 54px; margin: 0; padding-right: 22px; cursor: pointer; font: 600 15px var(--f-body, inherit) !important; letter-spacing: 0 !important; text-transform: none !important; color: var(--ink) !important; -webkit-tap-highlight-color: transparent; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23988ea0' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M9 6l6 6-6 6'/%3E%3C/svg%3E") no-repeat right 2px center / 15px; }
+  [data-desk] .drawer.as-page .dr-b .sec.fold.open > h3 { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23988ea0' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); }
+  [data-desk] .drawer.as-page .dr-b .sec.fold:not(.open) > h3 > * { display: none; }
+  [data-desk] .drawer.as-page .dr-b .sec.fold.open > h3::after { display: none; }
+  [data-desk] .drawer.as-page .dr-b .sec.fold > h3[data-sum]::after { content: attr(data-sum); flex: 1; min-width: 0; text-align: right; font: 400 13px var(--f-body, inherit); color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  [data-desk] .drawer.as-page .dr-b .sec.fold > h3:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  [data-desk] .drawer.as-page .dr-b .sec.fold:not(.open) > :not(h3) { display: none !important; }
+  [data-desk] .drawer.as-page .dr-b .sec.fold.open { padding-bottom: 16px; }
+}

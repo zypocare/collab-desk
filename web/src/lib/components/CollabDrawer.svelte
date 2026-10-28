@@ -89,10 +89,11 @@
 		waLink
 	} from '../util';
 	import { DRAFT_MAX_MB, cancelInvoice, recordPayment, reloadCollabs, setChecklist, setInvoiceFlags, shareDraft, releaseDraft, withdrawQuote, type DraftProgress } from '../studio.svelte';
-	import { emailOk, errMessage, todayIso, waShare } from '../util';
+	import { emailOk, errMessage, todayIso, unreadFor, waShare } from '../util';
 	import type { Quote } from '../types';
 	import { INVOICE_STATUS, KIND_LABEL, balanceDue, type Invoice } from '../invoice';
 	import InvoiceDialog from './InvoiceDialog.svelte';
+	import GoLiveSheet from './GoLiveSheet.svelte';
 	import PaymentDialog from './PaymentDialog.svelte';
 	import BrandTrust from './BrandTrust.svelte';
 	import DraftPrecheck from './DraftPrecheck.svelte';
@@ -187,6 +188,82 @@
 		return out;
 	});
 	const sh = (k: string) => !page || showAll || (FOCUS[c?.stage ?? ''] ?? []).includes(k);
+	// Phone page: the stage and the next step stay open; every other part is one row (its name and a short summary)
+	// that opens on a tap, so the page reads as "what's next" and not a long form.
+	function folds(node: HTMLElement, on: boolean) {
+		let active = on;
+		const prep = () => {
+			// The parts written here, and the ones in their own component (posts, link, files, product, costs).
+			for (const sec of node.querySelectorAll<HTMLElement>(':scope > section.sec, :scope > .sec-wrap > section.sec')) {
+				const h = sec.querySelector<HTMLElement>(':scope > h3');
+				// The stage and the "Should you take it?" score stay open.
+				const fold = active && !!h && !sec.hasAttribute('data-open') && !sec.classList.contains('dec-sec');
+				sec.classList.toggle('fold', fold);
+				if (!h) continue;
+				if (fold) {
+					h.tabIndex = 0;
+					h.setAttribute('role', 'button');
+					h.setAttribute('aria-expanded', String(sec.classList.contains('open')));
+				} else for (const a of ['tabindex', 'role', 'aria-expanded']) h.removeAttribute(a);
+			}
+		};
+		const toggle = (h: HTMLElement) => {
+			const sec = h.parentElement;
+			if (!sec?.classList.contains('fold')) return;
+			sec.classList.toggle('open');
+			h.setAttribute('aria-expanded', String(sec.classList.contains('open')));
+		};
+		const click = (e: MouseEvent) => {
+			const t = e.target as HTMLElement;
+			if (t.closest('button, a, input, select, textarea, label')) return;
+			const h = t.closest('h3');
+			if (h instanceof HTMLElement && h.parentElement?.classList.contains('fold') && node.contains(h)) toggle(h);
+		};
+		const key = (e: KeyboardEvent) => {
+			const h = e.target as HTMLElement;
+			if ((e.key === 'Enter' || e.key === ' ') && h.tagName === 'H3' && h.parentElement?.classList.contains('fold')) {
+				e.preventDefault();
+				toggle(h);
+			}
+		};
+		const mo = new MutationObserver(prep);
+		mo.observe(node, { childList: true, subtree: true });
+		node.addEventListener('click', click);
+		node.addEventListener('keydown', key);
+		prep();
+		return {
+			update(v: boolean) {
+				active = v;
+				prep();
+			},
+			destroy() {
+				mo.disconnect();
+				node.removeEventListener('click', click);
+				node.removeEventListener('keydown', key);
+			}
+		};
+	}
+	// A jump link opens the part it goes to.
+	const openSec = (id: string) => document.getElementById(id)?.classList.add('open');
+	const sums = $derived.by(() => {
+		if (!c) return {} as Record<string, string>;
+		const lastMsg = c.messages[c.messages.length - 1];
+		const n = unreadFor(c);
+		const dr = c.drafts[c.drafts.length - 1];
+		const open = c.invoices.filter((i) => i.status === 'sent' || i.status === 'partly_paid');
+		return {
+			msg: n ? `${n} new` : lastMsg ? lastMsg.body.replace(/\s+/g, ' ').slice(0, 60) : 'No messages yet',
+			deal: [TYPE_LABEL[c.type], isPaid(c) && c.fee ? inr(c.fee) : '', c.usage].filter(Boolean).join(' · '),
+			quote: quote ? QUOTE_STATUS[quote.status].label : 'None yet',
+			dates: [c.draft_date ? `Draft ${fmt(c.draft_date)}` : '', c.live_date ? `live ${fmt(c.live_date)}` : ''].filter(Boolean).join(' · ') || 'Not set',
+			drafts: dr ? `${c.drafts.length} sent · ${dr.status === 'approved' ? 'approved' : dr.status === 'changes' ? 'changes asked' : 'waiting'}` : 'None yet',
+			check: `${CHECKLIST.length - checklistMissing(c).length} of ${CHECKLIST.length} done`,
+			pay: open.length ? `${open.length} open · ${inr(outstanding(c))} to come` : c.pay_status === 'paid' ? 'Paid' : c.invoices.length ? `${c.invoices.length} invoice${c.invoices.length === 1 ? '' : 's'}` : 'No invoice yet',
+			brief: (c.brief || '').replace(/\s+/g, ' ').slice(0, 60) || 'No brief yet',
+			contact: c.contact_name || c.contact_email || 'Not added',
+			act: `${c.events.length} update${c.events.length === 1 ? '' : 's'}`
+		} as Record<string, string>;
+	});
 	$effect(() => {
 		if (!page) return;
 		void c?.id;
@@ -264,6 +341,8 @@
 		deal = null;
 	}
 	let invoiceOpen = $state<{ editing?: Invoice } | null>(null);
+	// Going live (the post, the checklist, the invoice) or just the invoice, in one guided sheet.
+	let liveOpen = $state<'live' | 'invoice' | null>(null);
 	let paymentOpen = $state<Invoice | null>(null);
 	const issuedInvoices = $derived(c ? c.invoices.filter((i) => i.status !== 'draft' && i.status !== 'cancelled') : []);
 	let confirmLive = $state(false);
@@ -408,8 +487,8 @@
 			case 'dates': if (dates) { await updateCollab(c.id, { draft_date: dates.draft, live_date: dates.live }); toast('Dates set', 'cal'); } return scrollTo('sec-dates');
 			case 'start': return changeStage('creating');
 			case 'share-draft': return scrollTo('sec-drafts', '#dr-link');
-			case 'go-live': return changeStage('live');
-			case 'invoice': invoiceOpen = {}; return;
+			case 'go-live': liveOpen = 'live'; return;
+			case 'invoice': liveOpen = 'invoice'; return;
 			case 'paid': if (openInv) paymentOpen = openInv; else markPaid(c); return;
 			case 'report': { const r = c.reports.find((x) => x.status === 'ready'); if (r) sendReport(r); return; }
 		}
@@ -479,7 +558,7 @@
 		{#if deal && c}
 			<DealMoment {c} q={deal} advance={advanceDue} onclose={endDeal} onadvance={() => (endDeal(), (invoiceOpen = {}))} />
 		{/if}
-		<div class="dr-b">
+		<div class="dr-b" use:folds={page && phone.on}>
 			{#if scam}
 				<div class="dr-scam" role="alert">
 					<Icon name="alert" />
@@ -491,7 +570,7 @@
 				<!-- Full page: jump straight to a part of the collab. -->
 				<nav class="cx-nav" aria-label="Jump to">
 					{#each JUMPS.filter(([id]) => present.includes(id)) as [id, label] (id)}
-						<a href="#{id}" onclick={(e) => { e.preventDefault(); document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }}>{label}</a>
+						<a href="#{id}" onclick={(e) => { e.preventDefault(); openSec(id); document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }}>{label}</a>
 					{/each}
 				</nav>
 			{/if}
@@ -502,7 +581,7 @@
 					<button class="btn grad" onclick={() => runNext(next.key)}><Icon name={next.icon} />{next.label}</button>
 				</div>
 			{/if}
-			<section class="sec">
+			<section class="sec" data-open>
 				<h3>Stage {#if c.stage === 'declined'}<span class="danger">Declined</span>{/if}</h3>
 				{#if !['declined', 'paused', 'cancelled'].includes(c.stage)}
 					<div class="sh" style="--p:{si / 5}">
@@ -539,7 +618,7 @@
 			{#if isRanked(c)}<DecisionCard {c} />{/if}
 
 			<section class="sec" id="sec-msg">
-				<h3>Messages{#if c.contact_name}<small class="sec-sub">with {c.contact_name}</small>{/if}</h3>
+				<h3 data-sum={sums.msg}>Messages{#if c.contact_name}<small class="sec-sub">with {c.contact_name}</small>{/if}</h3>
 				{#if page}
 					{@const lastMsg = c.messages[c.messages.length - 1]}
 					<!-- Phones: the chat opens on its own screen. -->
@@ -562,7 +641,7 @@
 			</section>
 
 			<section class="sec" id="sec-deal" hidden={!sh('deal')}>
-				<h3>Deal</h3>
+				<h3 data-sum={sums.deal}>Deal</h3>
 				<div class="fields">
 					<div class="f">
 						<label for="f-type">Type</label>
@@ -611,7 +690,7 @@
 			</section>
 
 			<section class="sec" hidden={!sh('quote')}>
-				<h3>Quote &amp; agreement {#if quote}<span class="pill tint {QUOTE_STATUS[quote.status].k}">{QUOTE_STATUS[quote.status].label}</span>{/if}</h3>
+				<h3 data-sum={sums.quote}>Quote &amp; agreement {#if quote}<span class="pill tint {QUOTE_STATUS[quote.status].k}">{QUOTE_STATUS[quote.status].label}</span>{/if}</h3>
 				{#if c.stage === 'request' || c.stage === 'negotiating'}
 					<a class="of-entry" href="/studio/offer/{c.code}"><Icon name="shield" /><span><b>Check the offer</b><small>What to push back on before you agree, from their agreement, brief and messages</small></span><Icon name="chevR" /></a>
 				{/if}
@@ -679,7 +758,7 @@
 			{#if ships(c)}<div class="sec-wrap" hidden={!sh('product')}><ProductShipping {c} /></div>{/if}
 
 			<section class="sec" id="sec-dates" hidden={!sh('dates')}>
-				<h3>Dates</h3>
+				<h3 data-sum={sums.dates}>Dates</h3>
 				{#if dates && c.stage !== 'live' && c.stage !== 'wrapped' && c.stage !== 'declined' && (c.draft_date !== dates.draft || c.live_date !== dates.live)}
 					<div class="date-sug">
 						<Icon name="spark" />
@@ -710,7 +789,7 @@
 			</section>
 
 			<section class="sec" id="sec-drafts" hidden={!sh('drafts')}>
-				<h3>
+				<h3 data-sum={sums.drafts}>
 					Drafts for approval
 					{#if roundsIncluded !== null}<span>{Math.max(0, c.drafts.length - 1)} of {roundsIncluded} revision{roundsIncluded === 1 ? '' : 's'} used</span>{/if}
 				</h3>
@@ -772,7 +851,7 @@
 
 			{#if ['confirmed', 'creating', 'live', 'wrapped'].includes(c.stage) && !noPost(c)}
 				<section class="sec" hidden={!sh('check')}>
-					<h3>Posting checklist <span>{CHECKLIST.length - checklistMissing(c).length} of {CHECKLIST.length}</span></h3>
+					<h3 data-sum={sums.check}>Posting checklist <span>{CHECKLIST.length - checklistMissing(c).length} of {CHECKLIST.length}</span></h3>
 					<div class="ck-bar" aria-hidden="true">{#each CHECKLIST as item, i (item.key)}<i class:on={i < CHECKLIST.length - checklistMissing(c).length}></i>{/each}</div>
 					{#each CHECKLIST as item (item.key)}
 						<label class="check-row ck-row" class:done={!!c.checklist?.[item.key]}>
@@ -791,7 +870,7 @@
 
 			{#if isPaid(c)}
 				<section class="sec" id="sec-pay" hidden={!sh('pay')}>
-					<h3>Payment {#if issuedInvoices.length}<span>{issuedInvoices.length} invoice{issuedInvoices.length === 1 ? '' : 's'}</span>{/if}</h3>
+					<h3 data-sum={sums.pay}>Payment {#if issuedInvoices.length}<span>{issuedInvoices.length} invoice{issuedInvoices.length === 1 ? '' : 's'}</span>{/if}</h3>
 					{#each c.invoices as inv (inv.id)}
 						<div class="inv-row" class:muted={inv.status === 'cancelled'}>
 							<div class="inv-row-h">
@@ -909,7 +988,7 @@
 			</section>
 
 			<section class="sec" id="sec-brief" hidden={!sh('brief')}>
-				<h3>Brief</h3>
+				<h3 data-sum={sums.brief}>Brief</h3>
 				{#if !['declined', 'wrapped'].includes(c.stage)}
 					<div class="sc-cta">
 						<span class="sc-cta-ic"><Icon name="script" /></span>
@@ -929,7 +1008,7 @@
 			</section>
 
 			<section class="sec" hidden={!sh('contact')}>
-				<h3>Brand contact</h3>
+				<h3 data-sum={sums.contact}>Brand contact</h3>
 				<div class="fields">
 					<div class="f"><label for="c-n">Name</label><input class="inp" id="c-n" value={c.contact_name} onchange={(e) => save('contact_name', val(e))} /></div>
 					<div class="f"><label for="c-p">Phone</label><input class="inp" id="c-p" value={c.contact_phone} inputmode="tel" onchange={(e) => save('contact_phone', val(e))} /></div>
@@ -953,7 +1032,7 @@
 			</section>
 
 			<section class="sec" id="sec-activity" hidden={!sh('activity')}>
-				<h3>Activity</h3>
+				<h3 data-sum={sums.act}>Activity</h3>
 				<div class="act">
 					{#each actDays as g, gi (g.day)}
 						<div class="act-day" class:first={gi === 0}>
@@ -999,6 +1078,9 @@
 {#if c && reportOpen}<ReportDialog side="creator" name={c.brand.name} target={{ collab_id: c.id }} onclose={() => (reportOpen = false)} ondone={(b) => b && reloadCollabs()} />{/if}
 {#if c && quoteOpen}
 	<QuoteDialog {c} base={quoteOpen.base} editing={quoteOpen.editing} preset={quoteOpen.preset} onclose={() => (quoteOpen = null)} />
+{/if}
+{#if liveOpen && c}
+	<GoLiveSheet {c} mode={liveOpen} onclose={() => (liveOpen = null)} onmore={(draft) => { liveOpen = null; invoiceOpen = { editing: draft }; }} />
 {/if}
 {#if c && invoiceOpen}
 	<InvoiceDialog {c} editing={invoiceOpen.editing} onclose={() => (invoiceOpen = null)} />

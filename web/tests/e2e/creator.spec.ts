@@ -22,9 +22,15 @@ test('add a collab from a pasted DM, score it, and send a quote', async ({ page 
 	await page.locator('button:has-text("New collab"), button:has-text("Add collab")').first().click();
 	await page.fill('#nc-paste', `Team ${brand} here! We'd love 1 reel and 2 stories for our launch. Budget 30k, live by 25 Dec. Write to us at ${brand.toLowerCase()}@example.test`);
 	await expect(page.locator('#nc-brand')).toHaveValue(brand);
-	await expect(page.locator('.dm-found')).toContainText('1 Reel');
-	await expect(page.locator('.dm-found')).toContainText(`${brand.toLowerCase()}@example.test`);
-	await page.locator('.dialog button[type=submit]').click();
+	// Three short steps: what they're asking (read from the message), the deal, then when it goes live.
+	await page.getByRole('button', { name: /^Next/ }).click();
+	await expect(page.locator('.nc-card')).toContainText('1 Reel');
+	await expect(page.locator('.nc-card')).toContainText('₹30,000');
+	await page.getByRole('button', { name: /Looks right/ }).click();
+	await expect(page.locator('#nc-fee')).toHaveValue('30000');
+	await page.getByRole('button', { name: /Next: dates/ }).click();
+	await page.getByRole('button', { name: 'Still talking' }).click();
+	await page.getByRole('button', { name: /^Add collab/ }).click();
 
 	// It opens, with the "Should you take it?" score.
 	await expect(page.getByText(brand).first()).toBeVisible();

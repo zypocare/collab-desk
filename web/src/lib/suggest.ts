@@ -239,7 +239,7 @@ export function nextStep(c: Collab): NextStep | null {
 			return { key: 'start', label: 'Start creating', hint: `Draft due ${fmt(c.draft_date)}`, icon: 'film' };
 		case 'creating':
 			if (!dr || dr.status === 'changes') return { key: 'share-draft', label: dr ? 'Share revised draft' : 'Share draft', hint: dr ? 'They asked for changes' : 'Send it for approval', icon: 'send' };
-			if (dr.status === 'approved') return noPost(c) ? { key: 'go-live', label: 'Mark delivered', hint: 'Draft approved: send the final files', icon: 'send' } : { key: 'go-live', label: 'Mark live', hint: 'Draft approved: post it', icon: 'spark' };
+			if (dr.status === 'approved') return noPost(c) ? { key: 'go-live', label: 'Mark delivered', hint: 'Draft approved: send the final files', icon: 'send' } : { key: 'go-live', label: "I've posted it", hint: 'Draft approved: post it, then link it here with the invoice', icon: 'spark' };
 			return null; // waiting for the brand's review
 		case 'live':
 			if (readyReport) return { key: 'report', label: 'Send results', hint: '7-day report is ready', icon: 'chart' };
