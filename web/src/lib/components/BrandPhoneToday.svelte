@@ -11,6 +11,9 @@
 	import { compact, firstName, fmt, hueOf, inr, inrS, iso, today } from '../util';
 	import Icon from './Icon.svelte';
 	import Ticket from './Ticket.svelte';
+	import CycleText from './CycleText.svelte';
+	import DiwaliLayer from './DiwaliLayer.svelte';
+	import { diwaliWords, festivalNow } from '../festival';
 
 	// Today for a brand on a phone: the creator's Today, piece for piece (the living header, the row of
 	// tickets, the set-up card, the moving line, the money card, Needs you and This week), with the brand's numbers.
@@ -19,13 +22,23 @@
 	const m = $derived(brandToday.money);
 	const T = today();
 	const hour = new Date().getHours();
-	const greet = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+	// A festival on now (festival.ts): its theme on this card and its greeting on the day, as on the creator's Today.
+	const fest = festivalNow();
+	const dw = fest ? diwaliWords(fest) : null;
+	const greet = dw?.greet ?? (hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening');
+	const note = dw?.note ?? '';
 	const monthName = T.toLocaleDateString('en-IN', { month: 'long' });
 	const who = $derived(d?.name || acc?.brand?.name || acc?.profile?.name || '');
 	const creators = $derived(d?.creators ?? []);
 	const waiting = $derived(d?.waiting ?? []);
 	const ig = $derived(brandIg.data);
 	const at = (slug: string, path: string) => (slug === pageSlug ? path : addressFor(slug, path));
+	// Each creator card comes alive like the creator's collab cards: a light runs round its edge in its own colour
+	// (amber when it's your turn), and its line turns through a few facts about them, each card a beat after the last.
+	const HUES = ['var(--g2)', 'var(--g1)', 'var(--g3)', 'var(--h-live)', 'var(--h-request)'];
+	const cardHue = (waitingOn: boolean, i: number) => (waitingOn ? 'var(--g3)' : HUES[i % HUES.length]);
+	const cardLines = (c: (typeof creators)[number]) =>
+		[...new Set([[c.niche, c.city].filter(Boolean).join(' · '), c.followers ? `${compact(c.followers)} followers` : '', c.open ? `${c.open} open request${c.open === 1 ? '' : 's'}` : '', c.done ? `${c.done} done with you` : ''].filter((x): x is string => !!x))].slice(0, 4);
 
 	// The header drifts and fades a little as the screen scrolls.
 	let sy = $state(0);
@@ -98,8 +111,9 @@
 	const picked = $derived(week[pick]);
 </script>
 
-<section class="ht" style="--sy:{sy}">
+<section class="ht" class:dw-on={!!fest} style="--sy:{sy}">
 	<div class="ht-glow" aria-hidden="true"><i></i><i></i><i></i></div>
+	{#if fest}<DiwaliLayer />{/if}
 	<a class="ht-orb" href={ig ? '/brand/settings' : '/brand/creators'} aria-label={ig ? 'Your Instagram' : 'Your creators'}>
 		<span class="orb-ring" aria-hidden="true"></span>
 		<span class="orb-in">
@@ -112,7 +126,7 @@
 		{#if ig?.picture}<span class="orb-badge"><b>{compact(ig.followers ?? 0)}</b> followers</span>{/if}
 		<span class="orb-spark s1" aria-hidden="true"></span><span class="orb-spark s2" aria-hidden="true"></span><span class="orb-spark s3" aria-hidden="true"></span>
 	</a>
-	<p class="ht-date">{T.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
+	<p class="ht-date">{T.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}{#if note}<span class="dw-note">{note}</span>{/if}</p>
 	<h1 class="ht-hi">{greet},<br /><em>{who}</em></h1>
 	<p class="ht-sum">
 		<span class="ht-dot" class:calm={!waiting.length}></span>
@@ -127,10 +141,11 @@
 		{#if creators.length}<a href="/brand/creators">See all</a>{/if}
 	</div>
 	<div class="tix-row">
-		{#each creators as c (c.id)}
-			<a class="tix-t tone-{c.waiting ? 'now' : c.open ? 'calm' : 'ok'}" href={at(c.slug, '/brand/requests')} aria-label="{c.name}: {c.open ?? 0} open">
+		{#each creators as c, i (c.id)}
+			{@const lines = cardLines(c)}
+			<a class="tix-t tone-{c.waiting ? 'now' : c.open ? 'calm' : 'ok'}" style="--rt:{cardHue(!!c.waiting, i)};--k:{i}" href={at(c.slug, '/brand/requests')} aria-label="{c.name}: {c.open ?? 0} open">
 				<b class="tix-n">{c.name}</b>
-				<span class="tix-l">{[c.niche, c.city].filter(Boolean).join(' · ') || 'Creator'}</span>
+				<span class="tix-l" aria-hidden="true">{#if lines.length}<CycleText {i} items={lines} />{:else}Creator{/if}</span>
 				<i class="tix-cut" aria-hidden="true"></i>
 				<span class="tix-f"><strong>{c.open ? `${c.open} open` : `${c.done ?? 0} done`}</strong><em>{c.waiting ? 'Your turn' : c.open ? 'In progress' : 'Done'}</em></span>
 			</a>
