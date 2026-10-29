@@ -114,6 +114,9 @@
 	});
 	const forYou = $derived(Math.min(studio.leads.length, 3) + open.length);
 	const ago = (at: string | null) => (at ? relWord(diff(at.slice(0, 10))) : '');
+	// Who wrote: the brand's name when the AI's read starts with it ("Barcode: ..."), else their name, else the handle.
+	const leadName = (l: (typeof studio.leads)[number]) => /^([^:@][^:]{0,40}):\s/.exec(l.collab_hint)?.[1].trim() || l.name || (l.username ? `@${l.username}` : 'Someone on Instagram');
+	const leadRead = (l: (typeof studio.leads)[number]) => (l.collab_hint || '').replace(/^[^:@][^:]{0,40}:\s/, '') || (l.collab_flag === 'likely' ? 'May want to work with you' : 'Might be asking about a collab');
 	const gauge = (score: number) => `${((2 * Math.PI * 27 * score) / 100).toFixed(1)} ${(2 * Math.PI * 27).toFixed(1)}`;
 </script>
 
@@ -156,35 +159,29 @@
 		<h2 class="dk2-say">{#each say as p, i (i)}{#if p.em}<em class="dk2-{p.em}">{p.t}</em>{:else}{p.t}{/if}{/each}</h2>
 
 		{#if lead}
+			<!-- A possible collab from her DMs: who, what they wrote, what Desk AI reads in it, and one button. -->
 			<div class="dk2-lead" use:swipe>
 				{#key lead.igsid}
 				<div class="dk2-lead-in" in:fly={{ x: 40 * dir, duration: 220 }}>
-					<div class="dk2-lt">
-						<Icon name="send" />
-						<span>Spotted in your DMs{#if phoneLeads.length > 1}<b class="dk2-of">{Math.min(leadI, phoneLeads.length - 1) + 1} of {phoneLeads.length}</b>{/if}</span>
-						<em class:maybe={lead.collab_flag !== 'likely'}><i></i>{lead.collab_flag === 'likely' ? 'Likely' : 'Maybe'}</em>
-					</div>
-					<a class="dk2-who" href="/studio/inbox/ig/{lead.igsid}">
-						<span class="dk2-av">{#if lead.picture}<img src={lead.picture} alt="" referrerpolicy="no-referrer" />{:else}<b>{(lead.username || 'IG').slice(0, 1).toUpperCase()}</b>{/if}</span>
-						<span class="dk2-wt"><b>@{lead.username || 'someone'}</b><small>{lead.collab_hint || (lead.collab_flag === 'likely' ? 'May want to work with you' : 'Might be asking about a collab')}</small></span>
+					<a class="dk2-who" href="/studio/inbox/ig/{lead.igsid}" aria-label="Open the chat with {leadName(lead)}">
+						<span class="dk2-av">{#if lead.picture}<img src={lead.picture} alt="" referrerpolicy="no-referrer" />{:else}<b>{(lead.username || lead.name || 'IG').slice(0, 1).toUpperCase()}</b>{/if}</span>
+						<span class="dk2-wt">
+							<b>{leadName(lead)}</b>
+							<small><em class="dk2-flag" class:maybe={lead.collab_flag !== 'likely'}>{lead.collab_flag === 'likely' ? 'Likely collab' : 'Maybe a collab'}</em>{#if lead.last_at}{` · ${ago(lead.last_at)}`}{/if}</small>
+						</span>
+						<Icon name="chevR" class="dk2-go" />
 					</a>
-					{#if said[lead.igsid]}
-						<p class="dk2-dm">{said[lead.igsid]}<small>Instagram{lead.last_at ? ` · ${ago(lead.last_at)}` : ''}</small></p>
-					{/if}
-					<div class="dk2-acts">
-						<button class="btn primary dk2-add" disabled={adding} onclick={addLead}>{#if adding}<span class="spinner"></span>{:else}<Icon name="plus" />{/if}Add as collab</button>
-						<a class="btn dk2-open" href="/studio/inbox/ig/{lead.igsid}" aria-label="Open the chat"><Icon name="arrow" /></a>
-					</div>
-					{#if phoneLeads.length > 1}
-						<div class="dk2-dots">
-							<button class="dk2-step" onclick={() => goLead(leadI - 1)} aria-label="Previous possible collab"><Icon name="chevL" /></button>
-							{#each phoneLeads as l, i (l.igsid)}<button class="dk2-dot" class:on={i === leadI} onclick={() => goLead(i)} aria-label="Show @{l.username || 'lead'}"><i></i></button>{/each}
-							<button class="dk2-step" onclick={() => goLead(leadI + 1)} aria-label="Next possible collab"><Icon name="chevR" /></button>
-						</div>
-					{/if}
+					{#if said[lead.igsid]}<p class="dk2-dm">{said[lead.igsid]}</p>{/if}
+					<p class="dk2-read"><Icon name="spark" /><span>{leadRead(lead)}</span></p>
+					<button class="btn primary dk2-add" disabled={adding} onclick={addLead}>{#if adding}<span class="spinner"></span>{:else}<Icon name="plus" />{/if}Add as collab</button>
 				</div>
 				{/key}
 			</div>
+			{#if phoneLeads.length > 1}
+				<div class="dk2-dots" role="group" aria-label="Possible collabs, {Math.min(leadI, phoneLeads.length - 1) + 1} of {phoneLeads.length}">
+					{#each phoneLeads as l, i (l.igsid)}<button class="dk2-dot" class:on={i === leadI} onclick={() => goLead(i)} aria-label="Show {leadName(l)}" aria-current={i === leadI}><i></i></button>{/each}
+				</div>
+			{/if}
 			<a class="ail-more" href="/studio/possible-collabs">{studio.leads.length > 3 ? `+${studio.leads.length - 3} more · ` : ''}All possible collabs<Icon name="chevR" /></a>
 		{/if}
 
