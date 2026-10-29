@@ -22,6 +22,7 @@
 		fmt,
 		fmtLong,
 		fmtTime,
+		hueOf,
 		inr,
 		payTerms,
 		plural,
@@ -43,6 +44,9 @@
 	import DraftChecklist from '#lib/components/DraftChecklist.svelte';
 	import ReportMenu from '#lib/components/ReportMenu.svelte';
 	import HealthCard from '#lib/components/HealthCard.svelte';
+	import { phone } from '#lib/phone.svelte.ts';
+	import { folds, openOnly } from '#lib/folds.ts';
+	import Mono from '#lib/components/Mono.svelte';
 
 	const r = $derived(brandData.requests.find((x) => x.code.toUpperCase() === (page.params.code ?? '').toUpperCase()));
 	// Not in this list: the request is with another creator (open it on their address; the sign-in is
@@ -178,6 +182,13 @@
 		if (id === 'live' && r.live_date) return i <= si ? `Went live ${fmtLong(r.live_date)}` : `Planned for ${fmtLong(r.live_date)}`;
 		return '';
 	}
+	// Phone rows: what each one says before it opens.
+	const offerText = $derived(!r ? '' : r.type === 'barter' ? r.product : `${accepted?.total ? money(accepted.total, accepted.currency) : r.fee ? inr(r.fee) : 'Quote requested'}${r.type === 'hybrid' ? ` + ${r.product}` : ''}`);
+	const piecesSum = $derived.by(() => {
+		const items = (r?.deliverables ?? []).flatMap((d) => d.items ?? []);
+		return items.length ? `${items.filter((x) => x.status === 'published' || x.status === 'delivered').length} of ${items.length} done` : '';
+	});
+	const datesSum = $derived(!r ? '' : r.live_date ? `live ${fmt(r.live_date)}` : r.draft_date ? `draft ${fmt(r.draft_date)}` : 'dates to be agreed');
 	const payText = $derived(
 		!r
 			? ''
@@ -202,6 +213,7 @@
 {:else if !r}
 	<div class="empty-card"><h2>We couldn't find that request</h2><p>It may belong to a different email address. Sign in with the email you used to send it.</p><a class="btn" href="/brand">My requests</a></div>
 {:else}
+	{#if !phone.on}
 	<header class="ph rv">
 		<div>
 			<div class="eb"><span class="id">{r.code}</span> · {TYPE_LABEL[r.type]}</div>
@@ -214,153 +226,145 @@
 			<ReportMenu name={pub.data?.display_name || 'this creator'} target={{ collab_id: r.id }} />
 		</div>
 	</header>
+	{/if}
 
 	<!-- Where it stands, at a glance. -->
 	{#if held}
 		<div class="warn-box" role="status"><b>{r.stage_label}</b><span>{r.lifecycle_reason}</span>{#if r.resume_on}<span>Review on {fmt(r.resume_on)}. The creator will confirm when work resumes.</span>{/if}<span>Existing invoices and payments remain available below.</span></div>
 	{/if}
-	<DeliverableProgress deliverables={r.deliverables} />
-	{#if r.stage !== 'declined' && !held}
-		<ol class="rtrack rv" style="--i:1;--p:{Math.max(0, si) / (STAGES.length - 1)}" aria-label="Progress">
-			{#each STAGES as st, i (st.id)}
-				<li class:done={i < si} class:now={i === si}><span>{#if i < si}<Icon name="check" />{:else}{i + 1}{/if}</span><b>{TRACK[i]}</b></li>
-			{/each}
-		</ol>
-	{/if}
 	{#if error}<div class="err-box">{error}</div>{/if}
 
-	<!-- Quote waiting for an answer -->
-	<!-- Wide screens: what needs the brand on the left, status and documents on the right. -->
-	<div class="r-grid">
-		<div class="r-main">
-	{#if quote?.status === 'changes'}
-		<div class="date-sug"><Icon name="edit" /><span><b>You asked for changes to quote v{quote.version}</b>{#if quote.response_note}: “{quote.response_note}”{/if}. {pub.data?.display_name?.split(' ')[0] ?? 'The creator'} will send a revised quote.</span></div>
-	{/if}
-	{#if openQuote}
-		<section class="panel rv action-panel" style="--i:1">
-			<div class="panel-h"><h2>Quote from {creator}</h2><span class="pill tint k-new">Needs your answer</span></div>
-			{#if opts}<div class="qc-wrap"><p class="hint">{creator} has given you {opts.length} options. Pick the one that suits you:</p><QuoteChoices options={opts} bind:value={choice} currency={openQuote0?.currency} /></div>{/if}
-			<div class="quote-view">
-				<div class="qv-lines">
-					{#each openQuote.items as it, i (i)}
-						<div class="qv-line"><span>{it.qty} {plural(it.kind, it.qty)}</span><span class="num">{money(it.qty * it.rate, openQuote.currency)}</span></div>
-					{/each}
-					{#if openQuote.usage_fee}<div class="qv-line"><span>{usageLabel(openQuote.usage)}</span><span class="num">{money(openQuote.usage_fee, openQuote.currency)}</span></div>{/if}
-					{#if openQuote.discount}<div class="qv-line"><span>Discount</span><span class="num">− {money(openQuote.discount, openQuote.currency)}</span></div>{/if}
-					<div class="qv-line total"><span>Total</span><b class="num">{money(openQuote.total, openQuote.currency)}</b></div>
-				</div>
-				<ExpectedResults lines={openQuote.items.map((x) => ({ kind: x.kind, qty: x.qty }))} cost={openQuote.total} />
-				<dl class="facts" style="margin-top:16px">
-					<div><dt>Usage rights</dt><dd>{usageLabel(openQuote.usage)}</dd></div>
-					<div><dt>Payment</dt><dd>{payTerms(openQuote)}</dd></div>
-					<div><dt>Revisions included</dt><dd>{openQuote.revision_rounds}{openQuote.exclusivity_days ? ` · ${openQuote.exclusivity_days} days exclusivity` : ''}</dd></div>
-				</dl>
-				{#if openQuote.notes}<p class="hint" style="margin-top:12px;white-space:pre-wrap">{openQuote.notes}</p>{/if}
-				{#if openQuote.valid_until}<p class="hint" style="margin-top:8px">{expired ? 'This quote expired on' : 'Valid until'} {fmtLong(openQuote.valid_until)}</p>{/if}
-			</div>
+	{#snippet track()}
+		{#if r.stage !== 'declined' && !held}
+			<ol class="rtrack rv" style="--i:1;--p:{Math.max(0, si) / (STAGES.length - 1)}" aria-label="Progress">
+				{#each STAGES as st, i (st.id)}
+					<li class:done={i < si} class:now={i === si}><span>{#if i < si}<Icon name="check" />{:else}{i + 1}{/if}</span><b>{TRACK[i]}</b></li>
+				{/each}
+			</ol>
+		{/if}
+	{/snippet}
 
-			{#if expired}
-				<div class="submit-row"><p>This quote has expired. Ask {creator} for a new one.</p></div>
-			{:else if mode === 'accept'}
-				<div class="bsec">
-					<div class="f">
-						<label for="sign">Type your full name to accept</label>
-						<input class="inp" id="sign" autocomplete="name" bind:value={signName} />
+	{#snippet changesNote()}
+		{#if quote?.status === 'changes'}
+			<div class="date-sug"><Icon name="edit" /><span><b>You asked for changes to quote v{quote.version}</b>{#if quote.response_note}: “{quote.response_note}”{/if}. {pub.data?.display_name?.split(' ')[0] ?? 'The creator'} will send a revised quote.</span></div>
+		{/if}
+	{/snippet}
+
+	<!-- Quote waiting for an answer -->
+	{#snippet quoteBlock()}
+		{#if openQuote}
+			<section class="panel rv action-panel" style="--i:1">
+				<div class="panel-h"><h2>Quote from {creator}</h2><span class="pill tint k-new">Needs your answer</span></div>
+				{#if opts}<div class="qc-wrap"><p class="hint">{creator} has given you {opts.length} options. Pick the one that suits you:</p><QuoteChoices options={opts} bind:value={choice} currency={openQuote0?.currency} /></div>{/if}
+				<div class="quote-view">
+					<div class="qv-lines">
+						{#each openQuote.items as it, i (i)}
+							<div class="qv-line"><span>{it.qty} {plural(it.kind, it.qty)}</span><span class="num">{money(it.qty * it.rate, openQuote.currency)}</span></div>
+						{/each}
+						{#if openQuote.usage_fee}<div class="qv-line"><span>{usageLabel(openQuote.usage)}</span><span class="num">{money(openQuote.usage_fee, openQuote.currency)}</span></div>{/if}
+						{#if openQuote.discount}<div class="qv-line"><span>Discount</span><span class="num">− {money(openQuote.discount, openQuote.currency)}</span></div>{/if}
+						<div class="qv-line total"><span>Total</span><b class="num">{money(openQuote.total, openQuote.currency)}</b></div>
 					</div>
-					<div class="f" style="margin-top:12px"><label for="anote">Note <span class="hint">(optional)</span></label><input class="inp" id="anote" bind:value={note} /></div>
-					<p class="hint" style="margin-top:10px">By accepting, you agree to the deliverables, usage rights and payment terms above. We record your name, email and the time.</p>
+					<ExpectedResults lines={openQuote.items.map((x) => ({ kind: x.kind, qty: x.qty }))} cost={openQuote.total} />
+					<dl class="facts" style="margin-top:16px">
+						<div><dt>Usage rights</dt><dd>{usageLabel(openQuote.usage)}</dd></div>
+						<div><dt>Payment</dt><dd>{payTerms(openQuote)}</dd></div>
+						<div><dt>Revisions included</dt><dd>{openQuote.revision_rounds}{openQuote.exclusivity_days ? ` · ${openQuote.exclusivity_days} days exclusivity` : ''}</dd></div>
+					</dl>
+					{#if openQuote.notes}<p class="hint" style="margin-top:12px;white-space:pre-wrap">{openQuote.notes}</p>{/if}
+					{#if openQuote.valid_until}<p class="hint" style="margin-top:8px">{expired ? 'This quote expired on' : 'Valid until'} {fmtLong(openQuote.valid_until)}</p>{/if}
 				</div>
-				<div class="submit-row">
-					<button class="btn ghost" onclick={() => (mode = '')}>Back</button>
-					<button class="btn grad lg" disabled={busy || !signName.trim()} onclick={() => respondQuote(true)}>{#if busy}<span class="spinner"></span>{:else}<Icon name="check" />{/if}Accept quote</button>
-				</div>
-			{:else if mode === 'changes'}
-				<div class="bsec">
-					<div class="f"><label for="cnote">What would you like changed?</label><textarea class="inp" id="cnote" rows="3" placeholder="e.g. Can we do 2 reels and drop the stories, within ₹40,000?" bind:value={note}></textarea></div>
-				</div>
-				<div class="submit-row">
-					<button class="btn ghost" onclick={() => (mode = '')}>Back</button>
-					<button class="btn primary" disabled={busy || !note.trim()} onclick={() => respondQuote(false)}>{#if busy}<span class="spinner"></span>{:else}<Icon name="send" />{/if}Send to {creator}</button>
-				</div>
-			{:else}
-				<div class="submit-row">
-					<p>Accepting turns this quote into your agreement with {creator}.</p>
-					<button class="btn" onclick={() => (mode = 'changes')}>Ask for changes</button>
-					<button class="btn grad lg" onclick={() => (mode = 'accept')}><Icon name="check" />Accept</button>
-				</div>
-			{/if}
-		</section>
-	{/if}
+
+				{#if expired}
+					<div class="submit-row"><p>This quote has expired. Ask {creator} for a new one.</p></div>
+				{:else if mode === 'accept'}
+					<div class="bsec">
+						<div class="f">
+							<label for="sign">Type your full name to accept</label>
+							<input class="inp" id="sign" autocomplete="name" bind:value={signName} />
+						</div>
+						<div class="f" style="margin-top:12px"><label for="anote">Note <span class="hint">(optional)</span></label><input class="inp" id="anote" bind:value={note} /></div>
+						<p class="hint" style="margin-top:10px">By accepting, you agree to the deliverables, usage rights and payment terms above. We record your name, email and the time.</p>
+					</div>
+					<div class="submit-row">
+						<button class="btn ghost" onclick={() => (mode = '')}>Back</button>
+						<button class="btn grad lg" disabled={busy || !signName.trim()} onclick={() => respondQuote(true)}>{#if busy}<span class="spinner"></span>{:else}<Icon name="check" />{/if}Accept quote</button>
+					</div>
+				{:else if mode === 'changes'}
+					<div class="bsec">
+						<div class="f"><label for="cnote">What would you like changed?</label><textarea class="inp" id="cnote" rows="3" placeholder="e.g. Can we do 2 reels and drop the stories, within ₹40,000?" bind:value={note}></textarea></div>
+					</div>
+					<div class="submit-row">
+						<button class="btn ghost" onclick={() => (mode = '')}>Back</button>
+						<button class="btn primary" disabled={busy || !note.trim()} onclick={() => respondQuote(false)}>{#if busy}<span class="spinner"></span>{:else}<Icon name="send" />{/if}Send to {creator}</button>
+					</div>
+				{:else}
+					<div class="submit-row">
+						<p>Accepting turns this quote into your agreement with {creator}.</p>
+						<button class="btn" onclick={() => (mode = 'changes')}>Ask for changes</button>
+						<button class="btn grad lg" onclick={() => (mode = 'accept')}><Icon name="check" />Accept</button>
+					</div>
+				{/if}
+			</section>
+		{/if}
+	{/snippet}
 
 	<!-- Draft waiting for review -->
-	{#if pendingDraft}
-		<section class="panel rv action-panel" style="--i:2;margin-top:18px">
-			<div class="panel-h"><h2>Draft {pendingDraft.round} for your review</h2><span class="pill tint k-new">Needs your answer</span></div>
-			<div style="padding:0 20px 8px">
-				{#if pendingDraft.file_path}
-					<DraftPlayer path={pendingDraft.preview_path && !pendingDraft.released_at ? pendingDraft.preview_path : pendingDraft.file_path} type={pendingDraft.preview_path && !pendingDraft.released_at ? (pendingDraft.preview_type ?? pendingDraft.file_type) : pendingDraft.file_type} {comments} canComment onadd={addComment} ondelete={removeComment} />
+	{#snippet draftBlock()}
+		{#if pendingDraft}
+			<section class="panel rv action-panel" style="--i:2;margin-top:18px">
+				<div class="panel-h"><h2>Draft {pendingDraft.round} for your review</h2><span class="pill tint k-new">Needs your answer</span></div>
+				<div style="padding:0 20px 8px">
+					{#if pendingDraft.file_path}
+						<DraftPlayer path={pendingDraft.preview_path && !pendingDraft.released_at ? pendingDraft.preview_path : pendingDraft.file_path} type={pendingDraft.preview_path && !pendingDraft.released_at ? (pendingDraft.preview_type ?? pendingDraft.file_type) : pendingDraft.file_type} {comments} canComment onadd={addComment} ondelete={removeComment} />
+					{/if}
+					{#if pendingDraft.link}<a class="btn" href={pendingDraft.link} target="_blank" rel="noopener"><Icon name="eye" />Open the draft</a>{/if}
+					{#if pendingDraft.caption}<div class="f" style="margin-top:14px"><span class="lbl-t">Caption</span><p class="draft-cap">{pendingDraft.caption}</p></div>{/if}
+					<DraftChecklist draft={pendingDraft.id} onask={(m) => ((feedback = m), (draftMode = 'changes'))} />
+					{#if pendingDraft.note}<blockquote class="note" style="margin-top:14px"><span>Note from {creator}</span><p>{pendingDraft.note}</p></blockquote>{/if}
+					{#if accepted}<p class="hint" style="margin-top:10px">{accepted.revision_rounds} revision round{accepted.revision_rounds === 1 ? '' : 's'} included. This is round {pendingDraft.round}.</p>{/if}
+				</div>
+				{#if draftMode === 'changes'}
+					<div class="bsec"><div class="f"><label for="fb">What should change?</label><textarea class="inp" id="fb" rows="3" bind:value={feedback}></textarea></div></div>
+					<div class="submit-row">
+						<button class="btn ghost" onclick={() => (draftMode = '')}>Back</button>
+						<button class="btn primary" disabled={busy || !feedback.trim()} onclick={() => respondDraft(false)}>{#if busy}<span class="spinner"></span>{:else}<Icon name="send" />{/if}Send feedback</button>
+					</div>
+				{:else}
+					<div class="submit-row">
+						<p>Approve it, or tell {creator} what to change.</p>
+						<button class="btn" onclick={askChanges}>Ask for changes{comments.length ? ` (${comments.length})` : ''}</button>
+						<button class="btn grad lg" disabled={busy} onclick={() => respondDraft(true)}><Icon name="check" />Approve draft</button>
+					</div>
 				{/if}
-				{#if pendingDraft.link}<a class="btn" href={pendingDraft.link} target="_blank" rel="noopener"><Icon name="eye" />Open the draft</a>{/if}
-				{#if pendingDraft.caption}<div class="f" style="margin-top:14px"><span class="lbl-t">Caption</span><p class="draft-cap">{pendingDraft.caption}</p></div>{/if}
-				<DraftChecklist draft={pendingDraft.id} onask={(m) => ((feedback = m), (draftMode = 'changes'))} />
-				{#if pendingDraft.note}<blockquote class="note" style="margin-top:14px"><span>Note from {creator}</span><p>{pendingDraft.note}</p></blockquote>{/if}
-				{#if accepted}<p class="hint" style="margin-top:10px">{accepted.revision_rounds} revision round{accepted.revision_rounds === 1 ? '' : 's'} included. This is round {pendingDraft.round}.</p>{/if}
-			</div>
-			{#if draftMode === 'changes'}
-				<div class="bsec"><div class="f"><label for="fb">What should change?</label><textarea class="inp" id="fb" rows="3" bind:value={feedback}></textarea></div></div>
-				<div class="submit-row">
-					<button class="btn ghost" onclick={() => (draftMode = '')}>Back</button>
-					<button class="btn primary" disabled={busy || !feedback.trim()} onclick={() => respondDraft(false)}>{#if busy}<span class="spinner"></span>{:else}<Icon name="send" />{/if}Send feedback</button>
-				</div>
-			{:else}
-				<div class="submit-row">
-					<p>Approve it, or tell {creator} what to change.</p>
-					<button class="btn" onclick={askChanges}>Ask for changes{comments.length ? ` (${comments.length})` : ''}</button>
-					<button class="btn grad lg" disabled={busy} onclick={() => respondDraft(true)}><Icon name="check" />Approve draft</button>
-				</div>
-			{/if}
-		</section>
-	{/if}
+			</section>
+		{/if}
+	{/snippet}
 
-	{#key r.code}<BrandShipping code={r.code} {creator} onchange={loadRequests} /><BrandUsage code={r.code} {creator} onchange={loadRequests} /><BrandLink code={r.code} {creator} /><BrandCaseStudy code={r.code} {creator} signer={auth.account?.role === 'brand' ? auth.account.full_name : ''} />{/key}
+	{#snippet messages()}
+		{#key r.id}<MessageThread collabId={r.id} side="brand" otherName={pub.data?.display_name ?? 'the creator'} />{/key}
+	{/snippet}
 
-	<section class="panel rv msg-panel" style="--i:3;margin-top:18px">
-		<div class="panel-h"><h2>Messages</h2><small>with {pub.data?.display_name ?? 'the creator'}</small></div>
-		<div style="padding:0 20px 18px">
-			{#key r.id}<MessageThread collabId={r.id} side="brand" otherName={pub.data?.display_name ?? 'the creator'} />{/key}
-		</div>
-	</section>
+	{#snippet brief()}
+		{#if briefD}<BriefView d={briefD} />{/if}
+		{#if r.brief}<p style="white-space:pre-wrap;color:var(--ink-2)">{r.brief}</p>{/if}
+	{/snippet}
 
-	{#if r.brief || briefD}
-		<section class="panel rv" style="--i:6;margin-top:18px">
-			<div class="panel-h"><h2>Your brief</h2><small>{usageLabel(r.usage)}</small></div>
-			{#if briefD}<div style="padding:0 20px"><BriefView d={briefD} /></div>{/if}
-			{#if r.brief}<p style="padding:0 20px 20px;white-space:pre-wrap;color:var(--ink-2)">{r.brief}</p>{/if}
-		</section>
-	{/if}
+	{#snippet history()}
+		<ol class="timeline">
+			{#each r.events.slice(0, 4) as ev, i (i)}<li><time>{fmtTime(ev.at)}</time><span>{ev.text}</span></li>{/each}
+		</ol>
+		{#if r.events.length > 4}
+			<details class="hist-more">
+				<summary>Show all {r.events.length} updates</summary>
+				<ol class="timeline">
+					{#each r.events.slice(4) as ev, i (i)}<li><time>{fmtTime(ev.at)}</time><span>{ev.text}</span></li>{/each}
+				</ol>
+			</details>
+		{/if}
+	{/snippet}
 
-	{#if r.events.length}
-		<section class="panel rv" style="--i:5;margin-top:18px">
-			<div class="panel-h"><h2>History</h2></div>
-			<ol class="timeline" style="padding:0 20px 14px">
-				{#each r.events.slice(0, 4) as ev, i (i)}<li><time>{fmtTime(ev.at)}</time><span>{ev.text}</span></li>{/each}
-			</ol>
-			{#if r.events.length > 4}
-				<details class="hist-more">
-					<summary>Show all {r.events.length} updates</summary>
-					<ol class="timeline" style="padding:0 20px 14px">
-						{#each r.events.slice(4) as ev, i (i)}<li><time>{fmtTime(ev.at)}</time><span>{ev.text}</span></li>{/each}
-					</ol>
-				</details>
-			{/if}
-		</section>
-	{/if}
-
-
-		</div>
-		<aside class="r-side">
-	<CampaignTimeline {r} {creator} />
-	<section class="panel rv" style="--i:3;padding:24px;margin-top:18px">
+	{#snippet deal()}
 		{#if r.note_for_brand}
 			<blockquote class="note"><span>Latest from {creator}</span><p>{r.note_for_brand}</p></blockquote>
 		{/if}
@@ -368,7 +372,7 @@
 			<p class="hint">{creator} isn't able to take this one on. Thank you for thinking of {creator}.</p>
 		{/if}
 		<dl class="facts">
-			<div><dt>{accepted ? 'Agreed' : 'Offer'}</dt><dd>{r.type === 'barter' ? r.product : `${accepted?.total ? money(accepted.total, accepted.currency) : r.fee ? inr(r.fee) : 'Quote requested'}${r.type === 'hybrid' ? ` + ${r.product}` : ''}`}</dd></div>
+			<div><dt>{accepted ? 'Agreed' : 'Offer'}</dt><dd>{offerText}</dd></div>
 			<div><dt>Go-live date</dt><dd>{r.live_date ? fmtLong(r.live_date) : r.preferred_live ? `You asked for ${fmt(r.preferred_live)}` : 'To be agreed'}</dd></div>
 			{#if r.content_language}<div><dt>Language</dt><dd>{langText(r.content_language)}</dd></div>{/if}
 			<div><dt>Invoice</dt><dd>{payText}</dd></div>
@@ -376,26 +380,122 @@
 		{#if accepted}
 			<a class="btn" style="margin-top:16px" href="/agreement/{accepted.id}"><Icon name="check" />View agreement · accepted {fmt(accepted.responded_at)}</a>
 		{/if}
-	</section>
+	{/snippet}
 
-	<CampaignDocs {r} />
+	{#snippet pastDrafts()}
+		{#each r.drafts.filter((d) => d.status !== 'pending') as d (d.id)}
+			<div class="prod-row">
+				<div><b>Round {d.round}</b><small>{fmt(d.submitted_at)}{d.feedback ? ` · “${d.feedback}”` : ''}</small></div>
+				<span class="pill tint {DRAFT_STATUS[d.status].k}">{DRAFT_STATUS[d.status].label}</span>
+			</div>
+		{/each}
+	{/snippet}
 
-	{#if health}<div style="margin-top:18px"><HealthCard {health} name={creator} connected={health.connected !== false} stack /></div>{/if}
-
-
-
-	{#if r.drafts.length && !(r.drafts.length === 1 && pendingDraft)}
-		<section class="panel rv" style="--i:4;margin-top:18px">
-			<div class="panel-h"><h2>Drafts</h2></div>
-			{#each r.drafts.filter((d) => d.status !== 'pending') as d (d.id)}
-				<div class="prod-row">
-					<div><b>Round {d.round}</b><small>{fmt(d.submitted_at)}{d.feedback ? ` · “${d.feedback}”` : ''}</small></div>
-					<span class="pill tint {DRAFT_STATUS[d.status].k}">{DRAFT_STATUS[d.status].label}</span>
+	{#if phone.on}
+		<!-- Phone: like the creator's collab page. The progress and anything waiting on you stay open; every other part
+		     is a row in a group (the work, the money, the creator, more) that opens as its own sheet. -->
+		<div class="fold-page">
+			<header class="dr-h" style="--hue:var(--m{hueOf(pub.data?.display_name || r.code)})">
+				<Mono name={pub.data?.display_name || 'Creator'} size="lg" />
+				<div class="dr-t">
+					<b class="title-inp">{pub.data?.display_name || 'Your creator'}</b>
+					<div class="dr-sub"><span class="id">{r.code}</span> · {r.stage_label} · {delivText(r.deliverables) || TYPE_LABEL[r.type]}</div>
 				</div>
-			{/each}
-		</section>
-	{/if}
+				<ReportMenu name={pub.data?.display_name || 'this creator'} target={{ collab_id: r.id }} />
+			</header>
+			{#if pub.data?.whatsapp || ((r.stage === 'live' || r.stage === 'wrapped') && pub.data?.accepting !== false)}
+				<div class="br-acts">
+					{#if pub.data?.whatsapp}<a class="btn wa" href={waLink(pub.data.whatsapp, `Hi ${creator}, about my request ${r.code}: `)} target="_blank" rel="noopener"><Icon name="send" />WhatsApp</a>{/if}
+					{#if (r.stage === 'live' || r.stage === 'wrapped') && pub.data?.accepting !== false}<a class="btn" href="/brand/new?again={r.code}"><Icon name="refresh" />Book again</a>{/if}
+				</div>
+			{/if}
+			<div class="dr-b" use:folds={{ on: true, labels: { brand: 'The creator' } }}>
+				{@render track()}
+				{@render changesNote()}
+				<!-- The one thing waiting on you, as one card with one button (its details open as a sheet). -->
+				{#if openQuote}
+					<div class="next-bar">
+						<div><small>Next step</small><b>{creator} sent a quote{openQuote.total ? `: ${money(openQuote.total, openQuote.currency)}` : ''}</b></div>
+						<button class="btn grad" onclick={() => openOnly(document.getElementById('sec-quote'))}><Icon name="check" />Review the quote</button>
+					</div>
+				{:else if pendingDraft}
+					<div class="next-bar">
+						<div><small>Next step</small><b>Draft {pendingDraft.round} is ready for your review</b></div>
+						<button class="btn grad" onclick={() => openOnly(document.getElementById('sec-draft'))}><Icon name="eye" />Review the draft</button>
+					</div>
+				{/if}
+				{#if openQuote}<section class="sec" id="sec-quote" data-g="money" data-ic="doc"><h3 data-sum="Needs your answer">Quote from {creator}</h3>{@render quoteBlock()}</section>{/if}
+				{#if pendingDraft}<section class="sec" id="sec-draft" data-g="work" data-ic="film"><h3 data-sum="Needs your answer">Draft {pendingDraft.round}</h3>{@render draftBlock()}</section>{/if}
 
-		</aside>
-	</div>
+				<section class="sec" data-g="work" data-ic="pieces"><h3 data-sum={piecesSum}>Pieces</h3><DeliverableProgress deliverables={r.deliverables} /></section>
+				<section class="sec" data-g="work" data-ic="cal"><h3 data-sum={datesSum}>Timeline</h3><CampaignTimeline {r} {creator} /></section>
+				{#key r.code}
+					<section class="sec" data-g="work" data-ic="box"><h3>Product</h3><BrandShipping code={r.code} {creator} onchange={loadRequests} /></section>
+					<section class="sec" data-g="work" data-ic="tag"><h3>Code &amp; link</h3><BrandLink code={r.code} {creator} /></section>
+				{/key}
+				{#if r.drafts.length && !(r.drafts.length === 1 && pendingDraft)}
+					<section class="sec" data-g="work" data-ic="film"><h3 data-sum={`${r.drafts.length} round${r.drafts.length === 1 ? '' : 's'}`}>Drafts</h3>{@render pastDrafts()}</section>
+				{/if}
+
+				<section class="sec" data-g="money" data-ic="wallet"><h3 data-sum={offerText}>Deal &amp; invoice</h3>{@render deal()}</section>
+				{#key r.code}<section class="sec" data-g="money" data-ic="shield"><h3>Usage rights</h3><BrandUsage code={r.code} {creator} onchange={loadRequests} /></section>{/key}
+				<section class="sec" data-g="money" data-ic="doc"><h3>Documents</h3><CampaignDocs {r} /></section>
+
+				<section class="sec" data-g="brand" data-ic="chat"><h3 data-sum={`with ${creator || 'the creator'}`}>Messages</h3>{@render messages()}</section>
+				{#if health}<section class="sec" data-g="brand" data-ic="person"><h3>Audience health</h3><HealthCard {health} name={creator} connected={health.connected !== false} stack /></section>{/if}
+				{#if r.brief || briefD}<section class="sec" data-g="brand" data-ic="doc"><h3 data-sum={usageLabel(r.usage)}>Your brief</h3>{@render brief()}</section>{/if}
+				{#key r.code}<section class="sec" data-g="brand" data-ic="case"><h3>Case study</h3><BrandCaseStudy code={r.code} {creator} signer={auth.account?.role === 'brand' ? auth.account.full_name : ''} /></section>{/key}
+
+				{#if r.events.length}<section class="sec" data-g="more" data-ic="clock"><h3 data-sum={`${r.events.length} update${r.events.length === 1 ? '' : 's'}`}>History</h3>{@render history()}</section>{/if}
+			</div>
+		</div>
+	{:else}
+		<DeliverableProgress deliverables={r.deliverables} />
+		{@render track()}
+
+		<!-- Wide screens: what needs the brand on the left, status and documents on the right. -->
+		<div class="r-grid">
+			<div class="r-main">
+				{@render changesNote()}
+				{@render quoteBlock()}
+				{@render draftBlock()}
+
+				{#key r.code}<BrandShipping code={r.code} {creator} onchange={loadRequests} /><BrandUsage code={r.code} {creator} onchange={loadRequests} /><BrandLink code={r.code} {creator} /><BrandCaseStudy code={r.code} {creator} signer={auth.account?.role === 'brand' ? auth.account.full_name : ''} />{/key}
+
+				<section class="panel rv msg-panel" style="--i:3;margin-top:18px">
+					<div class="panel-h"><h2>Messages</h2><small>with {pub.data?.display_name ?? 'the creator'}</small></div>
+					<div style="padding:0 20px 18px">{@render messages()}</div>
+				</section>
+
+				{#if r.brief || briefD}
+					<section class="panel rv" style="--i:6;margin-top:18px">
+						<div class="panel-h"><h2>Your brief</h2><small>{usageLabel(r.usage)}</small></div>
+						<div style="padding:0 20px 20px">{@render brief()}</div>
+					</section>
+				{/if}
+
+				{#if r.events.length}
+					<section class="panel rv" style="--i:5;margin-top:18px">
+						<div class="panel-h"><h2>History</h2></div>
+						<div style="padding:0 20px 14px">{@render history()}</div>
+					</section>
+				{/if}
+			</div>
+			<aside class="r-side">
+				<CampaignTimeline {r} {creator} />
+				<section class="panel rv" style="--i:3;padding:24px;margin-top:18px">{@render deal()}</section>
+
+				<CampaignDocs {r} />
+
+				{#if health}<div style="margin-top:18px"><HealthCard {health} name={creator} connected={health.connected !== false} stack /></div>{/if}
+
+				{#if r.drafts.length && !(r.drafts.length === 1 && pendingDraft)}
+					<section class="panel rv" style="--i:4;margin-top:18px">
+						<div class="panel-h"><h2>Drafts</h2></div>
+						{@render pastDrafts()}
+					</section>
+				{/if}
+			</aside>
+		</div>
+	{/if}
 {/if}
