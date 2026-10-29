@@ -42,7 +42,7 @@
 		{ href: '/studio/collabs', label: 'Collabs', icon: 'board', tabs: [{ href: '/studio/collabs', label: 'Board' }, { href: '/studio/brands', label: 'Brands' }, { href: '/studio/pitches', label: 'Pitches' }], also: ['/studio/c/', '/studio/import', '/studio/possible-collabs'] },
 		{ href: '/studio/inbox', label: 'Messages', icon: 'inbox', desk: true },
 		{ href: '/studio/content', label: 'Plan', icon: 'cal', tabs: [{ href: '/studio/content', label: 'Content' }, { href: '/studio/calendar', label: 'Calendar' }, { href: '/studio/grow', label: 'Grow' }], also: ['/studio/grow/'] },
-		{ href: '/studio/money', label: 'Money', icon: 'wallet', tabs: [{ href: '/studio/money', label: 'Overview' }, { href: '/studio/payments', label: 'Payments' }, { href: '/studio/reports', label: 'Reports' }] },
+		{ href: '/studio/money', label: 'Money', icon: 'wallet', tabs: [{ href: '/studio/money', label: 'Overview' }, { href: '/studio/payments', label: 'Payments' }, { href: '/studio/invoices', label: 'Invoices' }, { href: '/studio/reports', label: 'Reports' }] },
 		{ href: '/studio/settings', label: 'My page', short: 'Page', icon: 'link', also: ['/studio/profile', '/studio/qr', '/studio/help'] }
 	];
 	const path = $derived(page.url.pathname);
@@ -76,7 +76,7 @@
 	const allowed = $derived(auth.account?.role === 'creator');
 	// Team roles: an assistant doesn't see money screens; an accountant doesn't talk to brands.
 	const role = $derived(studio.me?.team_role ?? 'owner');
-	const MONEY = ['/studio/money', '/studio/payments', '/studio/reports'];
+	const MONEY = ['/studio/money', '/studio/payments', '/studio/invoices', '/studio/reports'];
 	const blocked = (href: string) => (role === 'assistant' && MONEY.some((m) => href.startsWith(m))) || (role === 'accountant' && href.startsWith('/studio/inbox'));
 	$effect(() => {
 		if (studio.me && blocked(path)) {
@@ -192,6 +192,7 @@
 		'/studio/page': 'Brand page',
 		'/studio/qr': 'QR codes',
 		'/studio/payments': 'Payments',
+		'/studio/invoices': 'Invoices',
 		'/studio/reports': 'Reports',
 		'/studio/settings': 'Settings',
 		'/studio/inbox': 'Messages',
@@ -332,7 +333,7 @@
 		{ href: '/studio/calendar', label: 'Calendar', icon: 'cal', on: ['/studio/calendar'] },
 		{ href: '/studio/content', label: 'Content', icon: 'film', on: ['/studio/content', '/studio/instagram'] },
 		{ href: '/studio/grow', label: 'Grow', icon: 'spark', on: ['/studio/grow'] },
-		{ href: '/studio/money', label: 'Money', icon: 'wallet', on: ['/studio/money', '/studio/payments', '/studio/reports'] },
+		{ href: '/studio/money', label: 'Money', icon: 'wallet', on: ['/studio/money', '/studio/payments', '/studio/invoices', '/studio/reports'] },
 		{ href: '/studio/page', label: 'Brand page', icon: 'link', on: ['/studio/page', '/studio/profile', '/studio/qr'] },
 		{ href: '/studio/settings', label: 'Settings', icon: 'gear', on: ['/studio/settings'] },
 		{ href: '/studio/help', label: 'Help', icon: 'info', on: ['/studio/help'] }

@@ -80,7 +80,7 @@
 	<nav class="cr-rings" aria-label="Money shortcuts">
 		<a class="cr-ring" style="--rt:var(--g3)" href="/studio/payments"><i><span><RingIcons i={0} icons={['wallet', 'rupee', 'check']} /></span></i>{#if lateList.length}<b>{lateList.length} LATE</b>{:else if dueN}<b>{dueN} DUE</b>{/if}<small>Payments</small></a>
 		<a class="cr-ring" style="--rt:var(--h-request)" href="/studio/reports"><i><span><RingIcons i={1} icons={['chart', 'eye', 'layers']} /></span></i><small>Reports</small></a>
-		<a class="cr-ring" style="--rt:var(--g2)" href="/studio/payments"><i><span><RingIcons i={2} icons={['doc', 'send', 'check']} /></span></i><small>Invoices</small></a>
+		<a class="cr-ring" style="--rt:var(--g2)" href="/studio/invoices"><i><span><RingIcons i={2} icons={['doc', 'send', 'check']} /></span></i><small>Invoices</small></a>
 		<a class="cr-ring" style="--rt:var(--h-live)" href="/studio/tax"><i><span><RingIcons i={3} icons={['rupee', 'shield', 'scale']} /></span></i><small>Tax desk</small></a>
 		<a class="cr-ring" style="--rt:var(--g1)" href="/studio/calendar"><i><span><RingIcons i={4} icons={['cal', 'clock', 'bell']} /></span></i><small>Due dates</small></a>
 	</nav>
