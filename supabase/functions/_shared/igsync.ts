@@ -268,8 +268,10 @@ export async function runSync(db: SupabaseClient, creator: number, opts: SyncOpt
       token_expires_at: (await db.from('ig_token').select('expires_at').eq('id', creator).single()).data?.expires_at,
     });
     if (saveError) throw new Error(saveError.message);
-    // The brand page shows these.
-    await db.from('creator_settings').update({ followers: short(p.followers_count), ...(engagement !== null ? { engagement: `${engagement}%` } : {}) }).eq('id', creator);
+    // The brand page shows these. Engagement is her Reels engagement when there is one (what Insights leads with),
+    // else across all posts, in full (4.34%).
+    const shownEr = formats.reels.er || engagement;
+    await db.from('creator_settings').update({ followers: short(p.followers_count), ...(shownEr ? { engagement: `${+Number(shownEr).toFixed(2)}%` } : {}) }).eq('id', creator);
 
     // 5b. Audience health and brand safety (brands see it before booking). Never stops the sync.
     summary.health = await saveHealth(db, creator, p.followers_count, demographics).catch((e) => ({ error: e instanceof Error ? e.message : String(e) }));

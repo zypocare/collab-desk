@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { slotLabel } from '#lib/postTime.ts';
+	import { erText, headlineEr } from '#lib/engagement.ts';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { onMount, tick } from 'svelte';
@@ -98,7 +99,8 @@
 		if (!p) return null;
 		const followers = ins?.followers ?? p.instagram?.followers ?? null;
 		if (!followers) return null;
-		const er = ins?.engagement_rate ?? p.instagram?.engagement_rate ?? null;
+		// Her Reels engagement in full when Instagram has it (the figure Insights leads with), else across all posts.
+		const er = headlineEr(ins?.insights, ins?.engagement_rate ?? p.instagram?.engagement_rate ?? null);
 		const minis = [
 			{ k: 'Avg views', v: ins?.avg_views ?? p.instagram?.avg_views },
 			{ k: 'Avg reach', v: ins?.avg_reach ?? p.instagram?.avg_reach },
@@ -660,7 +662,7 @@
 								<div class="mp-big-n">
 									<div><span class="mp-num" use:countUp={{ to: ig.followers, delay: 400 }}></span><p>followers{ig.posts ? ` · ${ig.posts.toLocaleString('en-IN')} posts` : ''}</p></div>
 									{#if ig.er !== null}
-										<div class="mp-orb"><span class="mp-orb-ring" aria-hidden="true"></span><span class="mp-orb-in"><b>{ig.er}%</b><i>engagement</i></span><span class="mp-spk mp-s1" aria-hidden="true"></span><span class="mp-spk mp-s2" aria-hidden="true"></span><span class="mp-spk mp-s3" aria-hidden="true"></span></div>
+										<div class="mp-orb"><span class="mp-orb-ring" aria-hidden="true"></span><span class="mp-orb-in"><b>{erText(ig.er)}</b><i>engagement</i></span><span class="mp-spk mp-s1" aria-hidden="true"></span><span class="mp-spk mp-s2" aria-hidden="true"></span><span class="mp-spk mp-s3" aria-hidden="true"></span></div>
 									{/if}
 								</div>
 								{#if spark}

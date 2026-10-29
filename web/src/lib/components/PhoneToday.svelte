@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { receivedIn } from '../invoice';
+	import { erText, headlineEr } from '../engagement';
 	import { onMount, untrack } from 'svelte';
 	import { addLeadAsCollab } from '../leads';
 	import { askPaid, completeFollow, markPaid, markReceived, priorityOf, studio } from '../studio.svelte';
@@ -191,6 +192,8 @@
 	);
 	// Beside the greeting: live Instagram numbers, or this month's goal when Instagram isn't connected.
 	const ig = $derived(studio.ig?.connected ? studio.ig : null);
+	// Her Reels engagement in full, the same figure Insights leads with.
+	const er = $derived(ig ? headlineEr(ig.insights, ig.engagement_rate) : null);
 	import SetupChecklist from '#lib/components/SetupChecklist.svelte';
 	import CheckupCard from '#lib/components/CheckupCard.svelte';
 </script>
@@ -206,12 +209,12 @@
 				<img class="orb-pic" src={ig.profile_picture_url} alt="" />
 			{:else if ig}
 				<b>{compact(ig.followers ?? 0)}</b><small>followers</small>
-				{#if ig.engagement_rate}<i>{ig.engagement_rate.toFixed(1)}% eng.</i>{/if}
+				{#if er}<i>{erText(er)} eng.</i>{/if}
 			{:else}
 				<b>{Math.round(pct * 100)}%</b><small>of {monthName} goal</small>
 			{/if}
 		</span>
-		{#if ig?.profile_picture_url}<span class="orb-badge"><b>{compact(ig.followers ?? 0)}</b> followers{#if ig.engagement_rate}<i>{ig.engagement_rate.toFixed(1)}%</i>{/if}</span>{/if}
+		{#if ig?.profile_picture_url}<span class="orb-badge"><b>{compact(ig.followers ?? 0)}</b> followers{#if er}<i>{erText(er)}</i>{/if}</span>{/if}
 		<span class="orb-spark s1" aria-hidden="true"></span><span class="orb-spark s2" aria-hidden="true"></span><span class="orb-spark s3" aria-hidden="true"></span>
 	</a>
 	<p class="ht-date">{T.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}{#if note}<span class="dw-note">{note}</span>{/if}</p>

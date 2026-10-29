@@ -271,7 +271,7 @@
 
 
 <style>
-	.m-booked { min-height: 0; display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 14px; margin: 12px 0 4px; padding: 16px 18px; text-align: left; color: var(--hero-ink, var(--ink)); font: inherit; cursor: pointer; border: 1px solid color-mix(in oklab, var(--h-confirmed) 40%, transparent); }
+	.m-booked { min-height: 0; display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 14px; margin: 12px 0; padding: 16px 18px; text-align: left; color: var(--hero-ink, var(--ink)); font: inherit; cursor: pointer; border: 1px solid color-mix(in oklab, var(--h-confirmed) 40%, transparent); }
 	.m-booked.on { box-shadow: 0 0 0 2px var(--h-confirmed); }
 	.m-booked .mb-l { display: grid; gap: 4px; min-width: 0; }
 	.m-booked .hc-eb { display: flex; align-items: center; gap: 7px; }
