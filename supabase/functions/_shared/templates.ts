@@ -659,6 +659,41 @@ ${body.split(/\n{2,}/).map(para).join('\n')}
 Share your link again: ${link}`,
     };
   }
+  // ---------------------------------------------------------------- her birthday (migration 181), once a year
+  // From Miracle, warm and personal: her year on Miracle in a line, then a wish. No sales in it.
+  if (kind === 'birthday') {
+    const first = String(p.name ?? s.display_name ?? '').trim().split(/\s+/)[0] || 'there';
+    const collabs = Number(p.collabs) || 0, brands = Number(p.brands) || 0, earned = Number(p.earned) || 0;
+    const year = collabs
+      ? `In the year since your last birthday you made <b>${collabs} collab${collabs === 1 ? '' : 's'}</b> happen with <b>${brands} brand${brands === 1 ? '' : 's'}</b>${earned ? `, and earned <b>${inr(earned)}</b> doing what you love` : ''}. That's a year of showing up, creating and being paid for it.`
+      : 'Here\'s to the year ahead: the brands you\'ll meet, the work you\'ll make, and every invoice paid on time.';
+    const yearText = year.replace(/<[^>]+>/g, '');
+    const link = url(s, '/studio');
+    return {
+      subject: `Happy birthday, ${first}!`,
+      html: layout(
+        s,
+        `Happy birthday, ${esc(first)}`,
+        `${P(`Today is all yours. Everyone at Miracle is wishing you a wonderful birthday, and a year as bright as your best Reel.`)}
+         ${P(year)}
+         ${P('Take the day off from the desk if you can. We\'ll keep your requests, reminders and payments ticking along, and tell you if anything needs you.')}`,
+        { label: 'Open Miracle', href: link },
+        { to: 'app', why: 'it\'s your birthday, as set in your profile', preheader: `A little note for your birthday, ${first}` },
+      ),
+      text: `Happy birthday, ${first}!
+
+Today is all yours. Everyone at Miracle is wishing you a wonderful birthday, and a year as bright as your best Reel.
+
+${yearText}
+
+Take the day off from the desk if you can. We'll keep your requests, reminders and payments ticking along, and tell you if anything needs you.
+
+With love,
+Team Miracle
+
+${link}`,
+    };
+  }
   // ---------------------------------------------------------------- Miracle's own plans
   if (kind === 'plan_receipt' || kind === 'plan_ending' || kind === 'plan_ended') {
     const planLink = url(s, p.side === 'brand' ? '/brand/settings?s=plan' : '/studio/settings?s=plan');

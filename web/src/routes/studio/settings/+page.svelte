@@ -17,6 +17,7 @@
 	import { KINDS, compact, inr, offeredKinds, phoneOk, waShare, titleCase } from '#lib/util.ts';
 	import { LANGUAGES } from '#lib/languages.ts';
 	import LanguagePicker from '#lib/components/LanguagePicker.svelte';
+	import Select from '#lib/components/Select.svelte';
 	import { rateCheck, suggestRates } from '#lib/rateSuggest.ts';
 	import Icon from '#lib/components/Icon.svelte';
 	import RingIcons from '#lib/components/RingIcons.svelte';
@@ -60,6 +61,22 @@
 	import { loadPlan, plan } from '#lib/plan.svelte.ts';
 
 	const s = $derived(studio.settings!);
+	// Her birthday (day and month): saved once both are picked, since the database keeps them together.
+	const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+	let bdPending = $state<{ d: number | null; m: number | null }>({ d: null, m: null });
+	const bdMonth = $derived(bdPending.m ?? s.birth_month ?? null);
+	const bdayDays = $derived(Array.from({ length: bdMonth === 2 ? 29 : bdMonth && [4, 6, 9, 11].includes(bdMonth) ? 30 : 31 }, (_, i) => i + 1));
+	function saveBirthday(d: number | null, m: number | null) {
+		const day = d ?? bdPending.d, month = m ?? bdPending.m;
+		if (!day || !month) {
+			bdPending = { d: day, m: month };
+			return;
+		}
+		const max = month === 2 ? 29 : [4, 6, 9, 11].includes(month) ? 30 : 31;
+		bdPending = { d: null, m: null };
+		saveSettings({ birth_day: Math.min(day, max), birth_month: month });
+		toast('Birthday saved');
+	}
 	const link = $derived(s.site_url.replace(/\/$/, ''));
 	const val = (e: Event) => (e.currentTarget as HTMLInputElement).value;
 	const num = (e: Event) => Math.max(0, Number(val(e)) || 0);
@@ -408,6 +425,17 @@
 								{#each fields as f (f.k)}
 									<div class="f"><label for="me-{f.k}">{f.label}</label><input class="inp" id="me-{f.k}" value={s[f.k]} placeholder={f.ph ?? ''} onchange={(e) => saveText(f.k, val(e), e.currentTarget)} /></div>
 								{/each}
+								<!-- Her birthday: day and month only, private (never on her page). Today turns into a birthday card,
+								     and Miracle wishes her on the day (migration 181). -->
+								<div class="f span2 bd-f">
+									<span class="lbl-t">Your birthday <span class="hint">(private, never shown on your page)</span></span>
+									<div class="bd-pick">
+										<Select id="me-bday-d" ariaLabel="Birthday day" placeholder="Day" value={bdPending.d ? String(bdPending.d) : s.birth_day ? String(s.birth_day) : undefined} options={bdayDays.map((d) => ({ value: String(d), label: String(d) }))} onchange={(v) => saveBirthday(Number(v) || null, s.birth_month ?? null)} />
+										<Select id="me-bday-m" ariaLabel="Birthday month" placeholder="Month" value={bdPending.m ? String(bdPending.m) : s.birth_month ? String(s.birth_month) : undefined} options={MONTHS.map((m, i) => ({ value: String(i + 1), label: m }))} onchange={(v) => saveBirthday(s.birth_day ?? null, Number(v) || null)} />
+										{#if s.birth_day || s.birth_month}<button class="lnk" onclick={() => ((bdPending = { d: null, m: null }), saveSettings({ birth_day: null, birth_month: null }))}>Remove</button>{/if}
+									</div>
+									<small class="hint">On your birthday your Today screen celebrates with you, and we send you a little note.</small>
+								</div>
 								<div class="f span2">
 									<span class="lbl-t">Languages you create content in</span>
 									<LanguagePicker label="Languages you create content in" options={LANGUAGES} value={s.content_languages ?? []} onchange={(v) => (v.length ? saveSettings({ content_languages: v }) : toast('Keep at least one language.', 'alert'))} />

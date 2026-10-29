@@ -356,6 +356,9 @@ export type Settings = {
 	/** Also in the public creator directory on the website (www.miracleapp.live/creators), for anyone and search engines. */
 	directory_listed?: boolean;
 	show_rates: boolean;
+	/** Her birthday, day and month only (migration 181): Today's birthday card, and a wish on the day. */
+	birth_day?: number | null;
+	birth_month?: number | null;
 	/** Package builder on her page: brands build a package from her rates, with a discount by size. */
 	bundle_on?: boolean;
 	bundle_tiers?: BundleTier[];

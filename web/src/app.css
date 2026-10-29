@@ -2155,3 +2155,5 @@ html.native,html.native *{scrollbar-width:none}html.native ::-webkit-scrollbar{d
 /* Shoot done (collab page, Dates): a quiet tick under the shoot day, or the button that marks it. */
 .shot-done{display:flex;align-items:center;gap:6px;margin-top:6px;font-size:13px;font-weight:600;color:var(--ok)}.shot-done .ic{width:14px;height:14px}.shot-done .lnk{margin-left:6px;font-weight:500;color:var(--ink-3)}
 .shot-btn{margin-top:8px;align-self:flex-start}
+/* Profile settings: the birthday picker, day and month side by side. */
+.bd-pick{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px}.bd-pick :is(.sel){width:auto;min-width:110px}

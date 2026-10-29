@@ -596,6 +596,10 @@
   .ht.dw-on{padding-top:30px;padding-bottom:58px}
   .ht.dw-on .ht-hi em{background:linear-gradient(90deg,#FFD166,#FF9F1C,#F25A90,#FF9F1C,#FFD166);background-size:250% 100%;-webkit-background-clip:text;background-clip:text;color:transparent}
   .ht.dw-on .dw-note{display:block;margin-top:3px;color:#FFC95C;font-weight:700;letter-spacing:.02em}
+  /* Her birthday (BirthdayLayer): the same room, the name in pink and gold. */
+  .ht.bd-on{padding-top:32px;padding-bottom:58px}
+  .ht.bd-on .ht-hi em{background:linear-gradient(90deg,#FFD166,#F25A90,#9C7BFF,#F25A90,#FFD166);background-size:250% 100%;-webkit-background-clip:text;background-clip:text;color:transparent}
+  .ht.bd-on .dw-note{display:block;margin-top:3px;color:#FF8FB8;font-weight:700;letter-spacing:.02em}
   .ht-dot{flex:none;width:8px;height:8px;border-radius:50%;background:var(--bad);animation:ping 1.8s infinite}
   .ht-dot.calm{background:var(--ok);animation:none}
 

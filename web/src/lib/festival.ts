@@ -28,3 +28,17 @@ export function diwaliWords(f: Festival, d = new Date()): { greet: string | null
 	if (n === 2) return { greet: 'Happy Dhanteras', note: 'Diwali in 2 days' };
 	return { greet: null, note: `Diwali in ${n} days` };
 }
+
+/** Her birthday (day and month), as Today sees it: 'eve' the day before, 'day' on it (29 February is the 28th in other
+ *  years), else null. The card changes at midnight by the phone's own clock. */
+export function birthdayNow(day: number | null | undefined, month: number | null | undefined, d = new Date()): 'eve' | 'day' | null {
+	if (!day || !month) return null;
+	const y = d.getFullYear();
+	const leap = (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0;
+	const dd = month === 2 && day === 29 && !leap ? 28 : day;
+	const on = (x: Date) => x.getMonth() + 1 === month && x.getDate() === dd;
+	if (on(d)) return 'day';
+	const next = new Date(d);
+	next.setDate(d.getDate() + 1);
+	return on(next) ? 'eve' : null;
+}
