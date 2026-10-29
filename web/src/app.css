@@ -2150,3 +2150,5 @@ html.native body::after{content:"";position:fixed;z-index:10000;top:0;left:0;rig
 /* Phones and the phone app: no scrollbars anywhere (they still scroll), like a native app. */
 @media (hover:none) and (pointer:coarse){html,html *{scrollbar-width:none}html ::-webkit-scrollbar{display:none;width:0;height:0}}
 html.native,html.native *{scrollbar-width:none}html.native ::-webkit-scrollbar{display:none;width:0;height:0}
+/* Book again on WhatsApp (collab page, wrapped): the message she sends, as she'll send it. */
+.rb-msg{margin:4px 0 12px;padding:12px 14px;border-radius:12px;background:color-mix(in oklab,var(--ok) 9%,var(--surface-2));font-size:14px;line-height:1.5;color:var(--ink-2);white-space:pre-wrap;overflow-wrap:anywhere}

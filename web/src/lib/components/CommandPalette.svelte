@@ -35,7 +35,7 @@
 		const live = studio.collabs.filter((c) => c.stage !== 'declined');
 		// Next steps first: the things that move work forward.
 		for (const c of live) {
-			const n = nextStep(c);
+			const n = nextStep(c, studio.settings);
 			if (n) out.push({ id: `n-${c.id}`, group: 'Next steps', label: `${n.label} · ${c.brand.name}`, sub: n.hint, icon: n.icon, hay: `${n.label} ${c.brand.name} ${c.code}`, run: () => openCollab(c.id, n.key) });
 		}
 		out.push(

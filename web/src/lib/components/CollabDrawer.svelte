@@ -53,6 +53,8 @@
 	import { toast } from '../ui.svelte';
 	import { supabase } from '../supabase';
 	import { captionStarter, nextStep, replySuggestions, suggestDates } from '../suggest';
+	import { rebookText, rebookWhatsApp } from '../rebook';
+	import { openOutside } from '../native';
 	import { savedFor } from '../savedReplies';
 	import BriefEditor from './BriefEditor.svelte';
 	import ScriptSheet from './ScriptSheet.svelte';
@@ -444,7 +446,13 @@
 	}
 
 	// ---- next step: one button that moves the collab forward ----
-	const next = $derived(c ? nextStep(c) : null);
+	const next = $derived(c ? nextStep(c, studio.settings) : null);
+	// Book again on WhatsApp: sending it counts as the offer (no email after it, and the discount starts today).
+	async function rebookSent() {
+		if (!c) return;
+		await updateCollab(c.id, { rebook_sent_at: new Date().toISOString() });
+		toast('Book again sent: their next collab books in a minute', 'send');
+	}
 	const dates = $derived(c && studio.settings ? suggestDates(c, studio.settings, studio.collabs) : null);
 	const best = $derived(bestSlot(studio.media));
 	const missingBrief = $derived(c ? briefMissing(c) : []);
@@ -491,6 +499,7 @@
 			case 'invoice': liveOpen = 'invoice'; return;
 			case 'paid': if (openInv) paymentOpen = openInv; else markPaid(c); return;
 			case 'report': { const r = c.reports.find((x) => x.status === 'ready'); if (r) sendReport(r); return; }
+			case 'rebook-wa': if (studio.settings) { openOutside(rebookWhatsApp(c, studio.settings)); await rebookSent(); } return;
 		}
 	}
 	// A card's next-step button opens the panel and runs the action here.
@@ -755,6 +764,15 @@
 				<DeliverableTracker {c} />
 			</section>
 
+			{#if c.stage === 'wrapped' && studio.settings?.site_url}
+				{@const s = studio.settings}
+				<section class="sec rb-sec" hidden={!sh('review')}>
+					<h3>Book again<small class="sec-sub">{c.rebook_sent_at ? `sent ${fmt(c.rebook_sent_at.slice(0, 10))}` : c.contact_email && s.rebook_offer ? 'emailed a week after it wraps' : 'on WhatsApp'}</small></h3>
+					<p class="hint">Brands that liked working with you come back. Send {c.contact_name ? c.contact_name.split(' ')[0] : c.brand.name} a thank-you{s.rebook_offer && s.rebook_pct ? ` with ${s.rebook_pct}% off their next collab` : ''} and a link that books it again in a minute, with this collab's pieces filled in.</p>
+					<blockquote class="rb-msg">{rebookText(c, s)}</blockquote>
+					<a class="btn sm wa" href={rebookWhatsApp(c, s)} target="_blank" rel="noopener" onclick={rebookSent}><Icon name="send" />{c.rebook_sent_at ? 'Send again on WhatsApp' : 'Send on WhatsApp'}</a>
+				</section>
+			{/if}
 			{#if c.stage === 'live' || c.stage === 'wrapped'}<section class="sec" hidden={!sh('review')}><h3>How was {c.brand.name}?<small class="sec-sub">private</small></h3><BrandRating brand={c.brand} compact /></section>{/if}
 			{#if c.stage === 'live' || c.stage === 'wrapped'}<section class="sec" hidden={!sh('review')}><h3>Case study<small class="sec-sub">for your page</small></h3>{#key c.id}<CaseStudy {c} />{/key}</section>{/if}
 			{#if c.usage_ends}<section class="sec" hidden={!sh('usage')}><h3>Usage rights</h3><UsageRights {c} /></section>{/if}

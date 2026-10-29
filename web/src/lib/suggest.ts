@@ -3,6 +3,7 @@
 import type { Collab, Package, PublicPackage, QuoteItem, Settings } from './types';
 import { diff, fmt, inTransit, iso, latestDraft, latestQuote, noPost, offeredKinds, overdue, parse, plural, unreadFor, usageDaysOf } from './util';
 import { balanceDue } from './invoice';
+import { rebookDue } from './rebook';
 import { fairFee, rateValue } from './priority';
 import { delivText, inr } from './util';
 
@@ -210,7 +211,8 @@ export function suggestDates(c: Collab, s: Settings, all: Collab[]): DateSuggest
 // ---------------------------------------------------------------------------
 export type NextStep = { key: string; label: string; hint: string; icon: string };
 
-export function nextStep(c: Collab): NextStep | null {
+/** s: her settings, for the steps that depend on them (Book again on WhatsApp). */
+export function nextStep(c: Collab, s?: Settings | null): NextStep | null {
 	const q = latestQuote(c);
 	const dr = latestDraft(c);
 	const openInv = c.invoices.find((i) => i.status === 'sent' || i.status === 'partly_paid');
@@ -250,6 +252,8 @@ export function nextStep(c: Collab): NextStep | null {
 				return { key: 'paid', label: 'Record payment', hint: overdue(c) ? 'Payment is overdue' : openInv ? `${openInv.number} is open` : 'Waiting for payment', icon: 'wallet' };
 			return null;
 		case 'wrapped':
+			// A WhatsApp-only brand gets no Book again email: she sends it from her WhatsApp (rebook.ts).
+			if (rebookDue(c, s)) return { key: 'rebook-wa', label: 'Book again', hint: `Send ${c.brand.name} a thank-you and a Book again link on WhatsApp`, icon: 'send' };
 			return null;
 		default:
 			return null;

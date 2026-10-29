@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { Collab } from '../types';
 	import { isRanked } from '../priority';
-	import { priorityOf } from '../studio.svelte';
+	import { priorityOf, studio } from '../studio.svelte';
 	import { ui } from '../ui.svelte';
 	import { delivText, deliverableProgress, diff, fmt, hueOf, inr, inrS, nextLine, stageIndex, stageLabel, unreadFor } from '../util';
 	import Icon from './Icon.svelte';
@@ -24,7 +24,7 @@
 	const n = $derived(nextLine(c));
 	const prio = $derived(isRanked(c) ? priorityOf(c) : null);
 	const unread = $derived(unreadFor(c));
-	const step = $derived(nextStep(c));
+	const step = $derived(nextStep(c, studio.settings));
 	const progress = $derived(deliverableProgress(c.deliverables));
 	const showProg = $derived(stageIndex(c.stage) >= 2 && stageIndex(c.stage) <= 4 && c.deliverables.length > 0);
 	const followTone = $derived(c.follow_date ? (diff(c.follow_date) < 0 ? 'late' : diff(c.follow_date) === 0 ? 'soon' : '') : '');
