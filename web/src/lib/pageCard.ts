@@ -6,12 +6,15 @@ import { loadPhoto } from './brandQr';
 import { compact, initials } from './util';
 import type { PublicPage } from './types';
 import { studio } from './studio.svelte';
+import { erText, headlineEr } from './engagement';
 
 const W = 1200, H = 630;
 
 function facts(p: PublicPage) {
 	const followers = p.instagram?.followers ? compact(p.instagram.followers) : p.followers || '';
-	const er = p.instagram?.engagement_rate ? `${(+p.instagram.engagement_rate).toFixed(1)}%` : p.engagement || '';
+	// Her Reels engagement in full (4.34%), the same figure as her page and Insights.
+	const v = headlineEr(studio.ig?.insights, p.instagram?.engagement_rate);
+	const er = v ? erText(v) : p.engagement || '';
 	return {
 		name: p.display_name || p.handle || 'Creator',
 		handle: p.handle || '',
