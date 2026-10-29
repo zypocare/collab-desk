@@ -2617,3 +2617,8 @@ html.cd-sheet, html.cd-sheet body { overflow: hidden; }
   [data-desk] .fold-page .dr-b .sec.fold :is(.quote-view, .submit-row, .bsec, .qc-wrap, .panel > div[style]) { padding-left: 0 !important; padding-right: 0 !important; margin-left: 0; margin-right: 0; }
   [data-desk] .fold-page .dr-b .sec.fold .submit-row { border: 0; background: none; }
 }
+@media (max-width: 760px) {
+  /* Round shortcuts on the brand's Money and profile: room before what follows. */
+  [data-desk] .cr-rings + .m-stages { margin-top: 16px; }
+  [data-desk] .cs-hub .pf-rings { margin-bottom: 18px; }
+}

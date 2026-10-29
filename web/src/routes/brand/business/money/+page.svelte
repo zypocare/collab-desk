@@ -9,6 +9,7 @@
 	import { countUp } from '#lib/ui.svelte.ts';
 	import Icon from '#lib/components/Icon.svelte';
 	import Ticket from '#lib/components/Ticket.svelte';
+	import RingIcons from '#lib/components/RingIcons.svelte';
 	import { auth } from '#lib/auth.svelte.ts';
 
 	// Money: every invoice from every creator, what's due, and the GST and TDS for the year.
@@ -103,6 +104,14 @@
 			</div>
 		</div>
 	</section>
+	<!-- The creator's Money shortcuts: round, each with its own tint, a turning rim and an icon that changes. -->
+	<nav class="cr-rings" aria-label="Money shortcuts">
+		<a class="cr-ring" style="--rt:var(--h-request)" href="/brand/reports"><i><span><RingIcons i={0} icons={['chart', 'eye', 'layers']} /></span></i><small>Reports</small></a>
+		<a class="cr-ring" style="--rt:var(--g1)" href="/brand/business/calendar"><i><span><RingIcons i={1} icons={['cal', 'clock', 'bell']} /></span></i>{#if counts.overdue}<b>{counts.overdue} LATE</b>{:else if counts.due}<b>{counts.due} DUE</b>{/if}<small>Due dates</small></a>
+		<a class="cr-ring" style="--rt:var(--g3)" href="/brand/business/shipping"><i><span><RingIcons i={2} icons={['box', 'send', 'check']} /></span></i><small>Shipping</small></a>
+		<a class="cr-ring" style="--rt:var(--g2)" href="/brand/business/team"><i><span><RingIcons i={3} icons={['users', 'shield', 'check']} /></span></i><small>Team</small></a>
+		<a class="cr-ring" style="--rt:var(--h-live)" href="/brand/business/turnaround"><i><span><RingIcons i={4} icons={['clock', 'refresh', 'spark']} /></span></i><small>Turnaround</small></a>
+	</nav>
 	<div class="m-stages" role="tablist" aria-label="Filter invoices">
 		{#each [['all', 'All'], ['due', 'Due'], ['overdue', 'Overdue'], ['paid', 'Paid']] as const as [k, label] (k)}
 			<button role="tab" aria-selected={show === k} class:on={show === k} onclick={() => (show = k)}><i class="dt" style="--hue:{k === 'all' ? 'var(--accent)' : HUE[k]}"></i>{label}<span>{counts[k]}</span></button>

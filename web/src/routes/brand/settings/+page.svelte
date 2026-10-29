@@ -7,6 +7,7 @@
 	import { page } from '$app/state';
 	import { onMount } from 'svelte';
 	import Avatar from '#lib/components/Avatar.svelte';
+	import RingIcons from '#lib/components/RingIcons.svelte';
 	import BrandBillingForm from '#lib/components/BrandBillingForm.svelte';
 	import BrandDetailsForm from '#lib/components/BrandDetailsForm.svelte';
 	import Icon from '#lib/components/Icon.svelte';
@@ -105,6 +106,18 @@
 
 	// Phone: the creator's My page hub, for a brand. Who you are, a few swipe cards, the ticket creators
 	// see on your requests, the sections in small groups and what you've done together at the bottom.
+	// Quick settings: the creator's round shortcuts (a turning ring in its own colour, its icon turning through a
+	// few related ones), for the places a brand goes most.
+	const QUICK: { label: string; icons: string[]; tint: string; s?: Sec; href?: string }[] = [
+		{ label: 'Instagram', icons: ['shield', 'check', 'users'], tint: 'var(--g2)', s: 'company' },
+		{ label: 'Billing', icons: ['rupee', 'doc', 'check'], tint: 'var(--g3)', s: 'billing' },
+		{ label: 'Team', icons: ['users', 'mail', 'check'], tint: 'var(--h-live)', s: 'team' },
+		{ label: 'Autopilots', icons: ['layers', 'spark', 'gear'], tint: 'var(--g1)', href: '/brand/autopilots' },
+		{ label: 'Pools', icons: ['layers', 'users', 'send'], tint: 'var(--h-request)', href: '/brand/creators?tab=pools' },
+		{ label: 'Reports', icons: ['chart', 'eye', 'layers'], tint: 'var(--g2)', href: '/brand/reports' },
+		{ label: 'Alerts', icons: ['bell', 'mail', 'check'], tint: 'var(--g3)', s: 'alerts' },
+		{ label: 'Help', icons: ['info', 'newmsg', 'check'], tint: 'var(--h-live)', href: '/brand/help' }
+	];
 	const GROUPS: { label: string; ids: Sec[] }[] = [
 		{ label: 'Your brand', ids: ['company', 'billing'] },
 		{ label: 'Working together', ids: ['team', 'brands'] },
@@ -178,6 +191,16 @@
 				<div class="cs-who"><b>{company}</b><small><Icon name="shield" />{brandIg.data ? `@${brandIg.data.username} · verified` : (acct?.email ?? '')}</small></div>
 				<button class="cs-edit" onclick={() => open('company')} aria-label="Edit company"><Icon name="edit" /></button>
 			</header>
+			<p class="pf-qs">Quick settings</p>
+			<nav class="cr-rings pf-rings" aria-label="Quick settings">
+				{#each QUICK as q, i (q.label)}
+					{#if q.s}
+						<button class="cr-ring" style="--rt:{q.tint}" onclick={() => q.s && open(q.s)}><i><span><RingIcons {i} icons={q.icons} /></span></i><small>{q.label}</small></button>
+					{:else}
+						<a class="cr-ring" style="--rt:{q.tint}" href={q.href}><i><span><RingIcons {i} icons={q.icons} /></span></i><small>{q.label}</small></a>
+					{/if}
+				{/each}
+			</nav>
 			<div class="cs-cards" bind:this={cardsEl} onscroll={onCards}>
 				{#each cards as k (k.eb)}
 					<div class="cs-card"><span class="cs-eb"><span class="cs-ci"><Icon name={k.icon} /></span>{k.eb}</span><p>{k.text}</p><button class="cs-cb" onclick={k.run} disabled={k.act === 'Connect' && !!igBusy}>{#if k.act === 'Connect' && igBusy === 'connect'}<span class="spinner"></span>{:else}{k.act}{/if}</button></div>
