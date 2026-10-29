@@ -65,7 +65,7 @@
 					<span class="tk-task">
 						<b>{s.count} collab{s.count === 1 ? '' : 's'} · {s.active ? `${s.active} active` : 'none active'}</b>
 						{#if s.outstanding > 0}
-							<small class="hot"><i></i>{inrS(s.outstanding)} still to come</small>
+							<small class="hot"><i></i>{inrS(s.outstanding)} yet to come</small>
 						{:else if s.avgDaysToPay !== null}
 							<small class="ok"><i></i>{s.avgDaysToPay === 0 ? 'Pays the same day' : `Pays in ${s.avgDaysToPay} day${s.avgDaysToPay === 1 ? '' : 's'}`}{s.onTimeRate !== null ? ` · ${Math.round(s.onTimeRate * 100)}% on time` : ''}</small>
 						{:else}

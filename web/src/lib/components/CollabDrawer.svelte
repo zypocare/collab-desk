@@ -985,7 +985,7 @@
 							<span class="pill tint k-pay"><Icon name="check" />Paid</span><b>{inr(issuedInvoices.length ? c.fee : c.pay_received)}</b><span class="hint">on {fmt(c.paid_on)}</span>
 							{#if !issuedInvoices.length}<button class="btn sm ghost" onclick={() => { editPay = true; document.getElementById('p-rec')?.focus(); }}><Icon name="edit" />Edit</button>{/if}
 						{:else}
-							<span title="Your fee not yet received (before GST and TDS)">Fee still to come</span><b>{inr(balance)}</b>
+							<span title="Your fee not yet received (before GST and TDS)">Fee yet to come</span><b>{inr(balance)}</b>
 							{#if overdue(c)}<span class="pill tint k-bad">Overdue</span>{/if}
 							<button class="btn sm" onclick={() => c && markPaid(c)}>Mark paid in full</button>
 						{/if}

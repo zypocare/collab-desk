@@ -174,7 +174,7 @@
 			received > 0 && { b: inrS(received), t: ` came in this ${monthName}` },
 			urgent > 0 && { b: String(urgent), t: ` need${urgent === 1 ? 's' : ''} you today` },
 			list.filter((c) => c.stage === 'request').length > 0 && { b: String(list.filter((c) => c.stage === 'request').length), t: ' new requests waiting' },
-			outs > 0 && { b: inrS(outs), t: ' still to come in' },
+			outs > 0 && { b: inrS(outs), t: ' yet to come in' },
 			goal > 0 && { b: `${pctN}%`, t: ` of the ${inrS(goal)} goal` },
 			active.length > 0 && { b: String(active.length), t: ` active collab${active.length === 1 ? '' : 's'}` },
 			nextPayout && { b: nextPayout.brand.name, t: ` pays next, ${fmt(nextPayout.pay_due!)}` }
@@ -244,7 +244,7 @@
 			</div>
 		</div>
 		<div class="hc-foot">
-			<a href="/studio/payments"><small>Still to come</small><b use:countUp={{ value: outs, money: true }}>{inr(outs)}</b></a>
+			<a href="/studio/payments"><small>Yet to come</small><b use:countUp={{ value: outs, money: true }}>{inr(outs)}</b></a>
 			<a href="/studio/payments"><small>Overdue</small><b class:od={odSum > 0} use:countUp={{ value: odSum, money: true }}>{inr(odSum)}</b></a>
 			<a href="/studio/payments"><small>Next payout</small><b>{nextPayout ? fmt(nextPayout.pay_due) : 'None'}</b>{#if nextPayout}<span class="hc-who">{nextPayout.brand.name}</span>{/if}</a>
 		</div>

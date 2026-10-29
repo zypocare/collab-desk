@@ -88,7 +88,7 @@
 			received > 0 && { b: inrS(received), t: ` came in this ${monthName}` },
 			urgent > 0 && { b: String(urgent), t: ' due today' },
 			list.filter((c) => c.stage === 'request').length > 0 && { b: String(list.filter((c) => c.stage === 'request').length), t: ' new requests waiting' },
-			outs > 0 && { b: inrS(outs), t: ' still to come in' },
+			outs > 0 && { b: inrS(outs), t: ' yet to come in' },
 			goal > 0 && { b: `${pctN}%`, t: ` of the ${inrS(goal)} goal` },
 			nextPayout && { b: nextPayout.brand.name, t: ` pays next, ${fmt(nextPayout.pay_due!)}` }
 		].filter((x): x is { b: string; t: string } => !!x)
@@ -215,7 +215,7 @@
 				{/if}
 			</div>
 			<div class="l-tiles">
-				<a href="/studio/payments"><small>Still to come</small><b class="l-num">{inr(outs)}</b></a>
+				<a href="/studio/payments"><small>Yet to come</small><b class="l-num">{inr(outs)}</b></a>
 				<a href="/studio/payments"><small>Overdue</small><b class="l-num">{inr(od)}</b></a>
 				<a href="/studio/payments"><small>Next payout</small><b class="l-txt">{nextPayout ? `${nextPayout.brand.name} · ${fmt(nextPayout.pay_due)}` : 'None scheduled'}</b></a>
 			</div>

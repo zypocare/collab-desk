@@ -40,7 +40,7 @@
 			...lateList.slice(0, 2).map((c) => ({ b: inr(outstanding(c)), t: ` from ${c.brand.name} is ${-diff(c.pay_due!)} days late` })),
 			{ b: inrS(m.thisMonth), t: ' came in this month' },
 			paidWeek ? { b: String(paidWeek), t: ` payment${paidWeek === 1 ? '' : 's'} in this week` } : null,
-			m.due ? { b: inrS(m.due), t: ' still to come' } : null,
+			m.due ? { b: inrS(m.due), t: ' yet to come' } : null,
 			m.tds ? { b: inrS(m.tds), t: ' TDS to claim back' } : null
 		].filter((x): x is { b: string; t: string } => !!x)
 	);
@@ -70,7 +70,7 @@
 	</div>
 	<div class="md-tiles">
 		<a class="md-tile" href="/studio/payments"><small>This month</small><b class="num">{inrS(m.thisMonth)}</b><span>{m.goal ? `${Math.round((m.goalPct ?? 0) * 100)}% of ${inrS(m.goal)} goal` : 'No goal set'}</span></a>
-		<a class="md-tile" href="/studio/payments"><small>Still to come</small><b class="num">{inrS(m.due)}</b><span>{m.later ? `${inrS(m.later)} not yet due` : 'from open invoices'}</span></a>
+		<a class="md-tile" href="/studio/payments"><small>Yet to come</small><b class="num">{inrS(m.due)}</b><span>{m.later ? `${inrS(m.later)} not yet due` : 'from open invoices'}</span></a>
 		<a class="md-tile" class:bad={m.late > 0} href="/studio/payments"><small>Overdue</small><b class="num">{inrS(m.late)}</b><span>{m.late ? 'needs a nudge' : 'all on time'}</span></a>
 		<a class="md-tile" href="/studio/reports"><small>Average deal</small><b class="num">{m.avgDeal ? inrS(m.avgDeal) : '—'}</b><span>{m.deals} paid deal{m.deals === 1 ? '' : 's'} this year</span></a>
 	</div>
@@ -121,7 +121,7 @@
 
 	<section class="md-card rv" style="--i:4">
 		<header class="md-h"><div><span class="bx-eb">Who pays most</span><h2>Top brands</h2></div><a href="/studio/brands">All brands<Icon name="arrow" /></a></header>
-		<HBars rows={m.brands.map((b) => ({ label: b.name, values: [b.received, b.due] }))} names={['Received', 'Still to come']} colors={['var(--g2)', 'color-mix(in oklab, var(--g1) 45%, transparent)']} fmt={inrS} />
+		<HBars rows={m.brands.map((b) => ({ label: b.name, values: [b.received, b.due] }))} names={['Received', 'Yet to come']} colors={['var(--g2)', 'color-mix(in oklab, var(--g1) 45%, transparent)']} fmt={inrS} />
 	</section>
 
 	<section class="md-card rv" style="--i:5">

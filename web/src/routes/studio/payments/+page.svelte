@@ -129,7 +129,7 @@
 </header>
 
 
-	<section class="hero-card glow m-hero m-pipe" aria-label="Money still to come">
+	<section class="hero-card glow m-hero m-pipe" aria-label="Money yet to come">
 		<div class="mesh" aria-hidden="true"></div>
 		<div class="hc-in">
 			<div class="hc-top">

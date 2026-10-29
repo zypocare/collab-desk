@@ -108,7 +108,7 @@
 	</div>
 
 	<div class="switch-row">
-		<div><b>Pending payment reminders</b><small>A phone notification with the money still to come in, at the times below. Its buttons remind the brands or open Payments. Skipped when nothing is pending. Phone alerts must be on (above).</small></div>
+		<div><b>Pending payment reminders</b><small>A phone notification with the money yet to come in, at the times below. Its buttons remind the brands or open Payments. Skipped when nothing is pending. Phone alerts must be on (above).</small></div>
 		<input type="checkbox" class="tgl" checked={s.pay_alerts ?? true} aria-label="Pending payment reminders" onchange={(e) => saveSettings({ pay_alerts: (e.currentTarget as HTMLInputElement).checked })} />
 	</div>
 	{#if s.pay_alerts ?? true}

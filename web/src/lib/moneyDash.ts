@@ -71,7 +71,7 @@ export function moneyDash(collabs: Collab[], fy: FY, goal: number, summary?: Fin
 	const mix: Slice[] = [
 		{ label: 'Money received', value: r.total.received, color: 'var(--g2)' },
 		{ label: 'Products (barter)', value: r.total.barter, color: 'var(--g3)' },
-		{ label: 'Still to come', value: due, color: 'var(--g1)' }
+		{ label: 'Yet to come', value: due, color: 'var(--g1)' }
 	];
 
 	// Coming in: what is owed, by the week it is due, for the next eight weeks (and what is late).

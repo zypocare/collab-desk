@@ -80,7 +80,7 @@
 	const cats = $derived(m.categories.map((x, i) => ({ ...x, color: CAT[i % CAT.length], p: catTotal ? Math.round((x.value / catTotal) * 100) : 0 })));
 	const mix = $derived([
 		{ label: 'Cash received', value: m.received, color: 'var(--g2)' },
-		{ label: 'Still to come', value: m.due, color: 'var(--g1)' },
+		{ label: 'Yet to come', value: m.due, color: 'var(--g1)' },
 		{ label: 'Products', value: m.barter, color: 'var(--g3)' }
 	]);
 	const mixTotal = $derived(mix.reduce((a, x) => a + x.value, 0));
@@ -93,7 +93,7 @@
 		[
 			...lateList.slice(0, 2).map((c) => ({ b: inr(outstanding(c)), t: ` from ${c.brand.name} is ${-diff(c.pay_due!)} days late` })),
 			{ b: inrS(m.thisMonth), t: ` came in this ${monthName}` },
-			m.due ? { b: inrS(m.due), t: ' still to come' } : null,
+			m.due ? { b: inrS(m.due), t: ' yet to come' } : null,
 			m.tds ? { b: inrS(m.tds), t: ' TDS to claim back' } : null,
 			nextPay ? { b: nextPay.c.brand.name, t: ` pays next, ${fmt(nextPay.c.pay_due)}` } : null,
 			paidWeek ? { b: String(paidWeek), t: ` payment${paidWeek === 1 ? '' : 's'} landed this week` } : null
@@ -166,7 +166,7 @@
 	<!-- Row 2: the four numbers that matter -->
 	<section class="lm-strip" aria-label="At a glance">
 		<a href="/studio/payments"><span class="lm-k"><i style="background: linear-gradient(135deg, var(--g1), var(--g2))"></i>This month</span><b>{inrS(m.thisMonth)}</b><span>{m.goal ? `${pct}% of the ${inrS(m.goal)} goal` : 'no monthly goal set'}</span></a>
-		<a href="/studio/payments"><span class="lm-k"><i style="background: #EFB35A"></i>Still to come</span><b>{inrS(m.due)}</b><span>{m.later ? `${inrS(m.later)} not yet due` : 'from open invoices'}</span></a>
+		<a href="/studio/payments"><span class="lm-k"><i style="background: #EFB35A"></i>Yet to come</span><b>{inrS(m.due)}</b><span>{m.later ? `${inrS(m.later)} not yet due` : 'from open invoices'}</span></a>
 		<a href="/studio/payments"><span class="lm-k"><i style="background: {m.late ? 'var(--bad)' : '#6FD08C'}"></i>Overdue</span><b>{inrS(m.late)}</b><span>{m.late ? 'needs a nudge' : 'every brand on time'}</span></a>
 		<a href="/studio/reports"><span class="lm-k"><i style="background: #7EA2FF"></i>Average deal</span><b>{m.avgDeal ? inrS(m.avgDeal) : '—'}</b><span>across {m.deals} paid collab{m.deals === 1 ? '' : 's'}</span></a>
 	</section>

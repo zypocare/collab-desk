@@ -69,7 +69,7 @@ async function alertFor(db: ReturnType<typeof admin>, s: Settings, dry: boolean)
   const line = (p: (typeof pending)[number]) =>
     `${p.brand} ${rupees(p.owed)} · ${!p.invoiced ? 'invoice not sent' : p.late > 0 ? `${p.late} day${p.late === 1 ? '' : 's'} late` : p.due ? `due ${p.late === 0 ? 'today' : shortDate(p.due)}` : 'invoiced'}`;
   const body = [...pending.slice(0, 3).map(line), pending.length > 3 ? `+ ${pending.length - 3} more` : ''].filter(Boolean).join('\n');
-  const title = `${rupees(total)} still to come in${lateN ? ` · ${lateN} late` : notSent ? ` · ${notSent} to invoice` : ''}`;
+  const title = `${rupees(total)} yet to come in${lateN ? ` · ${lateN} late` : notSent ? ` · ${notSent} to invoice` : ''}`;
 
   const msg = {
     title,

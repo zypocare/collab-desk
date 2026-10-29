@@ -1,5 +1,5 @@
 <script lang="ts">
-	// Horizontal bars: one row per item, each split into parts (e.g. received + still to come).
+	// Horizontal bars: one row per item, each split into parts (e.g. received + yet to come).
 	let {
 		rows,
 		names,

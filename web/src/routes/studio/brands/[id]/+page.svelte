@@ -116,7 +116,7 @@
 				<div><b>{s.avgDaysToPay === null ? '—' : s.avgDaysToPay === 0 ? 'Same day' : `${s.avgDaysToPay}d`}</b><small>pays in</small></div>
 				<div><b>{s.barter ? inrS(s.barter) : '—'}</b><small>in products</small></div>
 			</div>
-			{#if s.outstanding}<p class="bd-due"><i></i>{inr(s.outstanding)} still to come</p>{/if}
+			{#if s.outstanding}<p class="bd-due"><i></i>{inr(s.outstanding)} yet to come</p>{/if}
 		</section>
 	
 
