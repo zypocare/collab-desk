@@ -12,6 +12,7 @@
 	import PhoneGrow from '#lib/components/PhoneGrow.svelte';
 	import GrowthCoach from '#lib/components/GrowthCoach.svelte';
 	import DayPerformance from '#lib/components/DayPerformance.svelte';
+	import InstagramPanel from '#lib/components/InstagramPanel.svelte';
 
 	// Grow: real followers and views from what already works for her. Her numbers, what's working, this
 	// week's reel ideas (the growth autopilot), collab reels with other creators, and a reel worth boosting.
@@ -230,6 +231,10 @@
 		</section>
 	</div>
 {/if}
+
+<!-- Her Instagram numbers and latest posts (moved here from Content): followers, engagement, views, reach, the insights
+     link brands see, and each recent post with the brand it was for. -->
+{#if connected}<InstagramPanel />{/if}
 
 <style>
 	.gr-health {

@@ -8,7 +8,6 @@
 	import { page } from '$app/state';
 	import Icon from '#lib/components/Icon.svelte';
 	import Mono from '#lib/components/Mono.svelte';
-	import InstagramPanel from '#lib/components/InstagramPanel.svelte';
 	import ContentTips from '#lib/components/ContentTips.svelte';
 	import { phone } from '#lib/phone.svelte.ts';
 	import Columns from '#lib/components/charts/Columns.svelte';
@@ -243,8 +242,7 @@
 
 {/if}
 
-<!-- How posts are doing, and what to make next. -->
-<InstagramPanel />
+<!-- What to make next. (How her posts are doing, the Instagram panel, lives on Grow.) -->
 <ContentTips />
 
 <style>
