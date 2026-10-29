@@ -1,5 +1,6 @@
 // Growth Autopilot (migration 163), at 9 AM India from the database cron job (when the queue is running low), or
-// "Find now" in the admin panel. Finds Indian creators who show a business email on a public page, opens that page to
+// "Find now" in the admin panel. Finds Indian creators (and, since migration 179, Indian D2C brands that work with
+// creators: the settings' audience) who show a business email on a public page, opens that page to
 // see the email there itself (anything it can't confirm is dropped), writes a short personal invitation for each, and
 // queues them: waiting for approval in the panel, or approved straight away in "auto" mode. private.growth_send_due
 // sends them in working hours, two minutes apart, up to the daily number; the rest wait for the next days.
@@ -30,8 +31,9 @@ const NICHES = ['fashion', 'beauty', 'food', 'travel', 'lifestyle', 'fitness'];
 type Params = Anthropic.Messages.MessageCreateParamsNonStreaming;
 
 const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type' };
-type Found = { name: string; handle: string; email: string; email_source: string; website: string; niche: string; city: string; followers: number | null; why: string; subject?: string; opening?: string };
-type Settings = { on: boolean; mode: 'approve' | 'auto'; daily: number; niches: string[]; cities: string[]; min_followers: number; max_followers: number; offer: string };
+// kind: a creator, or a brand (its name is the brand's, contact the person its page names, if any).
+type Found = { kind?: 'creator' | 'brand'; name: string; contact?: string; handle: string; email: string; email_source: string; website: string; niche: string; city: string; followers: number | null; why: string; subject?: string; opening?: string };
+type Settings = { on: boolean; mode: 'approve' | 'auto'; daily: number; niches: string[]; cities: string[]; min_followers: number; max_followers: number; offer: string; audience: 'creators' | 'brands' | 'both'; brand_offer: string };
 type Db = ReturnType<typeof admin>;
 // request: the batch's requests still going, by custom_id (a single request on older runs).
 type Run = { id: number; at: string; batch_id: string | null; request: Record<string, Params> | Params | null; cost_usd: number | string; asked: number | null; confirmed: number | null; added: number | null; found: Found[] | null; results_read: boolean; reading: number; read_ids: string[] | null; next_requests: Record<string, Params> | null; note: string | null };
@@ -80,6 +82,8 @@ Deno.serve(async (req) => {
   const enough = ctx.s.daily * (manual ? 7 : 2);
   if (ctx.backlog >= enough) return reply({ skipped: `${ctx.backlog} creators are already waiting to be emailed, about ${Math.round(ctx.backlog / ctx.s.daily)} days of sending. Search again when fewer are waiting.` });
 
+  // Brands are searched only with Claude (Gemini's search is creators only).
+  if (!CLAUDE_KEY && ctx.s.audience === 'brands') return reply({ error: 'Finding brands needs Claude (GROWTH_ANTHROPIC_API_KEY). Set the audience to Creators, or add the key.' }, 400);
   if (CLAUDE_KEY && !dry) {
     // One search at a time: a click while Claude is still searching doesn't start (or pay for) another.
     const { data: pending } = await db.from('growth_runs').select('id, at').eq('engine', 'claude').not('batch_id', 'is', null).is('finished_at', null).order('at').limit(1);
@@ -88,7 +92,7 @@ Deno.serve(async (req) => {
     const { data: run, error } = await db.from('growth_runs').insert({ engine: 'claude', manual }).select('id').single();
     if (error || !run) return reply({ error: error?.message ?? 'Could not start the search.' }, 500);
     const id = (run as { id: number }).id;
-    const requests = claudeRequests(ctx.s, [...ctx.seenHandle]);
+    const requests = claudeRequests(ctx.s, [...ctx.seenHandle], [...ctx.seenSite]);
     try {
       const batch = await claude().messages.batches.create({ requests: Object.entries(requests).map(([custom_id, params]) => ({ custom_id, params })) });
       await db.from('growth_runs').update({ batch_id: batch.id, request: requests }).eq('id', id);
@@ -124,11 +128,12 @@ async function context(db: Db) {
   const s = g as Settings | null;
   if (!s) return { error: 'No settings.' };
   const today = todayIST();
-  const [{ data: leads }, { data: sup }, { data: creators }, { data: wl }] = await Promise.all([
-    db.from('growth_leads').select('email, handle, status, found_on'),
+  const [{ data: leads }, { data: sup }, { data: creators }, { data: wl }, { data: brands }] = await Promise.all([
+    db.from('growth_leads').select('email, handle, status, found_on, website, kind'),
     db.from('growth_suppress').select('email'),
     db.from('creator_settings').select('creator_email, handle'),
     db.from('waitlist').select('email, instagram'),
+    db.from('brand_profiles').select('website, instagram'),
   ]);
   const all = leads ?? [];
   // Creators still to be emailed: waiting for approval, or approved and not sent yet.
@@ -136,18 +141,53 @@ async function context(db: Db) {
   // Gemini searches within the time limit, so it asks for about two days' worth at most.
   const want = Math.max(1, Math.min(s.daily, s.daily * 2 - backlog));
   const seenEmail = new Set([...all.map((l) => l.email), ...(sup ?? []).map((x) => x.email), ...(creators ?? []).map((c) => c.creator_email ?? ''), ...(wl ?? []).map((w) => w.email ?? '')].map((e) => String(e).toLowerCase()).filter(Boolean));
-  const seenHandle = new Set([...all.map((l) => l.handle), ...(creators ?? []).map((c) => c.handle ?? ''), ...(wl ?? []).map((w) => w.instagram ?? '')].map((h) => String(h).replace(/^@+/, '').toLowerCase()).filter(Boolean));
-  return { s, today, want, backlog, seenEmail, seenHandle };
+  const seenHandle = new Set([...all.map((l) => l.handle), ...(creators ?? []).map((c) => c.handle ?? ''), ...(wl ?? []).map((w) => w.instagram ?? ''), ...(brands ?? []).map((b) => igHandle(b.instagram ?? ''))].map((h) => String(h).replace(/^@+/, '').toLowerCase()).filter(Boolean));
+  // Brands already found or already on Miracle, by their website.
+  const seenSite = new Set([...all.filter((l) => l.kind === 'brand').map((l) => l.website ?? ''), ...(brands ?? []).map((b) => b.website ?? '')].map(siteOf).filter(Boolean));
+  return { s, today, want, backlog, seenEmail, seenHandle, seenSite };
 }
 type Ctx = Exclude<Awaited<ReturnType<typeof context>>, { error: string }>;
 
 // ---------- Claude, through the Message Batches API ----------
 const claude = () => new Anthropic({ apiKey: CLAUDE_KEY, maxRetries: 1 });
 
-/** One search: a request for each niche, all in the same batch, by custom_id. */
-function claudeRequests(s: Settings, known: string[]): Record<string, Params> {
-  const niches = (s.niches.length ? s.niches : NICHES).slice(0, MAX_NICHES);
-  return Object.fromEntries(niches.map((n, i) => [`n${i}`, claudeRequest(s, n, PER_NICHE, known)]));
+/** One search: a request for each niche, all in the same batch, by custom_id: n0, n1… for creators, b0, b1… for
+ * brands. Both: half the niches each way, so a search costs about the same. */
+function claudeRequests(s: Settings, known: string[], knownSites: string[]): Record<string, Params> {
+  const all = s.niches.length ? s.niches : NICHES;
+  const aud = s.audience ?? 'creators';
+  const each = aud === 'both' ? Math.ceil(MAX_NICHES / 2) : MAX_NICHES;
+  const out: Record<string, Params> = {};
+  if (aud !== 'brands') all.slice(0, each).forEach((n, i) => (out[`n${i}`] = claudeRequest(s, n, PER_NICHE, known)));
+  if (aud !== 'creators') all.slice(0, each).forEach((n, i) => (out[`b${i}`] = brandRequest(s, n, PER_NICHE, [...known.slice(-150), ...knownSites.slice(-150)])));
+  return out;
+}
+
+/** The search Claude runs for one category of brands: Indian D2C brands that already work with Instagram creators and
+ * publish a business email on their own site. */
+function brandRequest(s: Settings, niche: string, count: number, known: string[]): Params {
+  const system = `You find Indian brands for Miracle to invite. Miracle is where brands find Indian Instagram creators: live Instagram numbers and rates up front, collab requests in one tap, and every post and invoice tracked in one place. Brands pay creators directly; Miracle takes no commission.
+Use web search to find real brands, then open the page on the brand's own website that shows its email (web fetch) to check it is really there.
+Who counts:
+- an Indian brand that sells online (its own website or D2C store) in the category in the request${s.cities.length ? `, based in or around ${s.cities.join(', ')}` : ', anywhere in India'};
+- small or growing (startups and D2C labels), not large listed companies or the Indian arm of a global brand;
+- already works with Instagram creators: influencer posts, a creator, ambassador or affiliate programme, or creator collabs on its Instagram;
+- publishes a marketing, partnerships, collab, PR or general business email (like hello@, marketing@, collab@) on a page of its own website you opened. Not a customer care, orders, returns, careers or grievance address.
+Search widely: different phrasings, sub-categories and Indian cities, so the list isn't only the first results.
+Never include a brand in the exclude list (Instagram handles and websites). Never invent a brand, a handle or an email: only what you saw on a page. Fewer real brands are better than more guesses.
+For each brand also write the start of a short, warm note from Miracle's founder: a subject and an opening line about something real you saw (a product, a launch, a creator collab). Plain words, no flattery clichés, no emojis, nothing you didn't see.
+When you are done, reply with ONLY a JSON array and nothing else. Each item: {"name" (the brand's name), "contact" (the first name of a marketing or partnerships person if the page names one, else ""), "handle" (the brand's Instagram, without @, or ""), "email" (exactly as published), "email_source" (the https:// page of its website where you saw the email), "website" (the brand's own site), "niche" (its category), "city", "why" (one line under 18 words about the brand and its creator work), "subject" (under 8 words, lower case like a note from a person), "opening" (one or two sentences, under 45 words, about the brand)}.`;
+  return {
+    model: CLAUDE_MODEL,
+    max_tokens: 16000,
+    output_config: { effort: 'medium' },
+    system,
+    tools: [
+      { type: 'web_search_20260209', name: 'web_search', max_uses: 8, user_location: { type: 'approximate', country: 'IN' } },
+      { type: 'web_fetch_20260209', name: 'web_fetch', max_uses: 12, max_content_tokens: FETCH_TOKENS },
+    ],
+    messages: [{ role: 'user', content: `Find ${count} brands in ${niche}.\nExclude (already known): ${known.join(', ') || 'none'}` }],
+  } as unknown as Params;
 }
 
 /** The search Claude runs for one niche: web search to find creators, web fetch to open the page and see the email on it. */
@@ -242,8 +282,9 @@ async function collect(db: Db, site: string) {
         note = 'Claude declined a search';
       } else {
         const text = message.content.map((b) => (b.type === 'text' ? b.text : '')).join('');
-        creators.push(...parseCreators(text));
-        if (!creators.length && text) note = `Claude found no creators with a public email this time: ${text.replace(/\s+/g, ' ').slice(0, 140)}`;
+        const kind = r.custom_id.startsWith('b') ? 'brand' : 'creator';
+        creators.push(...parseCreators(text).map((c) => ({ ...c, kind }) as Found));
+        if (!creators.length && text) note = `Claude found no ${kind === 'brand' ? 'brands' : 'creators'} with a public email this time: ${text.replace(/\s+/g, ' ').slice(0, 140)}`;
       }
     }
     const read = [...readIds, r.custom_id];
@@ -350,6 +391,7 @@ function parseCreators(text: string): Found[] {
   return raw
     .map((x) => ({
       name: String(x.name ?? '').trim().slice(0, 80),
+      contact: String(x.contact ?? '').trim().split(/\s+/)[0].slice(0, 40),
       handle: String(x.handle ?? '').replace(/^@+/, '').trim().toLowerCase().slice(0, 30),
       email: String(x.email ?? '').trim().toLowerCase().slice(0, 120),
       email_source: String(x.email_source ?? '').trim().slice(0, 300),
@@ -368,10 +410,14 @@ function parseCreators(text: string): Found[] {
 async function queue(db: Db, site: string, ctx: Ctx, creators: Found[], o: { want?: number; writeWait: number; dry?: boolean }): Promise<{ added: number; confirmed: number; error?: string; rows?: unknown[] }> {
   const { want = Infinity, writeWait, dry = false } = o;
   const { s, today, seenEmail, seenHandle } = ctx;
+  const { seenSite } = ctx;
   const fresh = creators.filter((c) => {
-    const ok = !seenEmail.has(c.email) && !(c.handle && seenHandle.has(c.handle)) && !BAD.test(c.email);
+    const brand = c.kind === 'brand';
+    const site = brand ? siteOf(c.website) : '';
+    const ok = !seenEmail.has(c.email) && !(c.handle && seenHandle.has(c.handle)) && !(site && seenSite.has(site)) && !BAD.test(c.email) && !(brand && BAD_BRAND.test(c.email));
     seenEmail.add(c.email);
     if (c.handle) seenHandle.add(c.handle);
+    if (site) seenSite.add(site);
     return ok;
   });
   // The email must really be on the page given (or their own site): every page at once.
@@ -380,19 +426,24 @@ async function queue(db: Db, site: string, ctx: Ctx, creators: Found[], o: { wan
   if (!found.length) return { added: 0, confirmed: 0, error: creators.length ? `${creators.length} creator${creators.length === 1 ? '' : 's'} found, but none of their emails could be confirmed on a public page` : undefined };
   // An email for each: Claude's own subject and opening when it wrote them, else the AI writes one (all at once), else
   // the standard email.
-  const written = await Promise.all(found.map((c) => (c.subject && c.opening) || !writeWait ? null :
+  const written = await Promise.all(found.map((c) => (c.subject && c.opening) || !writeWait || c.kind === 'brand' ? null :
     ai<{ subject: string; body: string }>(db, site, 'growthmail', { name: c.name, handle: c.handle, niche: c.niche, city: c.city, about_them: c.why, offer: s.offer }, writeWait)));
   const slots = sendTimes(found.length);
   const rows = found.map((c, k) => {
     const w = written[k] as { subject?: string; body?: string } | null;
+    const brand = c.kind === 'brand';
     const word = c.name.split(' ')[0];
-    const first = word.length > 1 ? word : 'there';
-    const pitch = `Miracle is a free tool for creators: a brand page with your rates and live Instagram numbers, quotes brands accept online, invoices with a UPI QR, and reminders that chase late payments for you. Brands pay you directly; we never take a cut.${s.offer ? `\n\n${s.offer}` : ''}\n\nWould you like to try it?`;
+    // A brand: its marketing person by first name when the page names one, else the brand's team.
+    const first = brand ? (c.contact && c.contact.length > 1 ? c.contact : `${c.name} team`) : word.length > 1 ? word : 'there';
+    const pitch = brand
+      ? `Miracle is where brands find Indian Instagram creators: their live Instagram numbers and rates up front, collab requests in one tap, and every post, deliverable and invoice tracked in one place. You pay creators directly; we never take a cut.${s.brand_offer ? `\n\n${s.brand_offer}` : ''}\n\nWould you like to try it?`
+      : `Miracle is a free tool for creators: a brand page with your rates and live Instagram numbers, quotes brands accept online, invoices with a UPI QR, and reminders that chase late payments for you. Brands pay you directly; we never take a cut.${s.offer ? `\n\n${s.offer}` : ''}\n\nWould you like to try it?`;
     return {
-      name: c.name, handle: c.handle, email: c.email, website: c.website, source_url: c.email_source, niche: c.niche, city: c.city, followers: c.followers, why: c.why,
-      subject: (c.opening && c.subject) || w?.subject?.trim() || `your brand deals, simpler`,
+      kind: brand ? 'brand' : 'creator',
+      name: c.name, handle: c.handle, email: c.email, website: c.website, source_url: c.email_source, niche: c.niche, city: c.city, followers: brand ? null : c.followers, why: c.why,
+      subject: (c.opening && c.subject) || w?.subject?.trim() || (brand ? `creators for ${c.name.toLowerCase()}` : `your brand deals, simpler`),
       body: (c.subject && c.opening ? `Hi ${first},\n\n${c.opening}\n\n${pitch}` : '') || w?.body?.trim() ||
-        `Hi ${first},\n\nI came across your ${c.niche || ''} content${c.city ? ` from ${c.city}` : ''} and loved it.\n\n${pitch}`,
+        (brand ? `Hi ${first},\n\nI came across ${c.name}${c.niche ? `, and your ${c.niche.toLowerCase()} range` : ''}, and saw you work with Instagram creators.\n\n${pitch}` : `Hi ${first},\n\nI came across your ${c.niche || ''} content${c.city ? ` from ${c.city}` : ''} and loved it.\n\n${pitch}`),
       status: s.mode === 'auto' ? 'approved' : 'ready', found_on: today, send_after: slots[k],
     };
   });
@@ -486,6 +537,16 @@ function sendTimes(n: number) {
 
 // ---------- the email, seen on a public page ----------
 const BAD = /noreply|no-reply|donotreply|example\.|privacy|legal|grievance|careers|jobs|hr@|support@|help@|abuse@/i;
+// A brand's customer-service addresses: not the people who run creator collabs.
+const BAD_BRAND = /^(care|customercare|customer\.?care|customer\.?support|cs|orders?|returns?|refunds?|complaints?|feedback|billing|accounts|finance|grievances?)@/i;
+/** A website as its bare host (no scheme, www or path), to tell one brand's site from another. */
+function siteOf(u: string) {
+  return String(u ?? '').trim().toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/[/?#].*$/, '');
+}
+/** An Instagram handle from a handle or a profile link. */
+function igHandle(v: string) {
+  return String(v ?? '').trim().toLowerCase().replace(/^.*instagram\.com\//, '').replace(/^@+/, '').replace(/[/?#].*$/, '');
+}
 
 /** The page the email was seen on: the one the search gave, else their own site. '' when it isn't there. */
 async function seenOn(c: Found): Promise<string> {

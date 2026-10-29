@@ -5,13 +5,14 @@
 	import { ask, toast } from '../ui.svelte.ts';
 	import Icon from '../Icon.svelte';
 
-	// Growth Autopilot (migration 163): creators Miracle found with a public business email, the invitation
-	// written for each, and what came of it. Approve mode: nothing goes out until it's approved here.
+	// Growth Autopilot (migration 163): creators, and since migration 179 brands, Miracle found with a public business
+	// email, the invitation written for each, and what came of it. Approve mode: nothing goes out until it's approved here.
 	type R = Record<string, any>;
 	let d = $state<R | null>(null);
 	let err = $state('');
 	let busy = $state('');
 	let tab = $state<'ready' | 'approved' | 'sent' | 'joined' | 'other'>('ready');
+	let who = $state<'all' | 'creator' | 'brand'>('all');
 	let picked = $state<Record<string, boolean>>({});
 	let open = $state('');
 	let draft = $state({ subject: '', body: '' });
@@ -41,12 +42,17 @@
 		e.preventDefault();
 		await save({
 			daily: Number(f.daily), niches: list(f.niches), cities: list(f.cities), min_followers: Number(f.min_followers), max_followers: Number(f.max_followers),
-			sender_name: f.sender_name, reply_to: f.reply_to, offer: f.offer, follow_up_days: Number(f.follow_up_days)
+			sender_name: f.sender_name, reply_to: f.reply_to, offer: f.offer, brand_offer: f.brand_offer, follow_up_days: Number(f.follow_up_days)
 		});
+	}
+	// Who the searches look for: creators, brands, or both (half the niches each way).
+	async function audience(a: 'creators' | 'brands' | 'both') {
+		if (a === d?.settings?.audience) return;
+		await save({ audience: a }, a === 'both' ? 'Searches find creators and brands' : a === 'brands' ? 'Searches find brands' : 'Searches find creators');
 	}
 	async function power() {
 		const on = !d?.settings?.on;
-		if (on && !(await ask({ title: 'Switch the Growth Autopilot on?', body: `Each search looks in every niche and finds dozens of creators; up to ${d?.settings?.daily} emails go out a day and the rest wait their turn. ${d?.settings?.mode === 'auto' ? 'In Auto mode their emails go out by themselves, 10 AM to 6 PM.' : 'In Approve mode nothing is sent until you approve it here.'}`, ok: 'Switch on' }))) return;
+		if (on && !(await ask({ title: 'Switch the Growth Autopilot on?', body: `Each search looks in every niche and finds dozens of ${people}; up to ${d?.settings?.daily} emails go out a day and the rest wait their turn. ${d?.settings?.mode === 'auto' ? 'In Auto mode their emails go out by themselves, 10 AM to 6 PM.' : 'In Approve mode nothing is sent until you approve it here.'}`, ok: 'Switch on' }))) return;
 		await save({ on }, on ? 'Growth Autopilot on' : 'Growth Autopilot off');
 	}
 	async function mode(m: 'approve' | 'auto') {
@@ -82,7 +88,7 @@
 			return toast(r.skipped || r.error || (r.added ? `${r.added} found` : 'Nothing new found'), !r.added);
 		}
 		// Claude (a batch) usually takes a few minutes, at most an hour; Gemini about two minutes.
-		toast(r.batch ? 'Claude is searching. This usually takes a few minutes; creators appear here when it’s done, and you can close this page.' : 'Searching in the background. Results appear here in about two minutes.');
+		toast(r.batch ? `Claude is searching. This usually takes a few minutes; ${people} appear here when it’s done, and you can close this page.` : 'Searching in the background. Results appear here in about two minutes.');
 		const until = Date.now() + (r.batch ? 600_000 : 200_000);
 		while (Date.now() < until) {
 			await new Promise((ok) => setTimeout(ok, r.batch ? 20000 : 8000));
@@ -91,15 +97,15 @@
 			if (run?.finished_at) {
 				busy = '';
 				const spent = run.engine === 'claude' && Number(run.cost_usd) ? ` · about $${Number(run.cost_usd).toFixed(2)} of Claude credit` : '';
-				return toast((run.added ? `${run.added} creator${run.added === 1 ? '' : 's'} found` : run.error || 'Nothing new found') + spent, !run.added);
+				return toast((run.added ? `${run.added} found` : run.error || 'Nothing new found') + spent, !run.added);
 			}
 		}
 		busy = '';
-		toast(r.batch ? 'Claude is still searching. Check back later: creators appear here when it’s done.' : 'The search took too long and was stopped. Try again, or narrow the niches or cities.', !r.batch);
+		toast(r.batch ? `Claude is still searching. Check back later: ${people} appear here when it’s done.` : 'The search took too long and was stopped. Try again, or narrow the niches or cities.', !r.batch);
 	}
 	async function act(ids: string[], action: 'approve' | 'skip' | 'never') {
 		if (!ids.length) return;
-		if (action === 'never' && !(await ask({ title: `Never email ${ids.length === 1 ? 'this creator' : `these ${ids.length}`}?`, body: 'They go on the never-email list.', ok: 'Never email', danger: true }))) return;
+		if (action === 'never' && !(await ask({ title: `Never email ${ids.length === 1 ? 'this one' : `these ${ids.length}`}?`, body: 'They go on the never-email list.', ok: 'Never email', danger: true }))) return;
 		const { data, error } = await supabase.rpc('admin_growth_leads', { p_ids: ids, p_action: action });
 		if (error) return toast(errMessage(error), true);
 		d = data as R;
@@ -119,6 +125,8 @@
 	}
 
 	const s = $derived(d?.settings ?? {});
+	// The words for who the searches find.
+	const people = $derived(s.audience === 'brands' ? 'brands' : s.audience === 'both' ? 'creators and brands' : 'creators');
 	// What a search should cost on Claude Sonnet: about 35 cents a niche (an estimate; each search's real cost is listed below).
 	const perSearch = $derived(`about $${((s.niches?.length || 6) * 0.35).toFixed(2)}`);
 	const lastEngine = $derived(((d?.runs ?? []) as R[])[0]?.engine ?? '');
@@ -133,8 +141,9 @@
 	const c = $derived(d?.counts ?? {});
 	const TABS = [['ready', 'Waiting for you'], ['approved', 'Queued'], ['sent', 'Sent'], ['joined', 'Joined'], ['other', 'Skipped · unsubscribed']] as const;
 	const inTab = (r: R, t: string) => (t === 'sent' ? r.status === 'sent' || r.status === 'followed' : t === 'other' ? r.status === 'skipped' || r.status === 'unsubscribed' : r.status === t);
-	const rows = $derived(((d?.rows ?? []) as R[]).filter((r) => inTab(r, tab)));
-	const count = (t: string) => ((d?.rows ?? []) as R[]).filter((r) => inTab(r, t)).length;
+	const isWho = (r: R) => who === 'all' || (r.kind ?? 'creator') === who;
+	const rows = $derived(((d?.rows ?? []) as R[]).filter((r) => inTab(r, tab) && isWho(r)));
+	const count = (t: string) => ((d?.rows ?? []) as R[]).filter((r) => inTab(r, t) && isWho(r)).length;
 	const pickedIds = $derived(rows.filter((r) => picked[r.id]).map((r) => r.id as string));
 	const allPicked = $derived(rows.length > 0 && rows.every((r) => picked[r.id]));
 	const pct = (a: number, b: number) => (b ? Math.round((a / b) * 100) + '%' : '—');
@@ -168,10 +177,10 @@
 	<header class="wh">
 		<div>
 			<h1>Growth Autopilot</h1>
-			<p class="muted lead">Finds Indian creators who show a business email on a public page, writes each a short invitation, and sends them 10 AM to 6 PM, a few minutes apart, with one follow-up. Anyone can unsubscribe in one tap.</p>
+			<p class="muted lead">Finds Indian creators, and D2C brands that work with creators, who show a business email on a public page, writes each a short invitation, and sends them 10 AM to 6 PM, a few minutes apart, with one follow-up. Anyone can unsubscribe in one tap.</p>
 		</div>
 		<div class="acts">
-			<button class="btn" onclick={findNow} disabled={!!busy || !!active}>{#if busy === 'find' || active}<span class="spinner"></span>{:else}<Icon name="search" />{/if}{active ? 'Searching…' : 'Find creators now'}</button>
+			<button class="btn" onclick={findNow} disabled={!!busy || !!active}>{#if busy === 'find' || active}<span class="spinner"></span>{:else}<Icon name="search" />{/if}{active ? 'Searching…' : `Find ${s.audience === 'both' ? '' : people + ' '}now`}</button>
 			{#if d}<button class="btn {s.on ? '' : 'pri'}" onclick={power} disabled={!!busy}><Icon name={s.on ? 'pause' : 'play'} />{s.on ? 'Switch off' : 'Switch on'}</button>{/if}
 		</div>
 	</header>
@@ -182,8 +191,8 @@
 			<section class="card searching" role="status">
 				<span class="pulse" aria-hidden="true"><i></i></span>
 				<div class="st">
-					<b>{active.results_read ? `Claude found ${num(active.asked)} creators: checking their pages` : active.engine === 'claude' ? 'Claude is searching for creators' : 'Searching for creators'} · started {ago(active.at)}</b>
-					<small class="muted">{active.results_read ? 'A few creators every minute: each one\'s page is opened to see the email there, then they appear below under "Waiting for you".' : active.engine === 'claude' ? 'This usually takes a few minutes, sometimes up to an hour. The creators it finds appear below under "Waiting for you". You can close this page; nothing more is spent while it waits.' : 'This takes about two minutes. The creators it finds appear below under "Waiting for you".'}</small>
+					<b>{active.results_read ? `Claude found ${num(active.asked)}: checking their pages` : active.engine === 'claude' ? `Claude is searching for ${people}` : `Searching for ${people}`} · started {ago(active.at)}</b>
+					<small class="muted">{active.results_read ? 'A few every minute: each one\'s page is opened to see the email there, then they appear below under "Waiting for you".' : active.engine === 'claude' ? `This usually takes a few minutes, sometimes up to an hour. The ${people} it finds appear below under "Waiting for you". You can close this page; nothing more is spent while it waits.` : `This takes about two minutes. The ${people} it finds appear below under "Waiting for you".`}</small>
 					{#if active.checked_at}<small class="chk">Last check {ago(active.checked_at)}: {active.batch_status || 'no answer yet'}</small>{/if}
 				</div>
 				{#if active.engine === 'claude'}<button class="btn sm" onclick={() => cancelSearch(active.id)} disabled={!!busy}>Cancel search</button>{/if}
@@ -193,7 +202,12 @@
 			<span class="dot" aria-hidden="true"></span>
 			<div class="st">
 				<b>{s.on ? 'On' : 'Off'} · {s.mode === 'auto' ? 'Auto: emails go out by themselves' : 'Approve: nothing goes out until you approve it'}</b>
-				<small class="muted">{s.on ? `Searches at 9 AM when fewer than ${num(s.daily * 2)} creators are waiting. ${num(c.sent_today)} of ${s.daily} sent today. A search costs ${perSearch} of Claude credit.` : `Switch it on to find creators every morning. "Find creators now" works either way (${perSearch} of Claude credit a search).`}</small>
+				<small class="muted">{s.on ? `Searches at 9 AM when fewer than ${num(s.daily * 2)} are waiting. ${num(c.sent_today)} of ${s.daily} sent today. A search costs ${perSearch} of Claude credit.` : `Switch it on to find ${people} every morning. "Find now" works either way (${perSearch} of Claude credit a search).`}</small>
+			</div>
+			<div class="seg" role="group" aria-label="Who to find">
+				<button class:on={(s.audience ?? 'creators') === 'creators'} onclick={() => audience('creators')}>Creators</button>
+				<button class:on={s.audience === 'brands'} onclick={() => audience('brands')}>Brands</button>
+				<button class:on={s.audience === 'both'} onclick={() => audience('both')}>Both</button>
 			</div>
 			<div class="seg" role="group" aria-label="Mode">
 				<button class:on={s.mode === 'approve'} onclick={() => mode('approve')}>Approve</button>
@@ -202,10 +216,10 @@
 		</section>
 
 		<section class="kpis">
-			<div class="card k"><small>Found</small><b class="mono">{num(c.found)}</b><span>{num(c.waiting)} waiting for you · {num(c.queued)} queued</span></div>
+			<div class="card k"><small>Found</small><b class="mono">{num(c.found)}</b><span>{num(c.waiting)} waiting for you · {num(c.queued)} queued{c.brands ? ` · ${num(c.brands)} brands` : ''}</span></div>
 			<div class="card k"><small>Emailed</small><b class="mono">{num(c.sent)}</b><span>{num(c.sent_today)} today</span></div>
 			<div class="card k"><small>Opened the link</small><b class="mono">{num(c.clicked)}</b><span>{pct(Number(c.clicked), Number(c.sent))} of emailed</span></div>
-			<div class="card k"><small>Signed up</small><b class="mono">{num(c.joined)}</b><span>{pct(Number(c.joined), Number(c.sent))} of emailed</span></div>
+			<div class="card k"><small>Signed up</small><b class="mono">{num(c.joined)}</b><span>{pct(Number(c.joined), Number(c.sent))} of emailed{c.brands_sent ? ` · brands ${num(c.brands_joined)} of ${num(c.brands_sent)}` : ''}</span></div>
 			<div class="card k"><small>Unsubscribed</small><b class="mono">{num(c.unsubscribed)}</b><span>{num(c.suppressed)} on the never-email list</span></div>
 		</section>
 
@@ -241,13 +255,14 @@
 				<div class="fields">
 					<label>Emails a day<input class="inp" type="number" min="1" max="60" bind:value={f.daily} /></label>
 					<label>Follow up after (days)<input class="inp" type="number" min="2" max="14" bind:value={f.follow_up_days} /></label>
-					<label class="wide">Niches <small class="muted">comma separated</small><input class="inp" bind:value={f.niches} /></label>
+					<label class="wide">Niches <small class="muted">comma separated; for brands, their category</small><input class="inp" bind:value={f.niches} /></label>
 					<label class="wide">Cities <small class="muted">empty: all of India</small><input class="inp" placeholder="e.g. Bangalore, Mumbai" bind:value={f.cities} /></label>
-					<label>Followers from<input class="inp" type="number" min="0" step="1000" bind:value={f.min_followers} /></label>
-					<label>Followers up to<input class="inp" type="number" min="0" step="1000" bind:value={f.max_followers} /></label>
+					<label>Creators' followers from<input class="inp" type="number" min="0" step="1000" bind:value={f.min_followers} /></label>
+					<label>Creators' followers up to<input class="inp" type="number" min="0" step="1000" bind:value={f.max_followers} /></label>
 					<label>Sender name<input class="inp" bind:value={f.sender_name} /></label>
 					<label>Replies go to<input class="inp" type="email" bind:value={f.reply_to} /></label>
-					<label class="wide">Offer in the email<input class="inp" bind:value={f.offer} /></label>
+					<label class="wide">Offer for creators<input class="inp" bind:value={f.offer} /></label>
+					<label class="wide">Offer for brands<input class="inp" bind:value={f.brand_offer} /></label>
 				</div>
 				<label class="chk"><input type="checkbox" checked={s.auto_approve} onchange={(e) => save({ auto_approve: (e.currentTarget as HTMLInputElement).checked }, (e.currentTarget as HTMLInputElement).checked ? 'New creators are approved straight away' : 'New creators wait for approval in Sign-ups')} /><span>Approve new creator sign-ups straight away <small class="muted">(you can still pause anyone)</small></span></label>
 				<div class="row"><button class="btn pri" type="submit" disabled={!!busy}>{#if busy === 'save'}<span class="spinner"></span>{/if}Save</button></div>
@@ -255,12 +270,17 @@
 		</div>
 	{/if}
 
-	<nav class="tabs" aria-label="Creators found">
-		{#each TABS as [k, l] (k)}<button class:on={tab === k} onclick={() => ((tab = k), (picked = {}), (open = ''))}>{l} <span class="mono muted">{num(count(k))}</span></button>{/each}
-	</nav>
+	<div class="tabbar">
+		<nav class="tabs" aria-label="Found">
+			{#each TABS as [k, l] (k)}<button class:on={tab === k} onclick={() => ((tab = k), (picked = {}), (open = ''))}>{l} <span class="mono muted">{num(count(k))}</span></button>{/each}
+		</nav>
+		<div class="seg sm" role="group" aria-label="Show">
+			{#each [['all', 'All'], ['creator', 'Creators'], ['brand', 'Brands']] as const as [k, l] (k)}<button class:on={who === k} onclick={() => ((who = k), (picked = {}), (open = ''))}>{l}</button>{/each}
+		</div>
+	</div>
 
 	{#if pickedIds.length}
-		<div class="bulk" role="region" aria-label="Actions on picked creators">
+		<div class="bulk" role="region" aria-label="Actions on picked leads">
 			<b>{pickedIds.length} picked</b>
 			{#if tab === 'ready' || tab === 'other'}<button class="btn sm dk" onclick={() => act(pickedIds, 'approve')}>Approve</button>{/if}
 			{#if tab === 'ready' || tab === 'approved'}<button class="btn sm dk" onclick={() => act(pickedIds, 'skip')}>Skip</button>{/if}
@@ -272,7 +292,7 @@
 	{#if !d}
 		<div class="card"><div class="ld"><span class="spinner"></span></div></div>
 	{:else if !rows.length}
-		<div class="card card-empty">{tab === 'ready' ? (active ? 'Nothing here yet: the creators from the search that is running appear here when it finishes.' : d.rows.length ? 'Nothing waiting. A new search runs at 9 AM when the queue is low, or press "Find creators now".' : 'No creators found yet. Press "Find creators now".') : 'Nobody here yet.'}</div>
+		<div class="card card-empty">{tab === 'ready' ? (active ? `Nothing here yet: the ${people} from the search that is running appear here when it finishes.` : d.rows.length ? 'Nothing waiting. A new search runs at 9 AM when the queue is low, or press "Find now".' : 'Nobody found yet. Press "Find now".') : 'Nobody here yet.'}</div>
 	{:else}
 		<div class="pickall"><label><input type="checkbox" checked={allPicked} onchange={() => (picked = Object.fromEntries(rows.map((r) => [r.id, !allPicked])))} /> Pick all {num(rows.length)} shown</label></div>
 		<div class="leads">
@@ -281,11 +301,12 @@
 					<div class="ld-top">
 						<input type="checkbox" aria-label="Pick {r.name}" bind:checked={picked[r.id]} />
 						<span class="tag {TAG[r.status]?.[1] ?? 't-mute'}"><i class="pd"></i>{TAG[r.status]?.[0] ?? r.status}</span>
+						{#if r.kind === 'brand'}<span class="tag t-info">Brand</span>{/if}
 						{#if r.niche}<span class="nich">{r.niche}</span>{/if}
 					</div>
 					<div class="ld-t">
 						<h2>{r.name}</h2>
-						<span>{[r.handle ? '@' + r.handle : '', r.city, r.followers ? `~${num(r.followers)} followers` : ''].filter(Boolean).join(' · ')}</span>
+						<span>{[r.handle ? '@' + r.handle : '', r.kind === 'brand' ? host(r.website) : '', r.city, r.followers ? `~${num(r.followers)} followers` : ''].filter(Boolean).join(' · ')}</span>
 					</div>
 					<div class="ld-s">
 						<div><small>Email seen on</small>{#if r.source_url}<a href={r.source_url} target="_blank" rel="noopener">{host(r.source_url)}</a>{:else}<b>—</b>{/if}</div>
@@ -296,7 +317,7 @@
 						<div class="mail">
 							<label>Subject<input class="inp" bind:value={draft.subject} disabled={!['ready', 'approved', 'skipped'].includes(r.status)} /></label>
 							<label>Email<textarea class="inp" rows="8" bind:value={draft.body} disabled={!['ready', 'approved', 'skipped'].includes(r.status)}></textarea></label>
-							<small class="muted">Added below it: the "Get your free page" link, the sender name, and the unsubscribe line.</small>
+							<small class="muted">Added below it: the "{r.kind === 'brand' ? 'Find creators on Miracle' : 'Get your free page'}" link, the sender name, and the unsubscribe line.</small>
 							{#if ['ready', 'approved', 'skipped'].includes(r.status)}<div class="row"><button class="btn sm" onclick={() => (open = '')}>Cancel</button><button class="btn sm pri" onclick={() => saveEdit(r.id)}>Save email</button></div>{/if}
 						</div>
 					{/if}
@@ -379,7 +400,10 @@
 	.fields .wide { grid-column: 1 / -1; }
 	.chk { display: flex; gap: 8px; align-items: flex-start; padding: 0 16px 10px; font-size: 13px; }
 	.row { display: flex; gap: 8px; padding: 0 16px; }
-	.tabs { display: flex; gap: 18px; border-bottom: 1px solid var(--line); overflow-x: auto; }
+	.tabbar { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 10px; border-bottom: 1px solid var(--line); }
+	.tabbar .seg.sm { margin-bottom: 6px; }
+	.seg.sm button { height: 28px; padding: 0 12px; font-size: 12.5px; }
+	.tabs { display: flex; gap: 18px; overflow-x: auto; min-width: 0; }
 	.tabs button { height: 36px; padding: 0 2px; border: 0; border-bottom: 2px solid transparent; background: none; color: var(--ink-2); font-weight: 500; font-size: 13.5px; white-space: nowrap; }
 	.tabs button.on { color: var(--ink); border-bottom-color: var(--accent); }
 	.tabs .mono { font-size: 11.5px; }

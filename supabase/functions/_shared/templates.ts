@@ -606,7 +606,8 @@ Waitlist members get first access to the 100 founding places (half price yearly)
   // ---------------------------------------------------------------- Growth Autopilot: an invitation from Miracle
   // Written like a person's email, not a newsletter: plain text, and the plainest HTML.
   if (kind === 'growth_invite') {
-    const first = String(p.name ?? '').trim().split(/\s+/)[0] || 'there';
+    // A brand is greeted as its team (its name is the brand's).
+    const first = p.as === 'brand' && String(p.name ?? '').trim() ? `${String(p.name).trim()} team` : String(p.name ?? '').trim().split(/\s+/)[0] || 'there';
     const link = String(p.link ?? 'https://app.miracleapp.live/signup?as=creator');
     const unsub = String(p.unsubscribe ?? '');
     const from = String(p.sender_name ?? 'Team Miracle');
@@ -617,15 +618,20 @@ Waitlist members get first access to the 100 founding places (half price yearly)
         return '';
       }
     })();
+    // A brand's invitation (the Growth Autopilot's brand search, migration 179) points to the brand sign-up.
+    const brand = p.as === 'brand';
     const body = p.follow
-      ? `Hi ${first},\n\nJust bringing this back up in case it got buried. Miracle gives you a page brands book you from, invoices with a UPI QR, and reminders that chase payments for you, free.\n\nIt takes two minutes to set up.`
+      ? brand
+        ? `Hi ${first},\n\nJust bringing this back up in case it got buried. On Miracle you find Indian creators with live Instagram numbers and their rates up front, send requests, and track every post and invoice in one place. You pay creators directly; we never take a cut.\n\nIt takes two minutes to start, and it's free.`
+        : `Hi ${first},\n\nJust bringing this back up in case it got buried. Miracle gives you a page brands book you from, invoices with a UPI QR, and reminders that chase payments for you, free.\n\nIt takes two minutes to set up.`
       : String(p.body ?? '').trim();
+    const cta = brand ? 'Find creators on Miracle' : 'Get your free page';
     const foot = `You're getting this ${p.follow ? 'note' : 'one-off email'} because your business email is public${site ? ` on ${site}` : ''}.${unsub ? ` Not interested? Unsubscribe: ${unsub}` : ''}`;
-    const text = `${body}\n\nYour free page: ${link}\n\n${from}\nMiracle · miracleapp.live\n\n--\n${foot}`;
+    const text = `${body}\n\n${cta}: ${link}\n\n${from}\nMiracle · miracleapp.live\n\n--\n${foot}`;
     const para = (t: string) => `<p style="margin:0 0 14px">${esc(t).replace(/\n/g, '<br>')}</p>`;
     const html = `<div style="font:15px/1.55 -apple-system,Segoe UI,Roboto,Arial,sans-serif;color:#1f171c;max-width:560px">
 ${body.split(/\n{2,}/).map(para).join('\n')}
-<p style="margin:0 0 14px"><a href="${esc(link)}" style="color:#c8255e;font-weight:600">Get your free page</a></p>
+<p style="margin:0 0 14px"><a href="${esc(link)}" style="color:#c8255e;font-weight:600">${cta}</a></p>
 <p style="margin:0 0 22px">${esc(from)}<br><span style="color:#6b6168">Miracle · miracleapp.live</span></p>
 <p style="margin:0;font-size:12px;color:#8a7f87">You're getting this ${p.follow ? 'note' : 'one-off email'} because your business email is public${site ? ` on ${esc(site)}` : ''}.${unsub ? ` Not interested? <a href="${esc(unsub)}" style="color:#8a7f87">Unsubscribe</a>.` : ''}</p>
 </div>`;
