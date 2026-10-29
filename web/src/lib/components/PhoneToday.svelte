@@ -36,6 +36,8 @@
 	import Icon from './Icon.svelte';
 	import Mono from './Mono.svelte';
 	import Stories from './Stories.svelte';
+	import DiwaliLayer from './DiwaliLayer.svelte';
+	import { diwaliWords, festivalNow } from '../festival';
 	import AlertsPrompt from './AlertsPrompt.svelte';
 	import BrandQuestions from './BrandQuestions.svelte';
 
@@ -45,7 +47,10 @@
 	const list = $derived(studio.collabs);
 	const T = today();
 	const hour = new Date().getHours();
-	const greet = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+	// A festival on now (festival.ts): its theme on this card, and its greeting on the day.
+	const fest = festivalNow();
+	const dw = fest ? diwaliWords(fest) : null;
+	const greet = dw?.greet ?? (hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening');
 	const monthName = T.toLocaleDateString('en-IN', { month: 'long' });
 	const ym = iso(T).slice(0, 7);
 
@@ -186,8 +191,9 @@
 	import CheckupCard from '#lib/components/CheckupCard.svelte';
 </script>
 
-<section class="ht" style="--sy:{sy}">
+<section class="ht" class:dw-on={!!fest} style="--sy:{sy}">
 	<div class="ht-glow" aria-hidden="true"><i></i><i></i><i></i></div>
+	{#if fest}<DiwaliLayer />{/if}
 	<a class="ht-orb" href={ig ? '/insights' : '/studio/payments'} target={ig ? '_blank' : undefined} rel="noopener" aria-label={ig ? 'Your Instagram insights' : `${monthName} goal`}>
 		<span class="orb-ring" aria-hidden="true"></span>
 		<span class="orb-in">
@@ -204,7 +210,7 @@
 		{#if ig?.profile_picture_url}<span class="orb-badge"><b>{compact(ig.followers ?? 0)}</b> followers{#if ig.engagement_rate}<i>{ig.engagement_rate.toFixed(1)}%</i>{/if}</span>{/if}
 		<span class="orb-spark s1" aria-hidden="true"></span><span class="orb-spark s2" aria-hidden="true"></span><span class="orb-spark s3" aria-hidden="true"></span>
 	</a>
-	<p class="ht-date">{T.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
+	<p class="ht-date">{T.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}{#if dw}<span class="dw-note">{dw.note}</span>{/if}</p>
 	<h1 class="ht-hi">{greet},<br /><em>{firstName(s.display_name)}</em></h1>
 	<p class="ht-sum">
 		<span class="ht-dot" class:calm={!urgent}></span>

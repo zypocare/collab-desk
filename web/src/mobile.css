@@ -587,6 +587,10 @@
   .ht-hi em{font-family:var(--f-serif);font-style:italic;font-weight:400;font-size:44px;line-height:1;letter-spacing:-.01em;padding-right:.08em;
     background:linear-gradient(90deg,var(--g1),var(--g2),var(--g3),var(--g2),var(--g1));background-size:250% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:shine 7s linear infinite}
   .ht-sum{display:flex;align-items:center;gap:8px;margin:12px 0 0;font-size:14px;color:var(--ink-2);animation:m-rise .6s .12s both}
+  /* Diwali (DiwaliLayer, festival.ts): room for the diyas, the lights clear of the date, the name in marigold and gold. */
+  .ht.dw-on{padding-top:30px;padding-bottom:58px}
+  .ht.dw-on .ht-hi em{background:linear-gradient(90deg,#FFD166,#FF9F1C,#F25A90,#FF9F1C,#FFD166);background-size:250% 100%;-webkit-background-clip:text;background-clip:text;color:transparent}
+  .ht.dw-on .dw-note{display:block;margin-top:3px;color:#FFC95C;font-weight:700;letter-spacing:.02em}
   .ht-dot{flex:none;width:8px;height:8px;border-radius:50%;background:var(--bad);animation:ping 1.8s infinite}
   .ht-dot.calm{background:var(--ok);animation:none}
 
