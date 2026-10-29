@@ -4,6 +4,7 @@
 	import { delivText, inrS, stageLabel, tasks, type Task } from '../util';
 	import type { Collab } from '../types';
 	import Icon from './Icon.svelte';
+	import RingIcons from './RingIcons.svelte';
 
 	// Pending Instagram collabs take the home row. Otherwise, show
 	// collabs that need her first, followed by the rest of the active ones.
@@ -22,9 +23,21 @@
 	const status = (t: Task) => (dated.has(t.kind) ? `${NEXT[t.kind]} ${when(t.d)}` : NEXT[t.kind]);
 	// new requests and messages are "do this now" (amber), never "late"; red is for missed dates and unpaid money
 	const tone = (t: Task) => (t.kind === 'new' || t.kind === 'msg' ? 'now' : t.d < 0 || t.kind === 'pay' ? 'late' : t.d === 0 ? 'now' : '');
+	// The ring in each card's corner (like Money's shortcuts): it turns, and its icon turns through what the card is about.
+	const ICONS: Record<string, string[]> = {
+		new: ['inbox', 'spark', 'check'], msg: ['mail', 'send', 'check'], quote: ['rupee', 'edit', 'send'], revise: ['edit', 'rupee', 'send'],
+		follow: ['bell', 'send', 'clock'], draft: ['film', 'edit', 'send'], shoot: ['cal', 'film', 'spark'], live: ['spark', 'eye', 'chart'],
+		product: ['box', 'send', 'check'], pay: ['wallet', 'rupee', 'bell'], claim: ['wallet', 'check', 'rupee'], usage: ['shield', 'clock', 'rupee'], tds: ['doc', 'rupee', 'check'],
+		request: ['inbox', 'spark', 'check'], negotiating: ['rupee', 'mail', 'check'], confirmed: ['check', 'cal', 'film'], creating: ['film', 'edit', 'send'],
+		dm: ['mail', 'spark', 'rupee']
+	};
+	// Its colour: the card's tone when it has one, else the theme's hues in turn, so the row isn't all one colour.
+	const HUES = ['var(--g2)', 'var(--g1)', 'var(--g3)', 'var(--h-live)', 'var(--h-request)'];
+	const TONE_HUE: Record<string, string> = { now: 'var(--g3)', late: 'var(--bad)', ok: 'var(--ok)' };
+	const hue = (tone: string, i: number) => TONE_HUE[tone] ?? HUES[i % HUES.length];
 	const all = $derived([
-		...need.map((t) => ({ id: t.c.id, name: t.c.brand.name, money: fee(t.c), href: t.kind === 'msg' ? `/studio/inbox/${t.c.code}` : `/studio/c/${t.c.code}`, line: t.title, pill: status(t), tone: tone(t) })),
-		...rest.map((c) => ({ id: c.id, name: c.brand.name, money: fee(c), href: `/studio/c/${c.code}`, line: delivText(c.deliverables), pill: stageLabel(c.stage), tone: c.stage === 'live' ? 'ok' : '' }))
+		...need.map((t) => ({ id: t.c.id, name: t.c.brand.name, money: fee(t.c), href: t.kind === 'msg' ? `/studio/inbox/${t.c.code}` : `/studio/c/${t.c.code}`, line: t.title, pill: status(t), tone: tone(t), icons: ICONS[t.kind] })),
+		...rest.map((c) => ({ id: c.id, name: c.brand.name, money: fee(c), href: `/studio/c/${c.code}`, line: delivText(c.deliverables), pill: stageLabel(c.stage), tone: c.stage === 'live' ? 'ok' : '', icons: ICONS[c.stage] ?? ICONS.confirmed }))
 	]);
 	const shown = $derived(leads.length ? leads.map((l) => ({
 		id: `dm-${l.igsid}`,
@@ -33,7 +46,8 @@
 		href: `/studio/inbox/ig/${l.igsid}`,
 		line: l.collab_hint || 'Asking about working together',
 		pill: 'Review DM',
-		tone: 'now'
+		tone: 'dm',
+		icons: ICONS.dm
 	})) : all);
 </script>
 
@@ -43,8 +57,9 @@
 		{#if shown.length}<a href="/studio/collabs">See all</a>{/if}
 	</div>
 	<div class="tix-row">
-		{#each shown as k (k.id)}
-			<a class="tix-t tone-{k.tone || 'calm'}" class:tix-dm={leads.length > 0} href={k.href} aria-label="{k.name}: {k.line}, {k.money}, {k.pill}">
+		{#each shown as k, i (k.id)}
+			<a class="tix-t tone-{k.tone || 'calm'}" class:tix-dm={leads.length > 0} style="--rt:{hue(k.tone, i)}" href={k.href} aria-label="{k.name}: {k.line}, {k.money}, {k.pill}">
+				<span class="tix-ring" aria-hidden="true"><RingIcons {i} icons={k.icons} /></span>
 				<b class="tix-n">{k.name}</b>
 				<span class="tix-l">{k.line}</span>
 				<i class="tix-cut" aria-hidden="true"></i>
