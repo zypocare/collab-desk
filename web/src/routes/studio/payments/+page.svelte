@@ -25,7 +25,7 @@
 		receiving = '';
 	}
 
-	let filter = $state<'all' | 'due' | 'overdue' | 'confirmed' | 'paid'>('all');
+	let filter = $state<'all' | 'due' | 'overdue' | 'confirmed' | 'paid' | 'barter'>('all');
 	let swapKey = $state(0);
 	let fanPay = $state(false);
 
@@ -67,10 +67,26 @@
 		toast(`Asked ${brand} for the certificate (${(data as { to: string }).to})`, 'send');
 		await reloadCollabs();
 	}
+	// Barter has its own tab: products and experiences aren't money in the bank, so they stay out of the payment list.
+	// Still to come first, then the ones already in (latest first).
+	const prods = $derived(
+		studio.collabs
+			.filter((c) => hasProduct(c) && c.product_value && c.stage !== 'declined')
+			.sort((a, b) => Number(!!a.product_received_at) - Number(!!b.product_received_at) || (b.product_received_at ?? '').localeCompare(a.product_received_at ?? ''))
+	);
+	// An experience agreed but not had yet: say so plainly (with its date once one is set).
+	const barterStatus = (c: Collab) => {
+		if (c.barter_kind === 'experience') {
+			if (c.product_received_at) return `Done ${fmt(c.product_received_at.slice(0, 10))}`;
+			if (stageIndex(c.stage) <= stageIndex('confirmed')) return c.shoot_date ? `Planned for ${fmt(c.shoot_date)}` : 'Not started yet';
+			return 'Not done yet';
+		}
+		return c.product_received_at ? `Received ${fmt(c.product_received_at.slice(0, 10))}` : c.shipped_at ? 'On the way' : stageIndex(c.stage) <= stageIndex('confirmed') ? 'Not sent yet' : 'Not received yet';
+	};
 	// Phone: the "Still to come" card, the next payment, and a colour per status.
 	const next = $derived(rows.filter((c) => (stateOf(c) === 'due' || stateOf(c) === 'overdue') && c.pay_due).sort((a, b) => a.pay_due!.localeCompare(b.pay_due!))[0]);
-	const counts = $derived({ all: rows.length, due: rows.filter((c) => stateOf(c) === 'due').length, overdue: nOd, confirmed: bookedRows.length, paid: rows.filter((c) => stateOf(c) === 'paid').length });
-	const HUE = { paid: 'var(--ok)', due: 'var(--warn,#e0a23a)', overdue: 'var(--bad)', confirmed: 'var(--h-confirmed)' } as const;
+	const counts = $derived({ all: rows.length, due: rows.filter((c) => stateOf(c) === 'due').length, overdue: nOd, confirmed: bookedRows.length, paid: rows.filter((c) => stateOf(c) === 'paid').length, barter: prods.length });
+	const HUE = { paid: 'var(--ok)', due: 'var(--warn,#e0a23a)', overdue: 'var(--bad)', confirmed: 'var(--h-confirmed)', barter: 'var(--g2)' } as const;
 	// Still owed but no invoice sent yet (the hero's line when no due date is known).
 	const notInvoiced = $derived.by(() => {
 		const n = rows.filter((c) => (stateOf(c) === 'due' || stateOf(c) === 'overdue') && !c.pay_due && outstanding(c) > 0).length;
@@ -80,7 +96,6 @@
 		filter = filter === f ? 'all' : f;
 		swapKey++;
 	};
-	const prods = $derived(studio.collabs.filter((c) => hasProduct(c) && c.product_value && c.stage !== 'declined'));
 
 	// "Remind brands" (also the button on the payment notification): a polite reminder to every brand
 	// with an invoice still unpaid. Nobody gets two in a day (the database checks).
@@ -163,11 +178,12 @@
 	{#if nOd && !autoPlan}<div class="rv" style="margin:14px 0"><ProNote title="Turn on automatic reminders" body={`${nOd} invoice${nOd === 1 ? ' is' : 's are'} overdue. Creator Pro chases them on time, every time, and matches the money when it lands.`} /></div>{/if}
 	<BankCredits />
 	<div class="m-stages" role="tablist" aria-label="Filter payments">
-		{#each [['all', 'All'], ['due', 'Due'], ['overdue', 'Overdue'], ['confirmed', 'Confirmed'], ['paid', 'Paid']] as const as [k, label] (k)}
+		{#each [['all', 'All'], ['due', 'Due'], ['overdue', 'Overdue'], ['confirmed', 'Confirmed'], ['paid', 'Paid'], ...(prods.length ? ([['barter', 'Barter']] as const) : [])] as const as [k, label] (k)}
 			<button role="tab" aria-selected={filter === k} class:on={filter === k} onclick={() => ((filter = k), swapKey++)}><i class="dt" style="--hue:{k === 'all' ? 'var(--accent)' : HUE[k]}"></i>{label}<span>{counts[k]}</span></button>
 		{/each}
 	</div>
 	<!-- Each payment a ticket (like Needs you on Today): three, the edge of the rest, "+N more". -->
+	{#if filter !== 'barter'}
 	<div class="tks m-plist">
 		{#key swapKey}
 			{#each fanPay ? list : list.slice(0, 3) as c, i (c.id)}
@@ -201,7 +217,8 @@
 		{#if !fanPay && list.length > 3}<span class="cr-edge tk-edge" aria-hidden="true"></span>{/if}
 	</div>
 	{#if list.length > 3}<button class="cr-more" onclick={() => (fanPay = !fanPay)}>{fanPay ? 'Show less' : `+${list.length - 3} more`}</button>{/if}
-	{#if certs.length}
+	{/if}
+	{#if certs.length && filter !== 'barter'}
 		<section class="hs">
 			<header class="hs-h"><h2>TDS certificates</h2><span class="m-gn">{certs.length}</span></header>
 			<div class="tks">
@@ -224,9 +241,9 @@
 			</div>
 		</section>
 	{/if}
-	{#if prods.length}
+	{#if filter === 'barter'}
 		<section class="hs">
-			<header class="hs-h"><h2>Barter products</h2><span class="m-gn">{prods.length}</span><small class="m-hs-r">{inr(prods.reduce((a, c) => a + c.product_value, 0))}</small></header>
+			<header class="hs-h"><h2>Barter</h2><span class="m-gn">{prods.length}</span><small class="m-hs-r">{inr(prods.reduce((a, c) => a + c.product_value, 0))}</small></header>
 			<div class="tks">
 				{#each prods as c, i (c.id)}
 					<Ticket
@@ -235,9 +252,7 @@
 						money={inr(c.product_value)}
 						moneySub={c.barter_kind === 'experience' ? 'experience' : 'product'}
 						task={c.product || (c.barter_kind === 'experience' ? 'Experience' : 'Product')}
-						status={c.barter_kind === 'experience'
-							? c.product_received_at ? `Done ${fmt(c.product_received_at.slice(0, 10))}` : 'Not done yet'
-							: c.product_received_at ? `Received ${fmt(c.product_received_at.slice(0, 10))}` : c.shipped_at ? 'On the way' : 'Not received yet'}
+						status={barterStatus(c)}
 						tone={c.product_received_at ? 'ok' : c.shipped_at ? 'warn' : 'calm'}
 						onopen={() => (ui.openCollab = c.id)}
 						{i}
