@@ -78,6 +78,7 @@
 	import Mono from './Mono.svelte';
 	import QuoteDialog from './QuoteDialog.svelte';
 	import CollabPosts from './CollabPosts.svelte';
+	import LiveRecap from './LiveRecap.svelte';
 	import {
 		CHECKLIST,
 		DRAFT_STATUS,
@@ -248,6 +249,15 @@
 	}
 	// A jump link opens the part it goes to.
 	const openSec = (id: string) => document.getElementById(id)?.classList.add('open');
+	// Live or wrapped, on its own page: the recap (results, journey, pieces, money) leads; its links open the
+	// section they're about (a part in its own component is found inside its wrapper) and scroll to it.
+	function jump(id: string) {
+		const el = document.getElementById(id);
+		const sec = el?.matches('section') ? el : el?.querySelector<HTMLElement>('section.sec');
+		sec?.classList.add('open');
+		sec?.querySelector(':scope > h3')?.setAttribute('aria-expanded', 'true');
+		(sec ?? el)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+	}
 	const sums = $derived.by(() => {
 		if (!c) return {} as Record<string, string>;
 		const lastMsg = c.messages[c.messages.length - 1];
@@ -448,6 +458,8 @@
 
 	// ---- next step: one button that moves the collab forward ----
 	const next = $derived(c ? nextStep(c, studio.settings) : null);
+	// Live or wrapped, on its own page: the recap (LiveRecap) leads, in place of the next step and the open stage bar.
+	const recap = $derived(page && !!c && (c.stage === 'live' || c.stage === 'wrapped'));
 	// A date with its year when it isn't this year's (a preferred date typed a year out shows as such).
 	const fmtY = (d: string) => `${fmt(d)}${d.slice(0, 4) !== String(new Date().getFullYear()) ? ` ${d.slice(0, 4)}` : ''}`;
 	// The shoot is done: editing comes next (a shoot day that has passed no longer shows as late).
@@ -594,14 +606,15 @@
 					{/each}
 				</nav>
 			{/if}
-			{#if next}
+			{#if recap && c}<LiveRecap {c} onopen={jump} onpay={(inv) => (paymentOpen = inv)} oninvoice={() => (invoiceOpen = {})} />{/if}
+			{#if next && !recap}
 				<div class="next-bar">
 					<span class="nb-ic"><Icon name={next.icon} /></span>
 					<div><small>Next step</small><b>{next.hint}</b></div>
 					<button class="btn grad" onclick={() => runNext(next.key)}><Icon name={next.icon} />{next.label}</button>
 				</div>
 			{/if}
-			<section class="sec" data-open>
+			<section class="sec" data-open={recap ? undefined : true}>
 				<h3>Stage {#if c.stage === 'declined'}<span class="danger">Declined</span>{/if}</h3>
 				{#if !['declined', 'paused', 'cancelled'].includes(c.stage)}
 					<div class="sh" style="--p:{si / 5}">
@@ -771,7 +784,7 @@
 				{/if}
 			</section>
 
-			<section class="sec" hidden={!sh('deliv')}>
+			<section class="sec" id="sec-deliv" hidden={!sh('deliv')}>
 				<DeliverableTracker {c} />
 			</section>
 
@@ -902,7 +915,7 @@
 				</section>
 			{/if}
 
-			<div class="sec-wrap" hidden={!sh('posts')}><CollabPosts {c} /></div>
+			<div class="sec-wrap" id="sec-posts" hidden={!sh('posts')}><CollabPosts {c} /></div>
 			{#if c.type !== 'barter' || c.links?.length}<div class="sec-wrap" hidden={!sh('link')}><CollabLink {c} /></div>{/if}
 
 			{#if isPaid(c)}
