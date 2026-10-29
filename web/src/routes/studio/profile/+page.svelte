@@ -11,6 +11,7 @@
 	import Icon from '#lib/components/Icon.svelte';
 	import Avatar from '#lib/components/Avatar.svelte';
 	import QrShareSheet from '#lib/components/QrShareSheet.svelte';
+	import RingIcons from '#lib/components/RingIcons.svelte';
 
 	// Her profile on the phone, laid out like an Instagram profile: photo and numbers, bio,
 	// buttons, highlight circles into each part of the page, then posts and collabs as grids.
@@ -33,15 +34,17 @@
 
 	// The QR code opens as a sheet to share; its look is changed in Settings > QR codes.
 	let qrOpen = $state(false);
+	// Quick settings: round shortcuts made like Money's (a turning ring in its own colour, its icon turning through
+	// a few related ones, each a beat after the one before).
 	const HIGHLIGHTS = [
-		{ label: 'QR code', icon: 'qr', href: '#qr' },
-		{ label: 'Rates', icon: 'rupee', href: '/studio/settings?s=rates' },
-		{ label: 'Bookings', icon: 'cal', href: '/studio/settings?s=bookings' },
-		{ label: 'Insights', icon: 'chart', href: '/insights' },
-		{ label: 'Reviews', icon: 'spark', href: '/studio/settings?s=reviews' },
-		{ label: 'Auto-pilot', icon: 'layers', href: '/studio/settings?s=autopilot' },
-		{ label: 'Invoices', icon: 'wallet', href: '/studio/settings?s=payments' },
-		{ label: 'Team', icon: 'users', href: '/studio/settings?s=team' }
+		{ label: 'QR code', icons: ['qr', 'share', 'link'], tint: 'var(--g2)', href: '#qr' },
+		{ label: 'Rates', icons: ['rupee', 'layers', 'check'], tint: 'var(--g3)', href: '/studio/settings?s=rates' },
+		{ label: 'Bookings', icons: ['cal', 'clock', 'check'], tint: 'var(--h-live)', href: '/studio/settings?s=bookings' },
+		{ label: 'Insights', icons: ['chart', 'eye', 'users'], tint: 'var(--h-request)', href: '/insights' },
+		{ label: 'Reviews', icons: ['spark', 'heart', 'check'], tint: 'var(--g1)', href: '/studio/settings?s=reviews' },
+		{ label: 'Auto-pilot', icons: ['layers', 'spark', 'gear'], tint: 'var(--g2)', href: '/studio/settings?s=autopilot' },
+		{ label: 'Invoices', icons: ['wallet', 'doc', 'rupee'], tint: 'var(--g3)', href: '/studio/settings?s=payments' },
+		{ label: 'Team', icons: ['users', 'mail', 'check'], tint: 'var(--h-live)', href: '/studio/settings?s=team' }
 	];
 
 	let tab = $state<'posts' | 'collabs'>('collabs');
@@ -97,15 +100,16 @@
 		<button class="btn pf-kit" onclick={() => (qrOpen = true)} aria-label="Your QR code" title="Your QR code"><Icon name="qr" /></button>
 		<button class="btn pf-kit" onclick={kit} disabled={kitBusy} aria-label="Download media kit PDF">{#if kitBusy}<span class="spinner"></span>{:else}<Icon name="download" />{/if}</button>
 	</div>
-	<div class="pf-hl" aria-label="Highlights">
-		{#each HIGHLIGHTS as h (h.label)}
+	<p class="pf-qs">Quick settings</p>
+	<nav class="cr-rings pf-rings" aria-label="Quick settings">
+		{#each HIGHLIGHTS as h, i (h.label)}
 			{#if h.href === '#qr'}
-				<button class="hl hl-qr" onclick={() => (qrOpen = true)} aria-label="Show and share your QR code"><span class="hl-c"><span class="hl-in"><Icon name={h.icon} /></span><i class="hl-badge" aria-hidden="true"><Icon name="share" /></i></span><span class="hl-l">{h.label}</span></button>
+				<button class="cr-ring" style="--rt:{h.tint}" onclick={() => (qrOpen = true)} aria-label="Show and share your QR code"><i><span><RingIcons {i} icons={h.icons} /></span></i><b>SHARE</b><small>{h.label}</small></button>
 			{:else}
-				<a class="hl" href={h.href} target={h.href.startsWith('/insights') ? '_blank' : undefined} rel="noopener"><span class="hl-c"><Icon name={h.icon} /></span><span class="hl-l">{h.label}</span></a>
+				<a class="cr-ring" style="--rt:{h.tint}" href={h.href} target={h.href.startsWith('/insights') ? '_blank' : undefined} rel="noopener"><i><span><RingIcons {i} icons={h.icons} /></span></i><small>{h.label}</small></a>
 			{/if}
 		{/each}
-	</div>
+	</nav>
 </section>
 
 <div class="pf-tabs" role="tablist" aria-label="Show" style="--n:2;--i:{tab === 'collabs' ? 0 : 1}">

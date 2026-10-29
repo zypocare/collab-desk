@@ -530,6 +530,11 @@
   .pf-btns .pf-kit{flex:none;width:36px;padding:0}
   .pf-btns .pf-kit .ic{width:18px;height:18px}
   .pf-hl{display:flex;gap:16px;overflow-x:auto;scrollbar-width:none;margin:16px -16px 0;padding:0 16px 6px}
+  /* Quick settings on the profile: Money's round shortcuts (cred.css .cr-ring), under a small heading. */
+  .pf-qs{margin:20px 0 0;font-size:11px;font-weight:700;letter-spacing:.24em;text-transform:uppercase;color:var(--ink-3)}
+  .pf-rings.cr-rings{margin-top:10px}
+  .pf-rings button.cr-ring{appearance:none;-webkit-appearance:none;margin:0;padding:0;border:0;background:none;font:inherit;color:var(--ink);cursor:pointer;-webkit-tap-highlight-color:transparent}
+  .pf-rings .cr-ring:focus-visible i{box-shadow:0 0 0 3px var(--bg),0 0 0 5px var(--accent)}
   .pf-hl::-webkit-scrollbar{display:none}
   .hl{flex:none;width:64px;display:flex;flex-direction:column;align-items:center;gap:5px;color:var(--ink);text-decoration:none}
   .hl-c{width:64px;height:64px;border-radius:50%;display:grid;place-items:center;border:1px solid var(--ig-sep);background:var(--ig-fill-2);box-shadow:inset 0 0 0 3px var(--bg);transition:transform .15s}
