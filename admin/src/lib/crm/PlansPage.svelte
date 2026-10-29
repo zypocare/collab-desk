@@ -106,13 +106,17 @@
 					<div class="card-b fields">
 						<div class="f"><label for="n-{p.code}">Name</label><input id="n-{p.code}" class="inp" bind:value={e.name} /></div>
 						<div class="f"><label for="t-{p.code}">Tagline</label><input id="t-{p.code}" class="inp" bind:value={e.tagline} /></div>
-						{#if p.rank > 1 || p.price_month}
+						{#if p.code === 'creator_unlock'}
+							<div class="f"><label for="pm-{p.code}">₹ per creator unlocked (paid once, GST included)</label><input id="pm-{p.code}" class="inp" type="number" min="1" bind:value={e.price_month} /></div>
+							<p class="muted sm">A free brand team that has used its 10 profiles for the day can pay this once to see one creator's full profile for good.</p>
+						{:else if p.rank > 1 || p.price_month}
 							<div class="row3">
 								<div class="f"><label for="pm-{p.code}">₹ a month</label><input id="pm-{p.code}" class="inp" type="number" min="0" bind:value={e.price_month} /></div>
 								<div class="f"><label for="py-{p.code}">₹ a year</label><input id="py-{p.code}" class="inp" type="number" min="0" bind:value={e.price_year} /></div>
 								<div class="f"><label for="pf-{p.code}">Founding ₹ a year</label><input id="pf-{p.code}" class="inp" inputmode="numeric" placeholder="none" bind:value={e.founding_year} /></div>
 							</div>
 						{/if}
+						{#if p.code !== 'creator_unlock'}
 						<div class="sub">Limits</div>
 						<div class="lims">
 							{#each Object.entries(LIMIT_LABEL) as [k, l] (k)}
@@ -125,7 +129,9 @@
 								<label class="feat"><input type="checkbox" checked={e.features.includes(f)} onchange={() => toggleFeature(p.code, f)} /> {l}</label>
 							{/each}
 						</div>
+						{/if}
 						<label class="feat"><input type="checkbox" bind:checked={e.active} /> Offered to new buyers</label>
+						{#if p.rank > 1}<p class="muted sm">{e.active ? 'On sale: shown in the app and on the website pricing page.' : 'Off: not sold, no trials or invite rewards, and hidden in the app and on the website. Anyone already on it keeps it until it ends.'}</p>{/if}
 					</div>
 					<div class="pf">
 						<span class="muted sm">Updated {day(p.updated_at)}{p.gateway && Object.keys(p.gateway).length ? ' · Razorpay plans made' : ''}</span>

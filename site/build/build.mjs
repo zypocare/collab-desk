@@ -26,7 +26,8 @@ const landBySlug = Object.fromEntries(LANDING.map((l) => [l.slug, l]));
 const urls = [];
 
 // ------------------------------------------------------------------ landing pages
-const PLAN = { creator: 'Creator Pro', brand: 'Brand Pro', agency: 'Agency' };
+// The plan a feature needs, shown as a tag. Creators are free, so creator features carry none.
+const PLAN = { creator: '', brand: 'Brand Pro', agency: 'Agency' };
 const tile = (href, b, small, go = 'Read') => `<a class="tile" href="${href}"><b>${esc(b)}</b><small>${esc(small)}</small><span class="go">${go} →</span></a>`;
 const sideOf = (who) => (who === 'brand' ? 'brand' : who === 'agency' ? 'agency' : 'creator');
 const crumbOf = { creator: { name: 'For creators', path: '/get-brand-deals' }, brand: { name: 'For brands', path: '/find-influencers-india' }, agency: { name: 'For agencies', path: '/influencer-agency-software' } };
@@ -48,7 +49,7 @@ for (const l of LANDING) {
 </div></section>
 <section class="sec wrap">
   <div class="sec-h"><span class="eb">What you get</span><h2>${md(l.fh ?? 'Everything it does *for you.*').replace(/\*(.+?)\*/g, '<em>$1</em>')}</h2></div>
-  <div class="feats">${l.features.map(([h, p, pro], i) => `<div class="feat"><span class="feat-n">${String(i + 1).padStart(2, '0')}${pro ? `<span class="tag">${PLAN[pro === true ? side : pro]}</span>` : ''}</span><h3>${esc(h)}</h3><p>${md(p)}</p></div>`).join('')}</div>
+  <div class="feats">${l.features.map(([h, p, pro], i) => `<div class="feat"><span class="feat-n">${String(i + 1).padStart(2, '0')}${pro && PLAN[pro === true ? side : pro] ? `<span class="tag">${PLAN[pro === true ? side : pro]}</span>` : ''}</span><h3>${esc(h)}</h3><p>${md(p)}</p></div>`).join('')}</div>
 </section>
 <section class="sec wrap">
   <div class="sec-h"><span class="eb">How it works</span><h2>Up and running <em>in a day.</em></h2></div>

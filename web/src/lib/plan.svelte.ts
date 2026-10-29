@@ -117,6 +117,40 @@ export async function buy(code: string, period: 'month' | 'year', agency = false
 	});
 }
 
+type UnlockCheckout = { key: string; order_id: string; amount: number; creator_name: string; email: string; name_on: string };
+
+/** Brands: unlock one creator's full profile for good, paid once through Razorpay. True once it's unlocked,
+ * false if the payment window was closed. */
+export async function buyUnlock(creator: number): Promise<boolean> {
+	if (!canSell()) throw new Error('This is bought on the Miracle website.');
+	const [, co] = await Promise.all([loadRazorpay(), billing<UnlockCheckout>({ action: 'unlock_checkout', creator })]);
+	const Rzp = (window as RzpWindow).Razorpay;
+	if (!Rzp) throw new Error("Couldn't load the payment window. Try again.");
+	return new Promise<boolean>((resolve, reject) => {
+		const r = new Rzp({
+			key: co.key,
+			order_id: co.order_id,
+			amount: co.amount * 100,
+			currency: 'INR',
+			name: 'Miracle',
+			description: `Unlock ${co.creator_name}'s full profile (GST included)`,
+			prefill: { email: co.email, name: co.name_on },
+			theme: { color: '#e5487f' },
+			handler: async (resp: Record<string, string>) => {
+				try {
+					await billing({ action: 'unlock_verify', ...resp });
+					resolve(true);
+				} catch (e) {
+					reject(e);
+				}
+			},
+			modal: { ondismiss: () => resolve(false) }
+		});
+		r.on('payment.failed', (resp: unknown) => reject(new Error(String((resp as { error?: { description?: string } })?.error?.description ?? 'The payment didn’t go through.'))));
+		r.open();
+	});
+}
+
 /** Stop renewing: the plan lasts to the end of what's paid. */
 export async function stopRenewal(agency = false) {
 	await billing({ action: 'cancel', agency });

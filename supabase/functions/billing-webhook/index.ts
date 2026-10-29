@@ -1,7 +1,8 @@
-// Razorpay's webhook for Miracle's plans: renewals, failed renewals, cancellations and ends.
+// Razorpay's webhook for Miracle's plans: renewals, failed renewals, cancellations and ends, and one-time
+// creator unlocks paid by brands (order.paid, in case the buyer closed the tab before the app confirmed it).
 // Set it up in Razorpay (Settings › Webhooks) to this function's address, with the secret in
 // RAZORPAY_WEBHOOK_SECRET, for: subscription.activated, subscription.charged, subscription.halted,
-// subscription.cancelled and subscription.completed.
+// subscription.cancelled, subscription.completed and order.paid.
 import { admin } from '../_shared/admin.ts';
 import { hmacHex, sameSig } from '../_shared/razorpay.ts';
 
@@ -9,7 +10,8 @@ type Hook = {
   event: string;
   payload?: {
     subscription?: { entity?: { id: string; current_end: number | null; status: string } };
-    payment?: { entity?: { id: string; amount: number; status: string } };
+    payment?: { entity?: { id: string; amount: number; status: string; order_id?: string } };
+    order?: { entity?: { id: string; amount_paid: number } };
   };
 };
 
@@ -19,6 +21,13 @@ Deno.serve(async (req) => {
   const raw = await req.text();
   if (!secret || !sameSig(await hmacHex(secret, raw), req.headers.get('x-razorpay-signature') ?? '')) return new Response('bad signature', { status: 401 });
   const hook = JSON.parse(raw) as Hook;
+  if (hook.event === 'order.paid') {
+    const pay = hook.payload?.payment?.entity, order = hook.payload?.order?.entity;
+    if (!pay?.id || !order?.id) return Response.json({ ignored: hook.event });
+    const { data, error } = await admin().rpc('unlock_paid', { p: { order_id: order.id, payment_id: pay.id, amount: pay.amount } });
+    if (error) return new Response(error.message, { status: 500 });
+    return Response.json(data);
+  }
   const sub = hook.payload?.subscription?.entity;
   if (!sub?.id || !hook.event.startsWith('subscription.')) return Response.json({ ignored: hook.event });
   const pay = hook.payload?.payment?.entity;

@@ -37,7 +37,7 @@
 			<div class="card k"><small>On trial</small><b class="mono">{num(d.trials)}</b><span>{num(d.trials_ending.length)} ending this week</span></div>
 			<div class="card k"><small>Given free</small><b class="mono">{num(d.comps)}</b><span>partners, early access</span></div>
 			<div class="card k" class:warn={d.halted}><small>Payment failed</small><b class="mono">{num(d.halted)}</b><span>{num(d.cancelling)} ending at period end</span></div>
-			<a class="card k" href={href('billing-payments')}><small>Collected this month</small><b class="mono">{inr0(d.revenue_month)}</b><span>{inr0(d.gst_month)} of it GST · {num(d.payments_month)} payments</span></a>
+			<a class="card k" href={href('billing-payments')}><small>Collected this month</small><b class="mono">{inr0(d.revenue_month)}</b><span>{inr0(d.gst_month)} of it GST · {num(d.payments_month)} payments{#if d.unlocks_month} · {num(d.unlocks_month)} creator unlocks ({inr0(d.unlock_revenue_month)}){/if}</span></a>
 		</section>
 
 		<div class="two">

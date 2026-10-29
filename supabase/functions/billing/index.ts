@@ -2,6 +2,8 @@
 //   { action: 'checkout', plan, period, agency? }  -> a Razorpay subscription to open in Razorpay's checkout
 //   { action: 'verify', razorpay_payment_id, razorpay_subscription_id, razorpay_signature } -> the plan, on at once
 //   { action: 'cancel', agency? } -> stop renewing; the plan lasts to the end of what's paid
+//   { action: 'unlock_checkout', creator } -> a one-time Razorpay order to unlock one creator's full profile (brands)
+//   { action: 'unlock_verify', razorpay_payment_id, razorpay_order_id, razorpay_signature } -> unlocked at once
 // Who may buy for which account, and the price, come from the database (billing_intent), as the buyer.
 import { admin } from '../_shared/admin.ts';
 import { reportProblem } from '../_shared/problems.ts';
@@ -10,6 +12,7 @@ import { hmacHex, RazorpayError, razorpayKeyId, razorpayReady, rzp, sameSig, typ
 const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-creator' };
 const reply = (body: unknown, status = 200) => Response.json(body, { status, headers: cors });
 
+type UnlockIntent = { owner: string; creator: number; creator_name: string; amount: number; email: string; name_on: string };
 type Intent = { plan: string; name: string; period: 'month' | 'year'; kind: string; subject: string; amount: number; founding: boolean; gateway_key: string; gateway_plan: string | null; email: string; name_on: string };
 
 /** A database function run as the person calling (their sign-in, and the creator page they're on). */
@@ -69,6 +72,31 @@ Deno.serve(async (req) => {
       const s = await rzp<RzpSubscription>(`/subscriptions/${encodeURIComponent(sub)}`);
       const p = await rzp<{ id: string; amount: number; status: string }>(`/payments/${encodeURIComponent(pay)}`);
       const { data, error } = await db.rpc('billing_event', { p: { event: 'subscription.charged', subscription_id: s.id, payment_id: p.status === 'captured' || p.status === 'authorized' ? p.id : null, amount: p.amount, current_end: s.current_end } });
+      if (error) throw new Error(error.message);
+      return reply({ ok: true, result: data });
+    }
+
+    if (body.action === 'unlock_checkout') {
+      const it = await asCaller<UnlockIntent>(req, 'unlock_intent', { p_creator: Number(body.creator) || 0 });
+      const order = await rzp<{ id: string }>('/orders', {
+        amount: it.amount * 100,
+        currency: 'INR',
+        receipt: `unlock-${it.creator}-${Date.now()}`.slice(0, 40),
+        notes: { kind: 'creator_unlock', owner: it.owner, creator: String(it.creator), email: it.email },
+      });
+      const me = await db.auth.getUser((req.headers.get('authorization') ?? '').slice(7));
+      const { error } = await db.rpc('unlock_pending', { p: { owner: it.owner, creator: it.creator, creator_name: it.creator_name, order_id: order.id, email: it.email, bought_by: me.data.user?.id ?? '' } });
+      if (error) throw new Error(error.message);
+      return reply({ key: razorpayKeyId(), order_id: order.id, amount: it.amount, creator_name: it.creator_name, email: it.email, name_on: it.name_on });
+    }
+
+    if (body.action === 'unlock_verify') {
+      const pay = String(body.razorpay_payment_id ?? ''), order = String(body.razorpay_order_id ?? ''), sig = String(body.razorpay_signature ?? '');
+      if (!pay || !order || !sameSig(await hmacHex(Deno.env.get('RAZORPAY_KEY_SECRET')!, `${order}|${pay}`), sig)) return reply({ error: "We couldn't confirm that payment. If money left your account, write to support@miracleapp.live." }, 400);
+      // Razorpay's own record of the payment (not what the browser said).
+      const p = await rzp<{ id: string; amount: number; status: string; order_id: string }>(`/payments/${encodeURIComponent(pay)}`);
+      if (p.order_id !== order || (p.status !== 'captured' && p.status !== 'authorized')) return reply({ error: "That payment hasn't gone through yet. If money left your account, it unlocks within a few minutes." }, 400);
+      const { data, error } = await db.rpc('unlock_paid', { p: { order_id: order, payment_id: p.id, amount: p.amount } });
       if (error) throw new Error(error.message);
       return reply({ ok: true, result: data });
     }

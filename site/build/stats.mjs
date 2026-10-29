@@ -17,6 +17,10 @@ if (!URL_ || !KEY) throw new Error('web/.env.live needs VITE_SUPABASE_URL and VI
 
 // A visit is the first page in a browser tab's session (sessionStorage, not a cookie); its source (utm_source or
 // the referring site) is kept for the clicks that follow. Robots and automated browsers aren't counted.
+// For pages that read public data (the pricing page reads the plans on sale).
+export const SB_URL = URL_.replace(/\/$/, '');
+export const SB_KEY = KEY;
+
 export const STATS_SCRIPT = `<script>(()=>{try{
 if(navigator.webdriver||/bot|crawl|spider|preview|lighthouse|headless/i.test(navigator.userAgent))return;
 const U=${JSON.stringify(`${URL_.replace(/\/$/, '')}/rest/v1/rpc/site_hit`)},K=${JSON.stringify(KEY)};

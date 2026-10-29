@@ -26,7 +26,7 @@ export const LANDING = [
 		faq: [
 			['How many followers do I need to get brand deals?', 'There’s no minimum. Brands book nano and micro creators (from a few thousand followers) for their trust and engagement. What matters most is a clear niche, steady reach and a page that makes booking easy.'],
 			['Does Miracle take a cut of my deals?', 'No. Brands pay you directly by UPI or bank transfer and Miracle takes no commission, on any plan.'],
-			['What’s free and what’s Pro?', 'Your page, the directory listing, requests, the collab board and unlimited invoices are free, with 5 collabs at a time, 1 offer check a day and 5 pitches a month. Creator Pro (₹299 a month, 14 days free) adds the autopilots, unlimited collabs, reminders that go by themselves and a teammate. [See pricing](/pricing).'],
+			['What’s free?', 'Everything, for creators: your page, the directory listing, unlimited collabs, offer checks and pitches, every autopilot, reminders that go by themselves and a teammate. No commission on any deal. [See pricing](/pricing).'],
 			['Will the AI send pitches without asking me?', 'Only if you choose auto. By default each pitch waits for you to approve it, and a brand is never pitched twice.'],
 			['Can I use Miracle if brands already DM me?', 'Yes. Miracle reads brand DMs on connected Instagram accounts, flags the ones that look like a collab, and turns them into requests you can quote on.']
 		],
@@ -38,7 +38,7 @@ export const LANDING = [
 		who: 'creator',
 		title: 'AI that pitches brands for you: find brands to collaborate with · Miracle',
 		description: 'Miracle’s pitch autopilot finds brands that fit your niche every day, finds their business email, writes a personal pitch and follows up. You approve, or let it run on its own.',
-		eb: 'Pitch autopilot · Creator Pro',
+		eb: 'Pitch autopilot · free for creators',
 		h1: ['Brands to pitch, ', 'every morning.'],
 		lede: 'Finding brands, hunting for the right email and writing a pitch that doesn’t sound copied takes hours a week. Miracle’s pitch autopilot does it while you create, and asks before anything goes out.',
 		mock: { eb: 'Pitch autopilot · today', tag: 'Approve', big: '8 brands found', sub: 'Skincare and wellness, near Bengaluru · 3 waiting for you', rows: [['Lumière Skin', 'Skincare · pitch written in your voice', 'Approve', 'wait'], ['Kaju & Co.', 'Snacks · sent 10:12 am', 'Sent', ''], ['Northstar Travel', 'Travel · replied yesterday', 'New request', 'ok'], ['Gobi Maps', 'Apps · no reply yet', 'Follow-up Thu', '']], foot: 'Public business emails only. A brand is never pitched twice.' },
@@ -53,7 +53,7 @@ export const LANDING = [
 		],
 		steps: ['Set your niche, city and packages.', 'Open Settings › Auto-pilot and switch on brand pitches.', 'Choose approve or auto, and how many brands a day.', 'Check your pitches each morning, or let them run.'],
 		faq: [
-			['Is the pitch autopilot free?', 'It’s part of Creator Pro (₹299 a month, with 14 days free to try). On the free plan you can still write and send 5 pitches a month yourself.'],
+			['Is the pitch autopilot free?', 'Yes. Every creator gets it free, along with the other autopilots. You can also write and send pitches yourself, as many as you like.'],
 			['Where does the brand email come from?', 'From the brand’s own website: Miracle only uses public business emails it finds there.'],
 			['Can I see the pitch before it goes?', 'Yes. In approve mode nothing goes out until you tap send, and you can edit each pitch.'],
 			['Will it spam brands?', 'No. It sends a few a day, one at a time, follows up once, and never pitches the same brand twice.']
@@ -82,7 +82,7 @@ export const LANDING = [
 		steps: ['Choose your address (yourname.miracleapp.live).', 'Add your packages, a line about you and your links.', 'Connect Instagram for live stats.', 'Paste the link in your Instagram bio.'],
 		faq: [
 			['Is it a replacement for Linktree?', 'It does what a link list does (links for followers, clicks counted) and adds what brands need: packages, prices, stats and a request form.'],
-			['Is the page free?', 'Yes. Your page, packages, links and request form are on the free plan. The email list for followers is part of Creator Pro.'],
+			['Is the page free?', 'Yes. Your page, packages, links, request form and the email list for followers are all free for creators.'],
 			['Can I hide my prices?', 'Yes. Show prices, show “from” prices, or let brands ask for a quote.'],
 			['Can I use my own domain?', 'Your page lives at yourname.miracleapp.live, which you can share anywhere.']
 		],
@@ -138,7 +138,7 @@ export const LANDING = [
 		faq: [
 			['How much should I charge for a reel?', 'It depends most on your average views, then engagement, niche and usage rights. The [rate calculator](/tools/rate-calculator) and [our guide](/guides/how-much-to-charge-instagram-reel-india) walk through it.'],
 			['Should I charge for usage rights?', 'Yes. When a brand runs your content as ads, it’s worth more to them; add 30% or more depending on how long.'],
-			['How many quotes can I send for free?', '3 a month on the free plan, and as many as you like on Creator Pro.'],
+			['How many quotes can I send for free?', 'As many as you like. Quotes, invoices and collabs are unlimited for creators.'],
 			['Can I show rates only to brands?', 'Yes: show them on your page, show “from” prices, or keep them for quotes.']
 		],
 		related: ['get-brand-deals', 'influencer-media-kit', 'brand-collaboration-management'],
@@ -164,7 +164,7 @@ export const LANDING = [
 		],
 		steps: ['Bring your current collabs in, or start fresh.', 'Answer new requests with a quote.', 'Share drafts for approval.', 'Send the results and the invoice when it’s live.'],
 		faq: [
-			['Can my manager use it?', 'Yes, on Creator Pro. Add a manager, assistant or accountant; each signs in with their own email and sees what their role needs. Managers looking after several creators use the [Agency plan](/influencer-agency-software).'],
+			['Can my manager use it?', 'Yes, free. Add a manager, assistant or accountant; each signs in with their own email and sees what their role needs. Managers looking after several creators use the [Agency plan](/influencer-agency-software).'],
 			['Do brands need an account?', 'They sign in with their work email (a 6-digit code, no password) to follow the request, approve drafts and see invoices.'],
 			['Does it work on my phone?', 'Yes. Miracle works in any browser on phone and laptop, and the Android app is coming to the Play Store.']
 		],

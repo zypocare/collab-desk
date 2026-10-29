@@ -95,7 +95,7 @@ export const ARTICLES: Article[] = [
 			{ p: 'In Settings › Auto-pilot, each rule has its own switch. Turn on only what you want; everything else waits for you as before.' },
 			{ list: ['Send invoices for you, once a collab is live.', 'Fill in dates: go-live on the date the brand asked for, and the draft due 4 days before.', 'Send brands their tracking link, so they can follow the collab without DMs.', 'Send quotes for package bookings in a week you have open.', 'Counter low barter offers with a polite reply.', 'Remind brands who go quiet, once, on a quote or draft.', 'Ask for missing brief details, and thank the brand with a review link when you wrap.'] },
 			{ p: 'The pitch autopilot finds up to 10 brands a day that fit your niche and city, using only public business emails from their own websites, and writes a pitch in your voice. In approve mode each pitch waits for your tap; in auto they go out one at a time between 10 am and 6 pm. A brand is never pitched twice.' },
-			{ tip: 'Auto-pilot rules and the pitch autopilot are part of Creator Pro, and on during your 14-day trial.' }
+			{ tip: 'Auto-pilot rules and the pitch autopilot are free for every creator.' }
 		],
 		links: [{ label: 'Auto-pilot settings', href: '/studio/settings?s=autopilot' }]
 	},
@@ -420,18 +420,18 @@ export const ARTICLES: Article[] = [
 	{
 		slug: 'plans-billing',
 		title: 'Plans, the free trial and billing',
-		summary: 'What’s free, what Pro adds, how the 14-day trial works, and how to pay or stop renewing.',
+		summary: 'Miracle is free for creators; what Brand Pro and Agency add, the brand trial, and how to pay or stop renewing.',
 		category: 'account',
 		audience: 'all',
 		keywords: ['plan', 'plans', 'pro', 'free', 'trial', 'price', 'pricing', 'billing', 'subscription', 'renew', 'cancel', 'refund', 'invoice', 'receipt', 'agency', 'upgrade', 'razorpay'],
 		body: [
-			{ p: 'Miracle has a free plan with no time limit, enough to run your collabs. Creators on Free run 5 collabs at a time, send unlimited invoices (with a small “Sent with Miracle” line), remind brands with one tap, check 1 offer a day and send 5 pitches a month. Brands on Free open 10 full creator profiles a day and send 3 requests and 1 campaign a month.' },
-			{ p: 'Pro removes the limits and puts the autopilots to work. Creator Pro (₹299 a month) adds unlimited collabs and offer checks, reminders that go by themselves, the formal demand letter and MSME complaint, invoices and a page without the Miracle line, and one teammate. Brand Pro (₹1,999 a month) and Agency (₹4,999 a month) unlock everything for brands and for agencies. A yearly plan is about two months free.' },
+			{ p: 'Miracle is free for creators, with no time limit: unlimited collabs, offer checks and pitches, every autopilot, reminders that go by themselves, bank-credit matching, the formal demand letter and MSME complaint, your insights page and fan list, and one teammate. Invoices and your page carry a small “Sent with Miracle” line. Brands on Free open 10 full creator profiles a day and send 3 requests and 1 campaign a month.' },
+			{ p: 'Brand Pro (₹1,999 a month) removes the brand limits and adds open briefs, brand autopilots, sales tracking and a team of 5. Agency (₹4,999 a month) covers every creator you manage and your own brand team. A yearly plan is about two months free. The plans on sale are always listed in Plan & billing.' },
 			{ tip: 'A collab counts from the first quote you send until it’s wrapped, declined, cancelled or paused. Creators a brand has worked with never count towards its 10 profiles a day.' },
-			{ p: 'Everyone starts with 14 days of Pro, no card needed. When it ends you stay on the free plan unless you pick one; nothing you made is deleted.' },
+			{ p: 'New brand teams start with 14 days of Brand Pro, no card needed. When it ends they stay on the free plan unless they pick one; nothing they made is deleted.' },
 			{ steps: ['Open Settings › Plan & billing.', 'Pick a plan, monthly or yearly.', 'Pay on the web with UPI, a card or net banking (through Razorpay).', 'You get a receipt and an invoice by email, and the plan is on everywhere, the phone app too.'] },
 			{ p: 'Plans renew by themselves. Stop renewing in Plan & billing at any time: the plan stays on until the end of what you paid for. A first payment can be refunded within 7 days.' },
-			{ p: 'Invite and earn: your link is in Plan & billing. Every creator who joins with it (once Miracle approves them) and every brand that sends its first request after signing up from your page, invoices or quotes gives you a free month of Creator Pro, up to 6 months a year.' },
+			{ p: 'Your invite link is in Plan & billing: share it with creator friends. Brands also see it on your page, invoices and quotes.' },
 			{ tip: 'There’s never a commission on deals, on any plan. Brands pay creators directly.' }
 		],
 		links: [{ label: 'Plan & billing', href: '/studio/settings?s=plan' }]

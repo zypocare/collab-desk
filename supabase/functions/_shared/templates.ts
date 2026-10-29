@@ -712,10 +712,29 @@ ${link}`,
       const table = `<table role="presentation" width="100%" style="border-collapse:collapse;font-size:14px;margin:4px 0 16px">
         ${row(inv.title ?? 'Invoice', esc(String(inv.number ?? p.invoice_no ?? '')), true)}
         ${row('Billed to', esc(String(inv.buyer?.name ?? '')) + (inv.buyer?.gstin ? `<br><span style="color:#6b6168">GSTIN ${esc(inv.buyer.gstin)}</span>` : ''))}
-        ${row(String(inv.item?.description ?? plan), `${esc(day(inv.item?.from))} to ${esc(day(inv.item?.to))}`)}
+        ${row(String(inv.item?.description ?? plan), p.period === 'once' ? esc(day(inv.item?.from)) : `${esc(day(inv.item?.from))} to ${esc(day(inv.item?.to))}`)}
         ${row('Taxable value', rs(inv.taxable ?? amount))}${tax}
         ${row('Total paid', rs(amount), true)}
       </table>`;
+      // A one-time creator unlock (brands): the creator, for good, not a plan that renews.
+      if (p.period === 'once') {
+        const who = String(p.creator ?? 'the creator');
+        const prof = p.creator_id ? url(s, `/brand/creator/${encodeURIComponent(String(p.creator_id))}`) : planLink;
+        return {
+          subject: `${who} unlocked: your invoice ${String(inv.number ?? p.invoice_no ?? '')}`,
+          html: layout(
+            s,
+            `${who}'s full profile is yours`,
+            `${P(`We received your payment. ${esc(who)}'s full verified profile is unlocked for your brand team, for good: it opens any day and never counts towards the free plan's daily profiles.`)}
+             ${table}
+             ${P(`Your ${inv.gst_charged ? 'GST tax invoice' : 'invoice'} is attached as a PDF, and you can open it any time from Plan & billing.`)}`,
+            { label: `Open ${who}'s profile`, href: prof },
+            { to: 'app', why: 'you unlocked a creator on Miracle', preheader: `₹${amount.toLocaleString('en-IN')} received: ${who} unlocked` },
+          ),
+          text: `We received ₹${amount}. ${who}'s full profile is unlocked for your brand team, for good.
+${inv.title ?? 'Invoice'} ${inv.number ?? p.invoice_no}: total ${rs(amount)}. View it any time: ${bill}`,
+        };
+      }
       return {
         subject: p.first ? `Welcome to ${plan}: your invoice ${String(inv.number ?? p.invoice_no ?? '')}` : `Payment received: ${plan} (invoice ${String(inv.number ?? p.invoice_no ?? '')})`,
         html: layout(

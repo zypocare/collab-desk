@@ -8,7 +8,8 @@
 	import { fit, NO_FILTERS, reelRate, similar } from '#lib/fit.ts';
 	import { pageSlug, supabase } from '#lib/supabase.ts';
 	import { toast } from '#lib/ui.svelte.ts';
-	import { compact, errMessage, firstName, fmt, hueOf, inrS } from '#lib/util.ts';
+	import { compact, errMessage, firstName, fmt, hueOf, inr, inrS } from '#lib/util.ts';
+	import { buyUnlock, canSell } from '#lib/plan.svelte.ts';
 	import AddToPool from '#lib/components/AddToPool.svelte';
 	import Avatar from '#lib/components/Avatar.svelte';
 	import Icon from '#lib/components/Icon.svelte';
@@ -34,15 +35,33 @@
 	});
 	const c = $derived(discover.list.find((x) => x.id === id) ?? null);
 	// A free brand team opens 10 full profiles a day (creators it has worked with never count).
-	let gate = $state<{ id: number; ok: boolean; msg: string } | null>(null);
+	// Past the day's 10, one creator can be unlocked for good with a one-time payment (when it's on sale).
+	let gate = $state<{ id: number; ok: boolean; msg: string; price: number | null; canBuy: boolean } | null>(null);
+	let tries = $state(0);
 	$effect(() => {
 		const want = id;
+		void tries;
 		if (!acct || !want) return;
 		supabase.rpc('brand_profile_open', { p_creator: want }).then(({ data, error }) => {
-			const r = error ? null : (data as { ok: boolean; msg?: string } | null);
-			gate = { id: want, ok: r?.ok !== false, msg: r?.msg ?? '' };
+			const r = error ? null : (data as { ok: boolean; msg?: string; unlock_price?: number | null; can_buy?: boolean } | null);
+			gate = { id: want, ok: r?.ok !== false, msg: r?.msg ?? '', price: r?.unlock_price ?? null, canBuy: r?.can_buy !== false };
 		});
 	});
+	let unlocking = $state(false);
+	async function unlock() {
+		if (!c) return;
+		unlocking = true;
+		try {
+			if (await buyUnlock(c.id)) {
+				toast(`${c.name} is unlocked for good`, 'check');
+				tries++;
+			}
+		} catch (e) {
+			toast(errMessage(e), 'alert');
+		} finally {
+			unlocking = false;
+		}
+	}
 	const opened = $derived(!acct || gate?.id === id);
 	const locked = $derived(gate?.id === id && !gate.ok);
 	const ft = $derived(c ? fit(c, NO_FILTERS, category) : null);
@@ -127,6 +146,19 @@
 	</header>
 
 	{#if locked}
+		{#if gate?.price && canSell()}
+			<section class="panel rv unlock-one">
+				<div class="uo-t">
+					<b>Unlock {c.name} for {inr(gate.price)}</b>
+					<span>Their full verified profile (audience, fit and history) opens any day for your team, for good. Paid once, GST included, with an invoice.</span>
+				</div>
+				{#if gate.canBuy}
+					<button class="btn grad" onclick={unlock} disabled={unlocking}>{#if unlocking}<span class="spinner"></span>{:else}<Icon name="eye" />{/if}Unlock for {inr(gate.price)}</button>
+				{:else}
+					<small class="hint">Ask your team's admin to unlock this creator.</small>
+				{/if}
+			</section>
+		{/if}
 		<div class="rv" style="margin:8px 0 24px"><ProNote side="brand" title="See every creator in full" body={gate?.msg || 'The free plan opens 10 full creator profiles a day.'} /></div>
 	{:else if !opened}
 		<div class="loader" style="min-height:24vh"><span class="ring"><span></span></span></div>
@@ -240,6 +272,11 @@
 {/if}
 
 <style>
+	/* One creator, unlocked for good: the one-time offer above the Brand Pro note. */
+	.unlock-one { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; padding: 18px 20px; margin: 8px 0 12px; }
+	.uo-t { display: grid; gap: 4px; flex: 1 1 260px; min-width: 0; }
+	.uo-t b { font-size: 16.5px; }
+	.uo-t span { font-size: 14px; line-height: 1.45; color: var(--ink-3); }
 	.cp-trust {
 		display: flex;
 		flex-wrap: wrap;

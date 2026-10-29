@@ -1,6 +1,13 @@
 // The pricing page and the refund and cancellation policy. Prices match billing_plans in the database
 // (supabase/migrations/20261024000154_billing.sql, the set in 20261026000161_free_paid_set.sql); change both together.
+// Creators are free (20261030000184_creators_free.sql). Creator Pro is only switched off in admin → Plans, so the
+// page is built with both creator layouts: "free, everything included" shows by default (and to search engines),
+// and a small script swaps in Free + Creator Pro, with the prices from the database, whenever it's on sale again.
 import { esc, JOIN, JOIN_BRAND, JOIN_LABEL, md, page, PRELAUNCH } from './layout.mjs';
+import { SB_KEY, SB_URL } from './stats.mjs';
+
+// Creators today: everything on the free plan.
+const CREATOR_FREE = ['Your brand page brands book you from, and a spot in the creator directory', 'Unlimited collabs, offer checks and pitches', 'Every autopilot, including the pitch autopilot', 'Reminders that go by themselves, and bank-credit matching', 'The formal demand letter and MSME complaint, written for you', 'A live insights page for brands and your fan list', 'One teammate: your manager or assistant', 'No commission on any deal, ever'];
 
 export const PLANS = [
 	{
@@ -36,8 +43,8 @@ const perks = (list) => `<ul class="ticks">${list.map((p) => `<li>${esc(p)}</li>
 const priceBlock = (p) => `
   <p class="price"><b data-m="${rs(p.month)}" data-y="${rs(p.year)}">${rs(p.year)}</b><small data-m="/month" data-y="/year">/year</small></p>
   <p class="alt" data-m="or ${rs(p.year)}/year: 2 months free" data-y="about ${rs(Math.round(p.year / 12))} a month · &lt;b&gt;founding members ${rs(p.founding)}/year&lt;/b&gt;">about ${rs(Math.round(p.year / 12))} a month · <b>founding members ${rs(p.founding)}/year</b></p>`;
-const paidCard = (p, join) => `
-<div class="card plan hot">
+const paidCard = (p, join, attrs = '') => `
+<div class="card plan hot"${attrs}>
   <h3>${esc(p.name)}</h3>
   ${priceBlock(p)}
   ${perks(p.perks)}
@@ -102,7 +109,8 @@ ${rows.map((r) => (r[1] === null ? `<tr class="grp"><td colspan="3">${esc(r[0])}
 
 export const PRICING_FAQ = [
 	['Is there a commission on deals?', 'No, never. Brands pay creators directly by UPI or bank transfer, and Miracle takes nothing from any deal on any plan. Plans pay for the tools, not for the deals.'],
-	['How does the free trial work?', 'Every new creator and brand gets 14 days of Pro, with no card needed. When it ends you stay on the free plan unless you pick a paid one; nothing you made is deleted.'],
+	['Is Miracle really free for creators?', 'Yes. Every feature, with no time limit and no card: unlimited collabs, every autopilot, automatic payment reminders and a teammate. Brands and agencies pay for their plans; creators never pay and never give a cut of a deal.'],
+	['How does the free trial work?', 'Every new brand team gets 14 days of Brand Pro, with no card needed. When it ends you stay on the free plan unless you pick a paid one; nothing you made is deleted.'],
 	['How do I pay?', 'On the website or the web app, through Razorpay: UPI AutoPay, cards or net banking. Plans renew by themselves and you can stop renewal any time. Plans aren’t sold inside the Play Store or iPhone apps; once you’ve paid, they unlock there too.'],
 	['Is GST included?', 'Yes. Prices include 18% GST, and every payment comes with a tax invoice from Zyposoft Technologies Private Limited, by email and as a link.'],
 	['What is the founding member price?', 'The first 100 people to buy a yearly plan pay half, and keep that price for as long as their plan keeps renewing.'],
@@ -110,16 +118,72 @@ export const PRICING_FAQ = [
 	['I manage several creators or clients. Which plan?', 'The Agency plan: Pro for every creator you manage and for your own brand team, client workspaces you switch between, a roster with your commission ledger, and 15 seats.']
 ];
 
+// The creator section: free with everything (default), or Free + Creator Pro when it's on sale (script below).
+const creatorSection = (s) => `
+<section class="sec wrap">
+  <div class="sec-h"><span class="eb">${esc(s.who)}</span><h2>Get more deals, <em>chase less.</em></h2></div>
+  <div class="grid2 plans" data-cp="free">
+    <div class="card plan hot">
+      <h3>Free, everything included</h3>
+      <p class="price"><b>₹0</b><small>/forever</small></p>
+      <p class="alt">No card. No time limit. No commission.</p>
+      ${perks(CREATOR_FREE)}
+      <a class="btn grad" href="${s.paid.join}">${PRELAUNCH ? JOIN_LABEL : 'Join free'}</a>
+    </div>
+    <div class="card"><h3>Why is it free for creators?</h3><p>Brands and agencies pay for Miracle's tools. Creators never pay, and never give anyone a cut of a deal: brands pay you directly by UPI or bank transfer. Invoices and your page carry a small “Sent with Miracle” line, and that's all we ask.</p></div>
+  </div>
+  <div data-cp="pro" hidden>
+  <div class="grid2 plans">
+    <div class="card plan">
+      <h3>${esc(s.free.name)}</h3>
+      <p class="price"><b>${s.free.price}</b><small>/forever</small></p>
+      <p class="alt">No card. No time limit.</p>
+      ${perks(s.free.perks)}
+      <a class="btn ghost" href="${s.paid.join}">${PRELAUNCH ? JOIN_LABEL : 'Join free'}</a>
+    </div>
+    ${paidCard(s.paid, s.paid.join, ' id="cp-card"')}
+  </div>
+  <details class="cmp-more" open><summary>Compare Free and ${esc(s.paid.name)}, feature by feature</summary>${compareTable(COMPARE.creator, s.paid.name)}</details>
+  </div>
+</section>`;
+
+// Shows Creator Pro, priced from the database, only while it's on sale (admin → Plans → Offered to new buyers).
+const creatorProScript = `<script>
+(() => {
+  const rs = (n) => '₹' + Number(n).toLocaleString('en-IN');
+  fetch(${JSON.stringify(SB_URL + '/rest/v1/rpc/public_plans')}, { method: 'POST', headers: { apikey: ${JSON.stringify(SB_KEY)}, authorization: 'Bearer ' + ${JSON.stringify(SB_KEY)}, 'content-type': 'application/json' }, body: '{}' })
+    .then((r) => (r.ok ? r.json() : null))
+    .then((d) => {
+      const p = d && (d.plans || []).find((x) => x.code === 'creator_pro');
+      if (!p) return;
+      const card = document.getElementById('cp-card');
+      const b = card.querySelector('.price b'), alt = card.querySelector('.alt');
+      const founding = d.founding && d.founding.on && p.founding_year;
+      b.dataset.m = rs(p.price_month); b.dataset.y = rs(p.price_year);
+      alt.dataset.m = 'or ' + rs(p.price_year) + '/year: 2 months free';
+      alt.dataset.y = 'about ' + rs(Math.round(p.price_year / 12)) + ' a month' + (founding ? ' · <b>founding members ' + rs(p.founding_year) + '/year</b>' : '');
+      card.querySelector('h3').textContent = p.name;
+      const on = document.querySelector('.ptoggle [aria-pressed="true"]');
+      const k = on ? on.dataset.p : 'y';
+      [b, alt].forEach((el) => (el.innerHTML = el.dataset[k]));
+      document.querySelector('[data-cp="free"]').hidden = true;
+      document.querySelector('[data-cp="pro"]').hidden = false;
+    })
+    .catch(() => {});
+})();
+</script>`;
+
 export function pricingPage() {
 	const body = `
 <section class="hero wrap">
   <span class="eb">Pricing</span>
-  <h1>Start free. <em>Go Pro when the deals come.</em></h1>
-  <p class="lede">Every plan keeps your deals commission-free: brands pay creators directly. Pro puts the autopilots to work, so follow-ups, invoices and pitches happen without you. Everyone gets 14 days of Pro free, no card needed.</p>
+  <h1>Free for creators. <em>Pro for brands that scale.</em></h1>
+  <p class="lede">Creators get every feature free, and every deal stays commission-free: brands pay creators directly. Brands start free and go Pro when they run more campaigns; new brand teams get 14 days of Brand Pro free, no card needed.</p>
   ${PRELAUNCH ? `<p class="soon"><span><b>Opening soon.</b> Miracle opens in batches, starting with the waitlist. Waitlist members get first access to the 100 founding places. <a href="${JOIN}">Join the waitlist</a></span></p>` : ''}
   <div class="ptoggle" role="group" aria-label="Billing"><button type="button" data-p="m" aria-pressed="false">Monthly</button><button type="button" data-p="y" aria-pressed="true">Yearly <em>2 months free</em></button></div>
 </section>
-${PLANS.map((s, i) => `
+${creatorSection(PLANS[0])}
+${PLANS.slice(1).map((s, j) => { const i = j + 1; return `
 <section class="sec wrap">
   <div class="sec-h"><span class="eb">${esc(s.who)}</span><h2>${i === 0 ? 'Get more deals, <em>chase less.</em>' : 'Find creators, <em>keep the budget.</em>'}</h2></div>
   <div class="grid2 plans">
@@ -133,7 +197,7 @@ ${PLANS.map((s, i) => `
     ${paidCard(s.paid, s.paid.join)}
   </div>
   <details class="cmp-more"${i === 0 ? ' open' : ''}><summary>Compare Free and ${esc(s.paid.name)}, feature by feature</summary>${compareTable(i === 0 ? COMPARE.creator : COMPARE.brand, s.paid.name)}</details>
-</section>`).join('')}
+</section>`; }).join('')}
 <section class="sec wrap">
   <div class="sec-h"><span class="eb">For agencies</span><h2>Every creator and client, <em>one desk.</em></h2></div>
   <div class="grid2 plans">${paidCard(AGENCY, PRELAUNCH ? '/waitlist?as=agency' : JOIN_BRAND)}
@@ -150,11 +214,12 @@ ${PLANS.map((s, i) => `
   };
   document.querySelectorAll('.ptoggle button').forEach((b) => b.addEventListener('click', () => set(b.dataset.p)));
 })();
-</script>`;
+</script>
+${creatorProScript}`;
 	return page({
 		path: '/pricing',
-		title: 'Pricing · Miracle: free for creators and brands, Pro from ₹299',
-		description: 'Free plan for creators and brands, Creator Pro ₹299/month, Brand Pro ₹1,999/month, Agency ₹4,999/month. Compare every feature. 14-day free trial, no commission on any deal.',
+		title: 'Pricing · Miracle: free for creators, Brand Pro from ₹1,999',
+		description: 'Miracle is free for creators: every feature, no commission on any deal. Brands start free; Brand Pro ₹1,999/month, Agency ₹4,999/month. 14-day Brand Pro trial.',
 		body,
 		ld: [{ '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: PRICING_FAQ.map(([q, a]) => ({ '@type': 'Question', name: q, acceptedAnswer: { '@type': 'Answer', text: a.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') } })) }],
 		crumbs: [{ name: 'Pricing', path: '/pricing' }],
@@ -167,7 +232,7 @@ export function refundPage() {
 <article class="hero wrap prose">
   <span class="eb">Policy</span>
   <h1>Refunds and <em>cancellation</em></h1>
-  <p class="lede">For Miracle's own plans (Creator Pro, Brand Pro and Agency). Money between brands and creators never passes through Miracle, so this policy doesn't cover deals.</p>
+  <p class="lede">For Miracle's own paid plans (such as Brand Pro and Agency). Money between brands and creators never passes through Miracle, so this policy doesn't cover deals.</p>
   <h2>Cancelling</h2>
   <p>You can stop your plan renewing at any time in the app: Settings › Plan &amp; billing › Stop renewing. Your plan stays on until the end of the period you've paid for, then your account moves to the free plan. Nothing you made is deleted.</p>
   <h2>Refunds</h2>

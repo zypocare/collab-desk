@@ -18,6 +18,9 @@
 	const p = $derived(plan.data);
 	const sell = canSell();
 	const paid = $derived(p ? p.catalog.filter((x) => x.rank > 1) : []);
+	// No creator plan on sale (admin → Plans): the free plan has everything; only Agency is left to buy.
+	const allFree = $derived(side === 'creator' && !!p && !paid.some((x) => x.side === 'creator'));
+	const proOnSale = $derived(!!p?.catalog.some((x) => x.code === 'creator_pro'));
 
 	const PERKS: Record<string, string[]> = {
 		creator_pro: [
@@ -61,7 +64,7 @@
 	};
 	const day = (d: string | null) => (d ? new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : '');
 	function status(s: PlanState) {
-		if (!s.plan || s.rank === 1) return 'Free plan';
+		if (!s.plan || s.rank === 1) return allFree ? 'Every feature included, free for creators' : 'Free plan';
 		if (s.via_agency) return `Covered by an Agency plan until ${day(s.ends_at)}`;
 		if (s.period === 'trial') return `Free trial: ${s.days_left} day${s.days_left === 1 ? '' : 's'} left`;
 		if (s.period === 'comp') return `On us until ${day(s.ends_at)}`;
@@ -122,7 +125,7 @@
 						</div>
 					{/if}
 				{/each}
-				{#if p.period === 'trial'}<p class="hint">Everything is on during your trial. After it, the free plan's limits apply and the autopilots switch off, unless you pick a plan.</p>{/if}
+				{#if p.period === 'trial' && !allFree}<p class="hint">Everything is on during your trial. After it, the free plan's limits apply and the autopilots switch off, unless you pick a plan.</p>{/if}
 			</div>
 		{/if}
 		{#if p.agency?.plan}
@@ -134,7 +137,7 @@
 		{/if}
 	</section>
 
-	{#if side === 'creator'}<InviteCard />{/if}
+	{#if side === 'creator'}<InviteCard reward={proOnSale} />{/if}
 
 	{#if !sell}
 		<p class="hint pb-note">Plan changes aren't available in this app.</p>
@@ -143,7 +146,7 @@
 	{:else}
 		<section class="panel rv pb-plans" aria-labelledby="pb-t">
 			<div class="panel-h">
-				<h2 id="pb-t">Plans</h2>
+				<h2 id="pb-t">{allFree ? 'Running creators for others?' : 'Plans'}</h2>
 				<div class="pb-toggle" role="group" aria-label="Billing">
 					<button class:on={period === 'month'} aria-pressed={period === 'month'} onclick={() => (period = 'month')}>Monthly</button>
 					<button class:on={period === 'year'} aria-pressed={period === 'year'} onclick={() => (period = 'year')}>Yearly <em>2 months free</em></button>
@@ -181,7 +184,7 @@
 			<div class="panel-h"><h2>Payments</h2><small>{side === 'brand' ? 'GST invoices from Zyposoft Technologies' : 'invoices from Zyposoft Technologies'}</small></div>
 			<ul class="pb-pay">
 				{#each p.payments as y (y.id)}
-					<li><span><b>{y.invoice_no}</b><small>{day(y.paid_at)} · {y.period === 'year' ? 'yearly' : 'monthly'}</small></span><span class="pb-amt"><b class="num">{inr(y.amount)}</b>{#if y.token}<a class="btn sm ghost" href="/bill/{y.token}" target="_blank" rel="noopener"><Icon name="arrow" />Invoice</a>{/if}</span></li>
+					<li><span><b>{y.invoice_no}</b><small>{day(y.paid_at)} · {y.period === 'once' ? 'creator unlock' : y.period === 'year' ? 'yearly' : 'monthly'}</small></span><span class="pb-amt"><b class="num">{inr(y.amount)}</b>{#if y.token}<a class="btn sm ghost" href="/bill/{y.token}" target="_blank" rel="noopener"><Icon name="arrow" />Invoice</a>{/if}</span></li>
 				{/each}
 			</ul>
 		</section>

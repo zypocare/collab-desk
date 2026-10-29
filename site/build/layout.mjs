@@ -14,7 +14,7 @@ export const JOIN_BRAND = PRELAUNCH ? '/waitlist?as=brand' : `${APP}/signup?as=b
 export const JOIN_AGENCY = PRELAUNCH ? '/waitlist?as=agency' : `${APP}/signup?as=brand`;
 export const JOIN_LABEL = PRELAUNCH ? 'Join the waitlist' : 'Join free';
 // The one line under every Join button.
-export const FINE = PRELAUNCH ? 'Opening soon · free plan · no commission on any deal' : 'Free plan · 14 days of Pro free · no commission';
+export const FINE = PRELAUNCH ? 'Opening soon · free plan · no commission on any deal' : 'Free for creators · no commission on any deal';
 
 export const esc = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 /** Inline formatting in content: **bold** and [text](href). Everything else is escaped. */
@@ -84,7 +84,7 @@ ${STATS_SCRIPT}
 export const joinRow = (who = 'creator', fine = true) => `<div class="acts"><a class="btn grad" href="${who === 'brand' ? JOIN_BRAND : who === 'agency' ? JOIN_AGENCY : JOIN}">${PRELAUNCH ? JOIN_LABEL : who === 'brand' ? 'Join as a brand' : 'Join free'}</a><a class="btn ghost" href="/pricing">See pricing</a></div>${fine ? `<p class="fine">${FINE}</p>` : ''}`;
 
 /** The closing call to action, the same everywhere. */
-export const cta = (h = 'Get more brand deals.', p = 'Your own page brands book you from, AI that finds brands and writes the pitch, and payments that arrive on time. Start on the free plan; Pro is ₹299 a month. No commission on any deal.', who = 'creator') => `
+export const cta = (h = 'Get more brand deals.', p = 'Your own page brands book you from, AI that finds brands and writes the pitch, and payments that arrive on time. Free for creators, every feature. No commission on any deal.', who = 'creator') => `
 <section class="wrap cta-w"><div class="cta">
   <div><span class="eb">${PRELAUNCH ? 'Opening soon' : 'Miracle'}</span><h2>${esc(h).replace(/(\S+\.)$/, '<em>$1</em>')}</h2><p>${md(p)}</p></div>
   ${joinRow(who, false)}
