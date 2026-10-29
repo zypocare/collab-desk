@@ -35,6 +35,7 @@
 		USAGE,
 		usageLabel,
 		usageOption,
+		diff,
 		fmt,
 		fmtTime,
 		hasProduct,
@@ -447,6 +448,15 @@
 
 	// ---- next step: one button that moves the collab forward ----
 	const next = $derived(c ? nextStep(c, studio.settings) : null);
+	// A date with its year when it isn't this year's (a preferred date typed a year out shows as such).
+	const fmtY = (d: string) => `${fmt(d)}${d.slice(0, 4) !== String(new Date().getFullYear()) ? ` ${d.slice(0, 4)}` : ''}`;
+	// The shoot is done: editing comes next (a shoot day that has passed no longer shows as late).
+	async function shotDone() {
+		if (!c) return;
+		await updateCollab(c.id, { shot_at: new Date().toISOString() });
+		if (c.stage === 'confirmed') await changeStage('creating');
+		toast('Shoot done. Next: edit and send the draft', 'film');
+	}
 	// Book again on WhatsApp: sending it counts as the offer (no email after it, and the discount starts today).
 	async function rebookSent() {
 		if (!c) return;
@@ -492,6 +502,7 @@
 			case 'nudge': return sendMessage(`Hi ${first}, just checking in on the quote I sent for ${c.code}. Happy to adjust anything if needed! ${me}`);
 			case 'ask-product': return sendMessage(`Hi ${first}, we're all set for ${c.code}! Please ship the product using the address on your request page and add the tracking number there. ${me}`);
 			case 'received': return markReceived(c);
+			case 'shot': return shotDone();
 			case 'dates': if (dates) { await updateCollab(c.id, { draft_date: dates.draft, live_date: dates.live }); toast('Dates set', 'cal'); } return scrollTo('sec-dates');
 			case 'start': return changeStage('creating');
 			case 'share-draft': return scrollTo('sec-drafts', '#dr-link');
@@ -781,10 +792,11 @@
 
 			<section class="sec" id="sec-dates" hidden={!sh('dates')}>
 				<h3 data-sum={sums.dates}>Dates</h3>
-				{#if dates && c.stage !== 'live' && c.stage !== 'wrapped' && c.stage !== 'declined' && (c.draft_date !== dates.draft || c.live_date !== dates.live)}
+				<!-- Suggested only while a date is missing or the two clash (the draft after going live); dates she set stay hers. -->
+				{#if dates && c.stage !== 'live' && c.stage !== 'wrapped' && c.stage !== 'declined' && (!c.draft_date || !c.live_date || c.live_date < c.draft_date) && (c.draft_date !== dates.draft || c.live_date !== dates.live)}
 					<div class="date-sug">
 						<Icon name="spark" />
-						<span><em class="ds-eb">Suggested dates</em>Draft {fmt(dates.draft)}, live {fmt(dates.live)}{#if dates.why}<small>{dates.why}</small>{/if}</span>
+						<span><em class="ds-eb">Suggested dates</em>Draft {fmtY(dates.draft)}, {noPost(c) ? 'deliver' : 'live'} {fmtY(dates.live)}{#if dates.why}<small>{dates.why}</small>{/if}</span>
 						<button class="btn sm" onclick={() => c && dates && updateCollab(c.id, { draft_date: dates.draft, live_date: dates.live })}>Use</button>
 					</div>
 				{/if}
@@ -793,7 +805,10 @@
 						<div class="f"><label for="d-product">Product arrives</label><DatePicker id="d-product" value={c.product_date} onchange={(v) => save('product_date', v || null)} /></div>
 					{/if}
 					{#if ['confirmed', 'creating'].includes(c.stage) || c.shoot_date}
-						<div class="f"><label for="d-shoot">Shoot day</label><DatePicker id="d-shoot" value={c.shoot_date} onchange={(v) => save('shoot_date', v || null)} /></div>
+						<div class="f"><label for="d-shoot">Shoot day</label><DatePicker id="d-shoot" value={c.shoot_date} onchange={(v) => save('shoot_date', v || null)} />
+							{#if c.shot_at}<span class="shot-done"><Icon name="check" />Shoot done {fmt(c.shot_at.slice(0, 10))} · editing{#if c.stage === 'confirmed' || c.stage === 'creating'}<button class="lnk" onclick={() => c && updateCollab(c.id, { shot_at: null })}>Undo</button>{/if}</span>
+							{:else if c.shoot_date && diff(c.shoot_date) <= 0 && (c.stage === 'confirmed' || c.stage === 'creating')}<button class="btn sm shot-btn" onclick={shotDone}><Icon name="check" />Shoot done</button>{/if}
+						</div>
 					{/if}
 					<div class="f"><label for="d-draft">Draft due to brand</label><DatePicker id="d-draft" value={c.draft_date} onchange={(v) => save('draft_date', v || null)} /></div>
 					<div class="f"><label for="d-live">{noPost(c) ? 'Delivery date' : 'Go-live date'}</label><DatePicker id="d-live" value={c.live_date} onchange={(v) => save('live_date', v || null)} /></div>

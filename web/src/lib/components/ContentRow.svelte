@@ -3,7 +3,7 @@
 	import type { Collab } from '../types';
 	import { hoursLeft, makeShotList, suggestShoot, type Shot } from '../content';
 	import { studio, updateCollab } from '../studio.svelte';
-	import { copyText, ui } from '../ui.svelte';
+	import { copyText, toast, ui } from '../ui.svelte';
 	import { delivText, diff, fmt, relWord } from '../util';
 	import DatePicker from './DatePicker.svelte';
 	import Icon from './Icon.svelte';
@@ -53,6 +53,7 @@
 				{#if c.draft_date}<span class:late={diff(c.draft_date) < 0 || draftAfterLive}><Icon name="film" />Draft {draftWhen}</span>{/if}
 				{#if c.live_date}<span><Icon name="spark" />Live {fmt(c.live_date)}</span>{/if}
 				{#if c.product_received_at}<span class="ok"><Icon name="box" />Product here</span>{/if}
+				{#if c.shot_at}<span class="ok"><Icon name="check" />Shot · editing</span>{/if}
 			</div>
 			{#if draftAfterLive}<button class="ct-warn" onclick={() => (ui.openCollab = c.id)}><Icon name="alert" />The draft is due after it goes live. Fix the dates</button>{/if}
 		</div>
@@ -85,6 +86,13 @@
 					<button onclick={async () => (await ask({ title: 'Start the shot list over?', body: 'A fresh list is made from the brief. Your ticks and edits are replaced.', ok: 'Start over', danger: true })) && save(makeShotList(c))}><Icon name="refresh" />Start over</button>
 				</div>
 			{/if}
+		</div>
+	{/if}
+	{#if !c.shot_at && c.shoot_date && diff(c.shoot_date) <= 0 && ['confirmed', 'creating'].includes(c.stage)}
+		<!-- The shoot day has come: once it's shot, editing is next (and it stops showing as late on Today). -->
+		<div class="ct-plan">
+			<span class="ct-plan-l">{diff(c.shoot_date) === 0 ? 'Shooting today' : `Shoot was ${fmt(c.shoot_date)}`}</span>
+			<button class="btn sm primary" onclick={async () => (await updateCollab(c.id, { shot_at: new Date().toISOString() }), toast('Shoot done. Next: edit and send the draft', 'film'))}><Icon name="check" />Shoot done</button>
 		</div>
 	{/if}
 	{#if plan}

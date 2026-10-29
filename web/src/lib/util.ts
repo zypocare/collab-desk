@@ -253,10 +253,11 @@ export function tasks(collabs: Collab[]): Task[] {
 		const dr = latestDraft(c);
 		if (dr?.status === 'changes') out.push({ c, kind: 'revise', d: 0, title: `Revise draft ${dr.round}: ${dr.feedback.slice(0, 60)}`, order: 1 });
 		if (c.follow_date && diff(c.follow_date) <= 2) out.push({ c, kind: 'follow', d: diff(c.follow_date), title: c.follow_note || 'Follow up', order: 1 });
-		if (['confirmed', 'creating'].includes(c.stage) && c.shoot_date && !allDone(c) && diff(c.shoot_date) <= 1)
-			out.push({ c, kind: 'shoot', d: diff(c.shoot_date), title: `Shoot · ${delivText(c.deliverables.filter((x) => !x.done))}`, order: 2 });
+		// A shoot she has marked done isn't late: what's left is editing, which shows as the draft coming due.
+		if (['confirmed', 'creating'].includes(c.stage) && c.shoot_date && !c.shot_at && !allDone(c) && diff(c.shoot_date) <= 1)
+			out.push({ c, kind: 'shoot', d: diff(c.shoot_date), title: diff(c.shoot_date) < 0 ? `Shoot done? Mark it, then edit · ${delivText(c.deliverables.filter((x) => !x.done))}` : `Shoot · ${delivText(c.deliverables.filter((x) => !x.done))}`, order: 2 });
 		if (!pieces.length && ['confirmed', 'creating'].includes(c.stage) && c.draft_date && !allDone(c) && diff(c.draft_date) <= 3)
-			out.push({ c, kind: 'draft', d: diff(c.draft_date), title: `Send draft · ${delivText(c.deliverables)}`, order: 2 });
+			out.push({ c, kind: 'draft', d: diff(c.draft_date), title: `${c.shot_at ? 'Edit and send the draft' : 'Send draft'} · ${delivText(c.deliverables)}`, order: 2 });
 		if (['confirmed', 'creating'].includes(c.stage) && c.live_date && diff(c.live_date) <= 3 && diff(c.live_date) >= 0)
 			out.push({ c, kind: 'live', d: diff(c.live_date), title: `Goes live · ${delivText(c.deliverables)}`, order: 3 });
 		if (inTransit(c)) out.push({ c, kind: 'product', d: c.product_date ? Math.min(0, diff(c.product_date)) : 0, title: `Parcel on the way via ${c.ship_carrier}: mark it received when it arrives`, order: 4 });

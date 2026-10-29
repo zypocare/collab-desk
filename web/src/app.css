@@ -2152,3 +2152,6 @@ html.native body::after{content:"";position:fixed;z-index:10000;top:0;left:0;rig
 html.native,html.native *{scrollbar-width:none}html.native ::-webkit-scrollbar{display:none;width:0;height:0}
 /* Book again on WhatsApp (collab page, wrapped): the message she sends, as she'll send it. */
 .rb-msg{margin:4px 0 12px;padding:12px 14px;border-radius:12px;background:color-mix(in oklab,var(--ok) 9%,var(--surface-2));font-size:14px;line-height:1.5;color:var(--ink-2);white-space:pre-wrap;overflow-wrap:anywhere}
+/* Shoot done (collab page, Dates): a quiet tick under the shoot day, or the button that marks it. */
+.shot-done{display:flex;align-items:center;gap:6px;margin-top:6px;font-size:13px;font-weight:600;color:var(--ok)}.shot-done .ic{width:14px;height:14px}.shot-done .lnk{margin-left:6px;font-weight:500;color:var(--ink-3)}
+.shot-btn{margin-top:8px;align-self:flex-start}

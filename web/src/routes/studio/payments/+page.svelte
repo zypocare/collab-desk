@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { markPaid, reloadCollabs, setInvoiceFlags, studio } from '#lib/studio.svelte.ts';
+	import { markPaid, markReceived, reloadCollabs, setInvoiceFlags, studio } from '#lib/studio.svelte.ts';
 	import { countUp, toast, ui } from '#lib/ui.svelte.ts';
 	import { delivText, diff, errMessage, fmt, hasProduct, inr, inrS, isPaid, outstanding, parse, payState, relWord, stageIndex, stageLabel, todayIso, waShare } from '#lib/util.ts';
 	import Icon from '#lib/components/Icon.svelte';
@@ -17,6 +17,13 @@
 	import type { Collab } from '#lib/types.ts';
 	import { ask } from '#lib/confirm.svelte.ts';
 	import { page } from '$app/state';
+	// Barter: marking a product received (or an experience done) from its card.
+	let receiving = $state('');
+	async function received(c: Collab) {
+		receiving = c.id;
+		await markReceived(c);
+		receiving = '';
+	}
 
 	let filter = $state<'all' | 'due' | 'overdue' | 'confirmed' | 'paid'>('all');
 	let swapKey = $state(0);
@@ -226,14 +233,21 @@
 						name={c.brand.name}
 						sub={stageLabel(c.stage)}
 						money={inr(c.product_value)}
-						moneySub="product"
-						task={c.product || 'Product'}
-						status={c.product_received_at ? 'Received' : c.shipped_at ? 'On the way' : 'Not shipped yet'}
+						moneySub={c.barter_kind === 'experience' ? 'experience' : 'product'}
+						task={c.product || (c.barter_kind === 'experience' ? 'Experience' : 'Product')}
+						status={c.barter_kind === 'experience'
+							? c.product_received_at ? `Done ${fmt(c.product_received_at.slice(0, 10))}` : 'Not done yet'
+							: c.product_received_at ? `Received ${fmt(c.product_received_at.slice(0, 10))}` : c.shipped_at ? 'On the way' : 'Not received yet'}
 						tone={c.product_received_at ? 'ok' : c.shipped_at ? 'warn' : 'calm'}
 						onopen={() => (ui.openCollab = c.id)}
 						{i}
 					>
-						<button class="btn" onclick={() => (ui.openCollab = c.id)}>Open</button>
+						<!-- Most barter never comes with a tracking number: she marks it here when it's in (or, for a stay or a meal, done). -->
+						{#if c.product_received_at}
+							<button class="btn" onclick={() => (ui.openCollab = c.id)}>Open</button>
+						{:else}
+							<button class="btn primary" disabled={receiving === c.id} onclick={() => received(c)}>{#if receiving === c.id}<span class="spinner"></span>{:else}<Icon name="check" />{/if}{c.barter_kind === 'experience' ? 'Done' : 'Got it'}</button>
+						{/if}
 					</Ticket>
 				{/each}
 			</div>

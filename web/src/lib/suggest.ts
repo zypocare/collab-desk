@@ -191,7 +191,9 @@ export function suggestDates(c: Collab, s: Settings, all: Collab[]): DateSuggest
 
 	// Go-live: their preferred date if it leaves time for review, else 4 days after the draft;
 	// then the first week that isn't full or marked away.
-	const pref = c.preferred_live ? parse(c.preferred_live) : null;
+	// A preferred date months after the draft is usually a typo (the wrong year): it isn't suggested.
+	const prefRaw = c.preferred_live ? parse(c.preferred_live) : null;
+	const pref = prefRaw && prefRaw <= addDays(draft, 60) ? prefRaw : null;
 	let live = pref && pref >= addDays(draft, 3) ? pref : addDays(draft, 4);
 	const away = new Set(s.away_weeks ?? []);
 	for (let i = 0; i < 12; i++) {
@@ -212,6 +214,12 @@ export function suggestDates(c: Collab, s: Settings, all: Collab[]): DateSuggest
 export type NextStep = { key: string; label: string; hint: string; icon: string };
 
 /** s: her settings, for the steps that depend on them (Book again on WhatsApp). */
+/** The shoot day has come and she hasn't marked it done: that's the step (then editing, then the draft). */
+function shootDone(c: Collab): NextStep | null {
+	if (!c.shoot_date || c.shot_at || diff(c.shoot_date) > 0) return null;
+	return { key: 'shot', label: 'Shoot done', hint: diff(c.shoot_date) === 0 ? 'Shooting today: mark it done when you wrap' : `Shoot was ${fmt(c.shoot_date)}: mark it done, then edit`, icon: 'film' };
+}
+
 export function nextStep(c: Collab, s?: Settings | null): NextStep | null {
 	const q = latestQuote(c);
 	const dr = latestDraft(c);
@@ -235,11 +243,16 @@ export function nextStep(c: Collab, s?: Settings | null): NextStep | null {
 				? { key: 'quote', label: 'Counter or quote', hint: 'Barter request: send a quote, or a reply from "Should you take it?"', icon: 'rupee' }
 				: { key: 'quote', label: 'Send quote', hint: 'Pick a ready quote in one tap', icon: 'rupee' };
 		case 'confirmed':
+			// An experience (a stay, a meal) isn't shipped: once she's had it, she marks it done.
+			if (c.type !== 'paid' && c.barter_kind === 'experience' && !c.product_received_at)
+				return { key: 'received', label: 'Mark it done', hint: `Had the ${c.product || 'experience'}? Mark it done`, icon: 'check' };
+			if (shootDone(c)) return shootDone(c);
 			if (c.type !== 'paid' && !c.shipped_at && !c.product_received_at) return { key: 'ask-product', label: 'Ask for the product', hint: 'Remind them to ship it', icon: 'box' };
 			if (inTransit(c)) return { key: 'received', label: 'Mark received', hint: `On its way via ${c.ship_carrier}`, icon: 'box' };
 			if (!c.draft_date || !c.live_date) return { key: 'dates', label: 'Set dates', hint: noPost(c) ? 'Suggested draft and delivery dates are ready' : 'Suggested draft and go-live dates are ready', icon: 'cal' };
 			return { key: 'start', label: 'Start creating', hint: `Draft due ${fmt(c.draft_date)}`, icon: 'film' };
 		case 'creating':
+			if (!dr && shootDone(c)) return shootDone(c);
 			if (!dr || dr.status === 'changes') return { key: 'share-draft', label: dr ? 'Share revised draft' : 'Share draft', hint: dr ? 'They asked for changes' : 'Send it for approval', icon: 'send' };
 			if (dr.status === 'approved') return noPost(c) ? { key: 'go-live', label: 'Mark delivered', hint: 'Draft approved: send the final files', icon: 'send' } : { key: 'go-live', label: "I've posted it", hint: 'Draft approved: post it, then link it here with the invoice', icon: 'spark' };
 			return null; // waiting for the brand's review
