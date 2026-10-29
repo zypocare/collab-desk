@@ -125,7 +125,7 @@
 	.bp-part { display: flex; align-items: center; gap: 12px; margin: 0 10px; padding: 12px 10px; border-radius: 14px; color: inherit; text-decoration: none; transition: background .15s; }
 	.bp-part:hover { background: color-mix(in oklab, var(--ink) 5%, transparent); }
 	.bp-part > :global(.ic) { width: 16px; height: 16px; color: var(--ink-3); flex: none; }
-	.bp-ic { width: 38px; height: 38px; flex: none; border-radius: 12px; display: grid; place-items: center; color: #fff; background: linear-gradient(135deg, var(--g1), var(--g2)); }
+	.bp-ic { width: 38px; height: 38px; flex: none; border-radius: 12px; display: grid; place-items: center; color: color-mix(in oklab, var(--g1) 70%, var(--ink)); background: color-mix(in oklab, var(--g1) 16%, transparent); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--g1) 32%, transparent);}
 	.bp-ic :global(.ic) { width: 18px; height: 18px; }
 	.bp-t { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 	.bp-t b { font-size: 15px; font-weight: 600; }

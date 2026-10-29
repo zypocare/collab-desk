@@ -23,7 +23,7 @@
 	.pn-in { display: flex; align-items: center; gap: 14px; }
 	.pn:hover { box-shadow: var(--glow); }
 	.pn:active { transform: scale(.985); }
-	.pn-ic { width: 38px; height: 38px; flex: none; border-radius: 11px; display: grid; place-items: center; background: var(--grad); color: var(--on-grad); }
+	.pn-ic { width: 38px; height: 38px; flex: none; border-radius: 11px; display: grid; place-items: center; background: color-mix(in oklab, var(--g1) 16%, transparent); color: color-mix(in oklab, var(--g1) 70%, var(--ink)); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--g1) 32%, transparent);}
 	.pn-ic :global(.ic) { width: 19px; height: 19px; }
 	.pn-t { display: grid; gap: 2px; flex: 1; min-width: 0; }
 	.pn-t small { font: 700 10.5px/1.2 var(--f-body); letter-spacing: .14em; text-transform: uppercase; color: var(--accent); }

@@ -223,7 +223,7 @@
 	.qr-empty { display: grid; justify-items: center; gap: 10px; padding: 48px 24px; text-align: center; }
 	.qr-empty h2 { margin: 6px 0 0; font-size: 22px; }
 	.qr-empty p { margin: 0 0 8px; max-width: 46ch; color: var(--ink-3); }
-	.qr-empty-ic { width: 64px; height: 64px; border-radius: 22px; display: grid; place-items: center; background: var(--grad); color: #fff; }
+	.qr-empty-ic { width: 64px; height: 64px; border-radius: 22px; display: grid; place-items: center; background: color-mix(in oklab, var(--g1) 16%, transparent); color: color-mix(in oklab, var(--g1) 70%, var(--ink)); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--g1) 32%, transparent);}
 	.qr-empty-ic :global(.ic) { width: 30px; height: 30px; }
 
 	.qr-grid { display: grid; grid-template-columns: minmax(220px, 280px) minmax(300px, 420px) minmax(300px, 1fr); gap: 16px; align-items: start; }

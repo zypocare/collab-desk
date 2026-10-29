@@ -224,8 +224,9 @@
 		height: 64px;
 		margin-bottom: 4px;
 		border-radius: 50%;
-		background: linear-gradient(135deg, var(--g1), var(--g2));
-		color: #fff;
+		background: color-mix(in oklab, var(--g1) 16%, transparent);
+		color: color-mix(in oklab, var(--g1) 70%, var(--ink));
+		box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--g1) 32%, transparent);
 	}
 	.rc-em-ic :global(.ic) {
 		width: 28px;

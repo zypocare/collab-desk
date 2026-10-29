@@ -61,7 +61,7 @@
 
 <style>
 	.pk { position: fixed; z-index: 60; right: max(20px, env(safe-area-inset-right, 0px)); bottom: calc(20px + env(safe-area-inset-bottom, 0px)); width: min(420px, calc(100vw - 32px)); display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 10px 14px; padding: 16px 18px; border-radius: 22px; background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow-lg); animation: pk-in .4s cubic-bezier(.2, .8, .2, 1); }
-	.pk-ic { width: 40px; height: 40px; border-radius: 14px; display: grid; place-items: center; background: var(--grad); color: #fff; }
+	.pk-ic { width: 40px; height: 40px; border-radius: 14px; display: grid; place-items: center; background: color-mix(in oklab, var(--g1) 16%, transparent); color: color-mix(in oklab, var(--g1) 70%, var(--ink)); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--g1) 32%, transparent);}
 	.pk-ic :global(.ic) { width: 20px; height: 20px; }
 	.pk-t { display: grid; gap: 2px; }
 	.pk-t b { font-size: 15px; }

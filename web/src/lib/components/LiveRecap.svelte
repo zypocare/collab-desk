@@ -240,7 +240,7 @@
 	/* A quiet row (the report, or "link the post") */
 	.lr-row { display: flex; align-items: center; gap: 12px; width: 100%; padding: 14px 16px; border: 0; border-radius: 18px; background: var(--surface); box-shadow: inset 0 0 0 1px var(--line); font: inherit; color: var(--ink); text-align: left; cursor: pointer; }
 	.lr-report { margin-top: 6px; }
-	.lr-ri { width: 36px; height: 36px; flex: none; display: grid; place-items: center; border-radius: 50%; background: linear-gradient(135deg, var(--g1), var(--g2)); color: #fff; }
+	.lr-ri { width: 36px; height: 36px; flex: none; display: grid; place-items: center; border-radius: 50%; background: color-mix(in oklab, var(--g1) 16%, transparent); color: color-mix(in oklab, var(--g1) 70%, var(--ink)); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--g1) 32%, transparent);}
 	.lr-ri :global(.ic) { width: 16px; height: 16px; }
 	.lr-rt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 	.lr-rt b { font-size: 14.5px; font-weight: 700; }
