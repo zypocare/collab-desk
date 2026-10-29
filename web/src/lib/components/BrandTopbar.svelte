@@ -77,7 +77,10 @@
 		'/brand/autopilots': 'Autopilots',
 		'/brand/campaigns/new': 'New campaign',
 		'/brand/new': 'New request',
-		'/brand/settings': 'Your brand',
+		'/brand/settings': 'Settings',
+		'/brand/profile': 'Your brand',
+		'/brand/grow': 'Grow',
+		'/brand/grow/insights': 'Your Insights',
 		'/brand/business/money': 'Payments',
 		'/brand/reports': 'Reports',
 		'/brand/business/content': 'Content',
@@ -100,6 +103,8 @@
 		: path === '/brand/inbox' ? (page.url.searchParams.get('c') ? '/brand/inbox' : '/brand')
 		: path.startsWith('/brand/creator/') ? '/brand/creators?tab=discover'
 		: path.startsWith('/brand/campaigns/') ? '/brand/campaigns'
+		: path === '/brand/grow/insights' ? '/brand/grow'
+		: path === '/brand/settings' && !sec ? '/brand/profile'
 		: sec ? '/brand/settings'
 		: isNew || path === '/brand/business/team' ? '/brand/settings'
 		: path.startsWith('/insights') ? '/'

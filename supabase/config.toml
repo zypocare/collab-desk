@@ -471,6 +471,10 @@ verify_jwt = false
 [functions.instagram-sync]
 verify_jwt = false
 
+# A brand's own Instagram, daily: called by cron (shared secret) or by the brand's team (checked inside).
+[functions.brand-ig-sync]
+verify_jwt = false
+
 # Story numbers every 2 hours (they disappear after 24 hours): cron (shared secret) or the creator.
 [functions.instagram-stories]
 verify_jwt = false

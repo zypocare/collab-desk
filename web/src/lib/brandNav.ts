@@ -26,11 +26,12 @@ export function brandGroups(onApp: boolean): BrandGroup[] {
 			tabs: [
 				{ href: '/brand/campaigns', label: 'Campaigns' },
 				{ href: '/brand/business/calendar', label: 'Calendar' },
+				{ href: '/brand/grow', label: 'Grow' },
 				{ href: '/brand/business/content', label: 'Content' },
 				{ href: '/brand/business/turnaround', label: 'Turnaround' },
 				{ href: '/brand/autopilots', label: 'Autopilots' }
 			],
-			also: ['/brand/campaigns', '/brand/business/calendar', '/brand/business/content', '/brand/business/turnaround', '/brand/autopilots']
+			also: ['/brand/campaigns', '/brand/grow', '/brand/business/calendar', '/brand/business/content', '/brand/business/turnaround', '/brand/autopilots']
 		},
 		{
 			// Like the creator's Money: the overview (Reports) first, then Payments and Shipping.
@@ -44,7 +45,8 @@ export function brandGroups(onApp: boolean): BrandGroup[] {
 			],
 			also: ['/brand/reports', '/brand/business/money', '/brand/business/shipping']
 		},
-		{ href: '/brand/settings', label: 'Brand', icon: 'gear', me: true, also: ['/brand/settings', '/brand/details', '/brand/business/team', '/brand/help'] }
+		// The brand's own profile first (like the creator's My page); settings one tap away.
+		{ href: '/brand/profile', label: 'Brand', icon: 'gear', me: true, also: ['/brand/profile', '/brand/settings', '/brand/details', '/brand/business/team', '/brand/help'] }
 	];
 }
 
