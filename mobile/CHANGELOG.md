@@ -16,9 +16,13 @@ How to ship one:
 4. Play Console › Production › Create new release › upload the `.aab` › paste the notes › send for review.
 5. Fill in the "Build" and "Sent" lines below.
 
-## 1.0.3 (planned)
+## 1.0.4 (planned)
 
 - Voice notes and voice typing work in the app (it now asks for the microphone).
+
+## 1.0.3
+
+- Share a brand's WhatsApp message to Miracle: it opens in Add collab, already read.
 
 ## 1.0.2
 

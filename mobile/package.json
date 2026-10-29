@@ -1,7 +1,7 @@
 {
   "name": "miracle-mobile",
   "private": true,
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Miracle for Android and iPhone: the web app in a native shell with native alerts, back button and links.",
   "scripts": {
     "sync": "cap sync",
