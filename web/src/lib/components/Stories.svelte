@@ -1,10 +1,10 @@
 <script lang="ts">
 	import { studio } from '../studio.svelte';
 	import { copyText } from '../ui.svelte';
-	import { delivText, inrS, stageLabel, tasks, type Task } from '../util';
+	import { delivText, fmt, inrS, stageLabel, tasks, type Task } from '../util';
 	import type { Collab } from '../types';
 	import Icon from './Icon.svelte';
-	import RingIcons from './RingIcons.svelte';
+	import CycleText from './CycleText.svelte';
 
 	// Pending Instagram collabs take the home row. Otherwise, show
 	// collabs that need her first, followed by the rest of the active ones.
@@ -23,31 +23,35 @@
 	const status = (t: Task) => (dated.has(t.kind) ? `${NEXT[t.kind]} ${when(t.d)}` : NEXT[t.kind]);
 	// new requests and messages are "do this now" (amber), never "late"; red is for missed dates and unpaid money
 	const tone = (t: Task) => (t.kind === 'new' || t.kind === 'msg' ? 'now' : t.d < 0 || t.kind === 'pay' ? 'late' : t.d === 0 ? 'now' : '');
-	// The ring in each card's corner (like Money's shortcuts): it turns, and its icon turns through what the card is about.
-	const ICONS: Record<string, string[]> = {
-		new: ['inbox', 'spark', 'check'], msg: ['mail', 'send', 'check'], quote: ['rupee', 'edit', 'send'], revise: ['edit', 'rupee', 'send'],
-		follow: ['bell', 'send', 'clock'], draft: ['film', 'edit', 'send'], shoot: ['cal', 'film', 'spark'], live: ['spark', 'eye', 'chart'],
-		product: ['box', 'send', 'check'], pay: ['wallet', 'rupee', 'bell'], claim: ['wallet', 'check', 'rupee'], usage: ['shield', 'clock', 'rupee'], tds: ['doc', 'rupee', 'check'],
-		request: ['inbox', 'spark', 'check'], negotiating: ['rupee', 'mail', 'check'], confirmed: ['check', 'cal', 'film'], creating: ['film', 'edit', 'send'],
-		dm: ['mail', 'spark', 'rupee']
-	};
+	// Each card comes alive like Money's round shortcuts: a light runs round its edge in its own colour, and its line
+	// turns through a few facts about it (CycleText), each card a beat after the one before.
 	// Its colour: the card's tone when it has one, else the theme's hues in turn, so the row isn't all one colour.
 	const HUES = ['var(--g2)', 'var(--g1)', 'var(--g3)', 'var(--h-live)', 'var(--h-request)'];
 	const TONE_HUE: Record<string, string> = { now: 'var(--g3)', late: 'var(--bad)', ok: 'var(--ok)' };
 	const hue = (tone: string, i: number) => TONE_HUE[tone] ?? HUES[i % HUES.length];
+	const facts = (...xs: (string | null | undefined | false)[]) => [...new Set(xs.filter((x): x is string => !!x && !!x.trim()))];
+	const dateLine = (c: Collab) => (c.live_date ? `Live ${fmt(c.live_date)}` : c.draft_date ? `Draft ${fmt(c.draft_date)}` : stageLabel(c.stage));
+	const ago = (at: string | null) => {
+		if (!at) return '';
+		const m = Math.max(0, Math.round((Date.now() - Date.parse(at)) / 60000));
+		return m < 60 ? `${Math.max(1, m)} min ago` : m < 1440 ? `${Math.round(m / 60)} h ago` : `${Math.round(m / 1440)} d ago`;
+	};
 	const all = $derived([
-		...need.map((t) => ({ id: t.c.id, name: t.c.brand.name, money: fee(t.c), href: t.kind === 'msg' ? `/studio/inbox/${t.c.code}` : `/studio/c/${t.c.code}`, line: t.title, pill: status(t), tone: tone(t), icons: ICONS[t.kind] })),
-		...rest.map((c) => ({ id: c.id, name: c.brand.name, money: fee(c), href: `/studio/c/${c.code}`, line: delivText(c.deliverables), pill: stageLabel(c.stage), tone: c.stage === 'live' ? 'ok' : '', icons: ICONS[c.stage] ?? ICONS.confirmed }))
+		...need.map((t) => ({ id: t.c.id, name: t.c.brand.name, money: fee(t.c), href: t.kind === 'msg' ? `/studio/inbox/${t.c.code}` : `/studio/c/${t.c.code}`, line: t.title, pill: status(t), tone: tone(t), lines: facts(t.title, t.c.deliverables.length > 0 && delivText(t.c.deliverables), dateLine(t.c)) })),
+		...rest.map((c) => ({ id: c.id, name: c.brand.name, money: fee(c), href: `/studio/c/${c.code}`, line: delivText(c.deliverables), pill: stageLabel(c.stage), tone: c.stage === 'live' ? 'ok' : '', lines: facts(c.deliverables.length > 0 && delivText(c.deliverables), dateLine(c)) }))
 	]);
+	const leadName = (l: (typeof studio.leads)[number]) => /^([^:@][^:]{0,40}):\s/.exec(l.collab_hint)?.[1].trim() || l.name || (l.username ? `@${l.username}` : 'Instagram');
+	// A long handle may break after its dots and underscores (@bhawna. / barcode), not in the middle of a word.
+	const soft = (name: string) => name.replace(/([._])(?=\S)/g, '$1\u200b');
 	const shown = $derived(leads.length ? leads.map((l) => ({
 		id: `dm-${l.igsid}`,
-		name: /^([^:@][^:]{0,40}):\s/.exec(l.collab_hint)?.[1].trim() || l.name || (l.username ? `@${l.username}` : 'Instagram'),
+		name: leadName(l),
 		money: 'From DM',
 		href: `/studio/inbox/ig/${l.igsid}`,
 		line: l.collab_hint || 'Asking about working together',
 		pill: 'Review DM',
 		tone: 'dm',
-		icons: ICONS.dm
+		lines: facts(l.collab_hint || 'Asking about working together', [l.username && leadName(l) !== `@${l.username}` ? `@${l.username}` : '', ago(l.last_at)].filter(Boolean).join(' · '), l.unread ? `${l.unread} new message${l.unread === 1 ? '' : 's'}` : '', 'Tap to turn it into a collab')
 	})) : all);
 </script>
 
@@ -58,10 +62,9 @@
 	</div>
 	<div class="tix-row">
 		{#each shown as k, i (k.id)}
-			<a class="tix-t tone-{k.tone || 'calm'}" class:tix-dm={leads.length > 0} style="--rt:{hue(k.tone, i)}" href={k.href} aria-label="{k.name}: {k.line}, {k.money}, {k.pill}">
-				<span class="tix-ring" aria-hidden="true"><RingIcons {i} icons={k.icons} /></span>
-				<b class="tix-n">{k.name}</b>
-				<span class="tix-l">{k.line}</span>
+			<a class="tix-t tone-{k.tone || 'calm'}" class:tix-dm={leads.length > 0} style="--rt:{hue(k.tone, i)};--k:{i}" href={k.href} aria-label="{k.name}: {k.line}, {k.money}, {k.pill}">
+				<b class="tix-n">{soft(k.name)}</b>
+				<span class="tix-l" aria-hidden="true"><CycleText {i} items={k.lines} /></span>
 				<i class="tix-cut" aria-hidden="true"></i>
 				<span class="tix-f"><strong>{k.money}</strong><em>{#if leads.length}<i class="tix-attention" aria-hidden="true"></i>{/if}{k.pill}</em></span>
 			</a>

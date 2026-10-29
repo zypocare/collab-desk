@@ -255,12 +255,16 @@
 		display: flex;
 		flex-direction: column;
 		padding: 14px 14px 12px;
-		border: 0;
+		/* The edge: a light in the card's colour (--rt) runs round it, like the turning rim of Money's shortcuts.
+		   Each card starts at a different point (--k), so the row never moves in step. */
+		border: 1.5px solid transparent;
 		border-radius: 18px;
 		background:
-			radial-gradient(120% 80% at 0% 0%, var(--tint), transparent 60%),
-			var(--surface);
-		box-shadow: inset 0 0 0 1px var(--line-strong);
+			radial-gradient(120% 80% at 0% 0%, var(--tint), transparent 60%) padding-box,
+			linear-gradient(var(--surface), var(--surface)) padding-box,
+			conic-gradient(from var(--tix-a), var(--line-strong) 0deg 220deg, color-mix(in oklab, var(--rt, var(--g2)) 70%, var(--line-strong)) 265deg, var(--rt, var(--g2)) 300deg, var(--g3) 325deg, var(--line-strong) 360deg) border-box;
+		animation: tix-turn 6s linear infinite;
+		animation-delay: calc(var(--k, 0) * -1.4s);
 		color: var(--ink);
 		text-align: left;
 		font: inherit;
@@ -288,34 +292,10 @@
 		font-weight: 400;
 		font-size: 23px;
 		line-height: 1.02;
-		/* Room for the ring; a long handle breaks onto the second line rather than running under it. */
-		margin-right: 38px;
-		overflow-wrap: anywhere;
+		/* A long name breaks onto the second line (a handle after its dots, see Stories.svelte). */
+		overflow-wrap: break-word;
 	}
-	/* The ring in the corner, like Money's shortcuts: its gradient turns and its icon changes (RingIcons). */
 	@property --tix-a { syntax: '<angle>'; inherits: false; initial-value: 0deg; }
-	.tix .tix-ring {
-		position: absolute;
-		top: 12px;
-		right: 12px;
-		width: 34px;
-		height: 34px;
-		box-sizing: border-box;
-		padding: 2px;
-		border-radius: 50%;
-		background: conic-gradient(from var(--tix-a), var(--g3), var(--g2), var(--g1), var(--g3));
-		animation: tix-turn 5s linear infinite;
-	}
-	.tix .tix-ring > .ri {
-		border: 2px solid var(--surface);
-		box-sizing: border-box;
-		background: radial-gradient(circle at 50% 30%, color-mix(in oklab, var(--rt, var(--g2)) 34%, var(--surface-2)), var(--surface-2) 75%);
-		color: var(--rt, var(--g2));
-	}
-	.tix .tix-ring .ic {
-		width: 15px;
-		height: 15px;
-	}
 	@keyframes tix-turn { to { --tix-a: 360deg; } }
 	.tix .tix-l {
 		margin-top: 4px;
@@ -402,7 +382,7 @@
 		background: currentColor;
 	}
 	@media (prefers-reduced-motion: reduce) {
-		.tix .tix-ring { animation: none; }
+		.tix .tix-t { animation: none; }
 	}
 	.tix .tix-tip {
 		height: 120px;
