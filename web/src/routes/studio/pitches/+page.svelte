@@ -93,13 +93,41 @@
 		const intro = `Hi ${p.brand_name} team! I'm ${s.display_name} (@${s.handle}), a ${niche} creator from ${s.city || 'India'}.`;
 		return `${intro} I love what you're doing and would love to create content for ${p.brand_name}. My rates, past work and live Instagram numbers are all here: ${link}\n\nHappy to share a few ideas if you're open to it!`;
 	}
-	async function dm(p: Pitch) {
-		const h = handleOf(p);
-		if (!h) return;
-		const text = dmText(p);
-		// Copy first and open the chat in the same tap (a phone only opens Instagram from a tap).
-		navigator.clipboard?.writeText(text).then(() => toast('Message copied. Paste it in the chat and send.', 'copy'), () => toast(`Copy this: ${text}`, 'copy'));
+	// The icon opens a sheet with the message (she can read or change it); its button copies it and opens the chat.
+	let dmFor = $state<Pitch | null>(null);
+	let dmBody = $state('');
+	function dm(p: Pitch) {
+		if (!handleOf(p)) return;
+		dmFor = p;
+		dmBody = dmText(p);
+	}
+	// Copied the old way first: inside the phone app the clipboard API can be refused without a word.
+	function copyNow(text: string) {
+		const ta = document.createElement('textarea');
+		ta.value = text;
+		ta.setAttribute('readonly', '');
+		ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0';
+		document.body.appendChild(ta);
+		ta.select();
+		ta.setSelectionRange(0, text.length);
+		let ok = false;
+		try {
+			ok = document.execCommand('copy');
+		} catch {
+			ok = false;
+		}
+		ta.remove();
+		if (!ok) navigator.clipboard?.writeText(text).catch(() => {});
+	}
+	async function sendDm() {
+		const p = dmFor;
+		const h = p ? handleOf(p) : '';
+		if (!p || !h) return;
+		// Copy, then open the chat in the same tap (a phone only opens Instagram from a tap).
+		copyNow(dmBody.trim());
+		toast('Message copied. In the chat, hold the message box, tap Paste, then send.', 'copy');
 		openOutside(`https://ig.me/m/${encodeURIComponent(h)}`);
+		dmFor = null;
 		const at = new Date().toISOString();
 		list = list.map((x) => (x.id === p.id ? { ...x, dm_sent_at: at } : x));
 		await supabase.from('pitches').update({ dm_sent_at: at }).eq('id', p.id);
@@ -322,6 +350,21 @@
 				<button class="btn ghost" onclick={() => (open = null)}>Cancel</button>
 				<button class="btn" disabled={busy || !open.brand_name?.trim()} onclick={() => save(false)}>Save to wishlist</button>
 				<button class="btn grad" disabled={busy || !open.brand_name?.trim() || !open.email?.trim()} onclick={() => save(true)}>{#if busy}<span class="spinner"></span>{:else}<Icon name="send" />{/if}Send pitch</button>
+			</div>
+		</div>
+	</div>
+{/if}
+
+{#if dmFor}
+	<!-- Instagram doesn't let any app type into a chat, so the message goes on her clipboard and she pastes it. -->
+	<div class="dialog-scrim" role="presentation" onclick={(e) => e.target === e.currentTarget && (dmFor = null)}>
+		<div class="dialog" role="dialog" aria-modal="true" aria-labelledby="dm-title">
+			<h2 id="dm-title">DM {dmFor.brand_name}</h2>
+			<p>We copy this and open your chat with @{handleOf(dmFor)}. In the chat, hold the message box, tap <b>Paste</b>, then send.</p>
+			<div class="f"><label for="dm-body">Your message</label><textarea class="inp" id="dm-body" rows="8" bind:value={dmBody}></textarea></div>
+			<div class="row">
+				<button class="btn ghost" onclick={() => (dmFor = null)}>Cancel</button>
+				<button class="btn grad" disabled={!dmBody.trim()} onclick={sendDm}><Icon name="insta" />Copy &amp; open</button>
 			</div>
 		</div>
 	</div>
