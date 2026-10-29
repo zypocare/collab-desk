@@ -6,7 +6,7 @@
 	import { addressFor } from '#lib/creatorHost.ts';
 	import { phone } from '#lib/phone.svelte.ts';
 	import { pageSlug } from '#lib/supabase.ts';
-	import { firstName } from '#lib/util.ts';
+	import { firstName, stageLabel } from '#lib/util.ts';
 	import type { BrandRow } from '#lib/types.ts';
 	import Avatar from '#lib/components/Avatar.svelte';
 	import Icon from '#lib/components/Icon.svelte';
@@ -59,7 +59,7 @@
 				<div class="ib-notes" aria-label="Start a chat">
 					{#each quiet as r (r.id)}
 						<button class="ib-note" onclick={() => pick(r)}>
-							<span class="ib-bubble">{r.stage_label}</span>
+							<span class="ib-bubble">{stageLabel(r.stage)}</span>
 							<span class="ib-nav"><Avatar name={r.creator.name} src={r.creator.photo} size="68px" /></span>
 							<small>{firstName(r.creator.name)}</small>
 						</button>
