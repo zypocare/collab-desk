@@ -15,11 +15,12 @@
 	import { openBriefs } from '#lib/campaigns.svelte.ts';
 	import type { OpenBrief } from '#lib/types.ts';
 	import { phone } from '#lib/phone.svelte.ts';
+	import { openOutside } from '#lib/native.ts';
 
 	// Brands she'd like to work with: a wishlist, a pitch from her own email, polite follow-ups.
 	type Pitch = {
 		id: string; brand_name: string; instagram: string; category: string; contact_name: string; email: string; subject: string; body: string;
-		status: 'idea' | 'ready' | 'sent' | 'replied' | 'won' | 'not_now' | 'skipped'; auto_follow: boolean; website?: string; source?: string; fit_note?: string; approved?: boolean; send_after?: string | null; followups: number; sent_at: string | null; next_follow_on: string | null; collab_id: string | null; created_at: string;
+		status: 'idea' | 'ready' | 'sent' | 'replied' | 'won' | 'not_now' | 'skipped'; auto_follow: boolean; website?: string; source?: string; fit_note?: string; approved?: boolean; send_after?: string | null; followups: number; dm_sent_at?: string | null; sent_at: string | null; next_follow_on: string | null; collab_id: string | null; created_at: string;
 	};
 	let list = $state<Pitch[]>([]);
 	let loaded = $state(false);
@@ -83,6 +84,27 @@
 		toast(r.added ? `${r.added} new brand${r.added === 1 ? '' : 's'} ready` : r.skipped ? `Nothing new: ${r.skipped}` : 'No new brands with a public email today', r.added ? 'check' : 'alert');
 		load();
 	}
+	// Instagram: Meta doesn't let an app start a DM, so Miracle writes a short one, copies it and opens the brand's
+	// chat; she pastes and taps send, from her own account. The pitch remembers she did.
+	const handleOf = (p: Pitch) => (p.instagram ?? '').trim().replace(/^@/, '').replace(/^https?:\/\/(www\.)?instagram\.com\//i, '').replace(/[/?#].*$/, '');
+	function dmText(p: Pitch) {
+		// "Lifestyle, Travel, Fashion, Yoga" reads as "a lifestyle and travel creator".
+		const niche = (s.niche || '').split(/[,/·|]/).map((x) => x.trim().toLowerCase()).filter(Boolean).slice(0, 2).join(' and ') || 'content';
+		const intro = `Hi ${p.brand_name} team! I'm ${s.display_name} (@${s.handle}), a ${niche} creator from ${s.city || 'India'}.`;
+		return `${intro} I love what you're doing and would love to create content for ${p.brand_name}. My rates, past work and live Instagram numbers are all here: ${link}\n\nHappy to share a few ideas if you're open to it!`;
+	}
+	async function dm(p: Pitch) {
+		const h = handleOf(p);
+		if (!h) return;
+		const text = dmText(p);
+		// Copy first and open the chat in the same tap (a phone only opens Instagram from a tap).
+		navigator.clipboard?.writeText(text).then(() => toast('Message copied. Paste it in the chat and send.', 'copy'), () => toast(`Copy this: ${text}`, 'copy'));
+		openOutside(`https://ig.me/m/${encodeURIComponent(h)}`);
+		const at = new Date().toISOString();
+		list = list.map((x) => (x.id === p.id ? { ...x, dm_sent_at: at } : x));
+		await supabase.from('pitches').update({ dm_sent_at: at }).eq('id', p.id);
+	}
+	const dmNote = (p: Pitch) => (p.dm_sent_at ? ` · DM sent ${fmt(p.dm_sent_at.slice(0, 10))}` : '');
 	const counts = $derived({ idea: list.filter((p) => p.status === 'idea').length, sent: list.filter((p) => p.status === 'sent').length, won: list.filter((p) => p.status === 'won').length });
 
 	function template(p: Partial<Pitch>) {
@@ -205,9 +227,10 @@
 		
 			<div class="tks pt-tks">
 				{#each ready as p, i (p.id)}
-					<Ticket name={p.brand_name} sub={[p.category, p.email].filter(Boolean).join(' · ')} task={p.fit_note || p.subject} status={goes(p)} tone={p.approved || auto ? 'ok' : 'warn'} onopen={() => (open = { ...p })} {i}>
+					<Ticket name={p.brand_name} sub={[p.category, p.email].filter(Boolean).join(' · ') + dmNote(p)} task={p.fit_note || p.subject} status={goes(p)} tone={p.approved || auto ? 'ok' : 'warn'} onopen={() => (open = { ...p })} {i}>
 						<span class="pt-tk-acts">
 							{#if !p.approved && !auto}<button class="btn primary" onclick={() => approve([p])}><Icon name="check" />Approve</button>{/if}
+							{#if handleOf(p)}<button class="icon-btn" aria-label="DM {p.brand_name} on Instagram" onclick={() => dm(p)}><Icon name="insta" /></button>{/if}
 							<button class="icon-btn" aria-label="Read or change the pitch" onclick={() => (open = { ...p })}><Icon name="edit" /></button>
 							<button class="icon-btn" aria-label="Skip this brand" onclick={() => skip(p)}><Icon name="x" /></button>
 						</span>
@@ -228,7 +251,7 @@
 		{#each shown as p, i (p.id)}
 			<Ticket
 				name={p.brand_name}
-				sub={p.instagram ? `${LABEL[p.status].t} · @${p.instagram}` : LABEL[p.status].t}
+				sub={(p.instagram ? `${LABEL[p.status].t} · @${handleOf(p)}` : LABEL[p.status].t) + dmNote(p)}
 				task={p.status === 'idea' ? 'On your wishlist' : p.status === 'sent' ? `Pitched ${fmt(p.sent_at?.slice(0, 10))}` : p.status === 'replied' ? 'They replied' : p.status === 'won' ? 'Won' : 'Not now'}
 				status={p.status === 'sent' ? (p.auto_follow && p.followups < 2 && p.next_follow_on ? `Next follow-up ${fmt(p.next_follow_on)}` : p.followups ? `${p.followups} follow-up${p.followups > 1 ? 's' : ''} sent` : 'Waiting for a reply') : p.status === 'idea' ? 'Not pitched yet' : p.status === 'replied' ? 'Reply and close it' : p.status === 'won' ? 'Now a collab' : 'Parked for later'}
 				tone={p.status === 'replied' || p.status === 'won' ? 'ok' : p.status === 'sent' ? 'warn' : 'calm'}
@@ -236,6 +259,7 @@
 			>
 				<span class="pt-tk-acts">
 					{#if p.status === 'idea'}<button class="btn primary" onclick={() => (open = { ...p })}><Icon name="send" />Pitch</button>{/if}
+					{#if handleOf(p) && ['idea', 'sent', 'replied'].includes(p.status)}<button class="btn" onclick={() => dm(p)}><Icon name="insta" />{p.dm_sent_at ? 'DM again' : 'DM'}</button>{/if}
 					{#if p.status === 'sent'}<button class="btn" onclick={() => setStatus(p, 'replied')}>Replied</button>{/if}
 					{#if p.status === 'sent' || p.status === 'replied'}<button class="btn primary" onclick={() => won(p)}><Icon name="check" />Won</button>{/if}
 					{#if p.status === 'won' && p.collab_id}<button class="btn" onclick={() => (ui.openCollab = p.collab_id)}>Open</button>{/if}
@@ -259,6 +283,7 @@
 			</div>
 			<div class="pt-acts">
 				{#if p.status === 'idea'}<button class="btn sm primary" onclick={() => (open = { ...p })}><Icon name="send" />Pitch</button>{/if}
+				{#if handleOf(p) && ['idea', 'sent', 'replied'].includes(p.status)}<button class="btn sm" onclick={() => dm(p)}><Icon name="insta" />{p.dm_sent_at ? 'DM again' : 'DM on Instagram'}</button>{/if}
 				{#if p.status === 'sent'}<button class="btn sm" onclick={() => setStatus(p, 'replied')}><Icon name="mail" />They replied</button>{/if}
 				{#if p.status === 'sent' || p.status === 'replied'}<button class="btn sm primary" onclick={() => won(p)}><Icon name="check" />Won</button>{/if}
 				{#if p.status === 'won' && p.collab_id}<button class="btn sm" onclick={() => (ui.openCollab = p.collab_id)}>Open collab</button>{/if}

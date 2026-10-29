@@ -138,7 +138,11 @@ async function findFor(db: ReturnType<typeof admin>, s: Settings, opt: { manual:
     });
     freshN += fresh.length;
     for (let i = 0; i < fresh.length && found.length < want; i += 6) {
-      const batch = await Promise.all(fresh.slice(i, i + 6).map(async (b) => ({ ...b, domain: domainOf(b.website), email: await siteEmail(b.website) })));
+      // The handle on the brand's own website beats the AI's guess (which can be an old or a fan account).
+      const batch = await Promise.all(fresh.slice(i, i + 6).map(async (b) => {
+        const site = await siteContact(b.website);
+        return { ...b, instagram: site.instagram || b.instagram, domain: domainOf(b.website), email: site.email };
+      }));
       for (const b of batch) if (b.email && found.length < want && !found.some((f) => f.domain === b.domain)) found.push(b);
     }
   }
@@ -210,12 +214,16 @@ function sendTimes(n: number) {
   return out;
 }
 
-// ---------- a public business email from the brand's own website ----------
+// ---------- a public business email (and the brand's Instagram) from its own website ----------
 const EMAIL = /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g;
 const BAD = /(\.(png|jpe?g|gif|webp|svg|css|js)$)|example\.|sentry|wixpress|domain\.com|email\.com|yourname|@2x|noreply|no-reply|donotreply|privacy|legal|grievance|careers|jobs|hr@|recruit|admission|returns?@|refund|orders?@|invest|ir@|compliance|accounts@|billing|resv\./i;
 const GOOD = ['collab', 'influenc', 'creator', 'partner', 'marketing', 'pr@', 'brand', 'social', 'media', 'hello', 'contact', 'info', 'care', 'support'];
 
-async function siteEmail(website: string): Promise<string> {
+// instagram.com paths that are never an account.
+const IG_NOT = new Set(['p', 'reel', 'reels', 'tv', 'explore', 'stories', 'accounts', 'direct', 'about', 'legal', 'developer', 'developers', 'share', 'sharer', 'web', 'embed', 'static', 'privacy', 'help', '_u', 'emails', 'oauth', 'challenge', 'instagram']);
+
+async function siteContact(website: string): Promise<{ email: string; instagram: string }> {
+  const none = { email: '', instagram: '' };
   const base = (() => {
     try {
       const u = new URL(website);
@@ -224,10 +232,10 @@ async function siteEmail(website: string): Promise<string> {
       return '';
     }
   })();
-  if (!base) return '';
+  if (!base) return none;
   const domain = domainOf(base);
   const home = await get(base);
-  if (!home) return '';
+  if (!home) return none;
   const links = [...home.matchAll(/href=["']([^"'#]+)["']/gi)]
     .map((m) => m[1])
     .filter((h) => /contact|collab|partner|influenc|creator|about/i.test(h))
@@ -243,7 +251,15 @@ async function siteEmail(website: string): Promise<string> {
   const ok = [...emails].map((e) => e.toLowerCase().replace(/^mailto:/, '')).filter((e) => !BAD.test(e));
   // Their own domain first, then the most collab-like address.
   const score = (e: string) => (e.endsWith('@' + domain) || e.endsWith('.' + domain) ? 100 : /gmail|yahoo|outlook/.test(e) ? 10 : 0) + (20 - Math.min(20, GOOD.findIndex((g) => e.includes(g)) >>> 0));
-  return ok.sort((a, b) => score(b) - score(a))[0] ?? '';
+  // Their Instagram: the account their pages link to most (the footer link, usually on every page).
+  const handles = new Map<string, number>();
+  for (const html of pages)
+    for (const m of html.matchAll(/instagram\.com\/(?:#!\/)?([A-Za-z0-9._]{1,30})(?=[\/?"'#\s]|$)/gi)) {
+      const h = m[1].replace(/\.+$/, '').toLowerCase();
+      if (h && !IG_NOT.has(h)) handles.set(h, (handles.get(h) ?? 0) + 1);
+    }
+  const instagram = [...handles].sort((a, b) => b[1] - a[1])[0]?.[0] ?? '';
+  return { email: ok.sort((a, b) => score(b) - score(a))[0] ?? '', instagram };
 }
 async function get(u: string): Promise<string> {
   try {
