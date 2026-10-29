@@ -15,6 +15,7 @@
 	import CampaignApplications from '#lib/components/CampaignApplications.svelte';
 	import DatePicker from '#lib/components/DatePicker.svelte';
 	import Icon from '#lib/components/Icon.svelte';
+	import Ticket from '#lib/components/Ticket.svelte';
 	import { shortlistFor, type Suggestion } from '#lib/autopilots.svelte.ts';
 	import { auth } from '#lib/auth.svelte.ts';
 
@@ -87,7 +88,7 @@
 			case 'live': return { text: r.pay_status === 'paid' ? 'Live · paid' : 'Live · to pay', tone: 'ok' };
 			case 'wrapped': return { text: 'Done', tone: 'ok' };
 			case 'declined': return { text: 'Declined', tone: 'bad' };
-			default: return { text: r.stage_label ?? '', tone: '' };
+			default: return { text: r.stage_label ?? (r.status === 'sent' ? 'Sent · waiting for their quote' : ''), tone: '' };
 		}
 	};
 	const price = (r: CampaignRow) => (r.quote ? Number(r.quote.total) : Number(r.fee) || 0);
@@ -236,8 +237,34 @@
 		<button role="tab" aria-selected={tab === 'brief'} class:on={tab === 'brief'} onclick={() => setTab('brief')}><i class="dt" style="--hue:var(--ok)"></i>Brief</button>
 	</div>
 
+	{#if tab === 'board' && phone.on}
+		<!-- Phone: the creator's money card. Budget used, big, and the three numbers that matter under it. -->
+		<section class="hero-card glow m-hero m-pipe" aria-label="Budget">
+			<div class="mesh" aria-hidden="true"></div>
+			<div class="hc-in">
+				<div class="hc-top">
+					<span class="hc-eb">{c.name}</span>
+					{#if waitingQuotes.length}<button class="glass-chip" onclick={() => setTab('quotes')}><Icon name="alert" />{waitingQuotes.length} to answer</button>{/if}
+				</div>
+				<div class="hc-val">{inr(used)}</div>
+				<div class="hc-sub">{c.budget_total ? `used of ${inr(c.budget_total)}` : 'agreed so far'}{quoted ? ` · ${inr(quoted)} quoted` : ''}</div>
+				{#if c.budget_total}
+					<div class="pipe-bar" aria-hidden="true">
+						{#if used}<i style="flex:{used};--hue:var(--ok)"></i>{/if}
+						{#if quoted}<i style="flex:{quoted};--hue:var(--warn,#e0a23a)"></i>{/if}
+						{#if c.budget_total - used - quoted > 0}<i style="flex:{c.budget_total - used - quoted};--hue:var(--line-strong)"></i>{/if}
+					</div>
+				{/if}
+				<div class="hc-foot">
+					<button onclick={() => setTab('board')}><small><span class="dt" style="--hue:var(--g1)"></span>Creators</small><b>{rows.length}</b></button>
+					<button class:on={waitingQuotes.length > 0} onclick={() => setTab('quotes')}><small><span class="dt" style="--hue:var(--bad)"></span>Your turn</small><b>{waitingQuotes.length}</b></button>
+					<button onclick={() => setTab('board')}><small><span class="dt" style="--hue:var(--warn,#e0a23a)"></span>Not replied</small><b>{notReplied}</b></button>
+				</div>
+			</div>
+		</section>
+	{/if}
 	{#if tab === 'board'}
-		<div class="cb-stats rv" style="--i:1">
+		<div class="cb-stats rv" style="--i:1" hidden={phone.on}>
 			<div class="cb-s"><span>Creators</span><b>{rows.length}</b><small>{rows.filter((r) => r.status === 'sent').length} asked · {rows.filter((r) => r.status === 'invited').length} invited</small></div>
 			<div class="cb-s" class:hot={waitingQuotes.length > 0}><span>Your turn</span><b>{waitingQuotes.length} quote{waitingQuotes.length === 1 ? '' : 's'}</b><small>{waitingQuotes.length ? 'compare them side by side' : 'nothing to answer'}</small></div>
 			<div class="cb-s"><span>Budget used</span><b>{inr(used)}</b><small>{c.budget_total ? `of ${inr(c.budget_total)}` : 'agreed so far'}{quoted ? ` · ${inr(quoted)} quoted` : ''}</small></div>
@@ -256,9 +283,36 @@
 				{/each}
 			</section>
 		{/if}
-		{#if waitingQuotes.length && phone.on}<button class="cb-neo cb-light cb-wide" onclick={() => setTab('quotes')}>Compare {waitingQuotes.length} quote{waitingQuotes.length === 1 ? '' : 's'}</button>{/if}
+		<!-- Phone: the card's "to answer" chip and each ticket's Review take you to the quotes. -->
 
-		<div class="cb-rows" class:cb-tix={phone.on}>
+		{#if phone.on}
+			<!-- Phone: each creator a ticket, like Needs you on Today. -->
+			<div class="tks cb-tks">
+				{#each rows as r, i (r.id)}
+					{@const w = where(r)}
+					<Ticket
+						name={who(r)}
+						sub={r.status === 'invited' ? 'Invited' : (r.stage_label ?? 'Asked')}
+						money={price(r) ? inrS(price(r)) : ''}
+						moneySub={price(r) ? (r.quote?.status === 'sent' ? 'quote' : 'agreed') : ''}
+						task={w.text}
+						status={w.tone === 'turn' ? 'Your turn' : w.tone === 'bad' ? 'Needs a look' : w.tone === 'ok' ? 'On track' : 'Waiting on them'}
+						tone={w.tone === 'turn' ? 'hot' : w.tone === 'bad' ? 'warn' : w.tone === 'ok' ? 'ok' : 'calm'}
+						href={r.code && r.creator ? at(r.creator.slug, `/brand/r/${r.code}`) : ''}
+						{i}
+					>
+						{#if r.status === 'invited' && r.joined}
+							<button class="btn primary" onclick={() => sendJoined(r)}>Send request</button>
+						{:else if r.status === 'invited'}
+							<button class="btn" onclick={() => invite(r)}>Copy invite</button>
+						{:else if r.code && r.creator}
+							{#if w.tone === 'turn'}<a class="btn primary" href={r.quote?.status === 'sent' ? '?tab=quotes' : at(r.creator.slug, `/brand/r/${r.code}`)}>Review</a>{:else}<a class="btn" href={at(r.creator.slug, `/brand/r/${r.code}`)}>Open</a>{/if}
+						{/if}
+					</Ticket>
+				{/each}
+			</div>
+		{/if}
+		<div class="cb-rows" class:cb-tix={phone.on} hidden={phone.on}>
 			{#if !phone.on}<div class="cb-r cb-th"><span>Creator</span><span>Where it stands</span><span>Price</span><span></span></div>{/if}
 			{#each rows as r (r.id)}
 				{@const w = where(r)}
