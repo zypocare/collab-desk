@@ -37,10 +37,10 @@
 			const d = new Date(start + 'T00:00:00');
 			d.setDate(d.getDate() + i * 7);
 			const w = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-			const hours = [...toMake, ...waitingProduct]
-				.filter((c) => weekOf(c.shoot_date ?? suggestShoot(c)) === w || (i === 0 && (c.shoot_date ?? suggestShoot(c)) < w))
-				.reduce((a, c) => a + hoursLeft(c, s), 0);
-			return { w, hours, label: i === 0 ? 'This week' : i === 1 ? 'Next week' : fmt(w) };
+			const cs = [...toMake, ...waitingProduct].filter((c) => weekOf(c.shoot_date ?? suggestShoot(c)) === w || (i === 0 && (c.shoot_date ?? suggestShoot(c)) < w));
+			const hours = cs.reduce((a, c) => a + hoursLeft(c, s), 0);
+			const n = cs.reduce((a, c) => a + c.deliverables.filter((d) => !d.done).reduce((k, d) => k + d.qty, 0), 0);
+			return { w, hours, n, label: i === 0 ? 'This week' : i === 1 ? 'Next week' : `In ${i} weeks`, from: fmt(w) };
 		});
 	});
 	const cap = $derived(s.weekly_hours || 25);
@@ -73,13 +73,14 @@
 		<div class="mesh" aria-hidden="true"></div>
 		<div class="hc-in">
 			<div class="hc-top">
-				<span class="hc-eb">This week</span>
+				<span class="hc-eb">Your work this week</span>
 				<a class="glass-chip" href="/studio/calendar"><Icon name="cal" />Calendar</a>
 			</div>
 			<div class="hc-main">
 				<div>
-					<div class="hc-val">{wk.hours}<span class="hc-unit"> h</span></div>
-					<div class="hc-sub">{pieces ? `${pieces} piece${pieces > 1 ? 's' : ''} to make` : 'Nothing to make right now'}{wk.hours > cap ? ` · ${wk.hours - cap} h over your ${cap} h` : ` · ${cap - wk.hours} h free`}</div>
+					<div class="hc-val">{wk.n}<span class="hc-unit"> {wk.n === 1 ? 'piece' : 'pieces'}</span></div>
+					<div class="hc-sub">{wk.n ? `to make, about ${wk.hours} h of work` : 'Nothing to make this week'}</div>
+					<div class="m-wk-note">{wk.hours > cap ? `That's ${wk.hours - cap} h more than the ${cap} h a week you set.` : `You set ${cap} h of work a week.`}</div>
 				</div>
 				<div class="goal" class:over={wk.hours > cap} style="--p:{wkPct}">
 					<svg viewBox="0 0 120 120" aria-hidden="true"
@@ -89,12 +90,13 @@
 							></defs
 						><circle class="g-track" cx="60" cy="60" r="50" /><circle class="g-prog" cx="60" cy="60" r="50" pathLength="100" style="stroke:url(#weekGradM)" /></svg
 					>
-					<div class="g-txt"><b>{Math.round((wk.hours / (cap || 1)) * 100)}%</b><small>of {cap} h</small></div>
+					<div class="g-txt">{#if wk.hours > cap}<b>+{wk.hours - cap} h</b><small>too much</small>{:else}<b>{cap - wk.hours} h</b><small>free</small>{/if}</div>
 				</div>
 			</div>
+			<span class="m-wk-cap">Coming weeks</span>
 			<div class="hc-foot">
 				{#each weeks.slice(1) as w (w.w)}
-					<div class:over={w.hours > cap}><small>{w.label}</small><b>{w.hours} h</b><span class="m-wbar"><i style="--p:{Math.min(1, w.hours / (cap || 1))}"></i></span></div>
+					<div class:over={w.hours > cap}><small title="From {w.from}">{w.label}</small><b>{w.hours ? `${w.hours} h` : 'Free'}</b><span class="m-wbar"><i style="--p:{Math.min(1, w.hours / (cap || 1))}"></i></span><em>{w.hours > cap ? 'too busy' : w.n ? `${w.n} piece${w.n > 1 ? 's' : ''}` : 'nothing yet'}</em></div>
 				{/each}
 			</div>
 		</div>

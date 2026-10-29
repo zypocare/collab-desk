@@ -1543,6 +1543,14 @@ textarea.inp.ng-text{min-height:132px;line-height:1.55}
   .m-wbar{display:block;height:4px;margin-top:6px;border-radius:99px;background:color-mix(in oklab,var(--hero-ink) 14%,transparent);overflow:hidden}
   .m-wbar i{display:block;height:100%;width:calc(var(--p) * 100%);border-radius:99px;background:linear-gradient(90deg,var(--g1),var(--g2),var(--g3))}
   .m-week .hc-foot > div.over .m-wbar i{background:var(--bad)}
+  [data-desk] .m-week .hc-unit{margin-left:6px}
+  [data-desk] .m-week .hc-sub{text-wrap:pretty}
+  [data-desk] .m-week .m-wk-note{margin-top:4px;font-size:12.5px;line-height:1.4;opacity:.65}
+  [data-desk] .m-week .m-wk-cap{display:block;margin-top:18px;font-size:10.5px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;opacity:.6}
+  [data-desk] .m-week .m-wk-cap + .hc-foot{margin-top:8px}
+  [data-desk] .m-week .hc-foot small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  [data-desk] .m-week .hc-foot em{display:block;margin-top:6px;font-style:normal;font-size:11.5px;opacity:.65;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  [data-desk] .m-week .hc-foot > div.over em{color:color-mix(in oklab,var(--bad) 60%,var(--hero-ink));opacity:1}
 
   /* Content: sections like Home's, each collab a card. */
   [data-desk] .ct-grid{display:flex;flex-direction:column;gap:0}
