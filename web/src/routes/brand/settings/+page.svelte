@@ -201,14 +201,21 @@
 					<button class="btn primary" onclick={() => open('company')}>{brandIg.data ? 'Open' : 'Connect'}</button>
 				</Ticket>
 			</div>
+			<!-- The creator's settings: every section a card row with its icon, one line on what's inside, and a dot
+			     when it needs you. -->
 			{#each GROUPS as g (g.label)}
 				<div class="cs-h">{g.label}</div>
-				{#each g.ids.map(byId) as x (x.id)}
-					<a class="cs-row" href={x.href ?? `?s=${x.id}`} onclick={(e) => { if (x.href) return; e.preventDefault(); open(x.id); }}><Icon name={x.icon} /><span>{x.label}</span>{#if x.warn}<i class="cs-dot" title={x.warn}></i>{/if}</a>
-				{/each}
+				<div class="cs-grp">
+					{#each g.ids.map(byId) as x, j (x.id)}
+						<a class="cs-row" style="--k:{j}" href={x.href ?? `?s=${x.id}`} onclick={(e) => { if (x.href) return; e.preventDefault(); open(x.id); }}><span class="cs-ico" class:warn={!!x.warn}><Icon name={x.icon} /></span><span class="cs-txt"><b>{x.label}</b><small>{x.warn ?? x.sub}</small></span>{#if x.warn}<i class="cs-dot" title={x.warn}></i>{/if}<Icon name="chev" class="cs-chev" /></a>
+					{/each}
+				</div>
 			{/each}
-			<a class="cs-row" href="/brand/details?new=1"><Icon name="plus" /><span>Add another brand</span></a>
-			<button class="cs-row" onclick={toggleTheme}><Icon name={theme.value === 'dark' ? 'sun' : 'moon'} /><span>{theme.value === 'dark' ? 'Light look' : 'Dark look'}</span></button>
+			<div class="cs-h">More</div>
+			<div class="cs-grp">
+				<a class="cs-row" href="/brand/details?new=1"><span class="cs-ico"><Icon name="plus" /></span><span class="cs-txt"><b>Add another brand</b><small>For agencies, or a second company</small></span><Icon name="chev" class="cs-chev" /></a>
+				<button class="cs-row" onclick={toggleTheme}><span class="cs-ico"><Icon name={theme.value === 'dark' ? 'sun' : 'moon'} /></span><span class="cs-txt"><b>{theme.value === 'dark' ? 'Light look' : 'Dark look'}</b><small>Switch the app’s colours</small></span></button>
+			</div>
 			<!-- What you've done on Miracle, in two big numbers. -->
 			<div class="cs-wins">
 				<a href="/brand/business/money"><small>Paid this month</small><b>{inr(d?.spent_month ?? 0)}</b><span>See payments →</span></a>

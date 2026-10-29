@@ -2622,3 +2622,11 @@ html.cd-sheet, html.cd-sheet body { overflow: hidden; }
   [data-desk] .cr-rings + .m-stages { margin-top: 16px; }
   [data-desk] .cs-hub .pf-rings { margin-bottom: 18px; }
 }
+@media (max-width: 760px) {
+  /* The person icon in a work group (a creator's audience, on the brand's creator page). */
+  [data-desk] :is(.drawer.as-page, .fold-page) .dr-b .sec.fold[data-ri="work-person"] { --ri: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%239C7BFF%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Ccircle cx=%2212%22 cy=%228%22 r=%224%22/%3E%3Cpath d=%22M4 21c1-4 4-6 8-6s7 2 8 6%22/%3E%3C/svg%3E"); }
+}
+@media (max-width: 760px) {
+  /* Brand pages: the grouped rows line up with the cards above them. */
+  [data-desk] .fold-page > .dr-b { padding-left: 0; padding-right: 0; }
+}

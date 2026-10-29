@@ -93,21 +93,32 @@
 		brief: brief.trim(),
 		brief_details: briefDetails
 	});
-	function briefProblem() {
+	// Three short steps, like adding a collab from a DM: what you want, the brief, who gets it.
+	function wantProblem() {
 		if (!name.trim()) return 'Give the campaign a name.';
 		if (!deliverables.length) return 'Choose at least one piece of content.';
-		if (type !== 'barter' && !askQuote && !(Number(fee) > 0)) return 'Add a budget per creator, or ask each creator for a quote.';
+		if (type !== 'barter' && !askQuote && !(Number(fee) > 0)) return 'Pick a budget per creator, or ask each creator for a quote.';
 		if (type !== 'paid' && !product.trim()) return barterKind === 'experience' ? 'Say what you are offering (the stay, meal or event).' : 'Say which product you will send.';
-		if (!brief.trim()) return 'Add a short brief: what the content is about.';
 		return '';
 	}
 	function next() {
-		err = briefProblem();
+		err = wantProblem();
+		if (!err) step = 2;
+	}
+	function nextBrief() {
+		err = brief.trim() ? '' : 'Add a short brief: what the content is about.';
 		if (!err) {
-			step = 2;
+			step = 3;
 			suggest();
 		}
 	}
+	const TITLES = { 1: ['What do you', 'want?'], 2: ['The', 'brief'], 3: ['Who gets', 'it?'] } as const;
+	// Content as chips: a tap adds one (up to 10), the cross takes that kind off.
+	const addOne = (k: string) => (qty[k] = Math.min(10, (qty[k] ?? 0) + 1));
+	// Budget as chips; "Other" opens the box for any amount.
+	const BUDGETS = [10000, 25000, 50000];
+	let otherFee = $state(false);
+	const pickFee = (v: number) => ((askQuote = false), (otherFee = false), (fee = String(v)));
 	// The shortlist autopilot: creators who fit this brief (ticked for you on Auto).
 	let sugs = $state<Suggestion[]>([]);
 	async function suggest() {
@@ -184,55 +195,63 @@
 			<h1>{name.trim() || 'Untitled'} <em>campaign</em></h1>
 		</div>
 	</header>
-	<div class="m-stages" role="tablist" aria-label="Steps">
-		<button role="tab" aria-selected={step === 1} class:on={step === 1} onclick={() => (step = 1)}><i class="dt" style="--hue:{step > 1 ? 'var(--ok)' : 'var(--accent)'}"></i>1 · Brief</button>
-		<button role="tab" aria-selected={step === 2} class:on={step === 2} onclick={() => step > 1 && (step = 2)} disabled={step < 2}><i class="dt" style="--hue:{step > 2 ? 'var(--ok)' : 'var(--accent)'}"></i>2 · Creators</button>
-		<button role="tab" aria-selected={step === 3} class:on={step === 3} onclick={() => step > 2 && (step = 3)} disabled={step < 3}><i class="dt" style="--hue:var(--accent)"></i>3 · Review and send</button>
-	</div>
+	<!-- A progress line and the step's question, as when adding a collab from a DM. -->
+	<div class="nc-prog" role="progressbar" aria-valuemin="1" aria-valuemax="3" aria-valuenow={step} aria-label="Step {step} of 3">{#each [1, 2, 3] as n (n)}<i class:on={n <= step}></i>{/each}</div>
+	<div class="nc-q"><span class="nc-eb">Step {step} of 3</span><h2>{TITLES[step][0]} <em>{TITLES[step][1]}</em></h2></div>
 
 	{#if err}<div class="err-box" role="alert">{err}</div>{/if}
 
 	{#if step === 1}
-		<section class="panel nc-f rv">
+		<section class="nc-f nc-flat rv">
+			<BriefFromLink category={acc?.brand?.category ?? ''} deal={type} deliverables={delivText(Object.entries(qty).filter(([, n]) => n > 0).map(([kind, n]) => ({ kind, qty: n })))} onfill={fromLink} />
 			<div class="f"><label for="nc-name">Campaign name</label><input class="inp" id="nc-name" bind:value={name} maxlength="80" placeholder="e.g. Diwali glow edit" /></div>
-			<div class="f"><span class="lbl">Type</span><div class="nc-seg">{#each TYPES as t (t.value)}<button class:on={type === t.value} onclick={() => (type = t.value)}>{t.label}</button>{/each}</div></div>
-			<div class="f"><span class="lbl">Content from each creator</span>
-				<div class="nc-kinds">
+			<div class="f"><span class="lbl">How you pay</span><div class="nc-seg">{#each TYPES as t (t.value)}<button class:on={type === t.value} onclick={() => (type = t.value)}>{t.label}</button>{/each}</div></div>
+			<div class="f"><span class="lbl">From each creator</span>
+				<div class="nc-chips">
 					{#each KINDS as k (k)}
-						<div class="nc-k" class:on={(qty[k] ?? 0) > 0}>
-							<span>{k}</span>
-							<button aria-label="Fewer {k}" onclick={() => (qty[k] = Math.max(0, (qty[k] ?? 0) - 1))}>−</button>
-							<b>{qty[k] ?? 0}</b>
-							<button aria-label="More {k}" onclick={() => (qty[k] = Math.min(10, (qty[k] ?? 0) + 1))}>+</button>
-						</div>
+						{#if (qty[k] ?? 0) > 0}
+							<span class="nc-chip on"><button class="nc-c-add" onclick={() => addOne(k)} aria-label="One more {k}">{k}<i>{qty[k]}</i></button><button class="nc-c-x" onclick={() => (qty[k] = 0)} aria-label="No {k}">×</button></span>
+						{:else}
+							<button class="nc-chip" onclick={() => addOne(k)}>+ {k}</button>
+						{/if}
 					{/each}
 				</div>
+				<p class="hint">Tap a kind again for one more.</p>
 			</div>
 			{#if type !== 'barter'}
-				<div class="nc-2">
-					<div class="f"><label for="nc-fee">Budget per creator (₹)</label><input class="inp" id="nc-fee" inputmode="numeric" bind:value={fee} disabled={askQuote} placeholder="e.g. 20000" /><label class="nc-chk"><input type="checkbox" bind:checked={askQuote} /> Ask each creator for a quote instead</label></div>
-					<div class="f"><label for="nc-budget">Total budget (₹, optional)</label><input class="inp" id="nc-budget" inputmode="numeric" bind:value={budget} placeholder="e.g. 120000" /><p class="hint">Only you see it. The board shows how much of it is used.</p></div>
+				<div class="f"><span class="lbl">Budget per creator</span>
+					<div class="nc-chips">
+						{#each BUDGETS as v (v)}<button class="nc-chip" class:sel={!askQuote && !otherFee && Number(fee) === v} onclick={() => pickFee(v)}>{inr(v).replace(',000', 'k').replace(/,00,000$/, 'L')}</button>{/each}
+						<button class="nc-chip" class:sel={!askQuote && (otherFee || (!!fee && !BUDGETS.includes(Number(fee))))} onclick={() => ((askQuote = false), (otherFee = true))}>Other</button>
+						<button class="nc-chip" class:sel={askQuote} onclick={() => ((askQuote = true), (otherFee = false))}>Ask for a quote</button>
+					</div>
+					{#if !askQuote && (otherFee || (!!fee && !BUDGETS.includes(Number(fee))))}<input class="inp" id="nc-fee" inputmode="numeric" bind:value={fee} placeholder="Any amount, e.g. 18000" aria-label="Budget per creator (₹)" />{/if}
+					{#if askQuote}<p class="hint">Each creator replies with their own price.</p>{/if}
 				</div>
+				<div class="f"><label for="nc-budget">Total budget (₹, optional)</label><input class="inp" id="nc-budget" inputmode="numeric" bind:value={budget} placeholder="e.g. 120000" /><p class="hint">Only you see it. The board shows how much of it is used.</p></div>
 			{/if}
 			{#if type !== 'paid'}
+				<div class="f"><div class="nc-seg"><button class:on={barterKind === 'product'} onclick={() => (barterKind = 'product')}>A product</button><button class:on={barterKind === 'experience'} onclick={() => (barterKind = 'experience')}>An experience</button></div></div>
 				<div class="nc-2">
 					<div class="f"><label for="nc-prod">{barterKind === 'experience' ? 'What you offer' : 'Product you send'}</label><input class="inp" id="nc-prod" bind:value={product} placeholder={barterKind === 'experience' ? 'A stay, a meal, an event' : 'e.g. Diwali glow kit'} /></div>
 					<div class="f"><label for="nc-pv">Its value (₹)</label><input class="inp" id="nc-pv" inputmode="numeric" bind:value={productValue} placeholder="e.g. 2400" /></div>
 				</div>
-				<div class="f"><div class="nc-seg"><button class:on={barterKind === 'product'} onclick={() => (barterKind = 'product')}>A product</button><button class:on={barterKind === 'experience'} onclick={() => (barterKind = 'experience')}>An experience</button></div></div>
 			{/if}
+			<div class="nc-go"><button class="nc-neo nc-grad" onclick={next}>Next: the brief</button></div>
+		</section>
+	{:else if step === 2}
+		<section class="nc-f nc-flat rv">
 			<div class="nc-2">
 				<div class="f"><label for="nc-date">Go live by</label><DatePicker id="nc-date" min={rel(3)} bind:value={preferred} placeholder="No preference" /></div>
 				<div class="f"><label for="nc-usage">Usage rights</label><Select id="nc-usage" bind:value={usage} options={USAGE.map((u) => ({ value: u, label: usageOption(u) }))} /></div>
 			</div>
 			<div class="f"><span class="lbl">Language (optional)</span><div class="nc-langs">{#each LANGUAGES as l (l)}<button class:on={langs.includes(l)} onclick={() => (langs = langs.includes(l) ? langs.filter((x) => x !== l) : [...langs, l])}>{l}</button>{/each}</div><p class="hint">Each creator gets only the languages they create in.</p></div>
-			<BriefFromLink category={acc?.brand?.category ?? ''} deal={type} deliverables={delivText(Object.entries(qty).filter(([, n]) => n > 0).map(([kind, n]) => ({ kind, qty: n })))} onfill={fromLink} />
 			<div class="f"><label for="nc-brief">The brief</label><textarea id="nc-brief" rows="4" bind:value={brief} maxlength="2000" placeholder="What should the content show? What's launching?"></textarea></div>
 			<BriefEditor bind:value={briefDetails} idp="nc" category={acc?.brand?.category ?? ''} />
-			<div class="nc-go"><button class="nc-neo nc-grad" onclick={next}>Next: creators</button></div>
+			<div class="nc-go"><button class="nc-neo nc-ghost" onclick={() => (step = 1)}>Back</button><button class="nc-neo nc-grad" onclick={nextBrief}>Next: who gets it</button></div>
 		</section>
-	{:else if step === 2}
-		<section class="panel nc-f rv">
+	{:else}
+		<section class="nc-f nc-flat rv">
 			<div class="f"><label for="nc-pool">Pool</label><Select id="nc-pool" bind:value={poolId} options={[{ value: '', label: 'No pool: your creators only' }, ...pools.list.map((p) => ({ value: p.id, label: `${p.name} · ${p.members.length}` }))]} /><p class="hint">Make and fill pools in <a href="/brand/creators?tab=pools">Creators</a>.</p></div>
 			{#if options.some((o) => o.from === 'Suggested')}
 				<div class="nc-sug">
@@ -263,41 +282,52 @@
 				</div>
 			{/if}
 			<p class="hint">Each creator gets their own request and replies with their own quote. Nobody sees who else was asked or what others charge.</p>
-			<div class="nc-go"><button class="nc-neo nc-ghost" onclick={() => (step = 1)}>Back</button><button class="nc-neo nc-grad" onclick={() => (chosen.length ? (step = 3) : (err = 'Pick at least one creator.'))}>Next: review</button></div>
 		</section>
-	{:else}
-		<div class="nc-rev rv">
-			<section class="panel nc-sum">
-				<span class="nc-eb">The brief</span>
-				<dl>
-					<dt>Type</dt><dd>{TYPES.find((t) => t.value === type)?.label}</dd>
-					<dt>Each creator</dt><dd>{delivText(deliverables)}</dd>
-					{#if type !== 'barter'}<dt>Budget</dt><dd>{askQuote ? 'Each creator quotes' : `Up to ${inr(Number(fee))} each`}{Number(budget) ? ` · ${inr(Number(budget))} total` : ''}</dd>{/if}
-					{#if type !== 'paid'}<dt>{barterKind === 'experience' ? 'Experience' : 'Product'}</dt><dd>{product}{Number(productValue) ? ` (${inr(Number(productValue))})` : ''}</dd>{/if}
-					<dt>Go live</dt><dd>{preferred ? `By ${fmt(preferred)}` : 'No preference'}</dd>
-					<dt>Usage</dt><dd>{usage}</dd>
-					{#if langs.length}<dt>Language</dt><dd>{langs.join(' or ')}</dd>{/if}
-				</dl>
-				<p class="nc-brief">{brief}</p>
-				<button class="nc-link" onclick={() => (step = 1)}>Edit the brief</button>
-			</section>
-			<section class="panel nc-sum">
-				<span class="nc-eb">Creators</span>
-				{#each chosen as o (o.key)}
-					{@const fit = fitFor(o.creator, kinds)}
-					<div class="nc-line"><b>{o.creator ? o.creator.name : `@${o.handle}`}</b><small class:warn={fit.text !== 'Ready'}>{o.creator ? fit.text : 'Gets it when they join'}</small></div>
-				{/each}
-				<button class="nc-link" onclick={() => (step = 2)}>Change creators</button>
-			</section>
-		</div>
+		<!-- What goes out, as one ticket before sending. -->
+		<section class="nc-tk rv">
+			<div class="nc-tk-h"><span class="nc-eb">{name.trim() || 'Your campaign'}</span><b>{toSend.length + toInvite.length} creator{toSend.length + toInvite.length === 1 ? '' : 's'}{type !== 'barter' && !askQuote && Number(fee) ? ` · ${inr(Number(fee) * (toSend.length + toInvite.length))}` : ''}</b></div>
+			<i class="nc-tk-cut" aria-hidden="true"></i>
+			<dl>
+				<dt>Each creator</dt><dd>{delivText(deliverables)}{type !== 'barter' ? (askQuote ? ' · they quote' : ` · ${inr(Number(fee))}`) : ''}</dd>
+				{#if type !== 'paid'}<dt>{barterKind === 'experience' ? 'Experience' : 'Product'}</dt><dd>{product}{Number(productValue) ? ` (${inr(Number(productValue))})` : ''}</dd>{/if}
+				<dt>Go live</dt><dd>{preferred ? `By ${fmt(preferred)}` : 'No preference'}</dd>
+				<dt>Usage</dt><dd>{usageOption(usage)}</dd>
+				{#if langs.length}<dt>Language</dt><dd>{langs.join(' or ')}</dd>{/if}
+			</dl>
+			<button class="nc-link" onclick={() => (step = 2)}>Edit the brief</button>
+		</section>
 		<div class="nc-send">
 			<span>{toSend.length} {plural('request', toSend.length)} now{toInvite.length ? ` · ${toInvite.length} when they join` : ''}</span>
-			<button class="nc-neo nc-grad nc-big" onclick={send} disabled={busy}>{busy ? 'Sending…' : `Send to ${toSend.length + toInvite.length} creator${toSend.length + toInvite.length === 1 ? '' : 's'}`}</button>
+			<div class="nc-go"><button class="nc-neo nc-ghost" onclick={() => (step = 2)}>Back</button><button class="nc-neo nc-grad nc-big" onclick={send} disabled={busy}>{busy ? 'Sending…' : `Send to ${toSend.length + toInvite.length} creator${toSend.length + toInvite.length === 1 ? '' : 's'}`}</button></div>
 		</div>
 	{/if}
 {/if}
 
 <style>
+	/* Three short steps: the progress line, the step's question, chips for content and budget, the summary ticket. */
+	.nc-prog { display: flex; gap: 4px; margin: 4px 0 14px; }
+	.nc-prog i { flex: 1; height: 4px; border-radius: 4px; background: var(--line); transition: background .3s; }
+	.nc-prog i.on { background: var(--grad); }
+	.nc-q { display: grid; gap: 4px; margin-bottom: 14px; }
+	.nc-q h2 { margin: 0; font: 400 32px/1.05 var(--f-serif, Georgia, serif); }
+	.nc-q h2 em { font-style: italic; color: var(--g2); }
+	.nc-flat { display: grid; gap: 16px; }
+	.nc-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+	.nc-chip { height: 38px; display: inline-flex; align-items: center; gap: 6px; padding: 0 13px; border: 1px dashed var(--line-strong); border-radius: 999px; background: none; color: var(--ink); font: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer; }
+	.nc-chip.sel { border: 1px solid var(--ink); background: var(--ink); color: var(--bg); }
+	.nc-chip.on { padding: 0; border: 1px solid var(--g2); background: color-mix(in oklab, var(--g2) 12%, transparent); }
+	.nc-chip.on button { height: 100%; border: 0; background: none; color: inherit; font: inherit; cursor: pointer; }
+	.nc-c-add { display: inline-flex; align-items: center; gap: 8px; padding: 0 4px 0 13px; }
+	.nc-c-add i { min-width: 20px; height: 20px; display: grid; place-items: center; border-radius: 999px; background: var(--g2); color: #fff; font-style: normal; font-size: 11.5px; font-weight: 800; }
+	.nc-c-x { padding: 0 12px 0 6px; font-size: 16px !important; color: var(--ink-3) !important; }
+	.nc-tk { display: flex; flex-direction: column; margin-top: 16px; border: 1px solid var(--line-strong); background: var(--surface); box-shadow: 4px 4px 0 var(--line-strong); }
+	.nc-tk-h { display: grid; gap: 4px; padding: 14px 16px 10px; }
+	.nc-tk-h b { font: 400 28px/1.1 var(--f-serif, Georgia, serif); }
+	.nc-tk-cut { display: block; height: 0; margin: 0 16px; border-top: 2px dashed var(--line-strong); }
+	.nc-tk dl { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; margin: 0; padding: 12px 16px 6px; font-size: 13px; }
+	.nc-tk dt { color: var(--ink-3); }
+	.nc-tk dd { margin: 0; text-align: right; font-weight: 600; }
+	.nc-tk :global(.nc-link) { align-self: flex-start; margin: 0 16px 14px; }
 	.nc-f {
 		display: grid;
 		gap: 18px;

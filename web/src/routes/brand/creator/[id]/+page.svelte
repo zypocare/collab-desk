@@ -23,6 +23,8 @@
 	import ProNote from '#lib/components/ProNote.svelte';
 	import { healthChips } from '#lib/health.ts';
 	import { goto } from '$app/navigation';
+	import { phone } from '#lib/phone.svelte.ts';
+	import { folds } from '#lib/folds.ts';
 
 	// One creator, from the brand's side: how well they fit, who their audience is, what they did with
 	// you, your team's private rating, and creators like them. Laid out with the app's dashboard cards.
@@ -123,6 +125,34 @@
 		<div class="clear-acts"><a class="glass-chip" href="/brand/creators?tab=discover"><Icon name="search" />Discover</a></div>
 	</div>
 {:else}
+	{#if phone.on}
+		<!-- Phone: like a creator's own profile. Photo and three numbers, who they are, their trust chips, one big
+		     button and a row of the rest. -->
+		<section class="pf cp-pf">
+			<div class="pf-top">
+				<span class="pf-av"><Avatar name={c.name} src={c.photo} size="86px" /></span>
+				<div class="pf-stats">
+					<span><b>{c.followers != null ? compact(c.followers) : '—'}</b><span>followers</span></span>
+					<span><b>{c.engagement != null ? `${+Number(c.engagement).toFixed(2)}%` : '—'}</b><span>engagement</span></span>
+					<span><b>{rate ? inrS(rate) : '—'}</b><span>Reels from</span></span>
+				</div>
+			</div>
+			<div class="pf-bio">
+				<b>{c.name}</b>
+				<span>{[c.niche?.split(',').slice(0, 2).map((x) => x.trim()).join(', '), c.city, c.handle ? `@${c.handle.replace(/^@+/, '')}` : ''].filter(Boolean).join(' · ')}</span>
+			</div>
+			<div class="cp-trust">{#each [...healthChips(c.health), ...creatorChips(c.trust)] as ch (ch.text)}<span class="cp-chip {ch.tone}">{ch.text}</span>{/each}<button class="lnk hint" onclick={() => (explain = !explain)} aria-expanded={explain}>What these mean</button></div>
+			{#if explain}
+				<p class="hint cp-explain"><b>Verified deals:</b> collabs done through Miracle and paid in full against a Miracle invoice. <b>On time:</b> the post went live on or before the agreed date, by Instagram's own time. <b>Replies in:</b> how fast they usually answer a new request. Worked out by Miracle; creators can't edit them.</p>
+			{/if}
+			{#if c.accepting !== false}<a class="btn grad cp-go" href={at(c.slug, '/brand/new')}><Icon name="send" />Send a request</a>{/if}
+			<div class="cp-acts">
+				<AddToPool creator={c.id} name={c.name} />
+				<a class="btn" href={at(c.slug, '/')} target="_blank" rel="noopener"><Icon name="eye" />Their page</a>
+				<ReportMenu name={c.name} target={{ creator_id: c.id }} onblocked={() => goto('/brand/creators?tab=discover')} />
+			</div>
+		</section>
+	{:else}
 	<a class="back rv" href="/brand/creators?tab=discover"><Icon name="back" />Discover</a>
 	<header class="ph rv">
 		<div style="display:flex;gap:16px;align-items:center">
@@ -144,6 +174,7 @@
 			<ReportMenu name={c.name} target={{ creator_id: c.id }} onblocked={() => goto('/brand/creators?tab=discover')} />
 		</div>
 	</header>
+	{/if}
 
 	{#if locked}
 		{#if gate?.price && canSell()}
@@ -163,10 +194,7 @@
 	{:else if !opened}
 		<div class="loader" style="min-height:24vh"><span class="ring"><span></span></span></div>
 	{:else}
-	<div class="md-grid">
-		<!-- Fit -->
-		<section class="md-card rv" style="--i:1">
-			<header class="md-h"><div><span class="bx-eb">Fit for {company}</span><h2>{ft?.label}</h2></div></header>
+	{#snippet fitBlock()}
 			<div class="cp-fit">
 				<Gauge value={(ft?.total ?? 0) / 100} gradient={false} color={ft && ft.total >= 80 ? 'var(--ok)' : 'var(--warn)'} center={String(ft?.total ?? '—')} sub="of 100" />
 				<HBars
@@ -181,14 +209,8 @@
 					fmt={(v) => String(v)}
 				/>
 			</div>
-			<p class="md-note">From their niche, the audience they share, your past collabs with them and their rates. {ft?.audience == null ? 'They haven\'t shared their audience yet.' : ''}</p>
-		</section>
-
-		<HealthCard health={c.health} name={firstName(c.name)} connected={c.followers != null} />
-
-		<!-- Audience -->
-		<section class="md-card rv" style="--i:2">
-			<header class="md-h"><div><span class="bx-eb">Their audience</span><h2>Who follows them</h2></div></header>
+	{/snippet}
+	{#snippet audienceBlock()}
 			{#if c.audience}
 				{#if c.audience.women !== null}
 					<Donut
@@ -207,11 +229,8 @@
 			{:else}
 				<p class="md-note">{firstName(c.name)} hasn't shared their audience from Instagram yet. Ask in your request, or check their page.</p>
 			{/if}
-		</section>
-
-		<!-- Your private rating -->
-		<section class="md-card rv" style="--i:3">
-			<header class="md-h"><div><span class="bx-eb">Your rating</span><h2>Only your team sees this</h2></div>{#if c.rating}<small class="md-note">Updated {fmt(c.rating.updated_at.slice(0, 10))}</small>{/if}</header>
+	{/snippet}
+	{#snippet ratingBlock()}
 			{#if canRate}
 				<div class="cp-stars">
 					{#each ROWS as row (row.key)}
@@ -229,19 +248,59 @@
 			{:else}
 				<p class="md-note">Rate {firstName(c.name)} after you work together: on time, quality and results. Only your team sees it.</p>
 			{/if}
-		</section>
-
-		<!-- With you -->
-		<section class="md-card rv" style="--i:4">
-			<header class="md-h"><div><span class="bx-eb">With {company}</span><h2>What you did together</h2></div>{#if c.with_me.collabs}<a href={at(c.slug, '/brand/requests')}>Requests<Icon name="arrow" /></a>{/if}</header>
+	{/snippet}
+	{#snippet togetherBlock()}
 			<div class="cp-nums">
 				<div><small>Requests</small><b class="num">{c.with_me.collabs}</b></div>
 				<div><small>Finished</small><b class="num">{c.with_me.wrapped}</b></div>
 				<div><small>Views</small><b class="num">{compact(c.with_me.views)}</b></div>
 				<div><small>Per view</small><b class="num">{cpv === null ? '—' : `₹${cpv.toFixed(2)}`}</b></div>
 			</div>
+	{/snippet}
+	{#if phone.on}
+		<!-- Phone: the fit as one compact card; the rest as grouped rows that open as sheets (folds.ts). -->
+		<div class="cp-fitc rv">
+			<span class="cp-ring" style="--p:{(ft?.total ?? 0) / 100}"><b>{ft?.total ?? '—'}</b></span>
+			<span class="cp-fitt"><span class="bx-eb">Fit for {company}</span><b>{ft?.label}</b><small>{[`Niche ${ft?.niche ?? 0}`, ft?.audience != null ? `Audience ${ft.audience}` : '', ft?.results != null ? `Results ${ft.results}` : '', ft?.price != null ? `Price ${ft.price}` : ''].filter(Boolean).join(' · ')}</small></span>
+		</div>
+		<div class="fold-page">
+			<div class="dr-b" use:folds={{ on: true, labels: { work: 'About them', brand: 'You and them' } }}>
+				<section class="sec" data-g="work" data-ic="person"><h3 data-sum={c.audience ? (c.audience.women !== null ? `${c.audience.women}% women` : 'Shared') : 'Not shared'}>Audience &amp; safety</h3><HealthCard health={c.health} name={firstName(c.name)} connected={c.followers != null} />{@render audienceBlock()}</section>
+				<section class="sec" data-g="work" data-ic="pieces"><h3 data-sum={ft?.label ?? ''}>Why they fit</h3>{@render fitBlock()}<p class="md-note">From their niche, the audience they share, your past collabs with them and their rates.</p></section>
+				<section class="sec" data-g="brand" data-ic="person"><h3 data-sum={c.with_me.collabs ? `${c.with_me.collabs} request${c.with_me.collabs === 1 ? '' : 's'}` : 'Nothing yet'}>What you did together</h3>{@render togetherBlock()}</section>
+				<section class="sec" data-g="brand" data-ic="case"><h3 data-sum="team only">Your rating &amp; notes</h3>{@render ratingBlock()}</section>
+			</div>
+		</div>
+	{:else}
+	<div class="md-grid">
+		<!-- Fit -->
+		<section class="md-card rv" style="--i:1">
+			<header class="md-h"><div><span class="bx-eb">Fit for {company}</span><h2>{ft?.label}</h2></div></header>
+			{@render fitBlock()}
+			<p class="md-note">From their niche, the audience they share, your past collabs with them and their rates. {ft?.audience == null ? 'They haven\'t shared their audience yet.' : ''}</p>
+		</section>
+
+		<HealthCard health={c.health} name={firstName(c.name)} connected={c.followers != null} />
+
+		<!-- Audience -->
+		<section class="md-card rv" style="--i:2">
+			<header class="md-h"><div><span class="bx-eb">Their audience</span><h2>Who follows them</h2></div></header>
+			{@render audienceBlock()}
+		</section>
+
+		<!-- Your private rating -->
+		<section class="md-card rv" style="--i:3">
+			<header class="md-h"><div><span class="bx-eb">Your rating</span><h2>Only your team sees this</h2></div>{#if c.rating}<small class="md-note">Updated {fmt(c.rating.updated_at.slice(0, 10))}</small>{/if}</header>
+			{@render ratingBlock()}
+		</section>
+
+		<!-- With you -->
+		<section class="md-card rv" style="--i:4">
+			<header class="md-h"><div><span class="bx-eb">With {company}</span><h2>What you did together</h2></div>{#if c.with_me.collabs}<a href={at(c.slug, '/brand/requests')}>Requests<Icon name="arrow" /></a>{/if}</header>
+			{@render togetherBlock()}
 		</section>
 	</div>
+	{/if}
 	{/if}
 
 	<!-- Creators like them: the app's tickets. -->
@@ -272,6 +331,21 @@
 {/if}
 
 <style>
+	/* Phone: the creator-profile header, one big button, the rest in a row; the fit as a compact card. */
+	.cp-pf .cp-trust { margin-top: 10px; }
+	.cp-pf :global(.cp-go) { width: 100%; height: 50px; justify-content: center; margin-top: 14px; font-size: 15px; font-weight: 800; }
+	.cp-acts { display: flex; gap: 10px; margin-top: 10px; }
+	.cp-acts > :global(*) { flex: 1; min-width: 0; }
+	.cp-acts > :global(:last-child) { flex: none; }
+	.cp-acts :global(.btn) { width: 100%; justify-content: center; }
+	.cp-acts :global(.btn.icon-only) { width: 44px; }
+	.cp-pf .pf-stats > span { display: flex; flex-direction: column; align-items: center; }
+	.cp-fitc { display: flex; align-items: center; gap: 14px; margin: 16px 0 4px; padding: 14px; border-radius: 20px; background: linear-gradient(140deg, color-mix(in oklab, var(--g3) 16%, transparent), color-mix(in oklab, var(--g2) 6%, transparent)); border: 1px solid color-mix(in oklab, var(--g3) 30%, transparent); }
+	.cp-ring { width: 64px; height: 64px; flex: none; display: grid; place-items: center; border-radius: 50%; background: conic-gradient(var(--g3) calc(var(--p) * 360deg), var(--line) 0); }
+	.cp-ring b { width: 52px; height: 52px; display: grid; place-items: center; border-radius: 50%; background: var(--surface); font-size: 18px; font-weight: 800; }
+	.cp-fitt { display: grid; gap: 3px; min-width: 0; }
+	.cp-fitt > b { font: 400 24px/1 var(--f-serif, Georgia, serif); }
+	.cp-fitt small { font-size: 12px; color: var(--ink-3); }
 	/* One creator, unlocked for good: the one-time offer above the Brand Pro note. */
 	.unlock-one { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; padding: 18px 20px; margin: 8px 0 12px; }
 	.uo-t { display: grid; gap: 4px; flex: 1 1 260px; min-width: 0; }
