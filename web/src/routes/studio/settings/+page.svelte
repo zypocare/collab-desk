@@ -29,6 +29,7 @@
 	import InstagramSettings from '#lib/components/InstagramSettings.svelte';
 	import PriorityRules from '#lib/components/PriorityRules.svelte';
 	import PackagesSettings from '#lib/components/PackagesSettings.svelte';
+	import BundleSettings from '#lib/components/BundleSettings.svelte';
 	import AvailabilitySettings from '#lib/components/AvailabilitySettings.svelte';
 	import AwayMode from '#lib/components/AwayMode.svelte';
 	import { support } from '#lib/support.svelte.ts';
@@ -187,7 +188,7 @@
 		},
 		{ id: 'found', label: 'Get found by brands', icon: 'search', sub: s.bio?.trim() ? 'Visits, about you, where brands look' : 'Add a line about you' },
 		{ id: 'links', label: 'Links & fan list', icon: 'link', sub: s.fan_list_on ? 'Links for followers · fan list on' : 'Links for followers · fan list off' },
-		{ id: 'rates', label: 'Rates & packages', icon: 'rupee', sub: `${offered.length} content types · ${studio.packages.filter((k) => k.active).length} packages` },
+		{ id: 'rates', label: 'Rates & packages', icon: 'rupee', sub: `${offered.length} content types · ${s.bundle_on !== false ? 'brands build packages' : `${studio.packages.filter((k) => k.active).length} packages`}` },
 		{
 			id: 'bookings',
 			label: 'Bookings & barter',
@@ -480,9 +481,10 @@
 								<input type="checkbox" class="tgl" checked={s.show_rates} aria-label="Show starting rates" onchange={(e) => toggle('show_rates', (e.currentTarget as HTMLInputElement).checked)} />
 							</div>
 						</section>
+						<BundleSettings />
 						<RateLearn />
 						<RateBenchmark />
-						<PackagesSettings />
+						{#if s.bundle_on === false}<PackagesSettings />{/if}
 					{:else if active === 'bookings'}
 						<section class="panel rv" style="--i:1">
 							<div class="switch-row" style="border-top:0">

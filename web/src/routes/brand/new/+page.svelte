@@ -11,6 +11,7 @@
 	import { supabase } from '#lib/supabase.ts';
 	import type { BriefDetails, CollabType } from '#lib/types.ts';
 	import { confetti, copyText, toast, ui } from '#lib/ui.svelte.ts';
+	import { bundlePrice, parseBuild } from '#lib/bundle.ts';
 	import { KINDS, USAGE, TYPE_LABEL, delivText, fmtLong, usageLabel, usageOption, errMessage, firstName, inr, offeredKinds, packageOffered, rel } from '#lib/util.ts';
 	import { budgetCombos, type Combo } from '#lib/suggest.ts';
 	import CompanyStep from '#lib/components/CompanyStep.svelte';
@@ -188,10 +189,22 @@
 			fee = String(k.price);
 		});
 	});
+	// A package built on her page (/brand/new?build=Reel:2,Story:2): those pieces, at the package price.
+	$effect(() => {
+		const built = parseBuild(page.url.searchParams.get('build'));
+		if (!Object.keys(built).length || page.url.searchParams.get('package') || !pub.data) return;
+		const d = pub.data;
+		untrack(() => {
+			type = 'paid';
+			qty = Object.fromEntries(KINDS.map((kind) => [kind, built[kind] ?? 0]));
+			const price = bundlePrice(d.rates, built, d.bundle);
+			if (price.total) fee = String(price.total);
+		});
+	});
 	// One item from the brand page (/brand/new?item=Reel): start with just that.
 	$effect(() => {
 		const item = page.url.searchParams.get('item');
-		if (!item || !KINDS.includes(item) || page.url.searchParams.get('package')) return;
+		if (!item || !KINDS.includes(item) || page.url.searchParams.get('package') || page.url.searchParams.get('build')) return;
 		untrack(() => {
 			qty = Object.fromEntries(KINDS.map((kind) => [kind, kind === item ? 1 : 0]));
 		});
@@ -280,7 +293,10 @@
 		document.querySelector('.dpick')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
 	}
 	// Running total at her public rates (nothing shown if she keeps rates private).
-	const estimate = $derived(rates ? lines.reduce((a, l) => a + (Number(rates[l.kind]) || 0) * l.qty, 0) : 0);
+	// With her package builder on, paid requests get the package discount for their size (barter is valued at full rates).
+	const bundle = $derived(rates && pub.data?.bundle && type !== 'barter' ? bundlePrice(rates, Object.fromEntries(lines.map((l) => [l.kind, l.qty])), pub.data.bundle) : null);
+	const estimate = $derived(bundle?.pct ? bundle.total : rates ? lines.reduce((a, l) => a + (Number(rates[l.kind]) || 0) * l.qty, 0) : 0);
+	const rateNote = $derived(bundle?.pct ? `package price, ${bundle.pct}% off ${creator}'s rates` : `at ${creator}'s rates`);
 		const replyIn = $derived(type === 'barter' ? (barter?.reply_time ?? pub.data?.reply_time) : pub.data?.reply_time);
 
 	// Progress bar: each step is ticked once it has what it needs; tap to jump to it.
@@ -577,7 +593,7 @@
 						{:else if lines.length && (estimate || pkg)}
 							<span class="lt-what">{delivText(lines)}</span>
 							<b class="lt-sum">{pkg ? inr(pkg.price) : type === 'barter' ? 'Barter' : inr(estimate)}</b>
-							<span class="lt-note">{pkg ? 'package price' : type === 'barter' ? `worth ${inr(estimate)} at ${creator}'s rates, for your ${exp ? 'experience' : 'product'}` : `at ${creator}'s rates`}{#if !pkg && type !== 'barter' && Number(fee) > 0}{' · '}your budget {inr(Number(fee))}{Number(fee) < estimate ? ` (${Math.round((Number(fee) / estimate) * 100)}%)` : ''}{/if}</span>
+							<span class="lt-note">{pkg ? 'package price' : type === 'barter' ? `worth ${inr(estimate)} at ${creator}'s rates, for your ${exp ? 'experience' : 'product'}` : rateNote}{#if !pkg && type !== 'barter' && Number(fee) > 0}{' · '}your budget {inr(Number(fee))}{Number(fee) < estimate ? ` (${Math.round((Number(fee) / estimate) * 100)}%)` : ''}{/if}</span>
 						{:else}<span class="rq-default">You'll get a request code and an email copy.</span>{/if}
 					</p>
 					<button class="btn grad lg" class:blocked={advice?.tone === 'block'} type="submit" disabled={busy || advice?.tone === 'block'} title={advice?.tone === 'block' ? advice.title : undefined}>{#if busy}<span class="spinner"></span>Sending…{:else}<Icon name="send" />{instant && preferred ? 'Book now' : 'Send request'}{/if}</button>
@@ -592,7 +608,7 @@
 					<dl>
 						<div><dt>Type</dt><dd>{TYPE_LABEL[type]}</dd></div>
 						<div><dt>Budget</dt><dd>{pkg ? inr(pkg.price) : type === 'barter' ? (exp ? 'Your experience' : 'Your product') : Number(fee) > 0 ? inr(Number(fee)) : 'Asking for a quote'}</dd></div>
-						{#if estimate && !pkg && lines.length}<div><dt>At {creator}'s rates</dt><dd>{inr(estimate)}</dd></div>{/if}
+						{#if estimate && !pkg && lines.length}<div><dt>{bundle?.pct ? `Package price, ${bundle.pct}% off` : `At ${creator}'s rates`}</dt><dd>{inr(estimate)}</dd></div>{/if}
 						{#if type !== 'paid' && product.trim()}<div><dt>Product</dt><dd>{product}</dd></div>{/if}
 						<div><dt>Go-live</dt><dd>{preferred ? fmtLong(preferred) : 'No preference'}</dd></div>
 						<div><dt>Usage</dt><dd>{usageLabel(usage)}</dd></div>

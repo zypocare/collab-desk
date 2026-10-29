@@ -354,6 +354,9 @@ export type Settings = {
 	/** Also in the public creator directory on the website (www.miracleapp.live/creators), for anyone and search engines. */
 	directory_listed?: boolean;
 	show_rates: boolean;
+	/** Package builder on her page: brands build a package from her rates, with a discount by size. */
+	bundle_on?: boolean;
+	bundle_tiers?: BundleTier[];
 	monthly_goal: number;
 	rates: Record<string, number>;
 	code_prefix: string;
@@ -465,6 +468,8 @@ export type PublicPage = {
 	reply_time: string;
 	accepting: boolean;
 	rates: Record<string, number> | null;
+	/** The package builder's discount steps; null when she turned the builder off. */
+	bundle?: BundleTier[] | null;
 	packages: PublicPackage[];
 	results: { brand: string; views: number | null; reach: number | null; likes: number | null; kind: string; permalink: string; thumbnail: string; posted_at: string }[];
 	reviews: { rating: number; text: string; name: string; brand: string }[];
@@ -807,3 +812,6 @@ export type BrandRow = {
 	unread: number;
 	last: { body: string; sender: 'brand' | 'creator'; at: string } | null;
 };
+
+/** A package discount step: from `min` pieces, `pct`% off the whole package. */
+export type BundleTier = { min: number; pct: number };

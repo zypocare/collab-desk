@@ -14,6 +14,7 @@
 	import type { PublicPage } from '#lib/types.ts';
 	import Logo from '#lib/components/Logo.svelte';
 	import PublicLinks from '#lib/components/PublicLinks.svelte';
+	import PackBuilder from '#lib/components/PackBuilder.svelte';
 
 	// A creator's page for brands (name.miracleapp.live), in the website's night scene: aurora hero with her
 	// numbers, the brands she's worked with, her best Reels, packages as tickets, open weeks, her audience and
@@ -133,6 +134,8 @@
 	const wa = $derived(p?.whatsapp ? waLink(p.whatsapp, `Hi ${firstName(p.display_name)}! I'd like to discuss a collaboration.`) : '');
 	const packs = $derived(p?.packages?.filter((x) => packageOffered(x.items, p.offered)) ?? []);
 	const rates = $derived(p?.rates ? Object.entries(p.rates).filter(([k, v]) => v && offeredKinds(p.offered).includes(k)) : []);
+	// The package builder (her setting): brands build a package from her rates instead of picking a fixed one.
+	const builder = $derived(!!p?.bundle && rates.length > 0);
 	// The ticket that stands out: "Most booked", or the middle one.
 	const hot = $derived.by(() => {
 		const i = packs.findIndex((k) => k.badge?.trim().toLowerCase() === 'most booked');
@@ -773,6 +776,13 @@
 			{#if showPackages}
 				<section class="mp-sec" id="packages" aria-labelledby="mp-pk-t">
 					<div class="mp-wrap">
+						{#if builder}
+							<div class="mp-sec-head">
+								<div><span class="mp-eb" data-r use:rv>Rates</span><h2 class="mp-h2" id="mp-pk-t" data-r use:rv>{first}'s rates, <span class="mp-gt">and your package.</span></h2></div>
+								<p class="mp-lede" data-r="2" use:rv>Each price is one piece for one campaign, paid by invoice. Take {p.bundle?.[0]?.min ?? 2} or more and the whole package costs less.</p>
+							</div>
+							<PackBuilder {rates} tiers={p.bundle ?? []} {first} replyTime={p.reply_time} />
+						{:else}
 						<div class="mp-sec-head">
 							<div><span class="mp-eb" data-r use:rv>Packages</span><h2 class="mp-h2" id="mp-pk-t" data-r use:rv>Pick a package, <span class="mp-gt">or build your own.</span></h2></div>
 							<p class="mp-lede" data-r="2" use:rv>Prices are for one campaign, paid by invoice. {first} replies with a confirmed quote{p.reply_time ? `, usually within ${p.reply_time}` : ''}.</p>
@@ -806,6 +816,7 @@
 								<span class="mp-eb" style="font-size:10.5px">{packs.length ? 'Or one at a time' : 'One at a time'}</span>
 								{#each rates as [k, v] (k)}<a class="mp-rate" href="/brand/new?item={encodeURIComponent(k)}">{k}<b>{inr(v)}</b></a>{/each}
 							</div>
+						{/if}
 						{/if}
 					</div>
 				</section>
@@ -931,7 +942,7 @@
 					{#if p.accepting}
 						<div class="mp-ctas" data-r="2" use:rv>
 							<a class="mp-neo mp-grad" href={requestHref}><span class="mp-shine" aria-hidden="true"></span>Send a request</a>
-							{#if showWeeks}<a class="mp-neo mp-ghost" href="#weeks">See open weeks</a>{:else if showPackages}<a class="mp-neo mp-ghost" href="#packages">See packages</a>{/if}
+							{#if showWeeks}<a class="mp-neo mp-ghost" href="#weeks">See open weeks</a>{:else if showPackages}<a class="mp-neo mp-ghost" href="#packages">{builder ? 'Build a package' : 'See packages'}</a>{/if}
 						</div>
 					{/if}
 					<form class="mp-ask" data-r="3" use:rv novalidate onsubmit={ask}>

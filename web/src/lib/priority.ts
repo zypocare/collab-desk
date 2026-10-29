@@ -1,7 +1,8 @@
 // Barter rules and rate-card maths. The studio scores requests in decide.ts ("Should I take it?");
 // the brand form uses the rules here to tell brands, before they send, how a barter request will
 // be treated and how to improve it.
-import type { Collab, CollabType, PublicPage } from './types';
+import { bundlePrice } from './bundle';
+import type { BundleTier, Collab, CollabType, PublicPage } from './types';
 import { inr, todayIso } from './util';
 
 export type BarterMode = 'open' | 'selective' | 'closed';
@@ -24,10 +25,15 @@ export const PRODUCT_WORTH = 0.4;
 
 type Line = { kind: string; qty: number };
 
-/** What the deliverables would cost at her rate card (0 if no rates are set for them). */
-export function rateValue(lines: Line[], rates: Record<string, number> | null | undefined) {
+/** What the deliverables would cost at her rate card (0 if no rates are set for them). With her package
+ *  discount steps, the package price instead (the package builder's discount by size). */
+export function rateValue(lines: Line[], rates: Record<string, number> | null | undefined, tiers?: BundleTier[] | null) {
 	if (!rates) return 0;
-	return lines.reduce((a, d) => a + (Number(rates[d.kind]) || 0) * d.qty, 0);
+	const full = lines.reduce((a, d) => a + (Number(rates[d.kind]) || 0) * d.qty, 0);
+	if (!tiers?.length) return full;
+	const qty: Record<string, number> = {};
+	for (const d of lines) qty[d.kind] = (qty[d.kind] ?? 0) + d.qty;
+	return bundlePrice(rates, qty, tiers).total;
 }
 
 /** A fee that, with the product, brings the offer up to the rate card. Rounded to ₹500. */
@@ -68,7 +74,7 @@ export function brandAdvice(
 	creator: string
 ): Advice | null {
 	const b = page.barter;
-	const rate = rateValue(o.lines, page.rates);
+	const rate = rateValue(o.lines, page.rates, o.type === 'barter' ? null : page.bundle);
 	const worth = offerWorth(o.type, o.fee, o.productValue);
 	const who = creator || 'The creator';
 

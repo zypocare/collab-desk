@@ -107,11 +107,12 @@ export function decide(c: Collab, s: Settings, all: Collab[], notes?: BrandPriva
 	const total = content + styling + travelH + visitH;
 
 	// ---- Money ----
-	const rate = rateValue(c.deliverables, s.rates);
+	const rate = rateValue(c.deliverables, s.rates, c.type !== 'barter' && s.bundle_on !== false ? s.bundle_tiers : null);
+	const discounted = rate < rateValue(c.deliverables, s.rates);
 	const reelRate = Number(s.rates?.Reel) || 0;
 	const usualHourly = reelRate && per.Reel ? reelRate / per.Reel : rate && content ? rate / content : null;
 	const lines: MoneyLine[] = [];
-	if (rate) lines.push({ label: `Your rate card for ${c.deliverables.map((d) => `${d.qty} ${d.kind}`).join(' + ') || 'this'}`, amount: rate });
+	if (rate) lines.push({ label: `${discounted ? 'Your package price' : 'Your rate card'} for ${c.deliverables.map((d) => `${d.qty} ${d.kind}`).join(' + ') || 'this'}`, amount: rate });
 	const travelCost = travel ? Math.round((2 * travel.km * PER_KM[s.travel_mode]) / 10) * 10 + (s.travel_mode === 'cab' ? 100 : 0) : 0;
 	if (travelCost) lines.push({ label: `Travel, ${Math.round(travel!.km * 2)} km by ${MODE_LABEL[s.travel_mode]}`, amount: travelCost });
 	const makeupCost = makeup === 'professional' ? s.makeup_cost || 2500 : makeup === 'glam' && s.makeup_cost ? Math.round(s.makeup_cost / 2) : 0;
