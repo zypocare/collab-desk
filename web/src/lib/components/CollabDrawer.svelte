@@ -93,8 +93,8 @@
 		payTerms,
 		waLink
 	} from '../util';
-	import { DRAFT_MAX_MB, cancelInvoice, recordPayment, reloadCollabs, setChecklist, setInvoiceFlags, shareDraft, releaseDraft, withdrawQuote, type DraftProgress } from '../studio.svelte';
-	import { emailOk, errMessage, todayIso, unreadFor, waShare } from '../util';
+	import { DRAFT_MAX_MB, cancelInvoice, recordPayment, reloadCollabs, setChecklist, setInvoiceFlags, setSomeday, shareDraft, releaseDraft, withdrawQuote, type DraftProgress } from '../studio.svelte';
+	import { emailOk, errMessage, rel, todayIso, unreadFor, waShare } from '../util';
 	import type { Quote } from '../types';
 	import { INVOICE_STATUS, KIND_LABEL, balanceDue, type Invoice } from '../invoice';
 	import InvoiceDialog from './InvoiceDialog.svelte';
@@ -409,7 +409,8 @@
 	}
 
 	// ---- next step: one button that moves the collab forward ----
-	const next = $derived(c ? nextStep(c, studio.settings) : null);
+	// Someday: nothing to push until she brings it back.
+	const next = $derived(c && !c.someday ? nextStep(c, studio.settings) : null);
 	// Live or wrapped, on its own page: the recap (LiveRecap) leads, in place of the next step and the open stage bar.
 	const recap = $derived(page && !!c && (c.stage === 'live' || c.stage === 'wrapped'));
 	// Phone page: the parts open as sheets with their own simpler layout (pieces, payment, dates).
@@ -581,7 +582,21 @@
 			{/if}
 			<section class="sec" data-open={recap ? undefined : true}>
 				<h3>Stage {#if c.stage === 'declined'}<span class="danger">Declined</span>{/if}</h3>
-				{#if !['declined', 'paused', 'cancelled'].includes(c.stage)}
+				{#if c.someday}
+					<!-- Someday: might happen, no date yet. Out of Today and the reminders until she brings it back, or
+					     the day she picked to check back comes. -->
+					<div class="sd-card">
+						<div class="sd-h"><span class="sd-ic"><Icon name="clock" /></span><span><b>Kept for someday</b><small>{c.someday_on ? `You'll be reminded to check back ${fmt(c.someday_on)}.` : 'No date yet. It stays out of Today and your reminders until you bring it back.'}</small></span></div>
+						<div class="sd-when" role="group" aria-label="When to check back">
+							{#each [[30, 'In a month'], [90, 'In 3 months']] as const as [n, l] (n)}
+								<button class="sd-chip" class:on={c.someday_on === rel(n)} aria-pressed={c.someday_on === rel(n)} onclick={() => setSomeday(c!, true, rel(n))}>{l}</button>
+							{/each}
+							<label class="sd-chip sd-date" class:on={!!c.someday_on && ![30, 90].some((n) => c!.someday_on === rel(n))}><Icon name="cal" /><span class="sr">Pick a day to check back</span><input type="date" value={c.someday_on ?? ''} min={todayIso()} onchange={(e) => setSomeday(c!, true, val(e) || null)} /></label>
+							{#if c.someday_on}<button class="sd-chip" onclick={() => setSomeday(c!, true, null)}>No date</button>{/if}
+						</div>
+						<button class="btn sm primary" onclick={() => setSomeday(c!, false)}><Icon name="refresh" />Bring it back</button>
+					</div>
+				{:else if !['declined', 'paused', 'cancelled'].includes(c.stage)}
 					<div class="sh" style="--p:{si / 5}">
 						<div class="sh-track"><i></i></div>
 						{#each STAGES as s, i (s.id)}
@@ -605,7 +620,10 @@
 					</div>
 				{/each}
 				{#if canDecline}
-					<button class="btn sm ghost danger" style="margin-top:14px" onclick={declineIt}><Icon name="x" />Decline this request</button>
+					<div class="sd-acts">
+						{#if !c.someday}<button class="btn sm" title="Might happen, no date yet: keep it out of Today and your reminders" onclick={() => setSomeday(c!, true)}><Icon name="clock" />Keep for someday</button>{/if}
+						<button class="btn sm ghost danger" onclick={declineIt}><Icon name="x" />Decline this request</button>
+					</div>
 				{:else if c.stage === 'declined'}
 					<p class="hint" style="margin:0 0 10px">The brand sees this request as "Not going ahead".</p>
 					<button class="btn sm" onclick={() => changeStage('request')}><Icon name="refresh" />Reopen request</button>

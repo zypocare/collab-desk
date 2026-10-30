@@ -15,6 +15,7 @@ const triesSince = (c: Collab, since: string) => (c.events ?? []).filter((e) => 
 export function nudgesFor(collabs: Collab[]): Nudge[] {
 	const out: Nudge[] = [];
 	for (const c of collabs) {
+		if (c.someday) continue;
 		if (['declined', 'wrapped', 'paused', 'cancelled'].includes(c.stage)) continue;
 		const lastEvent = (c.events ?? []).filter((e) => e.kind === 'nudge').map((e) => e.at).sort().pop() ?? '';
 		// Not twice in two days, whatever the reason.

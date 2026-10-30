@@ -87,7 +87,7 @@
 		[
 			received > 0 && { b: inrS(received), t: ` came in this ${monthName}` },
 			urgent > 0 && { b: String(urgent), t: ' due today' },
-			list.filter((c) => c.stage === 'request').length > 0 && { b: String(list.filter((c) => c.stage === 'request').length), t: ' new requests waiting' },
+			list.filter((c) => c.stage === 'request' && !c.someday).length > 0 && { b: String(list.filter((c) => c.stage === 'request' && !c.someday).length), t: ' new requests waiting' },
 			outs > 0 && { b: inrS(outs), t: ' yet to come in' },
 			goal > 0 && { b: `${pctN}%`, t: ` of the ${inrS(goal)} goal` },
 			nextPayout && { b: nextPayout.brand.name, t: ` pays next, ${fmt(nextPayout.pay_due!)}` }

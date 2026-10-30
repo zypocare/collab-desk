@@ -3,7 +3,7 @@
 	import { isRanked } from '../priority';
 	import { priorityOf, studio } from '../studio.svelte';
 	import { ui } from '../ui.svelte';
-	import { delivText, deliverableProgress, diff, fmt, hueOf, inr, inrS, nextLine, stageIndex, stageLabel, unreadFor } from '../util';
+	import { delivText, deliverableProgress, diff, fmt, hueOf, inr, inrS, nextLine, stageIndex, stageOf, unreadFor } from '../util';
 	import Icon from './Icon.svelte';
 	import { nextStep } from '../suggest';
 	import PriorityBadge from './PriorityBadge.svelte';
@@ -42,7 +42,7 @@
 	role="button"
 	aria-pressed={selecting ? picked : undefined}
 	style="--i:{i};--h:var(--m{hueOf(c.brand.name)})"
-	aria-label="{c.brand.name}, {stageLabel(c.stage)}"
+	aria-label="{c.brand.name}, {stageOf(c)}"
 	ondragstart={(e) => {
 		e.dataTransfer?.setData('text/plain', c.id);
 		if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move';
@@ -56,7 +56,7 @@
 	<div class="card-h">
 		<Mono name={c.brand.name} />
 		<div><b>{c.brand.name}</b><small><span class="id">{c.code}</span> · {c.brand.category}</small></div>
-		{#if unread}<span class="msg-dot" title="{unread} unread message{unread > 1 ? 's' : ''}"><Icon name="mail" />{unread}</span>{:else if c.stage === 'request'}<span class="new-badge">NEW</span>{/if}
+		{#if unread}<span class="msg-dot" title="{unread} unread message{unread > 1 ? 's' : ''}"><Icon name="mail" />{unread}</span>{:else if c.stage === 'request' && !c.someday}<span class="new-badge">NEW</span>{/if}
 	</div>
 	<div class="deliv">{delivText(c.deliverables)}</div>
 	{#if showProg}

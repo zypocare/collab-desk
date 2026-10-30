@@ -10,7 +10,7 @@
 	// collabs that need her first, followed by the rest of the active ones.
 	const leads = $derived([...studio.leads].sort((a, b) => Number(b.collab_flag === 'likely') - Number(a.collab_flag === 'likely')));
 	const need = $derived([...new Map(tasks(studio.collabs).map((t) => [t.c.id, t])).values()]);
-	const rest = $derived(studio.collabs.filter((c) => !need.some((t) => t.c.id === c.id) && !['wrapped', 'declined', 'cancelled'].includes(c.stage)));
+	const rest = $derived(studio.collabs.filter((c) => !need.some((t) => t.c.id === c.id) && !c.someday && !['wrapped', 'declined', 'cancelled'].includes(c.stage)));
 	// Short amounts (₹85k) so the next-step chip beside it fits on a narrow card.
 	const fee = (c: Collab) => (c.type === 'barter' ? 'Barter' : c.fee > 0 ? inrS(c.fee) : 'No fee');
 	const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];

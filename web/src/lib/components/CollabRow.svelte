@@ -1,6 +1,6 @@
 <script lang="ts">
 	import type { Collab } from '../types';
-	import { delivText, hueOf, inr, inrS, nextLine, overdue, stageLabel, unreadFor } from '../util';
+	import { delivText, hueOf, inr, inrS, nextLine, overdue, stageOf, unreadFor } from '../util';
 	import Icon from './Icon.svelte';
 	import { loadBrandTrust, payHint, trust } from '../trust.svelte';
 
@@ -19,16 +19,16 @@
 				? inr(c.fee)
 				: 'Quote'
 	);
-	const state = $derived(late ? 'Overdue' : c.type === 'barter' ? `Barter · ${stageLabel(c.stage)}` : c.type === 'hybrid' ? `+ product · ${stageLabel(c.stage)}` : stageLabel(c.stage));
+	const state = $derived(late ? 'Overdue' : c.type === 'barter' ? `Barter · ${stageOf(c)}` : c.type === 'hybrid' ? `+ product · ${stageOf(c)}` : stageOf(c));
 	// New requests: how this brand pays, from every creator's invoices.
 	const pays = $derived(c.stage === 'request' || c.stage === 'negotiating' ? payHint(trust.brands[c.brand_id]) : '');
 	$effect(() => {
 		if (c.stage === 'request') loadBrandTrust();
 	});
-	const tag = $derived(unread ? `${unread} new` : c.stage === 'request' ? 'New' : '');
+	const tag = $derived(unread ? `${unread} new` : c.stage === 'request' && !c.someday ? 'New' : '');
 </script>
 
-<a class="wc st-{c.stage}" href="/studio/c/{c.code}" style="--h:var(--m{hueOf(c.brand.name)});--i:{Math.min(i, 8)}">
+<a class="wc st-{c.someday ? 'someday' : c.stage}" href="/studio/c/{c.code}" style="--h:var(--m{hueOf(c.brand.name)});--i:{Math.min(i, 8)}">
 	<span class="wc-top">
 		<span class="wc-bn">{c.brand.name}</span>
 		<span class="wc-money">{#if late}<i></i>{/if}{money}<small>{state}</small></span>

@@ -4,9 +4,9 @@
 	import { page } from '$app/state';
 	import { untrack } from 'svelte';
 	import { SvelteSet } from 'svelte/reactivity';
-	import { byCode, byId, markPaid, owedOn, priorityOf, reloadCollabs, setStage, studio } from '#lib/studio.svelte.ts';
+	import { byCode, byId, markPaid, owedOn, priorityOf, reloadCollabs, setSomeday, setStage, studio } from '#lib/studio.svelte.ts';
 	import { supabase } from '#lib/supabase.ts';
-	import type { Stage } from '#lib/types.ts';
+	import type { Collab, Stage } from '#lib/types.ts';
 	import { confetti, copyText, countUp, pointer, toast, ui } from '#lib/ui.svelte.ts';
 	import { STAGES, HELD_STAGES, isActive, productionHeld, errMessage, inr, inrS, parse, stageLabel } from '#lib/util.ts';
 	import Select from '#lib/components/Select.svelte';
@@ -24,7 +24,13 @@
 	let over = $state<string | null>(null);
 	let popped = $state<string | null>(null);
 	let shown = $state<Record<string, number>>({});
-	const limit = (stage: Stage) => shown[stage] ?? 25;
+	const limit = (stage: Col) => shown[stage] ?? 25;
+	// Someday: requests and talks that might happen, with no date yet. Their own column and tab, out of
+	// the pipeline's numbers.
+	type Col = Stage | 'someday';
+	const SOMEDAY = { id: 'someday' as Col, label: 'Someday', pub: '' };
+	const colOf = (c: Collab): Col => (c.someday ? 'someday' : c.stage);
+	const colLabel = (id: Col) => (id === 'someday' ? 'Someday' : stageLabel(id));
 	$effect(() => { void q; void filter; shown = {}; });
 
 	// Batch actions: pick several cards, then move, mark paid or remind them all at once.
@@ -114,12 +120,12 @@
 	);
 	const key = (d: string | null) => (d ? parse(d).getTime() : 0);
 	const columns = $derived(
-		[...STAGES, ...HELD_STAGES.filter((s) => visible.some((c) => c.stage === s.id)), ...(showDeclined ? [{ id: 'declined' as Stage, label: 'Declined', pub: '' }] : [])].map((s) => {
+		[...(STAGES as { id: Col; label: string; pub: string }[]), ...(visible.some((c) => c.someday) ? [SOMEDAY] : []), ...HELD_STAGES.filter((s) => visible.some((c) => c.stage === s.id)), ...(showDeclined ? [{ id: 'declined' as Col, label: 'Declined', pub: '' }] : [])].map((s) => {
 			const cs = visible
-				.filter((c) => c.stage === s.id)
+				.filter((c) => colOf(c) === s.id)
 				.sort((a, b) => {
 					// Requests still being decided: highest priority first (paid before barter).
-					if (s.id === 'request' || s.id === 'negotiating') return (priorityOf(b)?.score ?? 0) - (priorityOf(a)?.score ?? 0);
+					if (s.id === 'request' || s.id === 'negotiating' || s.id === 'someday') return (priorityOf(b)?.score ?? 0) - (priorityOf(a)?.score ?? 0);
 					const ka = key(a.draft_date || a.live_date || a.received_on), kb = key(b.draft_date || b.live_date || b.received_on);
 					return s.id === 'wrapped' || s.id === 'declined' ? kb - ka : ka - kb;
 				});
@@ -127,27 +133,27 @@
 		})
 	);
 	// Phone: a list instead of the board, filtered by stage with a row of chips.
-	let mstage = $state<'active' | Stage>('active');
+	let mstage = $state<'active' | Col>('active');
 	const ACTIVE: Stage[] = ['request', 'negotiating', 'confirmed', 'creating', 'live'];
 	const mtabs = $derived(
 		[
-			{ id: 'active' as const, label: 'Active', n: visible.filter((c) => ACTIVE.includes(c.stage)).length },
-			...[...STAGES, ...HELD_STAGES, { id: 'declined' as Stage, label: 'Declined' }].map((s) => ({ id: s.id, label: s.label, n: visible.filter((c) => c.stage === s.id).length }))
+			{ id: 'active' as const, label: 'Active', n: visible.filter((c) => ACTIVE.includes(c.stage) && !c.someday).length },
+			...[...STAGES, SOMEDAY, ...HELD_STAGES, { id: 'declined' as Stage, label: 'Declined' }].map((s) => ({ id: s.id, label: s.label, n: visible.filter((c) => colOf(c) === s.id).length }))
 		].filter((t) => t.id === 'active' || t.n || t.id === mstage)
 	);
 	const mgroups = $derived(
-		[...STAGES, ...HELD_STAGES, { id: 'declined' as Stage, label: 'Declined' }]
-			.map((s) => ({ s, cs: columns.find((x) => x.s.id === s.id)?.cs ?? visible.filter((c) => c.stage === s.id) }))
+		[...STAGES, SOMEDAY, ...HELD_STAGES, { id: 'declined' as Stage, label: 'Declined' }]
+			.map((s) => ({ s, cs: columns.find((x) => x.s.id === s.id)?.cs ?? visible.filter((c) => colOf(c) === s.id) }))
 			.map((g) => ({ ...g, sum: g.cs.reduce((a, c) => a + c.fee + c.product_value, 0) }))
-			.filter((g) => g.cs.length && (mstage === 'active' ? ACTIVE.includes(g.s.id) : g.s.id === mstage))
+			.filter((g) => g.cs.length && (mstage === 'active' ? ACTIVE.includes(g.s.id as Stage) : g.s.id === mstage))
 	);
 	// The pipeline card (phones): a tile per stage of the board, three to a row, from new requests to done.
 	const PIPE_TILES: [Stage, string][] = [['request', 'New'], ['negotiating', 'In talks'], ['confirmed', 'Confirmed'], ['creating', 'Creating'], ['live', 'Live'], ['wrapped', 'Done']];
-	const activeList = $derived(visible.filter((c) => ACTIVE.includes(c.stage)));
+	const activeList = $derived(visible.filter((c) => ACTIVE.includes(c.stage) && !c.someday));
 	const activeN = $derived(activeList.length);
 	const pipeValue = $derived(activeList.reduce((a, c) => a + (c.type === 'barter' ? 0 : Number(c.fee) || 0), 0));
 	const pipeProducts = $derived(activeList.reduce((a, c) => a + (c.type === 'paid' ? 0 : Number(c.product_value) || 0), 0));
-	const waiting = $derived(visible.filter((c) => c.stage === 'request').length);
+	const waiting = $derived(visible.filter((c) => c.stage === 'request' && !c.someday).length);
 	const pipeStages = $derived(ACTIVE.map((id) => ({ id, n: activeList.filter((c) => c.stage === id).length })));
 	const declinedCount = $derived(studio.collabs.filter((c) => c.stage === 'declined').length);
 
@@ -160,7 +166,7 @@
 		}
 	};
 	let view = $state<'board' | 'list'>(savedView());
-	let lstage = $state<'all' | Stage>('all');
+	let lstage = $state<'all' | Col>('all');
 	$effect(() => {
 		const v = view;
 		try {
@@ -169,19 +175,27 @@
 			/* private window */
 		}
 	});
-	const listRows = $derived(visible.filter((c) => (lstage === 'all' ? showDeclined || c.stage !== 'declined' : c.stage === lstage)));
+	const listRows = $derived(visible.filter((c) => (lstage === 'all' ? showDeclined || c.stage !== 'declined' : colOf(c) === lstage)));
 	const stageValue = (id: Stage) => activeList.filter((c) => c.stage === id).reduce((a, c) => a + (Number(c.fee) || 0) + (Number(c.product_value) || 0), 0);
 	function showStage(id: Stage) {
 		lstage = view === 'list' && lstage === id ? 'all' : id;
 		view = 'list';
 	}
 
-	async function drop(e: DragEvent, stage: Stage) {
+	async function drop(e: DragEvent, to: Col) {
 		e.preventDefault();
 		over = null;
 		const id = e.dataTransfer?.getData('text/plain');
 		const c = byId(id);
-		if (!c || c.stage === stage) return;
+		if (!c || colOf(c) === to) return;
+		// Someday holds only what isn't agreed yet; out of it, back to the stage it was dropped on.
+		if (to === 'someday') {
+			if (c.stage !== 'request' && c.stage !== 'negotiating') return toast('Only a request or a talk can wait for someday. Pause an agreed collab instead.', 'info');
+			return setSomeday(c, true);
+		}
+		const stage = to;
+		if (c.someday && !(await setSomeday(c, false))) return;
+		if (c.stage === stage) return;
 		if (productionHeld(c) || ['paused', 'cancelled'].includes(stage)) {
 			ui.openCollab = c.id;
 			toast('Use the collaboration’s Pause, Cancel or Resume controls to review the reason and schedule.', 'info');
@@ -201,7 +215,7 @@
 	<div>
 		<div class="eb">Pipeline</div>
 		<h1>Your <em>collabs</em></h1>
-		<p>{studio.collabs.filter(isActive).length} active, {studio.collabs.filter((c) => c.stage === 'request').length} waiting for your reply.</p>
+		<p>{studio.collabs.filter(isActive).length} active, {studio.collabs.filter((c) => c.stage === 'request' && !c.someday).length} waiting for your reply{studio.collabs.some((c) => c.someday) ? `, ${studio.collabs.filter((c) => c.someday).length} for someday` : ''}.</p>
 	</div>
 </header>
 
@@ -317,7 +331,7 @@
 			<div class="hc-foot six">
 				{#each PIPE_TILES as [id, label] (id)}
 					<button class:on={mstage === id} onclick={() => (mstage = mstage === id ? 'active' : id)}>
-						<small><span class="dt st-{id}"></span>{label}</small><b>{visible.filter((c) => c.stage === id).length}</b>
+						<small><span class="dt st-{id}"></span>{label}</small><b>{visible.filter((c) => colOf(c) === id).length}</b>
 					</button>
 				{/each}
 			</div>
@@ -342,8 +356,8 @@
 		<div class="clear hero-card glow m-none">
 			<div class="mesh" aria-hidden="true"></div>
 			<span class="clear-ic"><Icon name={q ? 'search' : 'board'} /></span>
-			<b>{q ? 'No matches' : 'Nothing at this stage'}</b>
-			<small>{q ? 'Try another brand name or code.' : 'Collabs show up here as they move along.'}</small>
+			<b>{q ? 'No matches' : mstage === 'someday' ? 'Nothing for someday' : 'Nothing at this stage'}</b>
+			<small>{q ? 'Try another brand name or code.' : mstage === 'someday' ? 'A brand said “later”? Add it as a collab and pick Someday, or move a request here from its page.' : 'Collabs show up here as they move along.'}</small>
 			<div class="clear-acts">
 				{#if q}<button class="glass-chip" onclick={() => (q = '')}><Icon name="x" />Clear search</button>{:else}<button class="glass-chip" onclick={() => (mstage = 'active')}><Icon name="board" />All active</button>{/if}
 				<button class="glass-chip" onclick={() => (ui.newCollab = true)}><Icon name="plus" />New collab</button>
@@ -352,7 +366,7 @@
 	{/each}
 {:else if view === 'list'}
 	{#if lstage !== 'all'}
-		<div class="cb-filter"><span class="st-{lstage}"><span class="dt"></span>{stageLabel(lstage)}</span><span>{listRows.length} collab{listRows.length === 1 ? '' : 's'}</span><button class="btn sm ghost" onclick={() => (lstage = 'all')}><Icon name="x" />Show all stages</button></div>
+		<div class="cb-filter"><span class="st-{lstage}"><span class="dt"></span>{colLabel(lstage)}</span><span>{listRows.length} collab{listRows.length === 1 ? '' : 's'}</span><button class="btn sm ghost" onclick={() => (lstage = 'all')}><Icon name="x" />Show all stages</button></div>
 	{/if}
 	<CollabTable list={listRows} {selecting} {picked} onpick={toggle} />
 {:else}

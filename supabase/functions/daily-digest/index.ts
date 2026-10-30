@@ -45,6 +45,7 @@ async function digestFor(db: ReturnType<typeof admin>, s: Settings, force: boole
     .from('collabs')
     .select('*, brand:brands(name), deliverables(kind, qty, done), quotes(version, status), drafts(round, status, feedback)')
     .eq('creator_id', s.id)
+    .eq('someday', false)
     .not('stage', 'in', '(wrapped,declined,paused,cancelled)');
   if (error) throw new Error(error.message);
 

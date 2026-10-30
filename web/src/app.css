@@ -94,7 +94,7 @@ p{margin:0}
 .tint{background:color-mix(in oklab,var(--hue) 13%,var(--surface));color:color-mix(in oklab,var(--hue) 82%,var(--ink))}
 .st-request{--hue:var(--h-request)} .st-negotiating{--hue:var(--h-nego)} .st-confirmed{--hue:var(--h-confirmed)}
 .st-creating{--hue:var(--h-creating)} .st-live{--hue:var(--h-live)} .st-wrapped{--hue:var(--h-wrapped)}
-.st-paused{--hue:var(--h-nego)} .st-cancelled{--hue:var(--bad)}
+.st-paused{--hue:var(--h-nego)} .st-cancelled{--hue:var(--bad)} .st-someday{--hue:var(--h-wrapped)}
 .k-shoot{--hue:var(--accent)} .k-draft{--hue:var(--h-creating)} .k-live{--hue:var(--h-live)} .k-follow{--hue:var(--h-nego)}
 .k-pay{--hue:var(--ok)} .k-product{--hue:var(--h-confirmed)} .k-new{--hue:var(--h-request)} .k-bad{--hue:var(--bad)}
 .dt{width:7px;height:7px;border-radius:50%;background:var(--hue);flex:none}
@@ -824,6 +824,16 @@ a{color:inherit}
 .type-card.static:hover{transform:none;border-color:var(--line-strong)}
 
 /* ---------- step 2: quotes, drafts, checklist ---------- */
+/* Someday (collab page): a request that might happen, no date yet. */
+.sd-card{display:grid;gap:12px;padding:14px;border-radius:18px;background:color-mix(in oklab,var(--h-wrapped) 10%,var(--surface));border:1px dashed color-mix(in oklab,var(--h-wrapped) 40%,var(--line))}
+.sd-h{display:flex;gap:12px;align-items:flex-start}.sd-h>span:last-child{display:grid;gap:3px;min-width:0}.sd-h b{font-size:16px}.sd-h small{color:var(--ink-3);font-size:13.5px;line-height:1.4}
+.sd-ic{width:36px;height:36px;flex:none;display:grid;place-items:center;border-radius:12px;background:color-mix(in oklab,var(--h-wrapped) 18%,var(--surface));color:color-mix(in oklab,var(--h-wrapped) 80%,var(--ink))}.sd-ic .ic{width:18px;height:18px}
+.sd-when{display:flex;flex-wrap:wrap;gap:8px}
+.sd-chip{position:relative;display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 13px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--ink-2);font:600 13.5px/1 inherit;cursor:pointer}
+.sd-chip.on{border-color:var(--ink);color:var(--ink);background:color-mix(in oklab,var(--h-wrapped) 14%,var(--surface))}.sd-chip .ic{width:15px;height:15px}
+.sd-date input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.sd-card>.btn{justify-self:start}
+.sd-acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
 .warn-box{margin-top:12px;padding:12px 14px;border-radius:14px;background:color-mix(in oklab,var(--warn) 12%,var(--surface));color:color-mix(in oklab,var(--warn) 70%,var(--ink));font-size:15.5px;display:flex;flex-direction:column;gap:6px;animation:rise .4s var(--ease) both}
 .warn-box b{display:flex;align-items:center;gap:6px;color:var(--ink)}
 .warn-box .ic{width:15px;height:15px;color:var(--warn)}

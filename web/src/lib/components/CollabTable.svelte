@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { Collab, Stage } from '../types';
 	import { ui } from '../ui.svelte';
-	import { delivText, diff, fmt, inr, inrS, nextLine, stageIndex, stageName, unreadFor } from '../util';
+	import { delivText, diff, fmt, inr, inrS, nextLine, stageIndex, stageOf, unreadFor } from '../util';
 	import { priorityOf } from '../studio.svelte';
 	import Icon from './Icon.svelte';
 	import Mono from './Mono.svelte';
@@ -73,7 +73,7 @@
 			{#each rows.slice((pageNumber - 1) * pageSize, pageNumber * pageSize) as c (c.id)}
 				{@const n = nextLine(c)}
 				{@const unread = unreadFor(c)}
-				<tr class="st-{c.stage}" class:picked={picked?.has(c.id)} onclick={() => open(c)}>
+				<tr class="st-{c.someday ? 'someday' : c.stage}" class:picked={picked?.has(c.id)} onclick={() => open(c)}>
 					{#if selecting}<td class="ct-pick"><span class="pick-box" aria-hidden="true">{#if picked?.has(c.id)}<Icon name="check" />{/if}</span></td>{/if}
 					<td>
 						<div class="ct-brand">
@@ -84,7 +84,7 @@
 							</span>
 						</div>
 					</td>
-					<td><span class="ct-stage"><span class="dt" class:pulse={c.stage === 'request'}></span>{stageName(c, c.stage)}</span></td>
+					<td><span class="ct-stage"><span class="dt" class:pulse={c.stage === 'request' && !c.someday}></span>{stageOf(c)}</span></td>
 					<td class="ct-del">{delivText(c.deliverables) || '—'}</td>
 					<td class="num-col">
 						{#if c.type === 'barter'}<span class="ct-v">{c.product_value ? inrS(c.product_value) : '—'}</span><small>barter</small>

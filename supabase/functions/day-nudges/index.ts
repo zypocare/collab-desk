@@ -174,6 +174,7 @@ async function herDay(db: ReturnType<typeof admin>, creator: number, today: stri
     .from('collabs')
     .select('id, code, stage, type, fee, pay_received, pay_status, pay_due, draft_date, shoot_date, live_date, product_date, follow_date, paid_on, brand:brands(name)')
     .eq('creator_id', creator)
+    .eq('someday', false)
     .not('stage', 'in', '(declined,paused,cancelled)');
   const cs = (rows ?? []).map((c) => ({ ...c, b: (c.brand as unknown as { name: string } | null)?.name ?? 'a brand' }));
   const open = cs.filter((c) => c.stage !== 'wrapped');

@@ -72,7 +72,7 @@
 	const current = $derived(group?.href);
 	// Tabs show on the paired pages themselves (not on a single collab's page).
 	const tabs = $derived(group?.tabs && group.tabs.some((t) => path === t.href) ? group.tabs : null);
-	const newCount = $derived(studio.collabs.filter((c) => c.stage === 'request').length);
+	const newCount = $derived(studio.collabs.filter((c) => c.stage === 'request' && !c.someday).length);
 	const allowed = $derived(auth.account?.role === 'creator');
 	// Team roles: an assistant doesn't see money screens; an accountant doesn't talk to brands.
 	const role = $derived(studio.me?.team_role ?? 'owner');

@@ -172,6 +172,10 @@ export type Collab = {
 	resume_stage?: Stage | null;
 	paused_at?: string | null;
 	cancelled_at?: string | null;
+	/** Might happen, no date yet: kept out of Today and the reminders until she brings it back. */
+	someday?: boolean;
+	/** Someday: an optional day to check back with the brand. */
+	someday_on?: string | null;
 	fee: number;
 	product: string;
 	product_value: number;

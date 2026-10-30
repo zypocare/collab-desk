@@ -307,9 +307,11 @@ export function replySuggestions(c: Collab, s: Settings): Reply[] {
 			break;
 		}
 		case 'confirmed':
-			if (c.type !== 'paid' && !c.shipped_at && !c.product_received_at)
+			if (c.type !== 'paid' && c.barter_kind === 'experience' && !c.product_received_at)
+				add('Plan the visit', `${hi}, we're all set! When would suit you for the ${c.product || 'visit'}? Share a couple of dates and I'll plan the shoot around it.`);
+			else if (c.type !== 'paid' && !c.shipped_at && !c.product_received_at)
 				add('Ask to ship', `${hi}, we're all set! Please ship the product using the address on your request page, and add the tracking number there so I know when to expect it.`);
-			if (c.product_received_at) add('Product arrived', `${hi}, the product has arrived, thank you! I'll share the draft${c.draft_date ? ` by ${fmt(c.draft_date)}` : ' soon'}.`);
+			if (c.product_received_at && c.barter_kind !== 'experience') add('Product arrived', `${hi}, the product has arrived, thank you! I'll share the draft${c.draft_date ? ` by ${fmt(c.draft_date)}` : ' soon'}.`);
 			add('Excited to start', `${hi}, excited to start on this!${c.draft_date ? ` You'll have the draft by ${fmt(c.draft_date)}` : ''}${c.live_date ? `, and we go live on ${fmt(c.live_date)}` : ''}.`);
 			if (!hasBrief) add('Ask for the brief', `${hi}, before I start, could you share the brief, key messages, hashtags and any do's and don'ts?`);
 			break;

@@ -17,6 +17,8 @@ export const HELD_STAGES: { id: Stage; label: string; pub: string }[] = [
 export const stageLabel = (s: Stage) => (s === 'declined' ? 'Declined' : [...STAGES, ...HELD_STAGES].find((x) => x.id === s)?.label ?? s);
 export const stagePub = (s: Stage) => (s === 'declined' ? 'Not going ahead' : [...STAGES, ...HELD_STAGES].find((x) => x.id === s)?.pub ?? s);
 export const productionHeld = (c: { stage: Stage }) => c.stage === 'paused' || c.stage === 'cancelled';
+/** A stage's name for this collab: "Someday" for one that might happen, with no date yet. */
+export const stageOf = (c: Pick<Collab, 'stage' | 'someday'>) => (c.someday ? 'Someday' : stageLabel(c.stage));
 
 /** WhatsApp click-to-chat link (free). Indian 10-digit numbers get +91. Empty if no usable number. */
 /** An email address someone can actually receive at: one @, a name, and a domain with a dot. */
@@ -165,7 +167,7 @@ export const deliverableProgress = (deliverables: { qty: number; done: boolean; 
 	total: deliverables.reduce((n, d) => n + d.qty, 0),
 	done: deliverables.reduce((n, d) => n + (d.items?.length ? d.items.filter((x) => ['published', 'delivered'].includes(x.status)).length : d.done ? d.qty : 0), 0)
 });
-export const isActive = (c: Collab) => !['wrapped', 'declined', 'paused', 'cancelled'].includes(c.stage);
+export const isActive = (c: Collab) => !c.someday && !['wrapped', 'declined', 'paused', 'cancelled'].includes(c.stage);
 export const outstanding = (c: Collab) =>
 	productionHeld(c)
 		? (c.invoices ?? []).filter((i) => ['sent', 'partly_paid'].includes(i.status)).reduce((sum, i) => sum + Math.max(0, Number(i.total) - Number(i.amount_received) - Math.max(Number(i.tds_amount), Number(i.tds_deducted))) * (Number(i.inr_rate) || 1), 0)
@@ -181,6 +183,7 @@ export type NextLine = { text: string; tone: '' | 'late' | 'soon'; icon: string 
 export function nextLine(c: Collab): NextLine {
 	const tone = (d: number) => (d < 0 ? 'late' : d <= 2 ? 'soon' : '') as NextLine['tone'];
 	const r = (text: string, d: number | null, icon = 'clock'): NextLine => ({ text, tone: d === null ? '' : tone(d), icon });
+	if (c.someday) return c.someday_on ? r(`Someday · check back ${relWord(diff(c.someday_on))}`, diff(c.someday_on), 'bell') : r('Someday · no date yet', null, 'clock');
 	switch (c.stage) {
 		case 'paused': return r(c.resume_on ? `Paused · review ${fmt(c.resume_on)}` : 'Paused', null, 'clock');
 		case 'cancelled': return r('Cancelled · review settlement', null, 'x');
@@ -235,6 +238,11 @@ export function tasks(collabs: Collab[]): Task[] {
 	for (const c of collabs) {
 		const unread = unreadFor(c);
 		if (unread) out.push({ c, kind: 'msg', d: 0, title: `Reply to ${unread} new message${unread > 1 ? 's' : ''}`, order: -1 });
+		// Someday: nothing to do until the day she picked to check back (if any).
+		if (c.someday) {
+			if (c.someday_on && diff(c.someday_on) <= 0) out.push({ c, kind: 'follow', d: diff(c.someday_on), title: 'Check back: is this collab still on?', order: 1 });
+			continue;
+		}
 		if (productionHeld(c)) {
 			if (c.stage === 'paused' && c.resume_on && diff(c.resume_on) <= 0) out.push({ c, kind: 'follow', d: diff(c.resume_on), title: 'Review paused collaboration', order: 1 });
 			continue;
@@ -316,6 +324,10 @@ export type CalEvent = { date: string; kind: 'shoot' | 'draft' | 'live' | 'follo
 export function events(collabs: Collab[]): CalEvent[] {
 	const ev: CalEvent[] = [];
 	for (const c of collabs) {
+		if (c.someday) {
+			if (c.someday_on) ev.push({ date: c.someday_on, kind: 'follow', c, label: 'Check back' });
+			continue;
+		}
 		if (productionHeld(c)) {
 			if (c.stage === 'paused' && c.resume_on) ev.push({ date: c.resume_on, kind: 'follow', c });
 			continue;

@@ -159,7 +159,7 @@
 
 	// The deal she's adding: what they asked for until she moves on from the first step, hers after that.
 	let seeded = $state(false);
-	const f = $state({ type: 'paid' as CollabType, deliv: [{ kind: 'Reel', qty: 1 }] as { kind: string; qty: number }[], fee: 0, product: '', productValue: 0, usage: 'Organic only', live: '', draft: '', agreed: true });
+	const f = $state({ type: 'paid' as CollabType, deliv: [{ kind: 'Reel', qty: 1 }] as { kind: string; qty: number }[], fee: 0, product: '', productValue: 0, kind: 'product' as 'product' | 'experience', usage: 'Organic only', live: '', draft: '', agreed: true, someday: false });
 	function seed() {
 		if (seeded) return;
 		seeded = true;
@@ -172,6 +172,13 @@
 		f.productValue = p.productValue || 0;
 		if (p.usage && USAGE.includes(p.usage)) f.usage = p.usage;
 		if (p.preferredLive && p.preferredLive >= todayIso()) setLive(p.preferredLive);
+
+		if (EXP.test(f.product)) f.kind = 'experience';
+		// "Let's do it later", with no date: starts as Someday (she can change it).
+		if (!p.preferredLive && SOMEDAY.test(pasted)) {
+			f.agreed = false;
+			f.someday = true;
+		}
 	}
 	const asked = $derived(
 		seeded
@@ -192,6 +199,10 @@
 	// The deal step.
 	const paidPart = $derived(f.type !== 'barter');
 	const productPart = $derived(f.type !== 'paid');
+	// A stay, a meal or an event typed in picks "An experience" until she taps a choice herself.
+	const EXP = /\b(stay|night|hotel|resort|villa|homestay|dinner|lunch|brunch|meal|buffet|spa|massage|salon|experience|event|show|ticket|tour|trip|session)\b/i;
+	let kindTapped = false;
+	const SOMEDAY = /\b(later|in (the )?future|next (month|quarter|year|season)|sometime|some time|will (let you know|get back|reach out|connect)|keep you posted|not (right )?now|no dates? yet|on hold|after (diwali|the festive season|our launch|launch))\b/i;
 	const more = $derived(KINDS.filter((k) => !f.deliv.some((d) => d.kind === k)));
 	const qty = (kind: string, by: number) => {
 		const d = f.deliv.find((x) => x.kind === kind);
@@ -232,6 +243,7 @@
 		const what = [delivText(f.deliv.filter((d) => d.qty > 0)), paidPart && f.fee ? `for ${inr(f.fee)}` : '', f.live ? `live on ${day(f.live)}` : ''].filter(Boolean).join(' ');
 		replyText = many
 			? `Hi${who ? ' ' + who : ''}! Thanks for these. Happy to work on ${reads.map((r) => r.brand).filter(Boolean).join(' and ') || 'both'}. I'll send the details for each shortly.`
+			: f.someday ? `Hi${who ? ' ' + who : ''}! Thanks for thinking of me. I'd love to do this whenever you're ready, just let me know.`
 			: f.agreed ? `Hi${who ? ' ' + who : ''}! Happy to do this: ${what}. I'll send the details shortly.` : `Hi${who ? ' ' + who : ''}! Thanks for reaching out, I'd love to work on this. Let me send you my quote shortly.`;
 	});
 
@@ -259,12 +271,15 @@
 				fee: paidPart ? Math.max(0, Number(f.fee) || 0) : 0,
 				product: productPart ? f.product : '',
 				product_value: productPart ? Math.max(0, Number(f.productValue) || 0) : 0,
+				barter_kind: productPart ? f.kind : 'product',
 				preferred_live: p?.preferredLive || null,
 				usage: f.usage,
 				brief: p?.brief ?? '',
-				live_date: f.live || null,
-				draft_date: f.draft || null,
-				stage: f.agreed ? 'confirmed' : 'negotiating',
+				live_date: f.someday ? null : f.live || null,
+				draft_date: f.someday ? null : f.draft || null,
+				stage: f.agreed && !f.someday ? 'confirmed' : 'negotiating',
+				// Might happen, no date yet: kept on the Someday list, out of Today and the reminders.
+				someday: f.someday,
 				via_agency: agency.trim()
 			},
 			deliverables: deliv.length ? deliv : [{ kind: 'Reel', qty: 1 }],
@@ -290,7 +305,7 @@
 			nameTouched = false;
 			draftTouched = false;
 			pickLive = pickDraft = false;
-			Object.assign(f, { type: 'paid', deliv: [{ kind: 'Reel', qty: 1 }], fee: 0, product: '', productValue: 0, usage: 'Organic only', live: '', draft: '', agreed: true });
+			Object.assign(f, { type: 'paid', deliv: [{ kind: 'Reel', qty: 1 }], fee: 0, product: '', productValue: 0, kind: 'product', usage: 'Organic only', live: '', draft: '', agreed: true, someday: false });
 			name = '';
 			go('ask');
 			return;
@@ -420,8 +435,13 @@
 				{/if}
 				{#if productPart}
 					<div class="nc-group">
-						<label for="nc-prod" class="nc-eb">What they send</label>
-						<input id="nc-prod" class="nc-in" placeholder="The product, a stay or a meal" bind:value={f.product} />
+						<!-- A stay, a meal or an event is never shipped: nothing to wait for, she marks it done once she's had it. -->
+						<span class="nc-eb">What they give</span>
+						<div class="nc-chips" role="group" aria-label="What they give">
+							<button type="button" class="nc-opt" class:on={f.kind === 'product'} aria-pressed={f.kind === 'product'} onclick={() => ((f.kind = 'product'), (kindTapped = true))}>A product (shipped)</button>
+							<button type="button" class="nc-opt" class:on={f.kind === 'experience'} aria-pressed={f.kind === 'experience'} onclick={() => ((f.kind = 'experience'), (kindTapped = true))}>An experience</button>
+						</div>
+						<input id="nc-prod" class="nc-in" aria-label={f.kind === 'experience' ? 'The experience' : 'The product'} placeholder={f.kind === 'experience' ? 'e.g. 1-night stay, dinner for two' : 'e.g. Skincare kit'} bind:value={f.product} oninput={() => !kindTapped && (f.kind = EXP.test(f.product) ? 'experience' : 'product')} />
 						<div class="nc-money sm"><span>₹</span><input type="number" inputmode="numeric" min="0" placeholder="Its value" aria-label="Its value" value={f.productValue || ''} oninput={(e) => (f.productValue = Number((e.currentTarget as HTMLInputElement).value) || 0)} /></div>
 					</div>
 				{/if}
@@ -430,8 +450,8 @@
 					<Select id="nc-usage" bind:value={f.usage} options={USAGE.map((u) => ({ value: u, label: usageOption(u) }))} />
 				</div>
 			{:else}
-				<div class="nc-head"><span class="nc-eb">{name}</span><h2 id="nc-title" class="nc-h">When it goes live</h2></div>
-				<div class="nc-group">
+				<div class="nc-head"><span class="nc-eb">{name}</span><h2 id="nc-title" class="nc-h">{f.someday ? 'Someday, no date yet' : 'When it goes live'}</h2></div>
+				<div class="nc-group" hidden={f.someday}>
 					<span class="nc-eb">Go-live date</span>
 					<div class="nc-chips" role="group" aria-label="Go-live date">
 						{#each liveChoices as o (o.d)}<button type="button" class="nc-opt" class:on={f.live === o.d && !pickLive} aria-pressed={f.live === o.d} onclick={() => ((pickLive = false), setLive(o.d))}>{o.l}</button>{/each}
@@ -446,9 +466,11 @@
 				<div class="nc-group">
 					<span class="nc-eb">Where it stands</span>
 					<div class="nc-seg" role="group" aria-label="Where it stands">
-						<button type="button" class:on={!f.agreed} aria-pressed={!f.agreed} onclick={() => (f.agreed = false)}>Still talking</button>
-						<button type="button" class:on={f.agreed} aria-pressed={f.agreed} onclick={() => (f.agreed = true)}>Agreed</button>
+						<button type="button" class:on={!f.agreed && !f.someday} aria-pressed={!f.agreed && !f.someday} onclick={() => ((f.agreed = false), (f.someday = false))}>Still talking</button>
+						<button type="button" class:on={f.agreed && !f.someday} aria-pressed={f.agreed && !f.someday} onclick={() => ((f.agreed = true), (f.someday = false))}>Agreed</button>
+						<button type="button" class:on={f.someday} aria-pressed={f.someday} onclick={() => ((f.agreed = false), (f.someday = true))}>Someday</button>
 					</div>
+					{#if f.someday}<p class="nc-hint">A brand said “later”, with no date. It goes on your Someday list, out of Today and your reminders, until you bring it back.</p>{/if}
 				</div>
 				<div class="nc-ticket">
 					<div class="nc-band">

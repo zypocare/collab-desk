@@ -13,7 +13,7 @@ import { collectPages, collectRanges } from './pagination';
 import { balanceDue, normaliseInvoice, type Invoice, type InvoiceItem } from './invoice';
 import { confetti, moneyIn, toast, ui } from './ui.svelte';
 import { ask } from './confirm.svelte';
-import { diff, errMessage, inr, stageLabel, todayIso, unreadFor } from './util';
+import { diff, errMessage, fmt, inr, stageLabel, todayIso, unreadFor } from './util';
 import { isNetworkError, load as loadSaved, net, save as saveLocal } from './offline.svelte';
 import { makePreview } from './draftPreview';
 import { uploadResumable } from './resumable';
@@ -415,6 +415,14 @@ export async function setStage(c: Collab, stage: Stage, quiet = false) {
 	if (quiet) return;
 	if (stage === 'live' || stage === 'wrapped') confetti();
 	toast(`${c.brand.name} moved to ${stageLabel(stage)}`, 'layers');
+}
+
+/** Someday: a request or a talk that might happen, with no date yet. It leaves Today and the reminders
+ * until she brings it back (or the day she picked to check back comes). */
+export async function setSomeday(c: Collab, on: boolean, checkOn: string | null = null) {
+	if (!(await updateCollab(c.id, on ? { someday: true, someday_on: checkOn } : { someday: false, someday_on: null }))) return false;
+	toast(on ? `${c.brand.name} is kept for someday${checkOn ? `, check back ${fmt(checkOn)}` : ''}` : `${c.brand.name} is back in your active collabs`, on ? 'clock' : 'layers');
+	return true;
 }
 
 /** What's still owed on a collab: the fee less what has come in. */

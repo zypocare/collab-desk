@@ -183,7 +183,7 @@
 		[
 			received > 0 && { b: inrS(received), t: ` came in this ${monthName}` },
 			urgent > 0 && { b: String(urgent), t: ` need${urgent === 1 ? 's' : ''} you today` },
-			list.filter((c) => c.stage === 'request').length > 0 && { b: String(list.filter((c) => c.stage === 'request').length), t: ' new requests waiting' },
+			list.filter((c) => c.stage === 'request' && !c.someday).length > 0 && { b: String(list.filter((c) => c.stage === 'request' && !c.someday).length), t: ' new requests waiting' },
 			outs > 0 && { b: inrS(outs), t: ' yet to come in' },
 			goal > 0 && { b: `${pctN}%`, t: ` of the ${inrS(goal)} goal` },
 			active.length > 0 && { b: String(active.length), t: ` active collab${active.length === 1 ? '' : 's'}` },
