@@ -12,6 +12,8 @@ const cap = (): Cap | undefined => (typeof window === 'undefined' ? undefined : 
 export const isNative = () => !!cap()?.isNativePlatform?.();
 /** Miracle on Google Play (the Android app). iPhone: the App Store app is coming; until then, Safari's Add to Home Screen. */
 export const PLAY_URL = 'https://play.google.com/store/apps/details?id=live.miracleapp.app';
+/** Miracle's own Instagram: tips for creators, new features and creator stories. */
+export const MIRACLE_IG = 'https://www.instagram.com/themiracleapp/';
 export const isAndroid = () => typeof navigator !== 'undefined' && /android/i.test(navigator.userAgent);
 
 /** The phone app, or the web app added to a Home Screen: opened like an app, not as a website. */

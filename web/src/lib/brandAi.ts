@@ -3,7 +3,7 @@
 import { askAi } from './ai';
 import type { Report } from './brandReports.svelte';
 import type { SalesRow } from './brandSales';
-import type { BriefDetails } from './types';
+import type { BrandDashboard, BrandRow, BriefDetails } from './types';
 
 export type Reading = { headline: string; points: string[]; next: string[]; answer: string };
 export type BriefDraft = { product: string; price: number | null; brief: string; message: string; dos: string[]; donts: string[]; hashtags: string[]; mentions: string[]; link: string };
@@ -82,3 +82,21 @@ export function fillBrief(cur: BriefDetails, d: BriefDraft): BriefDetails {
 		link: cur.link?.trim() ? cur.link : d.link
 	};
 }
+
+// "Ask your desk" for brands: their requests across every creator and the dashboard summary, kept short.
+export type BrandChatReply = { answer: string; codes: string[]; page: string };
+export function brandChatData(rows: BrandRow[], dash: BrandDashboard | null) {
+	const open = rows.filter((r) => !['declined', 'wrapped', 'cancelled'].includes(r.stage));
+	const done = rows.filter((r) => r.stage === 'wrapped').slice(0, 20);
+	return {
+		requests: [...open, ...done].slice(0, 80).map((r) => ({
+			code: r.code, creator: r.creator.name, stage: r.stage_label, fee: r.fee || null, product_value: r.product_value || null,
+			live: r.live_date, pay: r.pay_status, needs: r.needs, invoice_due: r.invoice_due, invoice_amount: r.invoice_amount,
+			unread: r.unread || 0, last: r.last ? `${r.last.sender === 'brand' ? 'You' : r.creator.name}: ${r.last.body.slice(0, 140)}` : null
+		})),
+		counts: { all: rows.length, open: open.length, wrapped: rows.filter((r) => r.stage === 'wrapped').length, listed_wrapped: done.length },
+		summary: dash ? { spent_month: dash.spent_month, to_pay: dash.to_pay, waiting: dash.waiting.map((w) => ({ kind: w.kind, code: w.code, creator: w.creator, amount: w.amount ?? null })), live_soon: dash.live_soon.map((l) => ({ code: l.code, creator: l.creator, date: l.live_date })) } : null
+	};
+}
+export const askBrandDesk = (question: string, data: ReturnType<typeof brandChatData>, company: string, today: string, history: { q: string; a: string }[]) =>
+	askAi<BrandChatReply>('brandchat', { question, data, company, today, history });

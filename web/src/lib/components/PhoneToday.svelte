@@ -28,6 +28,7 @@
 		rel,
 		relWord,
 		mergeSteps, tasks,
+		evLabel,
 		today,
 		type Task
 	} from '../util';
@@ -153,6 +154,22 @@
 	const busiest = $derived([...week].sort((a, b) => b.list.length - a.list.length)[0]);
 	const dayName = (d: Date, i: number) => (i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : d.toLocaleDateString('en-IN', { weekday: 'long' }));
 	const NUM = ['No', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten'];
+	// The day strip: the day she taps, or the first day with something on it.
+	let pick = $state<number | null>(null);
+	const sel = $derived(pick ?? (week.find((d) => d.list.length)?.i ?? 0));
+	const selDay = $derived(week[sel]);
+	const ORDER = ['shoot', 'draft', 'product', 'live', 'pay', 'follow'];
+	const selList = $derived([...selDay.list].sort((a, b) => ORDER.indexOf(a.kind) - ORDER.indexOf(b.kind)));
+	const short = (d: Date, i: number) => (i === 0 ? 'Today' : d.toLocaleDateString('en-IN', { weekday: 'short' }));
+	const longDate = (d: Date) => d.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'short' });
+	function choose(i: number) {
+		pick = i;
+		try {
+			navigator.vibrate?.(6);
+		} catch {
+			/* no vibration */
+		}
+	}
 	// Her collab slots, Monday to Sunday, the same weeks and count as her brand page and Settings. The days
 	// above run into next week, so both weeks show: this one (to Sunday) and the next.
 	const cap = $derived(Math.max(1, s.weekly_capacity ?? 3));
@@ -333,6 +350,38 @@
 		{#if weekN}{NUM[weekN] ?? weekN} thing{weekN === 1 ? '' : 's'} this week.{#if busiest.list.length > 1}{' '}<em>{dayName(busiest.dt, busiest.i)}</em> is the big one.{:else}{' '}Next up: <em>{dayName(week.find((d) => d.list.length)!.dt, week.find((d) => d.list.length)!.i).toLowerCase()}</em>.{/if}
 		{:else}A free week. <em>Make it count.</em>{/if}
 	</p>
+	<!-- The next seven days: tap one to see what's on it. -->
+	<div class="wk2-days" role="tablist" aria-label="The next seven days">
+		{#each week as d (d.i)}
+			<button class="wk2-d" class:now={d.i === 0} class:on={d.i === sel} class:free={!d.list.length} role="tab" aria-selected={d.i === sel} aria-label="{dayName(d.dt, d.i)}, {d.list.length || 'nothing'} {d.list.length === 1 ? 'thing' : 'things'}" onclick={() => choose(d.i)}>
+				<small>{short(d.dt, d.i)}</small>
+				<b>{d.dt.getDate()}</b>
+				<span class="wk2-dots" aria-hidden="true">{#each d.list.slice(0, 3) as e, k (k)}<i class="k-{e.kind}"></i>{/each}</span>
+			</button>
+		{/each}
+	</div>
+	<div class="wk2-day" role="tabpanel">
+		<div class="wk2-day-h"><b>{dayName(selDay.dt, selDay.i)}</b><small>{longDate(selDay.dt)}</small></div>
+		{#if selList.length}
+			<ol class="wk2-tl">
+				{#each selList as e, k (e.c.id + e.kind + k)}
+					<li class="k-{e.kind}">
+						<a href="/studio/c/{e.c.code}">
+							<span class="wk2-node" aria-hidden="true"></span>
+							<span class="wk2-ev"><em>{evLabel(e)}</em><b>{e.c.brand.name}</b><small>{e.label || delivText(e.c.deliverables) || TYPE_LABEL[e.c.type]}{isPaid(e.c) && e.kind === 'pay' ? ` · ${inr(outstanding(e.c))}` : ''}</small></span>
+						</a>
+					</li>
+				{/each}
+			</ol>
+		{:else}
+			<p class="wk2-free">Nothing on {selDay.i === 0 ? 'today' : selDay.i === 1 ? 'tomorrow' : dayName(selDay.dt, selDay.i)}. A good day to shoot ahead or pitch a brand you love.</p>
+			<div class="wk2-ideas">
+				<a href="/studio/pitches" class="k-live"><span><Icon name="send" /></span>Pitch a brand</a>
+				<a href="/studio/grow" class="k-draft"><span><Icon name="spark" /></span>Reel ideas</a>
+				<a href="/studio/calendar" class="k-shoot"><span><Icon name="cal" /></span>Plan a shoot</a>
+			</div>
+		{/if}
+	</div>
 	<a class="wk2-cap" href="/studio/settings?s=bookings">
 		<span class="wk2-cap-h"><small>Collab slots</small><span class="wk2-st {slotState.k}"><i></i>{slotState.t}</span></span>
 		{#each slotWeeks as w (w.k)}
@@ -343,11 +392,6 @@
 			</span>
 		{/each}
 		<span class="wk2-cap-f"><span>{slotNote}</span><span class="wk2-edit">Change<Icon name="chevR" /></span></span>
-	</a>
-	<a class="wk2-more" href="/studio/calendar">
-		<span class="wk2-more-ic" aria-hidden="true"><Icon name="cal" /></span>
-		<span class="wk2-more-t"><b>See the week day by day</b><small>Shoots, drafts and posts by date</small></span>
-		<Icon name="chevR" />
 	</a>
 </section>
 

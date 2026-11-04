@@ -35,6 +35,7 @@
 	const made = $derived(wall.filter((r) => r.stage === 'live' || r.stage === 'wrapped'));
 	let tab = $state<'collabs' | 'posts' | 'made'>('collabs');
 	const QUICK = [
+		{ label: 'Settings', icons: ['gear', 'users', 'check'], tint: 'var(--g1)', href: '/brand/settings' },
 		{ label: 'Insights', icons: ['chart', 'eye', 'users'], tint: 'var(--g2)', href: '/brand/grow/insights' },
 		{ label: 'Grow', icons: ['spark', 'chart', 'check'], tint: 'var(--g3)', href: '/brand/grow' },
 		{ label: 'Team', icons: ['users', 'mail', 'check'], tint: 'var(--h-live)', href: '/brand/settings?s=team' },
