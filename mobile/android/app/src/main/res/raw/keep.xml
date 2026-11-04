@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Resource shrinking (shrinkResources) keeps these: Capacitor and its plugins load them by name at run time
+     (the splash, the alert icon ic_stat_miracle, the launcher icons, the file sharer's paths). -->
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@drawable/splash,@drawable/ic_stat_miracle,@drawable/ic_launcher_background,@mipmap/*,@xml/*,@layout/*" />

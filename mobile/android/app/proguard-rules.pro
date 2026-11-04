@@ -40,3 +40,15 @@
 
 # Readable crash reports in Play Console (the mapping file maps the names back).
 -keepattributes SourceFile,LineNumberTable
+
+# Edge to edge (MainActivity): keep the androidx names, so the call stays visible to Play's checks (it
+# looks for EdgeToEdge.enable / the insets APIs by name) and the system bars keep working.
+-keep class androidx.activity.EdgeToEdge { *; }
+-keep class androidx.activity.EdgeToEdgeApi* { *; }
+-keep class androidx.activity.SystemBarStyle { *; }
+-keep class androidx.activity.SystemBarStyle$* { *; }
+-keep class androidx.core.view.WindowCompat { *; }
+-keep class androidx.core.view.ViewCompat { *; }
+-keep class androidx.core.view.WindowInsetsCompat { *; }
+-keep class androidx.core.view.WindowInsetsCompat$* { *; }
+-keep class androidx.core.view.OnApplyWindowInsetsListener { *; }

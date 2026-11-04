@@ -109,6 +109,9 @@
 	const busiest = $derived([...week].sort((a, b) => b.list.length - a.list.length)[0]);
 	const dayName = (dt: Date, i: number) => (i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : dt.toLocaleDateString('en-IN', { weekday: 'long' }));
 	const picked = $derived(week[pick]);
+	// Each day is a calendar leaf, its band in the colour of the day's first thing (as on the creator's Today).
+	const LEAF_ORDER = ['shoot', 'draft', 'live'];
+	const LEAF: Record<string, string> = { shoot: '#9C7BFF', draft: '#C9B6FF', live: '#F25A90' };
 </script>
 
 <section class="ht" class:dw-on={!!fest} style="--sy:{sy}">
@@ -272,8 +275,9 @@
 	</p>
 	<div class="wk2-days" role="group" aria-label="Pick a day">
 		{#each week as x (x.i)}
-			<button class="wk2-d" class:now={x.i === 0} class:on={x.i === pick} onclick={() => (pick = x.i)} aria-label="{dayName(x.dt, x.i)}, {x.list.length || 'nothing'} {x.list.length === 1 ? 'thing' : 'things'}" aria-pressed={x.i === pick}>
-				<small>{x.i === 0 ? 'Today' : x.dt.toLocaleDateString('en-IN', { weekday: 'short' })}</small>
+			{@const first = [...x.list].sort((a, b) => LEAF_ORDER.indexOf(a.kind) - LEAF_ORDER.indexOf(b.kind))[0]}
+			<button class="wk2-d" class:now={x.i === 0} class:on={x.i === pick} class:free={!x.list.length} style={first ? `--h:${LEAF[first.kind] ?? '#C9B6FF'}` : ''} onclick={() => (pick = x.i)} aria-label="{dayName(x.dt, x.i)}, {x.list.length || 'nothing'} {x.list.length === 1 ? 'thing' : 'things'}" aria-pressed={x.i === pick}>
+				<em>{x.i === 0 ? 'Today' : x.dt.toLocaleDateString('en-IN', { weekday: 'short' })}</em>
 				<b>{x.dt.getDate()}</b>
 				<span class="wk2-dots">{#each x.list.slice(0, 3) as e (e.code + e.kind)}<i class="k-{e.kind}"></i>{/each}</span>
 			</button>
