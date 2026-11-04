@@ -1332,7 +1332,8 @@
 	/* hero */
 	.mp-hero {
 		overflow: hidden;
-		padding-top: 120px;
+		/* Clear of the top bar, which sits under the phone's status bar in the app. */
+		padding-top: calc(120px + env(safe-area-inset-top, 0px));
 		padding-bottom: 70px;
 		isolation: isolate;
 	}
@@ -2842,7 +2843,7 @@
 	}
 	@media (max-width: 560px) {
 		.mp-hero {
-			padding-top: 96px;
+			padding-top: calc(96px + env(safe-area-inset-top, 0px));
 		}
 		.mp-ring {
 			width: 76px;
