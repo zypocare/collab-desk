@@ -11,6 +11,7 @@
 	import Icon from '#lib/components/Icon.svelte';
 	import GetFound from '#lib/components/GetFound.svelte';
 	import Segmented from '#lib/components/Segmented.svelte';
+	import StorySheet from '#lib/components/StorySheet.svelte';
 
 	// Her brand page (the public page brands see): the link and ways to share it, what is on it
 	// with a shortcut to change each part, and a live preview as a laptop or a phone shows it.
@@ -23,6 +24,7 @@
 	let frameKey = $state(0);
 
 	let kitBusy = $state(false);
+	let storyOpen = $state(false);
 	async function kit() {
 		kitBusy = true;
 		const { data, error } = await supabase.rpc('public_page');
@@ -60,6 +62,7 @@
 		<p>Put it in your Instagram bio and send it in DMs. Brands sign in with their work email to send and track requests.</p>
 		<div class="bp-acts">
 			<button class="btn grad lg" onclick={() => copyText(link, 'Link copied')}><Icon name="copy" />Copy link</button>
+			<button class="btn" onclick={() => (storyOpen = true)}><Icon name="insta" />Share to Story</button>
 			<a class="btn wa" href={waShare('', `My rates, packages and collab requests: ${link}`)} target="_blank" rel="noopener"><Icon name="send" />WhatsApp my rate card</a>
 			<a class="btn" href="/?preview=1" target="_blank" rel="noopener"><Icon name="eye" />Open your page</a>
 			<a class="btn" href="/studio/qr"><Icon name="qr" />QR codes</a>
@@ -74,6 +77,7 @@
 </section>
 
 <GetFound {link} />
+{#if storyOpen}<StorySheet onclose={() => (storyOpen = false)} />{/if}
 
 <div class="bp-grid">
 	<section class="panel bp-parts rv" style="--i:2">
