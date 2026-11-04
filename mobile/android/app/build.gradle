@@ -40,6 +40,9 @@ android {
             // Capacitor, its plugins and the WebView find by name. Its mapping file goes inside the bundle,
             // so Play can read crash reports.
             minifyEnabled true
+            // And drops resources nothing uses (Play's recommendation); res/raw/keep.xml keeps the ones
+            // looked up by name.
+            shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             // Symbols for the native libraries inside the bundle, so Play can read native crashes too.
             ndk { debugSymbolLevel 'SYMBOL_TABLE' }
