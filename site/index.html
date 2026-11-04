@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Miracle · Get more brand deals as a creator in India</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<meta name="description" content="Miracle helps Indian creators and influencers land more brand deals: a page brands book you from, AI that finds brands to pitch and checks every offer, a live media kit, and payments that arrive on time. Free plan, no commission on any deal.">
+<meta name="description" content="Miracle runs the business side of being a creator in India: brand DMs in one place, fair rates, offers checked before you sign, invoices that chase late payments, and tax sorted. Free for creators, no commission. Android app on Google Play; on iPhone, add it to your Home Screen.">
 <link rel="canonical" href="https://www.miracleapp.live/">
 <meta name="robots" content="index,follow,max-image-preview:large">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -868,6 +868,66 @@ footer{position:relative;overflow:hidden;padding-block:70px 0;border-top:1px sol
 .faq-q[open] summary::after{content:"–"}
 .faq-q p{margin:0;padding:0 22px 20px;color:var(--ink-2);line-height:1.6;max-width:70ch}
 .faq-more{margin:0;color:var(--ink-3)}.faq-more a{color:var(--ink);text-decoration:underline;text-underline-offset:3px}
+
+/* The page is clipped at the sides (the tilted ticker runs past them) without making a scroll box. */
+main{overflow-x:clip}
+
+/* Sound familiar? The problems creators bring us, and what Miracle does about each. */
+.pains{padding-block:clamp(72px,9vw,120px);border-top:1px solid var(--line)}
+.pains .h2{margin:14px 0 18px}
+.pains .lede{max-width:54ch;margin-bottom:44px}
+.pn-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.pn{position:relative;overflow:hidden;display:grid;grid-template-rows:auto auto 1fr;gap:16px;padding:28px 26px;border-radius:24px;background:var(--surface);box-shadow:0 0 0 1px var(--line) inset}
+.pn::before{content:"";position:absolute;inset:0 0 auto;height:3px;background:var(--c)}
+.pn-q{margin:0;font:italic 400 clamp(22px,2vw,27px)/1.2 var(--f-display);color:var(--ink)}
+.pn-to{display:flex;align-items:center;gap:10px;font:700 11px/1 var(--f-body);letter-spacing:.24em;text-transform:uppercase;color:var(--c)}
+.pn-to::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--c),transparent)}
+.pn-a b{display:block;margin-bottom:6px;font:600 18px/1.3 var(--f-body)}
+.pn-a p{margin:0;color:var(--ink-3);font-size:15px;line-height:1.55}
+.pn-cta{display:flex;flex-wrap:wrap;align-items:center;gap:18px 28px;margin-top:44px}
+.pn-link{font-weight:600;color:var(--ink-2);text-decoration:underline;text-underline-offset:4px}
+.pn-link:hover{color:var(--ink)}
+.join-app{margin:0;color:var(--ink-3);font-size:14.5px}
+.join-app a{color:var(--ink);text-decoration:underline;text-underline-offset:3px}
+
+/* Get the app */
+.getapp{padding-block:clamp(72px,9vw,120px);border-top:1px solid var(--line);background:radial-gradient(50% 60% at 85% 0%,rgba(156,123,255,.12),transparent 70%),#0C090C}
+.getapp .h2{margin:14px 0 18px}
+.getapp .lede{max-width:52ch}
+.app-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-top:44px}
+.app-card{position:relative;display:grid;align-content:start;gap:16px;padding:28px;border-radius:26px;background:var(--surface);box-shadow:0 0 0 1px var(--line) inset}
+.app-card h3{margin:0;font:400 34px/1 var(--f-display)}
+.app-card p{margin:0;color:var(--ink-3);font-size:15px;line-height:1.55}
+.app-ic{width:46px;height:46px;display:grid;place-items:center;border-radius:14px;background:var(--surface-2);box-shadow:0 0 0 1px var(--line-2) inset;color:var(--ink-2)}
+.app-ic svg{width:24px;height:24px}
+.app-card .neo{justify-self:start}
+.store{justify-self:start;display:inline-flex;align-items:center;gap:12px;height:58px;padding:0 22px 0 16px;border-radius:14px;background:#000;color:#fff;box-shadow:0 0 0 1px var(--line-2) inset;transition:transform .12s var(--ease)}
+a.store:hover{transform:translateY(-2px)}
+.store svg{width:26px;height:26px;flex:none}
+.store>span{display:grid;line-height:1.1;text-align:left}
+.store small{font-size:10.5px;letter-spacing:.04em;opacity:.8}
+.store b{font-size:19px;font-weight:600;letter-spacing:-.01em}
+.store.soon{background:transparent;color:var(--ink-2);box-shadow:0 0 0 1px var(--line-2) inset;cursor:default}
+.app-steps{margin:0;padding:0;list-style:none;counter-reset:a;display:grid;gap:12px}
+.app-steps li{counter-increment:a;position:relative;min-height:28px;padding:2px 0 0 40px;color:var(--ink-2);font-size:15px;line-height:1.6}
+.app-steps li::before{content:counter(a);position:absolute;left:0;top:0;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:#2E262E;color:var(--ink);font-weight:700;font-size:13px;line-height:1}
+.app-steps b{color:var(--ink)}
+.app-glyph{display:inline-grid;place-items:center;width:24px;height:24px;margin:0 2px;border-radius:7px;background:var(--surface-2);vertical-align:-6px;color:#5AA8FF}
+.app-glyph svg{width:15px;height:15px}
+.app-note{color:var(--ink-3);font-size:13px}
+.here-tag{display:none;justify-self:start;padding:6px 12px;border-radius:99px;background:color-mix(in oklab,var(--g2) 18%,transparent);color:var(--g2);font:700 11px/1 var(--f-body);letter-spacing:.14em;text-transform:uppercase}
+#app[data-here=android] .android,#app[data-here=ios] .ios{order:-1;box-shadow:0 0 0 1.5px var(--g2) inset,0 30px 80px -40px rgba(242,90,144,.5)}
+#app[data-here=android] .android .here-tag,#app[data-here=ios] .ios .here-tag{display:inline-flex}
+
+@media (max-width:980px){
+  .pn-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .app-grid{grid-template-columns:minmax(0,1fr)}
+}
+@media (max-width:640px){
+  .pn-grid{grid-template-columns:minmax(0,1fr)}
+  .pn{padding:24px 22px}
+  .app-card{padding:24px 22px}
+}
 </style>
 <meta name="theme-color" content="#110D11">
 <meta property="og:title" content="Miracle: every collab, handled">
@@ -888,8 +948,8 @@ footer{position:relative;overflow:hidden;padding-block:70px 0;border-top:1px sol
 <meta name="twitter:description" content="A page brands book you from, AI that finds brands to pitch, a live media kit and payments on time. No commission.">
 <script type="application/ld+json">{"@context": "https://schema.org", "@type": "Organization", "@id": "https://www.miracleapp.live/#org", "name": "Miracle", "legalName": "Zyposoft Technologies Private Limited", "url": "https://www.miracleapp.live/", "logo": "https://www.miracleapp.live/icon-192.png", "email": "support@miracleapp.live", "address": {"@type": "PostalAddress", "streetAddress": "#7, Nisarga Layout, Chikkalsandra", "addressLocality": "Bengaluru", "postalCode": "560061", "addressRegion": "Karnataka", "addressCountry": "IN"}, "contactPoint": [{"@type": "ContactPoint", "contactType": "customer support", "email": "support@miracleapp.live", "areaServed": "IN", "availableLanguage": ["en", "hi"]}]}</script>
 <script type="application/ld+json">{"@context": "https://schema.org", "@type": "WebSite", "@id": "https://www.miracleapp.live/#site", "name": "Miracle", "alternateName": "Miracle for creators", "url": "https://www.miracleapp.live/", "inLanguage": "en-IN", "publisher": {"@id": "https://www.miracleapp.live/#org"}}</script>
-<script type="application/ld+json">{"@context": "https://schema.org", "@type": "SoftwareApplication", "name": "Miracle", "applicationCategory": "BusinessApplication", "operatingSystem": "Android, Web", "description": "Get more brand deals as a creator in India: a booking page, AI that finds brands to pitch and checks offers, a live media kit, quotes, drafts, invoices and payment reminders. No commission.", "url": "https://www.miracleapp.live/", "image": "https://www.miracleapp.live/og.jpg", "offers": [{"@type": "Offer", "name": "Free", "price": "0", "priceCurrency": "INR"}, {"@type": "Offer", "name": "Brand Pro", "price": "1999", "priceCurrency": "INR"}, {"@type": "Offer", "name": "Agency", "price": "4999", "priceCurrency": "INR"}], "publisher": {"@id": "https://www.miracleapp.live/#org"}}</script>
-<script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "What is Miracle?", "acceptedAnswer": {"@type": "Answer", "text": "Miracle is an app for creators and influencers in India to run the business side of brand collaborations: a page brands book you from, AI that reads every request and offer, quotes brands accept online, drafts for approval, invoices and payment reminders, and all your earnings in one place. Brands use it to find creators, send briefs and track results."}}, {"@type": "Question", "name": "How does Miracle help me get more brand deals?", "acceptedAnswer": {"@type": "Answer", "text": "Brands book you from your own page with your packages and live Instagram numbers, and find you in the creator directory by niche and city. Miracle’s AI finds brands that fit you every day and writes the pitch for you to send (or sends it, if you switch it to auto), and checks each offer against your rates before you say yes."}}, {"@type": "Question", "name": "Does Miracle take a commission on brand deals?", "acceptedAnswer": {"@type": "Answer", "text": "No. Brands pay creators directly by UPI or bank transfer, and Miracle never takes a cut of any deal."}}, {"@type": "Question", "name": "Is Miracle free?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Creators get every feature free, with no time limit: unlimited collabs, every autopilot and reminders that go by themselves. Brands start free and can go Pro for more campaigns. Miracle never takes a commission on any deal."}}, {"@type": "Question", "name": "When can I join?", "acceptedAnswer": {"@type": "Answer", "text": "Now. Sign up free with your email, pick your link, and send your first quote the same day. Live Instagram numbers switch on for everyone as soon as Meta opens Instagram sign-in to all apps."}}, {"@type": "Question", "name": "Does Miracle handle invoices and getting paid?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Miracle makes the invoice for each collab with a UPI QR for the exact amount, and reminds the brand politely until the money is in your account."}}, {"@type": "Question", "name": "How do brands find creators on Miracle?", "acceptedAnswer": {"@type": "Answer", "text": "Through each creator’s page (name.miracleapp.live), the public creator directory at miracleapp.live/creators, and Discover inside the app, with live Instagram numbers, starting prices, reviews and an audience health check."}}, {"@type": "Question", "name": "Is my Instagram account safe with Miracle?", "acceptedAnswer": {"@type": "Answer", "text": "Miracle connects through Instagram’s official API with your permission. It reads your own posts, insights and audience to show real numbers to brands, and never posts without you."}}, {"@type": "Question", "name": "Does Miracle work on my phone?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Miracle works in any browser on phone and laptop, and the Android app is coming to the Play Store. The iPhone app follows."}}, {"@type": "Question", "name": "Who makes Miracle?", "acceptedAnswer": {"@type": "Answer", "text": "Miracle is made in Bengaluru by Zyposoft Technologies Private Limited."}}]}</script>
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "SoftwareApplication", "name": "Miracle", "applicationCategory": "BusinessApplication", "operatingSystem": "Android, iOS (web app), Web", "description": "Get more brand deals as a creator in India: a booking page, AI that finds brands to pitch and checks offers, a live media kit, quotes, drafts, invoices and payment reminders. No commission.", "url": "https://www.miracleapp.live/", "image": "https://www.miracleapp.live/og.jpg", "offers": [{"@type": "Offer", "name": "Free", "price": "0", "priceCurrency": "INR"}, {"@type": "Offer", "name": "Brand Pro", "price": "1999", "priceCurrency": "INR"}, {"@type": "Offer", "name": "Agency", "price": "4999", "priceCurrency": "INR"}], "publisher": {"@id": "https://www.miracleapp.live/#org"}}</script>
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "What is Miracle?", "acceptedAnswer": {"@type": "Answer", "text": "Miracle is an app for creators and influencers in India to run the business side of brand collaborations: a page brands book you from, AI that reads every request and offer, quotes brands accept online, drafts for approval, invoices and payment reminders, and all your earnings in one place. Brands use it to find creators, send briefs and track results."}}, {"@type": "Question", "name": "How does Miracle help me get more brand deals?", "acceptedAnswer": {"@type": "Answer", "text": "Brands book you from your own page with your packages and live Instagram numbers, and find you in the creator directory by niche and city. Miracle’s AI finds brands that fit you every day and writes the pitch for you to send (or sends it, if you switch it to auto), and checks each offer against your rates before you say yes."}}, {"@type": "Question", "name": "Does Miracle take a commission on brand deals?", "acceptedAnswer": {"@type": "Answer", "text": "No. Brands pay creators directly by UPI or bank transfer, and Miracle never takes a cut of any deal."}}, {"@type": "Question", "name": "Is Miracle free?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Creators get every feature free, with no time limit: unlimited collabs, every autopilot and reminders that go by themselves. Brands start free and can go Pro for more campaigns. Miracle never takes a commission on any deal."}}, {"@type": "Question", "name": "When can I join?", "acceptedAnswer": {"@type": "Answer", "text": "Now. Sign up free with your email, tell us about you and pick your link, and a short checklist in the app gets you set up in a few minutes. Live Instagram numbers switch on for everyone as soon as Meta opens Instagram sign-in to all apps."}}, {"@type": "Question", "name": "Does Miracle handle invoices and getting paid?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Miracle makes the invoice for each collab with a UPI QR for the exact amount, and reminds the brand politely until the money is in your account."}}, {"@type": "Question", "name": "How do brands find creators on Miracle?", "acceptedAnswer": {"@type": "Answer", "text": "Through each creator’s page (name.miracleapp.live), the public creator directory at miracleapp.live/creators, and Discover inside the app, with live Instagram numbers, starting prices, reviews and an audience health check."}}, {"@type": "Question", "name": "Is my Instagram account safe with Miracle?", "acceptedAnswer": {"@type": "Answer", "text": "Miracle connects through Instagram’s official API with your permission. It reads your own posts, insights and audience to show real numbers to brands, and never posts without you."}}, {"@type": "Question", "name": "Does Miracle work on my phone?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Get the Android app on Google Play. The iPhone app is coming soon to the App Store; until then, open app.miracleapp.live in Safari, tap Share, then Add to Home Screen, and Miracle opens like an app, with alerts. On a laptop, use any browser."}}, {"@type": "Question", "name": "What problems does Miracle solve for creators?", "acceptedAnswer": {"@type": "Answer", "text": "Brand DMs lost between fan messages and WhatsApp, not knowing what to charge, risky contract lines, brands that pay late, shoot and draft dates kept in your head, and TDS and GST at tax time. Miracle keeps every collab in one place, prices and checks every offer, chases payments with invoices and reminders, and keeps your tax in one file."}}, {"@type": "Question", "name": "Who makes Miracle?", "acceptedAnswer": {"@type": "Answer", "text": "Miracle is made in Bengaluru by Zyposoft Technologies Private Limited."}}]}</script>
 <link rel="icon" href="/icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <style id="sf-css">.sf{position:relative;overflow:hidden;margin:0;padding:64px 0 0;border-top:1px solid #2E262E;background:#09070A;color:#A39AA1;font:400 14.5px/1.6 'Geist',ui-sans-serif,system-ui,-apple-system,'Segoe UI',sans-serif;text-align:left;-webkit-font-smoothing:antialiased}
@@ -938,12 +998,11 @@ footer{position:relative;overflow:hidden;padding-block:70px 0;border-top:1px sol
       <b>Miracle</b>
     </a>
     <nav class="nav" aria-label="Sections">
-      <a href="#promises">For creators</a>
+      <a href="#problems">How it helps</a>
+      <a href="#how">How it works</a>
+      <a href="#app">Get the app</a>
       <a href="#brands">For brands</a>
       <a href="#agencies">For managers</a>
-      <a href="#ai">AI desk</a>
-      <a href="#trust">No commission</a>
-      <a href="/creators">Find creators</a>
       <a href="/pricing">Pricing</a>
     </nav>
     <a class="signin" href="/signin">Sign in</a>
@@ -966,15 +1025,15 @@ footer{position:relative;overflow:hidden;padding-block:70px 0;border-top:1px sol
     </svg>
     <div class="wrap">
       <div class="hero-copy">
-        <span class="eb">For Indian creators and brands</span>
+        <span class="eb">For Indian creators · Free, no commission</span>
         <h1 id="hero-title" class="h1s"><span class="ln"><span>Brand deals, done properly.</span></span><span class="ln"><span class="gt">Paid on time.</span></span></h1>
-        <p class="lede">Miracle is the business side of being a creator: a page brands book you from, an AI that finds brands and checks every offer, invoices that chase the money for you, and every rupee you earn in one place. No commission on any deal, ever.</p>
+        <p class="lede">Brand DMs lost in your inbox, rates you guess, contracts you can't read and brands that pay late. Miracle runs the business side of being a creator, from the first "hi, collab?" to money in your bank, so you can get back to creating.</p>
         <form class="claimf" id="claim" action="https://app.miracleapp.live/signup" method="get">
           <input type="hidden" name="as" value="creator">
           <label for="claim-name"><span class="sr">Your link</span><input id="claim-name" name="link" placeholder="yourname" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="30" pattern="[A-Za-z0-9-]{1,30}" title="Letters, numbers and hyphens"><span>.miracleapp.live</span></label>
           <button class="neo grad mag" type="submit"><span class="shine" aria-hidden="true"></span>Claim your link</button>
         </form>
-        <p class="claim-alt">Free to start, no card. Brand or agency? <a href="https://app.miracleapp.live/signup?as=brand">Join here</a> · <a href="/pricing">Pricing</a> · Already on Miracle? <a href="/signin">Sign in</a></p>
+        <p class="claim-alt">Free for creators, no card. <a href="#app">Get the app</a> for Android, or add it to your iPhone · Brand or agency? <a href="https://app.miracleapp.live/signup?as=brand">Join here</a> · Already on Miracle? <a href="/signin">Sign in</a></p>
       </div>
 
       <div class="stage3d" aria-label="The Miracle app home screen">
@@ -1031,6 +1090,52 @@ footer{position:relative;overflow:hidden;padding-block:70px 0;border-top:1px sol
       <div data-r="2"><b>UPI</b><small>brands pay you directly</small></div>
       <div data-r="3"><b>Paid on time</b><small>invoices with UPI that chase the money for you</small></div>
       <div data-r="4"><b>EN · HI · KN</b><small>an AI desk that speaks your language</small></div>
+    </div>
+  </section>
+
+
+  <!-- 2b · The problems creators bring us, and what Miracle does about each -->
+  <section class="pains" id="problems" aria-labelledby="pn-title">
+    <div class="wrap">
+      <span class="eb" data-r>Being a creator is a business</span>
+      <h2 class="h2" id="pn-title" data-r>Sound <span class="gt">familiar?</span></h2>
+      <p class="lede" data-r>Making the content is the fun part. Everything around it is where creators lose deals, money and sleep. Here's what Miracle takes off your plate.</p>
+      <div class="pn-grid">
+        <article class="pn" data-r style="--c:var(--req)">
+          <p class="pn-q">“Brand DMs get buried under fan messages and WhatsApp. I've lost deals that way.”</p>
+          <span class="pn-to">With Miracle</span>
+          <div class="pn-a"><b>Every collab in one place.</b><p>Miracle spots Instagram DMs that look like a collab and turns each into a card in one tap. Share a brand's WhatsApp message or a screenshot and it's read for you.</p></div>
+        </article>
+        <article class="pn" data-r="2" style="--c:var(--g2)">
+          <p class="pn-q">“Brands ask for my media kit and rates, and I send screenshots.”</p>
+          <span class="pn-to">With Miracle</span>
+          <div class="pn-a"><b>One link that looks like a pro.</b><p>Your page at yourname.miracleapp.live shows live Instagram numbers, your rates and past work. Brands build a package and send a proper request in a minute.</p></div>
+        </article>
+        <article class="pn" data-r="3" style="--c:var(--warn)">
+          <p class="pn-q">“I never know what to charge, or if the contract is a trap.”</p>
+          <span class="pn-to">With Miracle</span>
+          <div class="pn-a"><b>Know what to say yes to.</b><p>See what creators your size really charge, quote from your rate card in a tap, and have the AI read every brief or agreement and flag what to push back on.</p></div>
+        </article>
+        <article class="pn" data-r style="--c:var(--ok)">
+          <p class="pn-q">“The reel went live two months ago. Still not paid.”</p>
+          <span class="pn-to">With Miracle</span>
+          <div class="pn-a"><b>Paid on time, without chasing.</b><p>Invoices with a UPI QR for the exact amount, reminders that go by themselves, and a formal payment demand when a brand goes quiet. Brands pay you directly.</p></div>
+        </article>
+        <article class="pn" data-r="2" style="--c:#B49CFF">
+          <p class="pn-q">“Shoots, drafts, go-lives… it's all in my head.”</p>
+          <span class="pn-to">With Miracle</span>
+          <div class="pn-a"><b>Never miss a date.</b><p>A calendar of every shoot, draft and go-live, drafts approved in the thread, and alerts on your phone. Miracle notices when you post and sends the brand the results.</p></div>
+        </article>
+        <article class="pn" data-r="3" style="--c:var(--live)">
+          <p class="pn-q">“TDS, GST, 26AS. Tax season is a nightmare.”</p>
+          <span class="pn-to">With Miracle</span>
+          <div class="pn-a"><b>Every rupee, in one file.</b><p>What you earned and who still owes you, TDS by brand, your GST limit with barter counted, and a quarter pack ready for your CA.</p></div>
+        </article>
+      </div>
+      <div class="pn-cta" data-r>
+        <a class="neo grad mag" href="https://app.miracleapp.live/signup?as=creator"><span class="shine" aria-hidden="true"></span>Join free as a creator</a>
+        <a class="pn-link" href="#app">Get the app on your phone →</a>
+      </div>
     </div>
   </section>
 
@@ -1262,6 +1367,44 @@ footer{position:relative;overflow:hidden;padding-block:70px 0;border-top:1px sol
   </section>
 
   <!-- 4b · For brands: a campaign moving across a board, as the brand sees it -->
+  <!-- Get the app: Android on Google Play; iPhone from Safari's Home Screen until the App Store app is out -->
+  <section class="getapp" id="app" aria-labelledby="app-title">
+    <div class="wrap">
+      <span class="eb" data-r>Get the app</span>
+      <h2 class="h2" id="app-title" data-r>Your whole desk, <span class="gt">in your pocket.</span></h2>
+      <p class="lede" data-r>New requests, approved drafts and payments reach you the moment they happen. Reply, quote and send an invoice from your phone, between shoots.</p>
+      <div class="app-grid">
+        <article class="app-card android" data-r>
+          <span class="here-tag">You're on Android</span>
+          <span class="app-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#00D7FE" d="M3.6 1.8 13.4 12 3.6 22.2c-.4-.2-.6-.7-.6-1.2V3c0-.5.2-1 .6-1.2z"/><path fill="#FFCE00" d="m16.8 8.6-3.4 3.4 3.4 3.4 3.9-2.2c1.1-.6 1.1-1.8 0-2.4z"/><path fill="#00F076" d="M3.6 1.8c.4-.2.9-.2 1.4.1l11.8 6.7-3.4 3.4z"/><path fill="#FF3A44" d="m13.4 12 3.4 3.4L5 22.1c-.5.3-1 .3-1.4.1z"/></svg></span>
+          <h3>Android</h3>
+          <p>Alerts for every request and payment, and Miracle in your Share menu: share a brand's WhatsApp message and it becomes a collab.</p>
+          <a class="store" href="https://play.google.com/store/apps/details?id=live.miracleapp.app" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#00D7FE" d="M3.6 1.8 13.4 12 3.6 22.2c-.4-.2-.6-.7-.6-1.2V3c0-.5.2-1 .6-1.2z"/><path fill="#FFCE00" d="m16.8 8.6-3.4 3.4 3.4 3.4 3.9-2.2c1.1-.6 1.1-1.8 0-2.4z"/><path fill="#00F076" d="M3.6 1.8c.4-.2.9-.2 1.4.1l11.8 6.7-3.4 3.4z"/><path fill="#FF3A44" d="m13.4 12 3.4 3.4L5 22.1c-.5.3-1 .3-1.4.1z"/></svg><span><small>Get it on</small><b>Google Play</b></span></a>
+        </article>
+        <article class="app-card ios" data-r="2">
+          <span class="here-tag">You're on an iPhone</span>
+          <span class="app-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="2.5" width="12" height="19" rx="3"/><path d="M10.5 18.5h3"/></svg></span>
+          <h3>iPhone</h3>
+          <p>The App Store app is coming soon. Use Miracle as an app on your iPhone today, with alerts:</p>
+          <ol class="app-steps">
+            <li>Open <b>app.miracleapp.live</b> in Safari.</li>
+            <li>Tap Share <span class="app-glyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-label="the Share button"><path d="M12 3v12"/><path d="m8 7 4-4 4 4"/><path d="M7 10H6a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2h-1"/></svg></span>, then <b>Add to Home Screen</b> <span class="app-glyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="4"/><path d="M12 8v8M8 12h8"/></svg></span>.</li>
+            <li>Open Miracle from your Home Screen, sign in and turn on alerts.</li>
+          </ol>
+          <span class="store soon" aria-disabled="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="2.5" width="12" height="19" rx="3"/><path d="M10.5 18.5h3"/></svg><span><small>Coming soon on the</small><b>App Store</b></span></span>
+          <small class="app-note">Alerts on iPhone need iOS 16.4 or later.</small>
+        </article>
+        <article class="app-card laptop" data-r="3">
+          <span class="app-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4.5" width="16" height="11" rx="2"/><path d="M2.5 19.5h19"/></svg></span>
+          <h3>Laptop</h3>
+          <p>Open Miracle in any browser for quotes, invoices and reports on a big screen. Same account, same desk, everywhere.</p>
+          <a class="neo light mag" href="https://app.miracleapp.live">Open Miracle</a>
+        </article>
+      </div>
+    </div>
+    <script>(()=>{const u=navigator.userAgent,s=document.getElementById('app');if(!s)return;const k=/android/i.test(u)?'android':/iphone|ipad|ipod/i.test(u)||(/Macintosh/.test(u)&&navigator.maxTouchPoints>1)?'ios':'';if(k)s.dataset.here=k})()</script>
+  </section>
+
   <section class="bdeck" id="brands" aria-labelledby="brands-title">
     <div class="bdeck-stage">
       <div class="wrap bdeck-in">
@@ -1357,7 +1500,7 @@ footer{position:relative;overflow:hidden;padding-block:70px 0;border-top:1px sol
         <div class="price-card" data-r="2"><span class="eb">Brand Pro</span><b class="pc-amt">₹1,999<i>/month</i></b><small>or ₹19,999 a year · founding ₹9,999</small><p>Unlimited requests and campaigns, open briefs, brand autopilots, competitor watch, sales tracking and a team of 5.</p></div>
         <div class="price-card" data-r="3"><span class="eb">Agency</span><b class="pc-amt">₹4,999<i>/month</i></b><small>or ₹49,999 a year · founding ₹24,999</small><p>Pro for every creator you manage and your own brand team, client workspaces, roster and commission ledger, 15 seats.</p></div>
       </div>
-      <p class="prices-more" data-r><a class="neo light mag" href="/pricing">Compare every feature</a><span>Founding price: half off yearly for the first 100, kept while you stay. Waitlist members get first access.</span></p>
+      <p class="prices-more" data-r><a class="neo light mag" href="/pricing">Compare every feature</a><span>Free for creators, always: every feature, no commission, no card. For brands and agencies, the founding price is half off yearly for the first 100, kept while you stay.</span></p>
     </div>
   </section>
 
@@ -1370,11 +1513,12 @@ footer{position:relative;overflow:hidden;padding-block:70px 0;border-top:1px sol
       <details class="faq-q"><summary>How does Miracle help me get more brand deals?</summary><p>Brands book you from your own page with your packages and live Instagram numbers, and find you in the creator directory by niche and city. Miracle’s AI finds brands that fit you every day and writes the pitch for you to send (or sends it, if you switch it to auto), and checks each offer against your rates before you say yes.</p></details>
       <details class="faq-q"><summary>Does Miracle take a commission on brand deals?</summary><p>No. Brands pay creators directly by UPI or bank transfer, and Miracle never takes a cut of any deal.</p></details>
       <details class="faq-q"><summary>Is Miracle free?</summary><p>Yes. Creators get every feature free, with no time limit: unlimited collabs, every autopilot and reminders that go by themselves. Brands start free and can go Pro for more campaigns. Miracle never takes a commission on any deal. <a href="/pricing">See pricing</a>.</p></details>
-      <details class="faq-q"><summary>When can I join?</summary><p>Now. <a href="https://app.miracleapp.live/signup?as=creator">Sign up free</a> with your email, pick your link, and send your first quote the same day. Live Instagram numbers switch on for everyone as soon as Meta opens Instagram sign-in to all apps.</p></details>
+      <details class="faq-q"><summary>When can I join?</summary><p>Now. <a href="https://app.miracleapp.live/signup?as=creator">Sign up free</a> with your email, tell us about you and pick your link, and a short checklist in the app gets you set up in a few minutes. Live Instagram numbers switch on for everyone as soon as Meta opens Instagram sign-in to all apps.</p></details>
       <details class="faq-q"><summary>Does Miracle handle invoices and getting paid?</summary><p>Yes. Miracle makes the invoice for each collab with a UPI QR for the exact amount, and reminds the brand politely until the money is in your account.</p></details>
       <details class="faq-q"><summary>How do brands find creators on Miracle?</summary><p>Through each creator’s page (name.miracleapp.live), the public creator directory at miracleapp.live/creators, and Discover inside the app, with live Instagram numbers, starting prices, reviews and an audience health check.</p></details>
       <details class="faq-q"><summary>Is my Instagram account safe with Miracle?</summary><p>Miracle connects through Instagram’s official API with your permission. It reads your own posts, insights and audience to show real numbers to brands, and never posts without you.</p></details>
-      <details class="faq-q"><summary>Does Miracle work on my phone?</summary><p>Yes. Miracle works in any browser on phone and laptop, and the Android app is coming to the Play Store. The iPhone app follows.</p></details>
+      <details class="faq-q"><summary>Does Miracle work on my phone?</summary><p>Yes. <a href="https://play.google.com/store/apps/details?id=live.miracleapp.app" target="_blank" rel="noopener">Get the Android app on Google Play</a>. The iPhone app is coming soon to the App Store; until then, open app.miracleapp.live in Safari, tap Share, then Add to Home Screen, and Miracle opens like an app, with alerts. On a laptop, use any browser. <a href="#app">How to get the app</a>.</p></details>
+      <details class="faq-q"><summary>What problems does Miracle solve for creators?</summary><p>Brand DMs lost between fan messages and WhatsApp, not knowing what to charge, risky contract lines, brands that pay late, shoot and draft dates kept in your head, and TDS and GST at tax time. Miracle keeps every collab in one place, prices and checks every offer, chases payments with invoices and reminders, and keeps your tax in one file. <a href="#problems">See how</a>.</p></details>
       <details class="faq-q"><summary>Who makes Miracle?</summary><p>Miracle is made in Bengaluru by Zyposoft Technologies Private Limited.</p></details>
       </div>
       <p class="faq-more">More in the <a href="/help">help centre</a> and <a href="/guides">guides for creators</a>.</p>
@@ -1389,17 +1533,18 @@ footer{position:relative;overflow:hidden;padding-block:70px 0;border-top:1px sol
       </g>
     </svg>
     <div class="wrap">
-      <h2 class="h2" id="join-title" data-r>Opening soon. <span class="gt">Get in first.</span></h2>
+      <h2 class="h2" id="join-title" data-r>Your link is waiting. <span class="gt">Claim it free.</span></h2>
       <div class="join-grid">
         <div class="join-card" data-r>
           <span class="eb">Creators</span>
           <ol>
-            <li><b>Sign up with your email</b><span>Your name, Instagram and city. Under a minute.</span></li>
-            <li><b>Pick your link</b><span>yourname.miracleapp.live, your page brands book you from.</span></li>
-            <li><b>Add your rates</b><span>Your packages and terms, once. Quotes and invoices use them.</span></li>
-            <li><b>Send your first quote</b><span>Brands accept it online, and the invoice chases the money for you.</span></li>
+            <li><b>Sign up with your email</b><span>A 6-digit code, no password. In the app or on the web.</span></li>
+            <li><b>Tell us about you and pick your link</b><span>Your name, Instagram and city, and yourname.miracleapp.live. About a minute.</span></li>
+            <li><b>Connect Instagram and add your rates</b><span>A short checklist on your first screen walks you through it.</span></li>
+            <li><b>Put your link in your bio</b><span>Brands send proper requests, and Miracle takes it from there.</span></li>
           </ol>
           <a class="neo grad mag" href="https://app.miracleapp.live/signup?as=creator"><span class="shine" aria-hidden="true"></span>Join free as a creator</a>
+          <p class="join-app">On your phone? <a href="#app">Get the app</a>: Android on Google Play, or add it to your iPhone's Home Screen.</p>
         </div>
         <div class="join-card" data-r="2">
           <span class="eb">Brands and agencies</span>
@@ -1427,7 +1572,7 @@ footer{position:relative;overflow:hidden;padding-block:70px 0;border-top:1px sol
     <nav aria-label="For creators"><b>Creators</b><a href="/get-brand-deals">Get brand deals</a><a href="/pitch-brands">Pitch brands with AI</a><a href="/link-in-bio-for-creators">Link in bio that books deals</a><a href="/influencer-media-kit">Live media kit</a><a href="/influencer-rate-card">Rates and quotes</a><a href="/brand-collaboration-management">Manage collabs</a><a href="/get-paid-by-brands">Get paid on time</a></nav>
     <nav aria-label="For brands and agencies"><b>Brands &amp; agencies</b><a href="/find-influencers-india">Find influencers in India</a><a href="/creators">Creator directory</a><a href="/influencer-marketing-no-commission">No-commission campaigns</a><a href="/influencer-agency-software">For agencies and managers</a><a href="/signin?as=brand">Brand sign in</a></nav>
     <nav aria-label="Learn"><b>Learn</b><a href="/guides">Guides</a><a href="/help">Help centre</a><a href="/tools/rate-calculator">Rate calculator</a><a href="/tools/engagement-calculator">Engagement calculator</a></nav>
-    <nav aria-label="Company"><b>Company</b><a href="/pricing">Pricing</a><a href="https://app.miracleapp.live/signup?as=creator">Join free</a><a href="mailto:support@miracleapp.live">Support</a><a href="/refund-policy">Refunds &amp; cancellation</a><a href="/signin">Sign in</a></nav>
+    <nav aria-label="Company"><b>Company</b><a href="/pricing">Pricing</a><a href="https://app.miracleapp.live/signup?as=creator">Join free</a><a href="/#app">Get the app</a><a href="mailto:support@miracleapp.live">Support</a><a href="/refund-policy">Refunds &amp; cancellation</a><a href="/signin">Sign in</a></nav>
   </div>
   <div class="sf-bot"><span>© 2026 Miracle is a product of Zyposoft Technologies Private Limited, #7, Nisarga Layout, Chikkalsandra, Bangalore 560061, India.</span><span class="sf-links"><a href="/terms">Terms</a><a href="/privacy">Privacy</a><a href="/data-deletion">Data deletion</a></span></div>
 </div><div class="sf-giant" aria-hidden="true">Miracle</div></footer>

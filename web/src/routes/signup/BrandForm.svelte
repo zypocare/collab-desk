@@ -7,7 +7,8 @@
 	import { CATS, errMessage, phoneOk } from '#lib/util.ts';
 
 	// Step 2 for a brand: the company once, then straight to the dashboard. Each creator later gets a copy.
-	let { email }: { email: string } = $props();
+	// `onswitch`: someone who meant to join as a creator goes to the creator form instead.
+	let { email, onswitch }: { email: string; onswitch?: () => void } = $props();
 
 	const ROLES = ['Founder', 'Marketing', 'Agency working for a brand', 'Other'];
 	const GOALS = ['Find new creators', 'Manage creators I already work with', 'Run a campaign with several creators'];
@@ -67,6 +68,7 @@
 	<div style="display:grid;gap:6px">
 		<h1 class="su-h1">Tell us about <em>your brand</em></h1>
 		<p class="su-lead">Creators see this on every request you send, and it goes on the invoices they send you. Signed in as {email}.</p>
+		{#if onswitch}<button type="button" class="su-link" style="justify-self:start" onclick={onswitch}>Joining as a creator? Switch</button>{/if}
 	</div>
 	<div class="su-card su-wide">
 		<div class="su-grid">

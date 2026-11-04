@@ -860,7 +860,7 @@ Answer it: ${admin}`,
   if (kind === 'creator_request') {
     const where = [p.niche, p.city].map((x) => String(x ?? '').trim()).filter(Boolean).join(' · ');
     const admin = 'https://admin.miracleapp.live';
-    // Signed up at app.miracleapp.live: no link yet (they pick it once approved).
+    // The link she asked for at sign-up (empty for creators who signed up before links were picked there).
     const asked = p.slug ? `asked for <b>${esc(p.slug)}.miracleapp.live</b>` : 'signed up as a creator';
     const askedText = p.slug ? `asked for ${p.slug}.miracleapp.live` : 'signed up as a creator';
     const size = [p.followers ? `${p.followers} followers` : '', p.collabs ? `paid collabs: ${p.collabs}` : ''].filter(Boolean).join(' · ');
@@ -890,7 +890,7 @@ Answer it: ${admin}`,
         `${P(`Your profile is approved. One last step: pick your link, like <b>yourname.miracleapp.live</b>. It's the page brands open to see your work and send you requests.`)}
          ${P(`Sign in with this email address. There's no password: you'll get a 6-digit code each time.`)}`,
         { label: 'Pick my link', href: String(p.url) },
-        { to: 'creator', preheader: 'Your profile is approved. Pick your link.', next: ['Pick your link.', 'Connect Instagram so your numbers show on your page.', 'Add your rates and packages.', 'Put your link in your Instagram bio.'] },
+        { to: 'creator', preheader: 'Your profile is approved. Pick your link.', next: ['Pick your link.', 'Get the app: Miracle on Google Play for Android; on iPhone, open miracleapp.live in Safari and tap Share, then Add to Home Screen.', 'Connect Instagram so your numbers show on your page.', 'Add your rates and packages.', 'Put your link in your Instagram bio.'] },
       ),
       text: `Welcome to Miracle, ${firstOf(p.name)}. Your profile is approved. Pick your link (sign in with this email, you'll get a 6-digit code): ${p.url}`,
     };
@@ -905,7 +905,7 @@ Answer it: ${admin}`,
         `${P(`Your link <b>${esc(p.slug)}.miracleapp.live</b> is live. Brands can see your page and send you proper collab requests there.`)}
          ${P(`Sign in with this email address. There's no password: you'll get a 6-digit code each time.`)}`,
         { label: 'Open your studio', href: String(p.url) },
-        { to: 'creator', preheader: `${p.slug}.miracleapp.live is live.`, next: ['Add your rates and packages.', 'Connect Instagram so your numbers show on your page.', 'Add your bank or UPI details for invoices.', 'Put your link in your Instagram bio.'] },
+        { to: 'creator', preheader: `${p.slug}.miracleapp.live is live.`, next: ['Get the app: Miracle on Google Play for Android; on iPhone, open miracleapp.live in Safari and tap Share, then Add to Home Screen.', 'Add your rates and packages.', 'Connect Instagram so your numbers show on your page.', 'Add your bank or UPI details for invoices.', 'Put your link in your Instagram bio.'] },
       ),
       text: `Welcome to Miracle, ${firstOf(p.name)}. Your link ${p.slug}.miracleapp.live is live. Sign in with this email (you'll get a 6-digit code): ${p.url}`,
     };

@@ -9,6 +9,8 @@
 	const a = $derived(ARTICLES.find((x) => x.slug === slug && (x.audience === 'all' || x.audience === side)));
 	const cat = $derived(CATEGORIES.find((c) => c.id === a?.category));
 	const more = $derived(a ? forSide(side).filter((x) => x.category === a.category && x.slug !== a.slug).slice(0, 4) : []);
+	// A link with a side shows on that side only (an article for both sides can link each to its own place).
+	const links = $derived((a?.links ?? []).filter((l) => !l.side || l.side === side));
 	// Links are written for creators (/studio/...); on the brand side they point at the brand app.
 	const href = (h: string) => (side === 'brand' ? h.replace(/^\/studio\//, '/brand/') : h);
 	let voted = $state<'' | 'yes' | 'no'>('');
@@ -40,8 +42,8 @@
 				{/if}
 			{/each}
 		</div>
-		{#if a.links?.length}
-			<div class="ha-links">{#each a.links as l (l.href)}<a class="btn" href={href(l.href)}>{l.label}<Icon name="arrow" /></a>{/each}</div>
+		{#if links.length}
+			<div class="ha-links">{#each links as l (l.href)}<a class="btn" href={href(l.href)}>{l.label}<Icon name="arrow" /></a>{/each}</div>
 		{/if}
 
 		<div class="ha-vote" aria-live="polite">

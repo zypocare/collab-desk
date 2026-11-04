@@ -10,6 +10,14 @@ type Cap = { isNativePlatform?: () => boolean; getPlatform?: () => string; Plugi
 
 const cap = (): Cap | undefined => (typeof window === 'undefined' ? undefined : (window as unknown as { Capacitor?: Cap }).Capacitor);
 export const isNative = () => !!cap()?.isNativePlatform?.();
+/** Miracle on Google Play (the Android app). iPhone: the App Store app is coming; until then, Safari's Add to Home Screen. */
+export const PLAY_URL = 'https://play.google.com/store/apps/details?id=live.miracleapp.app';
+export const isAndroid = () => typeof navigator !== 'undefined' && /android/i.test(navigator.userAgent);
+
+/** The phone app, or the web app added to a Home Screen: opened like an app, not as a website. */
+export const inInstalledApp = () =>
+	isNative() ||
+	(typeof window !== 'undefined' && (matchMedia('(display-mode: standalone)').matches || (navigator as Navigator & { standalone?: boolean }).standalone === true));
 export const nativePlatform = () => (isNative() ? (cap()?.getPlatform?.() ?? 'web') : 'web');
 const plugin = (name: string) => cap()?.Plugins?.[name] as Plugin | undefined;
 

@@ -8,9 +8,11 @@
 	import { copyText, ui } from '#lib/ui.svelte.ts';
 	import { firstName } from '#lib/util.ts';
 	import Icon from '#lib/components/Icon.svelte';
+	import { PLAY_URL, inInstalledApp, isAndroid } from '#lib/native.ts';
+	import { isIos } from '#lib/pwa.svelte.ts';
 
 	// A newly approved creator's first steps, at the top of Today. Each step ticks itself from her real
-	// data (only "link in bio" is ticked by hand); the card goes away when all are done or she hides it.
+	// data ("link in bio" and "get the app" are ticked by hand); the card goes away when all are done or she hides it.
 	let { phone = false }: { phone?: boolean } = $props();
 
 	// The rate card every new studio starts with: changing it counts as "rates added".
@@ -19,6 +21,7 @@
 	const s = $derived(studio.settings);
 	const key = (k: string) => `cd-setup-${k}-${s?.id ?? ''}`;
 	let bio = $state(false);
+	let app = $state(false);
 	let hidden = $state(true);
 	// Instagram and packages arrive a moment after the studio: wait for them (studio.extras, or 1.5 s at most)
 	// so a finished setup never flashes.
@@ -35,6 +38,7 @@
 		if (!s) return;
 		try {
 			bio = localStorage.getItem(key('bio')) === '1';
+			app = localStorage.getItem(key('app')) === '1';
 			hidden = localStorage.getItem(key('hide')) === '1';
 		} catch {
 			hidden = false;
@@ -55,10 +59,20 @@
 	);
 	const link = $derived((s?.site_url ?? '').replace(/\/$/, ''));
 	type Step = { id: string; done: boolean; title: string; sub: string; href?: string; act: string; run?: () => void };
+	// Getting the app: Google Play on Android, Add to Home Screen on iPhone (the App Store app is coming), and
+	// from a laptop, a pointer to the phone. Done already when she's in the app or the Home Screen web app.
+	const inApp = inInstalledApp();
+	const appStep = (): Step =>
+		isAndroid()
+			? { id: 'app', done: inApp || app, title: 'Get the Android app', sub: 'New requests and payments as alerts on your phone', href: PLAY_URL, act: 'Google Play' }
+			: isIos()
+				? { id: 'app', done: inApp || app, title: 'Add Miracle to your Home Screen', sub: 'In Safari, tap Share, then Add to Home Screen. It opens like an app, with alerts.', act: 'Done', run: () => tick('app') }
+				: { id: 'app', done: inApp || app, title: 'Get Miracle on your phone', sub: 'Android: Google Play. iPhone: open miracleapp.live in Safari, then Share › Add to Home Screen.', act: 'Done', run: () => tick('app') };
 	const steps = $derived<Step[]>(
 		s
 			? [
 					{ id: 'profile', done: !!(s.display_name?.trim() && s.niche?.trim() && s.city?.trim()), title: 'Profile basics', sub: 'Your name, what you create and your city', href: '/studio/settings?s=profile', act: 'Add' },
+					appStep(),
 					{ id: 'rates', done: ratesSet, title: 'Your rates or packages', sub: 'What a Reel, a Story or a bundle costs', href: '/studio/settings?s=rates', act: 'Set rates' },
 					{ id: 'ig', done: !!studio.ig?.connected, title: 'Connect Instagram', sub: 'Live followers, reach and insights for brands', href: '/studio/settings?s=profile', act: 'Connect' },
 					{ id: 'pay', done: !!(s.upi_id?.trim() || s.bank_details?.trim()), title: 'Payment details', sub: 'UPI ID or bank account, printed on invoices', href: '/studio/settings?s=payments', act: 'Add' },
@@ -79,11 +93,11 @@
 	const owner = $derived(studio.me?.team_role === 'owner');
 	const show = $derived((settled || studio.extras) && studio.loaded && owner && !hidden && steps.length > 0 && doneN < steps.length);
 
-	function tickBio() {
-		bio = !bio;
+	function tick(k: 'bio' | 'app') {
+		const on = k === 'bio' ? (bio = !bio) : (app = !app);
 		try {
-			if (bio) localStorage.setItem(key('bio'), '1');
-			else localStorage.removeItem(key('bio'));
+			if (on) localStorage.setItem(key(k), '1');
+			else localStorage.removeItem(key(k));
 		} catch {
 			/* storage blocked */
 		}
@@ -107,15 +121,15 @@
 		<ol class="ob-list">
 			{#each steps as st (st.id)}
 				<li class:done={st.done}>
-					{#if st.id === 'bio'}
-						<button class="ob-tick" onclick={tickBio} aria-pressed={st.done} aria-label={st.done ? 'Mark as not done' : 'Mark as done'}>{#if st.done}<Icon name="check" />{/if}</button>
+					{#if st.id === 'bio' || (st.id === 'app' && !inApp)}
+						<button class="ob-tick" onclick={() => tick(st.id as 'bio' | 'app')} aria-pressed={st.done} aria-label={st.done ? 'Mark as not done' : 'Mark as done'}>{#if st.done}<Icon name="check" />{/if}</button>
 					{:else}
 						<span class="ob-tick" aria-hidden="true">{#if st.done}<Icon name="check" />{/if}</span>
 					{/if}
 					<span class="ob-s"><b>{st.title}</b><small>{st.sub}</small></span>
 					{#if !st.done}
 						{#if st.href}
-							<a class="ob-neo" href={st.href}>{st.act}<Icon name="chevR" /></a>
+							<a class="ob-neo" href={st.href} target={st.href.startsWith('http') ? '_blank' : undefined} rel={st.href.startsWith('http') ? 'noopener' : undefined}>{st.act}<Icon name="chevR" /></a>
 						{:else}
 							<button class="ob-neo" onclick={st.run}>{st.act}</button>
 						{/if}

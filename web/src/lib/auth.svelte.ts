@@ -26,6 +26,21 @@ export async function initAuth() {
 	});
 }
 
+const KNOWN = 'mc-known';
+/** Someone has signed in on this device before (now or earlier), so it isn't a first visit. */
+export function signedInHereBefore() {
+	try {
+		return localStorage.getItem(KNOWN) === '1' || !!localStorage.getItem('cd-account');
+	} catch {
+		return false;
+	}
+}
+
+/** A login that hasn't joined as anything yet: no company, no requests sent, no creators worked with.
+ *  The database calls every login it doesn't know a brand, so this is someone still choosing. */
+export const isNewLogin = (a: Account | null) =>
+	a?.role === 'brand' && !(a.profile || a.brand || a.companies?.length || a.creators?.length);
+
 export async function refreshAccount() {
 	const [{ data, error }, closing] = await Promise.all([supabase.rpc('my_account'), supabase.rpc('account_closing')]);
 	const uid = auth.session?.user.id ?? '';
@@ -52,6 +67,8 @@ export async function refreshAccount() {
 	else if (auth.account && auth.account.role !== 'creator') dropPush(false);
 	try {
 		localStorage.setItem('cd-account', JSON.stringify({ uid, account: auth.account }));
+		// Kept after signing out: this device has been used to sign in, so the app's welcome isn't shown again.
+		if (auth.account) localStorage.setItem(KNOWN, '1');
 	} catch {
 		/* storage blocked */
 	}
