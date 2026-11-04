@@ -22,6 +22,8 @@ How to ship one:
 
 ## 1.0.6
 
+Build 19 · sent for review 4 Nov 2026
+
 - A smaller app that uses less memory.
 - Fills the screen properly on Android 15 and newer.
 
