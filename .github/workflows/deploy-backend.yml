@@ -22,5 +22,6 @@ jobs:
         with:
           version: latest
       - run: supabase link --project-ref "$PROJECT_REF"
-      - run: supabase db push
+      # The CLI aims at a local database unless told otherwise: push to the linked, hosted project.
+      - run: supabase db push --remote
       - run: supabase functions deploy --project-ref "$PROJECT_REF"
