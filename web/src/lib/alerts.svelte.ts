@@ -2,12 +2,15 @@
 // payments...), kept for 90 days so she can find them later. Each login has its own unread count.
 import { supabase } from './supabase';
 
+// Brands keep their own list (brand_alerts_*, migration 189); the same screen and bell show it.
+const fn = (name: string) => (typeof location !== 'undefined' && location.pathname.startsWith('/brand') ? `brand_${name}` : name);
+
 export type Alert = { id: number; kind: string; title: string; body: string; url: string; created_at: string };
 export const alerts = $state<{ list: Alert[]; loaded: boolean; unread: number; seenBefore: string | null }>({ list: [], loaded: false, unread: 0, seenBefore: null });
 
 export async function loadAlerts() {
 	// Without the ones this login deleted or cleared (others on her team keep theirs).
-	const { data } = await supabase.rpc('alerts_list');
+	const { data } = await supabase.rpc(fn('alerts_list'));
 	alerts.list = ((data as Alert[] | null) ?? []).map(({ id, kind, title, body, url, created_at }) => ({ id, kind, title, body, url, created_at }));
 	alerts.loaded = true;
 }
@@ -15,7 +18,7 @@ export async function loadAlerts() {
 /** Delete these from this login's list. */
 export async function hideAlerts(ids: number[]) {
 	if (!ids.length) return;
-	const { error } = await supabase.rpc('alerts_hide', { p_ids: ids });
+	const { error } = await supabase.rpc(fn('alerts_hide'), { p_ids: ids });
 	if (error) await loadAlerts();
 }
 
@@ -23,17 +26,17 @@ export async function hideAlerts(ids: number[]) {
 export async function clearAlerts() {
 	alerts.list = [];
 	alerts.unread = 0;
-	await supabase.rpc('alerts_clear');
+	await supabase.rpc(fn('alerts_clear'));
 }
 
 export async function refreshUnread() {
-	const { data } = await supabase.rpc('alerts_unread');
+	const { data } = await supabase.rpc(fn('alerts_unread'));
 	if (typeof data === 'number') alerts.unread = data;
 }
 
 /** She opened Alerts: everything so far is seen. Keeps when she'd last looked, to mark what's new. */
 export async function markAlertsSeen() {
-	const { data } = await supabase.rpc('alerts_seen');
+	const { data } = await supabase.rpc(fn('alerts_seen'));
 	alerts.seenBefore = typeof data === 'string' ? data : null;
 	alerts.unread = 0;
 }

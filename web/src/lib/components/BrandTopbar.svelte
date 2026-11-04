@@ -8,6 +8,7 @@
 	import { phone, startPhone } from '../phone.svelte';
 	import { loadPublicPage } from '../publicPage.svelte';
 	import { toast, ui } from '../ui.svelte';
+	import { alerts } from '../alerts.svelte';
 	import { errMessage } from '../util';
 	import { pub } from '../publicPage.svelte';
 	import { theme, toggleTheme } from '../ui.svelte';
@@ -76,6 +77,7 @@
 		'/brand/campaigns/new': 'New campaign',
 		'/brand/new': 'New request',
 		'/brand/settings': 'Settings',
+		'/brand/alerts': 'Alerts',
 		'/brand/profile': 'Your brand',
 		'/brand/grow': 'Grow',
 		'/brand/grow/insights': 'Your Insights',
@@ -102,6 +104,7 @@
 		: path.startsWith('/brand/creator/') ? '/brand/creators?tab=discover'
 		: path.startsWith('/brand/campaigns/') ? '/brand/campaigns'
 		: path === '/brand/grow/insights' ? '/brand/grow'
+		: path === '/brand/alerts' ? '/brand'
 		: path === '/brand/settings' && !sec ? '/brand/profile'
 		: sec ? '/brand/settings'
 		: isNew || path === '/brand/business/team' ? '/brand/settings'
@@ -134,9 +137,11 @@
 			<div class="m-brand" class:wordmark={path === '/brand'}>{title}</div>
 			<div class="m-r">
 				{#if signedIn && path === '/brand'}
-					<button class="m-ib m-ask" onclick={() => (ui.askOpen = true)} aria-label="Ask your desk"><Icon name="spark" /></button>
+					<!-- The creator's Today bar, piece for piece: new, Ask your desk, search, alerts, messages. -->
 					<a class="m-ib" href={creators.length ? '/brand/campaigns/new' : '/brand/creators?tab=discover'} aria-label="New campaign"><Icon name="plus" /></a>
+					<button class="m-ib m-ask" onclick={() => (ui.askOpen = true)} aria-label="Ask your desk"><Icon name="spark" /></button>
 					<a class="m-ib" href="/brand/creators?tab=discover" aria-label="Find creators"><Icon name="search" /></a>
+					<a class="m-ib" href="/brand/alerts" aria-label="Alerts{alerts.unread ? `, ${alerts.unread} new` : ''}"><Icon name="bell" />{#if alerts.unread}<span class="m-badge">{alerts.unread > 99 ? '99+' : alerts.unread}</span>{/if}</a>
 					<a class="m-ib" href="/brand/inbox" aria-label="Messages{unread ? `, ${unread} unread` : ''}"><Icon name="send" />{#if unread}<span class="m-badge">{unread}</span>{/if}</a>
 				{:else if signedIn && path === '/brand/requests'}
 					<a class="m-ib" href="/brand/creators?tab=discover" aria-label="Find creators"><Icon name="plus" /></a>
@@ -144,8 +149,9 @@
 				{:else if signedIn && path === '/brand/campaigns'}
 					<a class="m-ib" href={creators.length ? '/brand/campaigns/new' : '/brand/creators?tab=discover'} aria-label="New campaign"><Icon name="plus" /></a>
 				{:else if signedIn && path === '/brand/profile'}
-					<!-- Settings, where Instagram keeps them: the menu at the top right of your profile. -->
-					<a class="m-ib" href="/brand/settings" aria-label="Settings"><Icon name="gear" /></a>
+					<!-- As on the creator's My page: new at the top, settings behind the menu. -->
+					<a class="m-ib" href={creators.length ? '/brand/campaigns/new' : '/brand/creators?tab=discover'} aria-label="New campaign"><Icon name="plus" /></a>
+					<a class="m-ib" href="/brand/settings" aria-label="Settings and activity"><Icon name="menu" /></a>
 				{/if}
 				{#if !signedIn}<button class="m-ib" onclick={toggleTheme} aria-label="Switch light or dark mode"><Icon name={theme.value === 'dark' ? 'sun' : 'moon'} /></button>{/if}
 				{#if auth.account?.role === 'creator'}

@@ -14,6 +14,8 @@
 		await markAlertsSeen();
 	});
 
+	// The same screen serves brands (/brand/alerts), with their own list and words.
+	const brandSide = typeof location !== 'undefined' && location.pathname.startsWith('/brand');
 	const HUE: Record<AlertGroup, string> = { requests: 'var(--g2)', money: 'var(--ok)', content: 'var(--g3)', messages: 'var(--g1)', other: 'var(--ink-3)' };
 	const FILTERS: (AlertGroup | 'all')[] = ['all', 'requests', 'money', 'content', 'messages', 'other'];
 	let filter = $state<AlertGroup | 'all'>('all');
@@ -193,7 +195,7 @@
 		<div class="al-empty rv">
 			<span class="al-empty-ic"><Icon name="bell" /></span>
 			<b>{visible.length ? `No ${GROUP_LABEL[filter as AlertGroup].toLowerCase()} alerts` : "You're all caught up"}</b>
-			<small>{visible.length ? 'Pick another filter to see the rest.' : 'When a brand sends a request, replies, accepts a quote or pays, it shows here too.'}</small>
+			<small>{visible.length ? 'Pick another filter to see the rest.' : (brandSide ? 'When a creator sends a quote, a draft, a message or an invoice, it shows here too.' : 'When a brand sends a request, replies, accepts a quote or pays, it shows here too.')}</small>
 		</div>
 	{:else}
 		{#each groups as g (g.key)}

@@ -11,6 +11,18 @@
 	let { creator, name, pool = '' }: { creator: number; name: string; pool?: string } = $props();
 	let open = $state(false);
 	let wrap = $state<HTMLElement>();
+	// Where the menu opens: toward the side of the screen with room, above or below the button.
+	let side = $state<'left' | 'right'>('right');
+	let up = $state(true);
+	function openMenu() {
+		const r = wrap?.getBoundingClientRect();
+		if (r) {
+			side = r.right - 240 < 8 ? 'left' : 'right';
+			const need = Math.min(360, 60 + pools.list.length * 44);
+			up = innerHeight - r.bottom < need + 90 && r.top > need;
+		}
+		open = !open;
+	}
 	onMount(() => {
 		if (!pools.loaded) loadPools().catch(() => {});
 		const close = (e: MouseEvent) => open && wrap && !wrap.contains(e.target as Node) && (open = false);
@@ -54,9 +66,9 @@
 	</button>
 {:else}
 	<div class="ap" bind:this={wrap}>
-		<button class="btn ap-btn" onclick={() => (open = !open)} aria-expanded={open} aria-haspopup="menu" aria-label="Add {name} to a pool"><Icon name="plus" />Pool</button>
+		<button class="btn ap-btn" onclick={openMenu} aria-expanded={open} aria-haspopup="menu" aria-label="Add {name} to a pool"><Icon name="plus" />Pool</button>
 		{#if open}
-			<div class="ap-menu" role="menu">
+			<div class="ap-menu" class:to-left={side === 'left'} class:down={!up} role="menu">
 				{#each pools.list as p (p.id)}
 					<button role="menuitemcheckbox" aria-checked={!!memberIn(p.id)} onclick={() => toggle(p.id)}>
 						<span class="ap-box" class:on={!!memberIn(p.id)} aria-hidden="true">{#if memberIn(p.id)}<Icon name="check" />{/if}</span>{p.name}
@@ -113,6 +125,9 @@
 		bottom: calc(100% + 8px);
 		right: 0;
 		min-width: 220px;
+		max-width: calc(100vw - 32px);
+		max-height: 360px;
+		overflow-y: auto;
 		display: grid;
 		gap: 2px;
 		padding: 8px;
@@ -121,6 +136,14 @@
 		box-shadow:
 			inset 0 0 0 1px var(--line-strong),
 			0 24px 50px -20px rgba(0, 0, 0, 0.6);
+	}
+	.ap-menu.to-left {
+		right: auto;
+		left: 0;
+	}
+	.ap-menu.down {
+		bottom: auto;
+		top: calc(100% + 8px);
 	}
 	.ap-menu button {
 		display: flex;
