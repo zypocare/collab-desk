@@ -2,6 +2,17 @@
   "cleanUrls": true,
   "redirects": [
     {
+      "source": "/:path((?!\\.well-known/).*)",
+      "has": [
+        {
+          "type": "host",
+          "value": "miracleapp.live"
+        }
+      ],
+      "destination": "https://www.miracleapp.live/:path",
+      "permanent": true
+    },
+    {
       "source": "/waitlist",
       "destination": "https://app.miracleapp.live/signup?as=creator",
       "permanent": false
