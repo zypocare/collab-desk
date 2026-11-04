@@ -915,6 +915,12 @@ a.store:hover{transform:translateY(-2px)}
 .app-glyph{display:inline-grid;place-items:center;width:24px;height:24px;margin:0 2px;border-radius:7px;background:var(--surface-2);vertical-align:-6px;color:#5AA8FF}
 .app-glyph svg{width:15px;height:15px}
 .app-note{color:var(--ink-3);font-size:13px}
+.app-qr{display:flex;align-items:center;gap:14px;margin-top:6px;padding-top:18px;border-top:1px solid var(--line)}
+.app-qr img{flex:none;width:96px;height:96px;border-radius:10px;background:#fff;padding:4px}
+.app-qr span{color:var(--ink-3);font-size:13.5px;line-height:1.5}
+.app-qr b{display:block;color:var(--ink);font-size:14.5px}
+.app-qr span b:last-child{display:inline;font-size:inherit}
+#app[data-here] .app-qr{display:none}
 .here-tag{display:none;justify-self:start;padding:6px 12px;border-radius:99px;background:color-mix(in oklab,var(--g2) 18%,transparent);color:var(--g2);font:700 11px/1 var(--f-body);letter-spacing:.14em;text-transform:uppercase}
 #app[data-here=android] .android,#app[data-here=ios] .ios{order:-1;box-shadow:0 0 0 1.5px var(--g2) inset,0 30px 80px -40px rgba(242,90,144,.5)}
 #app[data-here=android] .android .here-tag,#app[data-here=ios] .ios .here-tag{display:inline-flex}
@@ -1399,6 +1405,7 @@ a.store:hover{transform:translateY(-2px)}
           <h3>Laptop</h3>
           <p>Open Miracle in any browser for quotes, invoices and reports on a big screen. Same account, same desk, everywhere.</p>
           <a class="neo light mag" href="https://app.miracleapp.live">Open Miracle</a>
+          <div class="app-qr"><img src="/img/app-qr.svg" alt="QR code for miracleapp.live/app" width="96" height="96" loading="lazy"><span><b>On your laptop?</b>Scan with your phone's camera to get the app, or open <b>miracleapp.live/app</b> on your phone.</span></div>
         </article>
       </div>
     </div>

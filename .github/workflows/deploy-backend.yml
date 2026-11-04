@@ -22,6 +22,9 @@ jobs:
         with:
           version: latest
       - run: supabase link --project-ref "$PROJECT_REF"
-      # The CLI aims at a local database unless told otherwise: push to the linked, hosted project.
-      - run: supabase db push --remote
-      - run: supabase functions deploy --project-ref "$PROJECT_REF"
+      # Which migrations the hosted database has, and which are new (shown in the log).
+      - run: supabase migration list --remote
+      # The CLI aims at a local database unless told otherwise, and asks before changing production
+      # (which a workflow can't answer): push to the linked, hosted project and confirm.
+      - run: supabase db push --remote --yes
+      - run: supabase functions deploy --project-ref "$PROJECT_REF" --yes
