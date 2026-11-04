@@ -111,6 +111,7 @@ button,input{font:inherit;color:inherit}
 .screen{position:relative;height:100%;border-radius:47px;overflow:hidden;background:var(--bg);font-family:var(--f-body)}
 .island{position:absolute;z-index:5;top:11px;left:50%;width:96px;height:28px;margin-left:-48px;border-radius:20px;background:#000}
 .ph-status{display:flex;justify-content:space-between;padding:15px 26px 0;font:600 12.5px/1 var(--f-body);color:var(--ink)}
+.ph-shot{position:absolute;left:0;right:0;top:40px;bottom:0;width:100%;height:calc(100% - 40px);object-fit:cover;object-position:top}
 .ph-bar{display:flex;align-items:center;justify-content:space-between;padding:14px 16px 10px}
 .ph-bar b{font:400 25px/1 var(--f-display);font-style:italic}
 .ph-bar span{display:flex;gap:13px;color:var(--ink)}
@@ -934,6 +935,34 @@ a.store:hover{transform:translateY(-2px)}
   .pn{padding:24px 22px}
   .app-card{padding:24px 22px}
 }
+
+/* From DM to paid: one phone whose screen changes as you scroll */
+.story{height:620vh}
+.story-stage{display:grid;place-items:center;perspective:1600px}
+.story-phone{width:300px;height:640px;transform:rotateY(var(--ry,-6deg)) rotateX(3deg);transition:transform .6s var(--ease)}
+.story-phone .shot{opacity:0;transform:translateY(22px) scale(.985);transition:opacity .55s var(--ease),transform .55s var(--ease)}
+.story-phone .shot.on{opacity:1;transform:none}
+/* the rest of the app, as a row of real screens */
+.inside{padding-block:clamp(72px,9vw,120px);border-top:1px solid var(--line)}
+.inside .h2{margin:14px 0 36px}
+.in-row{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(230px,1fr);gap:18px;overflow-x:auto;scroll-snap-type:x mandatory;padding:6px max(16px,calc((100vw - 1240px) / 2 + 40px)) 18px;scrollbar-width:none}
+.in-row::-webkit-scrollbar{display:none}
+.in-card{margin:0;display:grid;gap:16px;align-content:start;scroll-snap-align:center}
+.in-ph{position:relative;aspect-ratio:390/844;border-radius:32px;padding:7px;background:linear-gradient(150deg,#3a2d38,#120d12 40%,#2a1f29);box-shadow:0 0 0 1.5px #4a3b47,0 40px 80px -40px rgba(242,90,144,.35);transition:transform .35s var(--ease)}
+.in-ph img{display:block;width:100%;height:100%;object-fit:cover;object-position:top;border-radius:26px;background:var(--bg)}
+.in-card:hover .in-ph{transform:translateY(-6px)}
+.in-card figcaption{display:grid;gap:6px;padding:0 4px}
+.in-card figcaption b{font:400 26px/1.05 var(--f-display)}
+.in-card figcaption span{color:var(--ink-3);font-size:14.5px;line-height:1.5}
+@media (max-width:1000px){
+  .story-phone{width:auto;height:min(52svh,470px);aspect-ratio:300/640;border-radius:40px;padding:7px}
+  .story-phone .screen{border-radius:33px}
+  .story-phone .island{top:8px;width:64px;height:19px;margin-left:-32px}
+  .story-phone .ph-status{padding:9px 18px 0;font-size:10px}
+  .story-phone .ph-shot{top:28px;height:calc(100% - 28px)}
+  .in-row{grid-auto-columns:min(68vw,250px)}
+}
+@media (prefers-reduced-motion:reduce){.story-phone,.story-phone .shot{transition:none}}
 </style>
 <meta name="theme-color" content="#110D11">
 <meta property="og:title" content="Miracle: every collab, handled">
@@ -1047,37 +1076,13 @@ a.store:hover{transform:translateY(-2px)}
           <div class="phone">
             <div class="screen">
               <span class="island" aria-hidden="true"></span>
-              <div class="ph-status" aria-hidden="true"><span>9:41</span><span>●●● ▮</span></div>
-              <div class="ph-bar"><b>Miracle</b><span aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg><svg viewBox="0 0 32 32" style="color:#F25A90"><use href="#spk"/></svg><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4z"/></svg></span></div>
-              <div class="ph-hero">
-                <div><small>Wednesday, 21 October</small><b class="ph-hi">Good evening,<em>Nivy</em></b><span class="ph-due"><i></i>3 due today · 12 active collabs</span></div>
-                <div class="ph-ring"><svg viewBox="0 0 96 96"><circle cx="48" cy="48" r="43" fill="#140e14" stroke="rgba(255,255,255,.1)" stroke-width="4"/><circle cx="48" cy="48" r="43" fill="none" stroke="url(#rg)" stroke-width="4" stroke-linecap="round" stroke-dasharray="270" stroke-dashoffset="40" transform="rotate(-90 48 48)"/></svg><div><b>20K</b><small>followers</small><span>4.2% eng.</span></div></div>
-              </div>
-              <div class="ph-stories" aria-hidden="true">
-                <span class="st me"><i><b>ND</b></i>New collab</span>
-                <span class="st"><i><b style="background:#2F6F9F">GB</b></i>Glowberry</span>
-                <span class="st"><i><b style="background:#3D7F6A">KN</b></i>Kumkum</span>
-                <span class="st"><i><b style="background:#A8466E">S</b></i>Sorso</span>
-                <span class="st"><i><b style="background:#A66A2C">M</b></i>Mustard</span>
-              </div>
-              <div class="ph-tick" aria-hidden="true"><div><span><b>3</b> new requests waiting</span><span class="s">✦</span><span><b>₹3.04L</b> yet to come</span><span class="s">✦</span><span>Draft due <b>Friday</b></span><span class="s">✦</span><span><b>3</b> new requests waiting</span><span class="s">✦</span><span><b>₹3.04L</b> yet to come</span><span class="s">✦</span><span>Draft due <b>Friday</b></span><span class="s">✦</span></div></div>
-              <div class="ph-card">
-                <span class="eb">Received in October</span><span class="goal">Goal ₹1.5L</span>
-                <span class="amt">₹3,97,082</span>
-                <span class="ring"><svg viewBox="0 0 70 70"><circle cx="35" cy="35" r="29" fill="none" stroke="rgba(255,255,255,.1)" stroke-width="7"/><circle cx="35" cy="35" r="29" fill="none" stroke="url(#rg)" stroke-width="7" stroke-linecap="round" stroke-dasharray="182" stroke-dashoffset="0" transform="rotate(-90 35 35)"/></svg><span><b>265%</b><small>of goal</small></span></span>
-                <p>from 10 brands · <b>265%</b> of this month's goal</p>
-              </div>
-              <div class="ph-eb">Needs you <span>3</span></div>
-              <div class="ticket mini" style="--h:#2F6F9F;--cut:#110D11">
-                <div class="t-top"><span class="t-ini">GB</span><span class="t-name"><b>Glowberry</b><small>NEW REQUEST</small></span><span class="t-amt"><b>₹68k</b><small>1 REEL</small></span></div>
-                <div class="t-cut"></div>
-                <div class="t-bot"><span><b>Review new request</b><small><i></i>Scored 93 · take it</small></span><span class="neo grad">Review</span></div>
-              </div>
+              <div class="ph-status" aria-hidden="true"><span>6:40</span><span>●●● ▮</span></div>
+              <img class="ph-shot" src="/img/screen-today.webp" alt="Miracle's Today screen: Good evening, Niveditha. 20K followers, her collabs with Northstar Travel and Lumière Skin, and ₹62,000 received in November." width="390" height="844" fetchpriority="high">
             </div>
           </div>
-          <div class="float f1" data-depth="60"><div class="in" style="display:flex;align-items:center;gap:11px"><span class="fi"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg></span><span><b>₹40,000 just landed</b><small>Kumkum Naturals · INV/26-27/011</small></span></div></div>
-          <div class="float f2" data-depth="90"><div class="in" style="display:flex;align-items:center;gap:11px"><span class="fi" style="background:#3D7F6A"><b style="font:400 17px/1 var(--f-display);color:#fff">93</b></span><span><b>New request scored 93</b><small>Glowberry · 1 Reel · ₹68,000</small></span></div></div>
-          <div class="float f3" data-depth="40"><div class="in" style="display:flex;align-items:center;gap:11px"><span class="fi" style="background:#A8466E"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v12H5.2L4 17.2z"/><path d="M8 9h8M8 12h5"/></svg></span><span><b>Draft approved</b><small>Sorso · goes live Friday, 7 PM</small></span></div></div>
+          <div class="float f1" data-depth="60"><div class="in" style="display:flex;align-items:center;gap:11px"><span class="fi"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg></span><span><b>₹22,000 just landed</b><small>Kaju &amp; Co. · NIV/26-27/012</small></span></div></div>
+          <div class="float f2" data-depth="90"><div class="in" style="display:flex;align-items:center;gap:11px"><span class="fi" style="background:#3D7F6A"><b style="font:400 17px/1 var(--f-display);color:#fff">93</b></span><span><b>New request scored 93</b><small>Northstar Travel · 2 Reels · ₹85,000</small></span></div></div>
+          <div class="float f3" data-depth="40"><div class="in" style="display:flex;align-items:center;gap:11px"><span class="fi" style="background:#A8466E"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v12H5.2L4 17.2z"/><path d="M8 9h8M8 12h5"/></svg></span><span><b>Brand in your DMs</b><small>Pepper &amp; Pine Café · 1 Reel + 2 Stories</small></span></div></div>
         </div>
       </div>
     </div>
@@ -1145,6 +1150,55 @@ a.store:hover{transform:translateY(-2px)}
     </div>
   </section>
 
+  <!-- 2 · From DM to paid: one phone, its screen changing as you scroll (the real app, with demo data) -->
+  <section class="deck story" id="how" aria-labelledby="how-title">
+    <div class="deck-stage">
+      <div class="wrap">
+        <div class="deck-copy">
+          <span class="eb">How a collab moves</span>
+          <h2 class="h2" id="how-title">From DM to paid, <span class="gt">in one app.</span></h2>
+          <div class="rail" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+          <div class="steps">
+            <div class="step on" style="--c:#7EA2FF"><span class="tag">01 · In your DMs</span><b>A brand slides into your DMs.</b><p>Miracle spots Instagram DMs that look like a collab and reads what the brand wants: the pieces, the pay and the date.</p></div>
+            <div class="step" style="--c:#B49CFF"><span class="tag">02 · New collab</span><b>One tap, and it’s a collab.</b><p>What they’re asking, read for you, with anything missing flagged. A WhatsApp message or a screenshot works the same way.</p></div>
+            <div class="step" style="--c:#EFB35A"><span class="tag">03 · Deal</span><b>Your quote, accepted online.</b><p>Priced from your rate card with usage, advance and dates. The brand accepts with their name, and you both get the agreement.</p></div>
+            <div class="step" style="--c:#F25A90"><span class="tag">04 · Creating</span><b>Always the next step.</b><p>Shoot day, draft due, go-live: every collab says what comes next, and the brand approves drafts in the thread.</p></div>
+            <div class="step" style="--c:#4CCFC2"><span class="tag">05 · Live</span><b>It goes live. Proof goes out.</b><p>Miracle spots your post, checks the #ad, and sends the brand a results report with real views and reach.</p></div>
+            <div class="step" style="--c:#6FD08C"><span class="tag">06 · Paid</span><b>And the money lands.</b><p>Invoices with a UPI QR, reminders that go by themselves, and a formal demand if a brand goes quiet. Brands pay you directly.</p></div>
+          </div>
+        </div>
+        <div class="story-stage">
+          <div class="phone story-phone">
+            <div class="screen">
+              <span class="island" aria-hidden="true"></span>
+              <div class="ph-status" aria-hidden="true"><span>6:40</span><span>●●● ▮</span></div>
+              <img class="ph-shot shot on" src="/img/screen-desk.webp" alt="Desk AI spotting a likely collab from Pepper &amp; Pine Café in her DMs" width="390" height="844" loading="lazy">
+              <img class="ph-shot shot" src="/img/screen-dm.webp" alt="Add a collab, with the brand’s DM read into what they’re asking" width="390" height="844" loading="lazy">
+              <img class="ph-shot shot" src="/img/screen-offer.webp" alt="It’s a deal: Lumière Skin accepted a ₹45,000 quote for 1 Reel and 3 Stories" width="390" height="844" loading="lazy">
+              <img class="ph-shot shot" src="/img/screen-collab.webp" alt="A collab page showing the next step: mark the shoot done, then edit" width="390" height="844" loading="lazy">
+              <img class="ph-shot shot" src="/img/screen-live.webp" alt="A live collab with 48.2K views, 2.7 times her usual reel" width="390" height="844" loading="lazy">
+              <img class="ph-shot shot" src="/img/screen-paid.webp" alt="Invoices: ₹68,000 unpaid, one late, with Next steps and Paid buttons" width="390" height="844" loading="lazy">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3 · The rest of the app, as a row of real screens -->
+  <section class="inside" id="inside" aria-labelledby="in-title">
+    <div class="wrap">
+      <span class="eb" data-r>Everything in one app</span>
+      <h2 class="h2 sm" id="in-title" data-r>Your money, your growth, <span class="gt">your page.</span></h2>
+    </div>
+    <div class="in-row" data-r="2">
+      <figure class="in-card"><div class="in-ph"><img src="/img/screen-money.webp" alt="Money: ₹5,45,000 earned this financial year, +82% on last year" width="390" height="844" loading="lazy"></div><figcaption><b>Every rupee, at a glance</b><span>What you earned, what’s yet to come and who’s late. Tax desk and reports for your CA.</span></figcaption></figure>
+      <figure class="in-card"><div class="in-ph"><img src="/img/screen-grow.webp" alt="All your insights: 412.3K accounts reached and 1.2M views in 30 days" width="390" height="844" loading="lazy"></div><figcaption><b>Know what’s working</b><span>Your full Instagram insights, the same numbers brands see, and what to post next.</span></figcaption></figure>
+      <figure class="in-card"><div class="in-ph"><img src="/img/screen-pack.webp" alt="Her page: brands build a package, and the price drops as it grows" width="390" height="844" loading="lazy"></div><figcaption><b>A page brands book from</b><span>yourname.miracleapp.live: live numbers, your rates, and a package builder that rewards bigger deals.</span></figcaption></figure>
+      <figure class="in-card"><div class="in-ph"><img src="/img/screen-collabs.webp" alt="Collabs board: ₹3,18,000 across 7 active collabs, by stage" width="390" height="844" loading="lazy"></div><figcaption><b>Every collab, one board</b><span>New, in talks, confirmed, creating, live and done, with what each is worth.</span></figcaption></figure>
+    </div>
+  </section>
+
   <!-- 3b · A real creator on Miracle -->
   <section class="spot" id="nivy" aria-labelledby="spot-title">
     <div class="wrap spot-grid">
@@ -1175,160 +1229,6 @@ a.store:hover{transform:translateY(-2px)}
     </div>
   </section>
 
-  <!-- 3 · Five promises -->
-  <section class="promises" id="promises" aria-labelledby="pr-title">
-    <div class="wrap">
-      <span class="eb" data-r>Everything between "hi, collab?" and money in the bank</span>
-      <h2 class="h2" id="pr-title" data-r>Five things Miracle <span class="gt">does for you.</span></h2>
-      <div class="pr-grid">
-        <a class="pr" href="#found" data-r style="--c:var(--req)"><span>01</span><b>Get found</b><p>A page brands book you from, a media kit that updates itself, and auto-DMs when someone comments "COLLAB".</p></a>
-        <a class="pr" href="#deals" data-r="2" style="--c:var(--warn)"><span>02</span><b>Close better deals</b><p>Every offer scored, risky contract lines flagged, and what creators your size really charge.</p></a>
-        <a class="pr" href="#paid" data-r="3" style="--c:var(--ok)"><span>03</span><b>Get paid on time</b><p>Advances, invoices with a UPI QR, reminders that go by themselves, and a formal demand when they don't pay.</p></a>
-        <a class="pr" href="#grow" data-r="4" style="--c:#B49CFF"><span>04</span><b>Grow for real</b><p>A check-up of your own reels: what's working, what's holding you back, and what to post next.</p></a>
-        <a class="pr" href="#tax" data-r="5" style="--c:var(--live)"><span>05</span><b>Know your money</b><p>What you earned, who still owes you, and your best brands, at a glance. Tax time sorted in one file.</p></a>
-      </div>
-    </div>
-  </section>
-
-  <!-- 2 · The deck: one collab, from request to paid -->
-  <section class="deck" id="how" aria-labelledby="how-title">
-    <div class="deck-stage">
-      <div class="wrap">
-        <div class="deck-copy">
-          <span class="eb">How a collab moves</span>
-          <h2 class="h2" id="how-title">From DM to paid, <span class="gt">on one ticket.</span></h2>
-          <div class="rail" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
-          <div class="steps">
-            <div class="step on" style="--c:#7EA2FF"><span class="tag">01 · New request</span><b>A brand finds your link.</b><p>They send a proper request with the budget, dates and deliverables. Miracle scores it so you know at a glance if it's worth it.</p></div>
-            <div class="step" style="--c:#EFB35A"><span class="tag">02 · Quote</span><b>Your quote, in a tap.</b><p>Priced from your rate card: the fee, usage rights, revisions and advance, sent as a clean quote the brand can accept.</p></div>
-            <div class="step" style="--c:#B49CFF"><span class="tag">03 · Draft</span><b>Drafts approved in the thread.</b><p>Send the cut, get notes, agree the go-live time. No lost WhatsApp voice notes.</p></div>
-            <div class="step" style="--c:#4CCFC2"><span class="tag">04 · Live</span><b>It goes live. Proof goes out.</b><p>Miracle spots the post and shares the numbers with the brand on a page they can open anytime.</p></div>
-            <div class="step" style="--c:#6FD08C"><span class="tag">05 · Paid</span><b>And the money lands.</b><p>An invoice with a UPI QR for the exact amount, polite reminders, and a ping the moment it's paid.</p></div>
-          </div>
-        </div>
-        <div class="pile">
-          <div class="ticket" style="--h:#2F6F9F">
-            <div class="t-top"><span class="t-ini">GB</span><span class="t-name"><b>Glowberry</b><small>NEW REQUEST</small></span><span class="t-amt"><b>₹68k</b><small>1 REEL</small></span></div>
-            <div class="t-cut"></div>
-            <div class="t-bot"><span><b>Scored 93 · take it</b><small style="color:#6FD08C"><i></i>Fits your rate and your calendar</small></span><span class="neo grad">Review</span></div>
-          </div>
-          <div class="ticket" style="--h:#B4700A">
-            <div class="t-top"><span class="t-ini">GB</span><span class="t-name"><b>Glowberry</b><small>QUOTE SENT</small></span><span class="t-amt"><b>₹68,000</b><small>+ GST</small></span></div>
-            <div class="t-cut"></div>
-            <div class="t-bot"><span><b>Usage 30 days · 50% advance</b><small style="color:#EFB35A"><i></i>Brand opened it 2 min ago</small></span><span class="neo grad">Nudge</span></div>
-          </div>
-          <div class="ticket" style="--h:#7550D0">
-            <div class="t-top"><span class="t-ini">S</span><span class="t-name"><b>Sorso</b><small>DRAFT APPROVED</small></span><span class="t-amt"><b>1 Reel</b><small>3 STORIES</small></span></div>
-            <div class="t-cut"></div>
-            <div class="t-bot"><span><b>Goes live Friday, 7 PM</b><small style="color:#B49CFF"><i></i>Caption covers every must-say</small></span><span class="neo grad">Schedule</span></div>
-          </div>
-          <div class="ticket" style="--h:#0B877D">
-            <div class="t-top"><span class="t-ini">KN</span><span class="t-name"><b>Kumkum Naturals</b><small>LIVE</small></span><span class="t-amt"><b>48.2K</b><small>VIEWS</small></span></div>
-            <div class="t-cut"></div>
-            <div class="t-bot"><span><b>Insights shared with the brand</b><small style="color:#4CCFC2"><i></i>Opened by the brand today</small></span><span class="neo grad">Share</span></div>
-          </div>
-          <div class="ticket paid" style="--h:#3D7F6A">
-            <div class="t-top"><span class="t-ini">KN</span><span class="t-name"><b>Kumkum Naturals</b><small>PAID</small></span><span class="t-amt"><b>₹40,000</b><small>VIA UPI</small></span></div>
-            <div class="t-cut"></div>
-            <div class="stub"><div class="t-bot"><span><b>INV/26-27/011 · settled</b><small style="color:#6FD08C"><i></i>Landed in your bank</small></span><span class="neo grad">Receipt</span></div></div>
-            <span class="paid-stamp">Paid</span>
-            <span class="spark-burst" aria-hidden="true"></span>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- 4 · Each promise, shown working -->
-  <section class="pil" id="found" aria-labelledby="pf-title">
-    <div class="wrap pil-grid">
-      <div class="pil-copy" data-r>
-        <span class="eb" style="color:var(--req)">01 · Get found</span>
-        <h2 class="h2 sm" id="pf-title">One link brands <span class="gt">book</span> you from.</h2>
-        <p class="lede">Your rates, packages, open weeks and past brands on one page at yourname.miracleapp.live. Brands send a proper request with the budget and dates, instead of "hi, collab?" in your DMs.</p>
-        <ul class="pts" style="--c:var(--req)">
-          <li><b>A media kit that updates itself.</b> Followers, reach and audience, live from Instagram, as a link or a PDF.</li>
-          <li><b>Comment-to-DM.</b> Someone comments "COLLAB" on your reel; they get your rates by DM.</li>
-          <li><b>Found in search.</b> An about line written for the words brands type, and the AI search inside Instagram and Google.</li>
-        </ul>
-      </div>
-      <div class="pil-vis" data-r="2">
-        <figure class="dev" style="--ry:-12deg"><div class="dev-frame"><span class="dev-island" aria-hidden="true"></span><img src="/img/screen-nivy-page.webp" alt="A creator's Miracle page with a Send a request button" width="390" height="844" loading="lazy"></div><span class="dev-shine" aria-hidden="true"></span></figure>
-        <div class="toast t1" data-depth="60"><span class="ti" style="--c:#7EA2FF"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg></span><span><b>@kora.botanicals: COLLAB</b><small>commented on your reel</small></span></div>
-        <div class="toast t2" data-depth="90"><span class="ti" style="--c:#F25A90"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4z"/></svg></span><span><b>Your rates, sent by DM</b><small>by Miracle, a second later</small></span></div>
-        <div class="toast t3" data-depth="40"><span class="ti" style="--c:#4CCFC2"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V5M4 19h16M8 15l3-4 3 2 5-6"/></svg></span><span><b>Media kit updated</b><small>live from Instagram, today</small></span></div>
-      </div>
-    </div>
-  </section>
-
-  <section class="pil alt" id="deals" aria-labelledby="pd-title">
-    <div class="wrap pil-grid rev">
-      <div class="pil-copy" data-r>
-        <span class="eb" style="color:var(--warn)">02 · Close better deals</span>
-        <h2 class="h2 sm" id="pd-title">Know what to say <span class="gt">yes</span> to.</h2>
-        <p class="lede">Every request is scored on money, time and fit: take it, negotiate or skip. Before you sign, Miracle reads the brand's agreement and points out what creators usually push back on.</p>
-        <ul class="pts" style="--c:var(--warn)">
-          <li><b>Quotes that close.</b> From your rate card, with usage rights, revisions and an advance, accepted online by the brand.</li>
-          <li><b>Real prices.</b> What creators your size were actually paid on Miracle, not guesses.</li>
-        </ul>
-      </div>
-      <div class="pil-vis" data-r="2">
-        <figure class="dev" style="--ry:12deg"><div class="dev-frame"><span class="dev-island" aria-hidden="true"></span><img src="/img/screen-offer.webp" alt="Miracle checking a brand's agreement: fairness 58, ask for 3 changes" width="390" height="844" loading="lazy"></div><span class="dev-shine" aria-hidden="true"></span></figure>
-        <div class="toast t1" data-depth="70"><span class="ti score" style="--c:#6FD08C"><b><span data-count="86">86</span></b></span><span><b>Take it</b><small>Kora Activewear · 2 Reels · ₹60,000</small></span></div>
-        <div class="toast t2" data-depth="45"><span class="ti" style="--c:#EFB35A"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v20M17 6H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span><span><b>₹8K – ₹30K a Reel</b><small>what creators your size charge</small></span></div>
-      </div>
-    </div>
-  </section>
-
-  <section class="pil" id="paid" aria-labelledby="pp-title">
-    <div class="wrap pil-grid">
-      <div class="pil-copy" data-r>
-        <span class="eb" style="color:var(--ok)">03 · Get paid on time</span>
-        <h2 class="h2 sm" id="pp-title">No more chasing <span class="gt">brands</span> for money.</h2>
-        <p class="lede">Ask for an advance in the quote. Send an invoice with a UPI QR for the exact amount. Miracle sends the reminders, marks it paid when your bank says so and, when a brand is very late, prepares the formal demand.</p>
-        <ul class="pts" style="--c:var(--ok)">
-          <li><b>See who pays on time</b> before you say yes: "pays in about 9 days", from invoices paid to creators on Miracle.</li>
-          <li><b>MSME protection.</b> Registered with Udyam? Late brands owe interest after 45 days, and Miracle fills the complaint in for you.</li>
-        </ul>
-      </div>
-      <div class="pil-vis" data-r="2">
-        <figure class="dev" style="--ry:-12deg"><div class="dev-frame"><span class="dev-island" aria-hidden="true"></span><img src="/img/screen-paid.webp" alt="Getting paid, step by step: reminders sent, a formal payment demand ready to send" width="390" height="844" loading="lazy"></div><span class="dev-shine" aria-hidden="true"></span></figure>
-        <div class="toast t1 money low" data-depth="80"><span class="ti" style="--c:#6FD08C"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg></span><span><b>₹<span data-count="35000" data-fmt="in">35,000</span> just landed</b><small>Glasshouse Eyewear · marked paid</small></span></div>
-        <div class="toast t2" data-depth="50"><span class="ti" style="--c:#7EA2FF"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span><span><b>Pays in about 9 days</b><small>from invoices paid to other creators</small></span></div>
-      </div>
-    </div>
-  </section>
-
-  <section class="pil alt" id="grow" aria-labelledby="pg-title">
-    <div class="wrap pil-grid rev">
-      <div class="pil-copy" data-r>
-        <span class="eb" style="color:#B49CFF">04 · Grow for real</span>
-        <h2 class="h2 sm" id="pg-title">Know what to <span class="gt">post next.</span></h2>
-        <p class="lede">Miracle reads your own reels and audience and tells you, plainly, what's holding you back and what to post next. Check a reel before you post it, plan festival reels in your calendar, and team up with creators in your niche.</p>
-      </div>
-      <div class="pil-vis" data-r="2">
-        <figure class="dev" style="--ry:12deg"><div class="dev-frame"><span class="dev-island" aria-hidden="true"></span><img src="/img/screen-grow.webp" alt="Grow in Miracle: followers rising, reel views, and what's working" width="390" height="844" loading="lazy"></div><span class="dev-shine" aria-hidden="true"></span></figure>
-        <div class="toast t1" data-depth="70"><span class="ti" style="--c:#B49CFF"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.6 5.6L20 9.3l-4 4 1 5.7-5-2.8-5 2.8 1-5.7-4-4 5.4-.7z"/></svg></span><span><b>Festival reels get the most shares</b><small>from your growth check-up</small></span></div>
-        <div class="toast t2" data-depth="45"><span class="ti" style="--c:#FFAE6B"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></span><span><b>Post Saturday, 7 pm</b><small>when your audience is watching</small></span></div>
-      </div>
-    </div>
-  </section>
-
-  <section class="pil" id="tax" aria-labelledby="pt-title">
-    <div class="wrap pil-grid">
-      <div class="pil-copy" data-r>
-        <span class="eb" style="color:var(--live)">05 · Know your money</span>
-        <h2 class="h2 sm" id="pt-title">Every rupee, <span class="gt">in one place.</span></h2>
-        <p class="lede">See what came in this month, who still owes you and when, and which brands pay you most. Products you got as barter count too. If a brand deducts TDS, Miracle notes it so you can claim it back, and tax time is one tidy file for your CA.</p>
-      </div>
-      <div class="pil-vis" data-r="2">
-        <figure class="dev" style="--ry:-12deg"><div class="dev-frame"><span class="dev-island" aria-hidden="true"></span><img src="/img/screen-money.webp" alt="Miracle's money view: what came in, what is yet to come, and by brand" width="390" height="844" loading="lazy"></div><span class="dev-shine" aria-hidden="true"></span></figure>
-        <div class="toast t1" data-depth="70"><span class="ti" style="--c:#4CCFC2"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg></span><span><b>₹4,72,000 earned this year</b><small>from 12 brands, barter included</small></span></div>
-        <div class="toast t2" data-depth="45"><span class="ti" style="--c:#EFB35A"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 9v4M12 17h.01M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg></span><span><b>₹12,100 TDS to claim back</b><small>Northstar Travel deducted it</small></span></div>
-      </div>
-    </div>
-  </section>
-
   <!-- 4 · Desk AI -->
   <section class="ai" id="ai" aria-labelledby="ai-title">
     <div class="wrap">
@@ -1352,27 +1252,7 @@ a.store:hover{transform:translateY(-2px)}
     </div>
   </section>
 
-  <section class="ai2" aria-labelledby="ap-title">
-    <div class="wrap pil-grid">
-      <div class="pil-copy" data-r>
-        <span class="eb" style="color:var(--g2)">Autopilots</span>
-        <h2 class="h2 sm" id="ap-title">It asks you first, <span class="gt">or just does it.</span></h2>
-        <p class="lede">For the busywork, turn on an autopilot. One switch each: Off, Ask me, or Auto. You stay in charge of every rupee and every reply.</p>
-      </div>
-      <div class="pil-vis" data-r="2">
-        <div class="mcard auto" role="img" aria-label="Autopilots, each set to Off, Ask me or Auto">
-          <span class="ap"><span><b>Pitch brands that suit you</b><small>Finds them and writes from your own email</small></span><span class="sw"><i>Off</i><i class="on">Ask me</i><i>Auto</i></span></span>
-          <span class="ap"><span><b>Reply to "COLLAB" comments</b><small>Sends your rates by DM</small></span><span class="sw"><i>Off</i><i>Ask me</i><i class="on">Auto</i></span></span>
-          <span class="ap"><span><b>Chase late payments</b><small>Two reminders, then waits for you</small></span><span class="sw"><i>Off</i><i>Ask me</i><i class="on">Auto</i></span></span>
-          <span class="ap"><span><b>Check drafts against the brief</b><small>Before the brand sees them</small></span><span class="sw"><i>Off</i><i class="on">Ask me</i><i>Auto</i></span></span>
-          <span class="ap"><span><b>Plan reels that grow you</b><small>Festivals and your best formats, in your calendar</small></span><span class="sw"><i>Off</i><i class="on">Ask me</i><i>Auto</i></span></span>
-          <span class="chips"><i>Writes captions and Reel scripts</i><i>Reads DMs for real offers</i><i>Checks contracts</i><i>Checks #ad rules</i></span>
-        </div>
-      </div>
-    </div>
-  </section>
 
-  <!-- 4b · For brands: a campaign moving across a board, as the brand sees it -->
   <!-- Get the app: Android on Google Play; iPhone from Safari's Home Screen until the App Store app is out -->
   <section class="getapp" id="app" aria-labelledby="app-title">
     <div class="wrap">
@@ -1412,6 +1292,7 @@ a.store:hover{transform:translateY(-2px)}
     <script>(()=>{const u=navigator.userAgent,s=document.getElementById('app');if(!s)return;const k=/android/i.test(u)?'android':/iphone|ipad|ipod/i.test(u)||(/Macintosh/.test(u)&&navigator.maxTouchPoints>1)?'ios':'';if(k)s.dataset.here=k})()</script>
   </section>
 
+  <!-- For brands: a campaign moving across a board, as the brand sees it -->
   <section class="bdeck" id="brands" aria-labelledby="brands-title">
     <div class="bdeck-stage">
       <div class="wrap bdeck-in">
@@ -1703,43 +1584,26 @@ a.store:hover{transform:translateY(-2px)}
   if (reduce) paint(0);
   if (reduce) { phone.style.transform = 'rotateY(-5deg) rotateX(3deg)'; } else requestAnimationFrame(heroFrame);
 
-  /* the deck: tickets dealt by scroll, the last one tears off its stub */
-  const deck = document.querySelector('.deck');
-  const cards = [...deck.querySelectorAll('.pile .ticket')];
+  /* From DM to paid: as you scroll, the steps light up one by one and the phone shows that step's screen */
+  const deck = document.querySelector('.story');
+  const shots = [...deck.querySelectorAll('.shot')];
   const steps = [...deck.querySelectorAll('.step')];
   const rails = [...deck.querySelectorAll('.rail i')];
-  const paid = deck.querySelector('.paid'), stub = paid.querySelector('.stub'), burst = paid.querySelector('.spark-burst');
-  ['#6FD08C', '#FFAE6B', '#F25A90', '#9C7BFF', '#F4EEF2', '#6FD08C', '#FFAE6B', '#F25A90', '#9C7BFF', '#4CCFC2', '#FFAE6B', '#F25A90'].forEach((c, i) => {
-    const s = document.createElement('i'), a = (i / 12) * Math.PI * 2, r = 70 + (i % 3) * 30;
-    s.style.cssText = `--c:${c};--x:${Math.cos(a) * r}px;--y:${Math.sin(a) * r - 30}px`; burst.appendChild(s);
-  });
-  let active = -1, burstOn = false;
+  const storyPhone = deck.querySelector('.story-phone');
+  let active = 0;
   function deckFrame() {
     const r = deck.getBoundingClientRect();
     if (r.bottom > 0 && r.top < innerHeight) {
       const p = clamp(-r.top / (r.height - innerHeight), 0, 1);
-      // each ticket rests front and centre for a stretch of scroll before the next one comes in
-      const raw = p * (cards.length - 1 + .6), i0 = Math.floor(raw), fr = raw - i0;
-      const s = i0 >= cards.length - 1 ? raw : i0 + easeIO(clamp((fr - .3) / .7, 0, 1));
-      const lift = Math.min(innerHeight * .9, 640);
-      cards.forEach((c, i) => {
-        const d = i === cards.length - 1 ? Math.max(i - s, 0) : i - s;
-        let y, rot, sc, op, dim;
-        if (d > 0) { const k = Math.min(d, 1); y = k * lift; rot = k * 9; sc = 1; op = d > 1.02 ? 0 : 1; dim = 0; }
-        else { const k = Math.min(-d, 4); y = -k * 26; rot = -k * 1.5; sc = 1 - k * .055; op = clamp(1 - k * .26, 0, 1); dim = Math.min(k * .35, .7); }
-        // the ticket in front sits at exactly its own size and place, so its text stays sharp
-        c.style.transform = Math.abs(d) < .02 ? 'none' : `translate(0, ${Math.round(y)}px) rotate(${rot.toFixed(2)}deg) scale(${sc.toFixed(3)})`;
-        c.style.opacity = op; c.style.zIndex = 10 + i; c.style.setProperty('--dim', dim);
-      });
-      const tear = clamp((s - (cards.length - 1) - .1) / .45, 0, 1);
-      stub.style.transform = tear === 0 ? 'none' : `translate(${Math.round(tear * 40)}px, ${Math.round(easeIO(tear) * 150)}px) rotate(${(tear * 14).toFixed(2)}deg)`;
-      stub.style.opacity = 1 - clamp((tear - .6) / .4, 0, 1);
-      paid.style.setProperty('--stamp', clamp((tear - .35) / .4, 0, 1));
-      if (tear > .5 && !burstOn) { burstOn = true; paid.classList.add('burst'); }
-      if (tear < .2 && burstOn) { burstOn = false; paid.classList.remove('burst'); }
-      const now = clamp(Math.round(s), 0, cards.length - 1);
-      if (now !== active) { active = now; steps.forEach((el, i) => el.classList.toggle('on', i === now)); }
-      rails.forEach((el, i) => el.style.setProperty('--p', clamp(s - i + 1, 0, 1)));
+      const raw = p * (shots.length - .25);
+      const now = clamp(Math.floor(raw), 0, shots.length - 1);
+      if (now !== active) {
+        active = now;
+        steps.forEach((el, i) => el.classList.toggle('on', i === now));
+        shots.forEach((el, i) => el.classList.toggle('on', i === now));
+      }
+      rails.forEach((el, i) => el.style.setProperty('--p', clamp(raw - i, 0, 1)));
+      if (!reduce) storyPhone.style.setProperty('--ry', `${(-8 + p * 14).toFixed(2)}deg`);
     }
     requestAnimationFrame(deckFrame);
   }
