@@ -1,15 +1,22 @@
 package live.miracleapp.app;
 
 import android.content.Intent;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.webkit.WebView;
+import androidx.activity.EdgeToEdge;
+import androidx.activity.SystemBarStyle;
 import com.getcapacitor.BridgeActivity;
 
 public class MainActivity extends BridgeActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // Edge to edge on every Android version, as Android 15 and newer do anyway: the page draws behind the
+        // clock and the buttons, and Capacitor's SystemBars tells it how much room they take (insetsHandling
+        // "css"). Light icons to start, over the dark splash; the web app then matches them to its look.
+        EdgeToEdge.enable(this, SystemBarStyle.dark(Color.TRANSPARENT), SystemBarStyle.dark(Color.TRANSPARENT));
         // No scrollbar on the side of the screen: pages still scroll, like a native app.
         WebView web = getBridge() != null ? getBridge().getWebView() : null;
         if (web == null) return; // no WebView on this phone: Capacitor shows its own screen
