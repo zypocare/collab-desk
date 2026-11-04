@@ -87,5 +87,6 @@ const h=a.getAttribute('href')||(a.closest('form')&&a.closest('form').getAttribu
 if(/signin|login/.test(h))return send('click','sign in');
 if(/signup|waitlist/.test(h))send('click','join · '+(/as=brand/.test(h)?'brand':/as=agency/.test(h)?'agency':'creator'));},{capture:true});
 }catch(e){}})();</script>
+<script>(()=>{const e=document.querySelectorAll('[data-price]');if(!e.length)return;const rs=n=>'₹'+Number(n).toLocaleString('en-IN');fetch("https://qzsfuvcxpqaavmwkxutt.supabase.co/rest/v1/rpc/public_plans",{method:'POST',headers:{apikey:"sb_publishable_UaW1ryl2S-gvm7worjrHJw_Hjr9k3wj",authorization:'Bearer '+"sb_publishable_UaW1ryl2S-gvm7worjrHJw_Hjr9k3wj",'content-type':'application/json'},body:'{}'}).then(r=>r.ok?r.json():null).then(d=>{if(!d)return;const by={};(d.plans||[]).forEach(p=>by[p.code]=p);const fo=d.founding&&d.founding.on;e.forEach(el=>{const[c,k]=el.dataset.price.split('.'),p=by[c];if(!p)return;const v=k==='month'?p.price_month:k==='year'?p.price_year:k==='permonth'?Math.round(p.price_year/12):k==='founding'&&fo?p.founding_year:null;if(v)el.textContent=rs(v)})}).catch(()=>{})})();</script>
 </body>
 </html>
