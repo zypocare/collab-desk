@@ -6,8 +6,11 @@
 	import { claimInvite } from '#lib/invite.ts';
 	import type { CreatorRequest } from '#lib/types.ts';
 	import { errMessage } from '#lib/util.ts';
+	import { cleanSlug, forgetWantedSlug, wantedSlug } from '#lib/slug.ts';
+	import LinkField from './LinkField.svelte';
 
-	// Step 2 for a creator: who they are, for the review and for brands later. No link yet: that comes after approval.
+	// Step 2 for a creator: who they are, for the review and for brands later, and her link (name.miracleapp.live),
+	// which she must pick here, in the app as on the website. It's kept for her and opens once she's approved.
 	// `onswitch`: a login that hasn't joined yet can go to the brand form instead.
 	let { email, request = null, onswitch }: { email: string; request?: CreatorRequest | null; onswitch?: () => void } = $props();
 
@@ -33,7 +36,16 @@
 	let busy = $state(false);
 	let error = $state('');
 
-	const linkIdea = $derived(f.handle.trim().replace(/^@+/, '').toLowerCase().replace(/[._\s]+/g, '-').replace(/[^a-z0-9-]/g, '').replace(/-+/g, '-').replace(/^-|-$/g, '').slice(0, 30));
+	// Her link: the one she holds from a request sent before, the name she claimed on the website, or (until
+	// she types her own) her Instagram handle.
+	const mine = r?.slug ?? '';
+	let slug = $state(mine || wantedSlug());
+	let slugOk = $state(false);
+	let slugTyped = untrack(() => !!slug);
+	$effect(() => {
+		const fromHandle = cleanSlug(f.handle);
+		if (!slugTyped) slug = fromHandle;
+	});
 	const toggle = (list: string[], v: string, max = 99) => (list.includes(v) ? list.filter((x) => x !== v) : list.length >= max ? list : [...list, v]);
 
 	async function submit(e: SubmitEvent) {
@@ -46,6 +58,8 @@
 		if (!f.city.trim()) return (error = 'Add your city.');
 		if (!f.niches.length) return (error = 'Pick what you create (up to 3).');
 		if (!f.followers) return (error = 'Pick roughly how many followers you have.');
+		if (!slug) return (error = 'Pick your link, like yourname.miracleapp.live.');
+		if (!slugOk) return (error = `${slug}.miracleapp.live can't be used. Pick another link.`);
 		busy = true;
 		const { error: err } = await supabase.rpc('creator_signup', {
 			p_name: f.name.trim(),
@@ -57,12 +71,14 @@
 			p_followers: f.followers,
 			p_collabs: f.collabs,
 			p_heard: f.heard,
-			p_note: f.note.trim()
+			p_note: f.note.trim(),
+			p_slug: slug
 		});
 		if (err) {
 			busy = false;
 			return (error = err.code === '23505' ? `@${handle} is already on Miracle. If it's yours, write to support@miracleapp.live and we'll sort it out.` : errMessage(err));
 		}
+		forgetWantedSlug();
 		await claimInvite('creator', f.name.trim());
 		await refreshAccount();
 		busy = false;
@@ -72,9 +88,8 @@
 <form class="su-plain" onsubmit={submit} novalidate>
 	<ol class="su-steps" aria-label="Steps">
 		<li class="done">✓ Email confirmed</li>
-		<li class="on" aria-current="step">2 About you</li>
+		<li class="on" aria-current="step">2 About you and your link</li>
 		<li>3 Review by Miracle</li>
-		<li>4 Pick your link</li>
 	</ol>
 	<div style="display:grid;gap:6px">
 		<h1 class="su-h1">Tell us about <em>you</em></h1>
@@ -88,6 +103,7 @@
 				<label for="cf-ig">Instagram handle</label>
 				<div class="su-pre"><span>@</span><input class="su-in" id="cf-ig" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="31" bind:value={f.handle} oninput={() => (f.handle = f.handle.replace(/^@+/, ''))} /></div>
 			</div>
+			<div onfocusin={() => (slugTyped = true)} style="display:contents"><LinkField bind:slug bind:ok={slugOk} {mine} name={f.name} handle={f.handle} /></div>
 			<div class="su-f"><label for="cf-wa">WhatsApp number</label><input class="su-in" id="cf-wa" type="tel" inputmode="tel" autocomplete="tel" placeholder="+91" bind:value={f.whatsapp} /></div>
 			<div class="su-f"><label for="cf-city">City</label><input class="su-in" id="cf-city" autocomplete="address-level2" bind:value={f.city} /></div>
 			<fieldset class="su-chips su-full">
@@ -121,13 +137,9 @@
 			<div class="su-f"><label for="cf-n">Anything we should know <span class="su-hint">(optional)</span></label><input class="su-in" id="cf-n" placeholder="A manager, a second account…" maxlength="600" bind:value={f.note} /></div>
 		</div>
 	</div>
-	<div class="su-note">
-		<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none;color:var(--g3)"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"></path><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"></path></svg>
-		<span>You'll pick your own link, like <b>{linkIdea || 'yourname'}.miracleapp.live</b>, once the Miracle team approves your profile.</span>
-	</div>
 	{#if error}<p class="su-err" role="alert">{error}</p>{/if}
 	<div class="su-row">
 		<button class="su-neo su-go" disabled={busy}>{busy ? 'Setting up…' : request ? 'Send again' : 'Create my page'}</button>
-		<span class="su-hint">You can change all of this later in Settings.</span>
+		<span class="su-hint">You can change all of this later in Settings, except your link.</span>
 	</div>
 </form>

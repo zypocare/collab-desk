@@ -860,7 +860,7 @@ Answer it: ${admin}`,
   if (kind === 'creator_request') {
     const where = [p.niche, p.city].map((x) => String(x ?? '').trim()).filter(Boolean).join(' · ');
     const admin = 'https://admin.miracleapp.live';
-    // Signed up at app.miracleapp.live: no link yet (they pick it once approved).
+    // The link she asked for at sign-up (empty for creators who signed up before links were picked there).
     const asked = p.slug ? `asked for <b>${esc(p.slug)}.miracleapp.live</b>` : 'signed up as a creator';
     const askedText = p.slug ? `asked for ${p.slug}.miracleapp.live` : 'signed up as a creator';
     const size = [p.followers ? `${p.followers} followers` : '', p.collabs ? `paid collabs: ${p.collabs}` : ''].filter(Boolean).join(' · ');

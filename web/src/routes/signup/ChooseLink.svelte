@@ -4,25 +4,17 @@
 	import { supabase } from '#lib/supabase.ts';
 	import { isNative } from '#lib/native.ts';
 	import { errMessage, firstName } from '#lib/util.ts';
+	import { SLUG_RE, cleanSlug as clean, slugIdeas, wantedSlug } from '#lib/slug.ts';
 
-	// Approved: the creator picks name.miracleapp.live (once), then goes to the studio there.
+	// Approved without a link: the creator picks name.miracleapp.live (once), then goes to the studio there.
+	// Creators now pick their link while signing up; this is for those who signed up before that.
 	let { name = '', handle = '' }: { name?: string; handle?: string } = $props();
 
-	const SLUG_RE = /^[a-z0-9]([a-z0-9-]{0,28}[a-z0-9])?$/;
-	const clean = (v: string) => v.toLowerCase().replace(/[._\s]+/g, '-').replace(/[^a-z0-9-]/g, '').replace(/-+/g, '-').replace(/^-|-$/g, '').slice(0, 30);
-	const ideas = $derived(
-		[...new Set([clean(handle), clean(firstName(name)), clean(name), clean(handle).replace(/-/g, '')])].filter((x) => SLUG_RE.test(x) && !x.startsWith('new-')).slice(0, 3)
-	);
+	const ideas = $derived(slugIdeas(name, handle));
 
 	// The name she typed on the website's "Claim your link", kept since sign-up.
-	const wanted = (() => {
-		try {
-			return localStorage.getItem('mc-wanted-link') ?? '';
-		} catch {
-			return '';
-		}
-	})();
-	let slug = $state(untrack(() => clean(wanted) || clean(handle) || clean(firstName(name))));
+	const wanted = wantedSlug();
+	let slug = $state(untrack(() => wanted || clean(handle) || clean(firstName(name))));
 	let free = $state<boolean | null>(null);
 	let busy = $state(false);
 	let error = $state('');

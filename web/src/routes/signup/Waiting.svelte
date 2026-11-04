@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { CreatorRequest } from '#lib/types.ts';
 	import { firstName } from '#lib/util.ts';
+	import { ROOT_DOMAIN } from '#lib/creatorHost.ts';
 
 	// Step 3 for a creator: the request is with the Miracle team (or was declined, with a way to send it again).
 	let { request, email, onedit }: { request: CreatorRequest; email: string; onedit: () => void } = $props();
@@ -22,7 +23,11 @@
 			<ol class="wt-steps">
 				<li class="done"><span>✓</span><b>Sign up</b><small>Sent {sent}</small></li>
 				<li class="on"><span>2</span><b>Review by the Miracle team</b><small>In progress. You'll get an email.</small></li>
-				<li><span>3</span><b>Pick your link</b><small>yourname.miracleapp.live, right after approval</small></li>
+				{#if request.slug}
+					<li><span>3</span><b>Your page goes live</b><small>{request.slug}.{ROOT_DOMAIN} is kept for you and opens once you're approved</small></li>
+				{:else}
+					<li><span>3</span><b>Pick your link</b><small>yourname.{ROOT_DOMAIN}, right after approval</small></li>
+				{/if}
 				<li><span>4</span><b>Connect Instagram and add your rates</b><small>Then brands can send you requests</small></li>
 			</ol>
 			<button class="su-link" style="justify-self:start" onclick={onedit}>Change what I sent</button>
@@ -33,7 +38,11 @@
 			<b class="wt-t">While you wait</b>
 			<div class="wt-tip"><span>1</span><p><b>Switch Instagram to a professional account</b> (Creator or Business). It's free: Settings, then Account type and tools. Miracle needs it for live stats.</p></div>
 			<div class="wt-tip"><span>2</span><p><b>Note your usual rates</b> for a Reel, a Story and a post. You'll add them on your first day.</p></div>
-			<div class="wt-tip"><span>3</span><p><b>Think of your link name.</b> Short and close to your handle works best.</p></div>
+			{#if request.slug}
+				<div class="wt-tip"><span>3</span><p><b>Get your bio ready.</b> Once you're approved, put <b>{request.slug}.{ROOT_DOMAIN}</b> in your Instagram bio.</p></div>
+			{:else}
+				<div class="wt-tip"><span>3</span><p><b>Think of your link name.</b> Short and close to your handle works best.</p></div>
+			{/if}
 			<span class="su-hint wt-q">Questions? support@miracleapp.live</span>
 		</aside>
 	{/if}

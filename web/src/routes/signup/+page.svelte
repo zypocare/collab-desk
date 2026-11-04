@@ -12,22 +12,18 @@
 	import ChooseLink from './ChooseLink.svelte';
 	import { inInstalledApp, isNative } from '#lib/native.ts';
 	import { keepInvite } from '#lib/invite.ts';
+	import { keepWantedSlug } from '#lib/slug.ts';
 	import { supabase } from '#lib/supabase.ts';
 	import './signup.css';
 
 	// Sign-up on Miracle's own address (app.miracleapp.live/signup), linked from every Join button on the website.
-	// Creators: email, a short profile, review by the Miracle team, then they pick their link.
+	// Creators: email, a short profile with their link (name.miracleapp.live), then review by the Miracle team.
 	// Brands: email, their company, then straight to the dashboard.
 	const KEY = 'mc-signup-as';
 	const asked = page.url.searchParams.get('as');
-	// "Claim your link" on the website: keep the name for when she picks her link after review.
+	// "Claim your link" on the website: the name is filled in as her link on the sign-up form.
 	const link = (page.url.searchParams.get('link') ?? '').trim().toLowerCase().slice(0, 30);
-	if (link)
-		try {
-			localStorage.setItem('mc-wanted-link', link);
-		} catch {
-			/* storage blocked */
-		}
+	if (link) keepWantedSlug(link);
 	// Opened from a creator's invite (her page, invoice or quote): she's thanked once they've joined.
 	keepInvite(page.url.searchParams.get('invite'));
 	// Opened from a Growth Autopilot email: the admin panel sees it was clicked.
