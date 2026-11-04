@@ -1,8 +1,9 @@
 <script lang="ts">
 	import Logo from '#lib/components/Logo.svelte';
 	import { page } from '$app/state';
-	import { onMount, tick } from 'svelte';
-	import { auth, homeFor, refreshAccount } from '#lib/auth.svelte.ts';
+	import { tick } from 'svelte';
+	import { auth, homeFor, refreshAccount, signedInHereBefore } from '#lib/auth.svelte.ts';
+	import { inInstalledApp } from '#lib/native.ts';
 	import { supabase, turnstileSiteKey } from '#lib/supabase.ts';
 	import type { Account } from '#lib/types.ts';
 	import { errMessage } from '#lib/util.ts';
@@ -13,6 +14,7 @@
 	type Turnstile = {
 		render: (el: HTMLElement, opts: Record<string, unknown>) => string;
 		reset: (id?: string) => void;
+		remove?: (id: string) => void;
 	};
 
 	const next = $derived(page.url.searchParams.get('next') || '');
@@ -34,6 +36,9 @@
 	const pwLink = page.url.searchParams.get('pw') === '1';
 	let password = $state('');
 	const withPw = $derived(pwLink || email.trim().toLowerCase() === REVIEW_LOGIN);
+	// The app opens here when nobody is signed in. On a phone that has never signed in, it's most likely
+	// someone new: a welcome asks creator, brand or "I already have an account" before the sign-in form.
+	let welcome = $state(inInstalledApp() && !signedInHereBefore() && !page.url.searchParams.get('email') && !pwLink);
 
 	// Already signed in? Go straight to the right area.
 	let signingIn = false;
@@ -41,12 +46,15 @@
 		if (auth.session && auth.account && !signingIn) location.replace(targetFor(auth.account));
 	});
 
-	onMount(() => {
-		if (!turnstileSiteKey) return;
+	// The bot check is drawn whenever the email form is on screen (after the welcome, and again after
+	// "Use another email" or "Send a new code", which bring a fresh form).
+	$effect(() => {
+		const el = tsBox;
+		if (!el || !turnstileSiteKey) return;
 		const w = window as unknown as { turnstile?: Turnstile; onTurnstileLoad?: () => void };
 		const renderWidget = () => {
-			if (!tsBox || !w.turnstile) return;
-			tsId = w.turnstile.render(tsBox, {
+			if (!w.turnstile || !el.isConnected) return;
+			tsId = w.turnstile.render(el, {
 				sitekey: turnstileSiteKey,
 				callback: (t: string) => (captchaToken = t),
 				'expired-callback': () => (captchaToken = ''),
@@ -56,11 +64,19 @@
 		if (w.turnstile) renderWidget();
 		else {
 			w.onTurnstileLoad = renderWidget;
-			const s = document.createElement('script');
-			s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onTurnstileLoad&render=explicit';
-			s.async = true;
-			document.head.appendChild(s);
+			if (!document.querySelector('script[data-ts]')) {
+				const s = document.createElement('script');
+				s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onTurnstileLoad&render=explicit';
+				s.async = true;
+				s.dataset.ts = '1';
+				document.head.appendChild(s);
+			}
 		}
+		return () => {
+			if (tsId) w.turnstile?.remove?.(tsId);
+			tsId = '';
+			captchaToken = '';
+		};
 	});
 
 	function resetCaptcha() {
@@ -223,7 +239,14 @@
 	<main class="lg-main">
 		<a class="lg-brand lg-brand-sm" href="/" aria-label="Miracle home"><Logo size={34} /><b>Miracle</b></a>
 		<div class="lg-card">
-			{#if step === 'email'}
+			{#if welcome}
+				<span class="lg-eb">Welcome to Miracle</span>
+				<h1>Every collab, <em>handled.</em></h1>
+				<p class="lg-lead">Requests, quotes, drafts, invoices and payments in one place, for creators and the brands they work with. Free to join.</p>
+				<a class="lg-neo lg-grad" href="/signup?as=creator"><Icon name="spark" />I'm a creator</a>
+				<a class="lg-neo lg-ghost" href="/signup?as=brand"><Icon name="box" />I'm a brand</a>
+				<button type="button" class="lg-lnk lg-have" onclick={() => (welcome = false)}>I already have an account · Sign in</button>
+			{:else if step === 'email'}
 				<span class="lg-eb">Sign in</span>
 				<h1>Your <em>email</em></h1>
 				<p class="lg-lead">{withPw ? 'Enter the email and password you were given.' : "We'll send you a 6-digit code. No password needed."}</p>
@@ -275,7 +298,7 @@
 				</form>
 			{/if}
 		</div>
-		{#if step === 'email' && !withPw}
+		{#if step === 'email' && !withPw && !welcome}
 			<div class="lg-join">
 				<span class="lg-l">New to Miracle? Join free</span>
 				<div class="lg-join-row">
@@ -343,6 +366,8 @@
 	.lg-alt { display: flex; justify-content: space-between; gap: 12px; margin-top: 4px; font-size: 13.5px; color: var(--ink-3); }
 	.lg-lnk { border: 0; padding: 0; background: none; color: var(--ink-2); font: inherit; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
 	.lg-lnk:hover { color: var(--ink); }
+	a.lg-neo { text-decoration: none; }
+	.lg-have { justify-self: center; margin-top: 10px; font-size: 14.5px; }
 	.lg-help { margin: 6px 0 0; font-size: 12.5px; color: var(--ink-3); }
 	.lg-help a { color: var(--ink-2); }
 	.lg-join { width: min(440px, 100%); display: grid; gap: 12px; }

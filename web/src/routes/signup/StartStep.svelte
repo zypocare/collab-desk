@@ -7,7 +7,8 @@
 	// Step 1: creator or brand, then the email and its 6-digit code (the same sign-in as everywhere).
 	// `chosen`: they already said creator or brand (the app's welcome, the sign-in screen, a Join button),
 	// so the question isn't asked again; "Change" brings it back.
-	let { as = $bindable(), chosen = false }: { as: 'creator' | 'brand'; chosen?: boolean } = $props();
+	// `onpick`: the code was sent with creator or brand picked (so the next screen doesn't ask again).
+	let { as = $bindable(), chosen = false, onpick }: { as: 'creator' | 'brand'; chosen?: boolean; onpick?: () => void } = $props();
 	let asking = $state(untrack(() => !chosen));
 
 	type Turnstile = { render: (el: HTMLElement, opts: Record<string, unknown>) => string; reset: (id?: string) => void; remove?: (id: string) => void };
@@ -76,6 +77,7 @@
 		if (tsId) (window as unknown as { turnstile?: Turnstile }).turnstile?.reset(tsId);
 		if (err) return (error = err.status === 429 ? 'Too many codes asked for. Please wait a minute and try again.' : errMessage(err));
 		email = addr;
+		onpick?.();
 		step = 'code';
 		startTimer();
 		await tick();

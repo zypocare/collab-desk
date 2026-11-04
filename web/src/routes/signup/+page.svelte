@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
-	import { auth, signOut } from '#lib/auth.svelte.ts';
+	import { auth, isNewLogin, signOut } from '#lib/auth.svelte.ts';
 	import { addressFor } from '#lib/creatorHost.ts';
 	import Logo from '#lib/components/Logo.svelte';
 	import AuthBackdrop from '#lib/components/AuthBackdrop.svelte';
@@ -10,7 +10,7 @@
 	import BrandForm from './BrandForm.svelte';
 	import Waiting from './Waiting.svelte';
 	import ChooseLink from './ChooseLink.svelte';
-	import { isNative } from '#lib/native.ts';
+	import { inInstalledApp, isNative } from '#lib/native.ts';
 	import { keepInvite } from '#lib/invite.ts';
 	import { supabase } from '#lib/supabase.ts';
 	import './signup.css';
@@ -34,36 +34,44 @@
 	const g = page.url.searchParams.get('g');
 	if (g && /^[0-9a-f]{32}$/.test(g)) supabase.rpc('growth_seen', { p_token: g }).then(() => {});
 	const chosen = asked === 'brand' || asked === 'creator';
-	let as = $state<'creator' | 'brand'>(chosen ? asked : stored());
+	const kept = stored();
+	let as = $state<'creator' | 'brand'>(chosen ? asked : (kept ?? 'creator'));
+	// Creator or brand has been said: by the link, earlier in this tab, or by sending the code here. A login
+	// that hasn't (they typed their email on Sign in) is asked before any form, since it may be a creator.
+	let picked = $state(chosen || !!kept);
 	// In the phone app or the installed web app, the logo stays here instead of opening the website inside it.
-	const inApp =
-		isNative() || matchMedia('(display-mode: standalone)').matches || (navigator as Navigator & { standalone?: boolean }).standalone === true;
-	function stored(): 'creator' | 'brand' {
+	const inApp = inInstalledApp();
+	function stored(): 'creator' | 'brand' | null {
 		try {
-			return sessionStorage.getItem(KEY) === 'brand' ? 'brand' : 'creator';
+			const v = sessionStorage.getItem(KEY);
+			return v === 'brand' || v === 'creator' ? v : null;
 		} catch {
-			return 'creator';
+			return null;
 		}
 	}
 	$effect(() => {
+		if (!picked) return;
 		try {
 			sessionStorage.setItem(KEY, as);
 		} catch {
 			/* storage blocked */
 		}
 	});
+	let pickAs = $state<'creator' | 'brand'>('creator');
+	const pick = (v: 'creator' | 'brand') => ((as = v), (picked = true));
 
 	let editing = $state(false);
 	const acc = $derived(auth.account);
 	const email = $derived(acc?.email ?? auth.session?.user.email ?? '');
 	// A login that already works as a brand (a company, or requests sent with this email).
-	const isBrand = $derived(acc?.role === 'brand' && !!(acc.profile || acc.brand || acc.companies?.length || acc.creators?.length));
+	const isBrand = $derived(acc?.role === 'brand' && !isNewLogin(acc));
 
 	const view = $derived.by(() => {
 		if (!auth.session) return 'start';
 		if (!acc) return 'loading';
 		if (acc.role === 'creator') return acc.needs_link ? 'link' : 'loading';
 		if (acc.role === 'pending') return editing || !acc.request ? 'creator' : 'waiting';
+		if (!isBrand && !picked) return 'pick';
 		if (as === 'creator') return isBrand ? 'brand-email' : 'creator';
 		return isBrand ? 'loading' : 'brand';
 	});
@@ -98,15 +106,37 @@
 	</header>
 	<main class="su-main">
 		{#if view === 'start'}
-			<StartStep bind:as {chosen} />
+			<StartStep bind:as {chosen} onpick={() => (picked = true)} />
+		{:else if view === 'pick'}
+			<form class="su-card" onsubmit={(e) => (e.preventDefault(), pick(pickAs))}>
+				<div class="su-head">
+					<span class="su-eb">Welcome to Miracle</span>
+					<h1 class="su-h1">Who are you <em>joining as?</em></h1>
+					<p class="su-lead">Signed in as <b>{email}</b>. Pick one to set up your account.</p>
+				</div>
+				<fieldset class="su-as">
+					<legend class="sr-only">Join as</legend>
+					<label style="--c:var(--g2)">
+						<input type="radio" name="su-pick" value="creator" bind:group={pickAs} />
+						<b>A creator</b>
+						<span>Run my brand collabs.</span>
+					</label>
+					<label style="--c:var(--g1)">
+						<input type="radio" name="su-pick" value="brand" bind:group={pickAs} />
+						<b>A brand</b>
+						<span>Work with creators. Start straight away.</span>
+					</label>
+				</fieldset>
+				<button class="su-neo su-go su-block">Continue</button>
+			</form>
 		{:else if view === 'creator'}
-			<CreatorForm {email} request={acc?.role === 'pending' ? acc.request : null} />
+			<CreatorForm {email} request={acc?.role === 'pending' ? acc.request : null} onswitch={acc?.role === 'brand' ? () => pick('brand') : undefined} />
 		{:else if view === 'waiting' && acc?.role === 'pending' && acc.request}
 			<Waiting request={acc.request} {email} onedit={() => (editing = true)} />
 		{:else if view === 'link' && acc?.role === 'creator'}
 			<ChooseLink name={acc.name} handle={acc.handle} />
 		{:else if view === 'brand'}
-			<BrandForm {email} />
+			<BrandForm {email} onswitch={() => pick('creator')} />
 		{:else if view === 'brand-email'}
 			<div class="su-card">
 				<h1 class="su-h1">This email is a <em>brand</em> account</h1>

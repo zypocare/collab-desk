@@ -3,7 +3,7 @@
 	import { page } from '$app/state';
 	import { onMount, tick } from 'svelte';
 	import type { LayoutProps } from './$types';
-	import { auth, refreshAccount } from '#lib/auth.svelte.ts';
+	import { auth, isNewLogin, refreshAccount } from '#lib/auth.svelte.ts';
 	import { ui } from '#lib/ui.svelte.ts';
 	import { allRequests, brandData, loadAllRequests, loadRequests } from '#lib/brand.svelte.ts';
 	import { brandGroups, deskTabs, groupOf, tabOn } from '#lib/brandNav.ts';
@@ -44,7 +44,8 @@
 		if (!onApp) return;
 		const a = auth.account;
 		const path = page.url.pathname;
-		if (a?.role === 'brand' && !(a.profile || a.brand || a.companies?.length || a.creators?.length)) goto('/signup?as=brand', { replaceState: true });
+		// A new login asks creator or brand first: someone who typed their email on Sign in may be a creator.
+		if (isNewLogin(a)) goto('/signup', { replaceState: true });
 		else if (path === '/brand/new') goto('/brand/creators?tab=discover', { replaceState: true });
 	});
 

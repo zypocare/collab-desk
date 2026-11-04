@@ -8,7 +8,8 @@
 	import { errMessage } from '#lib/util.ts';
 
 	// Step 2 for a creator: who they are, for the review and for brands later. No link yet: that comes after approval.
-	let { email, request = null }: { email: string; request?: CreatorRequest | null } = $props();
+	// `onswitch`: a login that hasn't joined yet can go to the brand form instead.
+	let { email, request = null, onswitch }: { email: string; request?: CreatorRequest | null; onswitch?: () => void } = $props();
 
 	const NICHES = ['Beauty', 'Skincare', 'Fashion', 'Jewellery', 'Food & drink', 'Travel', 'Fitness', 'Wellness', 'Tech', 'Lifestyle', 'Comedy & memes', 'Parenting', 'Home', 'Other'];
 	const FOLLOWERS = ['Under 10K', '10K to 50K', '50K to 1 lakh', '1 lakh to 5 lakh', 'Over 5 lakh'];
@@ -78,6 +79,7 @@
 	<div style="display:grid;gap:6px">
 		<h1 class="su-h1">Tell us about <em>you</em></h1>
 		<p class="su-lead">This helps us review your profile, and helps brands find you later. Signed in as {email}.</p>
+		{#if onswitch}<button type="button" class="su-link" style="justify-self:start" onclick={onswitch}>Joining as a brand? Switch</button>{/if}
 	</div>
 	<div class="su-card su-wide">
 		<div class="su-grid">
