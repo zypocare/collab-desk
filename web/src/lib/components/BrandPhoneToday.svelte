@@ -1,4 +1,5 @@
 <script lang="ts">
+	import FoundingBanner from './FoundingBanner.svelte';
 	import { igImg } from '../igImg';
 	import { onMount } from 'svelte';
 	import { auth } from '../auth.svelte';
@@ -139,6 +140,8 @@
 </section>
 
 <!-- The creator's row of collab tickets: here, the creators the brand works with. -->
+<FoundingBanner />
+
 <section class="tix" aria-label="Your creators">
 	<div class="tix-h">
 		<span>Your creators</span>

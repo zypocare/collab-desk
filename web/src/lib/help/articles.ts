@@ -294,7 +294,7 @@ export const ARTICLES: Article[] = [
 		keywords: ['brands', 'crm', 'contacts', 'rating', 'notes', 'merge', 'retainer', 'monthly deal', 'pays in', 'history', 'block'],
 		body: [
 			{ p: 'Collabs › Brands lists every brand you’ve worked with. Open one to see its collabs, how many days it takes to pay, products, contacts and your private notes.' },
-			{ list: ['Your rating is private: it moves that brand’s future requests up or down your list.', 'Merge into another brand tidies up the same brand saved under two names.', 'Monthly deals: for a retainer (say, 4 reels a month for 6 months), tap Set up a monthly deal. Each month’s collab is made on its own, and its invoice goes at the start of the month or when the content goes live.'] }
+			{ list: ['Your rating moves that brand’s future requests up or down your list. Other creators never see yours: once three creators have rated the same brand, they see only the average (as “Creators rate 4.5★”).', 'Merge into another brand tidies up the same brand saved under two names.', 'Monthly deals: for a retainer (say, 4 reels a month for 6 months), tap Set up a monthly deal. Each month’s collab is made on its own, and its invoice goes at the start of the month or when the content goes live.'] }
 		],
 		links: [{ label: 'Brands', href: '/studio/brands' }]
 	},

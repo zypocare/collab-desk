@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
+	import { onMount } from 'svelte';
 	import { auth } from '#lib/auth.svelte.ts';
 	import { supabase } from '#lib/supabase.ts';
 	import { claimInvite } from '#lib/invite.ts';
@@ -57,6 +58,11 @@
 		await claimInvite('brand', f.name.trim());
 		goto('/brand', { replaceState: true });
 	}
+	// The founding offer, while places are left (migration 190).
+	let founding = $state<{ on: boolean; left: number; months: number } | null>(null);
+	onMount(() => {
+		supabase.rpc('founding_brands').then(({ data }) => (founding = (data as typeof founding) ?? null));
+	});
 </script>
 
 <form class="su-plain" onsubmit={submit} novalidate>
@@ -68,6 +74,7 @@
 	<div style="display:grid;gap:6px">
 		<h1 class="su-h1">Tell us about <em>your brand</em></h1>
 		<p class="su-lead">Creators see this on every request you send, and it goes on the invoices they send you. Signed in as {email}.</p>
+		{#if founding?.on}<p class="su-lead bf-found">Founding brands get <b>Brand Pro free for {founding.months} months</b>. {founding.left} place{founding.left === 1 ? '' : 's'} left.</p>{/if}
 		{#if onswitch}<button type="button" class="su-link" style="justify-self:start" onclick={onswitch}>Joining as a creator? Switch</button>{/if}
 	</div>
 	<div class="su-card su-wide">

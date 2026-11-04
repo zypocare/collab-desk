@@ -1,6 +1,9 @@
 <script lang="ts">
 	import { studio } from '../studio.svelte';
 	import Icon from './Icon.svelte';
+	import { onMount } from 'svelte';
+	import { loadViews, views } from '../profileViews.svelte';
+	onMount(() => void loadViews());
 
 	// Profile strength on My page: how complete her profile is for brands on Explore, and the next steps
 	// that lift it (a complete profile is part of her Miracle Score; deals and on-time posts are the rest).
@@ -36,6 +39,9 @@
 				<small>Your Miracle Score also counts on-time posts, paid deals and how fast you reply.</small>
 			</div>
 		</div>
+		{#if views.loaded}
+			<div class="ps-views"><Icon name="eye" /><span><b>{views.week} brand{views.week === 1 ? '' : 's'}</b> viewed your profile this week{views.week !== views.before ? (views.week > views.before ? `, up from ${views.before}` : `, down from ${views.before}`) : ''}. {views.month} in the last 30 days.</span></div>
+		{/if}
 		{#if next.length}
 			<ul class="ps-list">
 				{#each next as x (x.id)}
@@ -55,6 +61,9 @@
 	.ps-eb { font-size: 10.5px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; color: var(--ink-3); }
 	.ps-t b { font-size: 15px; line-height: 1.3; }
 	.ps-t small { color: var(--ink-3); font-size: 12.5px; line-height: 1.4; }
+	.ps-views { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border-radius: 14px; background: color-mix(in oklab, var(--g1) 10%, transparent); font-size: 13.5px; line-height: 1.45; color: var(--ink-2); }
+	.ps-views b { color: var(--ink); }
+	.ps-views :global(.ic) { flex: none; width: 17px; height: 17px; margin-top: 2px; color: var(--g1); }
 	.ps-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
 	.ps-list a { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 10px 12px; border-radius: 14px; background: var(--surface-2); color: var(--ink); text-decoration: none; }
 	.ps-plus { font: 400 18px/1 var(--f-serif); color: var(--g2); }

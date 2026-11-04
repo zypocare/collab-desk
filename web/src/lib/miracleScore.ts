@@ -7,7 +7,9 @@ import { reelRate } from './fit';
 export type ScorePart = { key: 'delivery' | 'proof' | 'replies' | 'audience' | 'profile'; label: string; got: number; max: number; why: string };
 export type MiracleScore = { total: number; parts: ScorePart[]; label: string; tone: 'ok' | 'warn' | 'info' };
 
-export function miracleScore(c: DiscoverCreator): MiracleScore {
+export type Reviews = { avg: number; n: number } | null | undefined;
+
+export function miracleScore(c: DiscoverCreator, rev?: Reviews): MiracleScore {
 	const t = c.trust;
 	const posted = t?.posted ?? 0;
 	const onTime = t?.on_time ?? 0;
@@ -19,8 +21,9 @@ export function miracleScore(c: DiscoverCreator): MiracleScore {
 	const ratio = posted ? onTime / posted : 0.5;
 	const weight = Math.min(posted, 3) / 3;
 	const delivery = Math.round(35 * (ratio * weight + 0.5 * (1 - weight)));
-	// Proof (20): paid deals done through Miracle.
-	const proof = Math.min(deals, 5) * 4;
+	// Proof (20): paid deals done through Miracle (15), and what brands said after (5; none yet sits mid-way).
+	const stars = rev?.n ? (rev.avg >= 4.5 ? 5 : rev.avg >= 4 ? 4 : rev.avg >= 3 ? 2 : 0) : 2;
+	const proof = Math.min(deals, 5) * 3 + stars;
 	// Replies (15): how fast they answer brands.
 	const replies = reply == null ? 8 : reply <= 2 ? 15 : reply <= 6 ? 13 : reply <= 24 ? 10 : reply <= 48 ? 6 : 3;
 	// Audience (20): Audience health from Instagram; a serious brand-safety note takes some off.
@@ -32,7 +35,7 @@ export function miracleScore(c: DiscoverCreator): MiracleScore {
 
 	const parts: ScorePart[] = [
 		{ key: 'delivery', label: 'Delivers on time', got: delivery, max: 35, why: posted ? `${onTime} of ${posted} posts on time` : 'No posts through Miracle yet' },
-		{ key: 'proof', label: 'Paid deals done', got: proof, max: 20, why: deals ? `${deals} paid deal${deals === 1 ? '' : 's'} on Miracle` : 'None yet' },
+		{ key: 'proof', label: 'Deals and reviews', got: proof, max: 20, why: [deals ? `${deals} paid deal${deals === 1 ? '' : 's'} on Miracle` : 'No paid deals yet', rev?.n ? `${rev.avg}★ from ${rev.n} brand${rev.n === 1 ? '' : 's'}` : ''].filter(Boolean).join(' · ') },
 		{ key: 'replies', label: 'Replies fast', got: replies, max: 15, why: reply == null ? 'Not enough messages yet' : reply <= 1 ? 'Usually within an hour' : `Usually within ${Math.round(reply)} hours` },
 		{ key: 'audience', label: 'Healthy audience', got: audience, max: 20, why: health == null ? 'Instagram not connected' : `Audience health ${health}` },
 		{ key: 'profile', label: 'Complete profile', got: profile, max: 10, why: `${bits.filter(Boolean).length} of ${bits.length} basics filled in` }
@@ -43,9 +46,10 @@ export function miracleScore(c: DiscoverCreator): MiracleScore {
 }
 
 /** Short proof lines for a card: the record that makes a brand trust them. */
-export function proofLines(c: DiscoverCreator): { text: string; tone: 'ok' | 'info' | 'warn' }[] {
+export function proofLines(c: DiscoverCreator, rev?: Reviews): { text: string; tone: 'ok' | 'info' | 'warn' }[] {
 	const t = c.trust;
 	const out: { text: string; tone: 'ok' | 'info' | 'warn' }[] = [];
+	if (rev?.n) out.push({ text: `${rev.avg}★ (${rev.n} review${rev.n === 1 ? '' : 's'})`, tone: rev.avg >= 4 ? 'ok' : 'warn' });
 	if (t?.posted) out.push({ text: `On time ${t.on_time} of ${t.posted}`, tone: t.on_time / t.posted >= 0.85 ? 'ok' : 'warn' });
 	if (t?.deals) out.push({ text: `${t.deals} verified deal${t.deals === 1 ? '' : 's'}`, tone: 'ok' });
 	if (c.health?.score != null) out.push({ text: `Audience ${c.health.score}`, tone: c.health.score >= 65 ? 'ok' : 'warn' });

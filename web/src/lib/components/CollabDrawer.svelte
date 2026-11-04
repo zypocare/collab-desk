@@ -780,7 +780,7 @@
 					<a class="btn sm wa" href={rebookWhatsApp(c, s)} target="_blank" rel="noopener" onclick={rebookSent}><Icon name="send" />{c.rebook_sent_at ? 'Send again on WhatsApp' : 'Send on WhatsApp'}</a>
 				</section>
 			{/if}
-			{#if c.stage === 'live' || c.stage === 'wrapped'}<section data-g="brand" data-ic="star" class="sec" hidden={!sh('review')}><h3>How was {c.brand.name}?<small class="sec-sub">private</small></h3><BrandRating brand={c.brand} compact /></section>{/if}
+			{#if c.stage === 'live' || c.stage === 'wrapped'}<section data-g="brand" data-ic="star" class="sec" hidden={!sh('review')}><h3>How was {c.brand.name}?<small class="sec-sub">anonymous</small></h3><BrandRating brand={c.brand} compact /></section>{/if}
 			{#if c.stage === 'live' || c.stage === 'wrapped'}<section data-g="brand" data-ic="case" class="sec" hidden={!sh('review')}><h3>Case study<small class="sec-sub">for your page</small></h3>{#key c.id}<CaseStudy {c} />{/key}</section>{/if}
 			{#if c.usage_ends}<section data-g="money" data-ic="shield" class="sec" hidden={!sh('usage')}><h3>Usage rights</h3><UsageRights {c} /></section>{/if}
 			{#if rightsRows([c]).length}<section data-g="money" data-ic="shield" class="sec" hidden={!sh('rights')}><h3>Ads and exclusivity</h3><RightsCard {c} /></section>{/if}

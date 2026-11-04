@@ -19,7 +19,7 @@
 	function rate(k: (typeof rows)[number]['k'], v: number) {
 		const same = n[k] === v;
 		saveBrandNotes(brand.id, { [k]: same ? null : v, rated_at: new Date().toISOString() });
-		if (!same && !compact) toast('Saved. Only you can see this.', 'check');
+		if (!same && !compact) toast('Saved. Other creators only see an average, once three creators have rated this brand.', 'check');
 	}
 </script>
 
