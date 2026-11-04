@@ -2,7 +2,7 @@
 // and footer as the home page, and the tags search engines read. Everything is plain HTML written by
 // build.mjs; the only scripts are the help search, the pricing switch and the waitlist form.
 import { footerCss, SITE_FOOTER } from './footer.mjs';
-import { STATS_SCRIPT } from './stats.mjs';
+import { SB_KEY, SB_URL, STATS_SCRIPT } from './stats.mjs';
 
 export const SITE = 'https://www.miracleapp.live';
 export const APP = 'https://app.miracleapp.live';
@@ -33,6 +33,32 @@ const NAV = [
 	['Guides', '/guides', 'guides'],
 	['Help', '/help', 'help']
 ];
+
+// Plan prices written into pages are only the fallback: the admin sets the real ones (billing_plans), and
+// PRICE_SCRIPT swaps them in when the page opens. Each amount below, wherever it appears in a page's text,
+// is marked with the plan and price it stands for. Keep these the same as the database's starting prices.
+export const PRICE_FALLBACK = {
+	creator_pro: { month: 299, year: 2999, founding: 1499 },
+	brand_pro: { month: 1999, year: 19999, founding: 9999 },
+	agency: { month: 4999, year: 49999, founding: 24999 }
+};
+const BY_AMOUNT = new Map();
+for (const [code, p] of Object.entries(PRICE_FALLBACK)) {
+	for (const k of ['month', 'year', 'founding']) BY_AMOUNT.set(p[k], `${code}.${k}`);
+	// "About ₹1,667 a month" too; small amounts like ₹250 also appear in rate tables, so only from ₹1,000.
+	if (p.year / 12 >= 1000) BY_AMOUNT.set(Math.round(p.year / 12), `${code}.permonth`);
+}
+/** Marks plan prices in page text (never inside tags, attributes or scripts) for PRICE_SCRIPT. */
+export const markPrices = (html) =>
+	html.replace(/(<script[\s\S]*?<\/script>)|(>[^<]+)/g, (m, script) =>
+		script ? m : m.replace(/₹\s?(\d[\d,]*)/g, (x, n) => {
+			const k = BY_AMOUNT.get(Number(n.replace(/,/g, '')));
+			return k ? `<span data-price="${k}">${x}</span>` : x;
+		})
+	);
+/** The live prices from the database (public_plans), put into every marked amount. Nothing to do on pages
+ * without one; the built-in amounts stay if the database can't be reached. */
+export const PRICE_SCRIPT = `<script>(()=>{const e=document.querySelectorAll('[data-price]');if(!e.length)return;const rs=n=>'₹'+Number(n).toLocaleString('en-IN');fetch(${JSON.stringify(SB_URL + '/rest/v1/rpc/public_plans')},{method:'POST',headers:{apikey:${JSON.stringify(SB_KEY)},authorization:'Bearer '+${JSON.stringify(SB_KEY)},'content-type':'application/json'},body:'{}'}).then(r=>r.ok?r.json():null).then(d=>{if(!d)return;const by={};(d.plans||[]).forEach(p=>by[p.code]=p);const fo=d.founding&&d.founding.on;e.forEach(el=>{const[c,k]=el.dataset.price.split('.'),p=by[c];if(!p)return;const v=k==='month'?p.price_month:k==='year'?p.price_year:k==='permonth'?Math.round(p.price_year/12):k==='founding'&&fo?p.founding_year:null;if(v)el.textContent=rs(v)})}).catch(()=>{})})();</script>`;
 
 export function page({ path, title, description, body, ld = [], crumbs = [], noindex = false, ogType = 'website', section = '' }) {
 	const url = `${SITE}${path}`;
@@ -71,10 +97,11 @@ ${json}
 </div></header>
 <main>
 ${crumbs.length ? `<nav class="crumbs wrap" aria-label="You are here"><a href="/">Miracle</a>${crumbs.map((c, i) => (i === crumbs.length - 1 ? ` <span>›</span> <span aria-current="page">${esc(c.name)}</span>` : ` <span>›</span> <a href="${c.path}">${esc(c.name)}</a>`)).join('')}</nav>` : ''}
-${body}
+${markPrices(body)}
 </main>
 ${SITE_FOOTER}
 ${STATS_SCRIPT}
+${PRICE_SCRIPT}
 </body>
 </html>
 `;

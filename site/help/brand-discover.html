@@ -40,7 +40,7 @@
   <article class="prose">
   <ul><li>Explore (its own tab) lists creators open to brands (and ones who worked with you), ranked by the Miracle Score: posts on time, paid deals on Miracle, how fast they reply, audience health and a complete profile. It is earned, never paid for. Start from a collection (Top rated, Best fit, Always on time, Reels under ₹15K…), filter by niche, language, city, followers, Reel price and Healthy audiences only, or sort by Best fit, Lowest price or Most followers.</li><li>Tap Compare on up to three creators to see them side by side: followers, engagement, average views, Reel price, cost per 1,000 views, audience health, on-time record, paid deals and reply time.</li><li>Each card shows their record (verified deals, on time) and their audience health and brand-safety check.</li><li>A creator’s page shows why they fit, Audience &amp; safety, what you did together, Your rating &amp; notes (only your team sees it), and creators like them.</li><li>Tap Pool to save a creator. Collabs › Pools holds your lists: start a campaign to a whole pool, and use Invite @handle for creators not on Miracle yet.</li></ul>
   <p>On the free plan you open 10 full creator profiles a day (creators you’ve worked with don’t count). Past that, unlock one creator for good: see “Unlock a creator’s full profile”.</p>
-  <div class="acts"><a class="btn ghost sm" href="https://app.miracleapp.live/brand/creators?tab=discover">Discover</a><a class="btn ghost sm" href="https://app.miracleapp.live/brand/creators?tab=pools">Pools</a></div>
+  <div class="acts"><a class="btn ghost sm" href="https://app.miracleapp.live/brand/explore">Explore</a><a class="btn ghost sm" href="https://app.miracleapp.live/brand/creators?tab=pools">Pools</a></div>
   <p class="tip">Still stuck? In the app, open <b>Help › Contact support</b>, or email <a href="mailto:support@miracleapp.live">support@miracleapp.live</a>. We reply within a working day.</p>
   </article>
 </div>
@@ -78,5 +78,6 @@ const h=a.getAttribute('href')||(a.closest('form')&&a.closest('form').getAttribu
 if(/signin|login/.test(h))return send('click','sign in');
 if(/signup|waitlist/.test(h))send('click','join · '+(/as=brand/.test(h)?'brand':/as=agency/.test(h)?'agency':'creator'));},{capture:true});
 }catch(e){}})();</script>
+<script>(()=>{const e=document.querySelectorAll('[data-price]');if(!e.length)return;const rs=n=>'₹'+Number(n).toLocaleString('en-IN');fetch("https://qzsfuvcxpqaavmwkxutt.supabase.co/rest/v1/rpc/public_plans",{method:'POST',headers:{apikey:"sb_publishable_UaW1ryl2S-gvm7worjrHJw_Hjr9k3wj",authorization:'Bearer '+"sb_publishable_UaW1ryl2S-gvm7worjrHJw_Hjr9k3wj",'content-type':'application/json'},body:'{}'}).then(r=>r.ok?r.json():null).then(d=>{if(!d)return;const by={};(d.plans||[]).forEach(p=>by[p.code]=p);const fo=d.founding&&d.founding.on;e.forEach(el=>{const[c,k]=el.dataset.price.split('.'),p=by[c];if(!p)return;const v=k==='month'?p.price_month:k==='year'?p.price_year:k==='permonth'?Math.round(p.price_year/12):k==='founding'&&fo?p.founding_year:null;if(v)el.textContent=rs(v)})}).catch(()=>{})})();</script>
 </body>
 </html>

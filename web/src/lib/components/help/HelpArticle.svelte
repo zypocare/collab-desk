@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { livePrices, loadLivePrices } from '../../livePrices.svelte';
+	loadLivePrices();
 	import { goto } from '$app/navigation';
 	import { ARTICLES, CATEGORIES, forSide } from '../../help/articles';
 	import Icon from '../Icon.svelte';
@@ -32,11 +34,11 @@
 		<p class="ha-sum">{a.summary}</p>
 		<div class="ha-body">
 			{#each a.body as b, i (i)}
-				{#if 'p' in b}<p>{b.p}</p>
+				{#if 'p' in b}<p>{livePrices(b.p)}</p>
 				{:else if 'steps' in b}
-					<ol class="ha-steps">{#each b.steps as s, j (j)}<li><span>{j + 1}</span><p>{s}</p></li>{/each}</ol>
+					<ol class="ha-steps">{#each b.steps as s, j (j)}<li><span>{j + 1}</span><p>{livePrices(s)}</p></li>{/each}</ol>
 				{:else if 'list' in b}
-					<ul class="ha-list">{#each b.list as s, j (j)}<li>{s}</li>{/each}</ul>
+					<ul class="ha-list">{#each b.list as s, j (j)}<li>{livePrices(s)}</li>{/each}</ul>
 				{:else}
 					<div class="ha-tip"><Icon name="spark" /><p>{b.tip}</p></div>
 				{/if}

@@ -1395,8 +1395,8 @@ a.store:hover{transform:translateY(-2px)}
       <p class="prices-lede" data-r>Creators get every feature free. No commission on any deal, on any plan. New brand teams get 14 days of Brand Pro free, no card needed. Prices include GST.</p>
       <div class="price-grid">
         <div class="price-card hot" data-r><span class="eb">Free</span><b class="pc-amt">₹0</b><small>for creators: everything, forever</small><p>Your brand page, unlimited collabs, every autopilot (pitches, invoices, reminders, tracking links), bank-credit matching and a teammate. Brands start free too: 10 full profiles a day, 3 requests and 1 campaign a month.</p></div>
-        <div class="price-card" data-r="2"><span class="eb">Brand Pro</span><b class="pc-amt">₹1,999<i>/month</i></b><small>or ₹19,999 a year · founding ₹9,999</small><p>Unlimited requests and campaigns, open briefs, brand autopilots, competitor watch, sales tracking and a team of 5.</p></div>
-        <div class="price-card" data-r="3"><span class="eb">Agency</span><b class="pc-amt">₹4,999<i>/month</i></b><small>or ₹49,999 a year · founding ₹24,999</small><p>Pro for every creator you manage and your own brand team, client workspaces, roster and commission ledger, 15 seats.</p></div>
+        <div class="price-card" data-r="2"><span class="eb">Brand Pro</span><b class="pc-amt"><span data-price="brand_pro.month">₹1,999</span><i>/month</i></b><small>or <span data-price="brand_pro.year">₹19,999</span> a year · founding <span data-price="brand_pro.founding">₹9,999</span></small><p>Unlimited requests and campaigns, open briefs, brand autopilots, competitor watch, sales tracking and a team of 5.</p></div>
+        <div class="price-card" data-r="3"><span class="eb">Agency</span><b class="pc-amt"><span data-price="agency.month">₹4,999</span><i>/month</i></b><small>or <span data-price="agency.year">₹49,999</span> a year · founding <span data-price="agency.founding">₹24,999</span></small><p>Pro for every creator you manage and your own brand team, client workspaces, roster and commission ledger, 15 seats.</p></div>
       </div>
       <p class="prices-more" data-r><a class="neo light mag" href="/pricing">Compare every feature</a><span>Free for creators, always: every feature, no commission, no card. For brands and agencies, the founding price is half off yearly for the first 100, kept while you stay.</span></p>
     </div>
@@ -1812,5 +1812,6 @@ if(/signin|login/.test(h))return send('click','sign in');
 if(/signup|waitlist/.test(h))send('click','join · '+(/as=brand/.test(h)?'brand':/as=agency/.test(h)?'agency':'creator'));},{capture:true});
 }catch(e){}})();</script>
 <!-- /site stats -->
+<script>(()=>{const e=document.querySelectorAll('[data-price]');if(!e.length)return;const rs=n=>'₹'+Number(n).toLocaleString('en-IN');fetch("https://qzsfuvcxpqaavmwkxutt.supabase.co/rest/v1/rpc/public_plans",{method:'POST',headers:{apikey:"sb_publishable_UaW1ryl2S-gvm7worjrHJw_Hjr9k3wj",authorization:'Bearer '+"sb_publishable_UaW1ryl2S-gvm7worjrHJw_Hjr9k3wj",'content-type':'application/json'},body:'{}'}).then(r=>r.ok?r.json():null).then(d=>{if(!d)return;const by={};(d.plans||[]).forEach(p=>by[p.code]=p);const fo=d.founding&&d.founding.on;e.forEach(el=>{const[c,k]=el.dataset.price.split('.'),p=by[c];if(!p)return;const v=k==='month'?p.price_month:k==='year'?p.price_year:k==='permonth'?Math.round(p.price_year/12):k==='founding'&&fo?p.founding_year:null;if(v)el.textContent=rs(v)})}).catch(()=>{})})();</script>
 </body>
 </html>

@@ -14,6 +14,7 @@ export const PLANS = [
 		who: 'For creators',
 		free: { name: 'Free', price: '₹0', perks: ['Your brand page brands book you from', 'Requests, collab board and calendar', '5 collabs at a time, unlimited invoices with a UPI QR', 'One-tap payment reminders', '1 offer check a day and 5 pitches a month', 'A little AI every day'] },
 		paid: {
+			code: 'creator_pro',
 			name: 'Creator Pro',
 			month: 299,
 			year: 2999,
@@ -26,6 +27,7 @@ export const PLANS = [
 		who: 'For brands',
 		free: { name: 'Free', price: '₹0', perks: ['Find creators with real audience health', '10 full creator profiles a day', '3 requests and 1 campaign a month', 'Briefs, drafts, approvals and reports', 'Pay creators directly, no commission', 'A little AI every day'] },
 		paid: {
+			code: 'brand_pro',
 			name: 'Brand Pro',
 			month: 1999,
 			year: 19999,
@@ -35,7 +37,7 @@ export const PLANS = [
 		}
 	}
 ];
-export const AGENCY = { name: 'Agency', month: 4999, year: 49999, founding: 24999, perks: ['Pro for every creator you manage', 'Pro for your own brand team', 'Switch between client workspaces', 'Roster, commission ledger and pitch decks', '15 seats'] };
+export const AGENCY = { code: 'agency', name: 'Agency', month: 4999, year: 49999, founding: 24999, perks: ['Pro for every creator you manage', 'Pro for your own brand team', 'Switch between client workspaces', 'Roster, commission ledger and pitch decks', '15 seats'] };
 
 const rs = (n) => '₹' + n.toLocaleString('en-IN');
 const perks = (list) => `<ul class="ticks">${list.map((p) => `<li>${esc(p)}</li>`).join('')}</ul>`;
@@ -44,7 +46,7 @@ const priceBlock = (p) => `
   <p class="price"><b data-m="${rs(p.month)}" data-y="${rs(p.year)}">${rs(p.year)}</b><small data-m="/month" data-y="/year">/year</small></p>
   <p class="alt" data-m="or ${rs(p.year)}/year: 2 months free" data-y="about ${rs(Math.round(p.year / 12))} a month · &lt;b&gt;founding members ${rs(p.founding)}/year&lt;/b&gt;">about ${rs(Math.round(p.year / 12))} a month · <b>founding members ${rs(p.founding)}/year</b></p>`;
 const paidCard = (p, join, attrs = '') => `
-<div class="card plan hot"${attrs}>
+<div class="card plan hot" data-plan="${p.code}"${attrs}>
   <h3>${esc(p.name)}</h3>
   ${priceBlock(p)}
   ${perks(p.perks)}
@@ -147,27 +149,44 @@ const creatorSection = (s) => `
   </div>
 </section>`;
 
-// Shows Creator Pro, priced from the database, only while it's on sale (admin → Plans → Offered to new buyers).
+// Every paid card priced from the database (admin → Plans), so the page always matches what the app charges.
+// Creator Pro shows only while it's on sale (admin → Plans → Offered to new buyers); otherwise creators see
+// "free, everything included". The founding-brands line shows while places are left (migration 190).
 const creatorProScript = `<script>
 (() => {
   const rs = (n) => '₹' + Number(n).toLocaleString('en-IN');
-  fetch(${JSON.stringify(SB_URL + '/rest/v1/rpc/public_plans')}, { method: 'POST', headers: { apikey: ${JSON.stringify(SB_KEY)}, authorization: 'Bearer ' + ${JSON.stringify(SB_KEY)}, 'content-type': 'application/json' }, body: '{}' })
-    .then((r) => (r.ok ? r.json() : null))
+  const call = (fn) => fetch(${JSON.stringify(SB_URL + '/rest/v1/rpc/')} + fn, { method: 'POST', headers: { apikey: ${JSON.stringify(SB_KEY)}, authorization: 'Bearer ' + ${JSON.stringify(SB_KEY)}, 'content-type': 'application/json' }, body: '{}' }).then((r) => (r.ok ? r.json() : null));
+  call('public_plans')
     .then((d) => {
-      const p = d && (d.plans || []).find((x) => x.code === 'creator_pro');
-      if (!p) return;
-      const card = document.getElementById('cp-card');
-      const b = card.querySelector('.price b'), alt = card.querySelector('.alt');
-      const founding = d.founding && d.founding.on && p.founding_year;
-      b.dataset.m = rs(p.price_month); b.dataset.y = rs(p.price_year);
-      alt.dataset.m = 'or ' + rs(p.price_year) + '/year: 2 months free';
-      alt.dataset.y = 'about ' + rs(Math.round(p.price_year / 12)) + ' a month' + (founding ? ' · <b>founding members ' + rs(p.founding_year) + '/year</b>' : '');
-      card.querySelector('h3').textContent = p.name;
+      if (!d) return;
       const on = document.querySelector('.ptoggle [aria-pressed="true"]');
       const k = on ? on.dataset.p : 'y';
-      [b, alt].forEach((el) => (el.innerHTML = el.dataset[k]));
-      document.querySelector('[data-cp="free"]').hidden = true;
-      document.querySelector('[data-cp="pro"]').hidden = false;
+      document.querySelectorAll('[data-plan]').forEach((card) => {
+        const p = (d.plans || []).find((x) => x.code === card.dataset.plan);
+        if (!p) return;
+        const b = card.querySelector('.price b'), alt = card.querySelector('.alt');
+        const founding = d.founding && d.founding.on && p.founding_year;
+        b.dataset.m = rs(p.price_month); b.dataset.y = rs(p.price_year);
+        alt.dataset.m = 'or ' + rs(p.price_year) + '/year: 2 months free';
+        alt.dataset.y = 'about ' + rs(Math.round(p.price_year / 12)) + ' a month' + (founding ? ' · <b>founding members ' + rs(p.founding_year) + '/year</b>' : '');
+        card.querySelector('h3').textContent = p.name;
+        [b, alt].forEach((el) => (el.innerHTML = el.dataset[k]));
+        if (p.code === 'creator_pro') {
+          document.querySelector('[data-cp="free"]').hidden = true;
+          document.querySelector('[data-cp="pro"]').hidden = false;
+        }
+      });
+    })
+    .catch(() => {});
+  call('founding_brands')
+    .then((f) => {
+      if (!f || !f.on) return;
+      document.querySelectorAll('[data-launch]').forEach((el) => {
+        el.querySelector('[data-launch-cap]').textContent = f.cap;
+        el.querySelector('[data-launch-months]').textContent = f.months;
+        el.querySelector('[data-launch-left]').textContent = f.left;
+        el.hidden = false;
+      });
     })
     .catch(() => {});
 })();
@@ -178,7 +197,7 @@ export function pricingPage() {
 <section class="hero wrap">
   <span class="eb">Pricing</span>
   <h1>Free for creators. <em>Pro for brands that scale.</em></h1>
-  <p class="lede">Creators get every feature free, and every deal stays commission-free: brands pay creators directly. Brands start free and go Pro when they run more campaigns; new brand teams get 14 days of Brand Pro free, no card needed.</p>
+  <p class="lede">Creators get every feature free, and every deal stays commission-free: brands pay creators directly. Brands start free and go Pro when they run more campaigns; new brand teams get 14 days of Brand Pro free, no card needed.<span data-launch hidden> <b>Founding brands:</b> the first <span data-launch-cap>100</span> brand teams get Brand Pro free for <span data-launch-months>6</span> months, <span data-launch-left></span> places left.</span></p>
   ${PRELAUNCH ? `<p class="soon"><span><b>Opening soon.</b> Miracle opens in batches, starting with the waitlist. Waitlist members get first access to the 100 founding places. <a href="${JOIN}">Join the waitlist</a></span></p>` : ''}
   <div class="ptoggle" role="group" aria-label="Billing"><button type="button" data-p="m" aria-pressed="false">Monthly</button><button type="button" data-p="y" aria-pressed="true">Yearly <em>2 months free</em></button></div>
 </section>
