@@ -24,6 +24,7 @@
 	import { compact, errMessage, fmt, inr } from '#lib/util.ts';
 	import PlanBilling from '#lib/components/PlanBilling.svelte';
 	import { loadPlan, plan } from '#lib/plan.svelte.ts';
+	import { MIRACLE_IG } from '#lib/native.ts';
 
 	// A brand's settings, laid out like the creator studio's: the sections on the left, the open one on the right.
 	const acct = $derived(auth.account?.role === 'brand' ? auth.account : null);
@@ -213,6 +214,7 @@
 			{/each}
 			<div class="cs-h">More</div>
 			<div class="cs-grp">
+				<a class="cs-row" href={MIRACLE_IG} target="_blank" rel="noopener"><span class="cs-ico"><Icon name="insta" /></span><span class="cs-txt"><b>Miracle on Instagram</b><small>@themiracleapp · News, features and creator picks</small></span><Icon name="chev" class="cs-chev" /></a>
 				<a class="cs-row" href="/brand/details?new=1"><span class="cs-ico"><Icon name="plus" /></span><span class="cs-txt"><b>Add another brand</b><small>For agencies, or a second company</small></span><Icon name="chev" class="cs-chev" /></a>
 				<button class="cs-row" onclick={toggleTheme}><span class="cs-ico"><Icon name={theme.value === 'dark' ? 'sun' : 'moon'} /></span><span class="cs-txt"><b>{theme.value === 'dark' ? 'Light look' : 'Dark look'}</b><small>Switch the app’s colours</small></span></button>
 			</div>
@@ -250,6 +252,11 @@
 				<Icon name="chevR" class="set-chev" />
 			</a>
 		{/each}
+		<a class="set-item" href={MIRACLE_IG} target="_blank" rel="noopener">
+			<span class="set-ic"><Icon name="insta" /></span>
+			<span class="set-t"><b>Miracle on Instagram</b><small>@themiracleapp · News, features and creator picks</small></span>
+			<Icon name="chevR" class="set-chev" />
+		</a>
 	</nav>
 	{#if active && current}
 		<div class="set-body">

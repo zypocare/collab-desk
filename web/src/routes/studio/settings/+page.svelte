@@ -60,6 +60,7 @@
 	import PlanBilling from '#lib/components/PlanBilling.svelte';
 	import { loadPlan, plan } from '#lib/plan.svelte.ts';
 	import StorySheet from '#lib/components/StorySheet.svelte';
+	import { MIRACLE_IG } from '#lib/native.ts';
 
 	const s = $derived(studio.settings!);
 	// Her birthday (day and month): saved once both are picked, since the database keeps them together.
@@ -374,6 +375,7 @@
 			<div class="cs-h">Help & More</div>
 			<div class="cs-grp">
 				<a class="cs-row" href="/studio/help"><span class="cs-ico"><Icon name="info" /></span><span class="cs-txt"><b>Help & Support</b><small>{support.unread ? 'New reply from support' : 'Answers, and a ticket to our team'}</small></span>{#if support.unread}<i class="cs-dot" title="New reply from support"></i>{/if}<Icon name="chev" class="cs-chev" /></a>
+				<a class="cs-row" href={MIRACLE_IG} target="_blank" rel="noopener"><span class="cs-ico"><Icon name="insta" /></span><span class="cs-txt"><b>Miracle on Instagram</b><small>@themiracleapp · Tips, new features and creator stories</small></span><Icon name="chev" class="cs-chev" /></a>
 				<a class="cs-row" href="/studio/qr"><span class="cs-ico"><Icon name="qr" /></span><span class="cs-txt"><b>QR Codes</b><small>Their look, and extra codes for events</small></span><Icon name="chev" class="cs-chev" /></a>
 				<a class="cs-row" href="/studio/import"><span class="cs-ico"><Icon name="layers" /></span><span class="cs-txt"><b>Import Collabs</b><small>Bring in deals from DMs or a list</small></span><Icon name="chev" class="cs-chev" /></a>
 				<button class="cs-row" onclick={toggleTheme}><span class="cs-ico"><Icon name={theme.value === 'dark' ? 'sun' : 'moon'} /></span><span class="cs-txt"><b>{theme.value === 'dark' ? 'Light Look' : 'Dark Look'}</b><small>Switch the app’s colours</small></span></button>
@@ -403,6 +405,11 @@
 				<Icon name="chevR" class="set-chev" />
 			</a>
 		{/each}
+		<a class="set-item" href={MIRACLE_IG} target="_blank" rel="noopener">
+			<span class="set-ic"><Icon name="insta" /></span>
+			<span class="set-t"><b>Miracle on Instagram</b><small>@themiracleapp · Tips, new features and creator stories</small></span>
+			<Icon name="chevR" class="set-chev" />
+		</a>
 		<a class="set-item" href="/studio/qr">
 			<span class="set-ic"><Icon name="qr" /></span>
 			<span class="set-t"><b>QR codes</b><small>Their look, colours and extra codes for events</small></span>

@@ -5,6 +5,7 @@
 	import { isAppHost } from '../creatorHost';
 	import { brandIg } from '../brandIg.svelte';
 	import { allRequests } from '../brand.svelte';
+	import { ui } from '../ui.svelte';
 	import Avatar from './Avatar.svelte';
 	import Icon from './Icon.svelte';
 	import Logo from './Logo.svelte';
@@ -46,6 +47,7 @@
 	</div>
 	<div class="side-end">
 		<WorkspaceSwitch />
+		<button class="side-ask" onclick={() => (ui.askOpen = true)}><Icon name="spark" />Ask your desk</button>
 		{#if creators.length}
 			<a class="side-ask" href="/brand/campaigns/new"><Icon name="plus" />New campaign</a>
 		{:else}

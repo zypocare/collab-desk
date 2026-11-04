@@ -530,10 +530,11 @@ export const ARTICLES: Article[] = [
 		summary: 'Sign up, verify your brand with Instagram, and find your way around.',
 		category: 'brand-setup',
 		audience: 'brand',
-		keywords: ['sign up', 'signup', 'join', 'start', 'brand account', 'verify', 'verified', 'instagram', 'profile', 'menu', 'where', 'gstin', 'company'],
+		keywords: ['sign up', 'signup', 'join', 'start', 'brand account', 'verify', 'verified', 'instagram', 'profile', 'menu', 'where', 'gstin', 'company', 'settings', 'ask', 'ai', 'chat', 'assistant', 'ask your desk'],
 		body: [
 			{ steps: ['Sign up as a brand with your work email: brand name, category, website, Instagram, your name and role, city, and your GSTIN if you have one.', 'Your team starts with 14 days of Brand Pro, no card needed.', 'In Settings › Company & Instagram, tap Connect Instagram (a Business or Creator account). Creators then see your logo, handle and Verified on Instagram.', 'Add your legal name, GSTIN, address and accounts email in Settings › Billing & GST. They’re printed on the invoices you receive.'] },
-			{ p: 'On a phone the bottom bar has Today, Collabs (Requests, Creators, Pools, Discover), Plan (Campaigns, Calendar, Grow, Content, Turnaround, Autopilots), Money (Reports, Payments, Shipping) and Brand: your profile, with Settings one tap away. Messages open from the send icon at the top. On a laptop the same places are in the side menu.' }
+			{ p: 'On a phone the bottom bar has Today, Collabs (Requests, Creators, Pools, Discover), Plan (Campaigns, Calendar, Grow, Content, Turnaround, Autopilots), Money (Reports, Payments, Shipping) and Brand: your profile, with Settings behind the gear at the top right. Messages open from the send icon at the top. On a laptop the same places are in the side menu.' },
+			{ p: 'Ask your desk: tap the sparkle at the top of Today (Ask your desk in the side menu on a laptop) and ask about your requests, drafts to approve, invoices to pay and go-live dates. The free AI answers from your own data and links you to the request. It never changes anything.' }
 		],
 		links: [{ label: 'Company & Instagram', href: '/brand/settings?s=company' }]
 	},

@@ -25,7 +25,7 @@ type Env = {
 type Run = { env: Env; gemini: boolean; neurons: number };
 
 // Expected size of each job in Cloudflare neurons (reserved before, corrected after).
-const COST: Record<string, number> = { dm: 160, reply: 110, caption: 110, pitch: 140, fit: 230, classify: 40, summary: 220, negotiate: 210, script: 330, nudge: 120, ask: 260, voice: 60, embed: 8, cheer: 60, reelcheck: 260, growplan: 200, checkup: 420, offercheck: 700, precheck: 220, getfound: 180, brandask: 450, brandbrief: 600, safety: 300, helpask: 200, casestudy: 400 };
+const COST: Record<string, number> = { dm: 160, reply: 110, caption: 110, pitch: 140, fit: 230, classify: 40, summary: 220, negotiate: 210, script: 330, nudge: 120, ask: 260, voice: 60, embed: 8, cheer: 60, reelcheck: 260, growplan: 200, checkup: 420, offercheck: 700, precheck: 220, getfound: 180, brandask: 450, brandchat: 380, brandbrief: 600, safety: 300, helpask: 200, casestudy: 400 };
 // Cloudflare's price list in neurons per token (Llama 3.3 70B fast; Llama 3.2 11B vision).
 const PER_TOKEN = { text: [0.0267, 0.2048], vision: [0.0045, 0.0615] };
 const USED_UP = "Today's free AI is used up. It's back at 5:30 am.";
@@ -52,10 +52,10 @@ export default {
 		try {
 			const kind = url.pathname.slice('/api/ai/'.length);
 			if (kind === 'status') return json(await status(req, env));
-			if (!['dm', 'reply', 'caption', 'pitch', 'classify', 'fit', 'summary', 'negotiate', 'script', 'nudge', 'ask', 'voice', 'embed', 'cheer', 'scout', 'reelcheck', 'growplan', 'checkup', 'offercheck', 'precheck', 'getfound', 'brandask', 'brandbrief', 'safety', 'helpask', 'compwatch', 'casestudy', 'growthscout', 'growthmail'].includes(kind)) return json({ error: 'Unknown.' }, 404);
+			if (!['dm', 'reply', 'caption', 'pitch', 'classify', 'fit', 'summary', 'negotiate', 'script', 'nudge', 'ask', 'voice', 'embed', 'cheer', 'scout', 'reelcheck', 'growplan', 'checkup', 'offercheck', 'precheck', 'getfound', 'brandask', 'brandchat', 'brandbrief', 'safety', 'helpask', 'compwatch', 'casestudy', 'growthscout', 'growthmail'].includes(kind)) return json({ error: 'Unknown.' }, 404);
 			const body = (await req.json()) as Record<string, unknown>;
 			const job = (x: Run) =>
-				kind === 'cheer' ? cheer(x, body) : kind === 'scout' ? scout(x, body) : kind === 'dm' ? readDm(x, body) : kind === 'reply' ? replies(x, body) : kind === 'pitch' ? pitch(x, body) : kind === 'classify' ? classify(x, body) : kind === 'fit' ? fit(x, body) : kind === 'summary' ? summary(x, body) : kind === 'negotiate' ? creatorOf(req, env).then((me) => negotiate(x, body, me)) : kind === 'script' ? script(x, body) : kind === 'nudge' ? nudge(x, body) : kind === 'ask' ? creatorOf(req, env).then((me) => ask(x, body, me)) : kind === 'voice' ? voice(x, body) : kind === 'embed' ? embed(x, body) : kind === 'reelcheck' ? reelCheck(x, body) : kind === 'growplan' ? growPlan(x, body) : kind === 'checkup' ? checkup(x, body) : kind === 'safety' ? safety(x, body) : kind === 'helpask' ? helpAsk(x, body) : kind === 'compwatch' ? compWatch(x, body) : kind === 'casestudy' ? caseStudy(x, body) : kind === 'growthscout' ? growthScout(x, body) : kind === 'growthmail' ? growthMail(x, body) : kind === 'offercheck' ? offerCheck(x, body) : kind === 'precheck' ? preCheck(x, body) : kind === 'getfound' ? getFound(x, body) : kind === 'brandask' ? brandAsk(x, body) : kind === 'brandbrief' ? brandBrief(x, body) : creatorOf(req, env).then((me) => caption(x, body, me));
+				kind === 'cheer' ? cheer(x, body) : kind === 'scout' ? scout(x, body) : kind === 'dm' ? readDm(x, body) : kind === 'reply' ? replies(x, body) : kind === 'pitch' ? pitch(x, body) : kind === 'classify' ? classify(x, body) : kind === 'fit' ? fit(x, body) : kind === 'summary' ? summary(x, body) : kind === 'negotiate' ? creatorOf(req, env).then((me) => negotiate(x, body, me)) : kind === 'script' ? script(x, body) : kind === 'nudge' ? nudge(x, body) : kind === 'ask' ? creatorOf(req, env).then((me) => ask(x, body, me)) : kind === 'voice' ? voice(x, body) : kind === 'embed' ? embed(x, body) : kind === 'reelcheck' ? reelCheck(x, body) : kind === 'growplan' ? growPlan(x, body) : kind === 'checkup' ? checkup(x, body) : kind === 'safety' ? safety(x, body) : kind === 'helpask' ? helpAsk(x, body) : kind === 'compwatch' ? compWatch(x, body) : kind === 'casestudy' ? caseStudy(x, body) : kind === 'growthscout' ? growthScout(x, body) : kind === 'growthmail' ? growthMail(x, body) : kind === 'offercheck' ? offerCheck(x, body) : kind === 'precheck' ? preCheck(x, body) : kind === 'getfound' ? getFound(x, body) : kind === 'brandask' ? brandAsk(x, body) : kind === 'brandchat' ? brandChat(x, body) : kind === 'brandbrief' ? brandBrief(x, body) : creatorOf(req, env).then((me) => caption(x, body, me));
 
 			// Checking an incoming Instagram DM comes from the DM webhook with a single-use pass, and the
 			// hourly fun nudge from its job the same way. DMs stay on Cloudflare (never sent to Google);
@@ -93,7 +93,7 @@ export default {
 			// Brands have their own, smaller daily share (per team), then the same free Gemini backup.
 			// (Help questions from a creator fall through to hers.)
 			const brandHelp = kind === 'helpask' && body.side === 'brand';
-			if (kind === 'brandask' || kind === 'brandbrief' || brandHelp) {
+			if (kind === 'brandask' || kind === 'brandchat' || kind === 'brandbrief' || brandHelp) {
 				// A link we won't open is turned away before it uses any of today's share.
 				if (kind === 'brandbrief') publicUrl(String(body.url ?? ''));
 				const t = await rpc(req, env, 'ai_take_brand', { p_kind: kind, p_cost: COST[kind] });
@@ -1287,6 +1287,33 @@ Rules: use only numbers in the data and never invent any; coverage says how many
 	const j = firstJson(reply) ?? {};
 	const list = (v: unknown, n: number) => (Array.isArray(v) ? v : []).map((k) => clip(k, 260)).filter(Boolean).slice(0, n);
 	return { headline: clip(j.headline, 180), points: list(j.points, 5), next: list(j.next, 3), answer: question ? clip(j.answer, 900) : '' };
+}
+
+/** "Ask your desk" for a brand team: a question about their own requests and money, answered only from
+ * the data the app sends (their requests across every creator, and the dashboard summary). */
+async function brandChat(x: Run, b: Record<string, unknown>) {
+	const clip = (v: unknown, n: number) => String(v ?? '').replace(/\s+/g, ' ').trim().slice(0, n);
+	const all = JSON.stringify(b.data ?? {});
+	const data = all.length > 14000 ? `${all.slice(0, 14000)} …(cut short: the rest of the data didn't fit)` : all;
+	const question = clip(b.question, 400);
+	const history = (Array.isArray(b.history) ? b.history : [])
+		.slice(-3)
+		.map((t) => `Q: ${clip((t as { q?: unknown }).q, 300)}\nA: ${clip((t as { a?: unknown }).a, 500)}`)
+		.join('\n');
+	const PAGES = ['requests', 'inbox', 'discover', 'new_campaign', 'reports', 'payments', 'calendar'];
+	const reply = await chat(
+		x,
+		`You are the assistant inside Miracle, an app an Indian brand team uses to book Instagram creators. You get today's date and the team's live data as JSON. requests: one per collab with code, creator, stage, fee (rupees), product_value (barter), live (go-live date), pay (payment status), needs (what waits on the brand: quote = a creator's quote to accept, draft = a draft to approve, pay = an invoice to pay), invoice_due, invoice_amount, unread (messages not read), last (the latest message). summary: spent_month, to_pay, waiting, live_soon. Return ONLY JSON:
+{"answer": "a direct answer in 1 to 4 short sentences, or a short list with one line per item starting with '• '", "codes": ["up to 4 request codes the answer is about, copied exactly from the data"], "page": "the one screen that helps next: ${PAGES.join(' | ')} | ''"}
+Rules: use only the data; never invent creators, codes, amounts or dates; if the data doesn't say, say so plainly and point to the screen that would. Count and add up carefully. Dates like "Fri 20 Nov"; money the Indian way (₹1,20,000 or ₹1.2 lakh). You can't change anything yourself: say what to tap. Brands pay creators directly; never suggest paying through the app. Speak to the team as "you". Simple English, no jargon.`,
+		`Today: ${clip(b.today, 20)}. Brand: ${clip(b.company, 60)}.${history ? `\nEarlier in this chat:\n${history}` : ''}\nQuestion: ${question}\nData: ${data}`,
+		700
+	);
+	const j = firstJson(reply) ?? {};
+	const known = new Set(((b.data as { requests?: { code?: string }[] })?.requests ?? []).map((r) => String(r.code ?? '')));
+	const codes = (Array.isArray(j.codes) ? j.codes : []).map((c) => clip(c, 24)).filter((c) => known.has(c)).slice(0, 4);
+	const page = PAGES.includes(String(j.page)) ? String(j.page) : '';
+	return { answer: clip(j.answer, 1400) || "I couldn't work that out from your data. Try asking another way.", codes, page };
 }
 
 /** A link a brand pasted, as a public web page's address: no addresses inside a network, no logins in it. */

@@ -895,6 +895,15 @@ main{overflow-x:clip}
 .getapp{padding-block:clamp(72px,9vw,120px);border-top:1px solid var(--line);background:radial-gradient(50% 60% at 85% 0%,rgba(156,123,255,.12),transparent 70%),#0C090C}
 .getapp .h2{margin:14px 0 18px}
 .getapp .lede{max-width:52ch}
+.ig-follow{display:flex;align-items:center;gap:16px;margin-top:28px;padding:18px 22px;border:1px solid var(--line);background:rgba(255,255,255,.03);color:inherit;text-decoration:none;transition:border-color .2s,transform .2s}
+.ig-follow:hover{border-color:#F25A90;transform:translateY(-2px)}
+.ig-follow:focus-visible{outline:2px solid #F25A90;outline-offset:3px}
+.ig-ic{flex:none;display:grid;place-items:center;width:48px;height:48px;border-radius:14px;background:linear-gradient(135deg,#6B3FD4,#D4296A 55%,#F2994A);color:#fff}
+.ig-ic svg{width:24px;height:24px}
+.ig-t{display:grid;gap:4px;min-width:0}
+.ig-t b{font-weight:600}
+.ig-t small{color:var(--ink-2,rgba(255,255,255,.7));font-size:14px;line-height:1.45}
+.ig-go{margin-left:auto;font-size:20px;color:#F25A90}
 .app-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-top:44px}
 .app-card{position:relative;display:grid;align-content:start;gap:16px;padding:28px;border-radius:26px;background:var(--surface);box-shadow:0 0 0 1px var(--line) inset}
 .app-card h3{margin:0;font:400 34px/1 var(--f-display)}
@@ -1288,6 +1297,7 @@ a.store:hover{transform:translateY(-2px)}
           <div class="app-qr"><img src="/img/app-qr.svg" alt="QR code for miracleapp.live/app" width="96" height="96" loading="lazy"><span><b>On your laptop?</b>Scan with your phone's camera to get the app, or open <b>miracleapp.live/app</b> on your phone.</span></div>
         </article>
       </div>
+      <a class="ig-follow" href="https://www.instagram.com/themiracleapp/" target="_blank" rel="noopener" data-r><span class="ig-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r=".8" fill="currentColor"/></svg></span><span class="ig-t"><b>Follow @themiracleapp on Instagram</b><small>What to charge, contracts to watch for and how to get paid on time. Tips for Indian creators, every week.</small></span><span class="ig-go" aria-hidden="true">→</span></a>
     </div>
     <script>(()=>{const u=navigator.userAgent,s=document.getElementById('app');if(!s)return;const k=/android/i.test(u)?'android':/iphone|ipad|ipod/i.test(u)||(/Macintosh/.test(u)&&navigator.maxTouchPoints>1)?'ios':'';if(k)s.dataset.here=k})()</script>
   </section>
@@ -1460,7 +1470,7 @@ a.store:hover{transform:translateY(-2px)}
     <nav aria-label="For creators"><b>Creators</b><a href="/get-brand-deals">Get brand deals</a><a href="/pitch-brands">Pitch brands with AI</a><a href="/link-in-bio-for-creators">Link in bio that books deals</a><a href="/influencer-media-kit">Live media kit</a><a href="/influencer-rate-card">Rates and quotes</a><a href="/brand-collaboration-management">Manage collabs</a><a href="/get-paid-by-brands">Get paid on time</a></nav>
     <nav aria-label="For brands and agencies"><b>Brands &amp; agencies</b><a href="/find-influencers-india">Find influencers in India</a><a href="/creators">Creator directory</a><a href="/influencer-marketing-no-commission">No-commission campaigns</a><a href="/influencer-agency-software">For agencies and managers</a><a href="/signin?as=brand">Brand sign in</a></nav>
     <nav aria-label="Learn"><b>Learn</b><a href="/guides">Guides</a><a href="/help">Help centre</a><a href="/tools/rate-calculator">Rate calculator</a><a href="/tools/engagement-calculator">Engagement calculator</a></nav>
-    <nav aria-label="Company"><b>Company</b><a href="/pricing">Pricing</a><a href="https://app.miracleapp.live/signup?as=creator">Join free</a><a href="/#app">Get the app</a><a href="mailto:support@miracleapp.live">Support</a><a href="/refund-policy">Refunds &amp; cancellation</a><a href="/signin">Sign in</a></nav>
+    <nav aria-label="Company"><b>Company</b><a href="/pricing">Pricing</a><a href="https://app.miracleapp.live/signup?as=creator">Join free</a><a href="/#app">Get the app</a><a href="https://www.instagram.com/themiracleapp/" target="_blank" rel="noopener">Instagram @themiracleapp</a><a href="mailto:support@miracleapp.live">Support</a><a href="/refund-policy">Refunds &amp; cancellation</a><a href="/signin">Sign in</a></nav>
   </div>
   <div class="sf-bot"><span>© 2026 Miracle is a product of Zyposoft Technologies Private Limited, #7, Nisarga Layout, Chikkalsandra, Bangalore 560061, India.</span><span class="sf-links"><a href="/terms">Terms</a><a href="/privacy">Privacy</a><a href="/data-deletion">Data deletion</a></span></div>
 </div><div class="sf-giant" aria-hidden="true">Miracle</div></footer>
