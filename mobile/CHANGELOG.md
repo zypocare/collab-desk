@@ -22,12 +22,14 @@ How to ship one:
 
 ## 1.0.4
 
+Build 17 · sent for review 4 Nov 2026
+
 - The app fills the whole screen on every phone, and the clock and battery icons match the page, light or dark.
 - A smaller, quicker app.
 
 ## 1.0.3
 
-Build 15 · sent for review 4 Nov 2026
+Build 15 · sent for review 4 Nov 2026 · published 4 Nov 2026
 
 - Share a brand's WhatsApp message to Miracle: it opens in Add collab, already read.
 
