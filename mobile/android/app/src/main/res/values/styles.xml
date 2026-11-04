@@ -13,6 +13,8 @@
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
         <item name="android:background">@null</item>
+        <!-- Behind the clock and the buttons (edge to edge) before the page has drawn: Miracle's ink, never white. -->
+        <item name="android:windowBackground">@color/miracle_ink</item>
     </style>
 
 

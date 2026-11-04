@@ -32,11 +32,6 @@
       "showSpinner": false,
       "androidScaleType": "CENTER_CROP"
     },
-    "StatusBar": {
-      "style": "DARK",
-      "backgroundColor": "#110D11",
-      "overlaysWebView": false
-    },
     "PushNotifications": {
       "presentationOptions": [
         "badge",

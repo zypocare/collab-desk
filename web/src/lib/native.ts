@@ -109,8 +109,11 @@ export function startNative() {
 		true
 	);
 	const bar = plugin('StatusBar');
-	(bar?.setBackgroundColor as ((o: { color: string }) => Promise<void>) | undefined)?.({ color: '#110D11' }).catch(() => {});
-	(bar?.setStyle as ((o: { style: string }) => Promise<void>) | undefined)?.({ style: 'DARK' }).catch(() => {});
+	if (bar) {
+		// Apps before 1.0.4: a dark bar painted behind the clock (on older Android), with light icons on it.
+		(bar.setBackgroundColor as ((o: { color: string }) => Promise<void>) | undefined)?.({ color: '#110D11' }).catch(() => {});
+		(bar.setStyle as ((o: { style: string }) => Promise<void>) | undefined)?.({ style: 'DARK' }).catch(() => {});
+	} else iconsFollowPage(plugin('SystemBars'));
 	// Tapping an alert opens what it is about.
 	const push = plugin('PushNotifications');
 	push?.addListener('pushNotificationActionPerformed', ((e: { notification?: { data?: { url?: string } } }) => {
@@ -119,6 +122,42 @@ export function startNative() {
 	}) as never);
 	if (nativePlatform() === 'android')
 		(push?.createChannel as ((c: Record<string, unknown>) => Promise<void>) | undefined)?.({ id: 'alerts', name: 'Alerts', description: 'New requests, messages and payments', importance: 5, visibility: 1, vibration: true }).catch(() => {});
+}
+
+/** 1.0.4 and later draw edge to edge on every Android: the clock and battery sit over whatever is behind them,
+ *  so their colour follows it. When the WebView lets the page draw there (--safe-area-inset-top above 0, set by
+ *  Capacitor's SystemBars), that's the page's own colour at the top, light or dark by its look and screen
+ *  (sign-in is always dark); otherwise Capacitor pads the window and it's Miracle's ink. Checked when the look
+ *  changes, and every 1.5 s for new screens; the phone is only told when it changes. */
+function iconsFollowPage(bars: Plugin | undefined) {
+	const setStyle = bars?.setStyle as ((o: { style: 'DARK' | 'LIGHT' }) => Promise<void>) | undefined;
+	if (!setStyle) return;
+	let last = '';
+	const bright = (c: string) => {
+		const m = c.match(/rgba?\(([\d.]+),\s*([\d.]+),\s*([\d.]+)(?:,\s*([\d.]+))?/);
+		if (!m || (m[4] !== undefined && Number(m[4]) < 0.5)) return null; // see-through: look further down
+		return (0.299 * Number(m[1]) + 0.587 * Number(m[2]) + 0.114 * Number(m[3])) / 255;
+	};
+	const check = () => {
+		const root = document.documentElement;
+		let dark = true;
+		if (parseFloat(getComputedStyle(root).getPropertyValue('--safe-area-inset-top')) > 0) {
+			let el: Element | null = document.elementFromPoint(innerWidth / 2, 2);
+			let b: number | null = null;
+			while (el && b === null) {
+				b = bright(getComputedStyle(el).backgroundColor);
+				el = el.parentElement;
+			}
+			dark = (b ?? (root.dataset.theme === 'dark' ? 0 : 1)) < 0.55;
+		}
+		const style = dark ? 'DARK' : 'LIGHT'; // DARK: light icons, for a dark background
+		if (style !== last) setStyle({ style }).catch(() => {});
+		last = style;
+	};
+	// The app starts with light icons over its dark splash: look once the page has drawn.
+	setTimeout(check, 800);
+	new MutationObserver(check).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'style'] });
+	setInterval(check, 1500);
 }
 
 /** Opens a link in the phone's browser (or the app that handles it, like WhatsApp). */
