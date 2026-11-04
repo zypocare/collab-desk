@@ -32,6 +32,8 @@ export const ICONS: Record<string, string> = {
 	script: '<path d="M7 3.5h8l4 4V20a.5.5 0 0 1-.5.5h-11A1.5 1.5 0 0 1 6 19V5a1.5 1.5 0 0 1 1-1.5Z"/><path d="M15 3.5V8h4M9 12h6M9 15.5h6M9 8.5h3"/>',
 	check: '<path d="m5 12.5 4.5 4.5L19 7.5"/>',
 	bell: '<path d="M6 9.5a6 6 0 0 1 12 0c0 5.5 2.5 7 2.5 7h-17S6 15 6 9.5"/><path d="M10 20a2 2 0 0 0 4 0"/>',
+	/** A bell with ringing lines: alerts switched on. */
+	bellOn: '<path d="M6 9.5a6 6 0 0 1 12 0c0 5.5 2.5 7 2.5 7h-17S6 15 6 9.5"/><path d="M10 20a2 2 0 0 0 4 0"/><path d="M2.5 8a9.5 9.5 0 0 1 2.6-4.6M21.5 8a9.5 9.5 0 0 0-2.6-4.6"/>',
 	clock: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
 	alert: '<path d="M12 4 2.8 19.5h18.4z"/><path d="M12 10v4.2M12 17h.01"/>',
 	ban: '<circle cx="12" cy="12" r="8.5"/><path d="m6 6 12 12"/>',

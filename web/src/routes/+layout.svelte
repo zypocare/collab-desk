@@ -99,7 +99,7 @@
 <div class="toasts" aria-live="polite">
 	{#each ui.toasts as t (t.id)}
 		{@const up = upgradeNeeded(t.msg)}
-		<div class="toast" class:out={t.out} class:bad={t.icon === 'alert' && !up} class:up role={t.icon === 'alert' ? 'alert' : 'status'}
+		<div class="toast" class:out={t.out} class:bad={t.icon === 'alert' && !up} class:ok={(t.icon === 'check' || t.icon === 'bellOn') && !up} class:up role={t.icon === 'alert' ? 'alert' : 'status'}
 			><span class="ti"><Icon name={up ? 'spark' : t.icon} /></span><span class="toast-msg">{up ? upgradeText(t.msg) : t.msg}</span
 			>{#if up}<a class="toast-up" href={page.url.pathname.startsWith('/brand') ? '/brand/settings?s=plan' : '/studio/settings?s=plan'}>{canSell() ? 'Upgrade' : 'Your plan'}</a>{/if}<i class="tbar" aria-hidden="true"></i></div
 		>

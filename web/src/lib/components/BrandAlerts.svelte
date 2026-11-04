@@ -37,7 +37,7 @@
 		try {
 			await enableBrandPush();
 			on = true;
-			toast('Alerts are on for this phone', 'bell');
+			toast('Alerts on. Creator updates will ping this phone.', 'bellOn');
 		} catch (e) {
 			toast(errMessage(e), 'alert');
 		} finally {
