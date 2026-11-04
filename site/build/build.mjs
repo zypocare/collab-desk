@@ -187,6 +187,9 @@ urls.push(['/help', 'weekly', 0.7]);
 // ------------------------------------------------------------------ 404, stylesheet, sitemap
 write('404.html', page({ path: '/404', title: 'Page not found · Miracle', description: 'This page isn’t here.', noindex: true, body: `<section class="hhero wrap"><span class="eb">404</span><h1>Not <em>here.</em></h1><p class="lede">That page moved or never existed.</p><div class="acts" style="justify-content:center"><a class="btn" href="/">Miracle home</a><a class="btn ghost" href="/guides">Guides</a><a class="btn ghost" href="/help">Help</a></div></section>` }));
 write('pricing.html', pricingPage());
+// Android's app links (one file, kept with the app in web/static): the website serves it too, for
+// miracleapp.live and www.
+write('.well-known/assetlinks.json', readFileSync(join(OUT, '../web/static/.well-known/assetlinks.json'), 'utf8'));
 // The waitlist only exists before launch. After it, /waitlist sends people to sign-up (vercel.json).
 if (PRELAUNCH) write('waitlist.html', waitlistPage());
 write('refund-policy.html', refundPage());

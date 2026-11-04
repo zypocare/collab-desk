@@ -7,6 +7,7 @@
 
 import { brandPage, qrScan } from './page';
 import { directory } from './directory';
+import assetLinks from '../static/.well-known/assetlinks.json';
 import { asText, search as helpSearch } from '../src/lib/help/articles';
 
 type Env = {
@@ -36,6 +37,10 @@ const json = (body: unknown, status = 200) => new Response(JSON.stringify(body),
 export default {
 	async fetch(req: Request, env: Env, ctx: { waitUntil: (p: Promise<unknown>) => void }): Promise<Response> {
 		const url = new URL(req.url);
+		// Android's app links: Miracle links open in the phone app (the app signing key's fingerprint). Served on
+		// every Miracle address, the bare miracleapp.live included when it comes through here, never redirected.
+		if (url.pathname === '/.well-known/assetlinks.json')
+			return new Response(JSON.stringify(assetLinks), { headers: { 'content-type': 'application/json', 'cache-control': 'public, max-age=3600', 'access-control-allow-origin': '*' } });
 		// The Miracle website (on Vercel) isn't a creator's address: pass it straight through.
 		if (url.hostname === 'miracleapp.live' || url.hostname === 'www.miracleapp.live') return fetch(req);
 		if (url.pathname.startsWith('/q/')) return qrScan(req, env, url);

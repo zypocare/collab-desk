@@ -11,7 +11,7 @@
 		"directory": "./build",
 		"binding": "ASSETS",
 		"not_found_handling": "single-page-application",
-		"run_worker_first": ["/api/*", "/", "/q/*", "/creators", "/creators/*"]
+		"run_worker_first": ["/api/*", "/", "/q/*", "/creators", "/creators/*", "/.well-known/*"]
 	},
 	"ai": { "binding": "AI" },
 	// Niveditha's own address. Cloudflare makes the DNS record and the certificate on deploy; the old
@@ -19,7 +19,10 @@
 	"routes": [
 		{ "pattern": "nivy.miracleapp.live", "custom_domain": true },
 		// Every other creator's address (needs a proxied "*" DNS record in Cloudflare).
-		{ "pattern": "*.miracleapp.live/*", "zone_name": "miracleapp.live" }
+		{ "pattern": "*.miracleapp.live/*", "zone_name": "miracleapp.live" },
+		// Android's app-links file on the bare address (Android checks it there for every *.miracleapp.live
+		// link and won't follow a redirect to www). Only takes effect while that DNS record is proxied.
+		{ "pattern": "miracleapp.live/.well-known/*", "zone_name": "miracleapp.live" }
 	],
 	// With routes set, Cloudflare turns the workers.dev address off unless this says otherwise.
 	"workers_dev": true,
