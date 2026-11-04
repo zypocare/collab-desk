@@ -493,7 +493,7 @@ export const ARTICLES: Article[] = [
 			{ p: 'Once a week, or sooner after new posts, an AI also reads the last 40 captions for things a brand should know first, such as betting apps, adult content, risky health claims or promotions without #ad. Minor notes (like drinks at a night out) don’t count against anyone; only serious ones mark a creator as worth a look.' },
 			{ list: ['Creators: see yours in Grow › Audience health. To lift reach and engagement, post consistently, reply to comments, and make reels people share and save.', 'A flag you think is wrong: edit the caption or archive the post, and it clears at the next check. Or raise a ticket and we’ll look.', 'Brands: the score and brand-safety notes show on Discover, creator pages, applications and requests. Healthy audiences only in Discover keeps creators scoring 65+ with nothing serious.'] }
 		],
-		links: [{ label: 'See yours in Grow', href: '/studio/grow', side: 'creator' }, { label: 'Discover', href: '/brand/creators?tab=discover', side: 'brand' }]
+		links: [{ label: 'See yours in Grow', href: '/studio/grow', side: 'creator' }, { label: 'Explore', href: '/brand/explore', side: 'brand' }]
 	},
 	{
 		slug: 'creator-directory',
@@ -591,20 +591,20 @@ export const ARTICLES: Article[] = [
 			{ p: 'On a creator’s page you can also build a package: pick how many of each piece and the bigger it is, the bigger the discount. Request this package sends it at that price. Packages with instant booking show Book now and are confirmed straight away.' },
 			{ p: 'Track everything in Collabs › Requests. The creator replies or sends a quote you can accept online; drafts, messages, invoices and results all stay on the request. The free plan sends 3 requests a month.' }
 		],
-		links: [{ label: 'Discover', href: '/brand/creators?tab=discover' }, { label: 'Your requests', href: '/brand/requests' }]
+		links: [{ label: 'Explore', href: '/brand/explore' }, { label: 'Your requests', href: '/brand/requests' }]
 	},
 	{
 		slug: 'brand-discover',
-		title: 'Find creators: Discover and pools',
+		title: 'Find creators: Explore and pools',
 		summary: 'Search by niche, audience and price; check audience health; save creators to pools.',
 		category: 'brand-start',
 		audience: 'brand',
-		keywords: ['discover', 'find creators', 'search', 'filter', 'pool', 'pools', 'shortlist', 'invite', 'audience health', 'healthy', 'unlock', 'profile', 'rating'],
+		keywords: ['discover', 'explore', 'miracle score', 'ranking', 'compare', 'collections', 'find creators', 'search', 'filter', 'pool', 'pools', 'shortlist', 'invite', 'audience health', 'healthy', 'unlock', 'profile', 'rating'],
 		body: [
-			{ list: ['Collabs › Discover lists creators open to brands (and ones who worked with you), sorted by Best fit, Reach or Price. Filter by niche, their audience (mostly women, age, where they live), followers, reel price, language, and Healthy audiences only.', 'Each card shows their record (verified deals, on time) and their audience health and brand-safety check.', 'A creator’s page shows why they fit, Audience & safety, what you did together, Your rating & notes (only your team sees it), and creators like them.', 'Tap Pool to save a creator. Collabs › Pools holds your lists: start a campaign to a whole pool, and use Invite @handle for creators not on Miracle yet.'] },
+			{ list: ['Explore (its own tab) lists creators open to brands (and ones who worked with you), ranked by the Miracle Score: posts on time, paid deals on Miracle, how fast they reply, audience health and a complete profile. It is earned, never paid for. Start from a collection (Top rated, Best fit, Always on time, Reels under ₹15K…), filter by niche, language, city, followers, Reel price and Healthy audiences only, or sort by Best fit, Lowest price or Most followers.', 'Tap Compare on up to three creators to see them side by side: followers, engagement, average views, Reel price, cost per 1,000 views, audience health, on-time record, paid deals and reply time.', 'Each card shows their record (verified deals, on time) and their audience health and brand-safety check.', 'A creator’s page shows why they fit, Audience & safety, what you did together, Your rating & notes (only your team sees it), and creators like them.', 'Tap Pool to save a creator. Collabs › Pools holds your lists: start a campaign to a whole pool, and use Invite @handle for creators not on Miracle yet.'] },
 			{ p: 'On the free plan you open 10 full creator profiles a day (creators you’ve worked with don’t count). Past that, unlock one creator for good: see “Unlock a creator’s full profile”.' }
 		],
-		links: [{ label: 'Discover', href: '/brand/creators?tab=discover' }, { label: 'Pools', href: '/brand/creators?tab=pools' }]
+		links: [{ label: 'Explore', href: '/brand/explore' }, { label: 'Pools', href: '/brand/creators?tab=pools' }]
 	},
 	{
 		slug: 'brand-unlock',

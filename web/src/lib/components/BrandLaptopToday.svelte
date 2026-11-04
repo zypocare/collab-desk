@@ -100,10 +100,10 @@
 			<span class="l-eb">{T.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}{waiting.length ? ` · ${waiting.length} waiting on you` : ''}</span>
 			<h1>{greet}, <em>{who}</em></h1>
 		</div>
-		<a class="l-search" href="/brand/creators?tab=discover">
+		<a class="l-search" href="/brand/explore">
 			<Icon name="search" /><span>search “{hint}”</span><kbd>{mac ? '⌘K' : 'Ctrl K'}</kbd>
 		</a>
-		<a class="l-neo l-grad l-shine l-new" href={hasCreators ? '/brand/campaigns/new' : '/brand/creators?tab=discover'}><Icon name="plus" />New campaign</a>
+		<a class="l-neo l-grad l-shine l-new" href={hasCreators ? '/brand/campaigns/new' : '/brand/explore'}><Icon name="plus" />New campaign</a>
 	</header>
 
 	<!-- A new brand's first steps (gone once they're done). -->
@@ -131,7 +131,7 @@
 
 	<!-- Story rings: the creators -->
 	<nav class="l-rings" aria-label="Your creators">
-		<a class="l-rg l-me" href="/brand/creators?tab=discover"><span class="l-r"><span class="l-in">+</span></span><span class="l-n">Find creators</span></a>
+		<a class="l-rg l-me" href="/brand/explore"><span class="l-r"><span class="l-in">+</span></span><span class="l-n">Find creators</span></a>
 		{#each creators as c (c.id)}
 			<a class="l-rg" href={at(c.slug, '/brand/requests')}><span class="l-r"><span class="l-in" style="background:var(--m{hueOf(c.name)})">{initials(c.name)}</span></span><span class="l-n">{c.name}</span></a>
 		{/each}
@@ -175,7 +175,7 @@
 				</h2>
 				<div class="l-ai-btns">
 					<a class="l-neo l-white l-shine" href="/brand/autopilots{apWaiting ? '#inbox' : ''}">{apWaiting ? 'Review them' : 'Set up autopilots'}</a>
-					<a class="l-neo l-dark" href="/brand/creators?tab=discover">Find creators</a>
+					<a class="l-neo l-dark" href="/brand/explore">Find creators</a>
 				</div>
 			</div>
 		</section>
@@ -184,7 +184,7 @@
 	<!-- Row 2: Needs you + This week -->
 	<div class="l-row l-top">
 		<section class="l-col">
-			<div class="l-sh"><h2>Needs you</h2>{#if waiting.length}<span class="l-count">{waiting.length}</span>{/if}{#if !hasCreators}<a href="/brand/creators?tab=discover">Find creators →</a>{/if}</div>
+			<div class="l-sh"><h2>Needs you</h2>{#if waiting.length}<span class="l-count">{waiting.length}</span>{/if}{#if !hasCreators}<a href="/brand/explore">Find creators →</a>{/if}</div>
 			{#if waiting.length}
 				<div class="tks l-grid">
 					{#each fanned ? waiting : waiting.slice(0, 4) as w, i (w.kind + w.code + (w.round ?? ''))}

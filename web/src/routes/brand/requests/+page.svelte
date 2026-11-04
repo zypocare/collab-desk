@@ -80,7 +80,7 @@
 		<span class="clear-ic"><Icon name="send" /></span>
 		<b>No requests yet</b>
 		<small>Find a creator and send your first request. Everything you send, to any creator, shows up here.</small>
-		<div class="clear-acts"><a class="glass-chip" href="/brand/creators?tab=discover"><Icon name="search" />Find creators</a><a class="glass-chip" href="/brand/campaigns"><Icon name="send" />Start a campaign</a></div>
+		<div class="clear-acts"><a class="glass-chip" href="/brand/explore"><Icon name="search" />Find creators</a><a class="glass-chip" href="/brand/campaigns"><Icon name="send" />Start a campaign</a></div>
 	</div>
 {:else}
 	{#if phone.on}

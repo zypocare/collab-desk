@@ -23,6 +23,7 @@
 	const on = (...h: string[]) => h.some((x) => path === x || path.startsWith(x + '/'));
 	const NAV = $derived([
 		{ href: '/brand', label: 'Today', icon: 'home', on: path === '/brand' },
+		{ href: '/brand/explore', label: 'Explore', icon: 'search', on: on('/brand/explore') },
 		{ href: '/brand/inbox', label: 'Inbox', icon: 'inbox', on: on('/brand/inbox') },
 		{ href: '/brand/alerts', label: 'Alerts', icon: 'bell', on: on('/brand/alerts') },
 		{ href: '/brand/requests', label: 'Collabs', icon: 'board', on: on('/brand/requests', '/brand/creators', '/brand/creator', '/brand/r', '/brand/new') },
@@ -53,7 +54,7 @@
 		{#if creators.length}
 			<a class="side-ask" href="/brand/campaigns/new"><Icon name="plus" />New campaign</a>
 		{:else}
-			<a class="side-ask" href="/brand/creators?tab=discover"><Icon name="users" />Find creators</a>
+			<a class="side-ask" href="/brand/explore"><Icon name="users" />Find creators</a>
 		{/if}
 		<div class="side-acct">
 			<a class="side-who" href="/brand/settings" title="Settings">

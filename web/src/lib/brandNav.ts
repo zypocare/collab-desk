@@ -8,31 +8,21 @@ export function brandGroups(onApp: boolean): BrandGroup[] {
 	return [
 		{ href: '/brand', label: 'Today', icon: 'home' },
 		{
+			// The work in progress: requests, campaigns and their dates, the creators you work with, pools.
 			href: '/brand/requests',
 			label: 'Collabs',
 			icon: 'board',
 			tabs: [
 				{ href: '/brand/requests', label: 'Requests' },
-				{ href: '/brand/creators', label: 'Creators' },
-				{ href: '/brand/creators?tab=pools', label: 'Pools' },
-				{ href: '/brand/creators?tab=discover', label: 'Discover' }
-			],
-			also: ['/brand/requests', '/brand/creators', '/brand/creator/', '/brand/r/', '/brand/new']
-		},
-		{
-			href: '/brand/campaigns',
-			label: 'Plan',
-			icon: 'cal',
-			tabs: [
 				{ href: '/brand/campaigns', label: 'Campaigns' },
 				{ href: '/brand/business/calendar', label: 'Calendar' },
-				{ href: '/brand/grow', label: 'Grow' },
-				{ href: '/brand/business/content', label: 'Content' },
-				{ href: '/brand/business/turnaround', label: 'Turnaround' },
-				{ href: '/brand/autopilots', label: 'Autopilots' }
+				{ href: '/brand/creators', label: 'Creators' },
+				{ href: '/brand/creators?tab=pools', label: 'Pools' }
 			],
-			also: ['/brand/campaigns', '/brand/grow', '/brand/business/calendar', '/brand/business/content', '/brand/business/turnaround', '/brand/autopilots']
+			also: ['/brand/requests', '/brand/creators', '/brand/creator/', '/brand/r/', '/brand/new', '/brand/campaigns', '/brand/business/calendar', '/brand/business/content', '/brand/business/turnaround', '/brand/autopilots', '/brand/grow']
 		},
+		// The marketplace: every creator open to brands, ranked on their record (its own tab, in the middle).
+		{ href: '/brand/explore', label: 'Explore', icon: 'search', also: ['/brand/explore'] },
 		{
 			// Like the creator's Money: the overview (Reports) first, then Payments and Shipping.
 			href: '/brand/reports',
@@ -46,7 +36,7 @@ export function brandGroups(onApp: boolean): BrandGroup[] {
 			also: ['/brand/reports', '/brand/business/money', '/brand/business/shipping']
 		},
 		// The brand's own profile first (like the creator's My page); settings one tap away.
-		{ href: '/brand/profile', label: 'Brand', icon: 'gear', me: true, also: ['/brand/profile', '/brand/settings', '/brand/details', '/brand/business/team', '/brand/help'] }
+		{ href: '/brand/profile', label: 'Brand', icon: 'gear', me: true, also: ['/brand/profile', '/brand/settings', '/brand/details', '/brand/business/team', '/brand/help', '/brand/alerts'] }
 	];
 }
 
@@ -69,7 +59,11 @@ export function tabOn(t: BrandTab, url: { pathname: string; searchParams: { get(
  */
 export function deskTabs(onApp: boolean, url: { pathname: string; searchParams: { get(k: string): string | null } }): BrandTab[] | null {
 	const sets: BrandTab[][] = [
-		brandGroups(onApp)[1].tabs ?? [],
+		[
+			{ href: '/brand/requests', label: 'Requests' },
+			{ href: '/brand/creators', label: 'Creators' },
+			{ href: '/brand/creators?tab=pools', label: 'Pools' }
+		],
 		[
 			{ href: '/brand/campaigns', label: 'Campaigns' },
 			{ href: '/brand/business/turnaround', label: 'Turnaround' },

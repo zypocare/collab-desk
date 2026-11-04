@@ -41,6 +41,8 @@
 		{ label: 'Grow', icons: ['spark', 'chart', 'check'], tint: 'var(--g3)', href: '/brand/grow' },
 		{ label: 'Team', icons: ['users', 'mail', 'check'], tint: 'var(--h-live)', href: '/brand/settings?s=team' },
 		{ label: 'Autopilots', icons: ['layers', 'spark', 'gear'], tint: 'var(--g1)', href: '/brand/autopilots' },
+		{ label: 'Content', icons: ['film', 'image', 'check'], tint: 'var(--g3)', href: '/brand/business/content' },
+		{ label: 'Turnaround', icons: ['clock', 'users', 'check'], tint: 'var(--h-live)', href: '/brand/business/turnaround' },
 		{ label: 'Billing', icons: ['rupee', 'doc', 'check'], tint: 'var(--h-request)', href: '/brand/settings?s=billing' },
 		{ label: 'Help', icons: ['info', 'newmsg', 'check'], tint: 'var(--g2)', href: '/brand/help' }
 	];

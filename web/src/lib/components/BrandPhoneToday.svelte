@@ -154,7 +154,7 @@
 				<span class="tix-f"><strong>{c.open ? `${c.open} open` : `${c.done ?? 0} done`}</strong><em>{c.waiting ? 'Your turn' : c.open ? 'In progress' : 'Done'}</em></span>
 			</a>
 		{:else}
-			<a class="tix-t tix-tip" href="/brand/creators?tab=discover"><Icon name="search" /><b class="tix-n">Find creators</b><span class="tix-l">By niche, city, language</span></a>
+			<a class="tix-t tix-tip" href="/brand/explore"><Icon name="search" /><b class="tix-n">Find creators</b><span class="tix-l">By niche, city, language</span></a>
 			<a class="tix-t tix-tip" href="/brand/creators?tab=pools"><Icon name="layers" /><b class="tix-n">Make a pool</b><span class="tix-l">Then send one campaign</span></a>
 			<a class="tix-t tix-tip" href="/brand/settings"><Icon name="shield" /><b class="tix-n">Instagram</b><span class="tix-l">Show you're the real brand</span></a>
 		{/each}
@@ -261,7 +261,7 @@
 			<b>You're all caught up</b>
 			<small>Quotes and drafts to approve land here.</small>
 			<div class="clear-acts">
-				<a class="glass-chip" href="/brand/creators?tab=discover"><Icon name="search" />Find creators</a>
+				<a class="glass-chip" href="/brand/explore"><Icon name="search" />Find creators</a>
 				<a class="glass-chip" href="/brand/campaigns"><Icon name="send" />Start a campaign</a>
 			</div>
 		</div>
@@ -301,7 +301,7 @@
 			{:else}
 				<p class="wk2-free">Nothing booked. A free day is a good day to line up the next campaign:</p>
 				<div class="wk2-ideas">
-					<a href="/brand/creators?tab=discover"><span class="k-shoot"><Icon name="search" /></span>Find creators</a>
+					<a href="/brand/explore"><span class="k-shoot"><Icon name="search" /></span>Find creators</a>
 					<a href="/brand/campaigns"><span class="k-live"><Icon name="send" /></span>New campaign</a>
 					<a href="/brand/business/content"><span class="k-draft"><Icon name="film" /></span>Reuse content</a>
 				</div>

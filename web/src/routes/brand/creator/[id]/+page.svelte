@@ -122,7 +122,7 @@
 		<span class="clear-ic"><Icon name="users" /></span>
 		<b>Creator not found</b>
 		<small>They may have stopped listing themselves for brands.</small>
-		<div class="clear-acts"><a class="glass-chip" href="/brand/creators?tab=discover"><Icon name="search" />Discover</a></div>
+		<div class="clear-acts"><a class="glass-chip" href="/brand/explore"><Icon name="search" />Discover</a></div>
 	</div>
 {:else}
 	{#if phone.on}
@@ -149,11 +149,11 @@
 			<div class="cp-acts">
 				<AddToPool creator={c.id} name={c.name} />
 				<a class="btn" href={at(c.slug, '/')} target="_blank" rel="noopener"><Icon name="eye" />Their page</a>
-				<ReportMenu name={c.name} target={{ creator_id: c.id }} onblocked={() => goto('/brand/creators?tab=discover')} />
+				<ReportMenu name={c.name} target={{ creator_id: c.id }} onblocked={() => goto('/brand/explore')} />
 			</div>
 		</section>
 	{:else}
-	<a class="back rv" href="/brand/creators?tab=discover"><Icon name="back" />Discover</a>
+	<a class="back rv" href="/brand/explore"><Icon name="back" />Discover</a>
 	<header class="ph rv">
 		<div style="display:flex;gap:16px;align-items:center">
 			<Avatar name={c.name} src={c.photo} size="64px" />
@@ -171,7 +171,7 @@
 			<AddToPool creator={c.id} name={c.name} />
 			<a class="btn" href={at(c.slug, '/')} target="_blank" rel="noopener"><Icon name="eye" />Their page</a>
 			{#if c.accepting !== false}<a class="btn grad" href={at(c.slug, '/brand/new')}><Icon name="send" />Send a request</a>{/if}
-			<ReportMenu name={c.name} target={{ creator_id: c.id }} onblocked={() => goto('/brand/creators?tab=discover')} />
+			<ReportMenu name={c.name} target={{ creator_id: c.id }} onblocked={() => goto('/brand/explore')} />
 		</div>
 	</header>
 	{/if}

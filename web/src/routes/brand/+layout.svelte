@@ -48,7 +48,7 @@
 		const path = page.url.pathname;
 		// A new login asks creator or brand first: someone who typed their email on Sign in may be a creator.
 		if (isNewLogin(a)) goto('/signup', { replaceState: true });
-		else if (path === '/brand/new') goto('/brand/creators?tab=discover', { replaceState: true });
+		else if (path === '/brand/new') goto('/brand/explore', { replaceState: true });
 	});
 
 	// Invited to a company's team: join it on the first visit after signing in, then list the teams
@@ -163,8 +163,8 @@
 								</nav>
 							{/if}
 							{#if !detail}
-								<a class="btn at-ask" href="/brand/creators?tab=discover"><Icon name="search" />Find creators</a>
-								<a class="btn grad at-new" href={hasCreators ? '/brand/campaigns/new' : '/brand/creators?tab=discover'}><Icon name="plus" />New campaign</a>
+								<a class="btn at-ask" href="/brand/explore"><Icon name="search" />Find creators</a>
+								<a class="btn grad at-new" href={hasCreators ? '/brand/campaigns/new' : '/brand/explore'}><Icon name="plus" />New campaign</a>
 							{/if}
 						</div>
 						{@render children()}

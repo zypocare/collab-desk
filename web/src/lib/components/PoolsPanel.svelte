@@ -118,7 +118,7 @@
 				<div class="hc-val">{vis(pool).length}</div>
 				<div class="hc-sub">creator{vis(pool).length === 1 ? '' : 's'} in this pool{vis(pool).some((m) => !m.creator) ? ` · ${vis(pool).filter((m) => !m.creator).length} not on Miracle yet` : ''} · only you see it</div>
 				<div class="hc-foot">
-					<a href="?tab=discover&pool={pool.id}"><small><span class="dt" style="--hue:var(--g2)"></span>Add</small><b>Creators</b></a>
+					<a href="/brand/explore?pool={pool.id}"><small><span class="dt" style="--hue:var(--g2)"></span>Add</small><b>Creators</b></a>
 					<button onclick={() => (inviting = true)}><small><span class="dt" style="--hue:var(--g1)"></span>Invite</small><b>@handle</b></button>
 					<a href="/brand/campaigns/new?pool={pool.id}"><small><span class="dt" style="--hue:var(--ok)"></span>Start</small><b>Campaign</b></a>
 				</div>
@@ -154,7 +154,7 @@
 					<span class="clear-ic"><Icon name="users" /></span>
 					<b>No creators yet</b>
 					<small>Add them from Discover or from your creators, or invite someone by their Instagram handle.</small>
-					<div class="clear-acts"><a class="glass-chip" href="?tab=discover&pool={pool.id}"><Icon name="search" />Add creators</a></div>
+					<div class="clear-acts"><a class="glass-chip" href="/brand/explore?pool={pool.id}"><Icon name="search" />Add creators</a></div>
 				</div>
 			{/each}
 		</div>
