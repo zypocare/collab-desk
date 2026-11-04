@@ -59,6 +59,7 @@
 	import { clampHints } from '#lib/clampHints.ts';
 	import PlanBilling from '#lib/components/PlanBilling.svelte';
 	import { loadPlan, plan } from '#lib/plan.svelte.ts';
+	import StorySheet from '#lib/components/StorySheet.svelte';
 
 	const s = $derived(studio.settings!);
 	// Her birthday (day and month): saved once both are picked, since the database keeps them together.
@@ -157,6 +158,7 @@
 	}
 
 	let kitBusy = $state(false);
+	let storyOpen = $state(false);
 	async function kit() {
 		kitBusy = true;
 		const { data, error } = await supabase.rpc('public_page');
@@ -270,6 +272,7 @@
 	const onCards = () => cardsEl && (cardI = Math.round(cardsEl.scrollLeft / Math.max(1, cardsEl.clientWidth * 0.86)));
 	const cards = $derived([
 		{ icon: 'link', icons: ['link', 'copy', 'check'], tint: 'var(--g2)', eb: 'Your link', text: 'Brands request collabs from your link', act: 'Copy link', run: () => copyText(link, 'Link copied. Put it in your Instagram bio.') },
+		{ icon: 'insta', icons: ['insta', 'image', 'share'], tint: 'var(--g1)', eb: 'Instagram Story', text: 'A picture of your page to post on your Story', act: 'Share', run: () => (storyOpen = true) },
 		{ icon: 'send', icons: ['send', 'mail', 'check'], tint: 'var(--h-live)', eb: 'WhatsApp', text: 'Send brands your rates and request link', act: 'WhatsApp', run: () => window.open(waShare('', `My rates, packages and collab requests: ${link}`), '_blank', 'noopener') },
 		{ icon: 'film', icons: ['film', 'doc', 'download'], tint: 'var(--g3)', eb: 'Media kit', text: 'Your media kit, ready to send', act: 'Download', run: kit },
 		{ icon: 'qr', icons: ['qr', 'image', 'share'], tint: 'var(--h-request)', eb: 'QR code', text: 'A QR code for events and prints', act: 'Open', run: () => goto('/studio/qr') },
@@ -313,6 +316,7 @@
 				<p>Put this in your Instagram bio and send it in DMs. Brands sign in with their work email to send and track requests.</p>
 				<div class="row">
 					<button class="btn" onclick={() => copyText(link, 'Link copied')}><Icon name="copy" />Copy link</button>
+					<button class="btn out" onclick={() => (storyOpen = true)}><Icon name="insta" />Share to Story</button>
 					<a class="btn out wa" href={waShare('', `My rates, packages and collab requests: ${link}`)} target="_blank" rel="noopener"><Icon name="send" />WhatsApp</a>
 					{#if s.show_insights && studio.ig?.connected}<button class="btn out" onclick={() => copyText(`${link}/insights`, 'Insights link copied. Send it when brands ask for insights')}><Icon name="chart" />Insights link</button><a class="btn out wa" href={waShare('', `My live Instagram numbers (updated every day): ${link}/insights`)} target="_blank" rel="noopener"><Icon name="send" />WhatsApp media kit</a>{/if}
 					<a class="btn out" href="/?preview=1" target="_blank" rel="noopener"><Icon name="eye" />Preview your page</a>
@@ -323,6 +327,7 @@
 	</div>
 </div>
 
+{#if storyOpen}<StorySheet onclose={() => (storyOpen = false)} />{/if}
 <div class="set-shell" class:sec-open={!!active}>
 	{#if phone.on && !active}
 		<div class="cs-hub">

@@ -47,6 +47,25 @@ export async function saveNativeFile(blob: Blob, filename: string): Promise<'sav
 	}
 }
 
+/** Opens the phone's share sheet with a file the app made (a picture for an Instagram Story). */
+export async function shareNativeFile(blob: Blob, filename: string): Promise<'shared' | 'cancelled'> {
+	const files = plugin('FileSharer');
+	if (!files?.share) throw new Error('Update Miracle to share pictures from the app.');
+	const base64Data = await new Promise<string>((resolve, reject) => {
+		const reader = new FileReader();
+		reader.onload = () => resolve(String(reader.result).split(',')[1]);
+		reader.onerror = () => reject(new Error('Could not prepare the picture.'));
+		reader.readAsDataURL(blob);
+	});
+	try {
+		await (files.share as (o: { filename: string; base64Data: string; contentType: string }) => Promise<unknown>)({ filename, base64Data, contentType: blob.type || 'image/png' });
+		return 'shared';
+	} catch (error) {
+		if ((error as { code?: string })?.code === 'USER_CANCELLED' || (error as Error)?.message === 'USER_CANCELLED') return 'cancelled';
+		throw error;
+	}
+}
+
 const OWN = /(^|\.)miracleapp\.live$/;
 // The website (miracleapp.live, www.) is not part of the app: it opens in the browser.
 const WEBSITE = /^(www\.)?miracleapp\.live$/;

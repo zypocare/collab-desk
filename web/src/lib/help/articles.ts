@@ -155,9 +155,9 @@ export const ARTICLES: Article[] = [
 		summary: 'Ways to share your page, and what else it can show.',
 		category: 'start',
 		audience: 'creator',
-		keywords: ['qr', 'qr code', 'media kit', 'pdf', 'rate card', 'whatsapp', 'links', 'youtube', 'shop', 'fan list', 'email list', 'newsletter', 'reviews', 'results', 'share'],
+		keywords: ['qr', 'qr code', 'media kit', 'pdf', 'rate card', 'whatsapp', 'links', 'youtube', 'shop', 'fan list', 'email list', 'newsletter', 'reviews', 'results', 'share', 'story', 'instagram story', 'share to story'],
 		body: [
-			{ list: ['Your link: copy it from the Your link card on My page, or Brand page on a laptop. WhatsApp my rate card sends it with your rates.', 'QR codes: make branded codes for events and print. Each is a short link that counts scans and requests.', 'Media kit PDF: your numbers, audience and rates in one file, kept up to date from Instagram.', 'Links & fan list: add your YouTube, shop and other links (each counts taps), and show Get my updates by email so followers can join your list. Write to your list from the same screen.', 'Results & reviews: Show results from past collabs puts your best collab posts, with real views and reach, on your page, next to brands’ star reviews.'] }
+			{ list: ['Your link: copy it from the Your link card on My page, or Brand page on a laptop. WhatsApp my rate card sends it with your rates.', 'Share to Story: a picture of your page (photo, live numbers and link) sized for an Instagram Story. Tap Share to Story on My page or Brand page, post it, and add a Link sticker with your link.', 'QR codes: make branded codes for events and print. Each is a short link that counts scans and requests.', 'Media kit PDF: your numbers, audience and rates in one file, kept up to date from Instagram.', 'Links & fan list: add your YouTube, shop and other links (each counts taps), and show Get my updates by email so followers can join your list. Write to your list from the same screen.', 'Results & reviews: Show results from past collabs puts your best collab posts, with real views and reach, on your page, next to brands’ star reviews.'] }
 		],
 		links: [{ label: 'Links & fan list', href: '/studio/settings?s=links' }, { label: 'QR codes', href: '/studio/qr' }]
 	},
