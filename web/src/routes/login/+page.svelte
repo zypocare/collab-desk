@@ -3,7 +3,7 @@
 	import { page } from '$app/state';
 	import { tick } from 'svelte';
 	import { auth, homeFor, refreshAccount, signedInHereBefore } from '#lib/auth.svelte.ts';
-	import { inInstalledApp } from '#lib/native.ts';
+	import { inInstalledApp, isNative } from '#lib/native.ts';
 	import { supabase, turnstileSiteKey } from '#lib/supabase.ts';
 	import type { Account } from '#lib/types.ts';
 	import { errMessage } from '#lib/util.ts';
@@ -36,9 +36,10 @@
 	const pwLink = page.url.searchParams.get('pw') === '1';
 	let password = $state('');
 	const withPw = $derived(pwLink || email.trim().toLowerCase() === REVIEW_LOGIN);
-	// The app opens here when nobody is signed in. On a phone that has never signed in, it's most likely
-	// someone new: a welcome asks creator, brand or "I already have an account" before the sign-in form.
-	let welcome = $state(inInstalledApp() && !signedInHereBefore() && !page.url.searchParams.get('email') && !pwLink);
+	// The installed web app (an iPhone's Home Screen) opens here when nobody is signed in. On a phone that has
+	// never signed in, it's most likely someone new: a welcome asks creator, brand or "I already have an
+	// account" before the sign-in form. The Android app has its own first-run slides (AppIntro) instead.
+	let welcome = $state(inInstalledApp() && !isNative() && !signedInHereBefore() && !page.url.searchParams.get('email') && !pwLink);
 
 	// Already signed in? Go straight to the right area.
 	let signingIn = false;

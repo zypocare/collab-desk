@@ -166,7 +166,7 @@ export const LANDING = [
 		faq: [
 			['Can my manager use it?', 'Yes, free. Add a manager, assistant or accountant; each signs in with their own email and sees what their role needs. Managers looking after several creators use the [Agency plan](/influencer-agency-software).'],
 			['Do brands need an account?', 'They sign in with their work email (a 6-digit code, no password) to follow the request, approve drafts and see invoices.'],
-			['Does it work on my phone?', 'Yes. Miracle works in any browser on phone and laptop, and the Android app is coming to the Play Store.']
+			['Does it work on my phone?', 'Yes. Get the Android app on Google Play. The iPhone app is coming soon to the App Store; until then, open app.miracleapp.live in Safari, tap Share, then Add to Home Screen, and Miracle opens like an app, with alerts. On a laptop, use any browser.']
 		],
 		related: ['get-paid-by-brands', 'get-brand-deals', 'influencer-agency-software'],
 		guides: ['asci-influencer-guidelines', 'barter-vs-paid-collabs']
