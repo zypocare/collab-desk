@@ -47,6 +47,7 @@ export default {
 		if (url.pathname === '/' && req.method === 'GET') return brandPage(req, env, url, ctx);
 		// The public creator directory (the website shows it at www.miracleapp.live/creators).
 		if ((url.pathname === '/creators' || url.pathname.startsWith('/creators/')) && req.method === 'GET') return directory(req, env, url, ctx);
+		if (url.pathname === '/api/img' && req.method === 'GET') return igImage(req, url, ctx);
 		if (!url.pathname.startsWith('/api/ai/')) return env.ASSETS.fetch(req);
 		if (req.method !== 'POST') return json({ error: 'Use POST.' }, 405);
 		try {
@@ -1314,6 +1315,31 @@ Rules: use only the data; never invent creators, codes, amounts or dates; if the
 	const codes = (Array.isArray(j.codes) ? j.codes : []).map((c) => clip(c, 24)).filter((c) => known.has(c)).slice(0, 4);
 	const page = PAGES.includes(String(j.page)) ? String(j.page) : '';
 	return { answer: clip(j.answer, 1400) || "I couldn't work that out from your data. Try asking another way.", codes, page };
+}
+
+/** Instagram's pictures (profile photos, post thumbnails), fetched once and kept at Cloudflare's edge for 30
+ * days. Instagram's links are signed and stop working after a few days; a copy kept while the link was good
+ * keeps showing, on every phone, and loads from close by. Only Instagram's and Facebook's picture hosts. */
+const IG_IMG_HOST = /(^|\.)(cdninstagram\.com|fbcdn\.net|fbsbx\.com)$/i;
+async function igImage(req: Request, url: URL, ctx: { waitUntil: (p: Promise<unknown>) => void }) {
+	const raw = url.searchParams.get('u') ?? '';
+	let src: URL;
+	try {
+		src = new URL(raw);
+	} catch {
+		return new Response('Bad picture address.', { status: 400 });
+	}
+	if (src.protocol !== 'https:' || !IG_IMG_HOST.test(src.hostname)) return new Response('Not an Instagram picture.', { status: 400 });
+	const cache = (caches as unknown as { default: Cache }).default;
+	const key = new Request(`https://img-cache.miracleapp.live/${encodeURIComponent(src.toString())}`);
+	const hit = await cache.match(key);
+	if (hit) return hit;
+	const up = await fetch(src.toString(), { headers: { accept: 'image/avif,image/webp,image/*,*/*;q=0.8', 'user-agent': 'Mozilla/5.0 (compatible; MiracleImage/1.0)' }, cf: { cacheEverything: true, cacheTtl: 2592000 } } as RequestInit).catch(() => null);
+	const type = up?.headers.get('content-type') ?? '';
+	if (!up || !up.ok || !type.startsWith('image/')) return new Response('Picture not available.', { status: 404, headers: { 'cache-control': 'public, max-age=300' } });
+	const res = new Response(up.body, { headers: { 'content-type': type, 'cache-control': 'public, max-age=2592000, immutable', 'access-control-allow-origin': '*' } });
+	ctx.waitUntil(cache.put(key, res.clone()));
+	return res;
 }
 
 /** A link a brand pasted, as a public web page's address: no addresses inside a network, no logins in it. */

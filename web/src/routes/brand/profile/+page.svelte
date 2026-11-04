@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { igImg } from '#lib/igImg.ts';
 	import { onMount } from 'svelte';
 	import { auth } from '#lib/auth.svelte.ts';
 	import { allRequests, loadAllRequests } from '#lib/brand.svelte.ts';
@@ -85,7 +86,7 @@
 	<div class="pf-grid">
 		{#each g?.media ?? [] as m (m.id)}
 			<a class="pf-tile pf-post" href={m.permalink} target="_blank" rel="noopener">
-				{#if m.thumbnail_url}<img src={m.thumbnail_url} alt="" loading="lazy" referrerpolicy="no-referrer" />{:else}<Icon name="film" />{/if}
+				{#if m.thumbnail_url}<img src={igImg(m.thumbnail_url)} alt="" loading="lazy" referrerpolicy="no-referrer" />{:else}<Icon name="film" />{/if}
 				{#if m.views ?? m.reach}<span class="pf-views"><Icon name="eye" />{compact(m.views ?? m.reach ?? 0)}</span>{/if}
 			</a>
 		{:else}
@@ -97,7 +98,7 @@
 		{#each tab === 'made' ? made : wall as r, i (r.id)}
 			{@const v = views(r.creator.name)}
 			<a class="wt st-{r.stage}" href={at(r.creator.slug, `/brand/r/${r.code}`)} style="--h:var(--m{hueOf(r.creator.name)});--i:{Math.min(i, 8)}">
-				{#if r.creator.photo}<img class="wt-img" src={r.creator.photo} alt="" loading="lazy" referrerpolicy="no-referrer" />{:else}<span class="wt-glow" aria-hidden="true"></span><span class="wt-mark" aria-hidden="true">{initials(r.creator.name)}</span>{/if}
+				{#if r.creator.photo}<img class="wt-img" src={igImg(r.creator.photo)} alt="" loading="lazy" referrerpolicy="no-referrer" />{:else}<span class="wt-glow" aria-hidden="true"></span><span class="wt-mark" aria-hidden="true">{initials(r.creator.name)}</span>{/if}
 				<span class="wt-stage"><i></i>{r.needs === 'quote' || r.needs === 'draft' ? 'Your turn' : stageLabel(r.stage)}</span>
 				<span class="wt-b">
 					<b>{r.creator.name}</b>

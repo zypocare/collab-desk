@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { igImg } from '../igImg';
 	import { audienceSummary, basedOn, benchmark, engageMix, formatRows, FORMAT_LABEL, insightKpis, sponsoredLine, type PublicInsights, type SectionKey } from '../insights';
 	import { compact, fmt, mediaLabel } from '../util';
 	import Audience from './Audience.svelte';
@@ -179,7 +180,7 @@
 		<div class="ins-top-grid">
 			{#each d.top as m, i (m.permalink)}
 				<a class="ins-post glow" href={m.permalink} target="_blank" rel="noopener" style="--i:{i}">
-					{#if m.thumbnail_url}<img src={m.thumbnail_url} alt="" loading="lazy" referrerpolicy="no-referrer" />{:else}<span class="ins-post-ph"><Icon name="film" /></span>{/if}
+					{#if m.thumbnail_url}<img src={igImg(m.thumbnail_url)} alt="" loading="lazy" referrerpolicy="no-referrer" />{:else}<span class="ins-post-ph"><Icon name="film" /></span>{/if}
 					<span class="ins-post-t">{mediaLabel(m.media_type, m.product_type)} · {fmt(m.posted_at.slice(0, 10))}</span>
 					<span class="ins-post-n">{#if m.views}<b>{compact(m.views)}</b> views{:else if m.reach}<b>{compact(m.reach)}</b> reached{/if}{#if m.interactions}{' · '}{compact(m.interactions)} interactions{/if}</span>
 				</a>
@@ -194,7 +195,7 @@
 		<div class="ins-top-grid">
 			{#each results.slice(0, 6) as r, i (r.permalink + i)}
 				<a class="ins-post glow" href={r.permalink} target="_blank" rel="noopener" style="--i:{i}">
-					{#if r.thumbnail}<img src={r.thumbnail} alt="" loading="lazy" referrerpolicy="no-referrer" />{:else}<span class="ins-post-ph"><Icon name="spark" /></span>{/if}
+					{#if r.thumbnail}<img src={igImg(r.thumbnail)} alt="" loading="lazy" referrerpolicy="no-referrer" />{:else}<span class="ins-post-ph"><Icon name="spark" /></span>{/if}
 					<span class="ins-post-t">{r.brand} · {({ REELS: 'Reel', STORY: 'Story', FEED: 'Post' } as Record<string, string>)[r.kind] ?? r.kind}</span>
 					<span class="ins-post-n">{#if r.views}<b>{compact(r.views)}</b> views{:else if r.reach}<b>{compact(r.reach)}</b> reached{/if}</span>
 				</a>

@@ -30,6 +30,16 @@
 
 	let { children }: LayoutProps = $props();
 
+	// A picture that won't load (an Instagram link that ran out, a deleted post) is hidden rather than
+	// shown as a broken-image icon; the tile or circle behind it shows instead.
+	onMount(() => {
+		const broken = (e: Event) => {
+			const t = e.target;
+			if (t instanceof HTMLImageElement) t.classList.add('img-x');
+		};
+		addEventListener('error', broken, true);
+		return () => removeEventListener('error', broken, true);
+	});
 	onMount(() => {
 		initProblems();
 		initTheme();

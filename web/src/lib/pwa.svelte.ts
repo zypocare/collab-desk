@@ -10,12 +10,15 @@ export const pwa = $state<{ installEvent: InstallEvent | null; installed: boolea
 export function watchInstall() {
 	if (typeof window === 'undefined') return;
 	// Inside the Android or iPhone app: it is already installed, and the native pieces start.
+	// The saved copy of the app (service-worker.js) in the phone app too, as in Chrome: the app's code and
+	// icons load from the phone instead of the network (Capacitor passes its requests through, so the
+	// native bridge is still added to each page). Alerts in the phone app stay native.
+	if (!import.meta.env.DEV && 'serviceWorker' in navigator) navigator.serviceWorker.register('/service-worker.js').catch((e) => console.error('[sw]', e));
 	if (isNative()) {
 		pwa.installed = true;
 		startNative();
 		return;
 	}
-	if (!import.meta.env.DEV && 'serviceWorker' in navigator) navigator.serviceWorker.register('/service-worker.js').catch((e) => console.error('[sw]', e));
 	pwa.installed = matchMedia('(display-mode: standalone)').matches || (navigator as unknown as { standalone?: boolean }).standalone === true;
 	addEventListener('beforeinstallprompt', (e) => {
 		e.preventDefault();

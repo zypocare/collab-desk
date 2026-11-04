@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { igImg } from '../igImg';
 	import { initials } from '../util';
 
 	//  Instagram photo inside the animated ring; her initials until it loads or if it fails.
@@ -16,7 +17,7 @@
 <span class="ring" style={size ? `--sz:${size}` : undefined}>
 	<span>
 		{#if src && !failed}
-			<img {src} alt="" class="av-img" class:in={loaded} referrerpolicy="no-referrer" onload={() => (loaded = true)} onerror={() => (failed = true)} />
+			<img src={igImg(src)} alt="" class="av-img" class:in={loaded} referrerpolicy="no-referrer" onload={() => (loaded = true)} onerror={() => (failed = true)} />
 		{/if}
 		{#if !src || failed || !loaded}<i class="av-txt">{initials(name)}</i>{/if}
 	</span>

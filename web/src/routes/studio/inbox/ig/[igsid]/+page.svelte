@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { igImg } from '#lib/igImg.ts';
 	import { page } from '$app/state';
 	import { onMount, tick } from 'svelte';
 	import { supabase } from '#lib/supabase.ts';
@@ -120,7 +121,7 @@
 	<header class="chat-h">
 		<button class="m-ib" onclick={() => history.back()} aria-label="Back"><Icon name="chevL" /></button>
 		<div class="chat-who">
-			{#if t?.picture}<img class="ig-pic" src={t.picture} alt="" referrerpolicy="no-referrer" />{:else}<Mono name={t?.username || 'IG'} />{/if}
+			{#if t?.picture}<img class="ig-pic" src={igImg(t.picture)} alt="" referrerpolicy="no-referrer" />{:else}<Mono name={t?.username || 'IG'} />{/if}
 			<span><b>@{t?.username || 'Instagram user'}</b><small>{t?.name || 'Instagram DM'}</small></span>
 		</div>
 		{#if t?.collab_id}<a class="m-ib" href="/studio/collabs" aria-label="Collab"><Icon name="info" /></a>{:else if !flagged}<button class="btn sm" onclick={addCollab}><Icon name="plus" />Add as collab</button>{/if}
