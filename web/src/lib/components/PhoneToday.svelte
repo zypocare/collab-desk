@@ -159,6 +159,8 @@
 	const sel = $derived(pick ?? (week.find((d) => d.list.length)?.i ?? 0));
 	const selDay = $derived(week[sel]);
 	const ORDER = ['shoot', 'draft', 'product', 'live', 'pay', 'follow'];
+	// The leaf's band takes the colour of the day's first thing, as on a collab's Dates.
+	const LEAF: Record<string, string> = { shoot: '#9C7BFF', draft: '#C9B6FF', product: '#FFAE6B', live: '#F25A90', pay: '#6FD08C', follow: '#EFB35A' };
 	const selList = $derived([...selDay.list].sort((a, b) => ORDER.indexOf(a.kind) - ORDER.indexOf(b.kind)));
 	const short = (d: Date, i: number) => (i === 0 ? 'Today' : d.toLocaleDateString('en-IN', { weekday: 'short' }));
 	const longDate = (d: Date) => d.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'short' });
@@ -353,8 +355,9 @@
 	<!-- The next seven days: tap one to see what's on it. -->
 	<div class="wk2-days" role="tablist" aria-label="The next seven days">
 		{#each week as d (d.i)}
-			<button class="wk2-d" class:now={d.i === 0} class:on={d.i === sel} class:free={!d.list.length} role="tab" aria-selected={d.i === sel} aria-label="{dayName(d.dt, d.i)}, {d.list.length || 'nothing'} {d.list.length === 1 ? 'thing' : 'things'}" onclick={() => choose(d.i)}>
-				<small>{short(d.dt, d.i)}</small>
+			{@const first = [...d.list].sort((a, b) => ORDER.indexOf(a.kind) - ORDER.indexOf(b.kind))[0]}
+			<button class="wk2-d" class:now={d.i === 0} class:on={d.i === sel} class:free={!d.list.length} style={first ? `--h:${LEAF[first.kind] ?? LEAF.follow}` : ''} role="tab" aria-selected={d.i === sel} aria-label="{dayName(d.dt, d.i)}, {d.list.length || 'nothing'} {d.list.length === 1 ? 'thing' : 'things'}" onclick={() => choose(d.i)}>
+				<em>{short(d.dt, d.i)}</em>
 				<b>{d.dt.getDate()}</b>
 				<span class="wk2-dots" aria-hidden="true">{#each d.list.slice(0, 3) as e, k (k)}<i class="k-{e.kind}"></i>{/each}</span>
 			</button>

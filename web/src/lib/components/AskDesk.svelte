@@ -16,16 +16,23 @@
 	import Icon from './Icon.svelte';
 	import NudgeSheet from './NudgeSheet.svelte';
 	import { canSpeak, listen as hear, type Listening } from '../speak';
+	import { auth } from '../auth.svelte';
+	import { allRequests, brandHome } from '../brand.svelte';
+	import { askBrandDesk, brandChatData } from '../brandAi';
+	import { addressFor } from '../creatorHost';
+	import { pageSlug } from '../supabase';
 
 	// "Ask your desk": she asks about her own collabs and money (typed or spoken), the free AI answers
 	// from her data and can offer a few actions as buttons. Nothing happens without her tap, and money
 	// actions still ask first. Past chats are kept on this device only.
-	let { onclose }: { onclose: () => void } = $props();
+	// `brand`: the same desk for a brand team, answering from their requests across every creator (brandchat).
+	let { onclose, brand = false }: { onclose: () => void; brand?: boolean } = $props();
 
 	type Action = { type: string; code: string; codes?: string[]; stage?: string; date?: string; path: string; text: string; label: string };
 	type Turn = { q: string; a: string; actions: Action[]; sources?: Source[] };
 	type Chat = { id: string; title: string; at: number; turns: Turn[] };
-	const KEY = 'ask-desk-chats';
+	// svelte-ignore state_referenced_locally
+	const KEY = brand ? 'brand-ask-chats' : 'ask-desk-chats';
 	let chats = $state<Chat[]>([]);
 	let activeId = $state<string | null>(null);
 	let q = $state('');
@@ -38,7 +45,9 @@
 
 	const active = $derived(chats.find((c) => c.id === activeId) ?? null);
 	const turns = $derived(active?.turns ?? []);
-	const name = $derived(firstName(studio.settings?.display_name ?? ''));
+	const bAcct = $derived(auth.account?.role === 'brand' ? auth.account : null);
+	const company = $derived(bAcct?.brand?.name || bAcct?.profile?.name || 'your brand');
+	const name = $derived(brand ? firstName(bAcct?.full_name ?? '') || company : firstName(studio.settings?.display_name ?? ''));
 	// Phone: opening it is a moment. A glow in her colours rises over the screen she's on, an orb of
 	// dots gathers in the middle, the greeting appears, and the desk settles in. A tap skips it.
 	const playIntro = typeof matchMedia !== 'undefined' && !matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -65,13 +74,31 @@
 		return () => clearTimeout(introTimer);
 	});
 
-	const TOOLS = [
+	const BRAND_TOOLS = [
+		{ icon: 'check', label: 'What needs me', hint: 'Quotes, drafts, invoices', q: 'What is waiting for me right now?' },
+		{ icon: 'image', label: 'Drafts', hint: 'Waiting for your approval', q: 'Which drafts are waiting for my approval?' },
+		{ icon: 'wallet', label: 'Invoices', hint: 'To pay, and when', q: 'Which invoices do I still have to pay, and when are they due?' },
+		{ icon: 'cal', label: 'Going live', hint: 'The next two weeks', q: 'What goes live in the next two weeks?' },
+		{ icon: 'chart', label: 'This month', hint: 'Spent on creators', q: 'How much have we spent on creators this month?' }
+	];
+	const CREATOR_TOOLS = [
 		{ icon: 'wallet', label: 'Who owes me', hint: 'Unpaid invoices', q: 'Who hasn’t paid me yet?' },
 		{ icon: 'cal', label: 'This week', hint: 'Drafts, go-lives, payments', q: 'What’s due this week?' },
 		{ icon: 'chart', label: 'My earnings', hint: 'This month so far', q: 'How much did I earn this month?' },
 		{ icon: 'film', label: 'Drafts due', hint: 'What to make next', q: 'Which collabs need a draft from me?' },
 		{ icon: 'bell', label: 'Follow-ups', hint: 'Brands gone quiet', q: 'Which brands should I follow up with?' }
 	];
+	// svelte-ignore state_referenced_locally
+	const TOOLS = brand ? BRAND_TOOLS : CREATOR_TOOLS;
+	const BRAND_PAGES: Record<string, { label: string; href: string }> = {
+		requests: { label: 'Requests', href: '/brand/requests' },
+		inbox: { label: 'Messages', href: '/brand/inbox' },
+		discover: { label: 'Find creators', href: '/brand/creators?tab=discover' },
+		new_campaign: { label: 'New campaign', href: '/brand/campaigns/new' },
+		reports: { label: 'Reports', href: '/brand/reports' },
+		payments: { label: 'Payments', href: '/brand/business/money' },
+		calendar: { label: 'Calendar', href: '/brand/business/calendar' }
+	};
 
 	onMount(() => {
 		try {
@@ -81,7 +108,7 @@
 		}
 		if (!phone.on) tick().then(() => box?.focus());
 		// New messages and notes get their search fingerprints while she reads.
-		indexDesk();
+		if (!brand) indexDesk();
 	});
 	function save() {
 		try {
@@ -126,6 +153,22 @@
 		c.at = Date.now();
 		await scrollEnd();
 		try {
+			if (brand) {
+				// A brand's desk: their requests across every creator; answers link to the requests they name.
+				const r = await askBrandDesk(question, brandChatData(allRequests.list, brandHome.dash), company, todayIso(), c.turns.slice(-4, -1).map((t) => ({ q: t.q, a: t.a })));
+				const rows = new Map(allRequests.list.map((x) => [x.code, x]));
+				const actions: Action[] = r.codes
+					.map((k) => rows.get(k))
+					.filter((x) => !!x)
+					.map((x) => ({ type: 'go', code: '', path: x!.creator.slug === pageSlug ? `/brand/r/${x!.code}` : addressFor(x!.creator.slug, `/brand/r/${x!.code}`), text: '', label: `${x!.creator.name} · ${x!.stage_label}` }));
+				if (BRAND_PAGES[r.page]) actions.push({ type: 'go', code: '', path: BRAND_PAGES[r.page].href, text: '', label: BRAND_PAGES[r.page].label });
+				c.turns[c.turns.length - 1] = { q: question, a: r.answer, actions };
+				chats = [c, ...chats.filter((x) => x.id !== c.id)];
+				save();
+				busy = false;
+				await scrollEnd();
+				return;
+			}
 			// The messages, emails, briefs and notes closest to the question go along, to quote from.
 			const sources = await searchDesk(question);
 			const r = await askAi<{ answer: string; cites?: number[]; actions: Action[] }>('ask', {
@@ -154,7 +197,7 @@
 
 	async function act(a: Action) {
 		const c = a.code ? byCode(a.code) : undefined;
-		if (a.type === 'go') return (onclose(), goto(a.path));
+		if (a.type === 'go') return (onclose(), /^https?:\/\//.test(a.path) ? (location.href = a.path) : goto(a.path));
 		if (a.type === 'new_collab') {
 			ui.pasteText = a.text;
 			ui.newCollab = true;
@@ -355,7 +398,7 @@
 				<button class="gm-send" type="submit" disabled={!q.trim() || busy} aria-label="Ask"><Icon name="send" /></button>
 			</div>
 		</form>
-		<p class="gm-foot">Answers come from your own collabs and money. Check anything important.</p>
+		<p class="gm-foot">{brand ? "Answers come from your requests, drafts and invoices. It can't change anything." : 'Answers come from your own collabs and money. Check anything important.'}</p>
 	</main>
 	{/if}
 

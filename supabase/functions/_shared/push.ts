@@ -348,8 +348,31 @@ export function pushForBrand(kind: string, p: Record<string, unknown>, creatorNa
   }
 }
 
-/** Sends to every device a brand login turned alerts on for; forgets devices the browser says are gone. */
+/** A brand login's alert kept in the app (Alerts on their Today), whether or not a phone gets it. A newer
+ * alert with the same tag (the same quote, the same draft) replaces the older one. */
+export async function keepBrandAlert(db: SupabaseClient, userId: string, msg: Push) {
+  if (msg.keep === false || !userId) return;
+  try {
+    const tag = String(msg.tag ?? '').slice(0, 80);
+    if (tag) await db.from('brand_alerts').delete().eq('user_id', userId).eq('tag', tag);
+    const { error } = await db.from('brand_alerts').insert({
+      user_id: userId,
+      kind: String(msg.kind ?? '').slice(0, 40),
+      title: String(msg.title ?? '').slice(0, 200),
+      body: String(msg.body ?? '').slice(0, 600),
+      url: String(msg.url ?? '').slice(0, 500),
+      tag,
+    });
+    if (error) console.error('[brand alerts]', error.message);
+  } catch (e) {
+    console.error('[brand alerts]', e);
+  }
+}
+
+/** Sends to every device a brand login turned alerts on for; forgets devices the browser says are gone.
+ * The alert is kept in their Alerts too, unless `keep` is false (already kept). */
 export async function pushToBrandUser(db: SupabaseClient, userId: string, msg: Push) {
+  await keepBrandAlert(db, userId, msg);
   if (!pushConfigured && !fcmConfigured && !apnsConfigured) return { sent: 0, skipped: 'push not configured' };
   const { data: subs } = await db.from('brand_push_subscriptions').select('id, endpoint, p256dh, auth, device').eq('user_id', userId);
   let sent = 0;

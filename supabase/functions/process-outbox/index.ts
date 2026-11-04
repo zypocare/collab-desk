@@ -4,7 +4,7 @@
 import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2';
 import { mailConfigured, sendGrowthMail, sendMail } from '../_shared/mailer.ts';
 import { render, type Settings as MailSettings } from '../_shared/templates.ts';
-import { pushFor, pushForBrand, pushToBrandUser, pushToCreator } from '../_shared/push.ts';
+import { keepBrandAlert, pushFor, pushForBrand, pushToBrandUser, pushToCreator } from '../_shared/push.ts';
 import { settingsOf, teamCopies, type Settings } from '../_shared/creators.ts';
 import { reportProblem } from '../_shared/problems.ts';
 import { planInvoicePdf, type PlanInvoice } from '../_shared/planInvoicePdf.ts';
@@ -169,6 +169,9 @@ type BrandTarget = { user_id: string; prefs: { quotes?: boolean; drafts?: boolea
 async function pushBrand(db: SupabaseClient, kind: string, payload: Record<string, unknown>, email: string, creatorName: string) {
   const alert = pushForBrand(kind, payload, creatorName);
   if (!alert || !email.trim()) return;
+  // Kept in the brand's Alerts in the app first, phone or no phone, switched on or off.
+  const { data: who } = await db.rpc('brand_alert_user', { p_email: email });
+  if (typeof who === 'string' && who) await keepBrandAlert(db, who, { ...alert.msg, kind });
   const { data, error } = await db.rpc('brand_push_target', { p_email: email });
   if (error) return console.error('[push brand]', error.message);
   const target = data as BrandTarget | null;
@@ -178,7 +181,7 @@ async function pushBrand(db: SupabaseClient, kind: string, payload: Record<strin
   // Quiet hours: 10 pm to 8 am in India.
   const hour = new Date(Date.now() + 330 * 60_000).getUTCHours();
   if (prefs.quiet && (hour >= 22 || hour < 8)) return;
-  await pushToBrandUser(db, target.user_id, alert.msg);
+  await pushToBrandUser(db, target.user_id, { ...alert.msg, kind, keep: false });
 }
 
 type Creator = { settings: Settings & MailSettings; ownerEmail: string; teamCc: string[]; replyTo?: string };

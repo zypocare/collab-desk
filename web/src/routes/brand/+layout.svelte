@@ -18,7 +18,8 @@
 	import BrandTopbar from '#lib/components/BrandTopbar.svelte';
 	import BrandFooter from '#lib/components/BrandFooter.svelte';
 	import BrandSide from '#lib/components/BrandSide.svelte';
-	import BrandAsk from '#lib/components/BrandAsk.svelte';
+	import AskDesk from '#lib/components/AskDesk.svelte';
+	import { watchAlerts } from '#lib/alerts.svelte.ts';
 	import { loadBrandIg } from '#lib/brandIg.svelte.ts';
 	import { PHONE_Q, phone } from '#lib/phone.svelte.ts';
 
@@ -66,6 +67,10 @@
 	onMount(() => {
 		if (!pub.data) loadPublicPage();
 		if (auth.account?.role === 'brand') loadRequests();
+	});
+	// The bell's count on Today, kept fresh while a brand is signed in.
+	$effect(() => {
+		if (auth.account?.role === 'brand') return watchAlerts();
 	});
 	$effect(() => {
 		if (auth.account?.role === 'brand') {
@@ -167,7 +172,7 @@
 				{/if}
 			</main>
 		</div>
-		{#if ui.askOpen}<BrandAsk onclose={() => (ui.askOpen = false)} />{/if}
+		{#if ui.askOpen}<AskDesk brand onclose={() => (ui.askOpen = false)} />{/if}
 	{:else}
 		<BrandTopbar />
 		<div class="page"><div class="wrap">{@render children()}</div></div>
