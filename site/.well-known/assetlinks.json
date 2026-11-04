@@ -1,0 +1,15 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "live.miracleapp.app",
+      "sha256_cert_fingerprints": [
+        "26:98:9D:3A:D5:94:2F:36:4E:9F:DC:DF:28:39:46:4A:B6:09:88:04:2D:9F:61:31:A1:F4:1A:0C:27:F0:9C:B7",
+        "41:CC:19:CC:12:E9:3C:02:A1:8D:B0:2B:93:F5:32:D9:FE:A0:57:BB:F5:80:7B:23:58:0E:98:27:45:A8:AD:73"
+      ]
+    }
+  }
+]

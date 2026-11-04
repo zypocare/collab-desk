@@ -70,15 +70,23 @@ export function startNative() {
 		if (e.canGoBack || history.length > 1) history.back();
 		else (app.exitApp as () => Promise<void>)();
 	}) as never);
-	// A Miracle link opened from another app (WhatsApp, email): go straight there.
-	app?.addListener('appUrlOpen', ((e: { url: string }) => {
-		try {
-			const u = new URL(e.url);
-			if (OWN.test(u.hostname)) location.href = u.href;
-		} catch {
-			/* not a link we know */
-		}
-	}) as never);
+	// A Miracle link opened from another app (WhatsApp, email, the browser) while the app was running.
+	app?.addListener('appUrlOpen', ((e: { url: string }) => openLink(e.url)) as never);
+	// The same when the link started the app: Capacitor opens the app's first page and keeps the link for us.
+	// Once per launch: following it reloads this page, which asks again.
+	(app?.getLaunchUrl as (() => Promise<{ url?: string } | undefined>) | undefined)?.()
+		.then((r) => {
+			const url = r?.url;
+			if (!url) return;
+			try {
+				if (sessionStorage.getItem('mc-launch') === url) return;
+				sessionStorage.setItem('mc-launch', url);
+			} catch {
+				/* storage blocked */
+			}
+			openLink(url);
+		})
+		.catch(() => {});
 	// Links to other sites (WhatsApp, Instagram posts, UPI apps) open outside the app.
 	document.addEventListener(
 		'click',
@@ -158,6 +166,27 @@ function iconsFollowPage(bars: Plugin | undefined) {
 	setTimeout(check, 800);
 	new MutationObserver(check).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'style'] });
 	setInterval(check, 1500);
+}
+
+/** A Miracle link that opened the app (Android's app links, see .well-known/assetlinks.json). The app's own
+ *  pages (a creator's page, an invoice, sign-in) open right here. The website's pages (help, pricing, guides)
+ *  belong in the browser, except its home, "get the app" and sign-in links, which mean "open Miracle". */
+function openLink(href: string) {
+	let u: URL;
+	try {
+		u = new URL(href);
+	} catch {
+		return;
+	}
+	if (u.protocol !== 'https:' || !OWN.test(u.hostname)) return;
+	if (WEBSITE.test(u.hostname)) {
+		if (/^\/(signin|login)\/?$/.test(u.pathname)) location.href = '/login';
+		else if (/^\/(app|android)?\/?$/.test(u.pathname)) {
+			if (!/^\/(studio|brand)(\/|$)/.test(location.pathname)) location.href = '/studio';
+		} else openOutside(u.href);
+		return;
+	}
+	if (u.href !== location.href) location.href = u.href;
 }
 
 /** Opens a link in the phone's browser (or the app that handles it, like WhatsApp). */
