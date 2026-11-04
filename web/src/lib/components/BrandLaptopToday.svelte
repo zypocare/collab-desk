@@ -1,4 +1,5 @@
 <script lang="ts">
+	import FoundingBanner from './FoundingBanner.svelte';
 	import { auth } from '../auth.svelte';
 	import { autopilots } from '../autopilots.svelte';
 	import { brandHome } from '../brand.svelte';
@@ -94,6 +95,7 @@
 </script>
 
 <div class="lt">
+	<FoundingBanner />
 	<!-- Header -->
 	<header class="l-h">
 		<div class="l-hi">

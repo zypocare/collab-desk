@@ -13,6 +13,8 @@ export type PayRecord = {
 	gstin: string | null;
 	profile_gstin: string | null;
 	instagram: string | null;
+	/** What creators say about working with them (an average, once 3 creators have rated). */
+	rating?: { n: number; avg: number; pay: number | null; brief: number | null; again: number | null } | null;
 };
 export type CreatorTrust = { deals: number; posted: number; on_time: number; reply_hours: number | null };
 
@@ -56,6 +58,7 @@ export function brandChips(r: PayRecord | undefined, ownGstin: string | null | u
 	// A missing GSTIN is normal for most brands she works with; only a wrong one is worth a chip.
 	if (g && !valid) chips.push({ text: "GSTIN doesn't check out", tone: 'bad' });
 	if (r?.instagram) chips.push({ text: 'Instagram verified', tone: 'info' });
+	if (r?.rating?.avg) chips.push({ text: `Creators rate ${r.rating.avg}★ (${r.rating.n})`, tone: r.rating.avg >= 4 ? 'ok' : r.rating.avg >= 3 ? 'warn' : 'bad' });
 
 	let line = '';
 	if (fresh) line = 'Nothing wrong, just no history. Ask for an advance before you start.';

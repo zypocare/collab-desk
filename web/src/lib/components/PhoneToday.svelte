@@ -207,7 +207,8 @@
 			outs > 0 && { b: inrS(outs), t: ' yet to come in' },
 			goal > 0 && { b: `${pctN}%`, t: ` of the ${inrS(goal)} goal` },
 			active.length > 0 && { b: String(active.length), t: ` active collab${active.length === 1 ? '' : 's'}` },
-			nextPayout && { b: nextPayout.brand.name, t: ` pays next, ${fmt(nextPayout.pay_due!)}` }
+			nextPayout && { b: nextPayout.brand.name, t: ` pays next, ${fmt(nextPayout.pay_due!)}` },
+			views.week > 0 && { b: String(views.week), t: ` brand${views.week === 1 ? '' : 's'} viewed your profile this week` }
 		].filter((x): x is { b: string; t: string } => !!x)
 	);
 	// Beside the greeting: live Instagram numbers, or this month's goal when Instagram isn't connected.
@@ -215,6 +216,8 @@
 	// Her Reels engagement in full, the same figure Insights leads with.
 	const er = $derived(ig ? headlineEr(ig.insights, ig.engagement_rate) : null);
 	import SetupChecklist from '#lib/components/SetupChecklist.svelte';
+	import { loadViews, views } from '#lib/profileViews.svelte.ts';
+	onMount(() => void loadViews());
 	import CheckupCard from '#lib/components/CheckupCard.svelte';
 </script>
 

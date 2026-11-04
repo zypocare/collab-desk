@@ -22,11 +22,25 @@
 	// The cards at the top also read the website and the Growth Autopilot.
 	let site = $state<D | null>(null);
 	let grow = $state<D | null>(null);
+	// Marketplace readiness: whether Spotlight and Creator Pro are worth switching on yet (migration 190).
+	let market = $state<D | null>(null);
+	const READY: [string, string, string][] = [
+		['active_brands', 'Brand teams active (30 days)', 'sent a request or moved a collab'],
+		['requests_30d', 'Requests from brands (30 days)', 'collabs started by a brand login'],
+		['listed_creators', 'Creators listed in Explore', 'approved and listed'],
+		['creators_with_request_pct', 'Creators who got a request (30 days)', '% of approved creators']
+	];
+	const readyRows = $derived(market ? READY.map(([k, l, sub]) => {
+		const v = Number(market![k]) || 0, t = Number(market!.targets?.[k]) || 1;
+		return { k, l, sub, v, t, pct: Math.min(100, Math.round((v / t) * 100)), hit: v >= t, unit: k.endsWith('_pct') ? '%' : '' };
+	}) : []);
+	const readyAll = $derived(readyRows.length > 0 && readyRows.every((x) => x.hit));
 	async function load() {
 		busy = true;
 		supabase.rpc('admin_quotas').then(({ data }) => data && (quota = data as D));
 		supabase.rpc('admin_site_stats', { p_days: days }).then(({ data }) => data && (site = data as D));
 		supabase.rpc('admin_growth').then(({ data }) => data && (grow = data as D));
+		supabase.rpc('admin_marketplace').then(({ data }) => data && (market = data as D));
 		const { data, error } = await supabase.rpc('admin_dashboard', { p_days: days });
 		busy = false;
 		err = error ? errMessage(error) : '';
@@ -135,6 +149,19 @@
 		<div id="site">
 		<SiteStats {days} />
 		</div>
+
+		{#if market}
+			<section class="card">
+				<div class="card-h"><h2 class="card-t">Marketplace readiness</h2><span class="tag {readyAll ? 't-ok' : 't-info'}">{readyAll ? 'Ready for paid features' : 'Growing: keep everything free'}</span></div>
+				<p class="muted sm" style="margin:0 0 10px">Spotlight and Creator Pro switch on once all four reach their target. Founding brands: {num(market.founding?.cap - market.founding?.left)} of {num(market.founding?.cap)} places taken ({market.founding?.months} months of Brand Pro free).</p>
+				<div class="fun">
+					{#each readyRows as x (x.k)}
+						<div class="fr"><span>{x.l}<small class="muted" style="display:block">{x.sub}</small></span><span class="bar"><span style:width="{x.pct}%" style:background={x.hit ? '#1d6b45' : '#5b34c4'}></span></span><span class="mono r">{num(x.v)}{x.unit} / {num(x.t)}{x.unit}</span></div>
+					{/each}
+				</div>
+				<p class="muted sm" style="margin:10px 0 0">Also: {num(market.profile_views_30d)} profile views by brands in 30 days · {num(market.reviews)} brand reviews · {num(market.brand_ratings)} creator ratings of brands · {num(market.brand_teams)} brand teams in all.</p>
+			</section>
+		{/if}
 
 		{#if quota}
 			<section class="card">

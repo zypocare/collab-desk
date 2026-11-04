@@ -9,7 +9,7 @@
 	import { costPerK, miracleScore, proofLines, type MiracleScore } from '../miracleScore';
 	import { phone } from '../phone.svelte';
 	import { portal } from '../portal';
-	import { pageSlug } from '../supabase';
+	import { pageSlug, supabase } from '../supabase';
 	import { compact, inrS, initials } from '../util';
 	import type { DiscoverCreator } from '../types';
 	import AddToPool from './AddToPool.svelte';
@@ -23,9 +23,12 @@
 	const category = $derived(acct?.brand?.category || acct?.profile?.category || '');
 	const company = $derived(acct?.brand?.name || acct?.profile?.name || 'your brand');
 	const at = (slug: string, path: string) => (slug === pageSlug ? path : addressFor(slug, path));
+	// What brands said after working with each creator (averages; migration 190).
+	let reviews = $state<Record<string, { avg: number; n: number }>>({});
 	onMount(() => {
 		if (!discover.loaded) loadDiscover();
 		if (!blocks.loaded) loadBlocks();
+		supabase.rpc('explore_reviews').then(({ data }) => (reviews = (data as typeof reviews) ?? {}));
 	});
 
 	type Row = { c: DiscoverCreator; score: MiracleScore; fit: number; rate: number | null };
@@ -33,7 +36,7 @@
 		const blocked = blockedCreators();
 		return discover.list
 			.filter((c) => (c.listed || c.with_me.collabs) && !blocked.has(c.id))
-			.map((c) => ({ c, score: miracleScore(c), fit: fit(c, NO_FILTERS, category).total, rate: reelRate(c) }));
+			.map((c) => ({ c, score: miracleScore(c, reviews[c.id]), fit: fit(c, NO_FILTERS, category).total, rate: reelRate(c) }));
 	});
 
 	// ---- Collections: ready-made shelves, only the ones with at least two creators ----
@@ -203,10 +206,10 @@
 					<span><b>{c.engagement != null ? `${Number(c.engagement).toFixed(1)}%` : '—'}</b><small>engagement</small></span>
 					<span><b>{r.rate ? inrS(r.rate) : '—'}</b><small>{r.rate ? 'a Reel' : 'rates on ask'}</small></span>
 				</div>
-				{#if proofLines(c).length || c.with_me.collabs}
+				{#if proofLines(c, reviews[c.id]).length || c.with_me.collabs}
 					<div class="ex-proof">
 						{#if c.with_me.collabs}<span class="tone-ok">Worked with you</span>{/if}
-						{#each proofLines(c) as p (p.text)}<span class="tone-{p.tone}">{p.text}</span>{/each}
+						{#each proofLines(c, reviews[c.id]) as p (p.text)}<span class="tone-{p.tone}">{p.text}</span>{/each}
 					</div>
 				{/if}
 				<div class="ex-acts">
@@ -320,7 +323,7 @@
 			<ul>
 				<li><b>Delivers on time</b> <span>35</span> Posts that went live on the agreed date.</li>
 				<li><b>Healthy audience</b> <span>20</span> Audience health from their Instagram; serious brand-safety notes count against it.</li>
-				<li><b>Paid deals done</b> <span>20</span> Deals done and paid through Miracle.</li>
+				<li><b>Deals and reviews</b> <span>20</span> Deals done and paid through Miracle, and the stars brands gave after.</li>
 				<li><b>Replies fast</b> <span>15</span> How quickly they usually answer brands.</li>
 				<li><b>Complete profile</b> <span>10</span> Photo, niche, city, languages, rates and Instagram.</li>
 			</ul>

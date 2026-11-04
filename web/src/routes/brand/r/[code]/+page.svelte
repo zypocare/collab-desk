@@ -1,4 +1,5 @@
 <script lang="ts">
+	import ReviewCreator from '#lib/components/ReviewCreator.svelte';
 	import QuoteChoices from '#lib/components/QuoteChoices.svelte';
 	import DeliverableProgress from '#lib/components/DeliverableProgress.svelte';
 	import { langText } from '#lib/languages.ts';
@@ -233,6 +234,7 @@
 		<div class="warn-box" role="status"><b>{r.stage_label}</b><span>{r.lifecycle_reason}</span>{#if r.resume_on}<span>Review on {fmt(r.resume_on)}. The creator will confirm when work resumes.</span>{/if}<span>Existing invoices and payments remain available below.</span></div>
 	{/if}
 	{#if error}<div class="err-box">{error}</div>{/if}
+	{#if r.stage === 'wrapped'}<ReviewCreator code={r.code} name={pub.data?.display_name || 'this creator'} />{/if}
 
 	{#snippet track()}
 		{#if r.stage !== 'declined' && !held}

@@ -1,6 +1,8 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import { auth } from '../auth.svelte';
 	import { inviteLink } from '../invite';
+	import { supabase } from '../supabase';
 	import { firstName } from '../util';
 	import Logo from './Logo.svelte';
 
@@ -9,6 +11,11 @@
 	let { creator = '', from }: { creator?: string; from: string } = $props();
 	const show = $derived(auth.account?.role !== 'brand');
 	const who = $derived(firstName(creator) || 'Your creator');
+	// The founding offer while places are left: the first 100 brand teams get Brand Pro free (migration 190).
+	let founding = $state<{ on: boolean; left: number; months: number } | null>(null);
+	onMount(() => {
+		if (show) supabase.rpc('founding_brands').then(({ data }) => (founding = (data as typeof founding) ?? null));
+	});
 </script>
 
 {#if show}
@@ -16,10 +23,11 @@
 		<span class="bi-logo"><Logo size={30} /></span>
 		<div class="bi-t">
 			<small>{who} runs collabs on Miracle</small>
-			<b>Run all your creator collabs in one place</b>
-			<span>Briefs, approvals, invoices and results for every creator you work with. Free for brands, and creators are paid directly: no commission.</span>
+			<b>Find more creators like {who}</b>
+			<span>Browse creators ranked on their record: posts on time, paid deals, audience health. Then run every collab in one place, with no commission.</span>
+			{#if founding?.on}<em class="bi-offer">Founding brands: Brand Pro free for {founding.months} months · {founding.left} place{founding.left === 1 ? '' : 's'} left</em>{/if}
 		</div>
-		<a class="bi-go" href={inviteLink('brand', from)}>Try it free</a>
+		<a class="bi-go" href={inviteLink('brand', from)}>Join free</a>
 	</aside>
 {/if}
 
@@ -30,6 +38,7 @@
 	.bi-t small { font: 700 10.5px/1.2 var(--f-body); letter-spacing: .14em; text-transform: uppercase; color: color-mix(in oklab, var(--hero-ink) 62%, transparent); }
 	.bi-t b { font: 400 21px/1.15 var(--f-serif); }
 	.bi-t span { font-size: 13px; line-height: 1.45; color: color-mix(in oklab, var(--hero-ink) 75%, transparent); }
+	.bi-offer { margin-top: 4px; font-style: normal; font-size: 12.5px; font-weight: 700; color: #FFD27A; }
 	.bi-go { flex: none; padding: 12px 18px; background: var(--grad); color: var(--on-grad); font: 700 12.5px/1 var(--f-body); letter-spacing: .08em; text-transform: uppercase; text-decoration: none; white-space: nowrap; box-shadow: 4px 4px 0 color-mix(in oklab, var(--hero-ink) 22%, transparent); transition: transform .12s, box-shadow .12s; }
 	.bi-go:active { transform: translate(4px, 4px); box-shadow: none; }
 	@media (max-width: 560px) {
