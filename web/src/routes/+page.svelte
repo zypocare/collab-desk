@@ -5,7 +5,7 @@
 	import { page } from '$app/state';
 	import { onMount, tick } from 'svelte';
 	import type { Action } from 'svelte/action';
-	import { auth, signOut } from '#lib/auth.svelte.ts';
+	import { auth, signOut, signOutTo } from '#lib/auth.svelte.ts';
 	import { loadPublicPage, pub } from '#lib/publicPage.svelte.ts';
 	import { errMessage, firstName, hueOf, inr, offeredKinds, packageOffered, plural, waLink } from '#lib/util.ts';
 	import { downloadMediaKit } from '#lib/mediaKitPdf.ts';
@@ -343,8 +343,7 @@
 		kitBusy = false;
 	}
 	async function logout() {
-		await signOut();
-		goto('/', { replaceState: true });
+		await signOutTo('/');
 	}
 
 	// Ask a question: answered by email, so it needs a sign-in (a code to their email) first.

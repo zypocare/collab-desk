@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { ComponentProps } from 'svelte';
 	import { goto } from '$app/navigation';
-	import { auth, refreshAccount, signOut } from '../auth.svelte';
+	import { auth, refreshAccount, signOut, signOutTo } from '../auth.svelte';
 	import { exportBrand } from '../brandExport';
 	import { phone } from '../phone.svelte';
 	import { supabase } from '../supabase';
@@ -31,8 +31,7 @@
 		if (!(await ask({ title: 'Sign out on every device?', body: 'Your phones and computers are signed out, this one too. Sign in again with your email.', ok: 'Sign out everywhere' }))) return;
 		busy = 'all';
 		await supabase.auth.signOut({ scope: 'global' }).catch(() => {});
-		await signOut();
-		goto('/login', { replace: true });
+		await signOutTo('/login');
 	}
 	async function leave() {
 		if (!(await ask({ title: `Leave ${company}?`, body: 'You lose access to its requests, campaigns and money. The owner can invite you again.', ok: 'Leave', danger: true }))) return;
@@ -75,7 +74,7 @@
 	{/if}
 	<div class="switch-row">
 		<div><b>Sign out</b><small>Just this {phone.on ? 'phone' : 'computer'}</small></div>
-		<button class="btn sm" type="button" onclick={async () => (await signOut(), goto('/login', { replace: true }))}><Icon name="logout" />Sign out</button>
+		<button class="btn sm" type="button" onclick={() => signOutTo('/login')}><Icon name="logout" />Sign out</button>
 	</div>
 </section>
 

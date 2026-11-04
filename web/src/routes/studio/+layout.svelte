@@ -10,7 +10,7 @@
 	import type { LayoutProps } from './$types';
 	import { pageSlug } from '#lib/supabase.ts';
 	import { addressFor, appAddress, isAppHost } from '#lib/creatorHost.ts';
-	import { auth, homeFor, signOut } from '#lib/auth.svelte.ts';
+	import { auth, homeFor, signOut, signOutTo } from '#lib/auth.svelte.ts';
 	import { byId, catchUp, loadStudio, studio, stopWatching, watchStudio } from '#lib/studio.svelte.ts';
 	import { ensurePageCard } from '#lib/pageCard.ts';
 	import { indexDesk } from '#lib/desk.ts';
@@ -387,8 +387,7 @@
 	}
 
 	async function logout() {
-		await signOut();
-		goto('/login', { replaceState: true });
+		await signOutTo('/login');
 	}
 </script>
 

@@ -139,5 +139,24 @@ export function reloadOnce(e: unknown) {
 	} catch {
 		/* storage blocked */
 	}
-	reportProblem(e);
+	// It came back straight after a reload, so it isn't (only) an old tab: say what the server answers for
+	// that file now, so the admin panel shows a 404, a 403 page (a firewall), or the network failing.
+	void withFileCheck(e).then((x) => reportProblem(x));
+}
+
+/** The error, with what fetching its file again returns added to the stack (not the message, which groups it). */
+async function withFileCheck(e: unknown) {
+	const err = e instanceof Error ? e : new Error(String((e as { message?: unknown })?.message ?? e));
+	const url = err.message.match(/https?:\/\/[^\s'"]+\.(?:m?js|css)\b/)?.[0];
+	if (!url) return err;
+	let check: string;
+	try {
+		const r = await fetch(url, { cache: 'no-store' });
+		check = `${r.status} ${r.headers.get('content-type') ?? 'no type'}${r.redirected ? `, redirected to ${r.url}` : ''}`;
+	} catch (x) {
+		check = `network error: ${(x as Error)?.message ?? x}`;
+	}
+	const out = new Error(err.message);
+	out.stack = `${err.stack ?? err.message}\nFile check now: ${check} (${navigator.onLine ? 'online' : 'offline'})`;
+	return out;
 }

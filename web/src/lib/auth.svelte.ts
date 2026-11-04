@@ -86,6 +86,14 @@ export async function switchBrand(id: string) {
 export const homeFor = (a: Account | null) =>
 	a?.role === 'creator' ? (a.needs_link ? '/signup' : '/studio') : a?.role === 'pending' ? '/signup' : '/brand';
 
+/** Signs out, then opens `to` as a fresh page load rather than a screen change: nothing from the signed-in
+ *  session stays in memory, and the next screen loads the way the app first opens. (On an old Android WebView,
+ *  loading the sign-in screen in place right after signing out failed to fetch its code.) */
+export async function signOutTo(to = '/login') {
+	await signOut();
+	location.replace(to);
+}
+
 export async function signOut() {
 	// First, while still signed in: this phone stops getting the studio's alerts.
 	await dropPush(true);

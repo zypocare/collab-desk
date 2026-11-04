@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
-	import { auth, signOut } from '../auth.svelte';
+	import { auth, signOut, signOutTo } from '../auth.svelte';
 	import { isAppHost } from '../creatorHost';
 	import { brandIg } from '../brandIg.svelte';
 	import { allRequests } from '../brand.svelte';
@@ -56,7 +56,7 @@
 				<span class="side-av"><Avatar name={company} src={brandIg.data?.picture ?? ''} size="36px" /></span>
 				<span><b>{company}</b><small>{brandIg.data ? `@${brandIg.data.username} ✓` : (acct?.email ?? '')}</small></span>
 			</a>
-			<button class="side-out" onclick={async () => (await signOut(), goto('/login', { replaceState: true }))} aria-label="Log out" title="Log out"><Icon name="logout" /></button>
+			<button class="side-out" onclick={() => signOutTo('/login')} aria-label="Log out" title="Log out"><Icon name="logout" /></button>
 		</div>
 	</div>
 </nav>
