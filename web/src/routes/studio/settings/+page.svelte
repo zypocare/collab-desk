@@ -23,7 +23,7 @@
 	import RingIcons from '#lib/components/RingIcons.svelte';
 	import Avatar from '#lib/components/Avatar.svelte';
 	import Ticket from '#lib/components/Ticket.svelte';
-	import { APP_VERSION, BUILD_LABEL } from '#lib/appVersion.ts';
+	import { appVersion } from '#lib/appVersion.svelte.ts';
 	import ShippingSettings from '#lib/components/ShippingSettings.svelte';
 	import NotificationSettings from '#lib/components/NotificationSettings.svelte';
 	import BillingSettings from '#lib/components/BillingSettings.svelte';
@@ -384,7 +384,7 @@
 				<Logo size={26} />
 				<b>{s.app_name || 'Miracle'}</b>
 				<span>Made for creators</span>
-				<small>Version {APP_VERSION} · build {BUILD_LABEL}</small>
+				<small>{appVersion.line}</small>
 			</footer>
 		</div>
 	{/if}
@@ -406,7 +406,7 @@
 		{#if !phone.on}
 			<button class="set-item" onclick={toggleTheme}><span class="set-ic"><Icon name={theme.value === 'dark' ? 'sun' : 'moon'} /></span><span class="set-t"><b>{theme.value === 'dark' ? 'Light look' : 'Dark look'}</b><small>How the app looks on this computer</small></span></button>
 			<button class="set-item set-out" onclick={() => signOutTo('/login')}><span class="set-ic"><Icon name="logout" /></span><span class="set-t"><b>Log out</b><small>@{s.handle}</small></span></button>
-			<p class="set-ver">Version {APP_VERSION} · build {BUILD_LABEL}</p>
+			<p class="set-ver">{appVersion.line}</p>
 		{/if}
 	</nav>
 	{#if active && current}

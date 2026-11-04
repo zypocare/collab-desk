@@ -12,7 +12,7 @@
 	import Icon from '#lib/components/Icon.svelte';
 	import Logo from '#lib/components/Logo.svelte';
 	import Ticket from '#lib/components/Ticket.svelte';
-	import { APP_VERSION, BUILD_LABEL } from '#lib/appVersion.ts';
+	import { appVersion } from '#lib/appVersion.svelte.ts';
 	import { brandHome, loadDashboard } from '#lib/brand.svelte.ts';
 	import { copyText } from '#lib/ui.svelte.ts';
 	import { auth, refreshAccount, signOut, signOutTo, switchBrand } from '#lib/auth.svelte.ts';
@@ -226,7 +226,7 @@
 				<Logo size={26} />
 				<b>Miracle</b>
 				<span>Made for brands</span>
-				<small>Version {APP_VERSION} · build {BUILD_LABEL}</small>
+				<small>{appVersion.line}</small>
 			</footer>
 		</div>
 	{/if}

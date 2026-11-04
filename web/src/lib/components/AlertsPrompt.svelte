@@ -31,7 +31,7 @@
 			await enablePush();
 			logAlerts('alerts_on');
 			status = 'on';
-			toast('Alerts are on.', 'bell');
+			toast('Alerts on. New requests and payments will ping this phone.', 'bellOn');
 		} catch (e) {
 			logAlerts('alerts_failed', errMessage(e));
 			toast(errMessage(e), 'alert');

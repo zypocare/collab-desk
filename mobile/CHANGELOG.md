@@ -16,9 +16,13 @@ How to ship one:
 4. Play Console › Production › Create new release › upload the `.aab` › paste the notes › send for review.
 5. Fill in the "Build" and "Sent" lines below.
 
-## 1.0.5 (planned)
+## 1.0.6 (planned)
 
 - Voice notes and voice typing work in the app (it now asks for the microphone).
+
+## 1.0.5
+
+- The new Miracle icon on your home screen and app drawer (it also follows your themed icons on Android 13 and up).
 
 ## 1.0.4
 
