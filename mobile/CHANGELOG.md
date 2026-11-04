@@ -26,7 +26,7 @@ How to ship one:
 
 ## 1.0.4
 
-Build 17 · sent for review 4 Nov 2026
+Build 17 · sent for review 4 Nov 2026 · published 4 Nov 2026
 
 - The app fills the whole screen on every phone, and the clock and battery icons match the page, light or dark.
 - A smaller, quicker app.
