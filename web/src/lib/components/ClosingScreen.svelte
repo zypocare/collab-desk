@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { auth, refreshAccount, signOut } from '../auth.svelte';
+	import { auth, refreshAccount, signOut, signOutTo } from '../auth.svelte';
 	import { exportBrand } from '../brandExport';
 	import { supabase } from '../supabase';
 	import type { Closing } from '../types';
@@ -37,8 +37,7 @@
 	}
 	async function out() {
 		busy = 'out';
-		await signOut();
-		goto('/login', { replace: true });
+		await signOutTo('/login');
 	}
 </script>
 

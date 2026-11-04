@@ -7,7 +7,7 @@
 	import { loadPackages, saveSettings, studio } from '#lib/studio.svelte.ts';
 	import type { PublicPage, Settings } from '#lib/types.ts';
 	import { supabase } from '#lib/supabase.ts';
-	import { signOut } from '#lib/auth.svelte.ts';
+	import { signOut, signOutTo } from '#lib/auth.svelte.ts';
 	import { phone } from '#lib/phone.svelte.ts';
 	import { exportEverything } from '#lib/exportAll.ts';
 	import { install, pwa } from '#lib/pwa.svelte.ts';
@@ -131,8 +131,7 @@
 		moveBusy = false;
 		if (error) return toast(error.message, 'alert');
 		if (!keepMe) {
-			await signOut();
-			return goto('/login', { replaceState: true });
+			return signOutTo('/login');
 		}
 		studio.settings!.creator_email = to;
 		const { data } = await supabase.rpc('studio_account');
@@ -380,7 +379,7 @@
 				<a href="/studio/payments"><small>Earned so far</small><b>{inr(earnedAll)}</b><span>See payments →</span></a>
 				<a href="/studio/collabs"><small>Collabs wrapped</small><b>{doneN}</b><span>See collabs →</span></a>
 			</div>
-			<button class="cs-logout" onclick={async () => (await signOut(), goto('/login', { replaceState: true }))}><Icon name="logout" /><span>Log out</span><small>@{s.handle}</small></button>
+			<button class="cs-logout" onclick={() => signOutTo('/login')}><Icon name="logout" /><span>Log out</span><small>@{s.handle}</small></button>
 			<footer class="cs-foot">
 				<Logo size={26} />
 				<b>{s.app_name || 'Miracle'}</b>
@@ -406,7 +405,7 @@
 		</a>
 		{#if !phone.on}
 			<button class="set-item" onclick={toggleTheme}><span class="set-ic"><Icon name={theme.value === 'dark' ? 'sun' : 'moon'} /></span><span class="set-t"><b>{theme.value === 'dark' ? 'Light look' : 'Dark look'}</b><small>How the app looks on this computer</small></span></button>
-			<button class="set-item set-out" onclick={async () => (await signOut(), goto('/login', { replaceState: true }))}><span class="set-ic"><Icon name="logout" /></span><span class="set-t"><b>Log out</b><small>@{s.handle}</small></span></button>
+			<button class="set-item set-out" onclick={() => signOutTo('/login')}><span class="set-ic"><Icon name="logout" /></span><span class="set-t"><b>Log out</b><small>@{s.handle}</small></span></button>
 			<p class="set-ver">Version {APP_VERSION} · build {BUILD_LABEL}</p>
 		{/if}
 	</nav>

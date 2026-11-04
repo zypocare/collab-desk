@@ -15,7 +15,7 @@
 	import { APP_VERSION, BUILD_LABEL } from '#lib/appVersion.ts';
 	import { brandHome, loadDashboard } from '#lib/brand.svelte.ts';
 	import { copyText } from '#lib/ui.svelte.ts';
-	import { auth, refreshAccount, signOut, switchBrand } from '#lib/auth.svelte.ts';
+	import { auth, refreshAccount, signOut, signOutTo, switchBrand } from '#lib/auth.svelte.ts';
 	import { loadRequests } from '#lib/brand.svelte.ts';
 	import { brandIg, connectBrandIg, disconnectBrandIg, loadBrandIg, refreshBrandIg } from '#lib/brandIg.svelte.ts';
 	import { phone } from '#lib/phone.svelte.ts';
@@ -221,7 +221,7 @@
 				<a href="/brand/business/money"><small>Paid this month</small><b>{inr(d?.spent_month ?? 0)}</b><span>See payments →</span></a>
 				<a href="/brand/creators"><small>Collabs done</small><b>{doneN}</b><span>See creators →</span></a>
 			</div>
-			<button class="cs-logout" onclick={async () => (await signOut(), goto('/login', { replace: true }))}><Icon name="logout" /><span>Log out</span><small>{acct?.email ?? ''}</small></button>
+			<button class="cs-logout" onclick={() => signOutTo('/login')}><Icon name="logout" /><span>Log out</span><small>{acct?.email ?? ''}</small></button>
 			<footer class="cs-foot">
 				<Logo size={26} />
 				<b>Miracle</b>

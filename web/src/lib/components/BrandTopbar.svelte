@@ -3,7 +3,7 @@
 	import { edgeSwipeBack, goBackOr } from '../back';
 	import { page } from '$app/state';
 	import { onMount } from 'svelte';
-	import { auth, signOut, switchBrand } from '../auth.svelte';
+	import { auth, signOut, signOutTo, switchBrand } from '../auth.svelte';
 	import { allRequests, brandData, loadRequests } from '../brand.svelte';
 	import { phone, startPhone } from '../phone.svelte';
 	import { loadPublicPage } from '../publicPage.svelte';
@@ -58,9 +58,7 @@
 	const segs = $derived(group?.tabs?.some((t) => tabOn(t, page.url)) ? group.tabs.map((t) => ({ ...t, on: tabOn(t, page.url) })) : null);
 
 	async function logout() {
-		await signOut();
-		// Like the studio: signing out lands on the sign-in screen, never on the creator's public page.
-		goto('/login', { replaceState: true });
+		await signOutTo('/login');
 	}
 
 	// ---------- Phones: an app bar with the screen's title, Back on screens opened from a tab ----------

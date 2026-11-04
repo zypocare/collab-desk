@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { auth, signOut } from '../auth.svelte';
+	import { auth, signOut, signOutTo } from '../auth.svelte';
 	import { pub } from '../publicPage.svelte';
 	import { appAddress, isAppHost } from '../creatorHost';
 	import Logo from './Logo.svelte';
@@ -14,8 +14,7 @@
 	const onApp = isAppHost(location.hostname);
 
 	async function logout() {
-		await signOut();
-		goto('/login', { replaceState: true });
+		await signOutTo('/login');
 	}
 </script>
 
