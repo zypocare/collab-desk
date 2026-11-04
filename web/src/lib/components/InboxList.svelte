@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { igImg } from '../igImg';
 	import { page } from '$app/state';
 	import { onMount } from 'svelte';
 	import { knownBrandHandle, studio } from '../studio.svelte';
@@ -126,7 +127,7 @@
 			{#if igCollabs}<a class="ail-more ib-all" href="/studio/possible-collabs">All possible collabs, in one place<Icon name="chevR" /></a>{/if}
 			{#each igShown as t (t.igsid)}
 				<a class="ib-row" class:unread={t.unread > 0} class:on={current === `/studio/inbox/ig/${t.igsid}`} href="/studio/inbox/ig/{t.igsid}">
-					<span class="ib-av" class:ring={t.unread > 0}>{#if t.picture}<img src={t.picture} alt="" referrerpolicy="no-referrer" />{:else}<Mono name={t.username || 'IG'} />{/if}</span>
+					<span class="ib-av" class:ring={t.unread > 0}>{#if t.picture}<img src={igImg(t.picture)} alt="" referrerpolicy="no-referrer" />{:else}<Mono name={t.username || 'IG'} />{/if}</span>
 					<span class="ib-b">
 						<b>{t.name || `@${t.username || 'Instagram user'}`}</b>
 						{#if isCollab(t)}<span class="ib-p ib-collab"><Icon name="spark" /><span class="ib-t">Collab? {t.collab_hint}</span></span>

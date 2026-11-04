@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { igImg } from '../igImg';
 	import { receivedIn } from '../invoice';
 	import { erText, headlineEr } from '../engagement';
 	import { onMount, untrack } from 'svelte';
@@ -225,7 +226,7 @@
 		<span class="orb-in">
 			{#if ig?.profile_picture_url}
 				<!-- Her photo in the ring, with the follower count on a badge. -->
-				<img class="orb-pic" src={ig.profile_picture_url} alt="" />
+				<img class="orb-pic" src={igImg(ig.profile_picture_url)} alt="" />
 			{:else if ig}
 				<b>{compact(ig.followers ?? 0)}</b><small>followers</small>
 				{#if er}<i>{erText(er)} eng.</i>{/if}

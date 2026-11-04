@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { igImg } from '../igImg';
 	import { onMount } from 'svelte';
 	import { fly } from 'svelte/transition';
 	import { isRanked } from '../priority';
@@ -164,7 +165,7 @@
 				{#key lead.igsid}
 				<div class="dk2-lead-in" in:fly={{ x: 40 * dir, duration: 220 }}>
 					<a class="dk2-who" href="/studio/inbox/ig/{lead.igsid}" aria-label="Open the chat with {leadName(lead)}">
-						<span class="dk2-av">{#if lead.picture}<img src={lead.picture} alt="" referrerpolicy="no-referrer" />{:else}<b>{(lead.username || lead.name || 'IG').slice(0, 1).toUpperCase()}</b>{/if}</span>
+						<span class="dk2-av">{#if lead.picture}<img src={igImg(lead.picture)} alt="" referrerpolicy="no-referrer" />{:else}<b>{(lead.username || lead.name || 'IG').slice(0, 1).toUpperCase()}</b>{/if}</span>
 						<span class="dk2-wt">
 							<b>{leadName(lead)}</b>
 							<small><em class="dk2-flag" class:maybe={lead.collab_flag !== 'likely'}>{lead.collab_flag === 'likely' ? 'Likely collab' : 'Maybe a collab'}</em>{#if lead.last_at}{` · ${ago(lead.last_at)}`}{/if}</small>

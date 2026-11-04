@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { igImg } from '#lib/igImg.ts';
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import { studio } from '#lib/studio.svelte.ts';
@@ -123,7 +124,7 @@
 			{@const img = thumb(c)}
 			{@const v = views(c)}
 			<a class="wt st-{c.stage}" class:img={!!img} href="/studio/c/{c.code}" style="--h:var(--m{hueOf(c.brand.name)});--i:{Math.min(i, 8)}">
-				{#if img}<img src={img} alt="" loading="lazy" referrerpolicy="no-referrer" />{:else}<span class="wt-glow" aria-hidden="true"></span><span class="wt-mark" aria-hidden="true">{initials(c.brand.name)}</span>{/if}
+				{#if img}<img src={igImg(img)} alt="" loading="lazy" referrerpolicy="no-referrer" />{:else}<span class="wt-glow" aria-hidden="true"></span><span class="wt-mark" aria-hidden="true">{initials(c.brand.name)}</span>{/if}
 				<span class="wt-stage"><i></i>{stageLabel(c.stage)}</span>
 				<span class="wt-b">
 					<b>{c.brand.name}</b>
@@ -142,7 +143,7 @@
 	<div class="pf-grid">
 		{#each studio.media as m (m.id)}
 			<a class="pf-tile pf-post" href={m.permalink} target="_blank" rel="noopener">
-				{#if m.thumbnail_url}<img src={m.thumbnail_url} alt="" loading="lazy" referrerpolicy="no-referrer" />{:else}<Icon name="film" />{/if}
+				{#if m.thumbnail_url}<img src={igImg(m.thumbnail_url)} alt="" loading="lazy" referrerpolicy="no-referrer" />{:else}<Icon name="film" />{/if}
 				{#if m.views ?? m.reach}<span class="pf-views"><Icon name="eye" />{compact(m.views ?? m.reach ?? 0)}</span>{/if}
 			</a>
 		{:else}

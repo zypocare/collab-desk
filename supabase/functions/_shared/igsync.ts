@@ -281,6 +281,9 @@ export async function runSync(db: SupabaseClient, creator: number, opts: SyncOpt
 
     // 7. 7-day results reports.
     summary.reports = await makeReports(db, creator, opts.reportFor);
+    // Profile photos of the brands in her DMs: Instagram's links run out after a few days, so the chats
+    // active in the last 60 days get a fresh one each day (one look-up each, at most 40).
+    summary.dmPictures = await refreshDmPictures(db, creator, token).catch(() => 0);
     return summary;
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);
@@ -452,4 +455,20 @@ async function makeReports(db: SupabaseClient, creator: number, reportFor?: stri
     made++;
   }
   return made;
+}
+
+/** Fresh profile photos for her recent DM chats (the photo link Instagram gives runs out in days). */
+async function refreshDmPictures(db: SupabaseClient, creator: number, token: string) {
+  const since = new Date(Date.now() - 60 * DAY).toISOString();
+  const { data } = await db.from('ig_threads').select('igsid, picture').eq('creator_id', creator).neq('collab_flag', 'no').gte('last_at', since).order('last_at', { ascending: false }).limit(40);
+  let n = 0;
+  for (const t of data ?? []) {
+    const r = await fetch(`https://graph.instagram.com/${encodeURIComponent(t.igsid)}?fields=profile_pic&access_token=${encodeURIComponent(token)}`).catch(() => null);
+    const j = (await r?.json().catch(() => null)) as { profile_pic?: string } | null;
+    if (j?.profile_pic && j.profile_pic !== t.picture) {
+      await db.from('ig_threads').update({ picture: j.profile_pic }).eq('creator_id', creator).eq('igsid', t.igsid);
+      n++;
+    }
+  }
+  return n;
 }

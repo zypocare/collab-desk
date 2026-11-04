@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { igImg } from '../igImg';
 	import type { Collab } from '../types';
 	import type { Invoice } from '../invoice';
 	import { balanceDue } from '../invoice';
@@ -116,7 +117,7 @@
 				{#each posts as m, i (m.id)}
 					<a class="lr-post" href={m.permalink} target="_blank" rel="noopener" aria-label="{mediaLabel(m.media_type, m.product_type)} from {fmt(m.posted_at.slice(0, 10))} on Instagram: {compact(views(m))} views">
 						<span class="lr-poster" style="--a:{HUES[i % 3][0]};--b:{HUES[i % 3][1]}">
-							{#if m.thumbnail_url}<img src={m.thumbnail_url} alt="" referrerpolicy="no-referrer" loading="lazy" />{/if}
+							{#if m.thumbnail_url}<img src={igImg(m.thumbnail_url)} alt="" referrerpolicy="no-referrer" loading="lazy" />{/if}
 							<span class="lr-pt"><em>{#if m.product_type === 'REELS'}<Icon name="film" />{/if}{mediaLabel(m.media_type, m.product_type)} · {fmt(m.posted_at.slice(0, 10))}</em><i><Icon name="share" /></i></span>
 							<span class="lr-pv"><b>{compact(views(m))}</b><small>views</small></span>
 						</span>

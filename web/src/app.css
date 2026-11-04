@@ -2167,3 +2167,5 @@ html.native,html.native *{scrollbar-width:none}html.native ::-webkit-scrollbar{d
 .shot-btn{margin-top:8px;align-self:flex-start}
 /* Profile settings: the birthday picker, day and month side by side. */
 .bd-pick{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px}.bd-pick :is(.sel){width:auto;min-width:110px}
+/* A picture that failed to load: hidden, so the shape behind it shows (routes/+layout.svelte). */
+img.img-x{visibility:hidden}

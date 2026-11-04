@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { igImg } from '#lib/igImg.ts';
 	import { slotLabel } from '#lib/postTime.ts';
 	import { erText, headlineEr } from '#lib/engagement.ts';
 	import { goto } from '$app/navigation';
@@ -620,7 +621,7 @@
 				<div class="mp-wrap">
 					<div class="mp-hero-l">
 						<div class="mp-id mp-fade">
-							<span class="mp-ring"><b>{#if pic}<img src={pic} alt="" referrerpolicy="no-referrer" onerror={() => (picBroken = true)} />{:else}{mono(p.display_name)}{/if}</b></span>
+							<span class="mp-ring"><b>{#if pic}<img src={igImg(pic)} alt="" referrerpolicy="no-referrer" onerror={() => (picBroken = true)} />{:else}{mono(p.display_name)}{/if}</b></span>
 							<div style="display:grid;gap:10px">
 								<span class="mp-eb">Brand collaborations{p.city ? ` · ${p.city}` : ''}</span>
 								{#if status}<span class="mp-status" class:mp-off={status.off}><i></i>{status.text}</span>{/if}
@@ -730,7 +731,7 @@
 						<div class="mp-reels">
 							{#each reels as r, i (r.permalink + i)}
 								<a class="mp-reel" data-r={i < 4 ? (i ? i + 1 : '') : i - 1} use:rv href={r.permalink} target="_blank" rel="noopener" style="--h:{hue(r.brand)}">
-									<span class="mp-poster">{#if r.thumbnail && !broken[r.permalink]}<img src={r.thumbnail} alt="{r.brand} Reel" loading="lazy" referrerpolicy="no-referrer" onerror={() => (broken[r.permalink] = true)} />{/if}</span>
+									<span class="mp-poster">{#if r.thumbnail && !broken[r.permalink]}<img src={igImg(r.thumbnail)} alt="{r.brand} Reel" loading="lazy" referrerpolicy="no-referrer" onerror={() => (broken[r.permalink] = true)} />{/if}</span>
 									<span class="mp-play"><svg viewBox="0 0 10 12"><path d="M0 0l10 6-10 6z" /></svg></span>
 									<span class="mp-meta"><span class="mp-views"><span use:countUp={{ to: r.views ?? 0 }}></span><small>views</small></span><span class="mp-brand">{r.brand}</span></span>
 								</a>

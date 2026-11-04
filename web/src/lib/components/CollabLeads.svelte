@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { igImg } from '../igImg';
 	import { studio } from '../studio.svelte';
 	import { addLeadAsCollab } from '../leads';
 	import Icon from './Icon.svelte';
@@ -28,7 +29,7 @@
 			{#each leads.slice(0, SHOW) as t (t.igsid)}
 				<li>
 					<a class="ail-who" href="/studio/inbox/ig/{t.igsid}" title="Open the chat">
-						<span class="lead-av">{#if t.picture}<img src={t.picture} alt="" referrerpolicy="no-referrer" />{:else}<Mono name={t.username || 'IG'} />{/if}</span>
+						<span class="lead-av">{#if t.picture}<img src={igImg(t.picture)} alt="" referrerpolicy="no-referrer" />{:else}<Mono name={t.username || 'IG'} />{/if}</span>
 						<span class="ail-t">
 							<b>@{t.username || 'someone'}{#if t.collab_flag === 'likely'}<em>Likely</em>{/if}</b>
 							<small>{t.collab_hint || (t.collab_flag === 'likely' ? 'May want to work with you' : 'Might be asking about a collab')}</small>

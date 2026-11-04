@@ -1,5 +1,6 @@
 // Branded QR codes: her colours, rounded dots, her photo (or initials) in the middle and a line
 // of text under the code. Drawn on a canvas for the screen and PNG downloads, and as SVG for print.
+import { igImg } from './igImg';
 import qrcode from 'qrcode-generator';
 
 export type QrLook = {
@@ -208,6 +209,7 @@ ${e.handle ? `<text x="${W / 2}" y="${f(handleY)}" text-anchor="middle" font-fam
 /** Her Instagram photo, if the picture allows being drawn into a downloadable image. */
 export function loadPhoto(url: string | null | undefined): Promise<HTMLImageElement | null> {
 	if (!url) return Promise.resolve(null);
+	url = igImg(url);
 	return new Promise((res) => {
 		const img = new Image();
 		img.crossOrigin = 'anonymous';

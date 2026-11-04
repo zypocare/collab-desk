@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { igImg } from '../igImg';
 	import { onMount } from 'svelte';
 	import { auth } from '../auth.svelte';
 	import { autopilots } from '../autopilots.svelte';
@@ -121,7 +122,7 @@
 		<span class="orb-ring" aria-hidden="true"></span>
 		<span class="orb-in">
 			{#if ig?.picture}
-				<img class="orb-pic" src={ig.picture} alt="" />
+				<img class="orb-pic" src={igImg(ig.picture)} alt="" />
 			{:else}
 				<b>{creators.length}</b><small>creator{creators.length === 1 ? '' : 's'}</small>
 			{/if}
