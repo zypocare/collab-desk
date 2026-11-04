@@ -5,7 +5,7 @@ import { mkdirSync, readFileSync, writeFileSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { ARTICLES, CATEGORIES } from '../../web/src/lib/help/articles.ts';
-import { APP, CSS, cta, esc, joinRow, md, mock, page, phone, SITE, slugify } from './layout.mjs';
+import { APP, CSS, cta, esc, joinRow, md, mock, page, phone, PRELAUNCH, SITE, slugify } from './layout.mjs';
 import { LANDING } from './landing.mjs';
 import { GUIDES } from './guides.mjs';
 import { pricingPage, refundPage } from './pricing.mjs';
@@ -187,7 +187,8 @@ urls.push(['/help', 'weekly', 0.7]);
 // ------------------------------------------------------------------ 404, stylesheet, sitemap
 write('404.html', page({ path: '/404', title: 'Page not found · Miracle', description: 'This page isn’t here.', noindex: true, body: `<section class="hhero wrap"><span class="eb">404</span><h1>Not <em>here.</em></h1><p class="lede">That page moved or never existed.</p><div class="acts" style="justify-content:center"><a class="btn" href="/">Miracle home</a><a class="btn ghost" href="/guides">Guides</a><a class="btn ghost" href="/help">Help</a></div></section>` }));
 write('pricing.html', pricingPage());
-write('waitlist.html', waitlistPage());
+// The waitlist only exists before launch. After it, /waitlist sends people to sign-up (vercel.json).
+if (PRELAUNCH) write('waitlist.html', waitlistPage());
 write('refund-policy.html', refundPage());
 write('assets/site.css', CSS.trim() + '\n');
 
@@ -216,7 +217,7 @@ for (const rel of HAND) {
 }
 writeFileSync(join(OUT, '../web/worker/siteFooter.ts'), `// Written by site/build/build.mjs from site/build/footer.mjs: the website's footer, for the creator directory.\n// Don't edit by hand; change footer.mjs and run \`node site/build/build.mjs\`.\nexport const SITE_FOOTER = ${JSON.stringify(DIRECTORY_FOOTER)};\nexport const SITE_FOOTER_CSS = ${JSON.stringify(footerCss.trim())};\n`);
 
-const fixed = [['/', 'weekly', 1.0], ['/creators', 'daily', 0.9], ['/pricing', 'monthly', 0.9], ['/waitlist', 'weekly', 0.8], ['/refund-policy', 'yearly', 0.3], ['/tools/rate-calculator', 'monthly', 0.8], ['/tools/engagement-calculator', 'monthly', 0.8], ['/privacy', 'yearly', 0.2], ['/terms', 'yearly', 0.2], ['/data-deletion', 'yearly', 0.2]];
+const fixed = [['/', 'weekly', 1.0], ['/creators', 'daily', 0.9], ['/pricing', 'monthly', 0.9], ...(PRELAUNCH ? [['/waitlist', 'weekly', 0.8]] : []), ['/refund-policy', 'yearly', 0.3], ['/tools/rate-calculator', 'monthly', 0.8], ['/tools/engagement-calculator', 'monthly', 0.8], ['/privacy', 'yearly', 0.2], ['/terms', 'yearly', 0.2], ['/data-deletion', 'yearly', 0.2]];
 const today = new Date().toISOString().slice(0, 10);
 write('sitemap.xml', `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
