@@ -279,9 +279,22 @@ function meter(x: Run, r: unknown, model: 'text' | 'vision', input: string, extr
 	const tout = u?.completion_tokens ?? out(r).length / 4;
 	x.neurons += tin * PER_TOKEN[model][0] + tout * PER_TOKEN[model][1];
 }
+/** Workers AI, with one more try when Cloudflare has a passing hiccup on its side (8004 "Internal
+ *  server error", 3040 out of capacity, a 5xx or a timeout). Quota and request errors aren't retried. */
+const PASSING = /\b(8004|3040|3043|50[0-4])\b|internal server error|capacity|overloaded|timed? ?out/i;
+async function aiRun(env: Env, model: string, input: Record<string, unknown>) {
+	try {
+		return await env.AI.run(model, input);
+	} catch (e) {
+		const m = String((e as Error)?.message ?? e);
+		if (!PASSING.test(m) || /neuron|allocation|4006|quota|limit/i.test(m)) throw e;
+		await new Promise((r) => setTimeout(r, 700));
+		return env.AI.run(model, input);
+	}
+}
 async function chat(x: Run, system: string, user: string, max = 700, temperature = 0.3) {
 	if (x.gemini) return gemini(x.env, system, private_(user), max, temperature);
-	const r = await x.env.AI.run(TEXT, { messages: [{ role: 'system', content: system }, { role: 'user', content: user }], max_tokens: max, temperature });
+	const r = await aiRun(x.env, TEXT, { messages: [{ role: 'system', content: system }, { role: 'user', content: user }], max_tokens: max, temperature });
 	meter(x, r, 'text', system + user);
 	return out(r);
 }
@@ -370,7 +383,7 @@ async function embed(x: Run, b: Record<string, unknown>) {
 	if (x.gemini) throw new Error("!Search by meaning rests until 5:30 am: today's free AI is used up.");
 	const texts = (Array.isArray(b.texts) ? b.texts : []).map((t) => String(t ?? '').slice(0, 2000)).filter(Boolean).slice(0, 32);
 	if (!texts.length) return { vectors: [] };
-	const r = (await x.env.AI.run('@cf/baai/bge-m3', { text: texts })) as { data?: number[][] };
+	const r = (await aiRun(x.env, '@cf/baai/bge-m3', { text: texts })) as { data?: number[][] };
 	// About 1,075 neurons per million tokens (a token is about 4 characters).
 	x.neurons += 1 + (texts.join(' ').length / 4) * 0.001075;
 	return { vectors: (r.data ?? []).map((v) => v.map((n) => Math.round(n * 1e5) / 1e5)) };
@@ -382,7 +395,7 @@ async function voice(x: Run, b: Record<string, unknown>) {
 	const audio = String(b.audio ?? '');
 	if (!audio) throw new Error('!Nothing was recorded.');
 	if (audio.length > 2_400_000) throw new Error('!That recording is too long. Keep it under a minute.');
-	const r = (await x.env.AI.run('@cf/openai/whisper-large-v3-turbo', { audio, task: 'transcribe', vad_filter: true })) as { text?: string; transcription_info?: { duration?: number } };
+	const r = (await aiRun(x.env, '@cf/openai/whisper-large-v3-turbo', { audio, task: 'transcribe', vad_filter: true })) as { text?: string; transcription_info?: { duration?: number } };
 	// About 47 neurons per minute of audio.
 	x.neurons += Math.max(5, ((r.transcription_info?.duration ?? 30) / 60) * 47);
 	return { text: String(r.text ?? '').trim() };
@@ -405,12 +418,12 @@ async function readDm(x: Run, b: Record<string, unknown>) {
 		};
 		let r: unknown;
 		try {
-			r = await env.AI.run(VISION, ask);
+			r = await aiRun(env, VISION, ask);
 		} catch (e) {
 			// The model asks for its licence to be accepted once (Meta's terms), then works.
 			if (/agree|licen/i.test(String((e as Error)?.message))) {
-				await env.AI.run(VISION, { prompt: 'agree', max_tokens: 5 });
-				r = await env.AI.run(VISION, ask);
+				await aiRun(env, VISION, { prompt: 'agree', max_tokens: 5 });
+				r = await aiRun(env, VISION, ask);
 			} else throw e;
 		}
 		meter(x, r, 'vision', '', 1600);
@@ -773,11 +786,11 @@ async function reelCheck(x: Run, b: Record<string, unknown>) {
 		};
 		let r: unknown;
 		try {
-			r = await x.env.AI.run(VISION, ask);
+			r = await aiRun(x.env, VISION, ask);
 		} catch (e) {
 			if (/agree|licen/i.test(String((e as Error)?.message))) {
-				await x.env.AI.run(VISION, { prompt: 'agree', max_tokens: 5 });
-				r = await x.env.AI.run(VISION, ask);
+				await aiRun(x.env, VISION, { prompt: 'agree', max_tokens: 5 });
+				r = await aiRun(x.env, VISION, ask);
 			} else throw e;
 		}
 		meter(x, r, 'vision', '', 300);
@@ -992,11 +1005,11 @@ async function offerCheck(x: Run, b: Record<string, unknown>) {
 		};
 		let r: unknown;
 		try {
-			r = await x.env.AI.run(VISION, ask);
+			r = await aiRun(x.env, VISION, ask);
 		} catch (e) {
 			if (/agree|licen/i.test(String((e as Error)?.message))) {
-				await x.env.AI.run(VISION, { prompt: 'agree', max_tokens: 5 });
-				r = await x.env.AI.run(VISION, ask);
+				await aiRun(x.env, VISION, { prompt: 'agree', max_tokens: 5 });
+				r = await aiRun(x.env, VISION, ask);
 			} else throw e;
 		}
 		meter(x, r, 'vision', '', 1600);
