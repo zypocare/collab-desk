@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
+	import { goto } from '$app/navigation';
 	import { brandHome, loadDashboard } from '#lib/brand.svelte.ts';
 	import DiscoverPanel from '#lib/components/DiscoverPanel.svelte';
 	import { addressFor } from '#lib/creatorHost.ts';
@@ -36,6 +37,8 @@
 	const waitingN = $derived(mine.filter((c) => c.waiting).length);
 
 	onMount(() => {
+		// Discover moved to its own tab, Explore (old links land there, with the pool they were adding to).
+		if (page.url.searchParams.get('tab') === 'discover') return void goto(`/brand/explore${toPool ? `?pool=${toPool}` : ''}`, { replaceState: true });
 		if (!brandHome.dash) loadDashboard();
 	});
 	const where = (c: BrandCreator) => [c.niche?.split(',')[0]?.trim(), c.handle ? `@${c.handle.replace(/^@+/, '')}` : c.city?.trim()].filter(Boolean).join(' · ') || 'Creator';
@@ -114,7 +117,7 @@
 					<span class="clear-ic"><Icon name="users" /></span>
 					<b>{q ? 'No creators match' : 'No creators yet'}</b>
 					<small>Creators you send a request to show up here.</small>
-					<div class="clear-acts"><a class="glass-chip" href="?tab=discover"><Icon name="search" />Discover creators</a></div>
+					<div class="clear-acts"><a class="glass-chip" href="/brand/explore"><Icon name="search" />Discover creators</a></div>
 				</div>
 			{/each}
 		{/if}

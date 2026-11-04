@@ -93,7 +93,7 @@
 	const BRAND_PAGES: Record<string, { label: string; href: string }> = {
 		requests: { label: 'Requests', href: '/brand/requests' },
 		inbox: { label: 'Messages', href: '/brand/inbox' },
-		discover: { label: 'Find creators', href: '/brand/creators?tab=discover' },
+		discover: { label: 'Find creators', href: '/brand/explore' },
 		new_campaign: { label: 'New campaign', href: '/brand/campaigns/new' },
 		reports: { label: 'Reports', href: '/brand/reports' },
 		payments: { label: 'Payments', href: '/brand/business/money' },

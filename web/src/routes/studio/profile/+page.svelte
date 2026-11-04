@@ -12,6 +12,7 @@
 	import Icon from '#lib/components/Icon.svelte';
 	import Avatar from '#lib/components/Avatar.svelte';
 	import QrShareSheet from '#lib/components/QrShareSheet.svelte';
+	import ProfileStrength from '#lib/components/ProfileStrength.svelte';
 	import RingIcons from '#lib/components/RingIcons.svelte';
 
 	// Her profile on the phone, laid out like an Instagram profile: photo and numbers, bio,
@@ -101,6 +102,7 @@
 		<button class="btn pf-kit" onclick={() => (qrOpen = true)} aria-label="Your QR code" title="Your QR code"><Icon name="qr" /></button>
 		<button class="btn pf-kit" onclick={kit} disabled={kitBusy} aria-label="Download media kit PDF">{#if kitBusy}<span class="spinner"></span>{:else}<Icon name="download" />{/if}</button>
 	</div>
+	<ProfileStrength />
 	<p class="pf-qs">Quick settings</p>
 	<nav class="cr-rings pf-rings" aria-label="Quick settings">
 		{#each HIGHLIGHTS as h, i (h.label)}

@@ -187,7 +187,7 @@
 		saveSettings({ [k]: on });
 		toast(
 			k === 'accepting' ? (on ? 'Your page is open for requests' : 'New requests are paused')
-			: k === 'listed' ? (on ? 'Brands on Miracle can now find you in Discover' : 'You are no longer listed in Discover')
+			: k === 'listed' ? (on ? 'Brands on Miracle can now find you in Explore' : 'You are no longer listed in Explore')
 			: on ? 'Rates shown on your page' : 'Rates hidden from your page'
 		);
 	}
@@ -531,8 +531,8 @@
 								<input type="checkbox" class="tgl" checked={s.accepting} aria-label="Accepting collaborations" onchange={(e) => toggle('accepting', (e.currentTarget as HTMLInputElement).checked)} />
 							</div>
 							<div class="switch-row">
-								<div><b>List me in Discover</b><small>Brands signed in to Miracle can find you by name, niche or city and send a request. They see what your page shows: your name, niche, city and Instagram numbers.</small></div>
-								<input type="checkbox" class="tgl" checked={!!s.listed} aria-label="List me in Discover" onchange={(e) => toggle('listed', (e.currentTarget as HTMLInputElement).checked)} />
+								<div><b>List me in Explore</b><small>Brands signed in to Miracle can find you by name, niche or city and send a request. They see what your page shows: your name, niche, city and Instagram numbers.</small></div>
+								<input type="checkbox" class="tgl" checked={!!s.listed} aria-label="List me in Explore" onchange={(e) => toggle('listed', (e.currentTarget as HTMLInputElement).checked)} />
 							</div>
 						</section>
 						<AwayMode />

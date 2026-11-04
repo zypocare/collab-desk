@@ -220,7 +220,7 @@
 					<span class="clear-ic"><Icon name="chart" /></span>
 					<b>No results yet</b>
 					<small>Once creators go live, their views and what they cost show up here.</small>
-					<div class="clear-acts"><a class="glass-chip" href="/brand/creators?tab=discover"><Icon name="search" />Find creators</a></div>
+					<div class="clear-acts"><a class="glass-chip" href="/brand/explore"><Icon name="search" />Find creators</a></div>
 				</div>
 			{/each}
 		</div>

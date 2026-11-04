@@ -40,7 +40,7 @@
 	const d30 = $derived(g?.insights?.growth?.d30 ?? null);
 	const TOOLS = [
 		{ href: '/brand/grow/insights', icon: 'chart', h: 'var(--g1)', t: 'All your insights', s: 'Reach, audience, best posts' },
-		{ href: '/brand/creators?tab=discover', icon: 'users', h: 'var(--g2)', t: 'Creators who grow you', s: 'Their audience is yours' },
+		{ href: '/brand/explore', icon: 'users', h: 'var(--g2)', t: 'Creators who grow you', s: 'Their audience is yours' },
 		{ href: '/brand/autopilots', icon: 'eye', h: 'var(--g3)', t: 'Competitor watch', s: 'Who your rivals work with' },
 		{ href: '/brand/reports', icon: 'layers', h: 'var(--ok)', t: 'Reports', s: 'What your creators did' }
 	];

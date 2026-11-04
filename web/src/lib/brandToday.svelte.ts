@@ -26,7 +26,7 @@ export function brandSetup() {
 		{ id: 'company', done: !!(acc?.profile || acc?.brand), title: 'Company details', sub: 'Name, category and your role', href: '/brand/settings', act: 'Add' },
 		{ id: 'ig', done: !!brandIg.data, title: "Connect your brand's Instagram", sub: "Creators see you're the real brand", href: '/brand/settings', act: 'Connect' },
 		{ id: 'billing', done: !!(acc?.profile?.gstin || acc?.brand), title: 'Billing details', sub: 'GSTIN and address, for GST you can claim', href: '/brand/settings?s=billing', act: 'Add' },
-		{ id: 'first', done: !!d?.creators?.length, title: 'Send your first request', sub: 'To one creator, or a campaign to a pool', href: '/brand/creators?tab=discover', act: 'Find' }
+		{ id: 'first', done: !!d?.creators?.length, title: 'Send your first request', sub: 'To one creator, or a campaign to a pool', href: '/brand/explore', act: 'Find' }
 	];
 }
 

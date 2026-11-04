@@ -125,7 +125,7 @@
 		brandIg.data
 			? { icon: 'shield', eb: 'Instagram', text: `Verified as @${brandIg.data.username}`, act: 'Open', run: () => open('company') }
 			: { icon: 'shield', eb: 'Instagram', text: "Show creators you're the real brand", act: 'Connect', run: () => ig('connect') },
-		{ icon: 'search', eb: 'Creators', text: 'Find creators open to brands', act: 'Discover', run: () => goto('/brand/creators?tab=discover') },
+		{ icon: 'search', eb: 'Creators', text: 'Find creators open to brands', act: 'Discover', run: () => goto('/brand/explore') },
 		{ icon: 'send', eb: 'Campaigns', text: 'One brief to a whole pool', act: 'Start', run: () => goto('/brand/campaigns/new') },
 		...(acct?.email ? [{ icon: 'copy', eb: 'Your sign-in', text: acct.email, act: 'Copy', run: () => copyText(acct.email, 'Email copied') }] : [])
 	]);

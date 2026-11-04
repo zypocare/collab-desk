@@ -93,8 +93,8 @@ export function growIdeas(g: BrandIg | null, best: { name: string; views: number
 		out.push({ title: `Post your Reels on ${[bt.best_day, bt.best_band].filter(Boolean).join(', ')}.`, why: 'Your recent posts did best then.', act: 'Plan', href: '/brand/business/calendar' });
 	}
 	const city = Object.entries(g.demographics?.city ?? {}).sort((a, b) => b[1] - a[1])[0]?.[0]?.split(',')[0];
-	if (city) out.push({ title: `Work with creators in ${city}.`, why: `Most of your followers are there, so their audience is likely yours.`, act: 'Find', href: `/brand/creators?tab=discover&q=${encodeURIComponent(city)}` });
+	if (city) out.push({ title: `Work with creators in ${city}.`, why: `Most of your followers are there, so their audience is likely yours.`, act: 'Find', href: `/brand/explore&q=${encodeURIComponent(city)}` });
 	const er = g.insights?.formats?.reels.er ?? null;
-	if (er !== null && er < 1) out.push({ title: 'Ask creators for Reels you can run as ads.', why: `Your own Reels get ${er}% engagement; creators' Reels usually do better for brands.`, act: 'Find', href: '/brand/creators?tab=discover' });
+	if (er !== null && er < 1) out.push({ title: 'Ask creators for Reels you can run as ads.', why: `Your own Reels get ${er}% engagement; creators' Reels usually do better for brands.`, act: 'Find', href: '/brand/explore' });
 	return out.slice(0, 3);
 }

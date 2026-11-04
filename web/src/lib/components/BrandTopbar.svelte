@@ -78,6 +78,7 @@
 		'/brand/new': 'New request',
 		'/brand/settings': 'Settings',
 		'/brand/alerts': 'Alerts',
+		'/brand/explore': 'Explore',
 		'/brand/profile': 'Your brand',
 		'/brand/grow': 'Grow',
 		'/brand/grow/insights': 'Your Insights',
@@ -101,10 +102,11 @@
 	const back = $derived(
 		path.startsWith('/brand/r/') ? '/brand/requests'
 		: path === '/brand/inbox' ? (page.url.searchParams.get('c') ? '/brand/inbox' : '/brand')
-		: path.startsWith('/brand/creator/') ? '/brand/creators?tab=discover'
+		: path.startsWith('/brand/creator/') ? '/brand/explore'
 		: path.startsWith('/brand/campaigns/') ? '/brand/campaigns'
 		: path === '/brand/grow/insights' ? '/brand/grow'
 		: path === '/brand/alerts' ? '/brand'
+		: ['/brand/grow', '/brand/business/content', '/brand/business/turnaround', '/brand/autopilots'].includes(path) ? '/brand/campaigns'
 		: path === '/brand/settings' && !sec ? '/brand/profile'
 		: sec ? '/brand/settings'
 		: isNew || path === '/brand/business/team' ? '/brand/settings'
@@ -138,19 +140,19 @@
 			<div class="m-r">
 				{#if signedIn && path === '/brand'}
 					<!-- The creator's Today bar, piece for piece: new, Ask your desk, search, alerts, messages. -->
-					<a class="m-ib" href={creators.length ? '/brand/campaigns/new' : '/brand/creators?tab=discover'} aria-label="New campaign"><Icon name="plus" /></a>
+					<a class="m-ib" href={creators.length ? '/brand/campaigns/new' : '/brand/explore'} aria-label="New campaign"><Icon name="plus" /></a>
 					<button class="m-ib m-ask" onclick={() => (ui.askOpen = true)} aria-label="Ask your desk"><Icon name="spark" /></button>
-					<a class="m-ib" href="/brand/creators?tab=discover" aria-label="Find creators"><Icon name="search" /></a>
+					<a class="m-ib" href="/brand/explore" aria-label="Explore creators"><Icon name="search" /></a>
 					<a class="m-ib" href="/brand/alerts" aria-label="Alerts{alerts.unread ? `, ${alerts.unread} new` : ''}"><Icon name="bell" />{#if alerts.unread}<span class="m-badge">{alerts.unread > 99 ? '99+' : alerts.unread}</span>{/if}</a>
 					<a class="m-ib" href="/brand/inbox" aria-label="Messages{unread ? `, ${unread} unread` : ''}"><Icon name="send" />{#if unread}<span class="m-badge">{unread}</span>{/if}</a>
 				{:else if signedIn && path === '/brand/requests'}
-					<a class="m-ib" href="/brand/creators?tab=discover" aria-label="Find creators"><Icon name="plus" /></a>
+					<a class="m-ib" href="/brand/explore" aria-label="Find creators"><Icon name="plus" /></a>
 					<a class="m-ib" href="/brand/inbox" aria-label="Messages{unread ? `, ${unread} unread` : ''}"><Icon name="send" />{#if unread}<span class="m-badge">{unread}</span>{/if}</a>
 				{:else if signedIn && path === '/brand/campaigns'}
-					<a class="m-ib" href={creators.length ? '/brand/campaigns/new' : '/brand/creators?tab=discover'} aria-label="New campaign"><Icon name="plus" /></a>
+					<a class="m-ib" href={creators.length ? '/brand/campaigns/new' : '/brand/explore'} aria-label="New campaign"><Icon name="plus" /></a>
 				{:else if signedIn && path === '/brand/profile'}
 					<!-- As on the creator's My page: new at the top, settings behind the menu. -->
-					<a class="m-ib" href={creators.length ? '/brand/campaigns/new' : '/brand/creators?tab=discover'} aria-label="New campaign"><Icon name="plus" /></a>
+					<a class="m-ib" href={creators.length ? '/brand/campaigns/new' : '/brand/explore'} aria-label="New campaign"><Icon name="plus" /></a>
 					<a class="m-ib" href="/brand/settings" aria-label="Settings and activity"><Icon name="menu" /></a>
 				{/if}
 				{#if !signedIn}<button class="m-ib" onclick={toggleTheme} aria-label="Switch light or dark mode"><Icon name={theme.value === 'dark' ? 'sun' : 'moon'} /></button>{/if}
@@ -188,7 +190,7 @@
 							{#if c.slug === pageSlug}<i class="bt-tick" aria-label="Current"><Icon name="check" /></i>{/if}
 						</button>
 					{/each}
-					<a class="bt-cr bt-find" role="menuitem" href="/brand/creators?tab=discover" onclick={() => (picking = false)}><span class="bt-add" aria-hidden="true">+</span><span><b>Find more creators</b></span></a>
+					<a class="bt-cr bt-find" role="menuitem" href="/brand/explore" onclick={() => (picking = false)}><span class="bt-add" aria-hidden="true">+</span><span><b>Find more creators</b></span></a>
 					<p class="bt-menu-f">You stay signed in when you switch. Each creator only sees your requests to them.</p>
 				</div>
 			{/if}
@@ -243,7 +245,7 @@
 				{#if c.slug === pageSlug}<i class="bt-tick" aria-label="Current"><Icon name="check" /></i>{:else}<Icon name="chevR" />{/if}
 			</button>
 		{/each}
-		<a class="bt-cr bt-find" href="/brand/creators?tab=discover" onclick={() => (picking = false)}><span class="bt-add" aria-hidden="true">+</span><span><b>Find more creators</b></span></a>
+		<a class="bt-cr bt-find" href="/brand/explore" onclick={() => (picking = false)}><span class="bt-add" aria-hidden="true">+</span><span><b>Find more creators</b></span></a>
 	</div>
 {/if}
 
