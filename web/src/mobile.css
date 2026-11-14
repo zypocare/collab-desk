@@ -334,7 +334,7 @@
 
   /* ---------- sheets from the bottom ---------- */
   [data-side] .dialog-scrim:not(.cmdk-scrim){place-items:end stretch;padding:0;padding-top:max(24px,env(safe-area-inset-top,0px));-webkit-backdrop-filter:none;backdrop-filter:none}
-  [data-side] .dialog-scrim:not(.cmdk-scrim) > .dialog{position:relative;width:100%;max-width:none;max-height:calc(100dvh - max(24px,env(safe-area-inset-top,0px)));overflow-y:auto;overscroll-behavior:contain;
+  [data-side] .dialog-scrim:not(.cmdk-scrim):not(.nc-scrim) > .dialog:not(.nc){position:relative;width:100%;max-width:none;max-height:calc(100dvh - max(24px,env(safe-area-inset-top,0px)));overflow-y:auto;overscroll-behavior:contain;
     border-radius:16px 16px 0 0;border:0;box-shadow:none;padding:28px 16px calc(16px + env(safe-area-inset-bottom,0px));animation:m-sheet .38s cubic-bezier(.2,.9,.25,1) both}
   [data-side] .dialog-scrim:not(.cmdk-scrim) > .dialog::before{content:"";position:absolute;top:8px;left:50%;width:36px;height:4px;margin-left:-18px;border-radius:99px;background:color-mix(in oklab,var(--ink) 25%,transparent)}
   [data-side] .dialog h2{font-size:18px;font-weight:700}

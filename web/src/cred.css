@@ -198,8 +198,8 @@
   @keyframes cr-bar { from { transform: scaleX(0); } }
 
   /* ---------- sheets spring up ---------- */
-  [data-side] .dialog-scrim:not(.cmdk-scrim) > .dialog { animation: cr-sheet .55s cubic-bezier(.2, 1.15, .3, 1) both; border-radius: 22px 22px 0 0; }
-  [data-side] .dialog-scrim:not(.cmdk-scrim) { animation: cr-dim .3s ease both; }
+  [data-side] .dialog-scrim:not(.cmdk-scrim):not(.nc-scrim) > .dialog:not(.nc) { animation: cr-sheet .55s cubic-bezier(.2, 1.15, .3, 1) both; border-radius: 22px 22px 0 0; }
+  [data-side] .dialog-scrim:not(.cmdk-scrim):not(.nc-scrim) { animation: cr-dim .3s ease both; }
   @keyframes cr-sheet { from { transform: translateY(100%); } }
   @keyframes cr-dim { from { background-color: transparent; } }
 
@@ -1085,8 +1085,8 @@
   @keyframes cr-badge { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.12); } }
   @keyframes cr-pop { 0% { transform: scale(.7); } 60% { transform: scale(1.15); } 100% { transform: none; } }
   @keyframes cr-bar { from { transform: scaleX(0); } }
-  [data-side] .dialog-scrim:not(.cmdk-scrim) > .dialog { animation: cr-sheet .55s cubic-bezier(.2, 1.15, .3, 1) both; border-radius: 22px 22px 0 0; }
-  [data-side] .dialog-scrim:not(.cmdk-scrim) { animation: cr-dim .3s ease both; }
+  [data-side] .dialog-scrim:not(.cmdk-scrim):not(.nc-scrim) > .dialog:not(.nc) { animation: cr-sheet .55s cubic-bezier(.2, 1.15, .3, 1) both; border-radius: 22px 22px 0 0; }
+  [data-side] .dialog-scrim:not(.cmdk-scrim):not(.nc-scrim) { animation: cr-dim .3s ease both; }
   .cr-ticker.cr-tk { margin: 14px -16px 4px; border: 0; background: var(--chrome); }
   .cr-ticker.cr-tk div { color: rgba(255, 255, 255, .72); font-size: 12px; letter-spacing: .02em; animation-duration: 32s; }
   .cr-ticker.cr-tk b { color: var(--g3); }

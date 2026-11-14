@@ -1,7 +1,5 @@
 <script lang="ts">
 	import { portal } from '../portal';
-	import { holdCollabPage } from '../collabDialog';
-	import BrandNameInput from './BrandNameInput.svelte';
 	import { onMount } from 'svelte';
 	import { createCollab, loadLeads, studio } from '../studio.svelte';
 	import { supabase } from '../supabase';
@@ -43,11 +41,34 @@
 	let body = $state<HTMLDivElement>();
 
 	onMount(() => {
+		const root = document.documentElement;
+		const b = document.body;
+		const overflow = root.style.overflow;
+		const bodyOverflow = b.style.overflow;
+		root.style.overflow = 'hidden';
+		b.style.overflow = 'hidden';
+		if (!matchMedia('(max-width: 760px)').matches && step === 'paste') {
+			box?.focus({ preventScroll: true });
+		}
+		// Keep #nc-paste focus from scrolling the title out of .nc-body while the mobile keyboard animates open
+		const onFocusIn = (e: FocusEvent) => {
+			if (e.target === box && body) {
+				body.scrollTop = 0;
+				requestAnimationFrame(() => { if (body) body.scrollTop = 0; });
+				setTimeout(() => { if (body) body.scrollTop = 0; }, 120);
+			}
+		};
+		body?.addEventListener('focusin', onFocusIn);
 		// A screenshot shared into the app (Android Share): read it straight away.
 		ui.pasteImage = null;
 		if (shared) shrinkImage(shared).then((img) => readWithAi(img), (err) => toast((err as Error).message, 'alert'));
 		// A DM or pasted message: read it at once, so the details are there when she looks.
 		else if (startText.trim().length > 20) readWithAi();
+		return () => {
+			body?.removeEventListener('focusin', onFocusIn);
+			root.style.overflow = overflow;
+			b.style.overflow = bodyOverflow;
+		};
 	});
 	const close = () => (ui.newCollab = false);
 	function go(s: Step) {
@@ -327,8 +348,8 @@
 
 <svelte:window onkeydown={(e) => e.key === 'Escape' && close()} />
 
-<div class="dialog-scrim nc-scrim" role="presentation" use:portal use:holdCollabPage onclick={(e) => e.target === e.currentTarget && close()}>
-	<div class="dialog nc" role="dialog" aria-modal="true" aria-labelledby="nc-title" tabindex="-1">
+<div class="dialog-scrim nc-scrim" role="presentation" use:portal onclick={(e) => e.target === e.currentTarget && close()}>
+	<div class="dialog nc" role="dialog" aria-modal="true" aria-labelledby="nc-title">
 		<header class="nc-top">
 			{#if step !== 'ask' && step !== 'paste'}<button type="button" class="nc-ib" aria-label="Back" onclick={back}><Icon name="chevL" /></button>{:else if step === 'ask' && !fromIg && !shared}<button type="button" class="nc-ib" aria-label="Back" onclick={back}><Icon name="chevL" /></button>{/if}
 			{#if at >= 0}
@@ -354,7 +375,8 @@
 				</div>
 				{#if aiNote}<p class="nc-note"><AiThinking label={aiNote.replace('…', '')} /></p>{/if}
 				<label for="nc-brand" class="nc-lbl">Brand</label>
-				<BrandNameInput id="nc-brand" bind:value={name} onedit={() => (nameTouched = true)} />
+				<input class="nc-brand" id="nc-brand" list="nc-brands" placeholder="Brand name" autocomplete="off" bind:value={name} oninput={() => (nameTouched = true)} />
+				<datalist id="nc-brands">{#each studio.brands as b (b.id)}<option value={b.name}></option>{/each}</datalist>
 				<p class="nc-more">Adding many? <a href="/studio/import" onclick={close}>Import them at once</a> · Ambassador deal? <a href="/studio/brands" onclick={close}>Set up a monthly deal</a></p>
 			{:else if step === 'ask'}
 				<div class="nc-head">
@@ -389,7 +411,8 @@
 				</div>
 				<p class="nc-hint">Tap any line to change it. Nothing is sent to the brand.</p>
 				<label for="nc-brand2" class="nc-lbl">Brand</label>
-				<BrandNameInput id="nc-brand2" bind:value={name} onedit={() => (nameTouched = true)} />
+				<input class="nc-brand" id="nc-brand2" list="nc-brands2" placeholder="Brand name" autocomplete="off" bind:value={name} oninput={() => (nameTouched = true)} />
+				<datalist id="nc-brands2">{#each studio.brands as b (b.id)}<option value={b.name}></option>{/each}</datalist>
 				<small class="nc-hint">{name.trim() ? (known ? 'A brand you know: their details are filled in' : 'New brand: their Instagram is saved too') : 'Who is the content for?'}</small>
 				{#if agency || agencyOpen}
 					<label for="nc-agency" class="nc-lbl">Sent by an agency</label>
@@ -504,9 +527,41 @@
 	/* One sheet that fits any screen: the header and the button stay put, the middle scrolls (no scroll bar). */
 	:global([data-side]) .dialog.nc { display: flex; flex-direction: column; width: min(480px, 100%); height: min(880px, calc(100dvh - 32px)); max-height: calc(100dvh - 32px); padding: 0; overflow: hidden; border: 1px solid var(--line); border-radius: 26px; background: radial-gradient(130% 30% at 50% 0%, color-mix(in oklab, var(--g1) 14%, transparent), transparent 72%), var(--surface); box-shadow: var(--shadow-lg); }
 	@media (max-width: 760px) {
-		/* Follow the keyboard's visible area, rather than the page behind it. No entry transform while focusing. */
-		:global([data-side]) .dialog-scrim.nc-scrim { top: var(--vv-top, 0px); bottom: auto; height: var(--vv-h, 100dvh); padding-top: max(8px, env(safe-area-inset-top, 0px)); overflow: hidden; overscroll-behavior: none; animation: none; }
-		:global([data-side]) .nc-scrim > .dialog.nc { width: 100%; height: 100%; max-height: 100%; padding-top: 14px; border-radius: 24px 24px 0 0; border-width: 1px 0 0; animation: none; }
+		/* Lock scrim to top of viewport and size cleanly to visualViewport without transform/scroll oscillation. */
+		:global([data-side]) .dialog-scrim.nc-scrim {
+			position: fixed;
+			inset: 0;
+			top: var(--vv-top, 0px) !important;
+			bottom: auto !important;
+			height: var(--vv-h, 100dvh) !important;
+			padding-top: max(8px, env(safe-area-inset-top, 0px));
+			overflow: hidden;
+			overscroll-behavior: none;
+			animation: none !important;
+			transition: none !important;
+		}
+		:global([data-side]) .nc-scrim > .dialog.nc {
+			width: 100%;
+			height: 100%;
+			max-height: 100%;
+			padding: 8px 0 0 !important;
+			border-radius: 24px 24px 0 0;
+			border-width: 1px 0 0;
+			animation: none !important;
+			transition: none !important;
+		}
+		.nc-top { padding: 6px 10px 2px 14px; }
+		.nc-body { gap: 10px; padding: 4px 18px 12px; scroll-behavior: auto; }
+		:global([data-side]) .nc .nc-h { font-size: clamp(26px, 7.5vw, 31px); line-height: 1.05; }
+		:global([data-side]) .nc .nc-sub { margin: -4px 0 0; font-size: 13px; line-height: 1.35; }
+		.nc-compose textarea { height: 116px; min-height: 116px; padding: 10px 14px 6px; font-size: 15px; line-height: 1.42; }
+		.nc-pill { height: 46px; gap: 3px; }
+		.nc-pill :global(.ic) { width: 18px; height: 18px; }
+		.nc-lbl { margin-bottom: -6px; }
+		.nc-brand { height: 44px; font-size: 23px; }
+		.nc-more { font-size: 12px; line-height: 1.4; }
+		.nc-foot { padding: 10px 18px calc(12px + env(safe-area-inset-bottom, 0px)); }
+		.nc-go { height: 48px; }
 	}
 	.nc-top { display: flex; flex: none; align-items: center; gap: 10px; padding: 10px 10px 4px 14px; }
 	.nc-ib { width: 44px; height: 44px; flex: none; display: grid; place-items: center; border: 0; background: none; color: var(--ink-2); cursor: pointer; }

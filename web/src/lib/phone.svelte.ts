@@ -1,7 +1,6 @@
 // The Studio on a phone behaves like an installed app: an app bar that shows the title once the
 // big one scrolls away, sheets that slide down to close, and pull down to refresh.
 import { haptic } from './feel';
-import { COLLAB_DIALOG_CHANGE, collabDialogOpen } from './collabDialog';
 export const PHONE_Q = '(max-width: 760px)';
 
 export const phone = $state({ on: false, scrolled: false, titled: false, hide: false });
@@ -16,6 +15,7 @@ export function startPhone(refresh: () => Promise<unknown>) {
 	// The part of the screen the keyboard leaves free (iPhone shrinks only this "visual viewport"):
 	// full-screen chats size to it, so the header stays and the message box sits just above the keyboard.
 	const vv = window.visualViewport;
+	const isIOS = typeof navigator !== 'undefined' && (/iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1));
 	let viewportFrame = 0;
 	let viewportHeight = '';
 	let viewportTop = '';
@@ -23,7 +23,8 @@ export function startPhone(refresh: () => Promise<unknown>) {
 		viewportFrame = 0;
 		if (!vv) return;
 		const height = `${Math.round(vv.height)}px`;
-		const top = `${Math.round(vv.offsetTop)}px`;
+		// On Android, the layout viewport itself resizes when the keyboard opens; transient offsetTop values during IME animation cause fixed sheets to bounce.
+		const top = isIOS ? `${Math.max(0, Math.round(vv.offsetTop))}px` : '0px';
 		if (height !== viewportHeight) document.documentElement.style.setProperty('--vv-h', height);
 		if (top !== viewportTop) document.documentElement.style.setProperty('--vv-top', top);
 		viewportHeight = height;
@@ -37,7 +38,6 @@ export function startPhone(refresh: () => Promise<unknown>) {
 	// Like Instagram: the top bar slides away while scrolling down and comes back on the way up.
 	let last = scrollY;
 	const onScroll = () => {
-		if (collabDialogOpen()) return;
 		const y = scrollY;
 		phone.scrolled = y > 4;
 		phone.titled = y > 64;
@@ -48,7 +48,6 @@ export function startPhone(refresh: () => Promise<unknown>) {
 	};
 	onScroll();
 	addEventListener('scroll', onScroll, { passive: true });
-	document.addEventListener(COLLAB_DIALOG_CHANGE, onScroll);
 
 	const offSheet = sheetSwipe();
 	const offPull = pullToRefresh(refresh);
@@ -58,7 +57,6 @@ export function startPhone(refresh: () => Promise<unknown>) {
 		vv?.removeEventListener('scroll', onVv);
 		cancelAnimationFrame(viewportFrame);
 		removeEventListener('scroll', onScroll);
-		document.removeEventListener(COLLAB_DIALOG_CHANGE, onScroll);
 		offSheet();
 		offPull();
 	};
