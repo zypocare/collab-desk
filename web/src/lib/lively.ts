@@ -1,6 +1,6 @@
 import { onNavigate } from '$app/navigation';
 import { onMount } from 'svelte';
-import { haptic } from './feel';
+import { nativePlatform } from './native';
 
 // CRED-style motion for the phone studio. A tapped wallet card grows into the collab it opens, cards tilt under the finger and spring back, sheets close with a
 // swipe down, and search boxes roll through things to search for. Laptop is left as it is.
@@ -29,7 +29,7 @@ export function lively() {
 	onNavigate((nav) => {
 		const card = lastCard;
 		lastCard = null;
-		if (!(document as DocVT).startViewTransition || REDUCED || IOS || !onPhone() || !nav.to || !card?.isConnected) return;
+		if (!(document as DocVT).startViewTransition || REDUCED || IOS || nativePlatform() === 'android' || !onPhone() || !nav.to || !card?.isConnected) return;
 		const root = document.documentElement;
 		// Today's money card grows into the Money screen's card.
 		const toMoney = card.matches('.m-hero') && nav.to.url.pathname === '/studio/money';
@@ -102,47 +102,7 @@ export function lively() {
 		addEventListener('pointerdown', down, { passive: true });
 		for (const ev of ['pointerup', 'pointercancel', 'blur'] as const) addEventListener(ev, up, { passive: true });
 
-		// Sheets: drag the top of a sheet down to close it (sheets close on Escape).
-		let sheet: HTMLElement | null = null;
-		let y0 = 0;
-		let dy = 0;
-		const tStart = (e: TouchEvent) => {
-			if (!onPhone() || e.touches.length !== 1) return;
-			const s = (e.target as Element | null)?.closest?.('.dialog-scrim > .dialog') as HTMLElement | null;
-			if (!s || s.scrollTop > 0) return;
-			const top = s.getBoundingClientRect().top;
-			if (e.touches[0].clientY - top > 64) return;
-			sheet = s;
-			y0 = e.touches[0].clientY;
-			dy = 0;
-		};
-		const tMove = (e: TouchEvent) => {
-			if (!sheet) return;
-			dy = Math.max(0, e.touches[0].clientY - y0);
-			if (dy > 0) e.preventDefault();
-			sheet.style.transition = 'none';
-			sheet.style.transform = `translateY(${dy}px)`;
-		};
-		const tEnd = () => {
-			const s = sheet;
-			sheet = null;
-			if (!s) return;
-			s.style.transition = 'transform .45s cubic-bezier(.2,1.3,.35,1)';
-			if (dy > 110) {
-				haptic('soft');
-				s.style.transition = 'transform .2s ease-in';
-				s.style.transform = 'translateY(100%)';
-				setTimeout(() => {
-					dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
-					// Still open (this sheet doesn't close on Escape): bring it back.
-					setTimeout(() => s.isConnected && ((s.style.transition = 'transform .45s cubic-bezier(.2,1.3,.35,1)'), (s.style.transform = '')), 60);
-				}, 190);
-			} else s.style.transform = '';
-		};
-		addEventListener('touchstart', tStart, { passive: true });
-		addEventListener('touchmove', tMove, { passive: false });
-		addEventListener('touchend', tEnd, { passive: true });
-		addEventListener('touchcancel', tEnd, { passive: true });
+		// Sheet dragging is handled once by startPhone(), including keyboard and form-field guards.
 
 		// Arrivals: sections and cards rise in, a few at a time, as they come on screen.
 		const io = typeof IntersectionObserver !== 'undefined'
@@ -184,10 +144,6 @@ export function lively() {
 			removeEventListener('deviceorientation', tilt);
 			cancelAnimationFrame(tq);
 			for (const ev of ['pointerup', 'pointercancel', 'blur'] as const) removeEventListener(ev, up);
-			removeEventListener('touchstart', tStart);
-			removeEventListener('touchmove', tMove);
-			removeEventListener('touchend', tEnd);
-			removeEventListener('touchcancel', tEnd);
 		};
 	});
 }

@@ -41,12 +41,16 @@
 	let body = $state<HTMLDivElement>();
 
 	onMount(() => {
-		if (step === 'paste') box?.focus();
+		const root = document.documentElement;
+		const overflow = root.style.overflow;
+		root.style.overflow = 'hidden';
+		if (step === 'paste') box?.focus({ preventScroll: true });
 		// A screenshot shared into the app (Android Share): read it straight away.
 		ui.pasteImage = null;
 		if (shared) shrinkImage(shared).then((img) => readWithAi(img), (err) => toast((err as Error).message, 'alert'));
 		// A DM or pasted message: read it at once, so the details are there when she looks.
 		else if (startText.trim().length > 20) readWithAi();
+		return () => { root.style.overflow = overflow; };
 	});
 	const close = () => (ui.newCollab = false);
 	function go(s: Step) {
@@ -326,7 +330,7 @@
 
 <svelte:window onkeydown={(e) => e.key === 'Escape' && close()} />
 
-<div class="dialog-scrim" role="presentation" use:portal onclick={(e) => e.target === e.currentTarget && close()}>
+<div class="dialog-scrim nc-scrim" role="presentation" use:portal onclick={(e) => e.target === e.currentTarget && close()}>
 	<div class="dialog nc" role="dialog" aria-modal="true" aria-labelledby="nc-title">
 		<header class="nc-top">
 			{#if step !== 'ask' && step !== 'paste'}<button type="button" class="nc-ib" aria-label="Back" onclick={back}><Icon name="chevL" /></button>{:else if step === 'ask' && !fromIg && !shared}<button type="button" class="nc-ib" aria-label="Back" onclick={back}><Icon name="chevL" /></button>{/if}
@@ -343,7 +347,7 @@
 				<p class="nc-sub">Paste their DM or email, read a screenshot, or say it. The details fill in for you.</p>
 				<div class="nc-compose">
 					<label for="nc-paste" class="sr">Their message (optional)</label>
-					<textarea id="nc-paste" rows="5" placeholder={'Hi! I’m Asha from Lumière Skin. We’d love 1 reel + 3 stories for our Vitamin C launch, budget ₹30k, live by 25th…'} bind:value={pasted} bind:this={box}></textarea>
+					<textarea id="nc-paste" rows="8" placeholder={'Hi! I’m Asha from Lumière Skin. We’d love 1 reel + 3 stories for our Vitamin C launch, budget ₹30k, live by 25th…'} bind:value={pasted} bind:this={box}></textarea>
 					<div class="nc-tools">
 						<button type="button" class="nc-pill ai" disabled={aiBusy} onclick={() => shotInput?.click()}><Icon name="image" />Screenshot</button>
 						{#if speakable}<button type="button" class="nc-pill ai" class:rec={speaking} disabled={aiBusy && !speaking} onclick={speak} aria-label={speaking ? 'Stop listening' : 'Speak the details'}><Icon name="mic" />{speaking ? 'Stop' : 'Speak'}</button>{/if}
@@ -503,11 +507,13 @@
 
 <style>
 	/* One sheet that fits any screen: the header and the button stay put, the middle scrolls (no scroll bar). */
-	:global([data-side]) .dialog.nc { display: flex; flex-direction: column; width: min(480px, 100%); max-height: min(860px, calc(100dvh - 32px)); padding: 0; overflow: hidden; border: 1px solid var(--line); border-radius: 26px; background: radial-gradient(130% 30% at 50% 0%, color-mix(in oklab, var(--g1) 14%, transparent), transparent 72%), var(--surface); box-shadow: var(--shadow-lg); }
+	:global([data-side]) .dialog.nc { display: flex; flex-direction: column; width: min(480px, 100%); height: min(880px, calc(100dvh - 32px)); max-height: calc(100dvh - 32px); padding: 0; overflow: hidden; border: 1px solid var(--line); border-radius: 26px; background: radial-gradient(130% 30% at 50% 0%, color-mix(in oklab, var(--g1) 14%, transparent), transparent 72%), var(--surface); box-shadow: var(--shadow-lg); }
 	@media (max-width: 760px) {
-		:global([data-side]) .dialog.nc { width: 100%; max-height: calc(100dvh - max(24px, env(safe-area-inset-top, 0px))); border-radius: 24px 24px 0 0; border-width: 1px 0 0; }
+		/* Follow the keyboard's visible area, rather than the page behind it. No entry transform while focusing. */
+		:global([data-side]) .dialog-scrim.nc-scrim { top: var(--vv-top, 0px); bottom: auto; height: var(--vv-h, 100dvh); padding-top: max(8px, env(safe-area-inset-top, 0px)); overflow: hidden; overscroll-behavior: none; animation: none; }
+		:global([data-side]) .nc-scrim > .dialog.nc { width: 100%; height: 100%; max-height: 100%; padding-top: 14px; border-radius: 24px 24px 0 0; border-width: 1px 0 0; animation: none; }
 	}
-	.nc-top { display: flex; align-items: center; gap: 10px; padding: 10px 10px 4px 14px; }
+	.nc-top { display: flex; flex: none; align-items: center; gap: 10px; padding: 10px 10px 4px 14px; }
 	.nc-ib { width: 44px; height: 44px; flex: none; display: grid; place-items: center; border: 0; background: none; color: var(--ink-2); cursor: pointer; }
 	.nc-ib :global(.ic) { width: 20px; height: 20px; }
 	.nc-prog { flex: 1; display: flex; gap: 6px; }
@@ -516,7 +522,8 @@
 	.nc-prog i.on { background: var(--ink); }
 	.nc-eb { font-size: 10.5px; font-weight: 800; letter-spacing: .17em; text-transform: uppercase; color: var(--ink-3); }
 	.nc-grow { flex: 1; padding-left: 6px; }
-	.nc-body { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; display: flex; flex-direction: column; gap: 16px; padding: 8px 20px 18px; }
+	.nc-body { flex: 1; min-height: 0; overflow-y: auto; overflow-anchor: none; overscroll-behavior: contain; scrollbar-width: none; display: flex; flex-direction: column; gap: 16px; padding: 8px 20px 18px; }
+	.nc-body > * { flex-shrink: 0; }
 	.nc-body::-webkit-scrollbar { display: none; }
 	.nc-head { display: flex; flex-direction: column; gap: 6px; }
 	:global([data-side]) .nc .nc-h { margin: 0; font: 400 clamp(30px, 9vw, 38px)/1.04 var(--f-serif, Georgia, serif); letter-spacing: -.01em; overflow-wrap: anywhere; }
@@ -524,7 +531,7 @@
 	:global([data-side]) .nc .nc-sub { margin: -6px 0 0; font-size: 14.5px; color: var(--ink-3); }
 	.nc-compose { display: flex; flex-direction: column; background: var(--bg); border: 1px solid var(--line-strong); box-shadow: 4px 4px 0 var(--line-strong); }
 	.nc-compose:focus-within { border-color: var(--ink); box-shadow: 4px 4px 0 var(--accent); }
-	.nc-compose textarea { width: 100%; min-height: 110px; max-height: 32dvh; box-sizing: border-box; border: 0; outline: 0; resize: none; background: none; color: var(--ink); font: 400 16px/1.5 var(--f-body, inherit); padding: 14px 16px 8px; scrollbar-width: none; }
+	.nc-compose textarea { display: block; flex: none; width: 100%; height: 240px; min-height: 240px; box-sizing: border-box; border: 0; outline: 0; resize: none; overflow-y: auto; overscroll-behavior: contain; background: none; color: var(--ink); font: 400 16px/1.5 var(--f-body, inherit); padding: 14px 16px 8px; scrollbar-width: none; }
 	.nc-compose textarea::-webkit-scrollbar { display: none; }
 	.nc-tools { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); border-top: 1px dashed var(--line-strong); }
 	.nc-pill { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; height: 60px; border: 0; background: transparent; color: var(--ink-2); font: 700 10px var(--f-body, inherit); letter-spacing: .1em; text-transform: uppercase; cursor: pointer; }
@@ -609,7 +616,7 @@
 	.nc-reply b { font-size: 14.5px; }
 	.nc-reply small { font-size: 13px; color: var(--ink-3); }
 	.nc-reply textarea { width: 100%; box-sizing: border-box; resize: none; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font: 400 14px/1.45 var(--f-body, inherit); padding: 8px 10px; outline: 0; scrollbar-width: none; }
-	.nc-foot { display: flex; flex-direction: column; gap: 4px; padding: 12px 20px calc(16px + env(safe-area-inset-bottom, 0px)); border-top: 1px solid var(--line); background: var(--surface); }
+	.nc-foot { display: flex; flex: none; flex-direction: column; gap: 4px; padding: 12px 20px calc(16px + env(safe-area-inset-bottom, 0px)); border-top: 1px solid var(--line); background: var(--surface); }
 	.nc-go { display: flex; align-items: center; justify-content: center; gap: 10px; height: 54px; border: 0; background: var(--ink); color: var(--bg); font: 800 16px var(--f-body, inherit); box-shadow: 4px 4px 0 var(--g2); cursor: pointer; transition: transform .07s, box-shadow .07s, opacity .2s; }
 	.nc-go:not(:disabled):active { transform: translate(4px, 4px); box-shadow: 0 0 0 var(--g2); }
 	.nc-go:disabled { opacity: .4; cursor: default; }

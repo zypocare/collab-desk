@@ -125,15 +125,17 @@
 		{#each wall as c, i (c.id)}
 			{@const img = thumb(c)}
 			{@const v = views(c)}
-			<a class="wt st-{c.stage}" class:img={!!img} href="/studio/c/{c.code}" style="--h:var(--m{hueOf(c.brand.name)});--i:{Math.min(i, 8)}">
-				{#if img}<img src={igImg(img)} alt="" loading="lazy" referrerpolicy="no-referrer" />{:else}<span class="wt-glow" aria-hidden="true"></span><span class="wt-mark" aria-hidden="true">{initials(c.brand.name)}</span>{/if}
-				<span class="wt-stage"><i></i>{stageLabel(c.stage)}</span>
+			<a class="wt st-{c.stage}" href="/studio/c/{c.code}" style="--h:var(--m{hueOf(c.brand.name)});--i:{Math.min(i, 8)}">
+				<span class="wt-cover">
+					{#if img}<img src={igImg(img)} alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" />{:else}<span class="wt-mark" aria-hidden="true">{initials(c.brand.name)}</span>{/if}
+					<span class="wt-stage"><i></i>{stageLabel(c.stage)}</span>
+					{#if v}<span class="wt-views" aria-label="{compact(v)} views"><Icon name="eye" />{compact(v)}</span>{/if}
+				</span>
 				<span class="wt-b">
 					<b>{c.brand.name}</b>
-					<small>{delivText(c.deliverables) || c.brand.category || 'Collab'}</small>
 					<span class="wt-meta">
+						<span class="wt-work"><span class="wt-work-icon"><Icon name="layers" /></span><small>{delivText(c.deliverables) || c.brand.category || 'Collab'}</small></span>
 						{#if money(c)}<em>{money(c)}{c.type === 'barter' ? ' barter' : ''}</em>{/if}
-						{#if v}<em><Icon name="eye" />{compact(v)}</em>{/if}
 					</span>
 				</span>
 			</a>
@@ -155,27 +157,30 @@
 {/if}
 
 <style>
-	/* The work wall: each collab a poster in the brand's colour (or its post, once linked). */
-	.wall { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; padding: 14px 0 8px; }
-	.wt { position: relative; isolation: isolate; overflow: hidden; aspect-ratio: 4 / 5; display: flex; flex-direction: column; justify-content: space-between; padding: 12px; border-radius: 22px; color: #fff; text-decoration: none;
-		background: radial-gradient(120% 90% at 100% 0%, color-mix(in oklab, var(--h) 75%, transparent), transparent 60%), radial-gradient(110% 80% at 0% 100%, color-mix(in oklab, var(--g2) 55%, transparent), transparent 65%), linear-gradient(160deg, color-mix(in oklab, var(--h) 45%, #1a0f1c), #140c16);
-		box-shadow: 0 14px 30px -18px color-mix(in oklab, var(--h) 70%, #000); animation: wt-in .5s cubic-bezier(.2, .8, .2, 1) both; animation-delay: calc(var(--i) * 40ms); }
-	.wt:active { transform: scale(.98); }
-	.wt.img img { position: absolute; inset: 0; z-index: -2; width: 100%; height: 100%; object-fit: cover; }
-	.wt.img::after { content: ''; position: absolute; inset: 0; z-index: -1; background: linear-gradient(180deg, rgba(0, 0, 0, .25), transparent 35%, rgba(0, 0, 0, .75)); }
-	.wt-glow { position: absolute; z-index: -1; width: 70%; aspect-ratio: 1; right: -20%; top: 18%; border-radius: 50%; background: radial-gradient(circle, color-mix(in oklab, var(--g3) 45%, transparent), transparent 70%); filter: blur(10px); }
-	.wt-mark { position: absolute; z-index: -1; right: 10px; top: 36%; font: italic 400 64px/1 'Instrument Serif', Georgia, serif; color: rgba(255, 255, 255, .16); letter-spacing: -.02em; }
-	.wt-stage { align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px; border-radius: 999px; background: rgba(255, 255, 255, .16); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); font-size: 11.5px; font-weight: 600; }
-	.wt-stage i { width: 7px; height: 7px; border-radius: 50%; background: var(--hue, #fff); box-shadow: 0 0 0 2px rgba(255, 255, 255, .25); }
-	.wt.st-request .wt-stage i { animation: pulse 2s infinite; }
-	.wt-b { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
-	.wt-b b { font: italic 400 25px/1.05 'Instrument Serif', Georgia, serif; letter-spacing: -.01em; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; text-shadow: 0 1px 12px rgba(0, 0, 0, .25); }
-	.wt-b small { font-size: 12px; opacity: .8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-	.wt-meta { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px; }
-	.wt-meta em { display: inline-flex; align-items: center; gap: 4px; height: 24px; padding: 0 9px; border-radius: 999px; background: rgba(0, 0, 0, .28); font-style: normal; font-size: 12px; font-weight: 600; }
-	.wt-meta :global(.ic) { width: 13px; height: 13px; }
+	/* Photo-led cards with a separate details panel, using the app's light/dark theme. */
+	.wall { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 12px; padding: 16px 0 8px; }
+	.wt { min-width: 0; display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--line); border-radius: 20px; background: var(--surface); color: var(--ink); text-decoration: none;
+		animation: wt-in .35s var(--ease) both; animation-delay: calc(var(--i) * 30ms); transition: transform .2s var(--ease), border-color .2s; }
+	.wt:active { transform: scale(.98); border-color: var(--accent); }
+	.wt-cover { position: relative; isolation: isolate; display: grid; place-items: center; flex: none; width: 100%; aspect-ratio: 1.06; overflow: hidden;
+		background: radial-gradient(ellipse at 100% 0%, color-mix(in oklab, var(--h) 65%, transparent), transparent 70%), radial-gradient(ellipse at 0% 100%, color-mix(in oklab, var(--g2) 40%, transparent), transparent 70%), var(--hero); }
+	.wt-cover > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+	.wt-cover::after { content: ''; position: absolute; z-index: 1; inset: 0; pointer-events: none; background: linear-gradient(180deg, rgba(0, 0, 0, .12), transparent 35%, transparent 65%, rgba(0, 0, 0, .18)); }
+	.wt-mark { display: grid; place-items: center; width: 84px; height: 84px; border: 1px solid rgba(255, 255, 255, .2); border-radius: 28px; background: rgba(255, 255, 255, .06); color: rgba(255, 255, 255, .8); font: 600 34px/1 var(--f-display); letter-spacing: -.04em; }
+	.wt-stage { position: absolute; z-index: 2; top: 10px; right: 10px; display: inline-flex; align-items: center; gap: 5px; height: 24px; padding: 0 8px; border: 1px solid rgba(255, 255, 255, .12); border-radius: 999px; background: rgba(17, 13, 17, .8); color: #fff; font-size: 10px; line-height: 1; font-weight: 600; }
+	.wt-stage i { flex: none; width: 6px; height: 6px; border-radius: 50%; background: var(--hue, var(--h-live)); }
+	.wt-views { position: absolute; z-index: 2; bottom: 10px; right: 10px; display: inline-flex; align-items: center; gap: 5px; min-height: 25px; padding: 0 9px; border-radius: 999px; background: var(--g1); color: var(--accent-ink); font-size: 11px; line-height: 1; font-weight: 600; font-variant-numeric: tabular-nums; }
+	.wt-views :global(.ic) { width: 13px; height: 13px; }
+	.wt-b { display: flex; flex: 1; flex-direction: column; gap: 14px; min-width: 0; padding: 12px 11px 13px; }
+	.wt-b > b { min-height: 2.7em; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; font: 600 14px/1.35 var(--f-body); overflow-wrap: anywhere; }
+	.wt-meta { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-top: auto; min-width: 0; }
+	.wt-work { display: inline-flex; align-items: center; gap: 5px; min-width: 0; }
+	.wt-work-icon { display: grid; place-items: center; flex: none; width: 17px; height: 17px; border-radius: 50%; background: color-mix(in oklab, var(--g2) 14%, var(--surface)); color: var(--accent); }
+	.wt-work-icon :global(.ic) { width: 11px; height: 11px; }
+	.wt-work small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink-3); font-size: 11.5px; line-height: 1.4; }
+	.wt-meta em { flex: none; color: var(--ink-2); font-style: normal; font-size: 11.5px; font-weight: 600; line-height: 1.4; white-space: nowrap; }
 	.wall :global(.pf-empty) { grid-column: 1 / -1; }
-	@keyframes wt-in { from { opacity: 0; transform: translateY(10px) scale(.97); } }
+	@keyframes wt-in { from { opacity: 0; transform: translateY(8px); } }
 	@media (prefers-reduced-motion: reduce) { .wt { animation: none; } }
 </style>
 

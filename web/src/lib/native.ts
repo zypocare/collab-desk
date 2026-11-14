@@ -2,6 +2,7 @@
 // the app adds native pieces: the back button, opening outside links in the phone's browser, the status
 // bar, and alerts through Firebase (Android) and Apple's push service (iPhone) instead of web push.
 // In a normal browser none of this runs.
+import { followSystemBars, NATIVE_APPEARANCE } from './systemBars';
 
 type Listener = { remove: () => Promise<void> };
 // addListener hands back the listener itself or a promise of it, depending on how the plugin is reached.
@@ -93,6 +94,9 @@ export function startNative() {
 	}) as never);
 	// A Miracle link opened from another app (WhatsApp, email, the browser) while the app was running.
 	app?.addListener('appUrlOpen', ((e: { url: string }) => openLink(e.url)) as never);
+	app?.addListener('appStateChange', ((e: { isActive: boolean }) => {
+		if (e.isActive) document.dispatchEvent(new Event(NATIVE_APPEARANCE));
+	}) as never);
 	// The same when the link started the app: Capacitor opens the app's first page and keeps the link for us.
 	// Once per launch: following it reloads this page, which asks again.
 	(app?.getLaunchUrl as (() => Promise<{ url?: string } | undefined>) | undefined)?.()
@@ -153,40 +157,11 @@ export function startNative() {
 		(push?.createChannel as ((c: Record<string, unknown>) => Promise<void>) | undefined)?.({ id: 'alerts', name: 'Alerts', description: 'New requests, messages and payments', importance: 5, visibility: 1, vibration: true }).catch(() => {});
 }
 
-/** 1.0.4 and later draw edge to edge on every Android: the clock and battery sit over whatever is behind them,
- *  so their colour follows it. When the WebView lets the page draw there (--safe-area-inset-top above 0, set by
- *  Capacitor's SystemBars), that's the page's own colour at the top, light or dark by its look and screen
- *  (sign-in is always dark); otherwise Capacitor pads the window and it's Miracle's ink. Checked when the look
- *  changes, and every 1.5 s for new screens; the phone is only told when it changes. */
+/** Match edge-to-edge icons to the page, without polling or reading layout on every root style mutation. */
 function iconsFollowPage(bars: Plugin | undefined) {
 	const setStyle = bars?.setStyle as ((o: { style: 'DARK' | 'LIGHT' }) => Promise<void>) | undefined;
 	if (!setStyle) return;
-	let last = '';
-	const bright = (c: string) => {
-		const m = c.match(/rgba?\(([\d.]+),\s*([\d.]+),\s*([\d.]+)(?:,\s*([\d.]+))?/);
-		if (!m || (m[4] !== undefined && Number(m[4]) < 0.5)) return null; // see-through: look further down
-		return (0.299 * Number(m[1]) + 0.587 * Number(m[2]) + 0.114 * Number(m[3])) / 255;
-	};
-	const check = () => {
-		const root = document.documentElement;
-		let dark = true;
-		if (parseFloat(getComputedStyle(root).getPropertyValue('--safe-area-inset-top')) > 0) {
-			let el: Element | null = document.elementFromPoint(innerWidth / 2, 2);
-			let b: number | null = null;
-			while (el && b === null) {
-				b = bright(getComputedStyle(el).backgroundColor);
-				el = el.parentElement;
-			}
-			dark = (b ?? (root.dataset.theme === 'dark' ? 0 : 1)) < 0.55;
-		}
-		const style = dark ? 'DARK' : 'LIGHT'; // DARK: light icons, for a dark background
-		if (style !== last) setStyle({ style }).catch(() => {});
-		last = style;
-	};
-	// The app starts with light icons over its dark splash: look once the page has drawn.
-	setTimeout(check, 800);
-	new MutationObserver(check).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'style'] });
-	setInterval(check, 1500);
+	followSystemBars(setStyle);
 }
 
 /** A Miracle link that opened the app (Android's app links, see .well-known/assetlinks.json). The app's own

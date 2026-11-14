@@ -15,12 +15,21 @@ export function startPhone(refresh: () => Promise<unknown>) {
 	// The part of the screen the keyboard leaves free (iPhone shrinks only this "visual viewport"):
 	// full-screen chats size to it, so the header stays and the message box sits just above the keyboard.
 	const vv = window.visualViewport;
-	const onVv = () => {
+	let viewportFrame = 0;
+	let viewportHeight = '';
+	let viewportTop = '';
+	const updateViewport = () => {
+		viewportFrame = 0;
 		if (!vv) return;
-		document.documentElement.style.setProperty('--vv-h', `${Math.round(vv.height)}px`);
-		document.documentElement.style.setProperty('--vv-top', `${Math.round(vv.offsetTop)}px`);
+		const height = `${Math.round(vv.height)}px`;
+		const top = `${Math.round(vv.offsetTop)}px`;
+		if (height !== viewportHeight) document.documentElement.style.setProperty('--vv-h', height);
+		if (top !== viewportTop) document.documentElement.style.setProperty('--vv-top', top);
+		viewportHeight = height;
+		viewportTop = top;
 	};
-	onVv();
+	const onVv = () => (viewportFrame ||= requestAnimationFrame(updateViewport));
+	updateViewport();
 	vv?.addEventListener('resize', onVv);
 	vv?.addEventListener('scroll', onVv);
 
@@ -44,6 +53,7 @@ export function startPhone(refresh: () => Promise<unknown>) {
 		mq.removeEventListener('change', onMq);
 		vv?.removeEventListener('resize', onVv);
 		vv?.removeEventListener('scroll', onVv);
+		cancelAnimationFrame(viewportFrame);
 		removeEventListener('scroll', onScroll);
 		offSheet();
 		offPull();
@@ -59,9 +69,12 @@ function sheetSwipe() {
 	let dy = 0;
 	let t0 = 0;
 	const start = (e: TouchEvent) => {
-		if (!phone.on || isField(e.target)) return;
+		if (!phone.on || e.touches.length !== 1 || isField(e.target)) return;
 		const d = (e.target as Element).closest?.('.dialog') as HTMLElement | null;
 		if (!d || d.closest('.cmdk-scrim')) return;
+		// This form scrolls inside .nc-body. Only its handle/header can drag the sheet, never its fields or tools.
+		const target = e.target as Element;
+		if (d.classList.contains('nc') && (target.closest('button,a,.nc-body,.nc-foot') || (target !== d && !target.closest('.nc-top')))) return;
 		const y = e.touches[0].clientY;
 		if (d.scrollTop > 0 && y - d.getBoundingClientRect().top > 56) return;
 		el = d;
@@ -70,7 +83,7 @@ function sheetSwipe() {
 		t0 = Date.now();
 	};
 	const move = (e: TouchEvent) => {
-		if (!el) return;
+		if (!el || e.touches.length !== 1) return;
 		dy = Math.max(0, e.touches[0].clientY - y0);
 		el.style.transition = 'none';
 		el.style.transform = dy ? `translateY(${dy}px)` : '';
@@ -81,6 +94,7 @@ function sheetSwipe() {
 		el = null;
 		d.style.transition = 'transform .3s cubic-bezier(.2,.8,.2,1)';
 		if (dy > 130 || (dy > 50 && Date.now() - t0 < 260)) {
+			haptic('soft');
 			d.style.transform = 'translateY(105%)';
 			setTimeout(() => {
 				d.parentElement?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
@@ -89,15 +103,24 @@ function sheetSwipe() {
 			}, 220);
 		} else d.style.transform = '';
 	};
+	const cancel = () => {
+		if (el) {
+			el.style.transition = '';
+			el.style.transform = '';
+		}
+		el = null;
+		dy = 0;
+	};
 	addEventListener('touchstart', start, { passive: true });
 	addEventListener('touchmove', move, { passive: true });
 	addEventListener('touchend', end);
-	addEventListener('touchcancel', end);
+	addEventListener('touchcancel', cancel);
 	return () => {
 		removeEventListener('touchstart', start);
 		removeEventListener('touchmove', move);
 		removeEventListener('touchend', end);
-		removeEventListener('touchcancel', end);
+		removeEventListener('touchcancel', cancel);
+		cancel();
 	};
 }
 

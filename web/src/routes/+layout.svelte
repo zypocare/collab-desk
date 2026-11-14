@@ -15,6 +15,8 @@
 	import { onMount } from 'svelte';
 	import { afterNavigate, onNavigate } from '$app/navigation';
 	import { isIOS } from '#lib/back.ts';
+	import { nativePlatform } from '#lib/native.ts';
+	import { NATIVE_APPEARANCE } from '#lib/systemBars.ts';
 	import { page } from '$app/state';
 	import { canSell, upgradeNeeded, upgradeText } from '#lib/plan.svelte.ts';
 	import { startReveal } from '#lib/reveal.ts';
@@ -61,7 +63,10 @@
 		else delete el.dataset.desk;
 	});
 	// What the person did before a crash: the pages they opened.
-	afterNavigate((nav) => step(`Opened ${nav.to?.route.id ?? nav.to?.url.pathname ?? ''}`));
+	afterNavigate((nav) => {
+		step(`Opened ${nav.to?.route.id ?? nav.to?.url.pathname ?? ''}`);
+		document.dispatchEvent(new Event(NATIVE_APPEARANCE));
+	});
 	// An account on its way out (deleted, or closed by Miracle) sees that instead of the app.
 	const closing = $derived(
 		auth.account?.closing && auth.account.closing.state !== 'paused' && (page.url.pathname.startsWith('/studio') || page.url.pathname.startsWith('/brand')) ? auth.account.closing : null
@@ -70,7 +75,8 @@
 	onNavigate((nav) => {
 		const d = document as Document & { startViewTransition?: (cb: () => Promise<void>) => unknown };
 		// Not on iPhone/iPad: Safari's page transitions can freeze half-way there (things stuck mid-screen, taps ignored).
-		if (!d.startViewTransition || isIOS() || !nav.from || !nav.to || nav.from.url.href === nav.to.url.href || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+		// Android's embedded WebView also avoids full-screen snapshots during navigation and keyboard resizing.
+		if (!d.startViewTransition || isIOS() || nativePlatform() === 'android' || !nav.from || !nav.to || nav.from.url.href === nav.to.url.href || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 		// On a phone (Studio or brand side): screens opened from a tab slide in from the right and slide back out.
 		const inApp = (u: URL) => u.pathname.startsWith('/studio') || u.pathname.startsWith('/brand') || u.pathname === '/' || u.pathname.startsWith('/insights');
 		const side = (u: URL) => u.pathname.startsWith('/studio');

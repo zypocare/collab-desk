@@ -3,10 +3,10 @@
 	import { goto } from '$app/navigation';
 	import { auth } from '../auth.svelte';
 	import { isNative } from '../native';
+	import { NATIVE_APPEARANCE } from '../systemBars';
 
-	// The phone app's welcome. Each time the app opens: the Miracle "m" draws itself in light, the name
-	// and a line rise in, and it fades into the app. The very first time (signed out): three short
-	// slides of what Miracle does, then sign-in. Browsers never see this.
+	// The phone app's first welcome: the logo, then three short slides for someone signed out.
+	// Returning users go straight to the app without replaying the launch animation.
 	let show = $state(false);
 	let phase = $state<'logo' | 'slides' | 'out'>('logo');
 	let i = $state(0);
@@ -30,7 +30,7 @@
 		}
 	};
 	onMount(() => {
-		if (!isNative() || read('mc-intro', sessionStorage)) return;
+		if (!isNative() || read('mc-welcomed', localStorage) || read('mc-intro', sessionStorage)) return;
 		write('mc-intro', sessionStorage);
 		show = true;
 		const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -46,7 +46,10 @@
 	function close() {
 		write('mc-welcomed', localStorage);
 		phase = 'out';
-		setTimeout(() => (show = false), 600);
+		setTimeout(() => {
+			show = false;
+			document.dispatchEvent(new Event(NATIVE_APPEARANCE));
+		}, 600);
 	}
 	// The last slide: join as a creator or a brand, or sign in to an account she already has.
 	function join(as: 'creator' | 'brand') {
