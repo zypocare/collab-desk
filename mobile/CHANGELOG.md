@@ -16,9 +16,17 @@ How to ship one:
 4. Play Console › Production › Create new release › upload the `.aab` › paste the notes › send for review.
 5. Fill in the "Build" and "Sent" lines below.
 
-## 1.0.7 (planned)
+## Planned
 
-- Voice notes and voice typing work in the app (it now asks for the microphone).
+- Add microphone permission for voice notes and voice typing in the phone app.
+
+## 1.0.7
+
+- Improved scrolling and navigation smoothness.
+- Improved keyboard stability when adding collabs.
+- Made the Add a collab drawer and message box larger.
+- Refreshed collab cards on My Page.
+- Faster startup for returning users.
 
 ## 1.0.6
 
