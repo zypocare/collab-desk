@@ -126,13 +126,17 @@ export function lively() {
 			queued = 0;
 			if (!io || !onPhone() || !document.documentElement.dataset.desk) return;
 			for (const el of document.querySelectorAll<HTMLElement>(RISE)) {
-				if (seen.has(el)) continue;
+				if (seen.has(el) || el.closest('.phone-today')) continue;
 				seen.add(el);
 				el.dataset.rv = '';
 				io.observe(el);
 			}
 		};
-		const mo = new MutationObserver(() => (queued ||= requestAnimationFrame(scan)));
+		const mo = new MutationObserver((records) => {
+			// Today's counters and cycling facts have their own observer; they mustn't rescan the app every frame.
+			if (records.every((record) => record.target instanceof Element && record.target.closest('.phone-today'))) return;
+			queued ||= requestAnimationFrame(scan);
+		});
 		mo.observe(document.body, { childList: true, subtree: true });
 		scan();
 		return () => {

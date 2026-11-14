@@ -1,0 +1,314 @@
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Bricolage+Grotesque:wght@500;600;700&family=Instrument+Serif:ital@0;1&display=swap">
+
+<style>
+  #miracle-home-concepts { width: 100%; }
+  #miracle-home-concepts .mh-stage { display: grid; justify-items: center; align-content: start; min-height: 1210px; padding: 20px 12px 24px; }
+  #miracle-home-concepts .mh-phone {
+    --mh-bg: light-dark(#f7f4f4, #110d11); --mh-surface: light-dark(#ffffff, #1a151a);
+    --mh-soft: light-dark(#f0e9ee, #251d25); --mh-text: light-dark(#1e171c, #f4eef2);
+    --mh-muted: light-dark(#756972, #b2a5af); --mh-line: light-dark(#e5dce2, #332733);
+    --mh-accent: light-dark(#c8255e, #f25a90); --mh-purple: light-dark(#6b3fd4, #ac90ff);
+    --mh-peach: light-dark(#bd6439, #ffae6b); --mh-good: light-dark(#237c63, #71d3ad);
+    --mh-danger: light-dark(#b4404d, #ff999f); --mh-hero: light-dark(#291726, #281827);
+    --mh-hero-text: #fbf2f6; --mh-hero-muted: #d5b9d0; --mh-radius: 23px; --mh-gap: 23px;
+    box-sizing: border-box; position: relative; display: flex; flex-direction: column; width: min(100%, 390px);
+    min-height: 1098px; overflow: hidden; border: 1px solid var(--mh-line); border-radius: 32px;
+    background: var(--mh-bg); color: var(--mh-text); font-family: Inter, system-ui, sans-serif; font-size: 14px; line-height: 1.45;
+    box-shadow: 0 20px 60px -35px color-mix(in oklab, var(--mh-text) 25%, transparent);
+  }
+  #miracle-home-concepts .mh-phone * { box-sizing: border-box; }
+  #miracle-home-concepts .mh-phone [hidden] { display: none !important; }
+  #miracle-home-concepts .mh-phone button, #miracle-home-concepts .mh-phone textarea { font: inherit; }
+  #miracle-home-concepts .mh-phone button { color: inherit; touch-action: manipulation; }
+  #miracle-home-concepts .mh-phone button:not(:disabled) { cursor: var(--cursor-interaction, pointer); }
+  #miracle-home-concepts .mh-phone h1, #miracle-home-concepts .mh-phone h2, #miracle-home-concepts .mh-phone h3,
+  #miracle-home-concepts .mh-phone p { margin: 0; }
+  #miracle-home-concepts .mh-phone svg { flex: none; }
+  #miracle-home-concepts .mh-inside { display: flex; flex: 1; flex-direction: column; }
+  #miracle-home-concepts .mh-status { display: flex; justify-content: space-between; align-items: center; padding: 17px 25px 4px; font-size: 11px; font-weight: 600; }
+  #miracle-home-concepts .mh-signal { display: inline-flex; gap: 5px; align-items: center; }
+  #miracle-home-concepts .mh-signal svg { width: 13px; height: 13px; }
+  #miracle-home-concepts .mh-appbar { display: flex; align-items: center; gap: 9px; padding: 8px 21px 0; }
+  #miracle-home-concepts .mh-logo { width: 32px; height: 32px; border-radius: 10px; }
+  #miracle-home-concepts .mh-wordmark { flex: 1; font: 600 19px Bricolage Grotesque, Inter, sans-serif; letter-spacing: -.6px; }
+  #miracle-home-concepts .mh-icon-button { display: inline-grid; place-items: center; flex: none; width: 42px; height: 42px; padding: 0; border: 0; border-radius: 50%; background: transparent; }
+  #miracle-home-concepts .mh-icon-button svg { width: 20px; height: 20px; }
+  #miracle-home-concepts .mh-notification { position: relative; }
+  #miracle-home-concepts .mh-notification::after { content: ''; position: absolute; right: 10px; top: 8px; width: 5px; height: 5px; border-radius: 50%; background: var(--mh-accent); box-shadow: 0 0 0 3px var(--mh-bg); }
+  #miracle-home-concepts .mh-avatar { width: 35px; height: 35px; border-radius: 50%; border: 1px solid color-mix(in oklab, var(--mh-accent) 40%, var(--mh-line)); background: var(--mh-soft); color: var(--mh-accent); font-size: 11px; font-weight: 600; }
+  #miracle-home-concepts .mh-content { display: flex; flex: 1; flex-direction: column; gap: var(--mh-gap); padding: 21px 21px 24px; }
+  #miracle-home-concepts .mh-date { color: var(--mh-muted); font-size: 11px; letter-spacing: .3px; }
+  #miracle-home-concepts .mh-greeting h1 { margin-top: 7px; font: 400 34px/1.03 'Instrument Serif', Georgia, serif; letter-spacing: -.5px; }
+  #miracle-home-concepts .mh-greeting h1 em { color: var(--mh-accent); font-weight: 400; }
+  #miracle-home-concepts .mh-greeting .mh-caption { margin-top: 9px; display: flex; gap: 7px; align-items: center; color: var(--mh-muted); font-size: 12px; }
+  #miracle-home-concepts .mh-dot { width: 5px; height: 5px; flex: none; border-radius: 50%; background: var(--mh-accent); }
+  #miracle-home-concepts .mh-money { position: relative; overflow: hidden; padding: 20px; border-radius: var(--mh-radius); color: var(--mh-hero-text);
+    background: radial-gradient(ellipse at 100% 0%, #5c2c593d, transparent 70%), radial-gradient(ellipse at 0% 100%, #8c326c26, transparent 70%), var(--mh-hero); }
+  #miracle-home-concepts .mh-money-top { display: flex; justify-content: space-between; align-items: center; gap: 12px; color: var(--mh-hero-muted); font-size: 11px; }
+  #miracle-home-concepts .mh-money-top button { display: grid; place-items: center; width: 30px; height: 30px; margin: -5px -5px -5px 0; border: 1px solid #fbf2f629; border-radius: 50%; background: #fbf2f608; color: var(--mh-hero-text); }
+  #miracle-home-concepts .mh-money-top svg { width: 15px; height: 15px; }
+  #miracle-home-concepts .mh-amount { margin-top: 9px; font: 400 48px/1.05 'Instrument Serif', Georgia, serif; letter-spacing: -1px; }
+  #miracle-home-concepts .mh-money-context { margin-top: 6px; color: var(--mh-hero-muted); font-size: 11px; }
+  #miracle-home-concepts .mh-goal { margin-top: 18px; }
+  #miracle-home-concepts .mh-goal-label { display: flex; justify-content: space-between; gap: 12px; font-size: 11px; color: var(--mh-hero-muted); }
+  #miracle-home-concepts .mh-goal-label b { color: var(--mh-hero-text); font-weight: 500; }
+  #miracle-home-concepts .mh-progress { height: 4px; margin-top: 8px; border-radius: 99px; background: #fbf2f61a; overflow: hidden; }
+  #miracle-home-concepts .mh-progress span { display: block; width: 65%; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #9c7bff, #f25a90 65%, #ffae6b); }
+  #miracle-home-concepts .mh-money-bottom { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 18px; padding-top: 14px; border-top: 1px solid #fbf2f614; }
+  #miracle-home-concepts .mh-money-bottom span { display: block; font-size: 11px; color: var(--mh-hero-muted); }
+  #miracle-home-concepts .mh-money-bottom strong { display: inline-flex; align-items: center; gap: 6px; margin-top: 4px; font-size: 15px; font-weight: 500; }
+  #miracle-home-concepts .mh-money-bottom .mh-money-late { color: #ffb4b9; }
+  #miracle-home-concepts .mh-money-bottom i { font-size: 11px; color: var(--mh-hero-muted); font-style: normal; }
+  #miracle-home-concepts .mh-quick { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; }
+  #miracle-home-concepts .mh-quick button { display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 8px; min-height: 70px; padding: 10px 3px; border: 1px solid var(--mh-line); border-radius: 16px; background: var(--mh-surface); font-size: 11px; font-weight: 500; }
+  #miracle-home-concepts .mh-quick button svg { width: 20px; height: 20px; }
+  #miracle-home-concepts .mh-quick .mh-add { border-color: color-mix(in oklab, var(--mh-accent) 28%, var(--mh-line)); background: color-mix(in oklab, var(--mh-accent) 9%, var(--mh-surface)); color: var(--mh-accent); }
+  #miracle-home-concepts .mh-section-heading { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+  #miracle-home-concepts .mh-section-heading h2 { flex: 1; font: 600 16px Bricolage Grotesque, Inter, sans-serif; letter-spacing: -.25px; }
+  #miracle-home-concepts .mh-section-heading .mh-count { display: inline-grid; place-items: center; min-width: 20px; height: 20px; border-radius: 50%; background: color-mix(in oklab, var(--mh-accent) 13%, var(--mh-surface)); color: var(--mh-accent); font: 500 11px Inter, sans-serif; }
+  #miracle-home-concepts .mh-link { display: inline-flex; justify-content: center; align-items: center; gap: 3px; min-height: 36px; padding: 0; border: 0; background: transparent; font-size: 11px; color: var(--mh-muted); }
+  #miracle-home-concepts .mh-link svg { width: 13px; height: 13px; }
+  #miracle-home-concepts .mh-task-list { display: grid; gap: 10px; }
+  #miracle-home-concepts .mh-task { padding: 14px; border: 1px solid var(--mh-line); border-radius: 18px; background: var(--mh-surface); }
+  #miracle-home-concepts .mh-task-top { display: flex; align-items: center; gap: 10px; }
+  #miracle-home-concepts .mh-brand { flex: none; display: grid; place-items: center; width: 35px; height: 35px; border-radius: 11px; background: var(--mh-soft); color: var(--mh-text); font: 500 17px 'Instrument Serif', Georgia, serif; }
+  #miracle-home-concepts .mh-brand.pink { color: var(--mh-accent); background: color-mix(in oklab, var(--mh-accent) 11%, var(--mh-surface)); }
+  #miracle-home-concepts .mh-brand.purple { color: var(--mh-purple); background: color-mix(in oklab, var(--mh-purple) 11%, var(--mh-surface)); }
+  #miracle-home-concepts .mh-task-title { flex: 1; min-width: 0; }
+  #miracle-home-concepts .mh-task-title strong { display: block; font-size: 12px; font-weight: 600; }
+  #miracle-home-concepts .mh-task-title small { display: block; margin-top: 2px; color: var(--mh-muted); font-size: 11px; }
+  #miracle-home-concepts .mh-tag { display: inline-flex; align-items: center; gap: 4px; padding: 4px 7px; border-radius: 7px; background: var(--mh-soft); color: var(--mh-muted); font-size: 11px; white-space: nowrap; }
+  #miracle-home-concepts .mh-tag.urgent { background: color-mix(in oklab, var(--mh-peach) 10%, var(--mh-surface)); color: var(--mh-peach); }
+  #miracle-home-concepts .mh-task-bottom { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-top: 13px; padding-top: 11px; border-top: 1px solid var(--mh-line); }
+  #miracle-home-concepts .mh-task-bottom span { display: inline-flex; align-items: center; gap: 5px; color: var(--mh-muted); font-size: 11px; }
+  #miracle-home-concepts .mh-task-bottom span svg { width: 13px; height: 13px; }
+  #miracle-home-concepts .mh-action { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 32px; padding: 0 12px; border: 0; border-radius: 10px; background: color-mix(in oklab, var(--mh-accent) 12%, var(--mh-surface)); color: var(--mh-accent); font-size: 11px; font-weight: 600; }
+  #miracle-home-concepts .mh-action svg { width: 13px; height: 13px; }
+  #miracle-home-concepts .mh-task-bottom .mh-action { color: var(--mh-accent); }
+  #miracle-home-concepts .mh-days { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 5px; }
+  #miracle-home-concepts .mh-day { display: grid; justify-items: center; gap: 6px; padding: 9px 0 8px; border: 1px solid transparent; border-radius: 13px; background: transparent; }
+  #miracle-home-concepts .mh-day span { font-size: 11px; color: var(--mh-muted); }
+  #miracle-home-concepts .mh-day strong { font-size: 13px; font-weight: 500; }
+  #miracle-home-concepts .mh-day i { height: 3px; width: 3px; border-radius: 50%; background: var(--mh-purple); }
+  #miracle-home-concepts .mh-day[data-day="15"] i, #miracle-home-concepts .mh-day[data-day="19"] i { opacity: 0; }
+  #miracle-home-concepts .mh-day[aria-pressed="true"] { border-color: color-mix(in oklab, var(--mh-accent) 38%, var(--mh-line)); background: color-mix(in oklab, var(--mh-accent) 8%, var(--mh-surface)); }
+  #miracle-home-concepts .mh-day[aria-pressed="true"] span, #miracle-home-concepts .mh-day[aria-pressed="true"] strong { color: var(--mh-accent); }
+  #miracle-home-concepts .mh-day-summary { display: flex; align-items: center; gap: 8px; margin-top: 10px; color: var(--mh-muted); font-size: 11px; }
+  #miracle-home-concepts .mh-day-summary svg { width: 14px; height: 14px; color: var(--mh-purple); }
+  #miracle-home-concepts .mh-nav { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 2px; margin-top: auto; padding: 9px 12px 17px; border-top: 1px solid var(--mh-line); background: var(--mh-surface); }
+  #miracle-home-concepts .mh-nav button { position: relative; display: grid; justify-items: center; gap: 5px; min-height: 44px; padding: 3px 0; border: 0; background: transparent; color: var(--mh-muted); font-size: 11px; }
+  #miracle-home-concepts .mh-nav button svg { width: 20px; height: 20px; }
+  #miracle-home-concepts .mh-nav button[aria-current="page"] { color: var(--mh-accent); font-weight: 600; }
+  #miracle-home-concepts .mh-nav button[aria-current="page"]::before { content: ''; position: absolute; top: -10px; height: 2px; width: 24px; background: var(--mh-accent); border-radius: 0 0 2px 2px; }
+  #miracle-home-concepts .mh-focus { padding: 21px; overflow: hidden; border: 1px solid color-mix(in oklab, var(--mh-purple) 27%, var(--mh-line)); border-radius: var(--mh-radius); background: radial-gradient(ellipse at 100% 0%, color-mix(in oklab, var(--mh-purple) 15%, transparent), transparent 75%), var(--mh-surface); }
+  #miracle-home-concepts .mh-focus-label { display: flex; align-items: center; justify-content: space-between; gap: 12px; color: var(--mh-purple); font-size: 11px; letter-spacing: .7px; text-transform: uppercase; font-weight: 600; }
+  #miracle-home-concepts .mh-focus-label .mh-tag { font-size: 11px; letter-spacing: normal; text-transform: none; }
+  #miracle-home-concepts .mh-focus h2 { margin-top: 17px; font: 500 30px/1.1 Bricolage Grotesque, Inter, sans-serif; letter-spacing: -.9px; }
+  #miracle-home-concepts .mh-focus h2 em { font: italic 400 34px 'Instrument Serif', Georgia, serif; color: var(--mh-accent); }
+  #miracle-home-concepts .mh-focus p { margin-top: 10px; color: var(--mh-muted); font-size: 11.5px; }
+  #miracle-home-concepts .mh-primary { display: inline-flex; justify-content: center; align-items: center; gap: 8px; min-height: 43px; padding: 0 16px; border: 0; border-radius: 12px; background: var(--mh-text); color: var(--mh-bg) !important; font-size: 12px; font-weight: 600; }
+  #miracle-home-concepts .mh-primary svg { width: 15px; height: 15px; }
+  #miracle-home-concepts .mh-focus .mh-primary { width: 100%; margin-top: 20px; }
+  #miracle-home-concepts .mh-compact-list { display: grid; }
+  #miracle-home-concepts .mh-compact-task { display: flex; align-items: center; gap: 10px; padding: 14px 0; border: 0; border-bottom: 1px solid var(--mh-line); background: transparent; text-align: left; }
+  #miracle-home-concepts .mh-compact-task:last-child { border-bottom: 0; padding-bottom: 0; }
+  #miracle-home-concepts .mh-compact-task > svg { width: 16px; height: 16px; color: var(--mh-muted); }
+  #miracle-home-concepts .mh-earnings-strip { padding: 17px 18px; border: 1px solid var(--mh-line); border-radius: var(--mh-radius); background: var(--mh-surface); }
+  #miracle-home-concepts .mh-strip-top { display: flex; align-items: center; justify-content: space-between; color: var(--mh-muted); font-size: 11px; }
+  #miracle-home-concepts .mh-strip-values { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 12px; }
+  #miracle-home-concepts .mh-strip-values > div + div { border-left: 1px solid var(--mh-line); padding-left: 17px; }
+  #miracle-home-concepts .mh-strip-values strong { display: block; font: 400 30px/1.1 'Instrument Serif', Georgia, serif; letter-spacing: -.4px; }
+  #miracle-home-concepts .mh-strip-values small { display: block; margin-top: 4px; color: var(--mh-muted); font-size: 11px; }
+  #miracle-home-concepts .mh-strip-values .mh-overdue { color: var(--mh-danger); }
+  #miracle-home-concepts .mh-add-row { display: grid; grid-template-columns: 1.1fr 1fr; gap: 10px; }
+  #miracle-home-concepts .mh-add-row button { min-height: 44px; display: inline-flex; justify-content: center; align-items: center; gap: 7px; border: 1px solid var(--mh-line); border-radius: 13px; background: var(--mh-surface); font-size: 11px; font-weight: 500; }
+  #miracle-home-concepts .mh-add-row svg { width: 16px; height: 16px; }
+  #miracle-home-concepts .mh-add-row button:first-child { border-color: color-mix(in oklab, var(--mh-accent) 30%, var(--mh-line)); color: var(--mh-accent); background: color-mix(in oklab, var(--mh-accent) 8%, var(--mh-surface)); }
+  #miracle-home-concepts .mh-sheet { position: absolute; z-index: 10; inset: 0; display: flex; align-items: flex-end; background: color-mix(in oklab, var(--mh-text) 28%, transparent); }
+  #miracle-home-concepts .mh-sheet-card { width: 100%; max-height: 90%; overflow-y: auto; padding: 12px 22px 26px; border: 1px solid var(--mh-line); border-radius: 27px 27px 0 0; background: var(--mh-bg); }
+  #miracle-home-concepts .mh-sheet-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  #miracle-home-concepts .mh-sheet-top h2 { font: 500 23px Bricolage Grotesque, Inter, sans-serif; letter-spacing: -.5px; }
+  #miracle-home-concepts .mh-sheet-copy { margin-top: 14px !important; color: var(--mh-muted); font-size: 13px; white-space: pre-line; }
+  #miracle-home-concepts .mh-message { display: block; width: 100%; min-height: 170px; resize: vertical; padding: 14px; margin-top: 16px; border: 1px solid var(--mh-line); border-radius: 15px; outline-offset: 3px; background: var(--mh-surface); color: var(--mh-text); font-size: 16px !important; }
+  #miracle-home-concepts .mh-sheet-card > .mh-primary { width: 100%; margin-top: 22px; }
+  #miracle-home-concepts .mh-toast { position: absolute; z-index: 20; left: 18px; right: 18px; bottom: 86px; padding: 13px 16px; border: 1px solid var(--mh-line); border-radius: 14px; background: var(--mh-text); color: var(--mh-bg); font-size: 12px; text-align: center; box-shadow: 0 8px 24px -15px var(--mh-text); }
+  @media (max-width: 410px) {
+    #miracle-home-concepts .mh-stage { padding: 12px 0 20px; min-height: 1280px; }
+    #miracle-home-concepts .mh-phone { border-radius: 25px; min-height: 1155px; }
+    #miracle-home-concepts .mh-content { padding-inline: 17px; }
+    #miracle-home-concepts .mh-appbar { padding-inline: 17px; }
+    #miracle-home-concepts .mh-task { padding: 12px; }
+    #miracle-home-concepts .mh-tag { padding-inline: 6px; font-size: 11px; }
+    #miracle-home-concepts .mh-task-top { gap: 8px; }
+  }
+</style>
+
+<div id="miracle-home-concepts" class="viz-carousel viz-dotted-background" aria-label="Miracle Today home designs">
+  <section class="mh-stage" data-variant="Money first" aria-label="Money first home design">
+    <div class="mh-phone" data-design="money" aria-label="Money first">
+      <div class="mh-inside">
+        <div class="mh-status"><span>9:41</span><span class="mh-signal"><i data-lucide="signal" aria-hidden="true"></i><i data-lucide="wifi" aria-hidden="true"></i><i data-lucide="battery-full" aria-hidden="true"></i></span></div>
+        <header class="mh-appbar"><img class="mh-logo" data-miracle-logo src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KPGRlZnM+Cgk8bGluZWFyR3JhZGllbnQgaWQ9ImciIGdyYWRpZW50VW5pdHM9InVzZXJTcGFjZU9uVXNlIiB4MT0iNjAiIHkxPSIxMDAiIHgyPSI1NjAiIHkyPSI0NDAiPjxzdG9wIG9mZnNldD0iMCIgc3RvcC1jb2xvcj0iIzZiM2ZkNCIvPjxzdG9wIG9mZnNldD0iLjUyIiBzdG9wLWNvbG9yPSIjZDQyOTZhIi8+PHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjZjI5OTRhIi8+PC9saW5lYXJHcmFkaWVudD4KCTxyYWRpYWxHcmFkaWVudCBpZD0iZ2xvdyIgY3g9Ii4zIiBjeT0iLjI1IiByPSIuOSI+PHN0b3Agb2Zmc2V0PSIwIiBzdG9wLWNvbG9yPSIjNmIzZmQ0IiBzdG9wLW9wYWNpdHk9Ii40NSIvPjxzdG9wIG9mZnNldD0iLjU1IiBzdG9wLWNvbG9yPSIjZDQyOTZhIiBzdG9wLW9wYWNpdHk9Ii4xOCIvPjxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iI2YyOTk0YSIgc3RvcC1vcGFjaXR5PSIuMjIiLz48L3JhZGlhbEdyYWRpZW50Pgo8L2RlZnM+CjxyZWN0IHdpZHRoPSI1MTIiIGhlaWdodD0iNTEyIiByeD0iMTEyIiBmaWxsPSIjMWMxMjE5Ii8+CjxyZWN0IHdpZHRoPSI1MTIiIGhlaWdodD0iNTEyIiByeD0iMTEyIiBmaWxsPSJ1cmwoI2dsb3cpIi8+CjxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKDI1NiAyNTYpIHNjYWxlKDEuMDQpIHRyYW5zbGF0ZSgtMjU2IC0yNTYpIj48ZyB0cmFuc2Zvcm09InRyYW5zbGF0ZSgyNTYgMjU2KSBzY2FsZSguNzkpIHNrZXdYKC0xMykgdHJhbnNsYXRlKC0zMDQuNSAtMjY2KSIgZmlsbD0ibm9uZSIgc3Ryb2tlLXdpZHRoPSIyNiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cGF0aCB0cmFuc2Zvcm09InRyYW5zbGF0ZSgtMTMsLTEwKSIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utb3BhY2l0eT0iLjk0IiBkPSJNNjQgMTI4QzkyIDEwNCAxMzIgMTEyIDE0NCAxNTZDMTU0IDIyMCAxNTggMzMwIDE1NiAzOTJDMTU1IDQyMCAxODIgNDIwIDE4MiAzOTJDMTgyIDMwMCAxNzYgMjAwIDE5NiAxNjBDMjIwIDEwNCAyOTAgMTA0IDMwMCAxNjBDMzEwIDIyMCAzMTIgMzMwIDMxMCAzOTJDMzA5IDQyMCAzMzYgNDIwIDMzNiAzOTJDMzM2IDMwMCAzMzAgMjAwIDM1MCAxNjBDMzc0IDEwNCA0NDQgMTA0IDQ1MiAxNjBDNDYwIDIzMCA0NTYgMzMwIDQ1MiAzOTJDNDUwIDQ0MCA1MDAgNDQwIDU0MCAzNjBNNDk5IDM4NEw1NDAgMzYwTDU0NSA0MDgiLz48cGF0aCB0cmFuc2Zvcm09InRyYW5zbGF0ZSgxMywxMCkiIHN0cm9rZT0idXJsKCNnKSIgZD0iTTY0IDEyOEM5MiAxMDQgMTMyIDExMiAxNDQgMTU2QzE1NCAyMjAgMTU4IDMzMCAxNTYgMzkyQzE1NSA0MjAgMTgyIDQyMCAxODIgMzkyQzE4MiAzMDAgMTc2IDIwMCAxOTYgMTYwQzIyMCAxMDQgMjkwIDEwNCAzMDAgMTYwQzMxMCAyMjAgMzEyIDMzMCAzMTAgMzkyQzMwOSA0MjAgMzM2IDQyMCAzMzYgMzkyQzMzNiAzMDAgMzMwIDIwMCAzNTAgMTYwQzM3NCAxMDQgNDQ0IDEwNCA0NTIgMTYwQzQ2MCAyMzAgNDU2IDMzMCA0NTIgMzkyQzQ1MCA0NDAgNTAwIDQ0MCA1NDAgMzYwTTQ5OSAzODRMNTQwIDM2MEw1NDUgNDA4Ii8+PC9nPjwvZz4KPC9zdmc+Cg==" alt=""><span class="mh-wordmark">miracle</span><button class="mh-icon-button mh-notification" data-open="notifications" aria-label="Notifications"><i data-lucide="bell" aria-hidden="true"></i></button><button class="mh-avatar" data-open="profile" aria-label="Your profile">AK</button></header>
+        <main class="mh-content">
+          <section class="mh-greeting"><p class="mh-date">Saturday, 14 November</p><h1>Good morning, <em>Akshay.</em></h1><p class="mh-caption"><span class="mh-dot"></span>3 things need you today · 5 active collabs</p></section>
+
+          <section class="mh-money" aria-label="November earnings">
+            <div class="mh-money-top"><span>Your money · November</span><button data-open="money" aria-label="View your earnings"><i data-lucide="arrow-up-right" aria-hidden="true"></i></button></div>
+            <div class="mh-amount">₹48,500</div><p class="mh-money-context">Received from 4 brands this month</p>
+            <div class="mh-goal"><div class="mh-goal-label"><span>Monthly goal <b>₹75,000</b></span><b>65%</b></div><div class="mh-progress" role="progressbar" aria-label="Monthly earnings goal" aria-valuenow="65" aria-valuemin="0" aria-valuemax="100"><span></span></div></div>
+            <div class="mh-money-bottom"><div><span>Yet to come</span><strong>₹24,000</strong></div><div><span>Overdue</span><strong class="mh-money-late">₹12,000 <i>· 1 brand</i></strong></div></div>
+          </section>
+
+          <nav class="mh-quick" aria-label="Quick actions"><button class="mh-add" data-open="add"><i data-lucide="plus" aria-hidden="true"></i>Add collab</button><button data-open="invoice"><i data-lucide="file-text" aria-hidden="true"></i>Create invoice</button><button data-open="assistant"><i data-lucide="sparkles" aria-hidden="true"></i>Ask Miracle</button></nav>
+
+          <section aria-label="Tasks needing attention">
+            <div class="mh-section-heading"><h2>Needs you <span class="mh-count">3</span></h2><button class="mh-link" data-expand>See all <i data-lucide="chevron-right" aria-hidden="true"></i></button></div>
+            <div class="mh-task-list">
+              <article class="mh-task"><div class="mh-task-top"><span class="mh-brand purple">F</span><div class="mh-task-title"><strong>FLO</strong><small>Send your reel draft</small></div><span class="mh-tag urgent">Due today</span></div><div class="mh-task-bottom"><span><i data-lucide="clock-3" aria-hidden="true"></i>Before 6:00 pm</span><button class="mh-action" data-open="draft">Open collab <i data-lucide="arrow-up-right" aria-hidden="true"></i></button></div></article>
+              <article class="mh-task"><div class="mh-task-top"><span class="mh-brand pink">L</span><div class="mh-task-title"><strong>Lumière Skin</strong><small>1 reel + 3 stories · ₹30,000</small></div><span class="mh-tag">New request</span></div><div class="mh-task-bottom"><span><i data-lucide="message-circle" aria-hidden="true"></i>Waiting for your reply</span><button class="mh-action" data-open="request">Review <i data-lucide="arrow-right" aria-hidden="true"></i></button></div></article>
+              <article class="mh-task" data-extra-task hidden><div class="mh-task-top"><span class="mh-brand">H</span><div class="mh-task-title"><strong>Hairspeak</strong><small>₹12,000 · 2 days overdue</small></div><button class="mh-action" data-open="reminder">Follow up</button></div></article>
+            </div>
+          </section>
+
+          <section class="mh-week" aria-label="This week"><div class="mh-section-heading"><h2>A little look ahead</h2><button class="mh-link" data-open="plan">Calendar <i data-lucide="chevron-right" aria-hidden="true"></i></button></div>
+            <div class="mh-days" role="group" aria-label="Choose a day"><button class="mh-day" data-day="14" aria-pressed="true"><span>Sat</span><strong>14</strong><i></i></button><button class="mh-day" data-day="15" aria-pressed="false"><span>Sun</span><strong>15</strong><i></i></button><button class="mh-day" data-day="16" aria-pressed="false"><span>Mon</span><strong>16</strong><i></i></button><button class="mh-day" data-day="17" aria-pressed="false"><span>Tue</span><strong>17</strong><i></i></button><button class="mh-day" data-day="18" aria-pressed="false"><span>Wed</span><strong>18</strong><i></i></button><button class="mh-day" data-day="19" aria-pressed="false"><span>Thu</span><strong>19</strong><i></i></button><button class="mh-day" data-day="20" aria-pressed="false"><span>Fri</span><strong>20</strong><i></i></button></div>
+            <p class="mh-day-summary" aria-live="polite"><i data-lucide="calendar-days" aria-hidden="true"></i><span data-agenda>Today · FLO draft due before 6 pm</span></p>
+          </section>
+        </main>
+        <nav class="mh-nav" aria-label="Main navigation"><button aria-current="page" data-today><i data-lucide="house" aria-hidden="true"></i>Today</button><button data-open="collabs"><i data-lucide="layers" aria-hidden="true"></i>Collabs</button><button data-open="plan"><i data-lucide="calendar-days" aria-hidden="true"></i>Plan</button><button data-open="money"><i data-lucide="wallet" aria-hidden="true"></i>Money</button><button data-open="profile"><i data-lucide="user-round" aria-hidden="true"></i>My Page</button></nav>
+      </div>
+      <section class="mh-sheet" role="dialog" aria-modal="true" aria-label="Preview details" hidden><div class="mh-sheet-card"><div class="mh-sheet-top"><h2 data-sheet-title></h2><button class="mh-icon-button" data-close aria-label="Close"><i data-lucide="x" aria-hidden="true"></i></button></div><p class="mh-sheet-copy" data-sheet-copy></p><label data-message-label hidden><span class="mh-date">Their message</span><textarea class="mh-message" placeholder="Paste a brand's DM or email here…"></textarea></label><button class="mh-primary" data-sheet-action>Done <i data-lucide="arrow-right" aria-hidden="true"></i></button></div></section>
+      <div class="mh-toast" role="status" hidden></div>
+    </div>
+  </section>
+
+  <section class="mh-stage" data-variant="Priority first" aria-label="Priority first home design" hidden>
+    <div class="mh-phone" data-design="focus" aria-label="Priority first">
+      <div class="mh-inside">
+        <div class="mh-status"><span>9:41</span><span class="mh-signal"><i data-lucide="signal" aria-hidden="true"></i><i data-lucide="wifi" aria-hidden="true"></i><i data-lucide="battery-full" aria-hidden="true"></i></span></div>
+        <header class="mh-appbar"><img class="mh-logo" data-miracle-logo src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KPGRlZnM+Cgk8bGluZWFyR3JhZGllbnQgaWQ9ImciIGdyYWRpZW50VW5pdHM9InVzZXJTcGFjZU9uVXNlIiB4MT0iNjAiIHkxPSIxMDAiIHgyPSI1NjAiIHkyPSI0NDAiPjxzdG9wIG9mZnNldD0iMCIgc3RvcC1jb2xvcj0iIzZiM2ZkNCIvPjxzdG9wIG9mZnNldD0iLjUyIiBzdG9wLWNvbG9yPSIjZDQyOTZhIi8+PHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjZjI5OTRhIi8+PC9saW5lYXJHcmFkaWVudD4KCTxyYWRpYWxHcmFkaWVudCBpZD0iZ2xvdyIgY3g9Ii4zIiBjeT0iLjI1IiByPSIuOSI+PHN0b3Agb2Zmc2V0PSIwIiBzdG9wLWNvbG9yPSIjNmIzZmQ0IiBzdG9wLW9wYWNpdHk9Ii40NSIvPjxzdG9wIG9mZnNldD0iLjU1IiBzdG9wLWNvbG9yPSIjZDQyOTZhIiBzdG9wLW9wYWNpdHk9Ii4xOCIvPjxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iI2YyOTk0YSIgc3RvcC1vcGFjaXR5PSIuMjIiLz48L3JhZGlhbEdyYWRpZW50Pgo8L2RlZnM+CjxyZWN0IHdpZHRoPSI1MTIiIGhlaWdodD0iNTEyIiByeD0iMTEyIiBmaWxsPSIjMWMxMjE5Ii8+CjxyZWN0IHdpZHRoPSI1MTIiIGhlaWdodD0iNTEyIiByeD0iMTEyIiBmaWxsPSJ1cmwoI2dsb3cpIi8+CjxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKDI1NiAyNTYpIHNjYWxlKDEuMDQpIHRyYW5zbGF0ZSgtMjU2IC0yNTYpIj48ZyB0cmFuc2Zvcm09InRyYW5zbGF0ZSgyNTYgMjU2KSBzY2FsZSguNzkpIHNrZXdYKC0xMykgdHJhbnNsYXRlKC0zMDQuNSAtMjY2KSIgZmlsbD0ibm9uZSIgc3Ryb2tlLXdpZHRoPSIyNiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cGF0aCB0cmFuc2Zvcm09InRyYW5zbGF0ZSgtMTMsLTEwKSIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utb3BhY2l0eT0iLjk0IiBkPSJNNjQgMTI4QzkyIDEwNCAxMzIgMTEyIDE0NCAxNTZDMTU0IDIyMCAxNTggMzMwIDE1NiAzOTJDMTU1IDQyMCAxODIgNDIwIDE4MiAzOTJDMTgyIDMwMCAxNzYgMjAwIDE5NiAxNjBDMjIwIDEwNCAyOTAgMTA0IDMwMCAxNjBDMzEwIDIyMCAzMTIgMzMwIDMxMCAzOTJDMzA5IDQyMCAzMzYgNDIwIDMzNiAzOTJDMzM2IDMwMCAzMzAgMjAwIDM1MCAxNjBDMzc0IDEwNCA0NDQgMTA0IDQ1MiAxNjBDNDYwIDIzMCA0NTYgMzMwIDQ1MiAzOTJDNDUwIDQ0MCA1MDAgNDQwIDU0MCAzNjBNNDk5IDM4NEw1NDAgMzYwTDU0NSA0MDgiLz48cGF0aCB0cmFuc2Zvcm09InRyYW5zbGF0ZSgxMywxMCkiIHN0cm9rZT0idXJsKCNnKSIgZD0iTTY0IDEyOEM5MiAxMDQgMTMyIDExMiAxNDQgMTU2QzE1NCAyMjAgMTU4IDMzMCAxNTYgMzkyQzE1NSA0MjAgMTgyIDQyMCAxODIgMzkyQzE4MiAzMDAgMTc2IDIwMCAxOTYgMTYwQzIyMCAxMDQgMjkwIDEwNCAzMDAgMTYwQzMxMCAyMjAgMzEyIDMzMCAzMTAgMzkyQzMwOSA0MjAgMzM2IDQyMCAzMzYgMzkyQzMzNiAzMDAgMzMwIDIwMCAzNTAgMTYwQzM3NCAxMDQgNDQ0IDEwNCA0NTIgMTYwQzQ2MCAyMzAgNDU2IDMzMCA0NTIgMzkyQzQ1MCA0NDAgNTAwIDQ0MCA1NDAgMzYwTTQ5OSAzODRMNTQwIDM2MEw1NDUgNDA4Ii8+PC9nPjwvZz4KPC9zdmc+Cg==" alt=""><span class="mh-wordmark">miracle</span><button class="mh-icon-button mh-notification" data-open="notifications" aria-label="Notifications"><i data-lucide="bell" aria-hidden="true"></i></button><button class="mh-avatar" data-open="profile" aria-label="Your profile">AK</button></header>
+        <main class="mh-content">
+          <section class="mh-greeting"><p class="mh-date">Saturday, 14 November</p><h1>Let's make <em>today count.</em></h1><p class="mh-caption"><span class="mh-dot"></span>One deadline. Two things to follow up.</p></section>
+          <section class="mh-focus" aria-label="Your next action"><div class="mh-focus-label"><span>Your next move</span><span class="mh-tag urgent">Due today</span></div><h2>Send FLO's<br><em>reel draft.</em></h2><p>FLO is waiting for your draft.<br>Send it before 6:00 pm today.</p><button class="mh-primary" data-open="draft">Open FLO collab <i data-lucide="arrow-up-right" aria-hidden="true"></i></button></section>
+
+          <section aria-label="Other tasks"><div class="mh-section-heading"><h2>Also on your radar</h2><span class="mh-count">2</span></div><div class="mh-compact-list"><button class="mh-compact-task" data-open="request"><span class="mh-brand pink">L</span><span class="mh-task-title"><strong>A new request from Lumière</strong><small>1 reel + 3 stories · ₹30,000</small></span><i data-lucide="chevron-right" aria-hidden="true"></i></button><button class="mh-compact-task" data-open="reminder"><span class="mh-brand">H</span><span class="mh-task-title"><strong>Hairspeak payment is overdue</strong><small>₹12,000 · Follow up with the brand</small></span><i data-lucide="chevron-right" aria-hidden="true"></i></button></div></section>
+
+          <section class="mh-earnings-strip" aria-label="November earnings overview"><div class="mh-strip-top"><span>Your money · November</span><button class="mh-link" data-open="money">View <i data-lucide="arrow-up-right" aria-hidden="true"></i></button></div><div class="mh-strip-values"><div><strong>₹48,500</strong><small>Received this month</small></div><div><strong class="mh-overdue">₹12,000</strong><small>Overdue · 1 brand</small></div></div></section>
+
+          <nav class="mh-add-row" aria-label="Quick actions"><button data-open="add"><i data-lucide="plus" aria-hidden="true"></i>Add a collab</button><button data-open="assistant"><i data-lucide="sparkles" aria-hidden="true"></i>Ask Miracle</button></nav>
+
+          <section class="mh-week" aria-label="This week"><div class="mh-section-heading"><h2>Your week, in view</h2><button class="mh-link" data-open="plan">Calendar <i data-lucide="chevron-right" aria-hidden="true"></i></button></div><div class="mh-days" role="group" aria-label="Choose a day"><button class="mh-day" data-day="14" aria-pressed="true"><span>Sat</span><strong>14</strong><i></i></button><button class="mh-day" data-day="15" aria-pressed="false"><span>Sun</span><strong>15</strong><i></i></button><button class="mh-day" data-day="16" aria-pressed="false"><span>Mon</span><strong>16</strong><i></i></button><button class="mh-day" data-day="17" aria-pressed="false"><span>Tue</span><strong>17</strong><i></i></button><button class="mh-day" data-day="18" aria-pressed="false"><span>Wed</span><strong>18</strong><i></i></button><button class="mh-day" data-day="19" aria-pressed="false"><span>Thu</span><strong>19</strong><i></i></button><button class="mh-day" data-day="20" aria-pressed="false"><span>Fri</span><strong>20</strong><i></i></button></div><p class="mh-day-summary" aria-live="polite"><i data-lucide="calendar-days" aria-hidden="true"></i><span data-agenda>Today · FLO draft due before 6 pm</span></p></section>
+        </main>
+        <nav class="mh-nav" aria-label="Main navigation"><button aria-current="page" data-today><i data-lucide="house" aria-hidden="true"></i>Today</button><button data-open="collabs"><i data-lucide="layers" aria-hidden="true"></i>Collabs</button><button data-open="plan"><i data-lucide="calendar-days" aria-hidden="true"></i>Plan</button><button data-open="money"><i data-lucide="wallet" aria-hidden="true"></i>Money</button><button data-open="profile"><i data-lucide="user-round" aria-hidden="true"></i>My Page</button></nav>
+      </div>
+      <section class="mh-sheet" role="dialog" aria-modal="true" aria-label="Preview details" hidden><div class="mh-sheet-card"><div class="mh-sheet-top"><h2 data-sheet-title></h2><button class="mh-icon-button" data-close aria-label="Close"><i data-lucide="x" aria-hidden="true"></i></button></div><p class="mh-sheet-copy" data-sheet-copy></p><label data-message-label hidden><span class="mh-date">Their message</span><textarea class="mh-message" placeholder="Paste a brand's DM or email here…"></textarea></label><button class="mh-primary" data-sheet-action>Done <i data-lucide="arrow-right" aria-hidden="true"></i></button></div></section>
+      <div class="mh-toast" role="status" hidden></div>
+    </div>
+  </section>
+</div>
+
+<script>
+(() => {
+  const root = document.getElementById('miracle-home-concepts');
+  const agenda = {
+    14: 'Today · FLO draft due before 6 pm', 15: 'Sunday · A clear day to recharge',
+    16: 'Monday · Lumière Skin shoot at 11 am', 17: 'Tuesday · ₹12,000 payout from Flipkart',
+    18: 'Wednesday · Brown Boy Cafe reel goes live', 19: 'Thursday · Nothing scheduled yet',
+    20: 'Friday · Hairspeak campaign report due'
+  };
+  const details = {
+    money: ['November earnings', '₹48,500 received from 4 brands.\n\n₹24,000 still to come, including ₹12,000 overdue from Hairspeak.\n\nNext payout: ₹12,000 from Flipkart, 17 November.'],
+    draft: ['FLO · Your next step', 'Reel draft due today, before 6:00 pm.\n\nKeep the draft, feedback and brand conversation together in this collab.'],
+    request: ['Lumière Skin', 'New collaboration request\n\n1 reel + 3 stories\nBudget: ₹30,000\nCampaign: Vitamin C launch'],
+    reminder: ['A little payment nudge', 'Hi Hairspeak team! A quick follow-up on the ₹12,000 payment that was due on 12 November. Could you share an update on when I can expect it? Thank you!'],
+    add: ['Add a collab', 'Paste their DM or email. Miracle will help you pick out the details.'],
+    invoice: ['Create an invoice', 'Choose a collab to start your invoice.\n\nFLO · Reel campaign\nFlipkart · Food Fest\nLumière Skin · Vitamin C launch'],
+    assistant: ['Ask Miracle', 'Your collabs, money and plans in one conversation.\n\nTry: “What should I focus on today?”\nOr: “Which payments need a follow-up?”'],
+    plan: ['A look at your week', '14 Nov · FLO draft due\n16 Nov · Lumière Skin shoot\n17 Nov · Flipkart payout\n18 Nov · Brown Boy Cafe reel goes live\n20 Nov · Hairspeak campaign report'],
+    collabs: ['Your collabs', '5 active collabs\n\nFLO · Creating\nLumière Skin · New request\nFlipkart · Live\nHairspeak · Wrapped\nBrown Boy Cafe · Creating'],
+    profile: ['Akshay Kothari', '@akshaykothari\n\nLifestyle & experiences · Bengaluru\nOpen for collaborations\n\nYour brand page, rates and media kit live here.'],
+    notifications: ['You’re in the loop', 'New request from Lumière Skin\n\nFLO draft is due today\n\nHairspeak payment is 2 days overdue']
+  };
+  const state = { days: { money: '14', focus: '14' }, lastAction: '' };
+  function readSaved(snapshot) {
+    const saved = snapshot && snapshot.privateContent;
+    if (saved && saved.days) for (const id of ['money', 'focus']) if (agenda[saved.days[id]]) state.days[id] = String(saved.days[id]);
+  }
+  readSaved(window.openai && window.openai.widgetState);
+  function remember() {
+    if (window.openai && window.openai.setWidgetState) window.openai.setWidgetState({ modelContent: { previewAction: state.lastAction }, privateContent: { days: state.days } }).catch(() => {});
+  }
+  function renderDay(phone) {
+    const chosen = state.days[phone.dataset.design];
+    phone.querySelectorAll('[data-day]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.day === chosen)));
+    phone.querySelector('[data-agenda]').textContent = agenda[chosen];
+  }
+  root.querySelectorAll('.mh-phone').forEach(phone => {
+    const inside = phone.querySelector('.mh-inside');
+    const sheet = phone.querySelector('.mh-sheet');
+    const title = phone.querySelector('[data-sheet-title]');
+    const copy = phone.querySelector('[data-sheet-copy]');
+    const message = phone.querySelector('[data-message-label]');
+    const action = phone.querySelector('[data-sheet-action]');
+    let lastTrigger = null;
+    let active = '';
+    let toastTimer = 0;
+    const showToast = text => {
+      const toast = phone.querySelector('.mh-toast');
+      toast.textContent = text; toast.hidden = false;
+      clearTimeout(toastTimer); toastTimer = setTimeout(() => { toast.hidden = true; }, 2300);
+    };
+    const close = () => { sheet.hidden = true; inside.inert = false; if (lastTrigger) lastTrigger.focus({ preventScroll: true }); };
+    phone.querySelectorAll('[data-open]').forEach(button => button.addEventListener('click', () => {
+      active = button.dataset.open; lastTrigger = button;
+      title.textContent = details[active][0]; copy.textContent = details[active][1];
+      message.hidden = active !== 'add';
+      action.textContent = active === 'add' ? 'Read message' : active === 'request' ? 'Keep in my collabs' : 'Done';
+      inside.inert = true; sheet.hidden = false;
+      sheet.setAttribute('aria-label', title.textContent);
+      phone.querySelector('[data-close]').focus({ preventScroll: true });
+      state.lastAction = active; remember();
+    }));
+    phone.querySelector('[data-close]').addEventListener('click', close);
+    sheet.addEventListener('click', event => { if (event.target === sheet) close(); });
+    sheet.addEventListener('keydown', event => { if (event.key === 'Escape') close(); });
+    action.addEventListener('click', () => {
+      if (active === 'add') {
+        const value = message.querySelector('textarea').value.trim();
+        if (!value) { message.querySelector('textarea').focus(); return; }
+        message.hidden = true; title.textContent = 'Your collab, ready to review';
+        copy.textContent = 'Check the brand, deliverables, budget and dates before adding this collaboration.';
+        active = 'reviewed'; action.textContent = 'Back to Today'; return;
+      }
+      close();
+      if (active === 'request') showToast('Lumière Skin is ready to review in Collabs');
+    });
+    phone.querySelectorAll('[data-day]').forEach(button => button.addEventListener('click', () => {
+      state.days[phone.dataset.design] = button.dataset.day; renderDay(phone); state.lastAction = `Selected ${button.dataset.day} November`; remember();
+    }));
+    const expand = phone.querySelector('[data-expand]');
+    if (expand) expand.addEventListener('click', () => {
+      const extra = phone.querySelector('[data-extra-task]'); extra.hidden = !extra.hidden;
+      expand.textContent = extra.hidden ? 'See all' : 'Show less';
+    });
+    phone.querySelector('[data-today]').addEventListener('click', () => showToast('You’re right where you need to be'));
+    const design = { appearance: 'System', density: 'Comfortable', corners: 23 };
+    const renderDesign = () => {
+      phone.style.colorScheme = design.appearance === 'System' ? 'inherit' : design.appearance.toLowerCase();
+      phone.style.setProperty('--mh-radius', `${design.corners}px`);
+      phone.style.setProperty('--mh-gap', design.density === 'Compact' ? '17px' : '23px');
+    };
+    renderDesign(); renderDay(phone);
+    if (globalThis.Tweak) {
+      const tweak = new Tweak({ container: phone, onChange: renderDesign });
+      tweak.addSelect(design, 'appearance', { label: 'Appearance', options: ['System', 'Light', 'Dark'] });
+      tweak.addSelect(design, 'density', { label: 'Spacing', options: ['Comfortable', 'Compact'] });
+      tweak.addSlider(design, 'corners', { label: 'Card corners', min: 14, max: 28, unit: 'px' });
+    }
+  });
+  window.addEventListener('openai:set_globals', event => {
+    const globals = event.detail && event.detail.globals;
+    if (globals && globals.widgetState) { readSaved(globals.widgetState); root.querySelectorAll('.mh-phone').forEach(renderDay); }
+  });
+})();
+</script>

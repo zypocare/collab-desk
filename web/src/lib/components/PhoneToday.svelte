@@ -5,7 +5,9 @@
 	import { onMount, untrack } from 'svelte';
 	import { addLeadAsCollab } from '../leads';
 	import { askPaid, completeFollow, markPaid, markReceived, priorityOf, studio } from '../studio.svelte';
-	import { copyText, countUp, ui } from '../ui.svelte';
+	import { copyText, ui } from '../ui.svelte';
+	import { homeMotion, homeCount, homeChange, moneySwipe } from '../homeMotion';
+	import '../../home-motion.css';
 	import {
 		KIND_ICON,
 		TYPE_LABEL,
@@ -84,6 +86,17 @@
 			.filter((c) => isPaid(c) && c.pay_status !== 'paid' && c.pay_due && diff(c.pay_due) >= 0)
 			.sort((a, b) => parse(a.pay_due!).getTime() - parse(b.pay_due!).getTime())[0]
 	);
+	let moneyView = $state(0);
+	let tickerPaused = $state(false);
+	const moneyLabels = $derived([`Received in ${monthName}`, 'Yet to come', 'Overdue payments', 'Next payout']);
+	const moneyValue = $derived([received, outs, odSum, nextPayout ? outstanding(nextPayout) : 0][moneyView]);
+	const moneyCaption = $derived([
+		`from ${paidN} brand${paidN === 1 ? '' : 's'}${goal ? ` · ${pctN}% of this month's goal` : ''}`,
+		'Across your unpaid collabs',
+		od.length ? `${od.length} collab${od.length === 1 ? '' : 's'} waiting for payment` : 'All your payments are on track',
+		nextPayout ? `${nextPayout.brand.name} · ${fmt(nextPayout.pay_due)}` : 'No payout scheduled yet'
+	][moneyView]);
+	function showMoney(index: number) { moneyView = (index + 4) % 4; }
 
 	// The week
 	const evs = $derived(events(list));
@@ -91,13 +104,16 @@
 	const upcoming = $derived(evs.filter((e) => diff(e.date) >= 0 && diff(e.date) <= 6).sort((a, b) => a.date.localeCompare(b.date)).slice(0, 3));
 
 	// The header drifts and fades a little as the screen scrolls.
-	let sy = $state(0);
-	onMount(() => {
-		const on = () => (sy = Math.min(240, scrollY));
-		on();
-		addEventListener('scroll', on, { passive: true });
-		return () => removeEventListener('scroll', on);
-	});
+	function headerDrift(node: HTMLElement) {
+		let frame = 0;
+		const preference = matchMedia('(prefers-reduced-motion: reduce)');
+		const paint = () => { frame = 0; node.style.setProperty('--sy', String(preference.matches ? 0 : Math.min(240, scrollY))); };
+		const scroll = () => { if (scrollY < 500) frame ||= requestAnimationFrame(paint); };
+		paint();
+		addEventListener('scroll', scroll, { passive: true });
+		preference.addEventListener('change', paint);
+		return { destroy() { cancelAnimationFrame(frame); removeEventListener('scroll', scroll); preference.removeEventListener('change', paint); } };
+	}
 
 	// A new possible collab spotted in her Instagram DMs opens "Add a collab" with its chat read in, the same as tapping
 	// Add on it: once per chat (remembered on this phone), only here on Today, never over something already open. The
@@ -221,7 +237,8 @@
 	import CheckupCard from '#lib/components/CheckupCard.svelte';
 </script>
 
-<section class="ht" class:dw-on={!!fest && !bday} class:bd-on={!!bday} style="--sy:{sy}">
+<div class="phone-today" use:homeMotion>
+<section class="ht" class:dw-on={!!fest && !bday} class:bd-on={!!bday} use:headerDrift>
 	<div class="ht-glow" aria-hidden="true"><i></i><i></i><i></i></div>
 	{#if bday}<BirthdayLayer />{:else if fest}<DiwaliLayer />{/if}
 	<a class="ht-orb" href={ig ? '/insights' : '/studio/payments'} target={ig ? '_blank' : undefined} rel="noopener" aria-label={ig ? 'Your Instagram insights' : `${monthName} goal`}>
@@ -254,19 +271,19 @@
 <CheckupCard phone />
 <SetupChecklist phone />
 {#if ticker.length > 1}
-	<div class="cr-ticker cr-tk" aria-label="Today in numbers"><div>{#each [0, 1] as k (k)}{#each ticker as f, j (j)}<span aria-hidden={k === 1}><b>{f.b}</b>{f.t}</span><i aria-hidden="true">✦</i>{/each}{/each}</div></div>
+	<div class="cr-ticker cr-tk" data-paused={tickerPaused} aria-label="Today in numbers"><div>{#each [0, 1] as k (k)}{#each ticker as f, j (j)}<span aria-hidden={k === 1}><b>{f.b}</b>{f.t}</span><i aria-hidden="true">✦</i>{/each}{/each}</div><button class="home-ticker-pause" aria-label={tickerPaused ? 'Resume numbers ticker' : 'Pause numbers ticker'} aria-pressed={tickerPaused} onclick={() => tickerPaused = !tickerPaused}>{tickerPaused ? '▶' : 'Ⅱ'}</button></div>
 {/if}
 
 
-<section class="hero-card glow m-hero" aria-label="Money this month">
+<section class="hero-card glow m-hero" aria-label="Money this month" use:moneySwipe={(direction) => showMoney(moneyView + direction)}>
 	<div class="mesh" aria-hidden="true"></div>
-	<a class="hc-go" href="/studio/money" aria-label="Open Money"></a>
+	<a class="hc-go" href={moneyView ? '/studio/payments' : '/studio/money'} aria-label={moneyView ? 'Open payments' : 'Open Money'} draggable="false"></a>
 	<div class="hc-in">
-		<div class="hc-top"><span class="hc-eb">Received in {monthName}</span>{#if goal}<a class="glass-chip" href="/studio/settings?s=payments"><Icon name="spark" />Goal {inrS(goal)}</a>{/if}</div>
+		<div class="hc-top"><span class="hc-eb">{moneyLabels[moneyView]}</span>{#if goal}<a class="glass-chip" href="/studio/settings?s=payments"><Icon name="spark" />Goal {inrS(goal)}</a>{/if}</div>
 		<div class="hc-main">
-			<div>
-				<div class="hc-val" use:countUp={{ value: received, money: true }}>{inr(received)}</div>
-				<div class="hc-sub">from {paidN} brand{paidN === 1 ? '' : 's'}{#if goal}{' · '}<b>{pctN}%</b> of this month's goal{/if}</div>
+			<div use:homeChange={moneyView}>
+				<div class="hc-val" use:homeCount={{ value: moneyValue, money: true }}>{inr(moneyValue)}</div>
+				<div class="hc-sub" aria-live="polite">{moneyCaption}</div>
 			</div>
 			<div class="goal" style="--p:{pct}">
 				<svg viewBox="0 0 120 120" aria-hidden="true"
@@ -274,14 +291,15 @@
 						><linearGradient id="goalGradM" x1="0" y1="0" x2="1" y2="1"
 							><stop offset="0" style="stop-color:var(--g3)" /><stop offset=".5" style="stop-color:var(--g2)" /><stop offset="1" style="stop-color:var(--g1)" /></linearGradient
 						></defs
-					><circle class="g-track" cx="60" cy="60" r="50" /><circle class="g-prog" cx="60" cy="60" r="50" pathLength="100" style="stroke:url(#goalGradM)" /></svg
+					><circle class="g-track" cx="60" cy="60" r="50" /><circle class="g-prog" cx="60" cy="60" r="50" pathLength="100" style="stroke:url(#goalGradM)" use:homeCount={{ value: pct, ring: true }} /></svg
 				>
-				<div class="g-txt"><b use:countUp={{ value: pctN, suffix: '%' }}>{pctN}%</b><small>of goal</small></div>
+				<div class="g-txt"><b use:homeCount={{ value: pctN, suffix: '%' }}>{pctN}%</b><small>of goal</small></div>
 			</div>
 		</div>
+		<div class="home-money-nav"><span>Swipe to explore</span><div class="home-money-dots" role="group" aria-label="Money views">{#each moneyLabels as label, i (i)}<button aria-label={label} aria-pressed={moneyView === i} onclick={() => showMoney(i)}></button>{/each}</div></div>
 		<div class="hc-foot">
-			<a href="/studio/payments"><small>Yet to come</small><b use:countUp={{ value: outs, money: true }}>{inr(outs)}</b></a>
-			<a href="/studio/payments"><small>Overdue</small><b class:od={odSum > 0} use:countUp={{ value: odSum, money: true }}>{inr(odSum)}</b></a>
+			<a href="/studio/payments"><small>Yet to come</small><b use:homeCount={{ value: outs, money: true }}>{inr(outs)}</b></a>
+			<a href="/studio/payments"><small>Overdue</small><b class:od={odSum > 0} use:homeCount={{ value: odSum, money: true }}>{inr(odSum)}</b></a>
 			<a href="/studio/payments"><small>Next payout</small><b>{nextPayout ? fmt(nextPayout.pay_due) : 'None'}</b>{#if nextPayout}<span class="hc-who">{nextPayout.brand.name}</span>{/if}</a>
 		</div>
 	</div>
@@ -323,7 +341,7 @@
 			{#if !fanned && ts.length > 2}<span class="cr-edge tk-edge" aria-hidden="true"></span>{/if}
 		</div>
 		{#if ts.length > 2}
-			<button class="cr-more" onclick={() => (fanned = !fanned)}>
+			<button class="cr-more" aria-expanded={fanned} onclick={() => (fanned = !fanned)}>
 				{#if !fanned}<span class="cr-dots" aria-hidden="true">{#each ts.slice(2, 5) as t (t.c.id + t.kind)}<i style="--h:var(--m{hueOf(t.c.brand.name)})"></i>{/each}</span>+{ts.length - 2} more{:else}Show less{/if}
 			</button>
 		{/if}
@@ -367,7 +385,7 @@
 			</button>
 		{/each}
 	</div>
-	<div class="wk2-day" role="tabpanel">
+	<div class="wk2-day" role="tabpanel" use:homeChange={sel}>
 		<div class="wk2-day-h"><b>{dayName(selDay.dt, selDay.i)}</b><small>{longDate(selDay.dt)}</small></div>
 		{#if selList.length}
 			<ol class="wk2-tl">
@@ -404,3 +422,4 @@
 
 
 <div class="hs"><BrandQuestions /></div>
+</div>

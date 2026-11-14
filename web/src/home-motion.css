@@ -1,0 +1,84 @@
+/* Today's established layout, with motion confined to visible cards. */
+@media (max-width: 760px) {
+	[data-desk] .phone-today { min-width: 0; }
+	[data-desk] .phone-today .ht-glow i {
+		filter: none;
+		background: radial-gradient(closest-side, color-mix(in oklab, var(--g1) 52%, transparent), transparent);
+		width: 290px; height: 290px;
+		animation: home-drift 9s ease-in-out infinite alternate;
+	}
+	[data-desk] .phone-today .ht-glow i:nth-child(2) {
+		background: radial-gradient(closest-side, color-mix(in oklab, var(--g2) 62%, transparent), transparent);
+		animation-delay: -4s; animation-duration: 11s;
+	}
+	[data-desk] .phone-today .ht-glow i:nth-child(3) {
+		background: radial-gradient(closest-side, color-mix(in oklab, var(--g3) 50%, transparent), transparent);
+		animation-delay: -6s; animation-duration: 8s;
+	}
+	[data-desk] .phone-today .orb-ring { animation: home-orbit 5s linear infinite; }
+	[data-desk] .phone-today .ht-orb { animation: home-float 4.8s ease-in-out infinite; }
+	[data-desk] .phone-today .orb-spark { animation: home-spark 2.6s ease-in-out infinite; }
+	[data-desk] .phone-today .tix-t {
+		animation: none;
+		isolation: isolate;
+		background: radial-gradient(120% 80% at 0% 0%, var(--tint), transparent 60%), var(--surface);
+		border-color: color-mix(in oklab, var(--rt, var(--g2)) 42%, var(--line-strong));
+	}
+	[data-desk] .phone-today .tix-t::before {
+		content: ''; position: absolute; inset: -55%; z-index: -1; pointer-events: none;
+		background: linear-gradient(110deg, transparent 40%, color-mix(in oklab, var(--rt, var(--g2)) 19%, transparent) 50%, transparent 60%);
+		animation: home-ticket-light 6s ease-in-out infinite;
+		animation-delay: calc(var(--k, 0) * -1.4s);
+	}
+	[data-desk] .phone-today .m-hero { touch-action: pan-y pinch-zoom; isolation: isolate; }
+	[data-desk] .phone-today .m-hero::after {
+		content: ''; position: absolute; inset: -60%; pointer-events: none;
+		background: linear-gradient(105deg, transparent 43%, rgb(255 255 255 / .17) 49%, transparent 55%);
+		animation: home-money-light 6.5s ease-in-out infinite;
+	}
+	[data-desk] .phone-today .m-hero .mesh { filter: none; animation: home-float 9s ease-in-out infinite; }
+	[data-desk] .phone-today .hc-main { transform: translateX(var(--money-drag, 0px)); transition: transform .25s ease; }
+	[data-desk] .phone-today .hc-main > div:first-child { min-width: 0; }
+	[data-desk] .phone-today .hc-sub { min-height: 40px; }
+	[data-desk] .phone-today .m-hero .goal { width: clamp(76px, 23vw, 104px); height: clamp(76px, 23vw, 104px); }
+	[data-desk] .phone-today .hc-val { font-variant-numeric: tabular-nums; font-size: clamp(34px, 12vw, 52px); white-space: nowrap; }
+	[data-desk] .phone-today .g-prog { animation: none; transition: none; }
+	[data-desk] .phone-today .home-money-nav { display: flex; align-items: center; justify-content: space-between; min-height: 44px; margin: 5px 0 -6px; }
+	[data-desk] .phone-today .home-money-nav > span { font-size: 11px; opacity: .7; }
+	[data-desk] .phone-today .home-money-dots { display: flex; pointer-events: auto; }
+	[data-desk] .phone-today .home-money-dots button { display: grid; place-items: center; width: 44px; height: 44px; border: 0; padding: 0; color: inherit; background: none; cursor: pointer; }
+	[data-desk] .phone-today .home-money-dots button::after { content: ''; width: 6px; height: 6px; border-radius: 99px; background: currentColor; opacity: .3; transition: width .3s, opacity .3s, transform .3s; }
+	[data-desk] .phone-today .home-money-dots button[aria-pressed=true]::after { width: 22px; opacity: 1; }
+	[data-desk] .phone-today .home-money-dots button:active::after { transform: scale(.8); }
+	[data-desk] .phone-today .home-money-dots button:focus-visible { outline: 2px solid currentColor; outline-offset: -6px; border-radius: 12px; }
+	[data-desk] .phone-today .hc-foot { margin-top: 8px; }
+	[data-desk] .phone-today .cr-ticker { position: relative; min-height: 44px; padding-right: 46px; }
+	[data-desk] .phone-today .home-ticker-pause { position: absolute; right: 0; top: 0; bottom: 0; z-index: 1; width: 44px; border: 0; background: var(--chrome); color: var(--g3); font-size: 16px; cursor: pointer; }
+	[data-desk] .phone-today .cr-ticker[data-paused=true] > div { animation-play-state: paused; }
+	[data-desk] .phone-today .tk:not(.leaving), [data-desk] .phone-today .wk2-day { animation: none; }
+	[data-desk] .phone-today :is(.btn, .cr-more, .tix-t, .wk2-d) { transition: transform .3s cubic-bezier(.2,1.6,.4,1); }
+	[data-desk] .phone-today :is(.btn, .cr-more):active { transform: translateY(2px) scale(.96); }
+	[data-desk] .phone-today .wk2-d.now { animation: none; }
+	[data-desk] .phone-today .wk2-d.now .wk2-dots { animation: home-spark 2.4s ease-in-out infinite; }
+	/* Avoid paint-heavy moving shadows/gradients in existing shared effects. */
+	[data-desk] .phone-today .wk2-bar i.on { animation: none; }
+	[data-desk] .phone-today .tk-task small.hot i { animation: home-spark 1.8s ease-in-out infinite; }
+	[data-desk] .phone-today :is(.btn.grad, .btn.primary)::after { left: -100%; animation: home-button-light 5s ease-in-out infinite; }
+	[data-desk] .phone-today :is(.glass-chip, .orb-badge, .orb-in) { backdrop-filter: none; -webkit-backdrop-filter: none; }
+}
+
+@keyframes home-orbit { to { transform: rotate(360deg); } }
+@keyframes home-float { 50% { transform: translateY(-5px); } }
+@keyframes home-drift { from { transform: translate(-14px, -8px) scale(.94); } to { transform: translate(24px, 20px) scale(1.12); } }
+@keyframes home-spark { 0%, 100% { opacity: .4; scale: .75; } 50% { opacity: 1; scale: 1.15; } }
+@keyframes home-ticket-light { 0%, 15% { transform: translateX(-50%) rotate(-12deg); } 75%, 100% { transform: translateX(50%) rotate(12deg); } }
+@keyframes home-money-light { 0%, 25% { transform: translateX(-65%); } 75%, 100% { transform: translateX(65%); } }
+@keyframes home-button-light { 0%, 55% { transform: translateX(0); } 90%, 100% { transform: translateX(400%); } }
+
+.phone-today[data-home-paused=true] *, .phone-today[data-home-paused=true] *::before, .phone-today[data-home-paused=true] *::after,
+.phone-today [data-home-active=false], .phone-today [data-home-active=false] *, .phone-today [data-home-active=false]::before, .phone-today [data-home-active=false]::after,
+.phone-today [data-home-active=false] *::before, .phone-today [data-home-active=false] *::after { animation-play-state: paused !important; }
+
+@media (prefers-reduced-motion: reduce) {
+	[data-desk] .phone-today *, [data-desk] .phone-today *::before, [data-desk] .phone-today *::after { animation: none !important; transition: none !important; }
+}

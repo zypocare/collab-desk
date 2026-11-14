@@ -1,0 +1,164 @@
+import { expect, test, type Page } from '@playwright/test';
+
+declare global {
+	interface Window {
+		homeTest: { received: (value: number) => void; destroy: () => Promise<void> };
+	}
+}
+
+async function mountHome(page: Page) {
+	await page.setViewportSize({ width: 393, height: 852 });
+	// Keep this component test independent of accounts and live services.
+	await page.route('https://**', (route) => route.fulfill({ contentType: 'application/json', body: '[]' }));
+	await page.route('**/__home-motion', (route) => route.fulfill({
+		contentType: 'text/html',
+		body: '<!doctype html><html data-side="studio" data-desk="studio" data-theme="dark"><head><meta name="viewport" content="width=device-width,initial-scale=1"></head><body><main style="padding:16px;overflow:clip"></main></body></html>'
+	}));
+	await page.goto('/__home-motion');
+	await page.evaluate(async () => {
+		for (const file of ['app', 'brand', 'studio', 'desk', 'pro', 'mobile-type', 'mobile', 'atelier', 'dash', 'cred', 'today']) await import(`/src/${file}.css`);
+		const statePath = '/src/lib/studio.svelte.ts';
+		const { studio } = await import(statePath);
+		const utilPath = '/src/lib/util.ts';
+		const { rel } = await import(utilPath);
+		studio.settings = { id: 'motion-test', handle: 'asha', display_name: 'Asha Sharma', monthly_goal: 100000, weekly_capacity: 3, rates: {}, site_url: 'https://example.test/asha' };
+		localStorage.setItem('cd-setup-hide-motion-test', '1');
+		studio.extras = true;
+		studio.collabs = [
+			{ name: 'Lumière', fee: 48000, stage: 'wrapped', pay_status: 'paid', pay_received: 48000, paid_on: rel(0) },
+			{ name: 'FLO', fee: 15000, stage: 'live', pay_status: 'invoiced', pay_due: rel(-3) },
+			{ name: 'Dot & Key', fee: 20000, stage: 'creating', draft_date: rel(0), live_date: rel(2), pay_due: rel(4) },
+			{ name: 'Hairspeak', fee: 12000, stage: 'confirmed', shoot_date: rel(1), pay_due: rel(5) },
+			{ name: 'Food Fest', fee: 5000, stage: 'negotiating', follow_date: rel(0), follow_note: 'Confirm the brief' }
+		].map((data, i) => ({
+			id: `collab-${i}`, code: `code-${i}`, brand_id: `brand-${i}`, brand: { id: `brand-${i}`, name: data.name },
+			type: 'paid', pay_status: 'pending', pay_received: 0, received_on: rel(-4),
+			deliverables: [{ id: `d-${i}`, kind: 'Reel', qty: 1, done: false }],
+			quotes: [], drafts: [], invoices: [], messages: [], reads: [], reports: [], posts: [], expenses: [], events: [], ...data
+		}));
+		const checksPath = '/src/lib/checkup.svelte.ts';
+		const { checkups } = await import(checksPath);
+		checkups.loaded = true;
+		const componentPath = '/src/lib/components/PhoneToday.svelte';
+		const { default: Home } = await import(componentPath);
+		const source = await (await fetch(componentPath)).text();
+		const runtime = source.match(/from\s+["']([^"']*\/svelte\.js[^"']*)["']/)?.[1];
+		if (!runtime) throw new Error('Could not find the component runtime');
+		const { mount, unmount } = await import(runtime);
+		const component = mount(Home, { target: document.querySelector('main')! });
+		window.homeTest = { received: (value) => studio.collabs[0].pay_received = value, destroy: () => unmount(component) };
+	});
+	await expect(page.locator('.phone-today')).toBeVisible();
+}
+
+test('money swipes, real balances, ticket expansion and day changes respond without accidental navigation', async ({ page }) => {
+	const errors: string[] = [];
+	page.on('pageerror', (error) => errors.push(error.message));
+	await mountHome(page);
+	const card = page.locator('.m-hero');
+	await card.scrollIntoViewIfNeeded();
+	await expect(card.locator('.hc-val')).toHaveText('₹48,000');
+	await expect(card.locator('.g-txt b')).toHaveText('48%');
+	const box = (await card.boundingBox())!;
+	await page.mouse.move(box.x + box.width - 40, box.y + 80);
+	await page.mouse.down();
+	await page.mouse.move(box.x + 35, box.y + 80, { steps: 12 });
+	await page.mouse.up();
+	await expect(card.locator('.hc-eb')).toHaveText('Yet to come');
+	await expect(card.locator('.hc-val')).toHaveText('₹47,000');
+	await expect(page).toHaveURL(/__home-motion$/);
+	await card.getByRole('button', { name: 'Overdue payments', exact: true }).click();
+	await expect(card.locator('.hc-val')).toHaveText('₹15,000');
+	await card.getByRole('button', { name: 'Next payout', exact: true }).click();
+	await expect(card.locator('.hc-val')).toHaveText('₹20,000');
+	await expect(card.locator('.hc-sub')).toContainText('Dot & Key');
+	await card.getByRole('button', { name: /^Received in/ }).click();
+	await page.evaluate(() => window.homeTest.received(55000));
+	await expect(card.locator('.hc-val')).toHaveText('₹55,000');
+	await expect(card.locator('.g-txt b')).toHaveText('55%');
+	await expect(card.locator('.glass-chip')).toHaveAttribute('href', '/studio/settings?s=payments');
+	await expect(page.locator('.tk')).toHaveCount(2);
+	const more = page.getByRole('button', { name: /more$/ });
+	await more.click();
+	await expect(page.getByRole('button', { name: 'Show less' })).toHaveAttribute('aria-expanded', 'true');
+	expect(await page.locator('.tk').count()).toBeGreaterThan(2);
+	await page.getByRole('button', { name: 'Show less' }).click();
+	await expect(page.locator('.tk')).toHaveCount(2);
+	await page.getByRole('tab').nth(1).click();
+	await expect(page.getByRole('tabpanel')).toContainText('Hairspeak');
+	await expect(page.getByRole('tab').nth(1)).toHaveAttribute('aria-selected', 'true');
+	// A normal tap still follows the card's original Money link.
+	await card.getByRole('button', { name: /^Received in/ }).click();
+	await page.route('**/studio/money', (route) => route.fulfill({ contentType: 'text/html', body: '<p>Money opened</p>' }));
+	await card.locator('.hc-go').click({ position: { x: 40, y: 80 } });
+	await expect(page).toHaveURL(/\/studio\/money$/);
+	expect(errors).toEqual([]);
+});
+
+test('ambient motion runs visibly, pauses off screen and in the background, and the ticker can pause', async ({ page }) => {
+	await mountHome(page);
+	await expect(page.locator('.ht')).toHaveAttribute('data-home-active', 'true');
+	const ring = page.locator('.orb-ring');
+	expect(await ring.evaluate((node) => getComputedStyle(node).animationPlayState)).toBe('running');
+	const transform = await ring.evaluate((node) => getComputedStyle(node).transform);
+	await expect.poll(() => ring.evaluate((node) => getComputedStyle(node).transform)).not.toBe(transform);
+	await page.getByRole('button', { name: 'Pause numbers ticker' }).click();
+	expect(await page.locator('.cr-ticker > div').evaluate((node) => getComputedStyle(node).animationPlayState)).toBe('paused');
+	await page.getByRole('button', { name: 'Resume numbers ticker' }).click();
+	await page.locator('.wk2').scrollIntoViewIfNeeded();
+	await expect(page.locator('.ht')).toHaveAttribute('data-home-active', 'false');
+	expect(await ring.evaluate((node) => getComputedStyle(node).animationPlayState)).toBe('paused');
+	await page.evaluate(() => { Object.defineProperty(document, 'hidden', { configurable: true, value: true }); document.dispatchEvent(new Event('visibilitychange')); });
+	await expect(page.locator('.phone-today')).toHaveAttribute('data-home-paused', 'true');
+	await page.evaluate(() => { Object.defineProperty(document, 'hidden', { configurable: true, value: false }); document.dispatchEvent(new Event('visibilitychange')); });
+	await expect(page.locator('.phone-today')).toHaveAttribute('data-home-paused', 'false');
+});
+
+test('phone touch swipes change money views while vertical swipes keep scrolling the page', async ({ page }) => {
+	await mountHome(page);
+	const card = page.locator('.m-hero');
+	await card.scrollIntoViewIfNeeded();
+	await expect(card.locator('.hc-val')).toHaveText('₹48,000');
+	const touch = await page.context().newCDPSession(page);
+	const swipe = async (dx: number, dy: number) => {
+		const rect = (await card.boundingBox())!;
+		const x = rect.x + rect.width * .7, y = rect.y + 105;
+		await touch.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y }] });
+		for (let i = 1; i <= 10; i++) await touch.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: x + dx * i / 10, y: y + dy * i / 10 }] });
+		await touch.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+	};
+	await swipe(-150, 3);
+	await expect(card.locator('.hc-eb')).toHaveText('Yet to come');
+	await expect(page).toHaveURL(/__home-motion$/);
+	const before = await page.evaluate(() => scrollY);
+	await swipe(2, -170);
+	await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThan(before + 30);
+	await expect(card.locator('.hc-eb')).toHaveText('Yet to come');
+	await touch.detach();
+});
+
+test('reduced motion gives final numbers and narrow screens keep every action accessible', async ({ page }) => {
+	await page.emulateMedia({ reducedMotion: 'reduce' });
+	await mountHome(page);
+	await expect(page.locator('.hc-val')).toHaveText('₹48,000');
+	await expect(page.locator('.g-prog')).toHaveCSS('stroke-dashoffset', '52px');
+	await expect(page.locator('.phone-today')).toHaveAttribute('data-home-paused', 'true');
+	expect(await page.locator('.orb-ring').evaluate((node) => getComputedStyle(node).animationName)).toBe('none');
+	for (const theme of ['light', 'dark']) {
+		await page.evaluate((value) => document.documentElement.dataset.theme = value, theme);
+		for (const width of [320, 360, 430]) {
+			await page.setViewportSize({ width, height: 852 });
+			expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
+			for (const button of await page.locator('.home-money-dots button').all()) {
+				const rect = (await button.boundingBox())!;
+				expect(rect.width).toBeGreaterThanOrEqual(44);
+				expect(rect.x).toBeGreaterThanOrEqual(0);
+				expect(rect.x + rect.width).toBeLessThanOrEqual(width);
+			}
+		}
+	}
+	await page.emulateMedia({ reducedMotion: 'no-preference' });
+	await expect(page.locator('.phone-today')).toHaveAttribute('data-home-paused', 'false');
+	await page.evaluate(() => window.homeTest.destroy());
+	await expect(page.locator('.phone-today')).toHaveCount(0);
+});

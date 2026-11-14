@@ -1,0 +1,550 @@
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Bricolage+Grotesque:wght@500;600;700&family=Instrument+Serif:ital@0;1&display=swap">
+<style>
+  #miracle-today-alive { display: grid; justify-items: center; width: 100%; padding: 16px 0 20px; }
+  #miracle-today-alive .la-phone {
+    --la-bg: light-dark(#f7f4f4,#110d11); --la-card: light-dark(#ffffff,#1a151a); --la-fill: light-dark(#f0e9ef,#271e29);
+    --la-text: light-dark(#1e171c,#f4eef2); --la-sub: light-dark(#655963,#b6a8b3); --la-line: light-dark(#e4dae2,#342834);
+    --la-pink: light-dark(#c8255e,#f25a90); --la-purple: light-dark(#6b3fd4,#a98aff); --la-peach: light-dark(#ad5d25,#ffae6b);
+    --la-green: light-dark(#247b61,#75d5ae); --la-red: light-dark(#ba3e50,#ff9ba6); --la-orbit-speed: 12s;
+    width: min(100%,394px); height: 852px; position: relative; isolation: isolate; overflow: hidden; border-radius: 30px; border: 1px solid var(--la-line);
+    background: var(--la-bg); color: var(--la-text); font: 400 14px/1.45 Inter,system-ui,sans-serif;
+    box-shadow: 0 25px 65px -42px color-mix(in oklab,var(--la-text) 35%,transparent);
+  }
+  #miracle-today-alive .la-phone * { box-sizing: border-box; }
+  #miracle-today-alive .la-phone [hidden] { display: none !important; }
+  #miracle-today-alive .la-phone button, #miracle-today-alive .la-phone textarea { font: inherit; }
+  #miracle-today-alive .la-phone button { color: inherit; touch-action: manipulation; cursor: var(--cursor-interaction,pointer); -webkit-tap-highlight-color: transparent; }
+  #miracle-today-alive .la-phone h1, #miracle-today-alive .la-phone h2, #miracle-today-alive .la-phone p { margin: 0; }
+  #miracle-today-alive .la-phone svg { flex: none; }
+  #miracle-today-alive .la-inside { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+  #miracle-today-alive .la-status { display: flex; flex: none; align-items: center; justify-content: space-between; padding: 17px 24px 8px; font-size: 11px; font-weight: 600; }
+  #miracle-today-alive .la-status > span:last-child { display: flex; align-items: center; gap: 5px; }
+  #miracle-today-alive .la-status svg { width: 13px; height: 13px; }
+  #miracle-today-alive .la-bar { display: flex; flex: none; align-items: center; gap: 9px; padding: 0 17px 5px; min-height: 49px; }
+  #miracle-today-alive .la-logo { width: 29px; height: 29px; border-radius: 9px; }
+  #miracle-today-alive .la-bar > strong { flex: 1; font: 600 19px Bricolage Grotesque,Inter,sans-serif; letter-spacing: -.5px; }
+  #miracle-today-alive .la-ib { display: inline-grid; place-items: center; width: 40px; height: 42px; flex: none; padding: 0; border: 0; border-radius: 13px; background: transparent; }
+  #miracle-today-alive .la-ib svg { width: 20px; height: 20px; }
+  #miracle-today-alive .la-bar .la-add { background: color-mix(in oklab,var(--la-pink) 12%,var(--la-card)); color: var(--la-pink); }
+  #miracle-today-alive .la-content { display: flex; flex: 1; min-height: 0; flex-direction: column; gap: 23px; padding: 13px 18px 26px; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; }
+  #miracle-today-alive .la-content > * { flex-shrink: 0; }
+  #miracle-today-alive .la-content::-webkit-scrollbar { display: none; }
+  #miracle-today-alive .la-greeting { position: relative; isolation: isolate; padding: 5px 0 2px; }
+  #miracle-today-alive .la-halo { position: absolute; z-index: -1; inset: -30px -18px -70px; overflow: hidden; pointer-events: none; }
+  #miracle-today-alive .la-halo::before, #miracle-today-alive .la-halo::after { content: ''; position: absolute; width: 280px; height: 230px; border-radius: 50%; opacity: .6; background: radial-gradient(ellipse,color-mix(in oklab,var(--la-purple) 23%,transparent),transparent 68%); transform: translate(-75px,-35px); animation: la-drift 13s ease-in-out infinite alternate; }
+  #miracle-today-alive .la-halo::after { right: -80px; top: -10px; background: radial-gradient(ellipse,color-mix(in oklab,var(--la-pink) 20%,transparent),transparent 68%); animation-delay: -6s; }
+  #miracle-today-alive .la-date { max-width: calc(100% - 124px); color: var(--la-sub); font-size: 11px; }
+  #miracle-today-alive .la-greeting h1 { max-width: calc(100% - 122px); margin-top: 9px; font: 500 27px/1.04 Bricolage Grotesque,Inter,sans-serif; letter-spacing: -.8px; }
+  #miracle-today-alive .la-greeting h1 em { display: block; margin-top: 3px; font: italic 400 47px/1 'Instrument Serif',Georgia,serif; letter-spacing: -1px; background: linear-gradient(110deg,var(--la-purple),var(--la-pink) 58%,var(--la-peach)); color: transparent; background-clip: text; -webkit-background-clip: text; }
+  #miracle-today-alive .la-summary { display: flex; align-items: center; gap: 7px; margin-top: 17px !important; color: var(--la-sub); font-size: 11px; }
+  #miracle-today-alive .la-dot { display: inline-block; flex: none; width: 6px; height: 6px; border-radius: 50%; background: var(--la-pink); }
+  #miracle-today-alive .la-orb { position: absolute; right: 1px; top: 0; display: grid; place-items: center; width: 115px; height: 115px; padding: 0; border: 0; background: transparent; border-radius: 50%; }
+  #miracle-today-alive .la-orb-edge { position: absolute; inset: 0; border-radius: 50%; background: conic-gradient(from 20deg,var(--la-purple),var(--la-pink),var(--la-peach),transparent 78%,var(--la-purple)); -webkit-mask: radial-gradient(farthest-side,transparent calc(100% - 2px),#000 calc(100% - 2px)); mask: radial-gradient(farthest-side,transparent calc(100% - 2px),#000 calc(100% - 2px)); animation: la-orbit var(--la-orbit-speed) linear infinite; }
+  #miracle-today-alive .la-orb-inner { position: absolute; inset: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 50%; background: var(--la-card); border: 1px solid var(--la-line); box-shadow: inset 0 1px 0 color-mix(in oklab,var(--la-text) 7%,transparent); }
+  #miracle-today-alive .la-orb-inner b { font-size: 23px; letter-spacing: -.6px; }
+  #miracle-today-alive .la-orb-inner small { font-size: 11px; color: var(--la-sub); }
+  #miracle-today-alive .la-orb-inner em { display: inline-flex; align-items: center; gap: 3px; padding: 3px 6px; margin-top: 5px; border-radius: 99px; background: color-mix(in oklab,var(--la-green) 11%,var(--la-card)); color: var(--la-green); font-size: 11px; font-style: normal; }
+  #miracle-today-alive .la-orb-inner em svg { width: 10px; height: 10px; }
+  #miracle-today-alive .la-orb-spark { position: absolute; left: 9px; top: 13px; width: 5px; height: 5px; border-radius: 50%; background: var(--la-peach); box-shadow: 0 0 9px color-mix(in oklab,var(--la-peach) 60%,transparent); animation: la-breathe 3s ease-in-out infinite; }
+  #miracle-today-alive .la-small-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+  #miracle-today-alive .la-small-heading > h2, #miracle-today-alive .la-section-head h2 { font-size: 11px; font-weight: 600; letter-spacing: .13em; text-transform: uppercase; color: var(--la-sub); }
+  #miracle-today-alive .la-text-button { display: inline-flex; align-items: center; justify-content: center; gap: 4px; min-height: 30px; padding: 0; border: 0; background: transparent; color: var(--la-sub); font-size: 11px; }
+  #miracle-today-alive .la-text-button svg { width: 13px; height: 13px; }
+  #miracle-today-alive .la-collab-rail { display: flex; gap: 10px; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; margin-inline: -18px; padding: 2px 18px 5px; }
+  #miracle-today-alive .la-collab-rail::-webkit-scrollbar { display: none; }
+  #miracle-today-alive .la-mini { position: relative; z-index: 0; isolation: isolate; flex: 0 0 148px; min-width: 0; overflow: hidden; scroll-snap-align: start; padding: 13px 12px 11px; border: 0; border-radius: 17px; text-align: left; background: var(--la-card); }
+  #miracle-today-alive .la-mini::before { content: ''; z-index: -2; position: absolute; inset: -95%; background: conic-gradient(from 0deg,transparent 38%,var(--la-purple) 45%,var(--la-pink) 52%,var(--la-peach) 59%,transparent 66%); animation: la-orbit 9s linear infinite; }
+  #miracle-today-alive .la-mini:nth-child(2)::before { animation-delay: -5s; }
+  #miracle-today-alive .la-mini:nth-child(3)::before { animation-delay: -10s; }
+  #miracle-today-alive .la-mini::after { content: ''; position: absolute; z-index: -1; inset: 1px; background: var(--la-card); border-radius: 16px; }
+  #miracle-today-alive .la-mini b { display: block; font: 400 22px/1.08 'Instrument Serif',Georgia,serif; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #miracle-today-alive .la-mini small { display: block; color: var(--la-sub); font-size: 11px; margin-top: 5px; }
+  #miracle-today-alive .la-mini-bottom { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding-top: 10px; margin-top: 10px; border-top: 1px dashed var(--la-line); font-size: 11px; }
+  #miracle-today-alive .la-mini-bottom em { border-radius: 6px; padding: 3px 5px; background: var(--la-fill); color: var(--la-peach); font-size: 11px; font-style: normal; }
+  #miracle-today-alive .la-ticker { display: flex; align-items: center; gap: 8px; overflow: hidden; width: calc(100% + 36px); margin: -9px -18px -5px; padding: 9px 18px; border: 0; border-block: 1px solid var(--la-line); background: var(--la-bg); color: var(--la-sub); font-size: 11px; text-align: left; }
+  #miracle-today-alive .la-ticker-window { flex: 1; min-width: 0; overflow: hidden; }
+  #miracle-today-alive .la-ticker-track { display: flex; width: max-content; animation: la-marquee 26s linear infinite; }
+  #miracle-today-alive .la-ticker-track > span { display: inline-flex; align-items: center; gap: 16px; padding-right: 16px; white-space: nowrap; }
+  #miracle-today-alive .la-ticker b { font-weight: 600; color: var(--la-peach); }
+  #miracle-today-alive .la-ticker i { font-style: normal; color: var(--la-pink); }
+  #miracle-today-alive .la-ticker > svg { width: 12px; height: 12px; }
+  #miracle-today-alive .la-ticker[aria-pressed="true"] .la-ticker-track { animation-play-state: paused; }
+  #miracle-today-alive .la-money { position: relative; isolation: isolate; overflow: hidden; padding: 19px 18px 16px; border: 1px solid light-dark(#432237,#46263f); border-radius: 24px; background: linear-gradient(135deg,#331a32,#23131f 70%); color: #fbf2f6; transform: perspective(800px) rotateX(var(--la-rx,0deg)) rotateY(var(--la-ry,0deg)); transition: transform .5s cubic-bezier(.18,1.2,.25,1); touch-action: pan-y; }
+  #miracle-today-alive .la-money::before { content: ''; position: absolute; z-index: -1; inset: -40%; pointer-events: none; background: radial-gradient(ellipse at 20% 5%,#c73e7b3b,transparent 43%),radial-gradient(ellipse at 85% 80%,#9674f326,transparent 45%); }
+  #miracle-today-alive .la-sheen { position: absolute; pointer-events: none; z-index: 2; inset: 0; opacity: 0; background: linear-gradient(110deg,transparent 30%,#fff2 48%,transparent 65%); }
+  #miracle-today-alive .la-money-top { display: flex; align-items: center; justify-content: space-between; gap: 9px; }
+  #miracle-today-alive .la-eyebrow { color: #d7b9cf; font-size: 11px; letter-spacing: .11em; text-transform: uppercase; }
+  #miracle-today-alive .la-goal-pill { display: inline-flex; align-items: center; gap: 5px; min-height: 29px; padding: 0 9px; border: 1px solid #f8e4f329; border-radius: 99px; background: #f8e4f308; color: #f6dce9; font-size: 11px; }
+  #miracle-today-alive .la-goal-pill svg { width: 12px; height: 12px; color: #ffae6b; }
+  #miracle-today-alive .la-money-main { display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 17px 0 18px; }
+  #miracle-today-alive .la-money-number { font: 400 48px/1.03 'Instrument Serif',Georgia,serif; letter-spacing: -1px; }
+  #miracle-today-alive .la-money-caption { max-width: 200px; color: #d7b9cf; font-size: 11px; margin-top: 7px !important; }
+  #miracle-today-alive .la-goal { position: relative; flex: none; display: grid; place-items: center; width: 94px; height: 94px; }
+  #miracle-today-alive .la-goal svg { position: absolute; width: 94px; height: 94px; transform: rotate(-90deg); }
+  #miracle-today-alive .la-goal circle { fill: none; stroke-width: 6px; }
+  #miracle-today-alive .la-goal .la-goal-track { stroke: #f8e4f31a; }
+  #miracle-today-alive .la-goal .la-goal-fill { stroke: url(#la-money-gradient); stroke-linecap: round; stroke-dasharray: 276.46; stroke-dashoffset: 96.76; }
+  #miracle-today-alive .la-goal-copy { display: grid; gap: 0; text-align: center; }
+  #miracle-today-alive .la-goal-copy b { font: 400 26px 'Instrument Serif',Georgia,serif; }
+  #miracle-today-alive .la-goal-copy small { color: #d7b9cf; font-size: 11px; }
+  #miracle-today-alive .la-money-foot { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; padding-top: 13px; border-top: 1px solid #f8e4f31a; }
+  #miracle-today-alive .la-money-foot button { min-width: 0; padding: 8px 7px; border: 1px solid #f8e4f310; border-radius: 11px; background: #f8e4f306; color: #f6dce9; text-align: left; transition: background .2s,transform .2s; }
+  #miracle-today-alive .la-money-foot button[aria-pressed="true"] { background: #f8e4f314; border-color: #f8e4f340; }
+  #miracle-today-alive .la-money-foot small, #miracle-today-alive .la-money-foot strong, #miracle-today-alive .la-money-foot em { display: block; }
+  #miracle-today-alive .la-money-foot small { color: #d7b9cf; font-size: 11px; white-space: nowrap; }
+  #miracle-today-alive .la-money-foot strong { margin-top: 3px; font-size: 13px; font-weight: 600; }
+  #miracle-today-alive .la-money-foot .la-late { color: #ffadba; }
+  #miracle-today-alive .la-money-foot em { color: #cbb2c8; font-size: 11px; font-style: normal; }
+  #miracle-today-alive .la-money-dots { display: flex; align-items: center; justify-content: center; gap: 5px; margin-top: 13px; }
+  #miracle-today-alive .la-money-dots span { height: 3px; width: 3px; border-radius: 5px; background: #e9cee53b; transition: width .25s,background .25s; }
+  #miracle-today-alive .la-money-dots span.active { width: 13px; background: #efbfd9; }
+  #miracle-today-alive .la-section-head { display: flex; align-items: center; gap: 8px; margin-bottom: 13px; }
+  #miracle-today-alive .la-section-head > span { display: inline-grid; place-items: center; min-width: 19px; height: 19px; padding: 0 5px; border-radius: 99px; color: var(--la-pink); background: color-mix(in oklab,var(--la-pink) 12%,var(--la-card)); font-size: 11px; }
+  #miracle-today-alive .la-section-head .la-text-button { margin-left: auto; }
+  #miracle-today-alive .la-tasks { display: flex; flex-direction: column; gap: 13px; }
+  #miracle-today-alive .la-ticket { position: relative; overflow: hidden; border: 1px solid var(--la-line); border-radius: 21px; background: var(--la-card); }
+  #miracle-today-alive .la-ticket-band { display: flex; align-items: center; gap: 10px; padding: 14px 14px 16px; background: linear-gradient(125deg,var(--ticket-band,#6c345f),#21131f 90%); color: #fff2f8; }
+  #miracle-today-alive .la-ticket-letter { display: grid; place-items: center; width: 35px; height: 35px; flex: none; border: 1px solid #ffeafa36; border-radius: 11px; background: #fff1fa12; font-weight: 600; }
+  #miracle-today-alive .la-ticket-name { flex: 1; min-width: 0; }
+  #miracle-today-alive .la-ticket-name b { display: block; font: italic 400 25px/1.05 'Instrument Serif',Georgia,serif; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  #miracle-today-alive .la-ticket-name small { display: block; margin-top: 4px; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: #ecd2e5; }
+  #miracle-today-alive .la-ticket-price { display: grid; gap: 3px; text-align: right; flex: none; }
+  #miracle-today-alive .la-ticket-price b { font-size: 13px; font-weight: 600; }
+  #miracle-today-alive .la-ticket-price small { color: #ecd2e5; font-size: 11px; }
+  #miracle-today-alive .la-ticket-cut { position: relative; margin: 0 14px; border-top: 1px dashed var(--la-line); }
+  #miracle-today-alive .la-ticket-cut::before, #miracle-today-alive .la-ticket-cut::after { content: ''; position: absolute; top: -9px; width: 17px; height: 17px; border-radius: 50%; background: var(--la-bg); }
+  #miracle-today-alive .la-ticket-cut::before { left: -23px; }
+  #miracle-today-alive .la-ticket-cut::after { right: -23px; }
+  #miracle-today-alive .la-ticket-bottom { display: flex; align-items: center; gap: 11px; padding: 14px 14px 16px; }
+  #miracle-today-alive .la-ticket-task { flex: 1; min-width: 0; }
+  #miracle-today-alive .la-ticket-task b { display: block; font-size: 12px; font-weight: 500; }
+  #miracle-today-alive .la-ticket-task small { display: flex; align-items: center; gap: 5px; margin-top: 5px; color: var(--la-peach); font-size: 11px; }
+  #miracle-today-alive .la-ticket-task small i { width: 4px; height: 4px; border-radius: 50%; background: currentColor; }
+  #miracle-today-alive .la-neopop { min-height: 35px; padding: 0 13px; border: 1px solid var(--la-line); border-radius: 0; background: var(--la-text); color: var(--la-bg) !important; box-shadow: 3px 3px 0 var(--la-pink); font-size: 11px; font-weight: 600; transition: transform .12s,box-shadow .12s; }
+  #miracle-today-alive .la-neopop:active { transform: translate(3px,3px); box-shadow: 0 0 0 var(--la-pink); }
+  #miracle-today-alive .la-ticket-shadow { height: 9px; margin: -6px 9px 0; border: 1px solid var(--la-line); border-top: 0; border-radius: 0 0 15px 15px; background: var(--la-card); opacity: .8; }
+  #miracle-today-alive .la-ticket-shadow + .la-ticket-shadow { margin: -5px 19px 0; opacity: .5; }
+  #miracle-today-alive .la-more { display: flex; align-items: center; gap: 7px; min-height: 34px; margin: 12px auto 0; padding: 0 12px; border: 1px solid var(--la-line); border-radius: 99px; background: var(--la-card); color: var(--la-sub); font-size: 11px; }
+  #miracle-today-alive .la-more svg { width: 13px; height: 13px; }
+  #miracle-today-alive .la-ai { position: relative; padding: 17px; border: 1px solid color-mix(in oklab,var(--la-purple) 40%,var(--la-line)); border-radius: 23px; background: radial-gradient(ellipse at 0 0,color-mix(in oklab,var(--la-purple) 12%,transparent),transparent 70%),var(--la-card); }
+  #miracle-today-alive .la-ai-top { display: flex; align-items: center; gap: 7px; color: var(--la-purple); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; }
+  #miracle-today-alive .la-ai-top svg { width: 14px; height: 14px; }
+  #miracle-today-alive .la-ai h2 { margin-top: 9px; font: 400 29px/1.08 'Instrument Serif',Georgia,serif; }
+  #miracle-today-alive .la-ai h2 em { color: var(--la-pink); }
+  #miracle-today-alive .la-ai p { margin-top: 9px; font-size: 11px; color: var(--la-sub); }
+  #miracle-today-alive .la-ai-chips { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 14px; }
+  #miracle-today-alive .la-ai-chips button { display: inline-flex; align-items: center; gap: 5px; min-height: 32px; padding: 0 10px; border: 1px solid var(--la-line); border-radius: 99px; background: var(--la-bg); font-size: 11px; }
+  #miracle-today-alive .la-ai-chips svg { width: 12px; height: 12px; color: var(--la-purple); }
+  #miracle-today-alive .la-ai-answer { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--la-line); }
+  #miracle-today-alive .la-ai-answer p { color: var(--la-text); }
+  #miracle-today-alive .la-week-say { margin: -3px 0 14px !important; font: 400 23px/1.15 'Instrument Serif',Georgia,serif; }
+  #miracle-today-alive .la-week-say em { color: var(--la-purple); }
+  #miracle-today-alive .la-days { display: grid; grid-template-columns: repeat(7,minmax(0,1fr)); gap: 5px; }
+  #miracle-today-alive .la-day { display: grid; justify-items: center; gap: 6px; padding: 8px 0; min-width: 0; border: 1px solid transparent; border-radius: 12px; background: transparent; }
+  #miracle-today-alive .la-day small { color: var(--la-sub); font-size: 11px; }
+  #miracle-today-alive .la-day b { font-size: 14px; font-weight: 500; }
+  #miracle-today-alive .la-day i { width: 3px; height: 3px; border-radius: 50%; background: var(--la-purple); }
+  #miracle-today-alive .la-day[aria-pressed="true"] { background: color-mix(in oklab,var(--la-purple) 12%,var(--la-card)); border-color: color-mix(in oklab,var(--la-purple) 45%,var(--la-line)); color: var(--la-purple); }
+  #miracle-today-alive .la-day[aria-pressed="true"] small { color: var(--la-purple); }
+  #miracle-today-alive .la-agenda { margin-top: 12px; overflow: hidden; border: 1px solid var(--la-line); border-radius: 17px; background: var(--la-card); }
+  #miracle-today-alive .la-agenda-top { display: flex; justify-content: space-between; align-items: center; padding: 10px 13px; border-bottom: 1px solid var(--la-line); }
+  #miracle-today-alive .la-agenda-top b { font-size: 11px; font-weight: 500; }
+  #miracle-today-alive .la-agenda-top small { font-size: 11px; color: var(--la-sub); }
+  #miracle-today-alive .la-event { display: flex; align-items: center; gap: 11px; padding: 13px; }
+  #miracle-today-alive .la-event-node { width: 7px; height: 7px; flex: none; border-radius: 50%; background: var(--la-purple); box-shadow: 0 0 0 4px color-mix(in oklab,var(--la-purple) 12%,transparent); }
+  #miracle-today-alive .la-event div { min-width: 0; }
+  #miracle-today-alive .la-event small { display: block; color: var(--la-purple); font-size: 11px; }
+  #miracle-today-alive .la-event b { display: block; margin-top: 3px; font-size: 12px; font-weight: 500; }
+  #miracle-today-alive .la-event p { color: var(--la-sub); font-size: 11px; margin-top: 3px; }
+  #miracle-today-alive .la-slots { display: grid; gap: 12px; padding: 15px; margin-top: 13px; border: 1px solid var(--la-line); border-radius: 18px; background: var(--la-card); }
+  #miracle-today-alive .la-slot-top { display: flex; align-items: center; justify-content: space-between; font-size: 11px; }
+  #miracle-today-alive .la-slot-top small { display: flex; align-items: center; gap: 4px; color: var(--la-green); font-size: 11px; }
+  #miracle-today-alive .la-slot-top small::before { content: ''; width: 4px; height: 4px; border-radius: 50%; background: currentColor; }
+  #miracle-today-alive .la-slot-row { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 6px; }
+  #miracle-today-alive .la-slot-row > span { font-size: 11px; color: var(--la-sub); }
+  #miracle-today-alive .la-slot-row > b { font: 400 21px 'Instrument Serif',Georgia,serif; }
+  #miracle-today-alive .la-slot-row > b small { font: 400 11px Inter,sans-serif; color: var(--la-sub); }
+  #miracle-today-alive .la-slot-bars { grid-column: 1/-1; display: grid; grid-template-columns: repeat(3,1fr); gap: 5px; }
+  #miracle-today-alive .la-slot-bars i { height: 5px; border-radius: 4px; background: var(--la-fill); }
+  #miracle-today-alive .la-slot-bars i.filled { background: linear-gradient(90deg,var(--la-purple),var(--la-pink)); }
+  #miracle-today-alive .la-nav { display: grid; flex: none; grid-template-columns: repeat(5,minmax(0,1fr)); position: relative; padding: 10px 10px 17px; border-top: 1px solid var(--la-line); background: light-dark(#1e171c,#09070a); color: #e7dfe5; }
+  #miracle-today-alive .la-nav button { display: grid; justify-items: center; align-content: center; gap: 5px; min-height: 45px; padding: 0; border: 0; background: transparent; color: #a69aa5; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; }
+  #miracle-today-alive .la-nav svg { width: 21px; height: 21px; }
+  #miracle-today-alive .la-nav button[aria-current="page"] { color: #f3d6e5; }
+  #miracle-today-alive .la-nav-indicator { position: absolute; top: 0; left: 10px; width: calc((100% - 20px)/5); height: 3px; display: grid; place-items: center; transition: transform .4s cubic-bezier(.2,1.4,.3,1); }
+  #miracle-today-alive .la-nav-indicator::after { content: ''; width: 21px; height: 3px; border-radius: 0 0 3px 3px; background: linear-gradient(90deg,#9c7bff,#f25a90,#ffae6b); }
+  #miracle-today-alive .la-sheet { position: absolute; z-index: 20; inset: 0; background: color-mix(in oklab,var(--la-bg) 72%,transparent); }
+  #miracle-today-alive .la-sheet-panel { position: absolute; left: 0; right: 0; top: 90px; padding: 16px 22px 24px; border: 1px solid var(--la-line); border-radius: 27px; background: var(--la-card); box-shadow: 0 24px 80px -30px color-mix(in oklab,var(--la-text) 35%,transparent); }
+  #miracle-today-alive .la-sheet-header { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+  #miracle-today-alive .la-sheet-header h2 { font: 400 29px/1.1 'Instrument Serif',Georgia,serif; }
+  #miracle-today-alive .la-sheet-copy { margin-top: 14px !important; color: var(--la-sub); white-space: pre-line; font-size: 13px; }
+  #miracle-today-alive .la-sheet-panel textarea { width: 100%; min-height: 190px; resize: vertical; margin-top: 15px; padding: 14px; border: 1px solid var(--la-line); border-radius: 12px; background: var(--la-bg); color: var(--la-text); font-size: 16px; }
+  #miracle-today-alive .la-sheet-panel > .la-neopop { width: 100%; min-height: 44px; margin-top: 21px; }
+  #miracle-today-alive .la-toast { position: absolute; z-index: 30; left: 22px; right: 22px; padding: 12px 14px; border: 1px solid var(--la-line); border-radius: 14px; background: var(--la-text); color: var(--la-bg); font-size: 12px; box-shadow: 0 8px 28px -15px var(--la-text); }
+  #miracle-today-alive .la-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  #miracle-today-alive .la-phone.is-resting *, #miracle-today-alive .la-phone.is-resting *::before, #miracle-today-alive .la-phone.is-resting *::after,
+  #miracle-today-alive .ambient-paused, #miracle-today-alive .ambient-paused *, #miracle-today-alive .ambient-paused::before, #miracle-today-alive .ambient-paused::after, #miracle-today-alive .ambient-paused *::before, #miracle-today-alive .ambient-paused *::after,
+  #miracle-today-alive .la-phone[data-motion="Off"] *, #miracle-today-alive .la-phone[data-motion="Off"] *::before, #miracle-today-alive .la-phone[data-motion="Off"] *::after,
+  #miracle-today-alive .la-phone.has-dialog *, #miracle-today-alive .la-phone.has-dialog *::before, #miracle-today-alive .la-phone.has-dialog *::after { animation-play-state: paused !important; }
+  @keyframes la-drift { to { transform: translate(-30px,8px) scale(1.12); opacity: .9; } }
+  @keyframes la-orbit { to { transform: rotate(360deg); } }
+  @keyframes la-breathe { 50% { opacity: .3; transform: scale(.7); } }
+  @keyframes la-marquee { to { transform: translateX(-50%); } }
+  @media (max-width: 370px) {
+    #miracle-today-alive .la-content { padding-inline: 14px; }
+    #miracle-today-alive .la-greeting h1 { font-size: 24px; }
+    #miracle-today-alive .la-greeting h1 em { font-size: 43px; }
+    #miracle-today-alive .la-orb { width: 104px; height: 104px; }
+    #miracle-today-alive .la-date { font-size: 11px; }
+    #miracle-today-alive .la-money { padding-inline: 14px; }
+    #miracle-today-alive .la-money-number { font-size: 43px; }
+    #miracle-today-alive .la-goal, #miracle-today-alive .la-goal svg { width: 81px; height: 81px; }
+    #miracle-today-alive .la-collab-rail { margin-inline: -14px; padding-inline: 14px; }
+    #miracle-today-alive .la-ticker { width: calc(100% + 28px); margin-inline: -14px; padding-inline: 14px; }
+    #miracle-today-alive .la-ticket-name b { font-size: 22px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    #miracle-today-alive *, #miracle-today-alive *::before, #miracle-today-alive *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+  }
+</style>
+
+<div id="miracle-today-alive" class="viz-dotted-background">
+  <div class="la-phone" aria-label="Miracle Today, enhanced" data-motion="Expressive">
+    <div class="la-inside">
+      <div class="la-status"><span>9:41</span><span><i data-lucide="signal" aria-hidden="true"></i><i data-lucide="wifi" aria-hidden="true"></i><i data-lucide="battery-full" aria-hidden="true"></i></span></div>
+      <header class="la-bar"><img class="la-logo" data-live-logo src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj4KPGRlZnM+Cgk8bGluZWFyR3JhZGllbnQgaWQ9ImciIGdyYWRpZW50VW5pdHM9InVzZXJTcGFjZU9uVXNlIiB4MT0iNjAiIHkxPSIxMDAiIHgyPSI1NjAiIHkyPSI0NDAiPjxzdG9wIG9mZnNldD0iMCIgc3RvcC1jb2xvcj0iIzZiM2ZkNCIvPjxzdG9wIG9mZnNldD0iLjUyIiBzdG9wLWNvbG9yPSIjZDQyOTZhIi8+PHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjZjI5OTRhIi8+PC9saW5lYXJHcmFkaWVudD4KCTxyYWRpYWxHcmFkaWVudCBpZD0iZ2xvdyIgY3g9Ii4zIiBjeT0iLjI1IiByPSIuOSI+PHN0b3Agb2Zmc2V0PSIwIiBzdG9wLWNvbG9yPSIjNmIzZmQ0IiBzdG9wLW9wYWNpdHk9Ii40NSIvPjxzdG9wIG9mZnNldD0iLjU1IiBzdG9wLWNvbG9yPSIjZDQyOTZhIiBzdG9wLW9wYWNpdHk9Ii4xOCIvPjxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iI2YyOTk0YSIgc3RvcC1vcGFjaXR5PSIuMjIiLz48L3JhZGlhbEdyYWRpZW50Pgo8L2RlZnM+CjxyZWN0IHdpZHRoPSI1MTIiIGhlaWdodD0iNTEyIiByeD0iMTEyIiBmaWxsPSIjMWMxMjE5Ii8+CjxyZWN0IHdpZHRoPSI1MTIiIGhlaWdodD0iNTEyIiByeD0iMTEyIiBmaWxsPSJ1cmwoI2dsb3cpIi8+CjxnIHRyYW5zZm9ybT0idHJhbnNsYXRlKDI1NiAyNTYpIHNjYWxlKDEuMDQpIHRyYW5zbGF0ZSgtMjU2IC0yNTYpIj48ZyB0cmFuc2Zvcm09InRyYW5zbGF0ZSgyNTYgMjU2KSBzY2FsZSguNzkpIHNrZXdYKC0xMykgdHJhbnNsYXRlKC0zMDQuNSAtMjY2KSIgZmlsbD0ibm9uZSIgc3Ryb2tlLXdpZHRoPSIyNiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48cGF0aCB0cmFuc2Zvcm09InRyYW5zbGF0ZSgtMTMsLTEwKSIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utb3BhY2l0eT0iLjk0IiBkPSJNNjQgMTI4QzkyIDEwNCAxMzIgMTEyIDE0NCAxNTZDMTU0IDIyMCAxNTggMzMwIDE1NiAzOTJDMTU1IDQyMCAxODIgNDIwIDE4MiAzOTJDMTgyIDMwMCAxNzYgMjAwIDE5NiAxNjBDMjIwIDEwNCAyOTAgMTA0IDMwMCAxNjBDMzEwIDIyMCAzMTIgMzMwIDMxMCAzOTJDMzA5IDQyMCAzMzYgNDIwIDMzNiAzOTJDMzM2IDMwMCAzMzAgMjAwIDM1MCAxNjBDMzc0IDEwNCA0NDQgMTA0IDQ1MiAxNjBDNDYwIDIzMCA0NTYgMzMwIDQ1MiAzOTJDNDUwIDQ0MCA1MDAgNDQwIDU0MCAzNjBNNDk5IDM4NEw1NDAgMzYwTDU0NSA0MDgiLz48cGF0aCB0cmFuc2Zvcm09InRyYW5zbGF0ZSgxMywxMCkiIHN0cm9rZT0idXJsKCNnKSIgZD0iTTY0IDEyOEM5MiAxMDQgMTMyIDExMiAxNDQgMTU2QzE1NCAyMjAgMTU4IDMzMCAxNTYgMzkyQzE1NSA0MjAgMTgyIDQyMCAxODIgMzkyQzE4MiAzMDAgMTc2IDIwMCAxOTYgMTYwQzIyMCAxMDQgMjkwIDEwNCAzMDAgMTYwQzMxMCAyMjAgMzEyIDMzMCAzMTAgMzkyQzMwOSA0MjAgMzM2IDQyMCAzMzYgMzkyQzMzNiAzMDAgMzMwIDIwMCAzNTAgMTYwQzM3NCAxMDQgNDQ0IDEwNCA0NTIgMTYwQzQ2MCAyMzAgNDU2IDMzMCA0NTIgMzkyQzQ1MCA0NDAgNTAwIDQ0MCA1NDAgMzYwTTQ5OSAzODRMNTQwIDM2MEw1NDUgNDA4Ii8+PC9nPjwvZz4KPC9zdmc+Cg==" alt=""><strong>Today</strong><button class="la-ib" data-detail="search" aria-label="Find a collab"><i data-lucide="search" aria-hidden="true"></i></button><button class="la-ib la-add" data-detail="add" aria-label="Add a collab"><i data-lucide="plus" aria-hidden="true"></i></button></header>
+      <main class="la-content">
+        <section class="la-greeting la-enter" data-ambient>
+          <div class="la-halo" aria-hidden="true"></div>
+          <p class="la-date">Saturday, 14 November</p><h1>Good morning,<em>Akshay</em></h1>
+          <button class="la-orb" data-detail="insights" aria-label="Your Instagram insights"><span class="la-orb-edge" aria-hidden="true"></span><span class="la-orb-inner"><b>12.4k</b><small>followers</small><em><i data-lucide="trending-up" aria-hidden="true"></i>4.8% eng.</em></span><span class="la-orb-spark" aria-hidden="true"></span></button>
+          <p class="la-summary"><span class="la-dot"></span><span><span data-urgent>4</span> need you today · 5 active collabs</span></p>
+        </section>
+
+        <section class="la-collabs la-enter" aria-label="Your collabs">
+          <div class="la-small-heading"><h2>Your collabs</h2><button class="la-text-button" data-next-collab>See all <i data-lucide="chevron-right" aria-hidden="true"></i></button></div>
+          <div class="la-collab-rail">
+            <button class="la-mini" data-ambient data-detail="flo"><b>FLO</b><small>Send your reel draft</small><span class="la-mini-bottom"><strong>₹8k</strong><em>Draft today</em></span></button>
+            <button class="la-mini" data-ambient data-detail="lumiere"><b>Lumière Skin</b><small>1 reel + 3 stories</small><span class="la-mini-bottom"><strong>₹30k</strong><em>Review</em></span></button>
+            <button class="la-mini" data-ambient data-detail="flipkart"><b>Flipkart</b><small>Food Fest campaign</small><span class="la-mini-bottom"><strong>₹3.5k</strong><em>Live</em></span></button>
+          </div>
+        </section>
+
+        <button class="la-ticker" data-ambient aria-pressed="false" aria-label="Pause summary: four tasks need you, next payout 17 November"><span class="la-ticker-window"><span class="la-ticker-track"><span><b data-ticker-count>4</b> need you today <i>✦</i> <b data-ticker-outstanding>₹24,000</b> yet to come <i>✦</i> Next payout <b>17 Nov</b> <i>✦</i></span><span aria-hidden="true"><b data-ticker-count>4</b> need you today <i>✦</i> <b data-ticker-outstanding>₹24,000</b> yet to come <i>✦</i> Next payout <b>17 Nov</b> <i>✦</i></span></span></span><i data-lucide="pause" aria-hidden="true"></i></button>
+
+        <section class="la-money la-enter" aria-label="Money this month">
+          <span class="la-sheen" aria-hidden="true"></span>
+          <div class="la-money-top"><span class="la-eyebrow" data-money-label>Received in November</span><button class="la-goal-pill" data-detail="goal" aria-label="Your monthly goal"><i data-lucide="sparkles" aria-hidden="true"></i>Goal ₹75k</button></div>
+          <div class="la-money-main"><div><div class="la-money-number" data-money-number aria-hidden="true">₹48,500</div><span class="la-sr" data-money-readable>₹48,500 received in November</span><p class="la-money-caption" data-money-caption>from 4 brands · 65% of this month's goal</p></div>
+            <div class="la-goal" role="progressbar" aria-label="Monthly earnings goal" aria-valuenow="65" aria-valuemin="0" aria-valuemax="100"><svg viewBox="0 0 108 108" aria-hidden="true"><defs><linearGradient id="la-money-gradient" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffae6b"/><stop offset=".5" stop-color="#f25a90"/><stop offset="1" stop-color="#9c7bff"/></linearGradient></defs><circle class="la-goal-track" cx="54" cy="54" r="44"/><circle class="la-goal-fill" cx="54" cy="54" r="44"/></svg><span class="la-goal-copy"><b>65%</b><small>of goal</small></span></div>
+          </div>
+          <div class="la-money-foot"><button data-money-view="1" aria-pressed="false"><small>Yet to come</small><strong>₹24,000</strong></button><button data-money-view="2" aria-pressed="false"><small>Overdue</small><strong class="la-late" data-overdue>₹12,000</strong></button><button data-money-view="3" aria-pressed="false"><small>Next payout</small><strong>17 Nov</strong><em>Flipkart</em></button></div>
+          <div class="la-money-dots" aria-hidden="true"><span class="active"></span><span></span><span></span><span></span></div>
+        </section>
+
+        <section class="la-needs la-enter" aria-label="Needs you">
+          <header class="la-section-head"><h2>Needs you</h2><span data-urgent>4</span></header>
+          <div class="la-tasks">
+            <article class="la-ticket" style="--ticket-band:#534078"><div class="la-ticket-band"><span class="la-ticket-letter">F</span><span class="la-ticket-name"><b>FLO</b><small>Creating</small></span><span class="la-ticket-price"><b>₹8,000</b><small>1 Reel</small></span></div><div class="la-ticket-cut"></div><div class="la-ticket-bottom"><span class="la-ticket-task"><b>Send your reel draft</b><small><i></i>Today, before 6 pm</small></span><button class="la-neopop" data-detail="flo">Open ↗</button></div></article>
+            <article class="la-ticket" style="--ticket-band:#753c61"><div class="la-ticket-band"><span class="la-ticket-letter">L</span><span class="la-ticket-name"><b>Lumière Skin</b><small>New request</small></span><span class="la-ticket-price"><b>₹30,000</b><small>1 Reel · 3 Stories</small></span></div><div class="la-ticket-cut"></div><div class="la-ticket-bottom"><span class="la-ticket-task"><b>Read their request</b><small><i></i>Waiting for your reply</small></span><button class="la-neopop" data-detail="lumiere">Review ↗</button></div></article>
+            <article class="la-ticket" data-extra data-payment-task hidden style="--ticket-band:#665441"><div class="la-ticket-band"><span class="la-ticket-letter">H</span><span class="la-ticket-name"><b>Hairspeak</b><small>Payment</small></span><span class="la-ticket-price"><b>₹12,000</b><small>Pending</small></span></div><div class="la-ticket-cut"></div><div class="la-ticket-bottom"><span class="la-ticket-task"><b>Payment came in?</b><small><i></i>2 days overdue</small></span><button class="la-neopop" data-detail="paid">Mark paid</button></div></article>
+            <article class="la-ticket" data-extra hidden style="--ticket-band:#3d6258"><div class="la-ticket-band"><span class="la-ticket-letter">B</span><span class="la-ticket-name"><b>Brown Boy Cafe</b><small>Creating</small></span><span class="la-ticket-price"><b>₹4,000</b><small>1 Story</small></span></div><div class="la-ticket-cut"></div><div class="la-ticket-bottom"><span class="la-ticket-task"><b>Check the final story</b><small><i></i>Today, 11 am</small></span><button class="la-neopop" data-detail="cafe">Open ↗</button></div></article>
+          </div>
+          <div class="la-ticket-shadow" data-stack-shadow></div><div class="la-ticket-shadow" data-stack-shadow></div>
+          <button class="la-more" aria-expanded="false" data-expand><i data-lucide="layers" aria-hidden="true"></i><span data-expand-label>+2 more</span></button>
+        </section>
+
+        <section class="la-ai la-enter" aria-label="Miracle desk"><div class="la-ai-top"><i data-lucide="sparkles" aria-hidden="true"></i>Your Miracle desk</div><h2>A little help.<br>A lot more <em>headspace.</em></h2><p>Your collabs, money and plans. Just ask.</p><div class="la-ai-chips"><button data-ask="today"><i data-lucide="sun" aria-hidden="true"></i>What needs me?</button><button data-ask="money"><i data-lucide="wallet" aria-hidden="true"></i>Chase payments</button><button data-ask="ideas"><i data-lucide="lightbulb" aria-hidden="true"></i>Reel ideas</button></div><div class="la-ai-answer" aria-live="polite" hidden><p data-ai-answer></p></div></section>
+
+        <section class="la-week la-enter" aria-label="This week"><header class="la-section-head"><h2>This week</h2><button class="la-text-button" data-detail="calendar">Calendar <i data-lucide="chevron-right" aria-hidden="true"></i></button></header><p class="la-week-say">Five things this week.<br><em>One good day at a time.</em></p>
+          <div class="la-days" role="group" aria-label="Choose a day"><button class="la-day" data-day="14" aria-pressed="true"><small>Today</small><b>14</b><i></i></button><button class="la-day" data-day="15" aria-pressed="false"><small>Sun</small><b>15</b><i></i></button><button class="la-day" data-day="16" aria-pressed="false"><small>Mon</small><b>16</b><i></i></button><button class="la-day" data-day="17" aria-pressed="false"><small>Tue</small><b>17</b><i></i></button><button class="la-day" data-day="18" aria-pressed="false"><small>Wed</small><b>18</b><i></i></button><button class="la-day" data-day="19" aria-pressed="false"><small>Thu</small><b>19</b><i></i></button><button class="la-day" data-day="20" aria-pressed="false"><small>Fri</small><b>20</b><i></i></button></div>
+          <div class="la-agenda" aria-live="polite"><div class="la-agenda-top"><b data-day-name>Today</b><small data-day-date>Saturday, 14 Nov</small></div><div class="la-event"><span class="la-event-node"></span><div><small data-event-kind>Draft · 6 pm</small><b data-event-brand>FLO</b><p data-event-copy>Send your reel draft for approval</p></div></div></div>
+          <div class="la-slots"><div class="la-slot-top"><span>Collab slots</span><small>One left</small></div><div class="la-slot-row"><span>This week</span><b>2<small> / 3</small></b><span class="la-slot-bars"><i class="filled"></i><i class="filled"></i><i></i></span></div><div class="la-slot-row"><span>Next week</span><b>1<small> / 3</small></b><span class="la-slot-bars"><i class="filled"></i><i></i><i></i></span></div></div>
+        </section>
+      </main>
+      <nav class="la-nav" aria-label="Main navigation"><span class="la-nav-indicator" aria-hidden="true"></span><button data-nav="today" aria-current="page"><i data-lucide="house" aria-hidden="true"></i>Today</button><button data-nav="collabs"><i data-lucide="layers" aria-hidden="true"></i>Collabs</button><button data-nav="plan"><i data-lucide="calendar-days" aria-hidden="true"></i>Plan</button><button data-nav="money"><i data-lucide="wallet" aria-hidden="true"></i>Money</button><button data-nav="profile"><i data-lucide="user-round" aria-hidden="true"></i>My Page</button></nav>
+    </div>
+    <section class="la-sheet" role="dialog" aria-modal="true" aria-label="Collab details" hidden><div class="la-sheet-panel"><header class="la-sheet-header"><h2 data-sheet-title></h2><button class="la-ib" data-close aria-label="Close"><i data-lucide="x" aria-hidden="true"></i></button></header><p class="la-sheet-copy" data-sheet-copy></p><textarea data-message placeholder="Paste their DM or email…" aria-label="Their message" hidden></textarea><button class="la-neopop" data-sheet-action>Done</button></div></section>
+    <div class="la-toast" role="status" hidden></div>
+  </div>
+</div>
+
+<script>
+(() => {
+  const root = document.getElementById('miracle-today-alive');
+  const phone = root.querySelector('.la-phone');
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)');
+  const config = { motion: 'Expressive', appearance: 'System' };
+  const money = phone.querySelector('.la-money');
+  const number = phone.querySelector('[data-money-number]');
+  const goal = phone.querySelector('.la-goal-fill');
+  const goalCopy = phone.querySelector('.la-goal-copy b');
+  const sheet = phone.querySelector('.la-sheet');
+  const inside = phone.querySelector('.la-inside');
+  const panel = phone.querySelector('.la-sheet-panel');
+  const state = { money: 0, day: '14', received: 48500, paid: false };
+  let valueFrame = 0, lastValue = 48500, displayedValue = 48500, toastTimer = 0, activeDetail = '', lastTrigger = null, aiTimer = 0;
+  const canMove = () => !reduced.matches && config.motion !== 'Off' && !document.hidden;
+  const ms = base => config.motion === 'Calm' ? base * .75 : base;
+  const animate = (node, frames, timing = {}) => {
+    if (!canMove()) return null;
+    return node.animate(frames, { duration: ms(420), easing: 'cubic-bezier(.18,.8,.25,1)', ...timing });
+  };
+  const spring = node => animate(node, [{ transform: 'scale(.96)' }, { transform: 'scale(1.025)', offset: .65 }, { transform: 'scale(1)' }], { duration: ms(380) });
+  function remember() {
+    if (window.openai && window.openai.setWidgetState) window.openai.setWidgetState({ modelContent: { homeDesign: 'Existing Today with responsive motion', selectedDay: state.day }, privateContent: { money: state.money, day: state.day } }).catch(() => {});
+  }
+  function readSaved(snapshot) {
+    const saved = snapshot && snapshot.privateContent;
+    if (saved && Number.isInteger(saved.money) && saved.money >= 0 && saved.money < 4) state.money = saved.money;
+    if (saved && /^[12][0-9]$/.test(saved.day) && Number(saved.day) >= 14 && Number(saved.day) <= 20) state.day = saved.day;
+  }
+  readSaved(window.openai && window.openai.widgetState);
+  function countTo(value) {
+    cancelAnimationFrame(valueFrame);
+    const before = displayedValue;
+    lastValue = value;
+    if (!canMove()) { displayedValue = value; number.textContent = '₹' + value.toLocaleString('en-IN'); return; }
+    const start = performance.now();
+    const tick = now => {
+      const t = Math.min(1, (now - start) / ms(630));
+      const next = Math.round(before + (value - before) * (1 - Math.pow(1 - t, 3)));
+      displayedValue = next;
+      number.textContent = '₹' + next.toLocaleString('en-IN');
+      if (t < 1 && canMove()) valueFrame = requestAnimationFrame(tick);
+      else { displayedValue = value; number.textContent = '₹' + value.toLocaleString('en-IN'); }
+    };
+    valueFrame = requestAnimationFrame(tick);
+  }
+  function shimmer() {
+    const sheen = phone.querySelector('.la-sheen');
+    sheen.getAnimations().forEach(animation => animation.cancel());
+    animate(sheen, [{ transform: 'translateX(-110%)', opacity: 0 }, { opacity: .8, offset: .45 }, { transform: 'translateX(110%)', opacity: 0 }], { duration: ms(780) });
+  }
+  function renderMoney(moving = false) {
+    const values = [state.received, state.paid ? 12000 : 24000, state.paid ? 0 : 12000, 12000];
+    const labels = ['Received in November', 'Yet to come', 'Overdue payments', 'Next payout · 17 November'];
+    const captions = [`from ${state.paid ? 5 : 4} brands · ${Math.round(state.received / 75000 * 100)}% of this month’s goal`, 'Payments from your live and completed collabs', state.paid ? 'You’re all caught up on overdue payments' : 'Hairspeak · 2 days overdue', 'Flipkart · Food Fest campaign'];
+    phone.querySelector('[data-money-label]').textContent = labels[state.money];
+    phone.querySelector('[data-money-caption]').textContent = captions[state.money];
+    phone.querySelector('[data-money-readable]').textContent = '₹' + values[state.money].toLocaleString('en-IN') + ' · ' + labels[state.money];
+    phone.querySelectorAll('[data-money-view]').forEach(button => button.setAttribute('aria-pressed', String(Number(button.dataset.moneyView) === state.money)));
+    phone.querySelectorAll('.la-money-dots span').forEach((dot, i) => dot.classList.toggle('active', i === state.money));
+    const pct = Math.round(state.received / 75000 * 100);
+    goalCopy.textContent = pct + '%';
+    phone.querySelector('.la-goal').setAttribute('aria-valuenow', String(pct));
+    const offset = 276.46 * (1 - Math.min(1, state.received / 75000));
+    const previous = getComputedStyle(goal).strokeDashoffset;
+    goal.style.strokeDashoffset = String(offset);
+    if (moving) { countTo(values[state.money]); animate(goal, [{ strokeDashoffset: previous }, { strokeDashoffset: String(offset) }], { duration: ms(700) }); shimmer(); }
+    else { lastValue = displayedValue = values[state.money]; number.textContent = '₹' + values[state.money].toLocaleString('en-IN'); }
+  }
+  phone.querySelectorAll('[data-money-view]').forEach(button => button.addEventListener('click', () => {
+    const i = Number(button.dataset.moneyView); state.money = state.money === i ? 0 : i; spring(button); renderMoney(true); remember();
+  }));
+  money.addEventListener('keydown', event => {
+    if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+    event.preventDefault();
+    state.money = (state.money + (event.key === 'ArrowRight' ? 1 : 3)) % 4;
+    renderMoney(true); remember();
+  });
+  let drag = null;
+  money.addEventListener('pointerdown', event => {
+    if (event.target.closest('button')) return;
+    drag = { x: event.clientX, y: event.clientY, rect: money.getBoundingClientRect() };
+    if (canMove()) { money.style.setProperty('--la-rx', '-1deg'); money.style.setProperty('--la-ry', '1.5deg'); }
+  });
+  money.addEventListener('pointermove', event => {
+    if (!drag || !canMove()) return;
+    const dx = Math.max(-8, Math.min(8, (event.clientX - drag.x) / 9));
+    money.style.setProperty('--la-ry', dx + 'deg');
+  });
+  const endDrag = event => {
+    if (!drag) return;
+    const dx = event.clientX - drag.x, dy = event.clientY - drag.y;
+    drag = null; money.style.setProperty('--la-rx', '0deg'); money.style.setProperty('--la-ry', '0deg');
+    if (event.type !== 'pointercancel' && Math.abs(dx) > 45 && Math.abs(dy) < 50) { state.money = (state.money + (dx < 0 ? 1 : 3)) % 4; renderMoney(true); remember(); }
+  };
+  window.addEventListener('pointerup', endDrag);
+  window.addEventListener('pointercancel', endDrag);
+  phone.querySelectorAll('button').forEach(button => button.addEventListener('click', () => {
+    if (!button.closest('.la-money') && !button.matches('.la-neopop,.la-ticker')) spring(button);
+  }));
+  const ticker = phone.querySelector('.la-ticker');
+  ticker.addEventListener('click', () => {
+    const paused = ticker.getAttribute('aria-pressed') !== 'true';
+    ticker.setAttribute('aria-pressed', String(paused));
+    ticker.setAttribute('aria-label', paused ? 'Resume summary' : 'Pause summary');
+  });
+  const expand = phone.querySelector('[data-expand]');
+  expand.addEventListener('click', async () => {
+    const open = expand.getAttribute('aria-expanded') !== 'true';
+    expand.setAttribute('aria-expanded', String(open));
+    phone.querySelector('[data-expand-label]').textContent = open ? 'Show less' : state.paid ? '+1 more' : '+2 more';
+    phone.querySelectorAll('[data-stack-shadow]').forEach(node => node.hidden = open);
+    const extras = [...phone.querySelectorAll('[data-extra]')].filter(node => !(state.paid && node.hasAttribute('data-payment-task')));
+    for (let i = 0; i < extras.length; i++) {
+      const node = extras[i];
+      if (open) { node.hidden = false; animate(node, [{ opacity: 0, transform: 'translateY(-15px) scale(.98)' }, { opacity: 1, transform: 'none' }], { delay: i * 55, duration: ms(450) }); }
+      else node.hidden = true;
+    }
+  });
+  const week = {
+    14: ['Today','Saturday, 14 Nov','Draft · 6 pm','FLO','Send your reel draft for approval'],
+    15: ['Tomorrow','Sunday, 15 Nov','A little breathing room','Nothing scheduled','A good day to shoot ahead or pitch a brand.'],
+    16: ['Monday','Monday, 16 Nov','Shoot · 11 am','Lumière Skin','Vitamin C launch · 1 reel + 3 stories'],
+    17: ['Tuesday','Tuesday, 17 Nov','Payment · ₹12,000','Flipkart','Food Fest campaign payout'],
+    18: ['Wednesday','Wednesday, 18 Nov','Go live · 7 pm','Brown Boy Cafe','Publish your approved story'],
+    19: ['Thursday','Thursday, 19 Nov','A free day','Your time, your plans','A good day for a new idea.'],
+    20: ['Friday','Friday, 20 Nov','Report due','Hairspeak','Send the final campaign results']
+  };
+  function renderDay(moving = false) {
+    const data = week[state.day] || week[14];
+    for (const [i, selector] of ['[data-day-name]','[data-day-date]','[data-event-kind]','[data-event-brand]','[data-event-copy]'].entries()) phone.querySelector(selector).textContent = data[i];
+    phone.querySelectorAll('[data-day]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.day === state.day)));
+    if (moving) animate(phone.querySelector('.la-event'), [{ opacity: 0, transform: 'translateX(15px)' }, { opacity: 1, transform: 'translateX(0)' }], { duration: ms(360) });
+  }
+  phone.querySelectorAll('[data-day]').forEach(button => button.addEventListener('click', () => { state.day = button.dataset.day; renderDay(true); remember(); }));
+  phone.querySelector('[data-next-collab]').addEventListener('click', () => {
+    const rail = phone.querySelector('.la-collab-rail');
+    rail.scrollTo({ left: rail.scrollLeft > 100 ? 0 : rail.scrollWidth, behavior: canMove() ? 'smooth' : 'auto' });
+  });
+  const miniFacts = [
+    ['Send your reel draft', '1 Reel · ₹8k', 'Due today, 6 pm'],
+    ['1 reel + 3 stories', 'Vitamin C launch', 'New request waiting'],
+    ['Food Fest campaign', '1 Reel · Live', 'Payout on 17 Nov']
+  ];
+  let factIndex = 0;
+  const factTimer = setInterval(() => {
+    if (!phone.isConnected) { clearInterval(factTimer); return; }
+    if (!canMove() || phone.classList.contains('has-dialog')) return;
+    factIndex = (factIndex + 1) % 3;
+    phone.querySelectorAll('.la-mini').forEach((mini, i) => {
+      if (mini.classList.contains('ambient-paused')) return;
+      const text = mini.querySelector('small');
+      const out = animate(text, [{ opacity: 1, transform: 'translateY(0)' }, { opacity: 0, transform: 'translateY(-7px)' }], { duration: 130, delay: i * 70 });
+      const change = () => { if (!phone.isConnected) return; text.textContent = miniFacts[i][factIndex]; animate(text, [{ opacity: 0, transform: 'translateY(7px)' }, { opacity: 1, transform: 'none' }], { duration: 230 }); };
+      if (out) out.finished.then(change, () => {}); else change();
+    });
+  }, 4200);
+  function toast(text, anchor) {
+    const node = phone.querySelector('.la-toast');
+    node.textContent = text;
+    node.style.top = Math.min(phone.clientHeight - 110, Math.max(20, (anchor || money).getBoundingClientRect().top - phone.getBoundingClientRect().top + 20)) + 'px';
+    node.hidden = false; animate(node, [{ opacity: 0, transform: 'translateY(10px) scale(.98)' }, { opacity: 1, transform: 'none' }]);
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => { node.hidden = true; }, 2600);
+  }
+  const details = {
+    flo: ['FLO', 'Your next step: send the reel draft.\n\nDue today, before 6 pm\n1 Reel · ₹8,000'],
+    lumiere: ['Lumière Skin', 'They would love 1 reel and 3 stories for the Vitamin C launch.\n\nBudget: ₹30,000\nReview the brief before accepting.'],
+    flipkart: ['Flipkart', 'Food Fest campaign · Live\n\nNext payment: 17 November\nKeep the posts, insights and payments together.'],
+    cafe: ['Brown Boy Cafe', 'Check the final story before it goes live.\n\nToday, 11 am\n1 Story · ₹4,000'],
+    insights: ['Your Instagram', '12.4k followers\n4.8% engagement\n\nYour connected account and latest reel performance.'],
+    goal: ['Your November goal', '₹75,000 for the month\n₹48,500 received so far\n\n65% of your goal reached. Keep going, one collab at a time.'],
+    add: ['Add a collab', 'Paste their DM or email. The details fill in for you.'],
+    search: ['Find anything', 'Search your collabs, brands, messages and pages from one place.'],
+    paid: ['Payment came in?', 'Have you received ₹12,000 from Hairspeak?\n\nConfirm after checking your bank account.'],
+    calendar: ['Your week', '14 Nov · FLO draft\n16 Nov · Lumière Skin shoot\n17 Nov · Flipkart payout\n18 Nov · Brown Boy Cafe goes live'],
+    profile: ['Akshay Kothari', '@akshaykothari\nLifestyle & experiences · Bengaluru\n\nYour profile, rates, brand page and media kit.']
+  };
+  function openDetail(kind, trigger) {
+    activeDetail = kind; lastTrigger = trigger;
+    const text = details[kind];
+    phone.querySelector('[data-sheet-title]').textContent = text[0];
+    phone.querySelector('[data-sheet-copy]').textContent = kind === 'goal' ? `₹75,000 for the month\n₹${state.received.toLocaleString('en-IN')} received so far\n\n${Math.round(state.received / 75000 * 100)}% of your goal reached. Keep going, one collab at a time.` : text[1];
+    phone.querySelector('[data-message]').hidden = kind !== 'add';
+    phone.querySelector('[data-sheet-action]').textContent = kind === 'paid' ? 'Yes, mark as received' : kind === 'add' ? 'Read message' : 'Back to Today';
+    const at = trigger.getBoundingClientRect().top - phone.getBoundingClientRect().top;
+    panel.style.top = Math.max(75, Math.min(at - 70, phone.clientHeight - (kind === 'add' ? 470 : 340))) + 'px';
+    inside.inert = true; sheet.hidden = false; phone.classList.add('has-dialog');
+    sheet.setAttribute('aria-label', text[0]);
+    animate(panel, [{ opacity: 0, transform: 'translateY(20px) scale(.98)' }, { opacity: 1, transform: 'none' }]);
+    phone.querySelector('[data-close]').focus({ preventScroll: true });
+  }
+  function closeDetail() { sheet.hidden = true; inside.inert = false; phone.classList.remove('has-dialog'); if (lastTrigger && lastTrigger.isConnected) lastTrigger.focus({ preventScroll: true }); }
+  phone.querySelectorAll('[data-detail]').forEach(button => button.addEventListener('click', () => openDetail(button.dataset.detail, button)));
+  phone.querySelector('[data-close]').addEventListener('click', closeDetail);
+  sheet.addEventListener('click', event => { if (event.target === sheet) closeDetail(); });
+  sheet.addEventListener('keydown', event => { if (event.key === 'Escape') closeDetail(); });
+  phone.querySelector('[data-sheet-action]').addEventListener('click', () => {
+    if (activeDetail === 'add') {
+      if (!phone.querySelector('[data-message]').value.trim()) return phone.querySelector('[data-message]').focus();
+      closeDetail(); toast('Message ready to review', phone.querySelector('.la-bar')); return;
+    }
+    if (activeDetail === 'paid' && !state.paid) {
+      state.paid = true; state.received += 12000; state.money = 0;
+      closeDetail();
+      const task = phone.querySelector('[data-payment-task]');
+      const finish = animate(task, [{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateX(25px) scale(.97)' }], { duration: ms(280) });
+      if (finish) finish.finished.then(() => { task.hidden = true; }, () => { task.hidden = true; }); else task.hidden = true;
+      phone.querySelectorAll('[data-urgent]').forEach(node => node.textContent = '3');
+      phone.querySelectorAll('[data-ticker-count]').forEach(node => node.textContent = '3');
+      phone.querySelectorAll('[data-ticker-outstanding]').forEach(node => node.textContent = '₹12,000');
+      phone.querySelector('[data-overdue]').textContent = '₹0';
+      phone.querySelector('[data-money-view="1"] strong').textContent = '₹12,000';
+      renderMoney(true); toast('₹12,000 received. One less thing to chase.', phone.querySelector('.la-needs')); return;
+    }
+    closeDetail();
+  });
+  const ai = {
+    today: 'Start with the FLO draft due at 6 pm. Then review Lumière Skin’s ₹30,000 request. Your Hairspeak payment also needs a follow-up.',
+    money: 'Hairspeak has ₹12,000 overdue by 2 days. Flipkart’s next payout is on 17 November. Open the payment ticket to check what came in.',
+    ideas: 'For Brown Boy Cafe: open with the first pour, cut to a close-up of the food, then end on the space. Keep the brand tag visible and the first second strong.'
+  };
+  phone.querySelectorAll('[data-ask]').forEach(button => button.addEventListener('click', () => {
+    clearTimeout(aiTimer);
+    const answer = phone.querySelector('.la-ai-answer');
+    const text = phone.querySelector('[data-ai-answer]');
+    answer.hidden = false; text.textContent = 'Putting your day together…';
+    animate(answer, [{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }]);
+    aiTimer = setTimeout(() => {
+      text.textContent = state.paid && button.dataset.ask === 'money' ? 'Your overdue payments are cleared. Flipkart’s ₹12,000 payout is next, on 17 November.' : state.paid && button.dataset.ask === 'today' ? 'Start with the FLO draft due at 6 pm, then review Lumière Skin’s ₹30,000 request and check Brown Boy Cafe’s story. Your overdue payment is sorted.' : ai[button.dataset.ask];
+      animate(text, [{ opacity: 0, transform: 'translateY(5px)' }, { opacity: 1, transform: 'none' }]);
+    }, canMove() ? 650 : 0);
+  }));
+  phone.querySelectorAll('[data-nav]').forEach((button, index) => button.addEventListener('click', () => {
+    if (button.dataset.nav === 'profile') return openDetail('profile', button);
+    const targets = { today: '.la-bar', collabs: '.la-collabs', plan: '.la-week', money: '.la-money' };
+    phone.querySelectorAll('[data-nav]').forEach(item => item.removeAttribute('aria-current'));
+    button.setAttribute('aria-current', 'page');
+    phone.querySelector('.la-nav-indicator').style.transform = `translateX(${index * 100}%)`;
+    if (button.dataset.nav === 'today') phone.querySelector('.la-content').scrollTo({ top: 0, behavior: canMove() ? 'smooth' : 'auto' });
+    else phone.querySelector(targets[button.dataset.nav]).scrollIntoView({ behavior: canMove() ? 'smooth' : 'auto', block: 'center' });
+  }));
+  const renderMotion = () => {
+    phone.dataset.motion = config.motion;
+    phone.style.colorScheme = config.appearance === 'System' ? 'inherit' : config.appearance.toLowerCase();
+    phone.style.setProperty('--la-orbit-speed', config.motion === 'Calm' ? '32s' : '12s');
+    if (!canMove()) phone.getAnimations({ subtree: true }).forEach(animation => {
+      if (animation.effect && Number.isFinite(animation.effect.getComputedTiming().endTime) && animation.playState !== 'finished') animation.finish();
+    });
+  };
+  if (globalThis.Tweak) {
+    const tweak = new Tweak({ container: phone, onChange: renderMotion });
+    tweak.addSelect(config, 'motion', { label: 'Motion', options: ['Expressive','Calm','Off'] });
+    tweak.addSelect(config, 'appearance', { label: 'Appearance', options: ['System','Light','Dark'] });
+  }
+  renderMoney(); renderDay(); renderMotion();
+  if ('IntersectionObserver' in window) {
+    let counted = false;
+    const entryObserver = new IntersectionObserver(entries => {
+      for (const entry of entries) {
+        if (!entry.isIntersecting) continue;
+        animate(entry.target, [{ opacity: 0, transform: 'translateY(14px)' }, { opacity: 1, transform: 'none' }], { duration: ms(560) });
+        if (entry.target === money && !counted) {
+          counted = true; const end = lastValue; lastValue = displayedValue = 0; countTo(end);
+          const offset = goal.style.strokeDashoffset;
+          animate(goal, [{ strokeDashoffset: '276.46' }, { strokeDashoffset: offset }], { duration: ms(900) }); shimmer();
+        }
+        entryObserver.unobserve(entry.target);
+      }
+    }, { threshold: .1 });
+    phone.querySelectorAll('.la-enter').forEach(node => entryObserver.observe(node));
+    const ambientObserver = new IntersectionObserver(entries => entries.forEach(entry => entry.target.classList.toggle('ambient-paused', !entry.isIntersecting)), { threshold: .01 });
+    phone.querySelectorAll('[data-ambient]').forEach(node => ambientObserver.observe(node));
+  }
+  document.addEventListener('visibilitychange', () => { phone.classList.toggle('is-resting', document.hidden); });
+  reduced.addEventListener('change', renderMotion);
+  window.addEventListener('openai:set_globals', event => { const snapshot = event.detail && event.detail.globals && event.detail.globals.widgetState; if (snapshot) { readSaved(snapshot); renderMoney(); renderDay(); } });
+})();
+</script>
