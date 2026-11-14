@@ -52,7 +52,7 @@ await page.goto('https://app.miracleapp.live/__keyboard-regression', { waitUntil
 await page.evaluate(mountCollabHarness, { mode: 'device' });
 console.log('Mounted the real drawer with fixture data.');
 await expect(page.locator('.dialog.nc')).toBeVisible();
-const initialHeight = await page.evaluate(() => innerHeight);
+const initialHeight = await page.evaluate(() => Math.min(innerHeight, visualViewport?.height ?? innerHeight));
 const metadata = {
 	android: adb('shell', 'getprop', 'ro.build.version.release').trim(),
 	webview: adb('shell', 'dumpsys', 'webviewupdate').split('\n').find(line => line.includes('Current WebView package'))?.trim(),
@@ -62,8 +62,14 @@ const results = [];
 for (let cycle = 0; cycle < 3; cycle++) {
 	const rect = await page.locator('#nc-paste').boundingBox();
 	const dpr = await page.evaluate(() => devicePixelRatio);
-	adb('shell', 'input', 'tap', String(Math.round((rect.x + 25) * dpr)), String(Math.round((rect.y + 25) * dpr)));
-	await expect.poll(() => page.evaluate(() => innerHeight), { timeout: 20000 }).toBeLessThan(initialHeight - 120);
+	adb('shell', 'uiautomator', 'dump', '/sdcard/miracle-keyboard-test.xml');
+	const hierarchy = adb('shell', 'cat', '/sdcard/miracle-keyboard-test.xml');
+	const bounds = /class="android\.webkit\.WebView"[^>]*bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"/.exec(hierarchy);
+	if (!bounds) throw new Error('Cannot locate the native WebView on the emulator display.');
+	const left = Number(bounds[1]), top = Number(bounds[2]);
+	adb('shell', 'input', 'tap', String(Math.round(left + (rect.x + 25) * dpr)), String(Math.round(top + (rect.y + 25) * dpr)));
+	await expect.poll(() => /mInputShown=true/.test(adb('shell', 'dumpsys', 'input_method')), { timeout: 15000 }).toBe(true);
+	await expect.poll(() => page.evaluate(() => Math.min(innerHeight, visualViewport?.height ?? innerHeight)), { timeout: 20000 }).toBeLessThan(initialHeight - 120);
 	await expect(page.locator('#nc-paste')).toBeFocused();
 	adb('shell', 'input', 'text', 'Hello%sthis%sis%sa%scollab%smessage');
 	const frames = await page.evaluate(() => new Promise(resolve => {
@@ -78,19 +84,19 @@ for (let cycle = 0; cycle < 3; cycle++) {
 		requestAnimationFrame(frame);
 	}));
 	const settled = frames.filter(frame => frame.time > 700);
-	for (const key of ['height', 'titleY', 'composeY', 'footerBottom', 'scroll']) {
+	for (const key of ['height', 'visualHeight', 'titleY', 'composeY', 'footerBottom', 'scroll']) {
 		const values = settled.map(frame => frame[key]);
 		expect(Math.max(...values) - Math.min(...values), `Cycle ${cycle + 1}: ${key} must settle`).toBeLessThanOrEqual(1);
 	}
 	for (const frame of settled) {
 		expect(frame.focused).toBe('nc-paste');
 		expect(frame.composeBottom).toBeLessThanOrEqual(frame.footerTop + 1);
-		expect(frame.footerBottom).toBeLessThanOrEqual(frame.height + 1);
+		expect(frame.footerBottom).toBeLessThanOrEqual(Math.min(frame.height, frame.visualHeight) + 1);
 	}
 	results.push({ cycle: cycle + 1, frames });
 	await page.screenshot({ path: join(out, `keyboard-open-${cycle + 1}.png`) });
 	adb('shell', 'input', 'keyevent', '4');
-	await expect.poll(() => page.evaluate(() => innerHeight), { timeout: 20000 }).toBe(initialHeight);
+	await expect.poll(() => page.evaluate(() => Math.min(innerHeight, visualViewport?.height ?? innerHeight)), { timeout: 20000 }).toBe(initialHeight);
 }
 await page.evaluate(() => window.collabTest.close());
 await expect.poll(() => page.evaluate(() => scrollY)).toBe(await page.evaluate(() => window.collabTest.original.y));

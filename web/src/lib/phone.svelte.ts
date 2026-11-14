@@ -17,15 +17,15 @@ export function startPhone(refresh: () => Promise<unknown>) {
 	// The part of the screen the keyboard leaves free (iPhone shrinks only this "visual viewport"):
 	// full-screen chats size to it, so the header stays and the message box sits just above the keyboard.
 	const vv = window.visualViewport;
-	// Capacitor SystemBars already resizes the WebView for IME insets. Applying its visual viewport
-	// resize as well can resize the sheet twice. Browser/PWA keyboards still use the visual viewport.
+	// WebViews can resize the native window, only the visual viewport, or report the two in separate
+	// frames. Use their intersection once, without subtracting keyboard insets a second time.
 	const nativeAndroid = nativePlatform() === 'android';
 	let viewportFrame = 0;
 	let viewportHeight = '';
 	let viewportTop = '';
 	const updateViewport = () => {
 		viewportFrame = 0;
-		const height = `${Math.round(nativeAndroid ? innerHeight : (vv?.height ?? innerHeight))}px`;
+		const height = `${Math.round(Math.min(innerHeight, vv?.height ?? innerHeight))}px`;
 		const top = nativeAndroid ? '0px' : `${Math.max(0, Math.round(vv?.offsetTop ?? 0))}px`;
 		if (height !== viewportHeight) document.documentElement.style.setProperty('--vv-h', height);
 		if (top !== viewportTop) document.documentElement.style.setProperty('--vv-top', top);
@@ -35,10 +35,8 @@ export function startPhone(refresh: () => Promise<unknown>) {
 	const onVv = () => (viewportFrame ||= requestAnimationFrame(updateViewport));
 	updateViewport();
 	window.addEventListener('resize', onVv, { passive: true });
-	if (!nativeAndroid) {
-		vv?.addEventListener('resize', onVv);
-		vv?.addEventListener('scroll', onVv);
-	}
+	vv?.addEventListener('resize', onVv);
+	if (!nativeAndroid) vv?.addEventListener('scroll', onVv);
 
 	// Like Instagram: the top bar slides away while scrolling down and comes back on the way up.
 	let last = scrollY;

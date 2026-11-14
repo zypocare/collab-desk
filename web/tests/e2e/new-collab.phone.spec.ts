@@ -70,19 +70,32 @@ test('native window resizing keeps the title, composer and footer in the visible
 	await expect(page.locator('#nc-paste')).toHaveCSS('height', '240px');
 });
 
-test('native visual viewport noise never resizes or pans a sheet already sized by Android', async ({ page }) => {
+test('native layout resizing clamps stale viewport heights and viewport scrolling never pans the drawer', async ({ page }) => {
 	await page.setViewportSize({ width: 393, height: 430 });
 	await paint(page);
 	const before = (await page.locator('.nc').boundingBox())!;
 	await page.evaluate(() => {
 		const viewport = window.visualViewport as unknown as { height: number; offsetTop: number; dispatchEvent: (event: Event) => boolean };
-		viewport.height = 170; viewport.offsetTop = 85;
+		viewport.height = 852; viewport.offsetTop = 85;
 		viewport.dispatchEvent(new Event('resize')); viewport.dispatchEvent(new Event('scroll'));
 	});
 	await paint(page);
 	expect(await page.locator('.nc').boundingBox()).toEqual(before);
 	await expect(page.locator('html')).toHaveCSS('--vv-h', '430px');
 	await expect(page.locator('html')).toHaveCSS('--vv-top', '0px');
+});
+
+test('modern native WebViews can report the keyboard through the visual viewport alone', async ({ page }) => {
+	await page.evaluate(() => {
+		const viewport = window.visualViewport as unknown as { height: number; offsetTop: number; dispatchEvent: (event: Event) => boolean };
+		viewport.height = 430; viewport.offsetTop = 32; viewport.dispatchEvent(new Event('resize'));
+	});
+	await paint(page);
+	expect(await page.evaluate(() => innerHeight)).toBe(852);
+	await expect(page.locator('html')).toHaveCSS('--vv-h', '430px');
+	await expect(page.locator('html')).toHaveCSS('--vv-top', '0px');
+	const footer = (await page.locator('.nc-foot').boundingBox())!;
+	expect(footer.y + footer.height).toBeLessThanOrEqual(431);
 });
 
 test('focus and typing do not undo the WebView caret scroll adjustment', async ({ page }) => {
