@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { portal } from '../portal';
+	import { holdCollabPage } from '../collabDialog';
+	import BrandNameInput from './BrandNameInput.svelte';
 	import { onMount } from 'svelte';
 	import { createCollab, loadLeads, studio } from '../studio.svelte';
 	import { supabase } from '../supabase';
@@ -41,16 +43,11 @@
 	let body = $state<HTMLDivElement>();
 
 	onMount(() => {
-		const root = document.documentElement;
-		const overflow = root.style.overflow;
-		root.style.overflow = 'hidden';
-		if (step === 'paste') box?.focus({ preventScroll: true });
 		// A screenshot shared into the app (Android Share): read it straight away.
 		ui.pasteImage = null;
 		if (shared) shrinkImage(shared).then((img) => readWithAi(img), (err) => toast((err as Error).message, 'alert'));
 		// A DM or pasted message: read it at once, so the details are there when she looks.
 		else if (startText.trim().length > 20) readWithAi();
-		return () => { root.style.overflow = overflow; };
 	});
 	const close = () => (ui.newCollab = false);
 	function go(s: Step) {
@@ -330,8 +327,8 @@
 
 <svelte:window onkeydown={(e) => e.key === 'Escape' && close()} />
 
-<div class="dialog-scrim nc-scrim" role="presentation" use:portal onclick={(e) => e.target === e.currentTarget && close()}>
-	<div class="dialog nc" role="dialog" aria-modal="true" aria-labelledby="nc-title">
+<div class="dialog-scrim nc-scrim" role="presentation" use:portal use:holdCollabPage onclick={(e) => e.target === e.currentTarget && close()}>
+	<div class="dialog nc" role="dialog" aria-modal="true" aria-labelledby="nc-title" tabindex="-1">
 		<header class="nc-top">
 			{#if step !== 'ask' && step !== 'paste'}<button type="button" class="nc-ib" aria-label="Back" onclick={back}><Icon name="chevL" /></button>{:else if step === 'ask' && !fromIg && !shared}<button type="button" class="nc-ib" aria-label="Back" onclick={back}><Icon name="chevL" /></button>{/if}
 			{#if at >= 0}
@@ -357,8 +354,7 @@
 				</div>
 				{#if aiNote}<p class="nc-note"><AiThinking label={aiNote.replace('…', '')} /></p>{/if}
 				<label for="nc-brand" class="nc-lbl">Brand</label>
-				<input class="nc-brand" id="nc-brand" list="nc-brands" placeholder="Brand name" autocomplete="off" bind:value={name} oninput={() => (nameTouched = true)} />
-				<datalist id="nc-brands">{#each studio.brands as b (b.id)}<option value={b.name}></option>{/each}</datalist>
+				<BrandNameInput id="nc-brand" bind:value={name} onedit={() => (nameTouched = true)} />
 				<p class="nc-more">Adding many? <a href="/studio/import" onclick={close}>Import them at once</a> · Ambassador deal? <a href="/studio/brands" onclick={close}>Set up a monthly deal</a></p>
 			{:else if step === 'ask'}
 				<div class="nc-head">
@@ -393,8 +389,7 @@
 				</div>
 				<p class="nc-hint">Tap any line to change it. Nothing is sent to the brand.</p>
 				<label for="nc-brand2" class="nc-lbl">Brand</label>
-				<input class="nc-brand" id="nc-brand2" list="nc-brands2" placeholder="Brand name" autocomplete="off" bind:value={name} oninput={() => (nameTouched = true)} />
-				<datalist id="nc-brands2">{#each studio.brands as b (b.id)}<option value={b.name}></option>{/each}</datalist>
+				<BrandNameInput id="nc-brand2" bind:value={name} onedit={() => (nameTouched = true)} />
 				<small class="nc-hint">{name.trim() ? (known ? 'A brand you know: their details are filled in' : 'New brand: their Instagram is saved too') : 'Who is the content for?'}</small>
 				{#if agency || agencyOpen}
 					<label for="nc-agency" class="nc-lbl">Sent by an agency</label>

@@ -1,10 +1,11 @@
 import { inr } from './util';
+import { COLLAB_DIALOG_CHANGE, collabDialogOpen } from './collabDialog';
 
 /** Run work only while its element is visible and the user permits motion. */
 export function whileVisible(node: Element, change: (active: boolean, reduced: boolean) => void) {
 	const preference = matchMedia('(prefers-reduced-motion: reduce)');
 	let visible = false;
-	const sync = () => change(visible && !document.hidden && !preference.matches, preference.matches);
+	const sync = () => change(visible && !document.hidden && !preference.matches && !collabDialogOpen(), preference.matches);
 	const observer = new IntersectionObserver(([entry]) => {
 		visible = entry.isIntersecting;
 		sync();
@@ -12,11 +13,13 @@ export function whileVisible(node: Element, change: (active: boolean, reduced: b
 	observer.observe(node);
 	preference.addEventListener('change', sync);
 	document.addEventListener('visibilitychange', sync);
+	document.addEventListener(COLLAB_DIALOG_CHANGE, sync);
 	sync();
 	return () => {
 		observer.disconnect();
 		preference.removeEventListener('change', sync);
 		document.removeEventListener('visibilitychange', sync);
+		document.removeEventListener(COLLAB_DIALOG_CHANGE, sync);
 	};
 }
 
@@ -28,10 +31,10 @@ export function homeMotion(root: HTMLElement) {
 	const arrived = new WeakSet<Element>();
 	const entrances = new Map<Element, Animation>();
 	const sync = () => {
-		root.dataset.homePaused = String(document.hidden || preference.matches);
+		root.dataset.homePaused = String(document.hidden || preference.matches || collabDialogOpen());
 		for (const animation of entrances.values()) {
 			if (preference.matches) animation.finish();
-			else if (document.hidden) animation.pause();
+			else if (document.hidden || collabDialogOpen()) animation.pause();
 			else animation.play();
 		}
 	};
@@ -42,7 +45,7 @@ export function homeMotion(root: HTMLElement) {
 			node.dataset.homeActive = String(entry.isIntersecting);
 			if (!entry.isIntersecting || arrived.has(node)) continue;
 			arrived.add(node);
-			if (preference.matches || document.hidden || node.matches('.cr-ticker')) continue;
+			if (preference.matches || document.hidden || collabDialogOpen() || node.matches('.cr-ticker')) continue;
 			const animation = node.animate([
 				{ opacity: 0.35, translate: '0 22px', scale: '0.97' },
 				{ opacity: 1, translate: '0 -3px', scale: '1.005', offset: 0.78 },
@@ -78,12 +81,14 @@ export function homeMotion(root: HTMLElement) {
 	mutations.observe(root, { childList: true, subtree: true });
 	preference.addEventListener('change', sync);
 	document.addEventListener('visibilitychange', sync);
+	document.addEventListener(COLLAB_DIALOG_CHANGE, sync);
 	sync();
 	return { destroy() {
 		observer.disconnect();
 		mutations.disconnect();
 		preference.removeEventListener('change', sync);
 		document.removeEventListener('visibilitychange', sync);
+		document.removeEventListener(COLLAB_DIALOG_CHANGE, sync);
 		for (const animation of entrances.values()) animation.cancel();
 	} };
 }
@@ -126,7 +131,7 @@ export function homeChange(node: HTMLElement, key: unknown) {
 			if (next === previous) return;
 			previous = next;
 			animation?.cancel();
-			if (document.hidden || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+			if (document.hidden || collabDialogOpen() || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 			animation = node.animate([
 				{ opacity: 0.3, translate: '12px 8px' },
 				{ opacity: 1, translate: '0 0' }

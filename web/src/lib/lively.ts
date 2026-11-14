@@ -1,6 +1,7 @@
 import { onNavigate } from '$app/navigation';
 import { onMount } from 'svelte';
 import { nativePlatform } from './native';
+import { collabDialogOpen } from './collabDialog';
 
 // CRED-style motion for the phone studio. A tapped wallet card grows into the collab it opens, cards tilt under the finger and spring back, sheets close with a
 // swipe down, and search boxes roll through things to search for. Laptop is left as it is.
@@ -89,11 +90,12 @@ export function lively() {
 		let tx = 0, ty = 0, tq = 0;
 		const root = document.documentElement;
 		const tilt = (e: DeviceOrientationEvent) => {
-			if (e.beta == null || e.gamma == null) return;
+			if (document.hidden || collabDialogOpen() || e.beta == null || e.gamma == null) return;
 			tx = Math.max(-1, Math.min(1, e.gamma / 30));
 			ty = Math.max(-1, Math.min(1, (e.beta - 45) / 30));
 			tq ||= requestAnimationFrame(() => {
 				tq = 0;
+				if (collabDialogOpen()) return;
 				root.style.setProperty('--tx', tx.toFixed(3));
 				root.style.setProperty('--ty', ty.toFixed(3));
 			});

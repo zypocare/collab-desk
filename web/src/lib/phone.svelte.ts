@@ -1,6 +1,7 @@
 // The Studio on a phone behaves like an installed app: an app bar that shows the title once the
 // big one scrolls away, sheets that slide down to close, and pull down to refresh.
 import { haptic } from './feel';
+import { COLLAB_DIALOG_CHANGE, collabDialogOpen } from './collabDialog';
 export const PHONE_Q = '(max-width: 760px)';
 
 export const phone = $state({ on: false, scrolled: false, titled: false, hide: false });
@@ -36,6 +37,7 @@ export function startPhone(refresh: () => Promise<unknown>) {
 	// Like Instagram: the top bar slides away while scrolling down and comes back on the way up.
 	let last = scrollY;
 	const onScroll = () => {
+		if (collabDialogOpen()) return;
 		const y = scrollY;
 		phone.scrolled = y > 4;
 		phone.titled = y > 64;
@@ -46,6 +48,7 @@ export function startPhone(refresh: () => Promise<unknown>) {
 	};
 	onScroll();
 	addEventListener('scroll', onScroll, { passive: true });
+	document.addEventListener(COLLAB_DIALOG_CHANGE, onScroll);
 
 	const offSheet = sheetSwipe();
 	const offPull = pullToRefresh(refresh);
@@ -55,6 +58,7 @@ export function startPhone(refresh: () => Promise<unknown>) {
 		vv?.removeEventListener('scroll', onVv);
 		cancelAnimationFrame(viewportFrame);
 		removeEventListener('scroll', onScroll);
+		document.removeEventListener(COLLAB_DIALOG_CHANGE, onScroll);
 		offSheet();
 		offPull();
 	};
