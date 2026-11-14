@@ -8,14 +8,14 @@
 	import { supabase } from '../supabase';
 	import { decisionOf, studio } from '../studio.svelte';
 	import { ui } from '../ui.svelte';
-	import { unreadFor } from '../util';
+	import { inr, inrS, iso, outstanding, overdue, tasks, today, unreadFor, relWord, diff } from '../util';
+	import { receivedIn } from '../invoice';
 	import AiThinking from './AiThinking.svelte';
 	import CollabLeads from './CollabLeads.svelte';
 	import Icon from './Icon.svelte';
 	import Mono from './Mono.svelte';
 	import ScoreRing from './ScoreRing.svelte';
 	import { addLeadAsCollab, lastBrandLines } from '../leads';
-	import { relWord, diff } from '../util';
 
 	// Today's AI assistant: every open request, read and scored ("Should you take it?"), and how
 	// many free AI uses are left today.
@@ -50,12 +50,24 @@
 			: open.length ? `Read ${open.length === 1 ? 'your new request' : `your ${open.length} open requests`} and scored ${open.length === 1 ? 'it' : 'them'}.` : "When a brand writes, I'll read it and tell you if it's worth it."
 	);
 
-	// Phone: the Desk AI card. A one-line read of what's waiting, the Instagram leads one at a time
-	// (with what the brand actually wrote), and the open requests as swipeable score cards.
+	// Phone: the Desk AI card with 3 segmented modes (DM Leads, Scored, Ask Desk).
 	const phoneLeads = $derived([...studio.leads].sort((a, b) => Number(b.collab_flag === 'likely') - Number(a.collab_flag === 'likely')).slice(0, 3));
 	let leadI = $state(0);
-	// Which way the card slides (1 = to the next one, -1 = back).
 	let dir = $state(1);
+	let aiTab = $state<'leads' | 'scores' | 'ask'>('leads');
+	let askTopic = $state<'today' | 'money' | 'hooks' | 'tax'>('today');
+	let tabInitialized = false;
+	$effect(() => {
+		if (tabInitialized) return;
+		if (studio.leads.length > 0) {
+			aiTab = 'leads';
+			tabInitialized = true;
+		} else if (open.length > 0) {
+			aiTab = 'scores';
+			tabInitialized = true;
+		}
+	});
+
 	function goLead(i: number) {
 		const n = phoneLeads.length;
 		if (n < 2) return;
@@ -64,7 +76,6 @@
 		leadI = to;
 		navigator.vibrate?.(8);
 	}
-	// Swipe left or right on the card to see the next possible collab (a tap still opens things).
 	function swipe(node: HTMLElement) {
 		let x0 = 0, y0 = 0, on = false;
 		const down = (e: PointerEvent) => {
@@ -77,7 +88,6 @@
 			const dx = e.clientX - x0, dy = e.clientY - y0;
 			if (Math.abs(dx) < 45 || Math.abs(dx) < Math.abs(dy) * 1.3) return;
 			goLead(dx < 0 ? leadI + 1 : leadI - 1);
-			// A swipe isn't a tap: swallow a click that follows straight away (never a later one).
 			const block = (ev: Event) => (ev.stopPropagation(), ev.preventDefault());
 			node.addEventListener('click', block, { capture: true, once: true });
 			setTimeout(() => node.removeEventListener('click', block, { capture: true }), 350);
@@ -103,7 +113,6 @@
 		adding = false;
 	}
 	const VERDICT_WORD: Record<string, string> = { take: 'worth a yes', negotiate: 'worth a counter', pass: 'likely a pass' };
-	// The line at the top, in pieces so two words can stand out.
 	const say = $derived.by(() => {
 		const parts: { t: string; em?: 'g' | 'w' }[] = [];
 		const n = studio.leads.length;
@@ -115,10 +124,16 @@
 	});
 	const forYou = $derived(Math.min(studio.leads.length, 3) + open.length);
 	const ago = (at: string | null) => (at ? relWord(diff(at.slice(0, 10))) : '');
-	// Who wrote: the brand's name when the AI's read starts with it ("Barcode: ..."), else their name, else the handle.
 	const leadName = (l: (typeof studio.leads)[number]) => /^([^:@][^:]{0,40}):\s/.exec(l.collab_hint)?.[1].trim() || l.name || (l.username ? `@${l.username}` : 'Someone on Instagram');
 	const leadRead = (l: (typeof studio.leads)[number]) => (l.collab_hint || '').replace(/^[^:@][^:]{0,40}:\s/, '') || (l.collab_flag === 'likely' ? 'May want to work with you' : 'Might be asking about a collab');
 	const gauge = (score: number) => `${((2 * Math.PI * 27 * score) / 100).toFixed(1)} ${(2 * Math.PI * 27).toFixed(1)}`;
+
+	// Dynamic live insights for the "Ask Desk ✦" tab
+	const ym = iso(today()).slice(0, 7);
+	const recNow = $derived(studio.collabs.reduce((a, c) => a + receivedIn(c, ym), 0));
+	const outsNow = $derived(studio.collabs.reduce((a, c) => a + outstanding(c), 0));
+	const odNow = $derived(studio.collabs.filter(overdue));
+	const topTasks = $derived(tasks(studio.collabs).slice(0, 3));
 </script>
 
 {#snippet body()}
@@ -155,53 +170,100 @@
 			<div class="dk2-in">
 				<header class="dk2-h">
 					<span class="ai-mark" aria-hidden="true"><i></i><svg viewBox="0 0 24 24"><path d="M12 2.5c.7 4.6 3.9 7.8 8.5 8.5-4.6.7-7.8 3.9-8.5 8.5-.7-4.6-3.9-7.8-8.5-8.5 4.6-.7 7.8-3.9 8.5-8.5z"/><path class="s2" d="M19 15.5c.25 1.6 1.4 2.75 3 3-1.6.25-2.75 1.4-3 3-.25-1.6-1.4-2.75-3-3 1.6-.25 2.75-1.4 3-3z"/></svg></span>
-					<span class="dk2-eb">Desk AI</span>
-					{#if forYou}<span class="dk2-eb dk2-mute">· {forYou} for you</span>{/if}
-					{#if left}<span class="dk2-left" title={leftTitle}><svg viewBox="0 0 36 36" aria-hidden="true"><circle cx="18" cy="18" r="14" /><circle class="dk2-arc" cx="18" cy="18" r="14" style="stroke-dasharray:{(88 * left.pct) / 100} 88" /></svg>{left.pct}% free</span>{/if}
+					<span class="dk2-eb">Desk AI{#if forYou} · {forYou} for you{/if}</span>
+					{#if left}<span class="dk2-left" title={leftTitle}><svg viewBox="0 0 36 36" aria-hidden="true"><circle cx="18" cy="18" r="14" /><circle class="dk2-arc" cx="18" cy="18" r="14" style="stroke-dasharray:{(88 * left.pct) / 100} 88" /></svg>{left.pct}% free</span>{:else}<span class="dk2-free">● Live</span>{/if}
 				</header>
 				<h2 class="dk2-say">{#each say as p, i (i)}{#if p.em}<em class="dk2-{p.em}">{p.t}</em>{:else}{p.t}{/if}{/each}</h2>
 
-				{#if lead}
-					<!-- A possible collab from her DMs: who, what they wrote, what Desk AI reads in it, and one button. -->
-					<div class="dk2-lead" use:swipe>
-						{#key lead.igsid}
-						<div class="dk2-lead-in" in:fly={{ x: 40 * dir, duration: 220 }}>
-							<a class="dk2-who" href="/studio/inbox/ig/{lead.igsid}" aria-label="Open the chat with {leadName(lead)}">
-								<span class="dk2-av">{#if lead.picture}<img src={igImg(lead.picture)} alt="" referrerpolicy="no-referrer" />{:else}<b>{(lead.username || lead.name || 'IG').slice(0, 1).toUpperCase()}</b>{/if}</span>
-								<span class="dk2-wt">
-									<b>{leadName(lead)}</b>
-									<small><em class="dk2-flag" class:maybe={lead.collab_flag !== 'likely'}>{lead.collab_flag === 'likely' ? 'Likely collab' : 'Maybe a collab'}</em>{#if lead.last_at}{` · ${ago(lead.last_at)}`}{/if}</small>
-								</span>
-								<Icon name="chevR" class="dk2-go" />
-							</a>
-							{#if said[lead.igsid]}<p class="dk2-dm">{said[lead.igsid]}</p>{/if}
-							<p class="dk2-read"><Icon name="spark" /><span>{leadRead(lead)}</span></p>
-							<button class="btn primary dk2-add" disabled={adding} onclick={addLead}>{#if adding}<span class="spinner"></span>{:else}<Icon name="plus" />{/if}Add as collab</button>
+				<!-- 3 Interactive Segmented Modes (DM Leads · Scored · Ask Desk) -->
+				<div class="dk2-tabs" role="group" aria-label="Desk AI modes">
+					<button type="button" class="dk2-tab" class:on={aiTab === 'leads'} aria-pressed={aiTab === 'leads'} onclick={() => (aiTab = 'leads')}>
+						DM Leads ({studio.leads.length})
+					</button>
+					<button type="button" class="dk2-tab" class:on={aiTab === 'scores'} aria-pressed={aiTab === 'scores'} onclick={() => (aiTab = 'scores')}>
+						Scored ({open.length})
+					</button>
+					<button type="button" class="dk2-tab" class:on={aiTab === 'ask'} aria-pressed={aiTab === 'ask'} onclick={() => (aiTab = 'ask')}>
+						Ask Desk ✦
+					</button>
+				</div>
+
+				{#if aiTab === 'leads'}
+					{#if lead}
+						<div class="dk2-lead" use:swipe>
+							{#key lead.igsid}
+							<div class="dk2-lead-in" in:fly={{ x: 40 * dir, duration: 220 }}>
+								<a class="dk2-who" href="/studio/inbox/ig/{lead.igsid}" aria-label="Open the chat with {leadName(lead)}">
+									<span class="dk2-av">{#if lead.picture}<img src={igImg(lead.picture)} alt="" referrerpolicy="no-referrer" />{:else}<b>{(lead.username || lead.name || 'IG').slice(0, 1).toUpperCase()}</b>{/if}</span>
+									<span class="dk2-wt">
+										<b>{leadName(lead)}</b>
+										<small><em class="dk2-flag" class:maybe={lead.collab_flag !== 'likely'}>{lead.collab_flag === 'likely' ? 'Likely collab' : 'Maybe a collab'}</em>{#if lead.last_at}{` · ${ago(lead.last_at)}`}{/if}</small>
+									</span>
+									<Icon name="chevR" class="dk2-go" />
+								</a>
+								{#if said[lead.igsid]}<p class="dk2-dm">{said[lead.igsid]}</p>{/if}
+								<p class="dk2-read"><Icon name="spark" /><span>{leadRead(lead)}</span></p>
+								<button class="btn grad dk2-add" disabled={adding} onclick={addLead}>{#if adding}<span class="spinner"></span>{:else}<Icon name="plus" />{/if}Add as Collab & Draft Quote</button>
+							</div>
+							{/key}
 						</div>
-						{/key}
-					</div>
-					{#if phoneLeads.length > 1}
-						<div class="dk2-dots" role="group" aria-label="Possible collabs, {Math.min(leadI, phoneLeads.length - 1) + 1} of {phoneLeads.length}">
-							{#each phoneLeads as l, i (l.igsid)}<button class="dk2-dot" class:on={i === leadI} onclick={() => goLead(i)} aria-label="Show {leadName(l)}" aria-current={i === leadI}><i></i></button>{/each}
+						{#if phoneLeads.length > 1}
+							<div class="dk2-dots" role="group" aria-label="Possible collabs, {Math.min(leadI, phoneLeads.length - 1) + 1} of {phoneLeads.length}">
+								{#each phoneLeads as l, i (l.igsid)}<button class="dk2-dot" class:on={i === leadI} onclick={() => goLead(i)} aria-label="Show {leadName(l)}" aria-current={i === leadI}><i></i></button>{/each}
+							</div>
+						{/if}
+						<a class="ail-more" href="/studio/possible-collabs">{studio.leads.length > 3 ? `+${studio.leads.length - 3} more · ` : ''}All possible collabs<Icon name="chevR" /></a>
+					{:else}
+						<div class="ask-response">
+							<b>No unread Instagram DM leads right now.</b> Paste any brand DM or email to extract deliverables and generate a quote automatically.
 						</div>
 					{/if}
-					<a class="ail-more" href="/studio/possible-collabs">{studio.leads.length > 3 ? `+${studio.leads.length - 3} more · ` : ''}All possible collabs<Icon name="chevR" /></a>
-				{/if}
-
-				{#if open.length}
-					<div class="dk2-sh"><span>Open requests · scored</span>{#if open.length > 1}<small>swipe</small>{/if}</div>
-					<div class="dk2-deck">
-						{#each open as { c, d } (c.id)}
-							<button class="dk2-sc v-{d!.verdict}" onclick={() => (ui.openCollab = c.id)}>
-								<span class="dk2-g">
-									<svg viewBox="0 0 66 66" aria-hidden="true"><circle cx="33" cy="33" r="27" /><circle class="dk2-arc" cx="33" cy="33" r="27" style="stroke-dasharray:{gauge(d!.score)}" /></svg>
-									<b>{d!.score}</b>
-								</span>
-								<em>{d!.label}</em>
-								<strong>{c.brand.name}</strong>
-								{#if studio.reading.includes(c.id)}<AiThinking label="Reading" />{:else}<small>{d!.line}</small>{/if}
-							</button>
-						{/each}
+				{:else if aiTab === 'scores'}
+					{#if open.length}
+						<div class="dk2-deck">
+							{#each open as { c, d } (c.id)}
+								<button class="dk2-sc v-{d!.verdict}" onclick={() => (ui.openCollab = c.id)}>
+									<span class="dk2-g">
+										<svg viewBox="0 0 66 66" aria-hidden="true"><circle cx="33" cy="33" r="27" /><circle class="dk2-arc" cx="33" cy="33" r="27" style="stroke-dasharray:{gauge(d!.score)}" /></svg>
+										<b>{d!.score}</b>
+									</span>
+									<em>{d!.label}</em>
+									<strong>{c.brand.name}</strong>
+									{#if studio.reading.includes(c.id)}<AiThinking label="Reading" />{:else}<small>{d!.line}</small>{/if}
+								</button>
+							{/each}
+						</div>
+					{:else}
+						<div class="ask-response">
+							<b>All open requests are reviewed.</b> When a new brand inquiry lands, Desk AI scores its fee against your benchmark rate card here.
+						</div>
+					{/if}
+				{:else}
+					<div class="ask-chips">
+						<button type="button" class="ask-chip" class:on={askTopic === 'today'} onclick={() => (askTopic = 'today')}>☀️ What needs me?</button>
+						<button type="button" class="ask-chip" class:on={askTopic === 'money'} onclick={() => (askTopic = 'money')}>💳 Cashflow & Goal</button>
+						<button type="button" class="ask-chip" class:on={askTopic === 'hooks'} onclick={() => (askTopic = 'hooks')}>🎬 Reel Hooks</button>
+						<button type="button" class="ask-chip" class:on={askTopic === 'tax'} onclick={() => (askTopic = 'tax')}>🧾 GST & TDS</button>
+					</div>
+					<div class="ask-response">
+						{#if askTopic === 'today'}
+							{#if topTasks.length}
+								<b>Priority order for today:</b><br />
+								{#each topTasks as tt, idx (tt.c.id + tt.kind)}
+									{idx + 1}. <b>{tt.c.brand.name}</b> — {tt.title}<br />
+								{/each}
+							{:else}
+								<b>You're all caught up today!</b> Great window to pitch a brand or batch-shoot upcoming Reels.
+							{/if}
+						{:else if askTopic === 'money'}
+							<b>Cashflow snapshot:</b> You've collected <b>{inr(recNow)}</b> this month with <b>{inr(outsNow)}</b> in your active pipeline{odNow.length ? ` (${odNow.length} overdue invoice${odNow.length === 1 ? '' : 's'} ready to chase)` : ''}.
+						{:else if askTopic === 'hooks'}
+							<b>High-Retention Reel Hook Starters:</b><br />
+							• "I tested this for 7 days so you don't have to — here's what actually happened..."<br />
+							• "3 things nobody tells you before switching to..."
+						{:else}
+							<b>GST & TDS Tracker:</b> Track 10% TDS (194J / 194R) deductions and download your CA-ready invoice pack anytime from the Money tab.
+						{/if}
 					</div>
 				{/if}
 

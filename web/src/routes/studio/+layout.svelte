@@ -497,9 +497,13 @@
 						{#key title}<div class="m-title">{title}</div>{/key}
 						<div class="m-r">{#if path === '/studio/settings' && !sec}<a class="cs-pill" href="/?preview=1" target="_blank" rel="noopener"><Icon name="eye" />Preview</a>{/if}</div>
 					{:else}
-						<div class="m-brand" class:wordmark={path === '/studio'}>{path === '/studio' ? (studio.settings?.app_name ?? 'Miracle') : title}</div>
+						<div class="m-brand-wrap">
+							{#if path === '/studio'}<span class="m-logo-mark" aria-hidden="true"><Logo /></span>{/if}
+							<div class="m-brand" class:wordmark={path === '/studio'}>{path === '/studio' ? (studio.settings?.app_name ?? 'Miracle') : title}</div>
+							{#if path === '/studio'}<span class="m-live-pill" aria-hidden="true"><i></i>Synced</span>{/if}
+						</div>
 						<div class="m-r">
-							{#if path === '/studio' || path === '/studio/collabs' || path === '/studio/profile'}<button class="m-ib" onclick={() => (ui.newCollab = true)} aria-label="New collab"><Icon name="plus" /></button>{/if}
+							{#if path === '/studio' || path === '/studio/collabs' || path === '/studio/profile'}<button class="m-ib add-btn" onclick={() => (ui.newCollab = true)} aria-label="New collab"><Icon name="plus" /></button>{/if}
 							{#if path === '/studio'}<button class="m-ib m-ask" onclick={() => (ui.askOpen = true)} aria-label="Ask your desk"><Icon name="spark" /></button>{/if}
 							{#if path === '/studio/profile'}
 								<a class="m-ib" href="/studio/settings" aria-label="Settings and activity"><Icon name="menu" /></a>

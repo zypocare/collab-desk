@@ -75,7 +75,7 @@
 		color: var(--ink-3);
 	}
 	.cuc.phone {
-		margin: 0 16px 14px;
+		margin: 18px 0 0;
 	}
 	.cuc.phone .cuc-t {
 		flex-direction: column;

@@ -99,6 +99,10 @@
 	);
 	let moneyView = $state(0);
 	let tickerPaused = $state(false);
+	let orbMode = $state(0);
+	function cycleOrbMode() {
+		orbMode = (orbMode + 1) % 3;
+	}
 	const moneyLabels = $derived([`Received in ${monthName}`, 'Yet to come', 'Overdue payments', 'Next payout']);
 	const moneyValue = $derived([received, outs, odSum, nextPayout ? outstanding(nextPayout) : 0][moneyView]);
 	const moneyCaption = $derived([
@@ -260,48 +264,62 @@
 <section class="ht" class:dw-on={!!fest && !bday} class:bd-on={!!bday} use:headerDrift>
 	<div class="ht-glow" aria-hidden="true"><i></i><i></i><i></i></div>
 	{#if bday}<BirthdayLayer />{:else if fest}<DiwaliLayer />{/if}
-	<a class="ht-orb" href={ig ? '/insights' : '/studio/payments'} target={ig ? '_blank' : undefined} rel="noopener" aria-label={ig ? 'Your Instagram insights' : `${monthName} goal`}>
-		<span class="orb-ring" aria-hidden="true"></span>
-		<span class="orb-ring-2" aria-hidden="true"></span>
-		<span class="orb-in">
-			{#if ig?.profile_picture_url}
-				<!-- Her photo in the ring, with the follower count on a badge. -->
-				<img class="orb-pic" src={igImg(ig.profile_picture_url)} alt="" />
-			{:else if ig}
-				<b>{compact(ig.followers ?? 0)}</b><small>followers</small>
-				{#if er}<i>{erText(er)} eng.</i>{/if}
+	{#if note}
+		<div class="fest-pill-wrap">
+			<span class="fest-banner">{bday ? '🎂' : '🪔'} {note}</span>
+		</div>
+	{/if}
+	<div class="ht-top-row">
+		<div class="ht-copy">
+			<p class="ht-date">{T.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
+			<h1 class="ht-hi"><span>{greet},</span><em>{firstName(s.display_name)}</em></h1>
+		</div>
+		<button type="button" class="ht-orb" onclick={cycleOrbMode} aria-label="Cycle live creator metrics">
+			<span class="orb-ring" aria-hidden="true"></span>
+			<span class="orb-ring-2" aria-hidden="true"></span>
+			<span class="orb-in">
+				{#if orbMode === 0 && ig?.profile_picture_url}
+					<img class="orb-pic" src={igImg(ig.profile_picture_url)} alt="" />
+				{:else if orbMode === 0 && ig}
+					<b>{compact(ig.followers ?? 0)}</b><small>followers</small>
+					{#if er}<span class="orb-pill">↗ {erText(er)} eng.</span>{/if}
+				{:else if orbMode === 1 || (!ig && orbMode === 0)}
+					<b>{pctN}%</b><small>of {monthName.slice(0, 3)} goal</small>
+					<span class="orb-pill gold">{inrS(received)}{goal ? ` / ${inrS(goal)}` : ''}</span>
+				{:else}
+					<b>{views.week || active.length}</b><small>{views.week ? 'brand views' : 'active deals'}</small>
+					<span class="orb-pill pink">★ {active.length} active</span>
+				{/if}
+			</span>
+			{#if orbMode === 0 && ig?.profile_picture_url}
+				<span class="orb-badge"><b>{compact(ig.followers ?? 0)}</b> followers{#if er}<i>{erText(er)}</i>{/if}</span>
 			{:else}
-				<b>{Math.round(pct * 100)}%</b><small>of {monthName} goal</small>
+				<span class="orb-mode-dots" aria-hidden="true">
+					<i class:on={orbMode === 0}></i><i class:on={orbMode === 1}></i><i class:on={orbMode === 2}></i>
+				</span>
 			{/if}
-		</span>
-		{#if ig?.profile_picture_url}<span class="orb-badge"><b>{compact(ig.followers ?? 0)}</b> followers{#if er}<i>{erText(er)}</i>{/if}</span>{/if}
-		<span class="orb-spark s1" aria-hidden="true"></span><span class="orb-spark s2" aria-hidden="true"></span><span class="orb-spark s3" aria-hidden="true"></span>
-	</a>
-	<p class="ht-date">{T.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}{#if note}<span class="dw-note">{note}</span>{/if}</p>
-	<h1 class="ht-hi">{greet},<br /><em>{firstName(s.display_name)}</em></h1>
-	<p class="ht-sum">
-		<span class="ht-dot" class:calm={!urgent}></span>
-		{urgent ? `${urgent} need${urgent === 1 ? 's' : ''} you today` : 'Nothing needs you today'} · {active.length} active collab{active.length === 1 ? '' : 's'}
-	</p>
+			<span class="orb-spark s1" aria-hidden="true"></span><span class="orb-spark s2" aria-hidden="true"></span><span class="orb-spark s3" aria-hidden="true"></span>
+		</button>
+	</div>
 
-	<!-- Interactive status pills + 4-button Quick Action Dock -->
+	<!-- Interactive Status Chips (Replaces static summary line, matching miracle_mobile_home_redesign.html) -->
 	<div class="ht-chips">
 		<a class="ht-chip" class:urgent={urgent > 0} href="#sec-needs">
-			<span class="ht-chip-dot" class:calm={!urgent}></span>
-			<span><b>{urgent}</b> {urgent === 1 ? 'urgent task' : 'urgent today'}</span>
+			<span class="dot-ping" class:calm={!urgent}></span>
+			<span>{#if urgent > 0}<b>{urgent}</b> {urgent === 1 ? 'needs you today' : 'need you today'}{:else}<b>All caught up</b> today{/if}</span>
 		</a>
-		<a class="ht-chip" href="/studio/collabs">
+		<a class="ht-chip" href="#sec-collabs">
 			{#if active.length}
-				<span class="ht-mini-avs" aria-hidden="true">
+				<span class="mini-avs" aria-hidden="true">
 					{#each active.slice(0, 3) as ac (ac.id)}
 						<i style="--h:var(--m{hueOf(ac.brand.name)})">{ac.brand.name.trim().slice(0, 1).toUpperCase()}</i>
 					{/each}
 				</span>
 			{/if}
-			<span><b>{active.length}</b> active</span>
+			<span><b>{active.length}</b> active collab{active.length === 1 ? '' : 's'}</span>
 		</a>
 		{#if studio.leads.length}
-			<a class="ht-chip" href="/studio/possible-collabs">
+			<a class="ht-chip" href="#sec-ai">
 				<span class="ht-spark" aria-hidden="true">✦</span>
 				<span><b>{studio.leads.length}</b> DM lead{studio.leads.length === 1 ? '' : 's'}</span>
 			</a>
@@ -313,6 +331,7 @@
 		{/if}
 	</div>
 
+	<!-- 4 Tactile Quick Actions -->
 	<div class="qa-strip">
 		<button type="button" class="qa-card primary" onclick={() => (ui.newCollab = true)}>
 			<span class="qa-ic"><Icon name="plus" /></span>
@@ -335,15 +354,11 @@
 
 <Stories />
 
-<!-- A new creator's first steps (gone once they're done). -->
-<CheckupCard phone />
-<SetupChecklist phone />
 {#if ticker.length > 1}
 	<div class="cr-ticker cr-tk" data-paused={tickerPaused} aria-label="Today in numbers"><div>{#each [0, 1] as k (k)}{#each ticker as f, j (j)}<span aria-hidden={k === 1}><b>{f.b}</b>{f.t}</span><i aria-hidden="true">✦</i>{/each}{/each}</div><button class="home-ticker-pause" aria-label={tickerPaused ? 'Resume numbers ticker' : 'Pause numbers ticker'} aria-pressed={tickerPaused} onclick={() => tickerPaused = !tickerPaused}>{tickerPaused ? '▶' : 'Ⅱ'}</button></div>
 {/if}
 
-
-<section class="hero-card glow m-hero" aria-label="Money this month" use:moneySwipe={(direction) => showMoney(moneyView + direction)}>
+<section class="hero-card glow m-hero" id="sec-money" aria-label="Money this month" use:moneySwipe={(direction) => showMoney(moneyView + direction)}>
 	<div class="mesh" aria-hidden="true"></div>
 	<a class="hc-go" href={moneyView ? '/studio/payments' : '/studio/money'} aria-label={moneyView ? 'Open payments' : 'Open Money'} draggable="false"></a>
 	<div class="hc-in">
@@ -364,43 +379,72 @@
 				<div class="g-txt"><b use:homeCount={{ value: pctN, suffix: '%' }}>{pctN}%</b><small>of goal</small></div>
 			</div>
 		</div>
-		<div class="home-money-nav"><span>Swipe to explore</span><div class="home-money-dots" role="group" aria-label="Money views">{#each moneyLabels as label, i (i)}<button aria-label={label} aria-pressed={moneyView === i} onclick={() => showMoney(i)}></button>{/each}</div></div>
-		{#if (moneyView === 0 && paidCollabs.length > 0) || (moneyView === 1 && unpaidCollabs.length > 0) || (moneyView === 2 && od.length > 0) || (moneyView === 3 && nextPayout)}
-			<div class="hc-ctx" aria-hidden="true">
-				{#if moneyView === 0}
+		<div class="hc-ctx" aria-hidden="true">
+			{#if moneyView === 0}
+				{#if paidCollabs.length > 0}
 					<div class="hc-ctx-pills">
 						{#each paidCollabs.slice(0, 3) as pc (pc.id)}
 							<span class="hc-ctx-pill">{pc.brand.name} <b>{inrS(receivedIn(pc, ym))}</b></span>
 						{/each}
 					</div>
-				{:else if moneyView === 1}
+				{:else}
+					<span class="hc-ctx-alert">Goal ring updates automatically as invoices are paid</span>
+				{/if}
+			{:else if moneyView === 1}
+				{#if unpaidCollabs.length > 0}
 					<div class="hc-ctx-pills">
 						{#each unpaidCollabs.slice(0, 3) as uc (uc.id)}
 							<span class="hc-ctx-pill">{uc.brand.name} <b>{inrS(outstanding(uc))}</b></span>
 						{/each}
 					</div>
-				{:else if moneyView === 2}
-					<span class="hc-ctx-alert"><b>{od[0].brand.name}</b> · {inrS(outstanding(od[0]))} overdue</span>
-					<a class="hc-ctx-act" href="/studio/payments">Chase →</a>
-				{:else if nextPayout}
-					<span class="hc-ctx-alert"><b>{nextPayout.brand.name}</b> · Due {fmt(nextPayout.pay_due)}</span>
-					<a class="hc-ctx-act" href="/studio/payments">Details →</a>
+				{:else}
+					<span class="hc-ctx-alert">No pending unpaid balances right now</span>
 				{/if}
-			</div>
-		{/if}
-		<div class="hc-foot">
-			<a href="/studio/payments" class:active-tile={moneyView === 1}><small>Yet to come</small><b use:homeCount={{ value: outs, money: true }}>{inr(outs)}</b></a>
-			<a href="/studio/payments" class:active-tile={moneyView === 2}><small>Overdue</small><b class:od={odSum > 0} use:homeCount={{ value: odSum, money: true }}>{inr(odSum)}</b></a>
-			<a href="/studio/payments" class:active-tile={moneyView === 3}><small>Next payout</small><b>{nextPayout ? fmt(nextPayout.pay_due) : 'None'}</b>{#if nextPayout}<span class="hc-who">{nextPayout.brand.name}</span>{/if}</a>
+			{:else if moneyView === 2}
+				{#if od.length > 0}
+					<span class="hc-ctx-alert"><b>{od[0].brand.name}</b> · {inrS(outstanding(od[0]))} overdue</span>
+					<a class="hc-ctx-act" href="/studio/payments">✦ Chase Now</a>
+				{:else}
+					<span class="hc-ctx-alert ok">✓ Zero overdue payments — you're 100% caught up!</span>
+				{/if}
+			{:else if nextPayout}
+				<span class="hc-ctx-alert"><b>{nextPayout.brand.name}</b> · Due {fmt(nextPayout.pay_due)}</span>
+				<a class="hc-ctx-act" href="/studio/invoices">View Invoice</a>
+			{:else}
+				<span class="hc-ctx-alert">No upcoming scheduled payouts</span>
+			{/if}
 		</div>
+		<div class="hc-foot">
+			<a href="/studio/payments" class:active-tile={moneyView === 1} onclick={(e) => { if (moneyView !== 1) { e.preventDefault(); showMoney(1); } }}>
+				<small>Yet to come</small>
+				<b use:homeCount={{ value: outs, money: true }}>{inr(outs)}</b>
+				<span class="hc-who">{unpaidCollabs.length} active deal{unpaidCollabs.length === 1 ? '' : 's'}</span>
+			</a>
+			<a href="/studio/payments" class:active-tile={moneyView === 2} onclick={(e) => { if (moneyView !== 2) { e.preventDefault(); showMoney(2); } }}>
+				<small>Overdue</small>
+				<b class:od={odSum > 0} use:homeCount={{ value: odSum, money: true }}>{inr(odSum)}</b>
+				<span class="hc-who">{od.length ? `${od[0].brand.name} · late` : 'All clear ✓'}</span>
+			</a>
+			<a href="/studio/payments" class:active-tile={moneyView === 3} onclick={(e) => { if (moneyView !== 3) { e.preventDefault(); showMoney(3); } }}>
+				<small>Next payout</small>
+				<b>{nextPayout ? fmt(nextPayout.pay_due) : 'None'}</b>
+				<span class="hc-who">{nextPayout ? `${nextPayout.brand.name} · ${inrS(outstanding(nextPayout))}` : 'None scheduled'}</span>
+			</a>
+		</div>
+		<div class="home-money-nav"><span>Tap a tile or swipe to inspect</span><div class="home-money-dots" role="group" aria-label="Money views">{#each moneyLabels as label, i (i)}<button aria-label={label} aria-pressed={moneyView === i} onclick={() => showMoney(i)}></button>{/each}</div></div>
 	</div>
 </section>
 
-<!-- A possible collab in her DMs puts the AI assistant (which lists it) above Needs you. -->
-{#if studio.leads.length}<AiDesk phone />{/if}
-
 <section class="hs" id="sec-needs">
-	<header class="hs-h"><h2>Needs you</h2>{#if ts.length}<span class="hs-n">{ts.length}</span>{/if}</header>
+	<header class="hs-h">
+		<h2>Needs you</h2>
+		{#if ts.length}<span class="hs-n">{ts.length}</span>{/if}
+		{#if ts.length > 2}
+			<button type="button" class="sec-link-btn" onclick={() => (fanned = !fanned)}>
+				{fanned ? 'Collapse' : `Show all ${ts.length}`}
+			</button>
+		{/if}
+	</header>
 	{#if ts.length}
 		<!-- Tickets: the brand on a band in its colour, a torn line, then what to do and by when. -->
 		<div class="tks">
@@ -414,34 +458,38 @@
 						<span class="tk-money"><b>{ticketMoney(t)}</b><small>{delivText(t.c.deliverables) || TYPE_LABEL[t.c.type]}</small></span>
 					</a>
 					<div class="tk-cut" aria-hidden="true"></div>
-					{#if chips.length}
-						<div class="tk-chips tk-chips-row">
-							{#each chips as ch (ch.text)}
-								<em class={ch.tone}>{ch.text}</em>
-							{/each}
-						</div>
-					{/if}
-					<div class="tk-foot">
-						<span class="tk-task"><b>{t.title}</b><small class:hot={hot(t)}><i></i>{when(t)}</small></span>
-						{#if t.kind === 'follow' && t.c.stage !== 'paused'}
-							<button class="btn" onclick={() => leaveThen(key, () => completeFollow(t.c))}>Done</button>
-						{:else if t.kind === 'pay'}
-							<button class="btn primary" onclick={async () => (await askPaid(t.c)) && leaveThen(key, () => markPaid(t.c, false, true))}>Mark paid</button>
-						{:else if t.kind === 'product' && inTransit(t.c)}
-							<button class="btn" onclick={() => leaveThen(key, () => markReceived(t.c))}>Received</button>
-						{:else if t.kind === 'msg'}
-							<a class="btn grad" href="/studio/inbox/{t.c.code}">Reply</a>
-						{:else}
-							<a class="btn grad" href="/studio/c/{t.c.code}">{t.kind === 'new' ? 'Review' : 'Open'}</a>
+					<div class="tk-body">
+						{#if chips.length}
+							<div class="tk-chips tk-chips-row">
+								{#each chips as ch (ch.text)}
+									<em class={ch.tone}>{ch.text}</em>
+								{/each}
+							</div>
 						{/if}
+						<div class="tk-foot">
+							<span class="tk-task"><b>{t.title}</b><small class:hot={hot(t)}><i></i>{when(t)}</small></span>
+							{#if t.kind === 'follow' && t.c.stage !== 'paused'}
+								<button class="btn" onclick={() => leaveThen(key, () => completeFollow(t.c))}>Done ✓</button>
+							{:else if t.kind === 'pay'}
+								<button class="btn grad" onclick={async () => (await askPaid(t.c)) && leaveThen(key, () => markPaid(t.c, false, true))}>Mark paid ✓</button>
+							{:else if t.kind === 'product' && inTransit(t.c)}
+								<button class="btn" onclick={() => leaveThen(key, () => markReceived(t.c))}>Received ✓</button>
+							{:else if t.kind === 'msg'}
+								<a class="btn grad" href="/studio/inbox/{t.c.code}">Reply ↗</a>
+							{:else}
+								<a class="btn grad" href="/studio/c/{t.c.code}">{t.kind === 'new' ? 'Review ↗' : 'Open ↗'}</a>
+							{/if}
+						</div>
 					</div>
 				</article>
 			{/each}
-			{#if !fanned && ts.length > 2}
-				<span class="cr-edge tk-edge" aria-hidden="true"></span>
-				{#if ts.length > 3}<span class="cr-edge tk-edge-2" aria-hidden="true"></span>{/if}
-			{/if}
 		</div>
+		{#if !fanned && ts.length > 2}
+			<div class="tk-stack-edges" aria-hidden="true">
+				<span class="tk-edge-1"></span>
+				{#if ts.length > 3}<span class="tk-edge-2"></span>{/if}
+			</div>
+		{/if}
 		{#if ts.length > 2}
 			<button class="cr-more" aria-expanded={fanned} onclick={() => (fanned = !fanned)}>
 				{#if !fanned}<span class="cr-dots" aria-hidden="true">{#each ts.slice(2, 5) as t (t.c.id + t.kind)}<i style="--h:var(--m{hueOf(t.c.brand.name)})"></i>{/each}</span>+{ts.length - 2} more{:else}Show less{/if}
@@ -462,16 +510,16 @@
 	{/if}
 </section>
 
+<AiDesk phone />
+
 <AwayMode banner />
 
 <NudgeList phone />
 
-{#if !studio.leads.length}<AiDesk phone />{/if}
-
 <AlertsPrompt />
 
-<section class="hs wk2">
-	<header class="hs-h"><h2>This week</h2><a href="/studio/calendar">Calendar</a></header>
+<section class="hs wk2" id="sec-week">
+	<header class="hs-h"><h2>This week</h2><a href="/studio/calendar">Full Calendar →</a></header>
 	<p class="wk2-say">
 		{#if weekN}{NUM[weekN] ?? weekN} thing{weekN === 1 ? '' : 's'} this week.{#if busiest.list.length > 1}{' '}<em>{dayName(busiest.dt, busiest.i)}</em> is the big one.{:else}{' '}Next up: <em>{dayName(week.find((d) => d.list.length)!.dt, week.find((d) => d.list.length)!.i).toLowerCase()}</em>.{/if}
 		{:else}A free week. <em>Make it count.</em>{/if}
@@ -511,7 +559,7 @@
 		{/if}
 	</div>
 	<a class="wk2-cap" href="/studio/settings?s=bookings">
-		<span class="wk2-cap-h"><small>Collab slots</small><span class="wk2-st {slotState.k}"><i></i>{slotState.t}</span></span>
+		<span class="wk2-cap-h"><small>Collab slots · Public bio status</small><span class="wk2-st {slotState.k}"><i></i>{slotState.t}</span></span>
 		{#each slotWeeks as w (w.k)}
 			<span class="wk2-cap-w">
 				<span class="wk2-cap-l"><b>{w.label}</b><span>{w.range}</span></span>
@@ -523,6 +571,8 @@
 	</a>
 </section>
 
-
+<!-- Growth check-up, setup steps, and brand questions -->
+<CheckupCard phone />
+<SetupChecklist phone />
 <div class="hs"><BrandQuestions /></div>
 </div>

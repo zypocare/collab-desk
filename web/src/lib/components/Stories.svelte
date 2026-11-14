@@ -6,8 +6,7 @@
 	import Icon from './Icon.svelte';
 	import CycleText from './CycleText.svelte';
 
-	// Pending Instagram collabs take the home row. Otherwise, show
-	// collabs that need her first, followed by the rest of the active ones.
+	// Pending Instagram collabs and active collabs in a stage-aware living ticket rail.
 	const leads = $derived([...studio.leads].sort((a, b) => Number(b.collab_flag === 'likely') - Number(a.collab_flag === 'likely')));
 	const need = $derived([...new Map(tasks(studio.collabs).map((t) => [t.c.id, t])).values()]);
 	const rest = $derived(studio.collabs.filter((c) => !need.some((t) => t.c.id === c.id) && !c.someday && !['wrapped', 'declined', 'cancelled'].includes(c.stage)));
@@ -23,9 +22,6 @@
 	const status = (t: Task) => (dated.has(t.kind) ? `${NEXT[t.kind]} ${when(t.d)}` : NEXT[t.kind]);
 	// new requests and messages are "do this now" (amber), never "late"; red is for missed dates and unpaid money
 	const tone = (t: Task) => (t.kind === 'new' || t.kind === 'msg' ? 'now' : t.d < 0 || t.kind === 'pay' ? 'late' : t.d === 0 ? 'now' : '');
-	// Each card comes alive like Money's round shortcuts: a light runs round its edge in its own colour, and its line
-	// turns through a few facts about it (CycleText), each card a beat after the one before.
-	// Its colour: the card's tone when it has one, else the theme's hues in turn, so the row isn't all one colour.
 	const HUES = ['var(--g2)', 'var(--g1)', 'var(--g3)', 'var(--h-live)', 'var(--h-request)'];
 	const TONE_HUE: Record<string, string> = { now: 'var(--g3)', late: 'var(--bad)', ok: 'var(--ok)' };
 	const hue = (tone: string, i: number) => TONE_HUE[tone] ?? HUES[i % HUES.length];
@@ -63,8 +59,6 @@
 		}))
 	]);
 	const leadName = (l: (typeof studio.leads)[number]) => /^([^:@][^:]{0,40}):\s/.exec(l.collab_hint)?.[1].trim() || l.name || (l.username ? `@${l.username}` : 'Instagram');
-	// A long handle may break after its dots and underscores (@bhawna. / barcode), not in the middle of a word.
-	const soft = (name: string) => name.replace(/([._])(?=\S)/g, '$1\u200b');
 	const dmItems = $derived(
 		leads.map((l) => ({
 			id: `dm-${l.igsid}`,
@@ -81,14 +75,19 @@
 	);
 
 	let filter = $state<'all' | 'need' | 'dm'>('all');
+	let railEl = $state<HTMLElement>();
+	function setFilter(next: 'all' | 'need' | 'dm') {
+		filter = next;
+		if (railEl) railEl.scrollTo({ left: 0, behavior: 'smooth' });
+	}
 	const shown = $derived.by(() => {
 		if (filter === 'dm' && dmItems.length) return dmItems;
 		if (filter === 'need' && need.length) return allItems.filter((x) => x.group === 'need');
-		return leads.length && filter === 'all' && !allItems.length ? dmItems : allItems;
+		return allItems.length ? allItems : dmItems;
 	});
 </script>
 
-<section class="tix" aria-label="Your collabs">
+<section class="tix" id="sec-collabs" aria-label="Your collabs">
 	<div class="tix-h">
 		<span class="tix-h-left">
 			<span>Your collabs</span>
@@ -96,33 +95,33 @@
 				<b class="tix-cnt">{shown.length}</b>
 			{/if}
 		</span>
-		{#if allItems.length || dmItems.length}<a href="/studio/collabs">See all</a>{/if}
+		{#if allItems.length || dmItems.length}<a href="/studio/collabs">See board →</a>{/if}
 	</div>
 	{#if (need.length > 0 && rest.length > 0) || (dmItems.length > 0 && allItems.length > 0)}
 		<div class="tix-filters">
-			<button type="button" class="tix-flt" class:on={filter === 'all'} aria-pressed={filter === 'all'} onclick={() => (filter = 'all')}>
-				All · {allItems.length}
+			<button type="button" class="tix-flt" class:on={filter === 'all'} aria-pressed={filter === 'all'} onclick={() => setFilter('all')}>
+				All Active · {allItems.length}
 			</button>
 			{#if need.length > 0}
-				<button type="button" class="tix-flt" class:on={filter === 'need'} aria-pressed={filter === 'need'} onclick={() => (filter = 'need')}>
-					Needs action · {need.length}
+				<button type="button" class="tix-flt" class:on={filter === 'need'} aria-pressed={filter === 'need'} onclick={() => setFilter('need')}>
+					Needs Action · {need.length}
 				</button>
 			{/if}
 			{#if dmItems.length > 0}
-				<button type="button" class="tix-flt" class:on={filter === 'dm'} aria-pressed={filter === 'dm'} onclick={() => (filter = 'dm')}>
-					DM leads · {dmItems.length}
+				<button type="button" class="tix-flt" class:on={filter === 'dm'} aria-pressed={filter === 'dm'} onclick={() => setFilter('dm')}>
+					DM Leads · {dmItems.length}
 				</button>
 			{/if}
 		</div>
 	{/if}
-	<div class="tix-row">
+	<div class="tix-row" bind:this={railEl}>
 		{#each shown as k, i (k.id)}
 			<a class="tix-t tone-{k.tone || 'calm'}" class:tix-dm={k.group === 'dm'} style="--rt:{hue(k.tone, i)};--k:{i}" href={k.href} aria-label="{k.name}: {k.line}, {k.money}, {k.pill}">
 				<span class="tix-top">
 					<span class="tix-av">{k.name.replace(/^@/, '').trim().slice(0, 1).toUpperCase() || 'C'}</span>
 					<small class="tix-step">{k.group === 'dm' ? 'IG DM Lead' : `Step ${Math.min(6, k.stageIdx + 1)}/6`}</small>
 				</span>
-				<b class="tix-n">{soft(k.name)}</b>
+				<b class="tix-n">{k.name}</b>
 				<span class="tix-l" aria-hidden="true"><CycleText {i} items={k.lines} /></span>
 				<span class="tix-prog" aria-hidden="true">
 					{#each [0, 1, 2, 3, 4, 5] as s (s)}
