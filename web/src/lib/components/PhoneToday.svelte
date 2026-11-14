@@ -7,13 +7,13 @@
 	import { askPaid, completeFollow, markPaid, markReceived, priorityOf, studio } from '../studio.svelte';
 	import { copyText, ui } from '../ui.svelte';
 	import { homeMotion, homeCount, homeChange, moneySwipe } from '../homeMotion';
-	import { COLLAB_DIALOG_CHANGE, collabDialogOpen } from '../collabDialog';
 	import '../../home-motion.css';
 	import {
 		KIND_ICON,
 		TYPE_LABEL,
 		stageLabel,
 		delivText,
+		deliverableProgress,
 		diff,
 		events,
 		firstName,
@@ -31,7 +31,10 @@
 		parse,
 		rel,
 		relWord,
-		mergeSteps, tasks,
+		mergeSteps,
+		tasks,
+		unreadFor,
+		usageLabel,
 		evLabel,
 		today,
 		type Task
@@ -47,6 +50,11 @@
 	import { birthdayNow, diwaliWords, festivalNow } from '../festival';
 	import AlertsPrompt from './AlertsPrompt.svelte';
 	import BrandQuestions from './BrandQuestions.svelte';
+	import SetupChecklist from '#lib/components/SetupChecklist.svelte';
+	import { loadViews, views } from '#lib/profileViews.svelte.ts';
+	import CheckupCard from '#lib/components/CheckupCard.svelte';
+
+	onMount(() => void loadViews());
 
 	// Today on a phone: a living header, swipeable money cards, shortcuts, what needs you as a deck
 	// of cards, the week ahead and the pipeline. Everything is worked out from the same data as on a laptop.
@@ -80,7 +88,9 @@
 	const outs = $derived(list.reduce((a, c) => a + outstanding(c), 0));
 	const od = $derived(list.filter(overdue));
 	const odSum = $derived(od.reduce((a, c) => a + outstanding(c), 0));
-	const paidN = $derived(new Set(list.filter((c) => receivedIn(c, ym) > 0).map((c) => c.brand_id)).size);
+	const paidCollabs = $derived(list.filter((c) => receivedIn(c, ym) > 0));
+	const unpaidCollabs = $derived(list.filter((c) => outstanding(c) > 0));
+	const paidN = $derived(new Set(paidCollabs.map((c) => c.brand_id)).size);
 	const pctN = $derived(goal ? Math.round((received / goal) * 100) : 0);
 	const nextPayout = $derived(
 		list
@@ -108,18 +118,16 @@
 	function headerDrift(node: HTMLElement) {
 		let frame = 0;
 		const preference = matchMedia('(prefers-reduced-motion: reduce)');
-		const paint = () => { frame = 0; if (!collabDialogOpen()) node.style.setProperty('--sy', String(preference.matches ? 0 : Math.min(240, scrollY))); };
-		const scroll = () => { if (!collabDialogOpen() && scrollY < 500) frame ||= requestAnimationFrame(paint); };
+		const paint = () => { frame = 0; node.style.setProperty('--sy', String(preference.matches ? 0 : Math.min(240, scrollY))); };
+		const scroll = () => { if (scrollY < 500) frame ||= requestAnimationFrame(paint); };
 		paint();
 		addEventListener('scroll', scroll, { passive: true });
 		preference.addEventListener('change', paint);
-		document.addEventListener(COLLAB_DIALOG_CHANGE, paint);
-		return { destroy() { cancelAnimationFrame(frame); removeEventListener('scroll', scroll); preference.removeEventListener('change', paint); document.removeEventListener(COLLAB_DIALOG_CHANGE, paint); } };
+		return { destroy() { cancelAnimationFrame(frame); removeEventListener('scroll', scroll); preference.removeEventListener('change', paint); } };
 	}
 
 	// A new possible collab spotted in her Instagram DMs opens "Add a collab" with its chat read in, the same as tapping
-	// Add on it: once per chat (remembered on this phone), only here on Today, never over something already open. The
-	// first time, the ones already waiting are only remembered, so old chats don't pop up one after another.
+	// Add on it: once per chat (remembered on this phone), only here on Today, never over something already open.
 	const POPPED = 'miracle.leadPopped';
 	$effect(() => {
 		const leads = studio.leads;
@@ -168,6 +176,20 @@
 	const hot = (t: Task) => t.kind === 'pay' || t.kind === 'msg' || t.d < 0 || (t.kind === 'new' && diff(t.c.received_on) <= -1);
 	const ticketMoney = (t: Task) => (t.c.type === 'barter' ? (t.c.product_value ? inrS(t.c.product_value) : 'Barter') : t.c.fee ? inrS(t.c.fee) : 'Quote');
 
+	// Deliverable & status chips shown on each Needs You ticket
+	function ticketChips(t: Task): { text: string; tone: '' | 'ok' | 'warn' | 'bad' }[] {
+		const out: { text: string; tone: '' | 'ok' | 'warn' | 'bad' }[] = [];
+		const prog = deliverableProgress(t.c.deliverables ?? []);
+		if (prog.total > 0) {
+			out.push({ text: `${prog.done}/${prog.total} pieces done`, tone: prog.done === prog.total ? 'ok' : '' });
+		}
+		if (t.c.shot_at) out.push({ text: 'Shoot done ✓', tone: 'ok' });
+		const unread = unreadFor(t.c);
+		if (unread > 0) out.push({ text: `${unread} unread msg${unread > 1 ? 's' : ''}`, tone: 'warn' });
+		if (t.c.usage && !/organic/i.test(t.c.usage)) out.push({ text: usageLabel(t.c.usage), tone: 'warn' });
+		return out.slice(0, 3);
+	}
+
 	// This week in one line (the day by day is on Plan).
 	const weekN = $derived(week.reduce((a, d) => a + d.list.length, 0));
 	const busiest = $derived([...week].sort((a, b) => b.list.length - a.list.length)[0]);
@@ -191,8 +213,7 @@
 			/* no vibration */
 		}
 	}
-	// Her collab slots, Monday to Sunday, the same weeks and count as her brand page and Settings. The days
-	// above run into next week, so both weeks show: this one (to Sunday) and the next.
+	// Her collab slots, Monday to Sunday, the same weeks and count as her brand page and Settings.
 	const cap = $derived(Math.max(1, s.weekly_capacity ?? 3));
 	const slotWeeks = $derived.by(() => {
 		const m = new Date(T);
@@ -233,10 +254,6 @@
 	const ig = $derived(studio.ig?.connected ? studio.ig : null);
 	// Her Reels engagement in full, the same figure Insights leads with.
 	const er = $derived(ig ? headlineEr(ig.insights, ig.engagement_rate) : null);
-	import SetupChecklist from '#lib/components/SetupChecklist.svelte';
-	import { loadViews, views } from '#lib/profileViews.svelte.ts';
-	onMount(() => void loadViews());
-	import CheckupCard from '#lib/components/CheckupCard.svelte';
 </script>
 
 <div class="phone-today" use:homeMotion>
@@ -245,6 +262,7 @@
 	{#if bday}<BirthdayLayer />{:else if fest}<DiwaliLayer />{/if}
 	<a class="ht-orb" href={ig ? '/insights' : '/studio/payments'} target={ig ? '_blank' : undefined} rel="noopener" aria-label={ig ? 'Your Instagram insights' : `${monthName} goal`}>
 		<span class="orb-ring" aria-hidden="true"></span>
+		<span class="orb-ring-2" aria-hidden="true"></span>
 		<span class="orb-in">
 			{#if ig?.profile_picture_url}
 				<!-- Her photo in the ring, with the follower count on a badge. -->
@@ -265,6 +283,54 @@
 		<span class="ht-dot" class:calm={!urgent}></span>
 		{urgent ? `${urgent} need${urgent === 1 ? 's' : ''} you today` : 'Nothing needs you today'} · {active.length} active collab{active.length === 1 ? '' : 's'}
 	</p>
+
+	<!-- Interactive status pills + 4-button Quick Action Dock -->
+	<div class="ht-chips">
+		<a class="ht-chip" class:urgent={urgent > 0} href="#sec-needs">
+			<span class="ht-chip-dot" class:calm={!urgent}></span>
+			<span><b>{urgent}</b> {urgent === 1 ? 'urgent task' : 'urgent today'}</span>
+		</a>
+		<a class="ht-chip" href="/studio/collabs">
+			{#if active.length}
+				<span class="ht-mini-avs" aria-hidden="true">
+					{#each active.slice(0, 3) as ac (ac.id)}
+						<i style="--h:var(--m{hueOf(ac.brand.name)})">{ac.brand.name.trim().slice(0, 1).toUpperCase()}</i>
+					{/each}
+				</span>
+			{/if}
+			<span><b>{active.length}</b> active</span>
+		</a>
+		{#if studio.leads.length}
+			<a class="ht-chip" href="/studio/possible-collabs">
+				<span class="ht-spark" aria-hidden="true">✦</span>
+				<span><b>{studio.leads.length}</b> DM lead{studio.leads.length === 1 ? '' : 's'}</span>
+			</a>
+		{:else if views.week > 0}
+			<a class="ht-chip" href="/studio/qr">
+				<span class="ht-spark" aria-hidden="true">✦</span>
+				<span><b>{views.week}</b> page view{views.week === 1 ? '' : 's'}</span>
+			</a>
+		{/if}
+	</div>
+
+	<div class="qa-strip">
+		<button type="button" class="qa-card primary" onclick={() => (ui.newCollab = true)}>
+			<span class="qa-ic"><Icon name="plus" /></span>
+			<span>Add collab</span>
+		</button>
+		<a class="qa-card" href="/studio/import">
+			<span class="qa-ic"><span class="qa-tag">AI</span><Icon name="inbox" /></span>
+			<span>Paste DM</span>
+		</a>
+		<a class="qa-card" href="/studio/invoices">
+			<span class="qa-ic"><Icon name="doc" /></span>
+			<span>Invoices</span>
+		</a>
+		<a class="qa-card" href="/studio/qr">
+			<span class="qa-ic"><Icon name="qr" /></span>
+			<span>Bio & QR</span>
+		</a>
+	</div>
 </section>
 
 <Stories />
@@ -299,10 +365,33 @@
 			</div>
 		</div>
 		<div class="home-money-nav"><span>Swipe to explore</span><div class="home-money-dots" role="group" aria-label="Money views">{#each moneyLabels as label, i (i)}<button aria-label={label} aria-pressed={moneyView === i} onclick={() => showMoney(i)}></button>{/each}</div></div>
+		{#if (moneyView === 0 && paidCollabs.length > 0) || (moneyView === 1 && unpaidCollabs.length > 0) || (moneyView === 2 && od.length > 0) || (moneyView === 3 && nextPayout)}
+			<div class="hc-ctx" aria-hidden="true">
+				{#if moneyView === 0}
+					<div class="hc-ctx-pills">
+						{#each paidCollabs.slice(0, 3) as pc (pc.id)}
+							<span class="hc-ctx-pill">{pc.brand.name} <b>{inrS(receivedIn(pc, ym))}</b></span>
+						{/each}
+					</div>
+				{:else if moneyView === 1}
+					<div class="hc-ctx-pills">
+						{#each unpaidCollabs.slice(0, 3) as uc (uc.id)}
+							<span class="hc-ctx-pill">{uc.brand.name} <b>{inrS(outstanding(uc))}</b></span>
+						{/each}
+					</div>
+				{:else if moneyView === 2}
+					<span class="hc-ctx-alert"><b>{od[0].brand.name}</b> · {inrS(outstanding(od[0]))} overdue</span>
+					<a class="hc-ctx-act" href="/studio/payments">Chase →</a>
+				{:else if nextPayout}
+					<span class="hc-ctx-alert"><b>{nextPayout.brand.name}</b> · Due {fmt(nextPayout.pay_due)}</span>
+					<a class="hc-ctx-act" href="/studio/payments">Details →</a>
+				{/if}
+			</div>
+		{/if}
 		<div class="hc-foot">
-			<a href="/studio/payments"><small>Yet to come</small><b use:homeCount={{ value: outs, money: true }}>{inr(outs)}</b></a>
-			<a href="/studio/payments"><small>Overdue</small><b class:od={odSum > 0} use:homeCount={{ value: odSum, money: true }}>{inr(odSum)}</b></a>
-			<a href="/studio/payments"><small>Next payout</small><b>{nextPayout ? fmt(nextPayout.pay_due) : 'None'}</b>{#if nextPayout}<span class="hc-who">{nextPayout.brand.name}</span>{/if}</a>
+			<a href="/studio/payments" class:active-tile={moneyView === 1}><small>Yet to come</small><b use:homeCount={{ value: outs, money: true }}>{inr(outs)}</b></a>
+			<a href="/studio/payments" class:active-tile={moneyView === 2}><small>Overdue</small><b class:od={odSum > 0} use:homeCount={{ value: odSum, money: true }}>{inr(odSum)}</b></a>
+			<a href="/studio/payments" class:active-tile={moneyView === 3}><small>Next payout</small><b>{nextPayout ? fmt(nextPayout.pay_due) : 'None'}</b>{#if nextPayout}<span class="hc-who">{nextPayout.brand.name}</span>{/if}</a>
 		</div>
 	</div>
 </section>
@@ -310,13 +399,14 @@
 <!-- A possible collab in her DMs puts the AI assistant (which lists it) above Needs you. -->
 {#if studio.leads.length}<AiDesk phone />{/if}
 
-<section class="hs">
+<section class="hs" id="sec-needs">
 	<header class="hs-h"><h2>Needs you</h2>{#if ts.length}<span class="hs-n">{ts.length}</span>{/if}</header>
 	{#if ts.length}
 		<!-- Tickets: the brand on a band in its colour, a torn line, then what to do and by when. -->
 		<div class="tks">
 			{#each fanned ? ts : ts.slice(0, 2) as t, i (t.c.id + t.kind)}
 				{@const key = t.c.id + t.kind}
+				{@const chips = ticketChips(t)}
 				<article class="tk" class:leaving={leaving === key} style="--h:var(--m{hueOf(t.c.brand.name)});--i:{i}">
 					<a class="tk-band" href="/studio/c/{t.c.code}">
 						<span class="tk-tile">{t.c.brand.name.trim().slice(0, 1).toUpperCase()}</span>
@@ -324,9 +414,16 @@
 						<span class="tk-money"><b>{ticketMoney(t)}</b><small>{delivText(t.c.deliverables) || TYPE_LABEL[t.c.type]}</small></span>
 					</a>
 					<div class="tk-cut" aria-hidden="true"></div>
+					{#if chips.length}
+						<div class="tk-chips tk-chips-row">
+							{#each chips as ch (ch.text)}
+								<em class={ch.tone}>{ch.text}</em>
+							{/each}
+						</div>
+					{/if}
 					<div class="tk-foot">
 						<span class="tk-task"><b>{t.title}</b><small class:hot={hot(t)}><i></i>{when(t)}</small></span>
-				{#if t.kind === 'follow' && t.c.stage !== 'paused'}
+						{#if t.kind === 'follow' && t.c.stage !== 'paused'}
 							<button class="btn" onclick={() => leaveThen(key, () => completeFollow(t.c))}>Done</button>
 						{:else if t.kind === 'pay'}
 							<button class="btn primary" onclick={async () => (await askPaid(t.c)) && leaveThen(key, () => markPaid(t.c, false, true))}>Mark paid</button>
@@ -340,7 +437,10 @@
 					</div>
 				</article>
 			{/each}
-			{#if !fanned && ts.length > 2}<span class="cr-edge tk-edge" aria-hidden="true"></span>{/if}
+			{#if !fanned && ts.length > 2}
+				<span class="cr-edge tk-edge" aria-hidden="true"></span>
+				{#if ts.length > 3}<span class="cr-edge tk-edge-2" aria-hidden="true"></span>{/if}
+			{/if}
 		</div>
 		{#if ts.length > 2}
 			<button class="cr-more" aria-expanded={fanned} onclick={() => (fanned = !fanned)}>
@@ -396,6 +496,7 @@
 						<a href="/studio/c/{e.c.code}">
 							<span class="wk2-node" aria-hidden="true"></span>
 							<span class="wk2-ev"><em>{evLabel(e)}</em><b>{e.c.brand.name}</b><small>{e.label || delivText(e.c.deliverables) || TYPE_LABEL[e.c.type]}{isPaid(e.c) && e.kind === 'pay' ? ` · ${inr(outstanding(e.c))}` : ''}</small></span>
+							<span class="wk2-open">Open</span>
 						</a>
 					</li>
 				{/each}

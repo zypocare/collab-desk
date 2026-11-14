@@ -82,3 +82,6 @@
 @media (prefers-reduced-motion: reduce) {
 	[data-desk] .phone-today *, [data-desk] .phone-today *::before, [data-desk] .phone-today *::after { animation: none !important; transition: none !important; }
 }
+
+@keyframes home-orbit-rev { to { transform: rotate(-360deg); } }
+

@@ -150,65 +150,69 @@
 {/snippet}
 
 {#if phone}
-	<section class="hs dk2">
-		<header class="dk2-h">
-			<span class="ai-mark" aria-hidden="true"><i></i><svg viewBox="0 0 24 24"><path d="M12 2.5c.7 4.6 3.9 7.8 8.5 8.5-4.6.7-7.8 3.9-8.5 8.5-.7-4.6-3.9-7.8-8.5-8.5 4.6-.7 7.8-3.9 8.5-8.5z"/><path class="s2" d="M19 15.5c.25 1.6 1.4 2.75 3 3-1.6.25-2.75 1.4-3 3-.25-1.6-1.4-2.75-3-3 1.6-.25 2.75-1.4 3-3z"/></svg></span>
-			<span class="dk2-eb">Desk AI</span>
-			{#if forYou}<span class="dk2-eb dk2-mute">· {forYou} for you</span>{/if}
-			{#if left}<span class="dk2-left" title={leftTitle}><svg viewBox="0 0 36 36" aria-hidden="true"><circle cx="18" cy="18" r="14" /><circle class="dk2-arc" cx="18" cy="18" r="14" style="stroke-dasharray:{(88 * left.pct) / 100} 88" /></svg>{left.pct}% free</span>{/if}
-		</header>
-		<h2 class="dk2-say">{#each say as p, i (i)}{#if p.em}<em class="dk2-{p.em}">{p.t}</em>{:else}{p.t}{/if}{/each}</h2>
+	<section class="hs dk2" id="sec-ai">
+		<div class="dk2-card">
+			<div class="dk2-in">
+				<header class="dk2-h">
+					<span class="ai-mark" aria-hidden="true"><i></i><svg viewBox="0 0 24 24"><path d="M12 2.5c.7 4.6 3.9 7.8 8.5 8.5-4.6.7-7.8 3.9-8.5 8.5-.7-4.6-3.9-7.8-8.5-8.5 4.6-.7 7.8-3.9 8.5-8.5z"/><path class="s2" d="M19 15.5c.25 1.6 1.4 2.75 3 3-1.6.25-2.75 1.4-3 3-.25-1.6-1.4-2.75-3-3 1.6-.25 2.75-1.4 3-3z"/></svg></span>
+					<span class="dk2-eb">Desk AI</span>
+					{#if forYou}<span class="dk2-eb dk2-mute">· {forYou} for you</span>{/if}
+					{#if left}<span class="dk2-left" title={leftTitle}><svg viewBox="0 0 36 36" aria-hidden="true"><circle cx="18" cy="18" r="14" /><circle class="dk2-arc" cx="18" cy="18" r="14" style="stroke-dasharray:{(88 * left.pct) / 100} 88" /></svg>{left.pct}% free</span>{/if}
+				</header>
+				<h2 class="dk2-say">{#each say as p, i (i)}{#if p.em}<em class="dk2-{p.em}">{p.t}</em>{:else}{p.t}{/if}{/each}</h2>
 
-		{#if lead}
-			<!-- A possible collab from her DMs: who, what they wrote, what Desk AI reads in it, and one button. -->
-			<div class="dk2-lead" use:swipe>
-				{#key lead.igsid}
-				<div class="dk2-lead-in" in:fly={{ x: 40 * dir, duration: 220 }}>
-					<a class="dk2-who" href="/studio/inbox/ig/{lead.igsid}" aria-label="Open the chat with {leadName(lead)}">
-						<span class="dk2-av">{#if lead.picture}<img src={igImg(lead.picture)} alt="" referrerpolicy="no-referrer" />{:else}<b>{(lead.username || lead.name || 'IG').slice(0, 1).toUpperCase()}</b>{/if}</span>
-						<span class="dk2-wt">
-							<b>{leadName(lead)}</b>
-							<small><em class="dk2-flag" class:maybe={lead.collab_flag !== 'likely'}>{lead.collab_flag === 'likely' ? 'Likely collab' : 'Maybe a collab'}</em>{#if lead.last_at}{` · ${ago(lead.last_at)}`}{/if}</small>
-						</span>
-						<Icon name="chevR" class="dk2-go" />
-					</a>
-					{#if said[lead.igsid]}<p class="dk2-dm">{said[lead.igsid]}</p>{/if}
-					<p class="dk2-read"><Icon name="spark" /><span>{leadRead(lead)}</span></p>
-					<button class="btn primary dk2-add" disabled={adding} onclick={addLead}>{#if adding}<span class="spinner"></span>{:else}<Icon name="plus" />{/if}Add as collab</button>
+				{#if lead}
+					<!-- A possible collab from her DMs: who, what they wrote, what Desk AI reads in it, and one button. -->
+					<div class="dk2-lead" use:swipe>
+						{#key lead.igsid}
+						<div class="dk2-lead-in" in:fly={{ x: 40 * dir, duration: 220 }}>
+							<a class="dk2-who" href="/studio/inbox/ig/{lead.igsid}" aria-label="Open the chat with {leadName(lead)}">
+								<span class="dk2-av">{#if lead.picture}<img src={igImg(lead.picture)} alt="" referrerpolicy="no-referrer" />{:else}<b>{(lead.username || lead.name || 'IG').slice(0, 1).toUpperCase()}</b>{/if}</span>
+								<span class="dk2-wt">
+									<b>{leadName(lead)}</b>
+									<small><em class="dk2-flag" class:maybe={lead.collab_flag !== 'likely'}>{lead.collab_flag === 'likely' ? 'Likely collab' : 'Maybe a collab'}</em>{#if lead.last_at}{` · ${ago(lead.last_at)}`}{/if}</small>
+								</span>
+								<Icon name="chevR" class="dk2-go" />
+							</a>
+							{#if said[lead.igsid]}<p class="dk2-dm">{said[lead.igsid]}</p>{/if}
+							<p class="dk2-read"><Icon name="spark" /><span>{leadRead(lead)}</span></p>
+							<button class="btn primary dk2-add" disabled={adding} onclick={addLead}>{#if adding}<span class="spinner"></span>{:else}<Icon name="plus" />{/if}Add as collab</button>
+						</div>
+						{/key}
+					</div>
+					{#if phoneLeads.length > 1}
+						<div class="dk2-dots" role="group" aria-label="Possible collabs, {Math.min(leadI, phoneLeads.length - 1) + 1} of {phoneLeads.length}">
+							{#each phoneLeads as l, i (l.igsid)}<button class="dk2-dot" class:on={i === leadI} onclick={() => goLead(i)} aria-label="Show {leadName(l)}" aria-current={i === leadI}><i></i></button>{/each}
+						</div>
+					{/if}
+					<a class="ail-more" href="/studio/possible-collabs">{studio.leads.length > 3 ? `+${studio.leads.length - 3} more · ` : ''}All possible collabs<Icon name="chevR" /></a>
+				{/if}
+
+				{#if open.length}
+					<div class="dk2-sh"><span>Open requests · scored</span>{#if open.length > 1}<small>swipe</small>{/if}</div>
+					<div class="dk2-deck">
+						{#each open as { c, d } (c.id)}
+							<button class="dk2-sc v-{d!.verdict}" onclick={() => (ui.openCollab = c.id)}>
+								<span class="dk2-g">
+									<svg viewBox="0 0 66 66" aria-hidden="true"><circle cx="33" cy="33" r="27" /><circle class="dk2-arc" cx="33" cy="33" r="27" style="stroke-dasharray:{gauge(d!.score)}" /></svg>
+									<b>{d!.score}</b>
+								</span>
+								<em>{d!.label}</em>
+								<strong>{c.brand.name}</strong>
+								{#if studio.reading.includes(c.id)}<AiThinking label="Reading" />{:else}<small>{d!.line}</small>{/if}
+							</button>
+						{/each}
+					</div>
+				{/if}
+
+				{#if new Date().getDate() <= 10}
+					<a class="ai-desk-review" href="/studio/reports?m={prevMonth()}"><Icon name="chart" /><span><b>Your {monthLabel(prevMonth()).split(' ')[0]} in review</b><small>What you earned, what worked, what to charge next</small></span><Icon name="chevR" /></a>
+				{/if}
+				<div class="ai-desk-acts">
+					<button class="btn sm ai-btn" onclick={() => (ui.askOpen = true)}><Icon name="spark" />Ask your desk</button>
+					<a class="btn sm ghost" href="/studio/inbox"><Icon name="send" />Messages{#if unread}<span class="ai-acts-n" aria-label="{unread} unread">{unread}</span>{/if}</a>
 				</div>
-				{/key}
 			</div>
-			{#if phoneLeads.length > 1}
-				<div class="dk2-dots" role="group" aria-label="Possible collabs, {Math.min(leadI, phoneLeads.length - 1) + 1} of {phoneLeads.length}">
-					{#each phoneLeads as l, i (l.igsid)}<button class="dk2-dot" class:on={i === leadI} onclick={() => goLead(i)} aria-label="Show {leadName(l)}" aria-current={i === leadI}><i></i></button>{/each}
-				</div>
-			{/if}
-			<a class="ail-more" href="/studio/possible-collabs">{studio.leads.length > 3 ? `+${studio.leads.length - 3} more · ` : ''}All possible collabs<Icon name="chevR" /></a>
-		{/if}
-
-		{#if open.length}
-			<div class="dk2-sh"><span>Open requests · scored</span>{#if open.length > 1}<small>swipe</small>{/if}</div>
-			<div class="dk2-deck">
-				{#each open as { c, d } (c.id)}
-					<button class="dk2-sc v-{d!.verdict}" onclick={() => (ui.openCollab = c.id)}>
-						<span class="dk2-g">
-							<svg viewBox="0 0 66 66" aria-hidden="true"><circle cx="33" cy="33" r="27" /><circle class="dk2-arc" cx="33" cy="33" r="27" style="stroke-dasharray:{gauge(d!.score)}" /></svg>
-							<b>{d!.score}</b>
-						</span>
-						<em>{d!.label}</em>
-						<strong>{c.brand.name}</strong>
-						{#if studio.reading.includes(c.id)}<AiThinking label="Reading" />{:else}<small>{d!.line}</small>{/if}
-					</button>
-				{/each}
-			</div>
-		{/if}
-
-		{#if new Date().getDate() <= 10}
-			<a class="ai-desk-review" href="/studio/reports?m={prevMonth()}"><Icon name="chart" /><span><b>Your {monthLabel(prevMonth()).split(' ')[0]} in review</b><small>What you earned, what worked, what to charge next</small></span><Icon name="chevR" /></a>
-		{/if}
-		<div class="ai-desk-acts">
-			<button class="btn sm ai-btn" onclick={() => (ui.askOpen = true)}><Icon name="spark" />Ask your desk</button>
-			<a class="btn sm ghost" href="/studio/inbox"><Icon name="send" />Messages{#if unread}<span class="ai-acts-n" aria-label="{unread} unread">{unread}</span>{/if}</a>
 		</div>
 	</section>
 {:else}

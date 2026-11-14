@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { studio } from '../studio.svelte';
 	import { copyText } from '../ui.svelte';
-	import { delivText, fmt, inrS, stageLabel, tasks, type Task } from '../util';
+	import { delivText, fmt, inrS, stageIndex, stageLabel, tasks, type Task } from '../util';
 	import type { Collab } from '../types';
 	import Icon from './Icon.svelte';
 	import CycleText from './CycleText.svelte';
@@ -36,37 +36,101 @@
 		const m = Math.max(0, Math.round((Date.now() - Date.parse(at)) / 60000));
 		return m < 60 ? `${Math.max(1, m)} min ago` : m < 1440 ? `${Math.round(m / 60)} h ago` : `${Math.round(m / 1440)} d ago`;
 	};
-	const all = $derived([
-		...need.map((t) => ({ id: t.c.id, name: t.c.brand.name, money: fee(t.c), href: t.kind === 'msg' ? `/studio/inbox/${t.c.code}` : `/studio/c/${t.c.code}`, line: t.title, pill: status(t), tone: tone(t), lines: facts(t.title, t.c.deliverables.length > 0 && delivText(t.c.deliverables), dateLine(t.c)) })),
-		...rest.map((c) => ({ id: c.id, name: c.brand.name, money: fee(c), href: `/studio/c/${c.code}`, line: delivText(c.deliverables), pill: stageLabel(c.stage), tone: c.stage === 'live' ? 'ok' : '', lines: facts(c.deliverables.length > 0 && delivText(c.deliverables), dateLine(c)) }))
+	const allItems = $derived([
+		...need.map((t) => ({
+			id: t.c.id,
+			name: t.c.brand.name,
+			money: fee(t.c),
+			href: t.kind === 'msg' ? `/studio/inbox/${t.c.code}` : `/studio/c/${t.c.code}`,
+			line: t.title,
+			pill: status(t),
+			tone: tone(t),
+			group: 'need' as const,
+			stageIdx: Math.max(0, stageIndex(t.c.stage)),
+			lines: facts(t.title, t.c.deliverables.length > 0 && delivText(t.c.deliverables), dateLine(t.c))
+		})),
+		...rest.map((c) => ({
+			id: c.id,
+			name: c.brand.name,
+			money: fee(c),
+			href: `/studio/c/${c.code}`,
+			line: delivText(c.deliverables),
+			pill: stageLabel(c.stage),
+			tone: c.stage === 'live' ? 'ok' : '',
+			group: 'active' as const,
+			stageIdx: Math.max(0, stageIndex(c.stage)),
+			lines: facts(c.deliverables.length > 0 && delivText(c.deliverables), dateLine(c))
+		}))
 	]);
 	const leadName = (l: (typeof studio.leads)[number]) => /^([^:@][^:]{0,40}):\s/.exec(l.collab_hint)?.[1].trim() || l.name || (l.username ? `@${l.username}` : 'Instagram');
 	// A long handle may break after its dots and underscores (@bhawna. / barcode), not in the middle of a word.
 	const soft = (name: string) => name.replace(/([._])(?=\S)/g, '$1\u200b');
-	const shown = $derived(leads.length ? leads.map((l) => ({
-		id: `dm-${l.igsid}`,
-		name: leadName(l),
-		money: 'From DM',
-		href: `/studio/inbox/ig/${l.igsid}`,
-		line: l.collab_hint || 'Asking about working together',
-		pill: 'Review DM',
-		tone: 'dm',
-		lines: facts(l.collab_hint || 'Asking about working together', [l.username && leadName(l) !== `@${l.username}` ? `@${l.username}` : '', ago(l.last_at)].filter(Boolean).join(' · '), l.unread ? `${l.unread} new message${l.unread === 1 ? '' : 's'}` : '', 'Tap to turn it into a collab')
-	})) : all);
+	const dmItems = $derived(
+		leads.map((l) => ({
+			id: `dm-${l.igsid}`,
+			name: leadName(l),
+			money: 'From DM',
+			href: `/studio/inbox/ig/${l.igsid}`,
+			line: l.collab_hint || 'Asking about working together',
+			pill: 'Review DM',
+			tone: 'dm',
+			group: 'dm' as const,
+			stageIdx: 0,
+			lines: facts(l.collab_hint || 'Asking about working together', [l.username && leadName(l) !== `@${l.username}` ? `@${l.username}` : '', ago(l.last_at)].filter(Boolean).join(' · '), l.unread ? `${l.unread} new message${l.unread === 1 ? '' : 's'}` : '', 'Tap to turn it into a collab')
+		}))
+	);
+
+	let filter = $state<'all' | 'need' | 'dm'>('all');
+	const shown = $derived.by(() => {
+		if (filter === 'dm' && dmItems.length) return dmItems;
+		if (filter === 'need' && need.length) return allItems.filter((x) => x.group === 'need');
+		return leads.length && filter === 'all' && !allItems.length ? dmItems : allItems;
+	});
 </script>
 
 <section class="tix" aria-label="Your collabs">
 	<div class="tix-h">
-		<span>Your collabs</span>
-		{#if shown.length}<a href="/studio/collabs">See all</a>{/if}
+		<span class="tix-h-left">
+			<span>Your collabs</span>
+			{#if allItems.length + dmItems.length > 0}
+				<b class="tix-cnt">{shown.length}</b>
+			{/if}
+		</span>
+		{#if allItems.length || dmItems.length}<a href="/studio/collabs">See all</a>{/if}
 	</div>
+	{#if (need.length > 0 && rest.length > 0) || (dmItems.length > 0 && allItems.length > 0)}
+		<div class="tix-filters">
+			<button type="button" class="tix-flt" class:on={filter === 'all'} aria-pressed={filter === 'all'} onclick={() => (filter = 'all')}>
+				All · {allItems.length}
+			</button>
+			{#if need.length > 0}
+				<button type="button" class="tix-flt" class:on={filter === 'need'} aria-pressed={filter === 'need'} onclick={() => (filter = 'need')}>
+					Needs action · {need.length}
+				</button>
+			{/if}
+			{#if dmItems.length > 0}
+				<button type="button" class="tix-flt" class:on={filter === 'dm'} aria-pressed={filter === 'dm'} onclick={() => (filter = 'dm')}>
+					DM leads · {dmItems.length}
+				</button>
+			{/if}
+		</div>
+	{/if}
 	<div class="tix-row">
 		{#each shown as k, i (k.id)}
-			<a class="tix-t tone-{k.tone || 'calm'}" class:tix-dm={leads.length > 0} style="--rt:{hue(k.tone, i)};--k:{i}" href={k.href} aria-label="{k.name}: {k.line}, {k.money}, {k.pill}">
+			<a class="tix-t tone-{k.tone || 'calm'}" class:tix-dm={k.group === 'dm'} style="--rt:{hue(k.tone, i)};--k:{i}" href={k.href} aria-label="{k.name}: {k.line}, {k.money}, {k.pill}">
+				<span class="tix-top">
+					<span class="tix-av">{k.name.replace(/^@/, '').trim().slice(0, 1).toUpperCase() || 'C'}</span>
+					<small class="tix-step">{k.group === 'dm' ? 'IG DM Lead' : `Step ${Math.min(6, k.stageIdx + 1)}/6`}</small>
+				</span>
 				<b class="tix-n">{soft(k.name)}</b>
 				<span class="tix-l" aria-hidden="true"><CycleText {i} items={k.lines} /></span>
+				<span class="tix-prog" aria-hidden="true">
+					{#each [0, 1, 2, 3, 4, 5] as s (s)}
+						<i class:done={s < k.stageIdx} class:curr={s === k.stageIdx}></i>
+					{/each}
+				</span>
 				<i class="tix-cut" aria-hidden="true"></i>
-				<span class="tix-f"><strong>{k.money}</strong><em>{#if leads.length}<i class="tix-attention" aria-hidden="true"></i>{/if}{k.pill}</em></span>
+				<span class="tix-f"><strong>{k.money}</strong><em>{#if k.group === 'dm'}<i class="tix-attention" aria-hidden="true"></i>{/if}{k.pill}</em></span>
 			</a>
 		{:else}
 			<!-- Nothing active yet: ways to get the first collabs in. -->
@@ -78,4 +142,3 @@
 		{/each}
 	</div>
 </section>
-
