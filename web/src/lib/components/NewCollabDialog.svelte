@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { portal } from '../portal';
+	import { holdCollabPage } from '../collabDialog';
+	import BrandNameInput from './BrandNameInput.svelte';
 	import { onMount } from 'svelte';
 	import { createCollab, loadLeads, studio } from '../studio.svelte';
 	import { supabase } from '../supabase';
@@ -41,35 +43,24 @@
 	let body = $state<HTMLDivElement>();
 
 	onMount(() => {
-		const root = document.documentElement;
-		const b = document.body;
-		const overflow = root.style.overflow;
-		const bodyOverflow = b.style.overflow;
-		root.style.overflow = 'hidden';
-		b.style.overflow = 'hidden';
-		if (!matchMedia('(max-width: 760px)').matches && step === 'paste') {
-			box?.focus({ preventScroll: true });
-		}
-		// Keep #nc-paste focus from scrolling the title out of .nc-body while the mobile keyboard animates open
-		const onFocusIn = (e: FocusEvent) => {
-			if (e.target === box && body) {
-				body.scrollTop = 0;
-				requestAnimationFrame(() => { if (body) body.scrollTop = 0; });
-				setTimeout(() => { if (body) body.scrollTop = 0; }, 120);
-			}
-		};
-		body?.addEventListener('focusin', onFocusIn);
 		// A screenshot shared into the app (Android Share): read it straight away.
 		ui.pasteImage = null;
 		if (shared) shrinkImage(shared).then((img) => readWithAi(img), (err) => toast((err as Error).message, 'alert'));
 		// A DM or pasted message: read it at once, so the details are there when she looks.
 		else if (startText.trim().length > 20) readWithAi();
-		return () => {
-			body?.removeEventListener('focusin', onFocusIn);
-			root.style.overflow = overflow;
-			b.style.overflow = bodyOverflow;
-		};
 	});
+	// The parent has a definite flex height. Fitting the composer to it never resizes the parent,
+	// changes focus, or resets scrolling while Android is keeping the caret above the keyboard.
+	function fitMessage(node: HTMLElement) {
+		const observer = new ResizeObserver(([entry]) => {
+			const tools = node.querySelector<HTMLElement>('.nc-tools');
+			if (!tools) return;
+			const height = Math.max(80, Math.min(240, Math.floor(entry.contentRect.height - tools.offsetHeight - 6)));
+			node.style.setProperty('--nc-message-height', `${height}px`);
+		});
+		observer.observe(node);
+		return { destroy() { observer.disconnect(); } };
+	}
 	const close = () => (ui.newCollab = false);
 	function go(s: Step) {
 		if (s !== 'ask' && s !== 'paste') seed();
@@ -348,8 +339,8 @@
 
 <svelte:window onkeydown={(e) => e.key === 'Escape' && close()} />
 
-<div class="dialog-scrim nc-scrim" role="presentation" use:portal onclick={(e) => e.target === e.currentTarget && close()}>
-	<div class="dialog nc" role="dialog" aria-modal="true" aria-labelledby="nc-title">
+<div class="dialog-scrim nc-scrim" role="presentation" use:portal use:holdCollabPage onclick={(e) => e.target === e.currentTarget && close()}>
+	<div class="dialog nc" role="dialog" aria-modal="true" aria-labelledby="nc-title" tabindex="-1">
 		<header class="nc-top">
 			{#if step !== 'ask' && step !== 'paste'}<button type="button" class="nc-ib" aria-label="Back" onclick={back}><Icon name="chevL" /></button>{:else if step === 'ask' && !fromIg && !shared}<button type="button" class="nc-ib" aria-label="Back" onclick={back}><Icon name="chevL" /></button>{/if}
 			{#if at >= 0}
@@ -358,11 +349,15 @@
 			{:else}<span class="nc-eb nc-grow">New collab</span>{/if}
 			<button type="button" class="nc-ib" aria-label="Close" onclick={close}><Icon name="x" /></button>
 		</header>
-
-		<div class="nc-body" bind:this={body}>
-			{#if step === 'paste'}
+		{#if step === 'paste'}
+			<div class="nc-intro">
 				<h2 id="nc-title" class="nc-h">Add a <em class="nc-grad">collab</em></h2>
 				<p class="nc-sub">Paste their DM or email, read a screenshot, or say it. The details fill in for you.</p>
+			</div>
+		{/if}
+
+		<div class="nc-body" bind:this={body} use:fitMessage>
+			{#if step === 'paste'}
 				<div class="nc-compose">
 					<label for="nc-paste" class="sr">Their message (optional)</label>
 					<textarea id="nc-paste" rows="8" placeholder={'Hi! I’m Asha from Lumière Skin. We’d love 1 reel + 3 stories for our Vitamin C launch, budget ₹30k, live by 25th…'} bind:value={pasted} bind:this={box}></textarea>
@@ -375,8 +370,7 @@
 				</div>
 				{#if aiNote}<p class="nc-note"><AiThinking label={aiNote.replace('…', '')} /></p>{/if}
 				<label for="nc-brand" class="nc-lbl">Brand</label>
-				<input class="nc-brand" id="nc-brand" list="nc-brands" placeholder="Brand name" autocomplete="off" bind:value={name} oninput={() => (nameTouched = true)} />
-				<datalist id="nc-brands">{#each studio.brands as b (b.id)}<option value={b.name}></option>{/each}</datalist>
+				<BrandNameInput id="nc-brand" bind:value={name} onedit={() => (nameTouched = true)} />
 				<p class="nc-more">Adding many? <a href="/studio/import" onclick={close}>Import them at once</a> · Ambassador deal? <a href="/studio/brands" onclick={close}>Set up a monthly deal</a></p>
 			{:else if step === 'ask'}
 				<div class="nc-head">
@@ -411,8 +405,7 @@
 				</div>
 				<p class="nc-hint">Tap any line to change it. Nothing is sent to the brand.</p>
 				<label for="nc-brand2" class="nc-lbl">Brand</label>
-				<input class="nc-brand" id="nc-brand2" list="nc-brands2" placeholder="Brand name" autocomplete="off" bind:value={name} oninput={() => (nameTouched = true)} />
-				<datalist id="nc-brands2">{#each studio.brands as b (b.id)}<option value={b.name}></option>{/each}</datalist>
+				<BrandNameInput id="nc-brand2" bind:value={name} onedit={() => (nameTouched = true)} />
 				<small class="nc-hint">{name.trim() ? (known ? 'A brand you know: their details are filled in' : 'New brand: their Instagram is saved too') : 'Who is the content for?'}</small>
 				{#if agency || agencyOpen}
 					<label for="nc-agency" class="nc-lbl">Sent by an agency</label>
@@ -550,18 +543,6 @@
 			animation: none !important;
 			transition: none !important;
 		}
-		.nc-top { padding: 6px 10px 2px 14px; }
-		.nc-body { gap: 10px; padding: 4px 18px 12px; scroll-behavior: auto; }
-		:global([data-side]) .nc .nc-h { font-size: clamp(26px, 7.5vw, 31px); line-height: 1.05; }
-		:global([data-side]) .nc .nc-sub { margin: -4px 0 0; font-size: 13px; line-height: 1.35; }
-		.nc-compose textarea { height: 116px; min-height: 116px; padding: 10px 14px 6px; font-size: 15px; line-height: 1.42; }
-		.nc-pill { height: 46px; gap: 3px; }
-		.nc-pill :global(.ic) { width: 18px; height: 18px; }
-		.nc-lbl { margin-bottom: -6px; }
-		.nc-brand { height: 44px; font-size: 23px; }
-		.nc-more { font-size: 12px; line-height: 1.4; }
-		.nc-foot { padding: 10px 18px calc(12px + env(safe-area-inset-bottom, 0px)); }
-		.nc-go { height: 48px; }
 	}
 	.nc-top { display: flex; flex: none; align-items: center; gap: 10px; padding: 10px 10px 4px 14px; }
 	.nc-ib { width: 44px; height: 44px; flex: none; display: grid; place-items: center; border: 0; background: none; color: var(--ink-2); cursor: pointer; }
@@ -574,6 +555,7 @@
 	.nc-grow { flex: 1; padding-left: 6px; }
 	.nc-body { flex: 1; min-height: 0; overflow-y: auto; overflow-anchor: none; overscroll-behavior: contain; scrollbar-width: none; display: flex; flex-direction: column; gap: 16px; padding: 8px 20px 18px; }
 	.nc-body > * { flex-shrink: 0; }
+	.nc-intro { flex: none; display: flex; flex-direction: column; gap: 12px; padding: 8px 20px 16px; }
 	.nc-body::-webkit-scrollbar { display: none; }
 	.nc-head { display: flex; flex-direction: column; gap: 6px; }
 	:global([data-side]) .nc .nc-h { margin: 0; font: 400 clamp(30px, 9vw, 38px)/1.04 var(--f-serif, Georgia, serif); letter-spacing: -.01em; overflow-wrap: anywhere; }
@@ -581,7 +563,7 @@
 	:global([data-side]) .nc .nc-sub { margin: -6px 0 0; font-size: 14.5px; color: var(--ink-3); }
 	.nc-compose { display: flex; flex-direction: column; background: var(--bg); border: 1px solid var(--line-strong); box-shadow: 4px 4px 0 var(--line-strong); }
 	.nc-compose:focus-within { border-color: var(--ink); box-shadow: 4px 4px 0 var(--accent); }
-	.nc-compose textarea { display: block; flex: none; width: 100%; height: 240px; min-height: 240px; box-sizing: border-box; border: 0; outline: 0; resize: none; overflow-y: auto; overscroll-behavior: contain; background: none; color: var(--ink); font: 400 16px/1.5 var(--f-body, inherit); padding: 14px 16px 8px; scrollbar-width: none; }
+	.nc-compose textarea { display: block; flex: none; width: 100%; height: var(--nc-message-height, 240px); min-height: 80px; box-sizing: border-box; border: 0; outline: 0; resize: none; overflow-y: auto; overscroll-behavior: contain; background: none; color: var(--ink); font: 400 16px/1.5 var(--f-body, inherit); padding: 14px 16px 8px; scrollbar-width: none; }
 	.nc-compose textarea::-webkit-scrollbar { display: none; }
 	.nc-tools { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); border-top: 1px dashed var(--line-strong); }
 	.nc-pill { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; height: 60px; border: 0; background: transparent; color: var(--ink-2); font: 700 10px var(--f-body, inherit); letter-spacing: .1em; text-transform: uppercase; cursor: pointer; }
@@ -680,6 +662,21 @@
 	.nc-agency { font-size: 22px; height: 46px; }
 	.nc-agency-add { align-self: flex-start; margin-top: -6px; }
 	.nc-text { height: 44px; border: 0; background: none; color: var(--ink-2); font: 600 14px var(--f-body, inherit); cursor: pointer; }
+	@media (max-width: 760px) {
+		.nc-top { padding: 6px 10px 2px 14px; }
+		.nc-intro { gap: 10px; padding: 6px 18px 12px; }
+		.nc-body { gap: 10px; padding: 4px 18px 12px; scroll-behavior: auto; }
+		:global([data-side]) .nc .nc-h { font-size: clamp(26px, 7.5vw, 31px); line-height: 1.05; }
+		:global([data-side]) .nc .nc-sub { margin: 0; font-size: 13px; line-height: 1.35; }
+		.nc-compose textarea { padding: 10px 14px 6px; font-size: 16px; line-height: 1.42; }
+		.nc-pill { height: 46px; gap: 3px; }
+		.nc-pill :global(.ic) { width: 18px; height: 18px; }
+		.nc-lbl { margin-bottom: -6px; }
+		.nc-brand { height: 44px; font-size: 23px; }
+		.nc-more { font-size: 12px; line-height: 1.4; }
+		.nc-foot { padding: 10px 18px calc(12px + env(safe-area-inset-bottom, 0px)); }
+		.nc-go { height: 48px; }
+	}
 	/* Short screens (iPhone SE, a laptop window made small): tighter, so most of a step fits at once. */
 	@media (max-height: 700px) {
 		.nc-body { gap: 12px; }

@@ -1,6 +1,8 @@
 // The Studio on a phone behaves like an installed app: an app bar that shows the title once the
 // big one scrolls away, sheets that slide down to close, and pull down to refresh.
 import { haptic } from './feel';
+import { nativePlatform } from './native';
+import { COLLAB_DIALOG_CHANGE, collabDialogOpen } from './collabDialog';
 export const PHONE_Q = '(max-width: 760px)';
 
 export const phone = $state({ on: false, scrolled: false, titled: false, hide: false });
@@ -15,16 +17,16 @@ export function startPhone(refresh: () => Promise<unknown>) {
 	// The part of the screen the keyboard leaves free (iPhone shrinks only this "visual viewport"):
 	// full-screen chats size to it, so the header stays and the message box sits just above the keyboard.
 	const vv = window.visualViewport;
-	const isIOS = typeof navigator !== 'undefined' && (/iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1));
+	// Capacitor SystemBars already resizes the WebView for IME insets. Applying its visual viewport
+	// resize as well can resize the sheet twice. Browser/PWA keyboards still use the visual viewport.
+	const nativeAndroid = nativePlatform() === 'android';
 	let viewportFrame = 0;
 	let viewportHeight = '';
 	let viewportTop = '';
 	const updateViewport = () => {
 		viewportFrame = 0;
-		if (!vv) return;
-		const height = `${Math.round(vv.height)}px`;
-		// On Android, the layout viewport itself resizes when the keyboard opens; transient offsetTop values during IME animation cause fixed sheets to bounce.
-		const top = isIOS ? `${Math.max(0, Math.round(vv.offsetTop))}px` : '0px';
+		const height = `${Math.round(nativeAndroid ? innerHeight : (vv?.height ?? innerHeight))}px`;
+		const top = nativeAndroid ? '0px' : `${Math.max(0, Math.round(vv?.offsetTop ?? 0))}px`;
 		if (height !== viewportHeight) document.documentElement.style.setProperty('--vv-h', height);
 		if (top !== viewportTop) document.documentElement.style.setProperty('--vv-top', top);
 		viewportHeight = height;
@@ -32,12 +34,16 @@ export function startPhone(refresh: () => Promise<unknown>) {
 	};
 	const onVv = () => (viewportFrame ||= requestAnimationFrame(updateViewport));
 	updateViewport();
-	vv?.addEventListener('resize', onVv);
-	vv?.addEventListener('scroll', onVv);
+	window.addEventListener('resize', onVv, { passive: true });
+	if (!nativeAndroid) {
+		vv?.addEventListener('resize', onVv);
+		vv?.addEventListener('scroll', onVv);
+	}
 
 	// Like Instagram: the top bar slides away while scrolling down and comes back on the way up.
 	let last = scrollY;
 	const onScroll = () => {
+		if (collabDialogOpen()) return;
 		const y = scrollY;
 		phone.scrolled = y > 4;
 		phone.titled = y > 64;
@@ -48,6 +54,7 @@ export function startPhone(refresh: () => Promise<unknown>) {
 	};
 	onScroll();
 	addEventListener('scroll', onScroll, { passive: true });
+	document.addEventListener(COLLAB_DIALOG_CHANGE, onScroll);
 
 	const offSheet = sheetSwipe();
 	const offPull = pullToRefresh(refresh);
@@ -56,7 +63,9 @@ export function startPhone(refresh: () => Promise<unknown>) {
 		vv?.removeEventListener('resize', onVv);
 		vv?.removeEventListener('scroll', onVv);
 		cancelAnimationFrame(viewportFrame);
+		window.removeEventListener('resize', onVv);
 		removeEventListener('scroll', onScroll);
+		document.removeEventListener(COLLAB_DIALOG_CHANGE, onScroll);
 		offSheet();
 		offPull();
 	};

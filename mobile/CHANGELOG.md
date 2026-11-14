@@ -20,6 +20,13 @@ How to ship one:
 
 - Add microphone permission for voice notes and voice typing in the phone app.
 
+## 1.0.8
+
+- Fixed keyboard and drawer resizing when adding a collab on Android.
+- Kept the drawer title and Next button visible while typing.
+- Stabilized the home screen behind the Add a collab drawer.
+- Enabled optimized resource shrinking to reduce the Android app's footprint.
+
 ## 1.0.7
 
 - Improved scrolling and navigation smoothness.
