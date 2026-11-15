@@ -125,17 +125,26 @@
 		{#each wall as c, i (c.id)}
 			{@const img = thumb(c)}
 			{@const v = views(c)}
+			{@const m = money(c)}
 			<a class="wt st-{c.stage}" href="/studio/c/{c.code}" style="--h:var(--m{hueOf(c.brand.name)});--i:{Math.min(i, 8)}">
 				<span class="wt-cover">
-					{#if img}<img src={igImg(img)} alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" />{:else}<span class="wt-mark" aria-hidden="true">{initials(c.brand.name)}</span>{/if}
-					<span class="wt-stage"><i></i>{stageLabel(c.stage)}</span>
-					{#if v}<span class="wt-views" aria-label="{compact(v)} views"><Icon name="eye" />{compact(v)}</span>{/if}
+					{#if img}<img src={igImg(img)} alt={c.brand.name} loading="lazy" decoding="async" referrerpolicy="no-referrer" />{:else}<span class="wt-mark" aria-hidden="true">{initials(c.brand.name)}</span>{/if}
 				</span>
 				<span class="wt-b">
-					<b>{c.brand.name}</b>
-					<span class="wt-meta">
-						<span class="wt-work"><span class="wt-work-icon"><Icon name="layers" /></span><small>{delivText(c.deliverables) || c.brand.category || 'Collab'}</small></span>
-						{#if money(c)}<em>{money(c)}{c.type === 'barter' ? ' barter' : ''}</em>{/if}
+					<span class="wt-r1">
+						<span class="wt-brand-line">
+							<i class="wt-dot" class:live={c.stage === 'live'} aria-hidden="true"></i>
+							<b>{c.brand.name}</b>
+						</span>
+						{#if v}
+							<span class="wt-views-txt" aria-label="{compact(v)} views"><Icon name="eye" />{compact(v)}</span>
+						{:else}
+							<span class="wt-views-txt ok">{stageLabel(c.stage)}</span>
+						{/if}
+					</span>
+					<span class="wt-r2">
+						<small>{delivText(c.deliverables) || c.brand.category || 'Collab'}</small>
+						{#if m}<em>{m}{c.type === 'barter' ? ' btr' : ''}</em>{/if}
 					</span>
 				</span>
 			</a>
@@ -157,31 +166,32 @@
 {/if}
 
 <style>
-	/* Photo-led cards with a separate details panel, using the app's light/dark theme. */
-	.wall { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 12px; padding: 16px 0 8px; }
-	.wt { min-width: 0; display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--line); border-radius: 20px; background: var(--surface); color: var(--ink); text-decoration: none;
-		animation: wt-in .35s var(--ease) both; animation-delay: calc(var(--i) * 30ms); transition: transform .2s var(--ease), border-color .2s; }
-	.wt:active { transform: scale(.98); border-color: var(--accent); }
-	.wt-cover { position: relative; isolation: isolate; display: grid; place-items: center; flex: none; width: 100%; aspect-ratio: 1.06; overflow: hidden;
-		background: radial-gradient(ellipse at 100% 0%, color-mix(in oklab, var(--h) 65%, transparent), transparent 70%), radial-gradient(ellipse at 0% 100%, color-mix(in oklab, var(--g2) 40%, transparent), transparent 70%), var(--hero); }
+	/* Exact 3-column Instagram profile grid (.pf-grid footprint) with pure original media + 2-line footer. */
+	.wall { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; margin: 0 -16px; padding: 4px; }
+	.wt { min-width: 0; display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--ink); text-decoration: none;
+		animation: wt-in .35s var(--ease) both; animation-delay: calc(var(--i) * 24ms); transition: transform .18s var(--ease), border-color .18s; }
+	.wt.st-live { border-color: color-mix(in oklab, var(--h-live) 34%, var(--line)); }
+	.wt:active { transform: scale(.97); border-color: var(--accent); }
+	.wt-cover { position: relative; isolation: isolate; display: grid; place-items: center; flex: none; width: 100%; aspect-ratio: 1 / 0.94; overflow: hidden;
+		background: radial-gradient(ellipse at 100% 0%, color-mix(in oklab, var(--h) 60%, transparent), transparent 70%), radial-gradient(ellipse at 0% 100%, color-mix(in oklab, var(--g2) 36%, transparent), transparent 70%), var(--hero); }
 	.wt-cover > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-	.wt-cover::after { content: ''; position: absolute; z-index: 1; inset: 0; pointer-events: none; background: linear-gradient(180deg, rgba(0, 0, 0, .12), transparent 35%, transparent 65%, rgba(0, 0, 0, .18)); }
-	.wt-mark { display: grid; place-items: center; width: 84px; height: 84px; border: 1px solid rgba(255, 255, 255, .2); border-radius: 28px; background: rgba(255, 255, 255, .06); color: rgba(255, 255, 255, .8); font: 600 34px/1 var(--f-display); letter-spacing: -.04em; }
-	.wt-stage { position: absolute; z-index: 2; top: 10px; right: 10px; display: inline-flex; align-items: center; gap: 5px; height: 24px; padding: 0 8px; border: 1px solid rgba(255, 255, 255, .12); border-radius: 999px; background: rgba(17, 13, 17, .8); color: #fff; font-size: 10px; line-height: 1; font-weight: 600; }
-	.wt-stage i { flex: none; width: 6px; height: 6px; border-radius: 50%; background: var(--hue, var(--h-live)); }
-	.wt-views { position: absolute; z-index: 2; bottom: 10px; right: 10px; display: inline-flex; align-items: center; gap: 5px; min-height: 25px; padding: 0 9px; border-radius: 999px; background: var(--g1); color: var(--accent-ink); font-size: 11px; line-height: 1; font-weight: 600; font-variant-numeric: tabular-nums; }
-	.wt-views :global(.ic) { width: 13px; height: 13px; }
-	.wt-b { display: flex; flex: 1; flex-direction: column; gap: 14px; min-width: 0; padding: 12px 11px 13px; }
-	.wt-b > b { min-height: 2.7em; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; font: 600 14px/1.35 var(--f-body); overflow-wrap: anywhere; }
-	.wt-meta { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-top: auto; min-width: 0; }
-	.wt-work { display: inline-flex; align-items: center; gap: 5px; min-width: 0; }
-	.wt-work-icon { display: grid; place-items: center; flex: none; width: 17px; height: 17px; border-radius: 50%; background: color-mix(in oklab, var(--g2) 14%, var(--surface)); color: var(--accent); }
-	.wt-work-icon :global(.ic) { width: 11px; height: 11px; }
-	.wt-work small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink-3); font-size: 11.5px; line-height: 1.4; }
-	.wt-meta em { flex: none; color: var(--ink-2); font-style: normal; font-size: 11.5px; font-weight: 600; line-height: 1.4; white-space: nowrap; }
+	.wt-mark { display: grid; place-items: center; width: 44px; height: 44px; border: 1px solid rgba(255, 255, 255, .2); border-radius: 14px; background: rgba(255, 255, 255, .06); color: rgba(255, 255, 255, .88); font: 600 17px/1 var(--f-display); letter-spacing: -.03em; }
+	.wt-b { display: flex; flex-direction: column; gap: 2.5px; min-width: 0; padding: 5px 6.5px 5.5px; border-top: 1px solid var(--line); background: linear-gradient(180deg, color-mix(in oklab, var(--surface) 94%, var(--g1) 6%), var(--surface)); }
+	.wt-r1 { display: flex; align-items: center; justify-content: space-between; gap: 4px; min-width: 0; }
+	.wt-brand-line { display: flex; align-items: center; gap: 4px; min-width: 0; flex: 1; }
+	.wt-dot { flex: none; width: 5.5px; height: 5.5px; border-radius: 50%; background: var(--g1); }
+	.wt-dot.live { background: var(--h-live); box-shadow: 0 0 6px var(--h-live); animation: wt-pulse 1.8s ease-in-out infinite; }
+	.wt-brand-line > b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 700 11px/1.15 var(--f-body); color: var(--ink); }
+	.wt-views-txt { flex: none; display: inline-flex; align-items: center; gap: 2.5px; font-size: 9px; font-weight: 700; line-height: 1; color: color-mix(in oklab, var(--g1) 75%, var(--ink)); font-variant-numeric: tabular-nums; }
+	.wt-views-txt.ok { color: var(--h-live); }
+	.wt-views-txt :global(.ic) { width: 10px; height: 10px; }
+	.wt-r2 { display: flex; align-items: center; justify-content: space-between; gap: 4px; min-width: 0; }
+	.wt-r2 small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink-3); font-size: 9.5px; font-weight: 600; line-height: 1.2; }
+	.wt-r2 em { flex: none; color: var(--g3); font-family: var(--f-serif, Georgia, serif); font-style: italic; font-size: 11.5px; font-weight: 400; line-height: 1; white-space: nowrap; }
 	.wall :global(.pf-empty) { grid-column: 1 / -1; }
-	@keyframes wt-in { from { opacity: 0; transform: translateY(8px); } }
-	@media (prefers-reduced-motion: reduce) { .wt { animation: none; } }
+	@keyframes wt-in { from { opacity: 0; transform: translateY(6px); } }
+	@keyframes wt-pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.35); opacity: .55; } }
+	@media (prefers-reduced-motion: reduce) { .wt, .wt-dot.live { animation: none; } }
 </style>
 
 {#if qrOpen}<QrShareSheet onclose={() => (qrOpen = false)} />{/if}

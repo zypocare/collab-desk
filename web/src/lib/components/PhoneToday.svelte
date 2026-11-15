@@ -7,7 +7,6 @@
 	import { askPaid, completeFollow, markPaid, markReceived, priorityOf, studio } from '../studio.svelte';
 	import { copyText, ui } from '../ui.svelte';
 	import { homeMotion, homeCount, homeChange, moneySwipe } from '../homeMotion';
-	import { COLLAB_DIALOG_CHANGE, collabDialogOpen } from '../collabDialog';
 	import '../../home-motion.css';
 	import {
 		KIND_ICON,
@@ -123,13 +122,12 @@
 	function headerDrift(node: HTMLElement) {
 		let frame = 0;
 		const preference = matchMedia('(prefers-reduced-motion: reduce)');
-		const paint = () => { frame = 0; if (!collabDialogOpen()) node.style.setProperty('--sy', String(preference.matches ? 0 : Math.min(240, scrollY))); };
-		const scroll = () => { if (!collabDialogOpen() && scrollY < 500) frame ||= requestAnimationFrame(paint); };
+		const paint = () => { frame = 0; node.style.setProperty('--sy', String(preference.matches ? 0 : Math.min(240, scrollY))); };
+		const scroll = () => { if (scrollY < 500) frame ||= requestAnimationFrame(paint); };
 		paint();
 		addEventListener('scroll', scroll, { passive: true });
 		preference.addEventListener('change', paint);
-		document.addEventListener(COLLAB_DIALOG_CHANGE, paint);
-		return { destroy() { cancelAnimationFrame(frame); removeEventListener('scroll', scroll); preference.removeEventListener('change', paint); document.removeEventListener(COLLAB_DIALOG_CHANGE, paint); } };
+		return { destroy() { cancelAnimationFrame(frame); removeEventListener('scroll', scroll); preference.removeEventListener('change', paint); } };
 	}
 
 	// A new possible collab spotted in her Instagram DMs opens "Add a collab" with its chat read in, the same as tapping

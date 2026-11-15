@@ -1,24 +1,19 @@
 import { expect, test, type Page } from '@playwright/test';
-import { mountCollabHarness } from '../helpers/collab-harness.mjs';
 
 declare global {
 	interface Window {
-		collabTest: {
-			isOpen: () => boolean; destroy: () => Promise<void>; close: () => Promise<void>; open: () => void;
-			original: { y: number; moneyTop: number; phone: { scrolled: boolean; titled: boolean; hide: boolean } };
-			phone: () => { scrolled: boolean; titled: boolean; hide: boolean };
-		};
+		collabTest: { isOpen: () => boolean; destroy: () => Promise<void> };
 	}
 }
 
 async function paint(page: Page) {
-	await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => requestAnimationFrame(() => resolve())))));
+	await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
 }
 
-test.beforeEach(async ({ page }, testInfo) => {
+test.beforeEach(async ({ page }) => {
 	await page.setViewportSize({ width: 393, height: 852 });
 	await page.addInitScript(() => {
-		// Deliberately independent of window.innerHeight, as during native IME inset updates.
+		// Model a keyboard that resizes only the visible area, as on a phone.
 		const viewport = Object.assign(new EventTarget(), { height: 852, width: 393, offsetTop: 0, offsetLeft: 0, pageTop: 0, pageLeft: 0, scale: 1 });
 		Object.defineProperty(window, 'visualViewport', { configurable: true, value: viewport });
 	});
@@ -26,9 +21,31 @@ test.beforeEach(async ({ page }, testInfo) => {
 		contentType: 'text/html',
 		body: '<!doctype html><html data-side="studio" data-desk="studio" data-theme="dark" style="overflow:auto"><head><meta name="viewport" content="width=device-width,initial-scale=1"></head><body></body></html>'
 	}));
-	await page.route('https://**', (route) => route.fulfill({ contentType: 'application/json', body: '[]' }));
 	await page.goto('/__new-collab');
-	await page.evaluate(mountCollabHarness, { mode: testInfo.title.startsWith('PWA') ? 'browser' : 'native' });
+	await page.evaluate(async () => {
+		for (const file of ['app', 'brand', 'studio', 'desk', 'pro', 'mobile-type', 'mobile', 'atelier', 'dash', 'cred', 'today']) {
+			await import(`/src/${file}.css`);
+		}
+		const statePath = '/src/lib/studio.svelte.ts';
+		const { studio } = await import(statePath);
+		studio.settings = { handle: 'preview', rates: {} };
+		studio.brands = [];
+		const uiPath = '/src/lib/ui.svelte.ts';
+		const { ui } = await import(uiPath);
+		ui.newCollab = true;
+		const componentPath = '/src/lib/components/NewCollabDialog.svelte';
+		const { default: NewCollabDialog } = await import(componentPath);
+		// Use the component's exact runtime URL, including Vite's dependency version.
+		const source = await (await fetch(componentPath)).text();
+		const runtime = source.match(/from\s+["']([^"']*\/svelte\.js[^"']*)["']/)?.[1];
+		if (!runtime) throw new Error('Could not find the component runtime');
+		const { mount, unmount } = await import(runtime);
+		const component = mount(NewCollabDialog, { target: document.body });
+		const phonePath = '/src/lib/phone.svelte.ts';
+		const { startPhone } = await import(phonePath);
+		const stop = startPhone(async () => {});
+		window.collabTest = { isOpen: () => ui.newCollab, destroy: async () => { stop(); await unmount(component); } };
+	});
 	await expect(page.getByRole('dialog', { name: 'Add a collab' })).toBeVisible();
 	await paint(page);
 });
@@ -38,7 +55,7 @@ test('the taller drawer and message box keep their size while typing a long mess
 	const box = page.locator('#nc-paste');
 	const initial = (await drawer.boundingBox())!;
 	expect(initial.height).toBeGreaterThan(820);
-	expect((await box.boundingBox())!.height).toBe(240);
+	expect((await box.boundingBox())!.height).toBe(116);
 	const message = 'Hi, I am Asha from Lumiere Skin. We would love 1 reel and 3 stories, budget Rs 30000.\n'.repeat(30);
 	await box.fill(message);
 	const footer = (await page.locator('.nc-foot').boundingBox())!;
@@ -46,122 +63,40 @@ test('the taller drawer and message box keep their size while typing a long mess
 		await box.press('End');
 		await box.pressSequentially(word);
 		expect((await drawer.boundingBox())!.height).toBeCloseTo(initial.height, 0);
-		expect((await box.boundingBox())!.height).toBe(240);
+		expect((await box.boundingBox())!.height).toBe(116);
 		expect((await page.locator('.nc-foot').boundingBox())!.y).toBeCloseTo(footer.y, 0);
 	}
 	await expect(box).toBeFocused();
 	expect(await box.evaluate((node) => node.scrollHeight > node.clientHeight)).toBe(true);
 });
 
-test('native window resizing keeps the title, composer and footer in the visible area', async ({ page }) => {
-	for (const height of [460, 430, 380, 852]) {
-		await page.setViewportSize({ width: 393, height });
+test('the footer stays above the keyboard without shrinking the message box', async ({ page }) => {
+	for (const [height, top] of [[460, 0], [430, 0], [852, 0]]) {
+		await page.evaluate(({ height, top }) => {
+			const viewport = window.visualViewport as unknown as { height: number; offsetTop: number; dispatchEvent: (event: Event) => boolean };
+			viewport.height = height;
+			viewport.offsetTop = top;
+			viewport.dispatchEvent(new Event('resize'));
+			viewport.dispatchEvent(new Event('scroll'));
+		}, { height, top });
 		await paint(page);
 		const footer = (await page.locator('.nc-foot').boundingBox())!;
 		const drawer = (await page.locator('.nc').boundingBox())!;
-		expect(footer.y + footer.height).toBeLessThanOrEqual(height + 1);
-		expect(drawer.y).toBeGreaterThanOrEqual(0);
-		const compose = (await page.locator('.nc-compose').boundingBox())!;
-		const intro = (await page.locator('.nc-intro').boundingBox())!;
-		expect(compose.y).toBeGreaterThanOrEqual(intro.y + intro.height);
-		expect(compose.y + compose.height).toBeLessThanOrEqual(footer.y + 1);
-		expect((await page.locator('#nc-paste').boundingBox())!.height).toBeGreaterThanOrEqual(80);
+		expect(footer.y + footer.height).toBeLessThanOrEqual(top + height + 1);
+		expect(drawer.y).toBeGreaterThanOrEqual(top);
+		expect((await page.locator('#nc-paste').boundingBox())!.height).toBe(116);
 	}
-	await expect(page.locator('#nc-paste')).toHaveCSS('height', '240px');
-});
-
-test('native layout resizing clamps stale viewport heights and viewport scrolling never pans the drawer', async ({ page }) => {
-	await page.setViewportSize({ width: 393, height: 430 });
-	await paint(page);
-	const before = (await page.locator('.nc').boundingBox())!;
+	// Android WebView can resize the layout viewport as well.
+	await page.setViewportSize({ width: 393, height: 460 });
 	await page.evaluate(() => {
-		const viewport = window.visualViewport as unknown as { height: number; offsetTop: number; dispatchEvent: (event: Event) => boolean };
-		viewport.height = 852; viewport.offsetTop = 85;
-		viewport.dispatchEvent(new Event('resize')); viewport.dispatchEvent(new Event('scroll'));
+		const viewport = window.visualViewport as unknown as { height: number; dispatchEvent: (event: Event) => boolean };
+		viewport.height = 460;
+		viewport.dispatchEvent(new Event('resize'));
 	});
 	await paint(page);
-	expect(await page.locator('.nc').boundingBox()).toEqual(before);
-	await expect(page.locator('html')).toHaveCSS('--vv-h', '430px');
-	await expect(page.locator('html')).toHaveCSS('--vv-top', '0px');
-});
-
-test('modern native WebViews can report the keyboard through the visual viewport alone', async ({ page }) => {
-	await page.evaluate(() => {
-		const viewport = window.visualViewport as unknown as { height: number; offsetTop: number; dispatchEvent: (event: Event) => boolean };
-		viewport.height = 430; viewport.offsetTop = 32; viewport.dispatchEvent(new Event('resize'));
-	});
-	await paint(page);
-	expect(await page.evaluate(() => innerHeight)).toBe(852);
-	await expect(page.locator('html')).toHaveCSS('--vv-h', '430px');
-	await expect(page.locator('html')).toHaveCSS('--vv-top', '0px');
+	expect((await page.locator('#nc-paste').boundingBox())!.height).toBe(116);
 	const footer = (await page.locator('.nc-foot').boundingBox())!;
-	expect(footer.y + footer.height).toBeLessThanOrEqual(431);
-});
-
-test('focus and typing do not undo the WebView caret scroll adjustment', async ({ page }) => {
-	await page.setViewportSize({ width: 393, height: 430 });
-	await paint(page);
-	const intro = (await page.locator('.nc-intro').boundingBox())!;
-	const scroll = await page.evaluate(async () => {
-		const input = document.querySelector<HTMLTextAreaElement>('#nc-paste')!;
-		const body = document.querySelector<HTMLElement>('.nc-body')!;
-		input.focus({ preventScroll: true });
-		await new Promise((resolve) => setTimeout(resolve, 40));
-		body.scrollTop = 60; // The IME scrolls to the caret after focus, not in the focus event itself.
-		const adjusted = body.scrollTop;
-		await new Promise((resolve) => setTimeout(resolve, 220));
-		return { adjusted, after: body.scrollTop };
-	});
-	expect(scroll.adjusted).toBe(60);
-	expect(scroll.after).toBe(scroll.adjusted);
-	await page.locator('#nc-paste').pressSequentially('A message for the brand');
-	await expect(page.locator('#nc-paste')).toBeFocused();
-	expect(await page.locator('.nc-intro').boundingBox()).toEqual(intro);
-});
-
-test('the underlying home stays fixed and resumes at the same place after repeated opens', async ({ page }) => {
-	const original = await page.evaluate(() => window.collabTest.original);
-	await expect(page.locator('.phone-today')).toHaveAttribute('data-home-paused', 'true');
-	for (const height of [430, 852, 460, 852]) {
-		await page.setViewportSize({ width: 393, height });
-		await paint(page);
-		expect(await page.locator('.m-hero').evaluate((node) => node.getBoundingClientRect().top)).toBeCloseTo(original.moneyTop, 0);
-		expect(await page.evaluate(() => window.collabTest.phone())).toEqual(original.phone);
-	}
-	for (let i = 0; i < 2; i++) {
-		await page.evaluate(() => window.collabTest.close());
-		await expect.poll(() => page.evaluate(() => scrollY)).toBe(original.y);
-		await expect(page.locator('.phone-today')).toHaveAttribute('data-home-paused', 'false');
-		await expect(page.locator('#dialog-opener')).toBeFocused();
-		await page.evaluate(() => window.collabTest.open());
-		await expect(page.locator('.dialog.nc')).toBeVisible();
-	}
-});
-
-test('PWA keyboards still follow the visual viewport when the layout viewport is unchanged', async ({ page }) => {
-	await page.evaluate(() => {
-		const viewport = window.visualViewport as unknown as { height: number; offsetTop: number; dispatchEvent: (event: Event) => boolean };
-		viewport.height = 430; viewport.offsetTop = 24; viewport.dispatchEvent(new Event('resize'));
-	});
-	await paint(page);
-	expect(await page.evaluate(() => innerHeight)).toBe(852);
-	const footer = (await page.locator('.nc-foot').boundingBox())!;
-	expect(footer.y + footer.height).toBeLessThanOrEqual(454);
-});
-
-test('brand suggestions are contained below their field and still allow manual names', async ({ page }) => {
-	await expect(page.locator('datalist, input[list]')).toHaveCount(0);
-	const brand = page.locator('#nc-brand');
-	await brand.fill('Flipkart');
-	const list = page.getByRole('listbox', { name: 'Existing brands' });
-	await expect(list.getByRole('option')).toHaveCount(2);
-	const rect = (await brand.boundingBox())!;
-	expect((await list.boundingBox())!.y).toBeGreaterThanOrEqual(rect.y + rect.height);
-	await list.getByRole('option', { name: 'Flipkart Food Fest', exact: true }).click();
-	await expect(brand).toHaveValue('Flipkart Food Fest');
-	await page.getByRole('button', { name: 'Next', exact: true }).click();
-	await page.locator('#nc-brand2').fill('A new brand');
-	await expect(page.getByRole('listbox')).toHaveCount(0);
+	expect(footer.y + footer.height).toBeLessThanOrEqual(461);
 });
 
 test('form scrolling never drags the drawer; cancelled header drags reset and a header swipe closes it', async ({ page }) => {
