@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { page } from '$app/state';
+	import { page } from '$app/state';
+
 	import { todayIso } from '#lib/util.ts';
 	import { money } from '#lib/currency.ts';
 	import { onMount } from 'svelte';
@@ -10,6 +11,7 @@
 	import { errMessage, fmtLong, inr } from '#lib/util.ts';
 	import Icon from '#lib/components/Icon.svelte';
 	import BrandInvite from '#lib/components/BrandInvite.svelte';
+	import ZeroLoginBrandBar from '#lib/components/ZeroLoginBrandBar.svelte';
 
 	let inv = $state<InvoiceView | null>(null);
 	let loaded = $state(false);
@@ -67,6 +69,8 @@
 </script>
 
 <svelte:head><title>{inv ? `Invoice ${inv.number}` : 'Invoice'}</title><meta name="robots" content="noindex" /></svelte:head>
+
+{#if inv}<ZeroLoginBrandBar creator={inv.seller.name} from="invoice" context="invoice" />{/if}
 
 <div class="page invoice-page">
 	<div class="wrap doc-wrap">

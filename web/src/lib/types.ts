@@ -496,7 +496,9 @@ export type PublicPage = {
 	/** Her "about" line. */
 	bio?: string | null;
 	/** Her links for followers, and the sign-up box for her email list (null when it's off). */
-	links?: { id: string; title: string; url: string }[];
+	links?: { id: string; title: string; url: string; kind?: 'link' | 'product' | 'call' | 'affiliate'; subtitle?: string | null; price_inr?: number; badge?: string | null }[];
+	/** Creator UPI ID exposed only when paid bio storefront items are active. */
+	upi_id?: string | null;
 	/** Case studies the brands approved. */
 	cases?: import('./caseStudy').PublicCase[];
 	fan_list?: { pitch: string | null } | null;

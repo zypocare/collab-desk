@@ -3,6 +3,8 @@
 	import { supabase } from '#lib/supabase.ts';
 	import { firstName } from '#lib/util.ts';
 	import Icon from '#lib/components/Icon.svelte';
+	import BrandInvite from '#lib/components/BrandInvite.svelte';
+	import ZeroLoginBrandBar from '#lib/components/ZeroLoginBrandBar.svelte';
 
 	// From the "your files are ready" email: download page, no sign-in.
 	type F = { id: string; label: string; url: string; file_path: string | null; file_type: string; size: number };
@@ -25,6 +27,8 @@
 </script>
 
 <svelte:head><title>Your files</title></svelte:head>
+
+{#if info?.state === 'open'}<ZeroLoginBrandBar creator={info.creator} from="files" context="delivery" />{/if}
 
 <header class="topbar">
 	<a class="brandmark" href="/" aria-label="Miracle home"><span class="ring"><span></span></span><b>{info?.creator ? `Collaborate with ${firstName(info.creator)}` : ''}</b></a>
@@ -59,4 +63,6 @@
 			{/each}
 		</section>
 	{/if}
+
+	{#if info?.state === 'open'}<BrandInvite creator={info.creator} from="files" />{/if}
 </div></div>

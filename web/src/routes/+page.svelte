@@ -693,7 +693,7 @@
 				</div>
 			</section>
 
-			<PublicLinks links={p.links ?? []} fanList={p.fan_list ?? null} {first} />
+			<PublicLinks links={p.links ?? []} fanList={p.fan_list ?? null} {first} upiId={p.upi_id ?? null} whiteLabel={!!p.white_label} />
 
 			{#if catalogue.length}
 				<section class="mp-sec mp-cat" id="brands" aria-labelledby="mp-br-t">

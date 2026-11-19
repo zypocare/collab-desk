@@ -6,6 +6,8 @@
 	import type { BriefDetails } from '#lib/types.ts';
 	import BriefEditor from '#lib/components/BriefEditor.svelte';
 	import Icon from '#lib/components/Icon.svelte';
+	import BrandInvite from '#lib/components/BrandInvite.svelte';
+	import ZeroLoginBrandBar from '#lib/components/ZeroLoginBrandBar.svelte';
 
 	// From the "a few details" email: the brand fills in what the brief is missing. No sign-in.
 	type Info = {
@@ -50,6 +52,8 @@
 
 <svelte:head><title>Brief details</title></svelte:head>
 
+{#if info?.state === 'open' || done}<ZeroLoginBrandBar creator={info?.creator ?? ''} from="brief" context="brief" />{/if}
+
 <header class="topbar">
 	<a class="brandmark" href="/" aria-label="Miracle home"><span class="ring"><span></span></span><b>{info?.creator ? `Collaborate with ${creator}` : ''}</b></a>
 </header>
@@ -92,4 +96,6 @@
 			<div class="row"><button class="btn grad lg" disabled={busy} onclick={send}>{#if busy}<span class="spinner"></span>{:else}<Icon name="send" />{/if}Send to {creator}</button></div>
 		</section>
 	{/if}
+
+	{#if info?.state === 'open' || done}<BrandInvite creator={info?.creator ?? ''} from="brief" />{/if}
 </div></div>

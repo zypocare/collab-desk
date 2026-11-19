@@ -8,6 +8,7 @@
 	import { compact, fmtLong, localDay } from '#lib/util.ts';
 	import Icon from '#lib/components/Icon.svelte';
 	import BrandInvite from '#lib/components/BrandInvite.svelte';
+	import ZeroLoginBrandBar from '#lib/components/ZeroLoginBrandBar.svelte';
 
 	let r = $state<ReportFull | null>(null);
 	let pdfBusy = $state(false);
@@ -36,6 +37,8 @@
 </script>
 
 <svelte:head><title>{r ? `Results · ${r.brand} × ${r.creator.name}` : 'Results'}</title><meta name="robots" content="noindex" /></svelte:head>
+
+{#if r}<ZeroLoginBrandBar creator={r.creator.name} from="report" context="ROI report" />{/if}
 
 <div class="page">
 	<div class="wrap doc-wrap">
