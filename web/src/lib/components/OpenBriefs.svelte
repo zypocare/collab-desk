@@ -28,6 +28,60 @@
 	let rate = $state<number | null>(0);
 	let note = $state('');
 	let busy = $state(false);
+	let quickBusyId = $state('');
+	let filterMode = $state<'all' | 'top' | 'paid' | 'barter' | 'applied'>('all');
+	let sortMode = $state<'match' | 'budget' | 'newest'>('match');
+
+	// Matchmaking score (0–100) from niche/category overlap, budget vs rate card, and brand verification.
+	function matchScore(b: OpenBrief): number {
+		let score = 55;
+		const niche = (studio.settings?.niche ?? '').toLowerCase();
+		const cat = (b.category ?? '').toLowerCase();
+		if (cat && niche && (niche.includes(cat) || cat.includes(niche.split(/[\s,&]+/)[0] || ''))) score += 20;
+		else if (fits(b)) score += 12;
+		if (b.verified) score += 10;
+		const myPrice = cardPrice(b);
+		const hi = Number(b.budget_max) || Number(b.budget_min) || 0;
+		if (!isBarter(b) && hi > 0) {
+			if (!myPrice || hi >= myPrice * 0.85) score += 15;
+			else if (hi >= myPrice * 0.6) score += 7;
+		} else if (isBarter(b) && studio.settings?.barter_mode !== 'closed') {
+			score += 8;
+		}
+		return Math.min(99, Math.max(40, score));
+	}
+
+	const filteredBriefs = $derived.by(() => {
+		let list = [...briefs];
+		if (filterMode === 'top') list = list.filter((b) => matchScore(b) >= 80 && !b.mine);
+		else if (filterMode === 'paid') list = list.filter((b) => !isBarter(b));
+		else if (filterMode === 'barter') list = list.filter((b) => isBarter(b));
+		else if (filterMode === 'applied') list = list.filter((b) => !!b.mine);
+
+		if (sortMode === 'match') list.sort((a, b) => matchScore(b) - matchScore(a));
+		else if (sortMode === 'budget') list.sort((a, b) => (Number(b.budget_max) || Number(b.budget_min) || 0) - (Number(a.budget_max) || Number(a.budget_min) || 0));
+		return list;
+	});
+
+	async function quickApply(b: OpenBrief) {
+		quickBusyId = b.id;
+		try {
+			const myRate = isBarter(b) ? 0 : cardPrice(b) || Number(b.budget_max) || Number(b.budget_min) || 0;
+			const ig = studio.ig?.connected ? studio.ig : null;
+			const autoNote = [
+				`Hi ${b.brand} team, I'd love to collaborate on this brief!`,
+				ig?.followers ? `My live IG stats (${Math.round(ig.followers / 1000)}K followers) and recent collabs are attached on my Miracle profile.` : 'My live media kit and past collabs are attached on my Miracle profile.'
+			].join(' ');
+			await applyToBrief(b.id, myRate, autoNote);
+			b.mine = { rate: myRate, note: autoNote, status: 'applied', created_at: new Date().toISOString() } as OpenBrief['mine'];
+			briefs = [...briefs];
+			toast(`Applied to ${b.brand} in 1 tap!`, 'check');
+		} catch (e) {
+			toast(errMessage(e), 'alert');
+		} finally {
+			quickBusyId = '';
+		}
+	}
 
 	const rates = $derived(studio.settings?.rates ?? {});
 	const isBarter = (b: OpenBrief) => b.brief.type === 'barter';
@@ -137,14 +191,28 @@
 </div>
 {#if briefs.length}
 	<p class="hint">Brands looking for creators like you. Apply with your own rate; the brand sends a request if they pick you.</p>
+	<div class="ob-match-bar">
+		<div class="ob-pills" role="tablist" aria-label="Filter briefs">
+			{#each [['all', `All (${briefs.length})`], ['top', 'Top Matches'], ['paid', 'Paid'], ['barter', 'Barter'], ['applied', 'Applied']] as [k, lbl] (k)}
+				<button type="button" class="ob-pill" class:on={filterMode === k} onclick={() => (filterMode = k as typeof filterMode)}>{lbl}</button>
+			{/each}
+		</div>
+		<select class="inp ob-sort" aria-label="Sort briefs" bind:value={sortMode}>
+			<option value="match">Sort: Best Match</option>
+			<option value="budget">Sort: Highest Budget</option>
+			<option value="newest">Sort: Default</option>
+		</select>
+	</div>
 	<section class="tks pt-tks">
-		{#each briefs as b, i (b.id)}
-			<Ticket name={b.brand} sub={[b.verified ? '✓ Verified' : '', b.category].filter(Boolean).join(' · ')} money={budget(b)} moneySub={budgetSub(b)} task={task(b)} status={status(b)} tone={tone(b)} chips={fitChips(b)} onopen={() => show(b, !b.mine && fits(b))} {i}>
+		{#each filteredBriefs as b, i (b.id)}
+			{@const sc = matchScore(b)}
+			<Ticket name={b.brand} sub={[b.verified ? '✓ Verified' : '', b.category].filter(Boolean).join(' · ')} money={budget(b)} moneySub={budgetSub(b)} task={task(b)} status={status(b)} tone={tone(b)} chips={[`${sc}% Match`, ...fitChips(b)]} onopen={() => show(b, !b.mine && fits(b))} {i}>
 				<span class="pt-tk-acts">
 					{#if !b.mine && !fits(b)}
 						<button class="btn" onclick={() => show(b, false)}>See the brief</button>
 					{:else if !b.mine}
-						<button class="btn grad" onclick={() => show(b, true)}>Apply</button>
+						<button class="btn grad" disabled={quickBusyId === b.id} onclick={() => quickApply(b)}>{#if quickBusyId === b.id}<span class="spinner"></span>{:else}<Icon name="spark" />{/if}1-Tap Apply</button>
+						<button class="btn" onclick={() => show(b, true)}>Custom rate</button>
 					{:else}
 						<button class="btn" onclick={() => show(b, false)}>View</button>
 						{#if b.mine.status !== 'sent'}<button class="btn" onclick={() => show(b, true)}><Icon name="edit" />Change</button>{/if}
@@ -226,4 +294,10 @@
 		color: var(--ok);
 		font-weight: 600;
 	}
+
+	.ob-match-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin: 10px 0 14px; }
+	.ob-pills { display: flex; gap: 6px; flex-wrap: wrap; }
+	.ob-pill { appearance: none; border: 1px solid var(--line); background: var(--surface); color: var(--ink-2); font: 700 12px/1 var(--f-body); padding: 7px 12px; border-radius: 999px; cursor: pointer; }
+	.ob-pill.on { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+	.ob-sort { width: auto; height: 34px; font-size: 12px; padding: 0 10px; }
 </style>

@@ -3,7 +3,8 @@
 	import { loadRoster, setDealPct, setSettled, setSplit, useCreator, type RosterCreator, type RosterDeal } from '#lib/agency.svelte.ts';
 	import { rosterDeck } from '#lib/agencyDeck.ts';
 	import { studio } from '#lib/studio.svelte.ts';
-	import { toast } from '#lib/ui.svelte.ts';
+	import { copyText, toast } from '#lib/ui.svelte.ts';
+	import { supabase } from '#lib/supabase.ts';
 	import { compact, errMessage, fmt, inr, inrS } from '#lib/util.ts';
 	import Icon from '#lib/components/Icon.svelte';
 	import Ticket from '#lib/components/Ticket.svelte';
@@ -17,9 +18,18 @@
 	let brand = $state('');
 	let brief = $state('');
 	let making = $state(false);
+	let linkBusy = $state(false);
+	let liveDecks = $state<{ id: string; token: string; brand_name: string; views: number; created_at: string }[]>([]);
+	let deckLeads = $state<{ id: string; brand_name: string; contact: string; selected_handles: string[]; message: string; created_at: string }[]>([]);
 	onMount(async () => {
 		try {
 			roster = await loadRoster();
+			const [dRes, qRes] = await Promise.all([
+				supabase.from('roster_decks').select('id, token, brand_name, views, created_at').order('created_at', { ascending: false }).limit(10),
+				supabase.from('roster_deck_inquiries').select('id, brand_name, contact, selected_handles, message, created_at').order('created_at', { ascending: false }).limit(15)
+			]);
+			if (!dRes.error) liveDecks = (dRes.data as typeof liveDecks) ?? [];
+			if (!qRes.error) deckLeads = (qRes.data as typeof deckLeads) ?? [];
 		} catch (e) {
 			error = errMessage(e);
 		}
@@ -64,6 +74,39 @@
 		await setSettled(r.id, id, on).catch((e) => toast(errMessage(e), 'alert'));
 		const d = r.deals.find((x) => x.id === id);
 		if (d) d.settled = on;
+	}
+	async function createLiveDeck() {
+		if (!brand.trim() || !picked.size) return;
+		linkBusy = true;
+		try {
+			const selected = roster.filter((r) => picked.has(r.id)).map((r) => ({
+				name: r.name,
+				handle: r.handle,
+				niche: r.niche,
+				city: r.city,
+				photo: r.photo,
+				followers: r.followers,
+				engagement: r.engagement,
+				avg_views: r.avg_views,
+				site_url: r.site_url,
+				rates: r.rates
+			}));
+			const { data, error: err } = await supabase.rpc('roster_deck_create', {
+				p_brand: brand.trim(),
+				p_brief: brief.trim(),
+				p_agency: studio.settings?.display_name || studio.me?.email || '',
+				p_creators: selected
+			});
+			if (err) throw err;
+			const created = data as { id: string; token: string; brand_name: string; views: number; created_at: string };
+			liveDecks = [created, ...liveDecks];
+			const url = `${location.origin}/deck/${created.token}`;
+			copyText(url, 'Live pitch deck link copied! Send it to the brand.');
+		} catch (e) {
+			toast(errMessage(e), 'alert');
+		} finally {
+			linkBusy = false;
+		}
 	}
 	async function deck() {
 		if (!brand.trim() || !picked.size) return;
@@ -123,7 +166,35 @@
 			<div class="ro-b">
 				<div class="f"><label for="ro-brand">For which brand</label><input class="inp" id="ro-brand" placeholder="e.g. Kora Botanicals" bind:value={brand} /></div>
 				<div class="f"><label for="ro-brief">What they want <span class="hint">(optional)</span></label><textarea class="inp" id="ro-brief" rows="2" placeholder="e.g. Festive skincare launch, women 22-35 in Bengaluru and Mumbai" bind:value={brief}></textarea></div>
-				<button class="btn grad" onclick={deck} disabled={making || !brand.trim() || !picked.size}>{#if making}<span class="spinner"></span>{:else}<Icon name="download" />{/if}Make the deck (PDF)</button>
+				<div style="display:flex;gap:8px;flex-wrap:wrap">
+					<button class="btn grad" onclick={createLiveDeck} disabled={linkBusy || !brand.trim() || !picked.size}>{#if linkBusy}<span class="spinner"></span>{:else}<Icon name="link" />{/if}Create live pitch link</button>
+					<button class="btn" onclick={deck} disabled={making || !brand.trim() || !picked.size}>{#if making}<span class="spinner"></span>{:else}<Icon name="download" />{/if}Download PDF</button>
+				</div>
+				{#if liveDecks.length}
+					<div style="display:grid;gap:6px;margin-top:12px;padding-top:12px;border-top:1px solid var(--line)">
+						<small class="hint">Live pitch links ({liveDecks.length})</small>
+						{#each liveDecks as d (d.id)}
+							<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:var(--surface-2)">
+								<div><b>{d.brand_name}</b> <small class="hint">· {d.views} view{d.views === 1 ? '' : 's'}</small></div>
+								<div style="display:flex;gap:6px">
+									<button type="button" class="btn sm" onclick={() => copyText(`${location.origin}/deck/${d.token}`, 'Pitch link copied')}><Icon name="copy" />Copy</button>
+									<a class="btn sm" href="/deck/{d.token}" target="_blank" rel="noopener">Open</a>
+								</div>
+							</div>
+						{/each}
+					</div>
+				{/if}
+				{#if deckLeads.length}
+					<div style="display:grid;gap:6px;margin-top:12px;padding-top:12px;border-top:1px solid var(--line)">
+						<small class="hint">Brand shortlist inquiries ({deckLeads.length})</small>
+						{#each deckLeads as q (q.id)}
+							<div style="padding:9px 11px;border-radius:10px;border:1px solid var(--line);background:var(--surface-2)">
+								<b>{q.brand_name}</b> <small class="hint">· {q.contact}</small>
+								<div class="hint" style="margin-top:2px">Shortlisted: {q.selected_handles.join(', ') || 'All'}{#if q.message} — "{q.message}"{/if}</div>
+							</div>
+						{/each}
+					</div>
+				{/if}
 			</div>
 		</section>
 
