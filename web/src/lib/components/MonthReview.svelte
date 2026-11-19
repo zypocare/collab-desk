@@ -9,6 +9,7 @@
 	import { compact, inr } from '../util';
 	import AiThinking from './AiThinking.svelte';
 	import Icon from './Icon.svelte';
+	import StorySheet from './StorySheet.svelte';
 
 	// "Your month in review": the month's numbers, and the AI's short write-up of them.
 	type Review = { headline: string; wins: string[]; watch: string[]; actions: string[] };
@@ -22,6 +23,7 @@
 	const f = $derived<MonthFacts | null>(month && studio.settings ? monthFacts(month, studio.collabs, studio.settings, studio.media, studio.followersHistory) : null);
 	let saved = $state<Record<string, Review>>({});
 	let busy = $state(false);
+	let wrappedOpen = $state(false);
 	const tried = new Set<string>();
 
 	async function load(m: string) {
@@ -63,9 +65,12 @@
 				<span class="eb">Your month in review <span class="ai-tag"><Icon name="spark" />AI</span></span>
 				<h2>{monthLabel(month)}</h2>
 			</div>
-			{#if months.length > 1}
-				<label class="mr-pick"><span class="sr-only">Month</span><select class="inp" bind:value={month}>{#each months as m (m)}<option value={m}>{monthLabel(m)}</option>{/each}</select><Icon name="chevD" /></label>
-			{/if}
+			<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+				<button type="button" class="btn sm grad" onclick={() => (wrappedOpen = true)}><Icon name="insta" />Share Wrapped Story</button>
+				{#if months.length > 1}
+					<label class="mr-pick"><span class="sr-only">Month</span><select class="inp" bind:value={month}>{#each months as m (m)}<option value={m}>{monthLabel(m)}</option>{/each}</select><Icon name="chevD" /></label>
+				{/if}
+			</div>
 		</header>
 
 		{#if busy}<p class="mr-head"><AiThinking label="Writing your review" /></p>{:else if r}<p class="mr-head">{r.headline}</p>{/if}
@@ -91,3 +96,5 @@
 		{/if}
 	</section>
 {/if}
+
+{#if wrappedOpen}<StorySheet initialMode="wrapped" wrappedMonth={month} onclose={() => (wrappedOpen = false)} />{/if}

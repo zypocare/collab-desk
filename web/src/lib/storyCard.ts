@@ -215,3 +215,257 @@ export function storyCardBlob(d: StoryCardData): Promise<Blob | null> {
 		}
 	});
 }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// "Creator Wrapped" 1080×1920 IG Story Card (Monthly Milestone Flex + Bio Link)
+// ═══════════════════════════════════════════════════════════════════════════
+export type WrappedTheme = 'aurora' | 'noir' | 'sunset';
+
+export type WrappedCardData = {
+	monthLabel: string; // e.g. "November 2026"
+	name: string;
+	handle: string;
+	link: string; // "priya.miracleapp.live"
+	photo: HTMLImageElement | null;
+	initials: string;
+	totalViews: number;
+	collabsCount: number;
+	topBrand: string;
+	topViews: number;
+	followerGrowth: number | null;
+	earnedLabel: string | null; // null unless creator explicitly enables revenue display
+	accepting: boolean;
+	theme: WrappedTheme;
+};
+
+const WRAPPED_THEMES: Record<WrappedTheme, { bg: string; g1: string; g2: string; g3: string; glow1: string; glow2: string; chip: string }> = {
+	aurora: {
+		bg: '#110D14',
+		g1: '#9C7BFF',
+		g2: '#F25A90',
+		g3: '#FFAE6B',
+		glow1: 'rgba(156,123,255,0.34)',
+		glow2: 'rgba(242,90,144,0.28)',
+		chip: 'rgba(156,123,255,0.20)'
+	},
+	noir: {
+		bg: '#0D0C10',
+		g1: '#F6D88B',
+		g2: '#E5A854',
+		g3: '#FFF0C2',
+		glow1: 'rgba(246,216,139,0.24)',
+		glow2: 'rgba(229,168,84,0.18)',
+		chip: 'rgba(246,216,139,0.16)'
+	},
+	sunset: {
+		bg: '#160D12',
+		g1: '#FF7A59',
+		g2: '#F25A90',
+		g3: '#FFD166',
+		glow1: 'rgba(255,122,89,0.32)',
+		glow2: 'rgba(242,90,144,0.28)',
+		chip: 'rgba(255,122,89,0.20)'
+	}
+};
+
+function roundRect(x: CanvasRenderingContext2D, rx: number, ry: number, rw: number, rh: number, r: number) {
+	x.beginPath();
+	x.moveTo(rx + r, ry);
+	x.arcTo(rx + rw, ry, rx + rw, ry + rh, r);
+	x.arcTo(rx + rw, ry + rh, rx, ry + rh, r);
+	x.arcTo(rx, ry + rh, rx, ry, r);
+	x.arcTo(rx, ry, rx + rw, ry, r);
+	x.closePath();
+}
+
+export function drawWrappedCard(canvas: HTMLCanvasElement, d: WrappedCardData) {
+	const W = STORY_W;
+	const H = STORY_H;
+	canvas.width = W;
+	canvas.height = H;
+	const x = canvas.getContext('2d')!;
+	const t = WRAPPED_THEMES[d.theme] ?? WRAPPED_THEMES.aurora;
+	x.textBaseline = 'alphabetic';
+
+	// Background + atmospheric mesh glows
+	x.fillStyle = t.bg;
+	x.fillRect(0, 0, W, H);
+
+	const r1 = x.createRadialGradient(W * 0.18, H * 0.16, 40, W * 0.18, H * 0.16, 620);
+	r1.addColorStop(0, t.glow1);
+	r1.addColorStop(1, 'transparent');
+	x.fillStyle = r1;
+	x.fillRect(0, 0, W, H);
+
+	const r2 = x.createRadialGradient(W * 0.86, H * 0.72, 40, W * 0.86, H * 0.72, 640);
+	r2.addColorStop(0, t.glow2);
+	r2.addColorStop(1, 'transparent');
+	x.fillStyle = r2;
+	x.fillRect(0, 0, W, H);
+
+	const accentGrad = x.createLinearGradient(120, 0, W - 120, 0);
+	accentGrad.addColorStop(0, t.g1);
+	accentGrad.addColorStop(0.52, t.g2);
+	accentGrad.addColorStop(1, t.g3);
+
+	// Top pill: Month Wrapped
+	const pillText = `${d.monthLabel.toUpperCase()}  ·  CREATOR WRAPPED`;
+	x.font = `700 28px ${SANS}`;
+	const pw = Math.min(W - 140, x.measureText(pillText).width + 72);
+	roundRect(x, (W - pw) / 2, 148, pw, 64, 32);
+	x.fillStyle = t.chip;
+	x.fill();
+	x.strokeStyle = 'rgba(255,255,255,0.18)';
+	x.lineWidth = 2;
+	x.stroke();
+	x.fillStyle = INK;
+	x.textAlign = 'center';
+	x.fillText(pillText, W / 2, 190);
+
+	// Avatar inside gradient ring
+	const cx = W / 2;
+	const cy = 358;
+	const ar = 96;
+	x.beginPath();
+	x.arc(cx, cy, ar + 10, 0, Math.PI * 2);
+	x.fillStyle = accentGrad;
+	x.fill();
+	x.beginPath();
+	x.arc(cx, cy, ar + 3, 0, Math.PI * 2);
+	x.fillStyle = t.bg;
+	x.fill();
+
+	x.save();
+	x.beginPath();
+	x.arc(cx, cy, ar, 0, Math.PI * 2);
+	x.clip();
+	if (d.photo) {
+		const s = Math.max((ar * 2) / d.photo.width, (ar * 2) / d.photo.height);
+		const dw = d.photo.width * s;
+		const dh = d.photo.height * s;
+		x.drawImage(d.photo, cx - dw / 2, cy - dh / 2, dw, dh);
+	} else {
+		x.fillStyle = '#251D2A';
+		x.fillRect(cx - ar, cy - ar, ar * 2, ar * 2);
+		x.fillStyle = INK;
+		x.font = `400 72px ${SERIF}`;
+		x.textAlign = 'center';
+		x.fillText(d.initials, cx, cy + 24);
+	}
+	x.restore();
+
+	// Creator Name & Handle
+	const namePx = fit(x, d.name, (px) => `italic 400 ${px}px ${SERIF}`, 92, W - 160, 52);
+	x.font = `italic 400 ${namePx}px ${SERIF}`;
+	x.fillStyle = INK;
+	x.textAlign = 'center';
+	x.fillText(d.name, W / 2, 558);
+
+	if (d.handle) {
+		x.font = `600 32px ${SANS}`;
+		x.fillStyle = INK2;
+		x.fillText(`@${d.handle.replace(/^@/, '')}`, W / 2, 608);
+	}
+
+	// Giant Hero Reach Number
+	const heroNum = d.totalViews > 0 ? compact(d.totalViews) : `${d.collabsCount}`;
+	const heroSub = d.totalViews > 0 ? 'VERIFIED COLLAB VIEWS' : `BRAND COLLAB${d.collabsCount === 1 ? '' : 'S'} LIVE`;
+	x.font = `400 184px ${SERIF}`;
+	x.fillStyle = accentGrad;
+	x.fillText(heroNum, W / 2, 854);
+
+	x.font = `700 30px ${SANS}`;
+	x.fillStyle = INK2;
+	x.fillText(heroSub, W / 2, 912);
+
+	// 2-Column Stat Strip
+	const cardY = 984;
+	const cardW = 424;
+	const cardH = 210;
+	const gap = 36;
+	const leftX = (W - (cardW * 2 + gap)) / 2;
+	const rightX = leftX + cardW + gap;
+
+	const s1Val = `${d.collabsCount}`;
+	const s1Lbl = `Collab${d.collabsCount === 1 ? '' : 's'} shipped`;
+	const s2Val = d.earnedLabel
+		? d.earnedLabel
+		: d.followerGrowth !== null
+			? `${d.followerGrowth >= 0 ? '+' : ''}${compact(d.followerGrowth)}`
+			: d.accepting
+				? 'Open'
+				: 'Booked';
+	const s2Lbl = d.earnedLabel ? 'Earned this month' : d.followerGrowth !== null ? 'New followers' : 'Collab slots';
+
+	for (const [bx, val, lbl] of [
+		[leftX, s1Val, s1Lbl],
+		[rightX, s2Val, s2Lbl]
+	] as const) {
+		roundRect(x, bx, cardY, cardW, cardH, 32);
+		x.fillStyle = 'rgba(255,255,255,0.055)';
+		x.fill();
+		x.strokeStyle = 'rgba(255,255,255,0.14)';
+		x.lineWidth = 2;
+		x.stroke();
+		x.textAlign = 'center';
+		const vpx = fit(x, val, (px) => `italic 400 ${px}px ${SERIF}`, 76, cardW - 48, 44);
+		x.font = `italic 400 ${vpx}px ${SERIF}`;
+		x.fillStyle = INK;
+		x.fillText(val, bx + cardW / 2, cardY + 114);
+		x.font = `600 26px ${SANS}`;
+		x.fillStyle = INK2;
+		x.fillText(lbl, bx + cardW / 2, cardY + 166);
+	}
+
+	// Top Collab Spotlight Strip
+	if (d.topBrand) {
+		const spY = 1244;
+		const spW = cardW * 2 + gap;
+		roundRect(x, leftX, spY, spW, 152, 32);
+		x.fillStyle = t.chip;
+		x.fill();
+		x.strokeStyle = 'rgba(255,255,255,0.18)';
+		x.lineWidth = 2;
+		x.stroke();
+		x.textAlign = 'center';
+		x.font = `700 24px ${SANS}`;
+		x.fillStyle = t.g3;
+		x.fillText('★  TOP COLLAB OF THE MONTH', W / 2, spY + 56);
+		const topLine = d.topViews > 0 ? `${d.topBrand}  ·  ${compact(d.topViews)} views` : d.topBrand;
+		const tpx = fit(x, topLine, (px) => `italic 400 ${px}px ${SERIF}`, 54, spW - 64, 34);
+		x.font = `italic 400 ${tpx}px ${SERIF}`;
+		x.fillStyle = INK;
+		x.fillText(topLine, W / 2, spY + 118);
+	}
+
+	// Bottom CTA Pill (Bio Storefront Link)
+	const ctaY = 1520;
+	const ctaW = W - 160;
+	roundRect(x, 80, ctaY, ctaW, 148, 36);
+	x.fillStyle = 'rgba(255,255,255,0.07)';
+	x.fill();
+	x.strokeStyle = accentGrad;
+	x.lineWidth = 3;
+	x.stroke();
+
+	x.textAlign = 'center';
+	x.font = `700 26px ${SANS}`;
+	x.fillStyle = d.accepting ? '#86E6A1' : INK2;
+	x.fillText(d.accepting ? '●  OPEN FOR BRAND COLLABS & STOREFRONT' : 'VIEW LIVE MEDIA KIT & STOREFRONT', W / 2, ctaY + 56);
+
+	const lpx = fit(x, d.link, (px) => `700 ${px}px ${SANS}`, 38, ctaW - 60, 24);
+	x.font = `700 ${lpx}px ${SANS}`;
+	x.fillStyle = INK;
+	x.fillText(d.link, W / 2, ctaY + 112);
+
+	// Footer viral attribution
+	x.font = `600 26px ${SANS}`;
+	x.fillStyle = INK3;
+	x.fillText('Wrapped with Miracle  ·  @themiracleapp', W / 2, 1810);
+}
+
+export async function wrappedCardBlob(d: WrappedCardData): Promise<Blob | null> {
+	const c = document.createElement('canvas');
+	drawWrappedCard(c, d);
+	return await new Promise((resolve) => c.toBlob((b) => resolve(b), 'image/png'));
+}

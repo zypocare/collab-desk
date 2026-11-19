@@ -4,6 +4,7 @@
 	import { confetti } from '#lib/ui.svelte.ts';
 	import { errMessage, firstName } from '#lib/util.ts';
 	import BrandInvite from '#lib/components/BrandInvite.svelte';
+	import ZeroLoginBrandBar from '#lib/components/ZeroLoginBrandBar.svelte';
 
 	// A brand leaves a quick review after a collab (one-tap link from email, no sign-in).
 	type Info = { state: 'open' | 'used' | 'expired' | 'missing'; code: string; brand: string; contact: string; creator: string };
@@ -39,6 +40,8 @@
 </script>
 
 <svelte:head><title>Leave a review</title></svelte:head>
+
+{#if info?.creator}<ZeroLoginBrandBar creator={info.creator} from="review" context="collab" />{/if}
 
 <header class="topbar">
 	<a class="brandmark" href="/" aria-label="Miracle home"><span class="ring"><span></span></span><b>{info?.creator ? `Collaborate with ${creator}` : ''}</b></a>

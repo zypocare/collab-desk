@@ -10,6 +10,7 @@
 	import DraftPlayer from '#lib/components/DraftPlayer.svelte';
 	import Icon from '#lib/components/Icon.svelte';
 	import BrandInvite from '#lib/components/BrandInvite.svelte';
+	import ZeroLoginBrandBar from '#lib/components/ZeroLoginBrandBar.svelte';
 	import ExpectedResults from '#lib/components/ExpectedResults.svelte';
 	import { loadPublicPage, pub } from '#lib/publicPage.svelte.ts';
 	import { onMount } from 'svelte';
@@ -110,6 +111,8 @@
 </script>
 
 <svelte:head><title>{info?.kind === 'draft' ? 'Review draft' : info?.kind === 'counter' ? 'Your request' : 'Your quote'}</title></svelte:head>
+
+{#if info?.creator}<ZeroLoginBrandBar creator={info.creator} from="action" context={info.kind === 'draft' ? 'draft review' : 'quote'} />{/if}
 
 <header class="topbar">
 	<a class="brandmark" href="/" aria-label="Miracle home"><span class="ring"><span></span></span><b>{info?.creator ? `Collaborate with ${creator}` : ''}</b></a>
