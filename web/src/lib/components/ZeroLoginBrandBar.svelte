@@ -6,8 +6,8 @@
 	import { firstName } from '../util';
 	import Logo from './Logo.svelte';
 
-	// Sticky zero-login brand conversion bar shown on outbound creator links (invoice, files, report, brief).
-	// Converts brands reviewing deliverables or paying invoices into free Brand Workspaces at zero CAC.
+	// Sticky zero-login brand conversion bar shown on outbound creator links (invoice, files, report, brief, action, review).
+	// Includes safe-area-inset-top padding so it never gets clipped behind the native iOS/Android status bar.
 	let { creator = '', from, context = 'collab' }: { creator?: string; from: string; context?: string } = $props();
 	let dismissed = $state(false);
 	let founding = $state<{ on: boolean; left: number; months: number } | null>(null);
@@ -51,6 +51,7 @@
 		position: sticky;
 		top: 0;
 		z-index: 40;
+		padding-top: env(safe-area-inset-top, 0px);
 		background: linear-gradient(90deg, color-mix(in oklab, var(--g1) 22%, var(--hero, #161118)), color-mix(in oklab, var(--g2) 18%, var(--hero, #161118)));
 		border-bottom: 1px solid color-mix(in oklab, var(--g1) 38%, var(--line));
 		color: #fff;
@@ -60,7 +61,7 @@
 	.zlb-in {
 		max-width: 980px;
 		margin: 0 auto;
-		padding: 10px 16px;
+		padding: 10px max(16px, env(safe-area-inset-right, 0px)) 10px max(16px, env(safe-area-inset-left, 0px));
 		display: flex;
 		align-items: center;
 		gap: 12px;
@@ -85,6 +86,9 @@
 		font-weight: 700;
 		line-height: 1.25;
 		color: #fff;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
 	}
 	.zlb-copy span {
 		font-size: 11.5px;
@@ -101,7 +105,7 @@
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
-		padding: 7px 13px;
+		padding: 7px 14px;
 		border-radius: 999px;
 		background: linear-gradient(135deg, var(--g1), var(--g2), var(--g3));
 		color: #120b12;
@@ -115,21 +119,28 @@
 	.zlb-x {
 		appearance: none;
 		border: 0;
-		background: rgba(255, 255, 255, 0.12);
-		color: rgba(255, 255, 255, 0.85);
-		width: 26px;
-		height: 26px;
+		background: rgba(255, 255, 255, 0.14);
+		color: rgba(255, 255, 255, 0.9);
+		width: 28px;
+		height: 28px;
 		border-radius: 50%;
 		cursor: pointer;
 		font-size: 12px;
 		display: grid;
 		place-items: center;
+		flex: none;
 	}
-	.zlb-x:hover { background: rgba(255, 255, 255, 0.22); }
+	.zlb-x:hover { background: rgba(255, 255, 255, 0.24); }
 	@media (max-width: 640px) {
-		.zlb-in { flex-wrap: wrap; gap: 8px; padding: 10px 14px; }
+		.zlb-in {
+			flex-wrap: wrap;
+			gap: 8px;
+			padding: 10px max(14px, env(safe-area-inset-right, 0px)) 11px max(14px, env(safe-area-inset-left, 0px));
+		}
+		.zlb-logo { width: 30px; height: 30px; border-radius: 8px; }
+		.zlb-copy b { font-size: 12.5px; }
 		.zlb-copy span { display: none; }
 		.zlb-act { width: 100%; justify-content: space-between; }
-		.zlb-cta { flex: 1; }
+		.zlb-cta { flex: 1; padding: 8px 14px; }
 	}
 </style>
