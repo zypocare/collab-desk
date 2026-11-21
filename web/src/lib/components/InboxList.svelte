@@ -126,7 +126,7 @@
 			{#if igCollabs}<button class="ib-filter" class:on={collabsOnly} onclick={() => (collabsOnly = !collabsOnly)}><Icon name="spark" />{igCollabs} look{igCollabs === 1 ? 's' : ''} like a collab{collabsOnly ? ' · show all' : ''}</button>{/if}
 			{#if igCollabs}<a class="ail-more ib-all" href="/studio/possible-collabs">All possible collabs, in one place<Icon name="chevR" /></a>{/if}
 			{#each igShown as t (t.igsid)}
-				<a class="ib-row" class:unread={t.unread > 0} class:on={current === `/studio/inbox/ig/${t.igsid}`} href="/studio/inbox/ig/{t.igsid}">
+				<a class="ib-row" class:lead={isCollab(t)} class:unread={t.unread > 0} class:on={current === `/studio/inbox/ig/${t.igsid}`} href="/studio/inbox/ig/{t.igsid}">
 					<span class="ib-av" class:ring={t.unread > 0}>{#if t.picture}<img src={igImg(t.picture)} alt="" referrerpolicy="no-referrer" />{:else}<Mono name={t.username || 'IG'} />{/if}</span>
 					<span class="ib-b">
 						<b>{t.name || `@${t.username || 'Instagram user'}`}</b>
@@ -146,3 +146,94 @@
 	</div>
 </div>
 
+<style>
+	@property --ib-rim { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
+
+	.ib-tabs {
+		display: grid !important;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		margin: 8px 14px 10px !important;
+		padding: 0 !important;
+		border: 1px solid #3e343e !important;
+		background: #191419 !important;
+		gap: 0 !important;
+	}
+	.ib-tabs button {
+		height: 40px !important;
+		border: 0 !important;
+		border-radius: 0 !important;
+		background: transparent !important;
+		color: #a39aa1 !important;
+		font: 700 10.5px/1 system-ui !important;
+		letter-spacing: .12em;
+		text-transform: uppercase;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 7px;
+	}
+	.ib-tabs button + button {
+		border-left: 1px solid #2e262e !important;
+	}
+	.ib-tabs button.on {
+		position: relative;
+		z-index: 2;
+		background: var(--ink) !important;
+		color: var(--bg) !important;
+		box-shadow: 3px 3px 0 var(--g2) !important;
+	}
+	.ib-tabs button.on::after {
+		display: none !important;
+	}
+
+	.ib-filter {
+		margin: 4px 14px 8px !important;
+		border-radius: 0 !important;
+		border: 1px solid transparent !important;
+		background:
+			linear-gradient(135deg, #271a2d, #18121a 65%) padding-box,
+			conic-gradient(from var(--ib-rim), rgba(156, 123, 255, 0.8), rgba(242, 90, 144, 0.8), rgba(255, 174, 107, 0.65), rgba(70, 52, 66, 0.3), rgba(156, 123, 255, 0.8)) border-box !important;
+		animation: ib-spin 11s linear infinite;
+		box-shadow: 2.5px 2.5px 0 #382c38;
+	}
+	.ib-filter.on {
+		background: var(--ink) !important;
+		color: var(--bg) !important;
+		box-shadow: 3px 3px 0 var(--g2) !important;
+	}
+
+	.ib-row {
+		margin: 0 12px 9px !important;
+		padding: 12px 13px !important;
+		border-radius: 18px !important;
+		border: 1px solid #2e2430 !important;
+		background: linear-gradient(155deg, #1d161f, #151016 70%) !important;
+		transition: transform .16s, border-color .16s;
+	}
+	.ib-row:active {
+		transform: scale(.985);
+	}
+	.ib-row.lead {
+		border-color: rgba(242, 90, 144, 0.36) !important;
+		background: linear-gradient(135deg, rgba(242, 90, 144, 0.11), rgba(156, 123, 255, 0.06) 45%, #161118 85%) !important;
+	}
+	.ib-collab {
+		display: inline-flex !important;
+		align-items: center;
+		gap: 5px;
+		margin-top: 3px;
+		padding: 3px 8px;
+		border-radius: 7px;
+		background: rgba(242, 90, 144, 0.15);
+		border: 1px solid rgba(242, 90, 144, 0.3);
+		color: #ff9ec0 !important;
+		font-size: 11px !important;
+		font-weight: 650;
+		max-width: 100%;
+	}
+
+	@keyframes ib-spin { to { --ib-rim: 360deg; } }
+	@media (prefers-reduced-motion: reduce) {
+		.ib-filter { animation: none; }
+	}
+</style>

@@ -615,11 +615,26 @@
 		transform: scale(.93);
 	}
 
+	.m-hero > .mesh {
+		display: none !important;
+	}
+
 	.qa-card {
+		border-radius: 0 !important;
+		border: 1px solid #3f3241 !important;
+		background: rgba(25, 19, 26, 0.9) !important;
+		box-shadow: 2.5px 2.5px 0 #312632 !important;
 		transition: transform .14s cubic-bezier(.22, 1, .36, 1), box-shadow .14s;
+	}
+	.qa-card.primary {
+		background: var(--ink) !important;
+		color: var(--bg) !important;
+		border-color: var(--ink) !important;
+		box-shadow: 3px 3px 0 var(--g2) !important;
 	}
 	.qa-card:active {
 		transform: translate(2px, 2px);
+		box-shadow: none !important;
 	}
 
 	@keyframes ht-spin { to { --ht-rim: 360deg; } }
