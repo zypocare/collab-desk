@@ -62,7 +62,7 @@
 	const grFacts = $derived(
 		[
 			cu?.data.findings.length ? { b: `Growth check-up:`, t: ` ${cu.data.findings.length} thing${cu.data.findings.length === 1 ? '' : 's'} holding you back` } : null,
-			h?.score != null ? { b: `Audience ${h.score}/100`, t: ` · ${GRADE[h.grade]} audience` } : null,
+			h?.score != null && h.grade ? { b: `Audience ${h.score}/100`, t: ` · ${GRADE[h.grade]} audience` } : null,
 			boost ? { b: `${boost.r.toFixed(1)}× shares`, t: ' — 1 reel ready to boost' } : null,
 			open.length ? { b: `${open.length} reel idea${open.length === 1 ? '' : 's'}`, t: ' ready for your Calendar' } : null
 		].filter((x): x is { b: string; t: string } => !!x)
