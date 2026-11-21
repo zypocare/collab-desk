@@ -79,6 +79,7 @@
 	import QuoteDialog from './QuoteDialog.svelte';
 	import CollabPosts from './CollabPosts.svelte';
 	import LiveRecap from './LiveRecap.svelte';
+	import CollabCockpit from './CollabCockpit.svelte';
 	import { folds, openOnly } from '../folds';
 	import {
 		CHECKLIST,
@@ -571,6 +572,18 @@
 						<a href="#{id}" onclick={(e) => { e.preventDefault(); openSec(id); document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }}>{label}</a>
 					{/each}
 				</nav>
+			{/if}
+			{#if page && phone.on && c}
+				<CollabCockpit
+					{c}
+					next={next ?? null}
+					onstage={(st) => changeStage(st)}
+					onrunnext={(k) => runNext(k)}
+					onjump={(id) => {
+						openSec(id);
+						document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+					}}
+				/>
 			{/if}
 			{#if recap && c}<LiveRecap {c} onopen={jump} onpay={(inv) => (paymentOpen = inv)} oninvoice={() => (invoiceOpen = {})} />{/if}
 			{#if next && !recap}
