@@ -24,6 +24,7 @@ async function mountHome(page: Page) {
 		studio.settings = { id: 'motion-test', handle: 'asha', display_name: 'Asha Sharma', monthly_goal: 100000, weekly_capacity: 3, rates: {}, site_url: 'https://example.test/asha' };
 		localStorage.setItem('cd-setup-hide-motion-test', '1');
 		studio.extras = true;
+		studio.leads = [{ igsid: 'lead-1', username: 'north.studio', name: 'North Studio', collab_flag: 'likely', collab_hint: 'Interested in a café reel', last_at: new Date().toISOString(), unread: 1 }];
 		studio.collabs = [
 			{ name: 'Lumière', fee: 48000, stage: 'wrapped', pay_status: 'paid', pay_received: 48000, paid_on: rel(0) },
 			{ name: 'FLO', fee: 15000, stage: 'live', pay_status: 'invoiced', pay_due: rel(-3) },
@@ -39,17 +40,53 @@ async function mountHome(page: Page) {
 		const checksPath = '/src/lib/checkup.svelte.ts';
 		const { checkups } = await import(checksPath);
 		checkups.loaded = true;
-		const componentPath = '/src/lib/components/PhoneToday.svelte';
+		const phonePath = '/src/lib/phone.svelte.ts';
+		const { startPhone } = await import(phonePath);
+		const stopPhone = startPhone(async () => {});
+		const componentPath = '/src/routes/studio/+page.svelte';
 		const { default: Home } = await import(componentPath);
-		const source = await (await fetch(componentPath)).text();
+		const source = await (await fetch('/src/lib/components/PhoneToday.svelte')).text();
 		const runtime = source.match(/from\s+["']([^"']*\/svelte\.js[^"']*)["']/)?.[1];
 		if (!runtime) throw new Error('Could not find the component runtime');
 		const { mount, unmount } = await import(runtime);
 		const component = mount(Home, { target: document.querySelector('main')! });
-		window.homeTest = { received: (value) => studio.collabs[0].pay_received = value, destroy: () => unmount(component) };
+		window.homeTest = { received: (value) => studio.collabs[0].pay_received = value, destroy: async () => { stopPhone(); await unmount(component); } };
 	});
 	await expect(page.locator('.phone-today')).toBeVisible();
 }
+
+test('creator story rings open account summaries and the visible collab rail filters real next steps and DMs', async ({ page }) => {
+	await mountHome(page);
+	const stories = page.getByRole('navigation', { name: 'Creator stories' });
+	await expect(stories.getByRole('button')).toHaveText(['Wrapped', 'AI Tips', 'Due soon', 'Top Reel', 'Briefs']);
+	for (const [label, content] of [
+		['Wrapped', '₹48,000'], ['AI Tips', 'posting time'], ['Due soon', '₹15,000 overdue'],
+		['Top Reel', 'Your reel highlights'], ['Briefs', 'Open brand briefs']
+	]) {
+		const trigger = stories.getByRole('button', { name: label, exact: true });
+		await trigger.click();
+		await expect(page.getByRole('dialog')).toContainText(content);
+		await page.getByRole('button', { name: 'Got it' }).click();
+		await expect(trigger).toBeFocused();
+	}
+	const rail = page.getByRole('region', { name: 'Your collabs' });
+	await expect(rail).toBeVisible();
+	await expect(rail.getByRole('link', { name: 'See board' })).toHaveAttribute('href', '/studio/collabs');
+	await expect(rail.getByRole('button', { name: 'All active 4' })).toHaveAttribute('aria-pressed', 'true');
+	await expect(rail.locator('.tix-row a')).toHaveCount(4);
+	await rail.getByRole('button', { name: /Needs action/ }).click();
+	await expect(rail.getByRole('link', { name: /Dot & Key/ })).toHaveAccessibleName(/Send draft/);
+	await rail.getByRole('button', { name: 'DM leads 1' }).click();
+	await expect(rail.locator('.tix-row a')).toHaveCount(1);
+	await expect(rail.getByRole('link', { name: /North Studio/ })).toHaveAttribute('href', '/studio/inbox/ig/lead-1');
+	await expect(rail.locator('.lead-meta')).toContainText('@north.studio');
+	await page.evaluate(async () => {
+		const path = '/src/lib/studio.svelte.ts';
+		(await import(path)).studio.leads = [];
+	});
+	await expect(rail.getByRole('button', { name: 'DM leads 0' })).toHaveAttribute('aria-pressed', 'true');
+	await expect(rail.locator('.rail-empty')).toHaveText('No Instagram leads to review.');
+});
 
 test('money swipes, real balances, ticket expansion and day changes respond without accidental navigation', async ({ page }) => {
 	const errors: string[] = [];

@@ -2741,6 +2741,14 @@ html.cd-sheet, html.cd-sheet body { overflow: hidden; }
 
   /* 1. Hero Greeting + Living Multi-Mode Orb + Status Chips + Quick Actions */
   [data-desk] .phone-today .ht {
+    /* The greeting sits on deep plum in both app themes. */
+    --ink: #f4eef2;
+    --ink-2: #c9bfc6;
+    --ink-3: #a39aa1;
+    --bg: #110d11;
+    --surface: #1a151a;
+    --line-strong: #3e343e;
+    color: var(--ink);
     position: relative;
     margin: 4px 0 0;
     padding: 16px;
@@ -2773,7 +2781,7 @@ html.cd-sheet, html.cd-sheet body { overflow: hidden; }
   }
   [data-desk] .phone-today .ht-top-row {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     justify-content: space-between;
     gap: 12px;
   }
@@ -2781,6 +2789,7 @@ html.cd-sheet, html.cd-sheet body { overflow: hidden; }
     flex: 1;
     min-width: 0;
     padding-top: 2px;
+    overflow-wrap: anywhere;
   }
   [data-desk] .phone-today .ht-date,
   [data-desk] .phone-today .ht-hi {
@@ -2925,14 +2934,12 @@ html.cd-sheet, html.cd-sheet body { overflow: hidden; }
   /* Interactive Hero Status Chips Row */
   [data-desk] .phone-today .ht-chips {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     gap: 7px;
-    overflow-x: auto;
-    scrollbar-width: none;
     margin-top: 14px;
     padding-bottom: 2px;
   }
-  [data-desk] .phone-today .ht-chips::-webkit-scrollbar { display: none; }
   [data-desk] .phone-today .ht-chip {
     flex: none;
     height: 30px;
@@ -3077,6 +3084,19 @@ html.cd-sheet, html.cd-sheet body { overflow: hidden; }
   }
   [data-desk] .phone-today .m-hero .hc-in {
     padding: 16px 16px 14px;
+    gap: 10px;
+  }
+  [data-desk] .phone-today .m-hero .hc-main {
+    margin-top: 0;
+  }
+  [data-desk] .phone-today .m-hero .hc-sub {
+    margin-top: 4px;
+    min-height: 0;
+    font-size: 12px;
+  }
+  [data-desk] .phone-today .m-hero .hc-main .goal {
+    width: 72px;
+    height: 72px;
   }
   [data-desk] .phone-today .m-hero .hc-eb {
     color: var(--g3);
@@ -3104,7 +3124,7 @@ html.cd-sheet, html.cd-sheet body { overflow: hidden; }
     color: var(--g3);
   }
   [data-desk] .phone-today .hc-ctx {
-    margin-top: 12px;
+    margin: 0;
     padding: 8px 10px;
     border-radius: 12px;
     background: rgba(17, 13, 17, 0.62);
@@ -3157,13 +3177,18 @@ html.cd-sheet, html.cd-sheet body { overflow: hidden; }
     box-shadow: 2px 2px 0 var(--g2);
   }
   [data-desk] .phone-today .m-hero .hc-foot {
-    margin-top: 12px;
+    margin: 0;
+    gap: 6px;
   }
   [data-desk] .phone-today .m-hero .hc-foot > a {
-    padding: 9px 8px;
+    padding: 8px 7px;
     border-radius: 12px;
     background: rgba(28, 23, 28, 0.75);
     border: 1px solid #382c38;
+  }
+  [data-desk] .phone-today .m-hero .hc-foot b {
+    font-size: 17px;
+    overflow-wrap: anywhere;
   }
   [data-desk] .phone-today .m-hero .hc-foot > a.active-tile {
     background: rgba(242, 90, 144, 0.14);

@@ -1,15 +1,22 @@
 <script lang="ts">
 	import { studio } from '../studio.svelte';
 	import { copyText } from '../ui.svelte';
-	import { delivText, fmt, inrS, stageIndex, stageLabel, tasks, type Task } from '../util';
+	import { delivText, fmt, inrS, isActive, stageIndex, stageLabel, tasks, type Task } from '../util';
 	import type { Collab } from '../types';
 	import Icon from './Icon.svelte';
 	import CycleText from './CycleText.svelte';
 
 	// Pending Instagram collabs and active collabs in a stage-aware living ticket rail.
 	const leads = $derived([...studio.leads].sort((a, b) => Number(b.collab_flag === 'likely') - Number(a.collab_flag === 'likely')));
-	const need = $derived([...new Map(tasks(studio.collabs).map((t) => [t.c.id, t])).values()]);
-	const rest = $derived(studio.collabs.filter((c) => !need.some((t) => t.c.id === c.id) && !c.someday && !['wrapped', 'declined', 'cancelled'].includes(c.stage)));
+	const nextTasks = $derived.by(() => {
+		const byCollab = new Map<string, Task>();
+		for (const task of tasks(studio.collabs)) {
+			if (!byCollab.has(task.c.id)) byCollab.set(task.c.id, task);
+		}
+		return byCollab;
+	});
+	const need = $derived([...nextTasks.values()]);
+	const rest = $derived(studio.collabs.filter((c) => isActive(c) && !nextTasks.has(c.id)));
 	// Short amounts (₹85k) so the next-step chip beside it fits on a narrow card.
 	const fee = (c: Collab) => (c.type === 'barter' ? 'Barter' : c.fee > 0 ? inrS(c.fee) : 'No fee');
 	const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -42,7 +49,9 @@
 			pill: status(t),
 			tone: tone(t),
 			group: 'need' as const,
-			stageIdx: Math.max(0, stageIndex(t.c.stage)),
+			active: isActive(t.c),
+			stage: stageLabel(t.c.stage),
+			stageIdx: stageIndex(t.c.stage),
 			lines: facts(t.title, t.c.deliverables.length > 0 && delivText(t.c.deliverables), dateLine(t.c))
 		})),
 		...rest.map((c) => ({
@@ -54,7 +63,9 @@
 			pill: stageLabel(c.stage),
 			tone: c.stage === 'live' ? 'ok' : '',
 			group: 'active' as const,
-			stageIdx: Math.max(0, stageIndex(c.stage)),
+			active: true,
+			stage: stageLabel(c.stage),
+			stageIdx: stageIndex(c.stage),
 			lines: facts(c.deliverables.length > 0 && delivText(c.deliverables), dateLine(c))
 		}))
 	]);
@@ -69,75 +80,76 @@
 			pill: 'Review DM',
 			tone: 'dm',
 			group: 'dm' as const,
-			stageIdx: 0,
-			lines: facts(l.collab_hint || 'Asking about working together', [l.username && leadName(l) !== `@${l.username}` ? `@${l.username}` : '', ago(l.last_at)].filter(Boolean).join(' · '), l.unread ? `${l.unread} new message${l.unread === 1 ? '' : 's'}` : '', 'Tap to turn it into a collab')
+			stage: 'IG DM lead',
+			stageIdx: -1,
+			meta: [l.username ? `@${l.username}` : '', ago(l.last_at)].filter(Boolean).join(' · '),
+			lines: facts(l.collab_hint || 'Asking about working together', l.unread ? `${l.unread} new message${l.unread === 1 ? '' : 's'}` : '')
 		}))
 	);
 
-	let filter = $state<'all' | 'need' | 'dm'>('all');
+	const activeItems = $derived(allItems.filter((item) => item.active));
+	const needItems = $derived(allItems.filter((item) => item.group === 'need'));
+	type Filter = 'all' | 'need' | 'dm';
+	let selected = $state<Filter | null>(null);
+	const filter = $derived(selected ?? (activeItems.length ? 'all' : needItems.length ? 'need' : dmItems.length ? 'dm' : 'all'));
+	const filters = $derived([
+		{ id: 'all' as const, label: 'All active', count: activeItems.length },
+		{ id: 'need' as const, label: 'Needs action', count: needItems.length },
+		{ id: 'dm' as const, label: 'DM leads', count: dmItems.length }
+	]);
 	let railEl = $state<HTMLElement>();
-	function setFilter(next: 'all' | 'need' | 'dm') {
-		filter = next;
-		if (railEl) railEl.scrollTo({ left: 0, behavior: 'smooth' });
+	function setFilter(next: Filter) {
+		selected = next;
+		if (railEl) railEl.scrollLeft = 0;
 	}
-	const shown = $derived.by(() => {
-		if (filter === 'dm' && dmItems.length) return dmItems;
-		if (filter === 'need' && need.length) return allItems.filter((x) => x.group === 'need');
-		return allItems.length ? allItems : dmItems;
-	});
+	const shown = $derived(filter === 'dm' ? dmItems : filter === 'need' ? needItems : activeItems);
 </script>
 
 <section class="tix" id="sec-collabs" aria-label="Your collabs">
 	<div class="tix-h">
-		<span class="tix-h-left">
-			<span>Your collabs</span>
-			{#if allItems.length + dmItems.length > 0}
-				<b class="tix-cnt">{shown.length}</b>
-			{/if}
-		</span>
-		{#if allItems.length || dmItems.length}<a href="/studio/collabs">See board →</a>{/if}
+		<h2>Your collabs</h2>
+		<a href="/studio/collabs">See board →</a>
 	</div>
-	{#if (need.length > 0 && rest.length > 0) || (dmItems.length > 0 && allItems.length > 0)}
-		<div class="tix-filters">
-			<button type="button" class="tix-flt" class:on={filter === 'all'} aria-pressed={filter === 'all'} onclick={() => setFilter('all')}>
-				All Active · {allItems.length}
-			</button>
-			{#if need.length > 0}
-				<button type="button" class="tix-flt" class:on={filter === 'need'} aria-pressed={filter === 'need'} onclick={() => setFilter('need')}>
-					Needs Action · {need.length}
+	{#if allItems.length || dmItems.length}
+		<div class="tix-filters" role="group" aria-label="Filter collaborations">
+			{#each filters as f (f.id)}
+				<button type="button" class="tix-flt" class:on={filter === f.id} aria-pressed={filter === f.id} onclick={() => setFilter(f.id)}>
+					{f.label} <b>{f.count}</b>
 				</button>
-			{/if}
-			{#if dmItems.length > 0}
-				<button type="button" class="tix-flt" class:on={filter === 'dm'} aria-pressed={filter === 'dm'} onclick={() => setFilter('dm')}>
-					DM Leads · {dmItems.length}
-				</button>
-			{/if}
+			{/each}
 		</div>
 	{/if}
 	<div class="tix-row" bind:this={railEl}>
 		{#each shown as k, i (k.id)}
-			<a class="tix-t tone-{k.tone || 'calm'}" class:tix-dm={k.group === 'dm'} style="--rt:{hue(k.tone, i)};--k:{i}" href={k.href} aria-label="{k.name}: {k.line}, {k.money}, {k.pill}">
+			<a class="tix-t tone-{k.tone || 'calm'}" class:tix-dm={k.group === 'dm'} style="--rt:{hue(k.tone, i)};--k:{i}" href={k.href} aria-label="{k.name}, {k.stage}: {k.line}, {k.money}, {k.pill}">
 				<span class="tix-top">
 					<span class="tix-av">{k.name.replace(/^@/, '').trim().slice(0, 1).toUpperCase() || 'C'}</span>
-					<small class="tix-step">{k.group === 'dm' ? 'IG DM Lead' : `Step ${Math.min(6, k.stageIdx + 1)}/6`}</small>
+					<small class="tix-step">{k.stage}{k.stageIdx >= 0 ? ` · ${k.stageIdx + 1}/6` : ''}</small>
 				</span>
 				<b class="tix-n">{k.name}</b>
 				<span class="tix-l" aria-hidden="true"><CycleText {i} items={k.lines} /></span>
-				<span class="tix-prog" aria-hidden="true">
-					{#each [0, 1, 2, 3, 4, 5] as s (s)}
-						<i class:done={s < k.stageIdx} class:curr={s === k.stageIdx}></i>
-					{/each}
-				</span>
+				{#if k.stageIdx >= 0}
+					<span class="tix-prog" aria-hidden="true">
+						{#each [0, 1, 2, 3, 4, 5] as s (s)}
+							<i class:done={s < k.stageIdx} class:curr={s === k.stageIdx}></i>
+						{/each}
+					</span>
+				{:else if k.group === 'dm' && k.meta}
+					<small class="lead-meta">{k.meta}</small>
+				{/if}
 				<i class="tix-cut" aria-hidden="true"></i>
 				<span class="tix-f"><strong>{k.money}</strong><em>{#if k.group === 'dm'}<i class="tix-attention" aria-hidden="true"></i>{/if}{k.pill}</em></span>
 			</a>
 		{:else}
-			<!-- Nothing active yet: ways to get the first collabs in. -->
-			<button class="tix-t tix-tip" onclick={() => copyText((studio.settings?.site_url || location.origin).replace(/\/$/, ''), 'Your link is copied. Put it in your Instagram bio.')}>
-				<Icon name="link" /><b class="tix-n">Share your link</b><span class="tix-l">Put it in your bio</span>
-			</button>
-			<a class="tix-t tix-tip" href="/studio/import"><Icon name="layers" /><b class="tix-n">Import DMs</b><span class="tix-l">Turn chats into collabs</span></a>
-			<a class="tix-t tix-tip" href="/studio/settings?s=rates"><Icon name="rupee" /><b class="tix-n">Rate card</b><span class="tix-l">Set your prices</span></a>
+			{#if allItems.length || dmItems.length}
+				<p class="rail-empty">{filter === 'dm' ? 'No Instagram leads to review.' : filter === 'need' ? 'You’re caught up. No collabs need action.' : 'No active collabs right now.'}</p>
+			{:else}
+				<button class="tix-t tix-tip" onclick={() => copyText((studio.settings?.site_url || location.origin).replace(/\/$/, ''), 'Your link is copied. Put it in your Instagram bio.')}>
+					<Icon name="link" /><b class="tix-n">Share your link</b><span class="tix-l">Put it in your bio</span>
+				</button>
+				<a class="tix-t tix-tip" href="/studio/import"><Icon name="layers" /><b class="tix-n">Import DMs</b><span class="tix-l">Turn chats into collabs</span></a>
+				<a class="tix-t tix-tip" href="/studio/settings?s=rates"><Icon name="rupee" /><b class="tix-n">Rate card</b><span class="tix-l">Set your prices</span></a>
+			{/if}
 		{/each}
 	</div>
 </section>

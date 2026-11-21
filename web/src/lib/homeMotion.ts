@@ -26,7 +26,7 @@ export function whileVisible(node: Element, change: (active: boolean, reduced: b
 /** One observer for the home page's ambient motion and card arrivals. */
 export function homeMotion(root: HTMLElement) {
 	const preference = matchMedia('(prefers-reduced-motion: reduce)');
-	const selector = '.ht, .tix-t, .cr-ticker, .m-hero, .tk, .dk2, .wk2';
+	const selector = '.ht, .creator-stories, .tix-t, .cr-ticker, .m-hero, .tk, .dk2, .wk2';
 	const seen = new WeakSet<Element>();
 	const arrived = new WeakSet<Element>();
 	const entrances = new Map<Element, Animation>();

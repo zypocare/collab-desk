@@ -17,6 +17,7 @@
 		diff,
 		events,
 		firstName,
+		initials,
 		fmt,
 		compact,
 		hueOf,
@@ -45,6 +46,7 @@
 	import Icon from './Icon.svelte';
 	import Mono from './Mono.svelte';
 	import Stories from './Stories.svelte';
+	import TodayStories from './TodayStories.svelte';
 	import DiwaliLayer from './DiwaliLayer.svelte';
 	import BirthdayLayer from './BirthdayLayer.svelte';
 	import { birthdayNow, diwaliWords, festivalNow } from '../festival';
@@ -283,7 +285,9 @@
 				{:else if orbMode === 0 && ig}
 					<b>{compact(ig.followers ?? 0)}</b><small>followers</small>
 					{#if er}<span class="orb-pill">↗ {erText(er)} eng.</span>{/if}
-				{:else if orbMode === 1 || (!ig && orbMode === 0)}
+				{:else if orbMode === 0}
+					<b>{initials(s.display_name)}</b><small>Your studio</small>
+				{:else if orbMode === 1}
 					<b>{pctN}%</b><small>of {monthName.slice(0, 3)} goal</small>
 					<span class="orb-pill gold">{inrS(received)}{goal ? ` / ${inrS(goal)}` : ''}</span>
 				{:else}
@@ -351,6 +355,7 @@
 	</div>
 </section>
 
+<TodayStories {monthName} {received} {paidN} {od} {nextPayout} />
 <Stories />
 
 {#if ticker.length > 1}
@@ -378,7 +383,7 @@
 				<div class="g-txt"><b use:homeCount={{ value: pctN, suffix: '%' }}>{pctN}%</b><small>of goal</small></div>
 			</div>
 		</div>
-		<div class="hc-ctx" aria-hidden="true">
+		<div class="hc-ctx">
 			{#if moneyView === 0}
 				{#if paidCollabs.length > 0}
 					<div class="hc-ctx-pills">

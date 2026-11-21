@@ -18,6 +18,19 @@
 	[data-desk] .phone-today .orb-ring { animation: home-orbit 5s linear infinite; }
 	[data-desk] .phone-today .ht-orb { animation: home-float 4.8s ease-in-out infinite; }
 	[data-desk] .phone-today .orb-spark { animation: home-spark 2.6s ease-in-out infinite; }
+	.phone-today #sec-collabs { scroll-margin-top: calc(64px + env(safe-area-inset-top, 0px)); }
+	.phone-today .tix-h h2 { margin: 0; font: 600 19px/1.2 var(--f-body); color: var(--ink); }
+	.phone-today .tix .tix-filters { display: grid; grid-template-columns: 1fr 1.15fr 1fr; gap: 5px; }
+	.phone-today .tix .tix-flt {
+		display: flex; align-items: center; justify-content: center; gap: 4px; min-width: 0; height: 44px;
+		padding: 2px 4px; font-size: 10px; letter-spacing: .02em; line-height: 1.15;
+	}
+	.phone-today .tix-flt b { font-variant-numeric: tabular-nums; }
+	.phone-today .tix .tix-t:not(.tix-tip) { flex-basis: clamp(195px, 57vw, 250px); width: auto; }
+	.phone-today .tix .lead-meta {
+		display: block; margin-top: 5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; color: var(--ink-2);
+	}
+	.phone-today .tix .rail-empty { flex: 1; margin: 0; padding: 16px; background: var(--surface); border: 1px dashed var(--line-strong); border-radius: 14px; color: var(--ink-2); }
 	[data-desk] .phone-today .tix-t {
 		animation: none;
 		isolation: isolate;
