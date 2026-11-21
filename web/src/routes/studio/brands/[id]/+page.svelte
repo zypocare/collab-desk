@@ -7,18 +7,14 @@
 	import { goto } from '$app/navigation';
 	import { ask } from '#lib/confirm.svelte.ts';
 	import { supabase } from '#lib/supabase.ts';
-	import { errMessage } from '#lib/util.ts';
-	import { countUp, toast, ui } from '#lib/ui.svelte.ts';
-	import { CATS, delivText, fmt, inr, stageLabel } from '#lib/util.ts';
+	import { CATS, errMessage, hueOf, initials, inr, inrS } from '#lib/util.ts';
+	import { countUp, toast } from '#lib/ui.svelte.ts';
 	import Icon from '#lib/components/Icon.svelte';
 	import BrandRating from '#lib/components/BrandRating.svelte';
 	import Select from '#lib/components/Select.svelte';
 	import Mono from '#lib/components/Mono.svelte';
-	import PayPill from '#lib/components/PayPill.svelte';
 	import CollabRow from '#lib/components/CollabRow.svelte';
-	import { phone } from '#lib/phone.svelte.ts';
 	import BrandVerified from '#lib/components/BrandVerified.svelte';
-	import { hueOf, initials, inrS } from '#lib/util.ts';
 
 	const brand = $derived(studio.brands.find((b) => b.id === page.params.id));
 	const s = $derived(brand ? brandStats(brand, studio.collabs) : null);
@@ -36,11 +32,8 @@
 		newComp = '';
 	}
 	const val = (e: Event) => (e.currentTarget as HTMLInputElement).value;
-	// Brands that came through this brand's recommendation link.
 	const referred = $derived(brand ? studio.collabs.filter((x) => x.referred_by === brand.id) : []);
 
-	// Merge a brand added twice by mistake into the right one: its collabs, monthly deals, notes and
-	// brand logins move over, then this one is removed.
 	let mergeInto = $state<string | undefined>(undefined);
 	let merging = $state(false);
 	const others = $derived(brand ? studio.brands.filter((b) => b.id !== brand.id).map((b) => ({ value: b.id, label: b.instagram ? `${b.name} · @${b.instagram.replace(/^@+/, '')}` : b.name })) : []);
@@ -65,7 +58,6 @@
 		toast(`${from} merged into ${into.name}`, 'check');
 	}
 
-	// Delete the brand and its collabs (not possible while an invoice to them was sent or paid).
 	const issued = $derived(s ? s.collabs.reduce((a, c) => a + c.invoices.filter((i) => i.status !== 'draft' && i.status !== 'cancelled').length, 0) : 0);
 	let deleting = $state(false);
 	async function del() {
@@ -103,31 +95,46 @@
 		</div>
 	</header>
 
-	
-		<!-- Phone: the brand on a big band in its colour (like its ticket), its numbers in serif. -->
-		<section class="bd-band" style="--h:var(--m{hueOf(brand.name)})" aria-label="Brand summary">
-			<div class="bd-top">
-				<span class="tk-tile">{initials(brand.name)}</span>
-				<div class="bd-who"><b>{brand.name}</b><small>{brand.category || 'Brand'}{#if brand.instagram}{' · '}<span class="tk-ig">@{brand.instagram.replace(/^@+/, '')}</span>{/if}</small></div>
+	<!-- Holographic Metallic Partner Vault Card -->
+	<section class="bd-vault rv" style="--h:var(--m{hueOf(brand.name)})" aria-label="Brand summary">
+		<div class="bdv-top">
+			<span class="tk-tile">{initials(brand.name)}</span>
+			<div class="bdv-who">
+				<b>{brand.name}</b>
+				<small>{brand.category || 'Brand'}{#if brand.instagram}{' · '}<span class="tk-ig">@{brand.instagram.replace(/^@+/, '')}</span>{/if}</small>
 			</div>
-			<div class="bd-nums">
-				<div><b use:countUp={{ value: s.paid, money: true }}>{inr(s.paid)}</b><small>earned</small></div>
-				<div><b>{s.count}</b><small>collab{s.count === 1 ? '' : 's'} · {s.active} active</small></div>
-				<div><b>{s.avgDaysToPay === null ? '—' : s.avgDaysToPay === 0 ? 'Same day' : `${s.avgDaysToPay}d`}</b><small>pays in</small></div>
-				<div><b>{s.barter ? inrS(s.barter) : '—'}</b><small>in products</small></div>
-			</div>
-			{#if s.outstanding}<p class="bd-due"><i></i>{inr(s.outstanding)} yet to come</p>{/if}
-		</section>
-	
+			{#if s.onTimeRate !== null}
+				<span class="bdv-pill">{Math.round(s.onTimeRate * 100)}% ON TIME</span>
+			{/if}
+		</div>
+		<div class="bdv-nums">
+			<div><b use:countUp={{ value: s.paid, money: true }}>{inr(s.paid)}</b><small>earned</small></div>
+			<div><b>{s.count}</b><small>collab{s.count === 1 ? '' : 's'} · {s.active} active</small></div>
+			<div><b>{s.avgDaysToPay === null ? '—' : s.avgDaysToPay === 0 ? 'Same day' : `${s.avgDaysToPay}d`}</b><small>pays in</small></div>
+			<div><b>{s.barter ? inrS(s.barter) : '—'}</b><small>in products</small></div>
+		</div>
+		{#if s.outstanding}<p class="bdv-due"><i></i>{inr(s.outstanding)} yet to come</p>{/if}
+		<div class="bdv-orbit">
+			{#if brand.instagram}
+				<a href="https://instagram.com/{brand.instagram.replace(/^@+/, '')}" target="_blank" rel="noopener"><Icon name="link" />Instagram</a>
+			{:else}
+				<a href="#b-ig"><Icon name="plus" />Add IG</a>
+			{/if}
+			{#if brand.website}
+				<a href={brand.website} target="_blank" rel="noopener"><Icon name="link" />Website</a>
+			{:else}
+				<a href="#b-web"><Icon name="plus" />Website</a>
+			{/if}
+			<a href="#b-notes"><Icon name="doc" />Notes</a>
+		</div>
+	</section>
 
 	<div class="page-grid">
 		<div class="stack">
 			<MonthlyDeals brandId={brand.id} brandName={brand.name} />
 			<section class="panel rv" style="--i:5">
 				<div class="panel-h"><h2>Collabs</h2><small>newest first</small></div>
-				
-					<div class="m-list m-wallet">{#each s.collabs as c, i (c.id)}<CollabRow {c} {i} />{/each}</div>
-				
+				<div class="m-list m-wallet">{#each s.collabs as c, i (c.id)}<CollabRow {c} {i} />{/each}</div>
 			</section>
 		</div>
 		<div class="stack">
@@ -163,7 +170,7 @@
 					</div>
 				</div>
 			</section>
-			<section class="panel rv" style="--i:7">
+			<section class="panel rv" style="--i:7" id="b-notes">
 				<div class="panel-h"><h2>Private notes</h2><small>only you see these</small></div>
 				<div style="padding:0 20px 20px">
 					<textarea class="inp" placeholder="What they liked, who approves content, how they pay…" value={notes.notes} onchange={(e) => saveBrandNotes(brand.id, { notes: val(e) })}></textarea>
@@ -211,7 +218,51 @@
 {/if}
 
 <style>
+	@property --bd-rim { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
+
+	.bd-vault {
+		position: relative;
+		overflow: hidden;
+		border-radius: 22px;
+		padding: 18px;
+		margin-bottom: 16px;
+		border: 1px solid transparent;
+		background:
+			repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0 8px, transparent 8px 16px),
+			linear-gradient(138deg, color-mix(in oklab, var(--h) 82%, #1a0d18) 0%, color-mix(in oklab, var(--h) 44%, #140a12) 66%, #140a12 100%) padding-box,
+			conic-gradient(from var(--bd-rim), rgba(255, 255, 255, 0.42), rgba(178, 154, 255, 0.65), rgba(242, 90, 144, 0.55), rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.42)) border-box;
+		animation: bd-spin 12s linear infinite;
+		box-shadow: 0 24px 48px -22px rgba(0, 0, 0, 0.88);
+		display: grid;
+		gap: 14px;
+		color: #fff;
+	}
+	.bd-vault::after { content: ''; position: absolute; inset: 0; width: 45%; background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.12), transparent); transform: translateX(-160%) skewX(-22deg); animation: bd-sheen 6.5s ease-in-out infinite; pointer-events: none; }
+	.bd-vault > * { position: relative; z-index: 1; }
+
+	.bdv-top { display: flex; align-items: center; gap: 12px; }
+	.bdv-who { flex: 1; min-width: 0; display: grid; gap: 3px; }
+	.bdv-who b { font: italic 400 26px/1.05 var(--f-serif, Georgia, serif); color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+	.bdv-who small { font-size: 10px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: rgba(255, 255, 255, 0.78); }
+	.bdv-pill { flex: none; padding: 4px 8px; border-radius: 999px; background: rgba(17, 13, 17, 0.52); border: 1px solid rgba(111, 208, 140, 0.45); color: var(--ok); font: 700 9.5px/1 ui-monospace, Consolas, monospace; letter-spacing: .06em; }
+
+	.bdv-nums { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 12px; padding-top: 14px; border-top: 1.5px dashed rgba(255, 255, 255, 0.24); }
+	.bdv-nums div { display: grid; gap: 3px; }
+	.bdv-nums b { font: 400 28px/1 var(--f-serif, Georgia, serif); letter-spacing: -.6px; color: #fff; font-variant-numeric: tabular-nums; }
+	.bdv-nums small { font-size: 9.5px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: rgba(255, 255, 255, 0.72); }
+
+	.bdv-due { margin: 0; display: inline-flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 700; color: #ffd67a; }
+	.bdv-due i { width: 7px; height: 7px; border-radius: 50%; background: var(--g3); }
+
+	.bdv-orbit { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; }
+	.bdv-orbit a { height: 34px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.18); background: rgba(17, 13, 17, 0.42); color: #fff; text-decoration: none; font-size: 11.5px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; gap: 5px; }
+	.bdv-orbit a :global(svg) { width: 14px; height: 14px; }
+
 	.dz-text { margin: 0; padding: 0 20px; }
 	.dz-act { padding: 14px 20px 20px; }
 	.mz-act { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 14px 20px 20px; }
+
+	@keyframes bd-spin { to { --bd-rim: 360deg; } }
+	@keyframes bd-sheen { 0%, 58% { transform: translateX(-160%) skewX(-22deg); } 100% { transform: translateX(270%) skewX(-22deg); } }
+	@media (prefers-reduced-motion: reduce) { .bd-vault, .bd-vault::after { animation: none; } }
 </style>

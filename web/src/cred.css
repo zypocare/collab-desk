@@ -489,8 +489,10 @@
 
   /* ---------- Needs you: tickets ---------- */
   .tks { display: flex; flex-direction: column; gap: 12px; }
-  .tk { position: relative; border-radius: 22px; background: var(--surface); border: 1px solid var(--line); animation: cr-drop .35s cubic-bezier(.2, .8, .2, 1) both; animation-delay: calc(var(--i, 0) * 50ms); }
-  .tk-band { display: flex; align-items: flex-start; gap: 12px; padding: 16px 18px 18px; border-radius: 21px 21px 0 0; color: #fff; text-decoration: none; background: linear-gradient(135deg, color-mix(in oklab, var(--h) 82%, #1a0d18) 0%, color-mix(in oklab, var(--h) 45%, #140a12) 70%, #140a12 100%); }
+  .tk { position: relative; border-radius: 22px; background: var(--surface); border: 0; box-shadow: 0 16px 34px -22px rgba(0, 0, 0, .82); animation: cr-drop .35s cubic-bezier(.2, .8, .2, 1) both; animation-delay: calc(var(--i, 0) * 50ms); }
+  .tk-band { position: relative; overflow: hidden; display: flex; align-items: flex-start; gap: 12px; padding: 16px 18px 18px; border-radius: 22px 22px 0 0; color: #fff; text-decoration: none; background: linear-gradient(135deg, color-mix(in oklab, var(--h) 82%, #1a0d18) 0%, color-mix(in oklab, var(--h) 45%, #140a12) 70%, #140a12 100%); }
+  .tk-band::after { content: ''; position: absolute; inset: 0; width: 42%; background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .11), transparent); transform: translateX(-160%) skewX(-22deg); animation: tk-sheen 7s ease-in-out infinite; pointer-events: none; }
+  @keyframes tk-sheen { 0%, 60% { transform: translateX(-160%) skewX(-22deg); } 100% { transform: translateX(270%) skewX(-22deg); } }
   .tk-tile { flex: none; width: 40px; height: 40px; display: grid; place-items: center; border-radius: 12px; background: rgba(255, 255, 255, .18); border: 1px solid rgba(255, 255, 255, .25); font-weight: 800; font-size: 16px; }
   .tk-who { flex: 1; min-width: 0; display: grid; gap: 3px; }
   .tk-who b { font: italic 400 28px/1.05 var(--f-serif, Georgia, serif); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -498,7 +500,7 @@
   .tk-money { flex: none; display: grid; gap: 3px; text-align: right; }
   .tk-money b { font-size: 17px; font-weight: 700; font-variant-numeric: tabular-nums; }
   .tk-cut { position: relative; height: 0; margin: 0 16px; border-top: 2px dashed var(--line-strong); }
-  .tk-cut::before, .tk-cut::after { content: ''; position: absolute; top: -12px; width: 22px; height: 22px; border-radius: 50%; background: var(--bg); border: 1px solid var(--line); }
+  .tk-cut::before, .tk-cut::after { content: ''; position: absolute; top: -11px; width: 22px; height: 22px; border-radius: 50%; background: var(--bg); border: 0; }
   .tk-cut::before { left: -29px; clip-path: inset(0 0 0 50%); }
   .tk-cut::after { right: -29px; clip-path: inset(0 50% 0 0); }
   .tk-foot { display: flex; align-items: center; gap: 12px; padding: 16px 18px 18px; }

@@ -156,6 +156,17 @@
 	const waiting = $derived(visible.filter((c) => c.stage === 'request' && !c.someday).length);
 	const pipeStages = $derived(ACTIVE.map((id) => ({ id, n: activeList.filter((c) => c.stage === id).length })));
 	const declinedCount = $derived(studio.collabs.filter((c) => c.stage === 'declined').length);
+	const creatingN = $derived(activeList.filter((c) => c.stage === 'creating').length);
+	const liveN = $derived(activeList.filter((c) => c.stage === 'live').length);
+	const pipeFacts = $derived(
+		[
+			waiting ? { b: String(waiting), t: ` new request${waiting === 1 ? '' : 's'} waiting for you` } : null,
+			pipeValue ? { b: inrS(pipeValue), t: ` in ${activeN} active collab${activeN === 1 ? '' : 's'}` } : null,
+			creatingN ? { b: String(creatingN), t: ` being created right now` } : null,
+			liveN ? { b: String(liveN), t: ` live and awaiting wrap` } : null,
+			pipeProducts ? { b: `+${inrS(pipeProducts)}`, t: ' in barter products' } : null
+		].filter((x): x is { b: string; t: string } => !!x)
+	);
 
 	// Laptop: Board or List, remembered on this computer. The pipeline tiles open the list at one stage.
 	const savedView = () => {
@@ -312,33 +323,69 @@
 		</ol>
 	</section>
 {:else if phone.on}
-	<!-- Phone: the same look as Home. A glowing pipeline card (tap a tile to filter), stage chips,
-	     then a card per collab, grouped by stage. -->
-	<section class="hero-card glow m-hero m-pipe" aria-label="Your pipeline">
-		<div class="mesh" aria-hidden="true"></div>
-		<div class="hc-in">
-			<div class="hc-top">
-				<span class="hc-eb">Your pipeline</span>
-				{#if waiting}<button class="glass-chip" onclick={() => (mstage = 'request')}><Icon name="inbox" />{waiting} waiting for you</button>{/if}
-			</div>
-			<div class="hc-val" use:countUp={{ value: pipeValue, money: true }}>{inr(pipeValue)}</div>
-			<div class="hc-sub">in {activeN} active collab{activeN === 1 ? '' : 's'}{pipeProducts ? ` · + ${inrS(pipeProducts)} in products` : ''}</div>
-			{#if activeN}
-				<div class="pipe-bar" aria-hidden="true">
-					{#each pipeStages as st (st.id)}{#if st.n}<i class="st-{st.id}" style="flex:{st.n}"></i>{/if}{/each}
-				</div>
+	<!-- Money-inspired Pipeline Vault Cockpit -->
+	<section class="p-vault rv" aria-label="Your pipeline">
+		<div class="pv-top">
+			<span class="bx-eb">Your pipeline</span>
+			{#if waiting}
+				<button type="button" class="pv-wait" onclick={() => (mstage = 'request')}>
+					<i aria-hidden="true"></i>{waiting} waiting
+				</button>
 			{/if}
-			<div class="hc-foot six">
-				{#each PIPE_TILES as [id, label] (id)}
-					<button class:on={mstage === id} onclick={() => (mstage = mstage === id ? 'active' : id)}>
-						<small><span class="dt st-{id}"></span>{label}</small><b>{visible.filter((c) => colOf(c) === id).length}</b>
-					</button>
-				{/each}
+		</div>
+
+		<b class="pv-big num" use:countUp={{ value: pipeValue, money: true }}>{inr(pipeValue)}</b>
+		<div class="pv-sub">
+			in <b>{activeN} active collab{activeN === 1 ? '' : 's'}</b>
+			{#if pipeProducts}<span>· <b>+{inrS(pipeProducts)}</b> in products</span>{/if}
+		</div>
+
+		{#if activeN}
+			<div class="pipe-bar pv-bar" aria-hidden="true">
+				{#each pipeStages as st (st.id)}{#if st.n}<i class="st-{st.id}" style="flex:{st.n}"></i>{/if}{/each}
 			</div>
+		{/if}
+
+		<div class="pv-grid">
+			{#each PIPE_TILES as [id, label] (id)}
+				<button type="button" class:on={mstage === id} onclick={() => (mstage = mstage === id ? 'active' : id)}>
+					<small><span class="dt st-{id}"></span>{label}</small>
+					<b class="num">{visible.filter((c) => colOf(c) === id).length}</b>
+				</button>
+			{/each}
+		</div>
+
+		<div class="pv-acts">
+			<button type="button" class="btn primary pv-main" onclick={() => (ui.newCollab = true)}><Icon name="plus" />New collab</button>
+			<a class="btn sm" href="/studio/import"><Icon name="layers" />Import</a>
+			<a class="btn sm" href="/studio/rights"><Icon name="shield" />Rights</a>
 		</div>
 	</section>
 
-	<label class="search m-search" use:rollHints={[...[...new Set(studio.collabs.filter((c) => !['wrapped', 'declined'].includes(c.stage)).map((c) => c.brand.name))].slice(0, 6), 'overdue', 'reels']}><Icon name="search" /><span class="sr">Search collabs</span><input type="search" placeholder="Search brand, code or category" bind:value={q} autocomplete="off" /></label>
+	{#if pipeFacts.length}
+		<div class="cr-ticker" aria-label="Pipeline pulse">
+			<div>
+				{#each [0, 1] as k (k)}
+					{#each pipeFacts as f, j (j)}
+						<span aria-hidden={k === 1}><b>{f.b}</b>{f.t}</span><span aria-hidden="true">✦</span>
+					{/each}
+				{/each}
+			</div>
+		</div>
+	{/if}
+
+	<div class="pv-tools">
+		<label class="search m-search" use:rollHints={[...[...new Set(studio.collabs.filter((c) => !['wrapped', 'declined'].includes(c.stage)).map((c) => c.brand.name))].slice(0, 6), 'overdue', 'reels']}><Icon name="search" /><span class="sr">Search collabs</span><input type="search" placeholder="Search brand, code or category" bind:value={q} autocomplete="off" /></label>
+		<Segmented
+			label="Filter type"
+			bind:value={filter}
+			options={[
+				{ value: 'all', label: 'All' },
+				{ value: 'paid', label: 'Paid' },
+				{ value: 'barter', label: 'Barter' }
+			]}
+		/>
+	</div>
 	<div class="m-stages" role="tablist" aria-label="Stage">
 		{#each mtabs as t (t.id)}
 			<button role="tab" aria-selected={mstage === t.id} class:on={mstage === t.id} class="st-{t.id}" onclick={() => (mstage = t.id)}><i class="dt"></i>{t.label}<span>{t.n}</span></button>
@@ -425,3 +472,49 @@
 		<button class="btn sm ghost" onclick={stopSelecting}>Cancel</button>
 	</div>
 {/if}
+
+<style>
+	@property --pv-rim { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
+
+	.p-vault {
+		position: relative;
+		overflow: hidden;
+		border-radius: 22px;
+		padding: 16px;
+		margin-bottom: 14px;
+		border: 1px solid transparent;
+		background:
+			linear-gradient(142deg, #271b2e 0%, #1a141b 56%, #241925 100%) padding-box,
+			conic-gradient(from var(--pv-rim), rgba(178, 154, 255, 0.85), rgba(242, 90, 144, 0.8), rgba(255, 174, 107, 0.72), rgba(70, 52, 66, 0.28), rgba(178, 154, 255, 0.85)) border-box;
+		animation: pv-spin 10.5s linear infinite;
+		box-shadow: 0 22px 46px -24px rgba(178, 154, 255, 0.38);
+	}
+	.p-vault::before, .p-vault::after { content: ''; position: absolute; border-radius: 50%; pointer-events: none; filter: blur(34px); opacity: 0.34; }
+	.p-vault::before { width: 150px; height: 150px; top: -55px; right: -35px; background: radial-gradient(circle, var(--g2), transparent 70%); }
+	.p-vault::after { width: 140px; height: 140px; bottom: -60px; left: -30px; background: radial-gradient(circle, var(--g1), transparent 70%); }
+	.p-vault > * { position: relative; z-index: 1; }
+
+	.pv-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+	.pv-wait { display: inline-flex; align-items: center; gap: 6px; padding: 5px 9px; border: 1px solid rgba(242, 90, 144, 0.45); background: rgba(242, 90, 144, 0.14); color: #ff9bbd; font: 700 10px/1 ui-monospace, Consolas, monospace; text-transform: uppercase; cursor: pointer; }
+	.pv-wait i { width: 6px; height: 6px; border-radius: 50%; background: var(--g2); }
+
+	.pv-big { display: block; font: 400 42px/1 var(--f-serif, Georgia, serif); letter-spacing: -2px; color: var(--ink); margin: 8px 0 4px; text-shadow: 0 6px 24px rgba(242, 90, 144, 0.2); }
+	.pv-sub { font-size: 11.5px; color: var(--ink-2); display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+	.pv-sub b { color: var(--g3); }
+
+	.pv-bar { margin-bottom: 12px; }
+
+	.pv-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; margin-bottom: 12px; }
+	.pv-grid button { border: 1px solid #382c38; background: rgba(24, 18, 25, 0.78); border-radius: 12px; padding: 8px 9px; text-align: left; display: grid; gap: 3px; color: inherit; cursor: pointer; transition: border-color .16s, background .16s; }
+	.pv-grid button.on { border-color: var(--g2); background: rgba(242, 90, 144, 0.14); }
+	.pv-grid small { display: inline-flex; align-items: center; gap: 5px; font-size: 9.5px; color: var(--ink-3); text-transform: uppercase; letter-spacing: .06em; font-weight: 700; }
+	.pv-grid b { font: italic 400 19px/1 var(--f-serif, Georgia, serif); color: var(--ink); }
+
+	.pv-acts { display: flex; gap: 8px; align-items: center; }
+	.pv-main { flex: 1; justify-content: center; }
+
+	.pv-tools { display: grid; gap: 10px; margin-bottom: 6px; }
+
+	@keyframes pv-spin { to { --pv-rim: 360deg; } }
+	@media (prefers-reduced-motion: reduce) { .p-vault { animation: none; } }
+</style>
