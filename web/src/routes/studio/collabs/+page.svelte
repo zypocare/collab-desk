@@ -363,11 +363,11 @@
 	</section>
 
 	{#if pipeFacts.length}
-		<div class="cr-ticker" aria-label="Pipeline pulse">
+		<div class="v-ticker" aria-label="Pipeline pulse">
 			<div>
 				{#each [0, 1] as k (k)}
 					{#each pipeFacts as f, j (j)}
-						<span aria-hidden={k === 1}><b>{f.b}</b>{f.t}</span><span aria-hidden="true">✦</span>
+						<span aria-hidden={k === 1}><b>{f.b}</b>{f.t}</span><em aria-hidden="true">✦</em>
 					{/each}
 				{/each}
 			</div>
@@ -375,8 +375,8 @@
 	{/if}
 
 	<div class="pv-tools">
-		<label class="search m-search" use:rollHints={[...[...new Set(studio.collabs.filter((c) => !['wrapped', 'declined'].includes(c.stage)).map((c) => c.brand.name))].slice(0, 6), 'overdue', 'reels']}><Icon name="search" /><span class="sr">Search collabs</span><input type="search" placeholder="Search brand, code or category" bind:value={q} autocomplete="off" /></label>
-		<Segmented
+		<label class="search m-search" style="margin:0" use:rollHints={[...[...new Set(studio.collabs.filter((c) => !['wrapped', 'declined'].includes(c.stage)).map((c) => c.brand.name))].slice(0, 6), 'overdue', 'reels']}><Icon name="search" /><span class="sr">Search collabs</span><input type="search" placeholder="Search brand, code or category" bind:value={q} autocomplete="off" /></label>
+		<div class="pv-seg"><Segmented
 			label="Filter type"
 			bind:value={filter}
 			options={[
@@ -384,7 +384,7 @@
 				{ value: 'paid', label: 'Paid' },
 				{ value: 'barter', label: 'Barter' }
 			]}
-		/>
+		/></div>
 	</div>
 	<div class="m-stages" role="tablist" aria-label="Stage">
 		{#each mtabs as t (t.id)}
@@ -513,8 +513,42 @@
 	.pv-acts { display: flex; gap: 8px; align-items: center; }
 	.pv-main { flex: 1; justify-content: center; }
 
-	.pv-tools { display: grid; gap: 10px; margin-bottom: 6px; }
+	.pv-tools { display: grid; gap: 12px; margin-bottom: 12px; }
+	.pv-seg { display: flex; justify-content: flex-start; }
+	.v-ticker {
+		position: relative;
+		overflow: hidden;
+		margin: 0 0 14px;
+		border: 1px solid var(--line);
+		border-radius: 12px;
+		background: var(--surface);
+	}
+	.v-ticker::before, .v-ticker::after {
+		content: '';
+		position: absolute;
+		top: 0;
+		bottom: 0;
+		width: 18px;
+		z-index: 2;
+		pointer-events: none;
+	}
+	.v-ticker::before { left: 0; background: linear-gradient(90deg, var(--surface), transparent); }
+	.v-ticker::after { right: 0; background: linear-gradient(-90deg, var(--surface), transparent); }
+	.v-ticker div {
+		display: inline-flex;
+		gap: 20px;
+		padding: 9px 0;
+		white-space: nowrap;
+		animation: v-tick 26s linear infinite;
+		font-size: 12px;
+		font-weight: 600;
+		color: var(--ink-2);
+	}
+	.v-ticker b { color: var(--g3); }
+	.v-ticker em { font-style: normal; color: var(--g2); }
+	@keyframes v-tick { to { transform: translateX(-50%); } }
+
 
 	@keyframes pv-spin { to { --pv-rim: 360deg; } }
-	@media (prefers-reduced-motion: reduce) { .p-vault { animation: none; } }
+	@media (prefers-reduced-motion: reduce) { .p-vault, .v-ticker div { animation: none; } }
 </style>

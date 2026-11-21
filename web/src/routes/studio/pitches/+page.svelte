@@ -262,11 +262,11 @@
 </section>
 
 {#if pitchFacts.length}
-	<div class="cr-ticker" aria-label="Outreach pulse">
+	<div class="v-ticker" aria-label="Outreach pulse">
 		<div>
 			{#each [0, 1] as k (k)}
 				{#each pitchFacts as f, j (j)}
-					<span aria-hidden={k === 1}><b>{f.b}</b>{f.t}</span><span aria-hidden="true">✦</span>
+					<span aria-hidden={k === 1}><b>{f.b}</b>{f.t}</span><em aria-hidden="true">✦</em>
 				{/each}
 			{/each}
 		</div>
@@ -464,5 +464,39 @@
 	.ptv-main { flex: 1; justify-content: center; }
 
 	@keyframes pt-spin { to { --pt-rim: 360deg; } }
-	@media (prefers-reduced-motion: reduce) { .pt-vault { animation: none; } }
+	
+	.v-ticker {
+		position: relative;
+		overflow: hidden;
+		margin: 0 0 14px;
+		border: 1px solid var(--line);
+		border-radius: 12px;
+		background: var(--surface);
+	}
+	.v-ticker::before, .v-ticker::after {
+		content: '';
+		position: absolute;
+		top: 0;
+		bottom: 0;
+		width: 18px;
+		z-index: 2;
+		pointer-events: none;
+	}
+	.v-ticker::before { left: 0; background: linear-gradient(90deg, var(--surface), transparent); }
+	.v-ticker::after { right: 0; background: linear-gradient(-90deg, var(--surface), transparent); }
+	.v-ticker div {
+		display: inline-flex;
+		gap: 20px;
+		padding: 9px 0;
+		white-space: nowrap;
+		animation: v-tick 26s linear infinite;
+		font-size: 12px;
+		font-weight: 600;
+		color: var(--ink-2);
+	}
+	.v-ticker b { color: var(--g3); }
+	.v-ticker em { font-style: normal; color: var(--g2); }
+	@keyframes v-tick { to { transform: translateX(-50%); } }
+
+	@media (prefers-reduced-motion: reduce) { .pt-vault, .v-ticker div { animation: none; } }
 </style>

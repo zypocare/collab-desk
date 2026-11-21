@@ -129,22 +129,22 @@
 		</div>
 	</section>
 
-	<div class="page-grid">
+	<div class="page-grid bd-page">
 		<div class="stack">
-			<MonthlyDeals brandId={brand.id} brandName={brand.name} />
-			<section class="panel rv" style="--i:5">
-				<div class="panel-h"><h2>Collabs</h2><small>newest first</small></div>
+			<div class="bd-bento"><MonthlyDeals brandId={brand.id} brandName={brand.name} /></div>
+			<section class="bd-bento rv" style="--i:5">
+				<header class="bd-bh"><h2>Collabs</h2><small>{s.collabs.length} · newest first</small></header>
 				<div class="m-list m-wallet">{#each s.collabs as c, i (c.id)}<CollabRow {c} {i} />{/each}</div>
 			</section>
 		</div>
 		<div class="stack">
-			<section class="panel rv" style="--i:5">
-				<div class="panel-h"><h2>Your rating</h2><small>private · moves their requests up or down</small></div>
-				<div style="padding:0 20px 18px"><BrandRating {brand} /></div>
+			<section class="bd-bento rv" style="--i:5">
+				<header class="bd-bh"><h2>Your rating</h2><small>private · ranks requests</small></header>
+				<BrandRating {brand} />
 			</section>
-			<section class="panel rv" style="--i:6">
-				<div class="panel-h"><h2>Details</h2></div>
-				<div class="form-b">
+			<section class="bd-bento rv" style="--i:6">
+				<header class="bd-bh"><h2>Details</h2><small>auto-saved</small></header>
+				<div class="form-b bd-form">
 					<div class="f span2"><label for="b-name">Brand name</label><input class="inp" id="b-name" value={brand.name} onchange={(e) => val(e).trim() && saveBrand(brand.id, { name: val(e).trim() })} /></div>
 					<div class="f"><label for="b-ig">Instagram</label><div class="pre"><span>@</span><input class="inp" id="b-ig" value={brand.instagram} onchange={(e) => saveBrand(brand.id, { instagram: val(e).replace(/^@/, '') })} /></div></div>
 					<div class="f">
@@ -170,49 +170,52 @@
 					</div>
 				</div>
 			</section>
-			<section class="panel rv" style="--i:7" id="b-notes">
-				<div class="panel-h"><h2>Private notes</h2><small>only you see these</small></div>
-				<div style="padding:0 20px 20px">
-					<textarea class="inp" placeholder="What they liked, who approves content, how they pay…" value={notes.notes} onchange={(e) => saveBrandNotes(brand.id, { notes: val(e) })}></textarea>
-					<div class="f" style="margin-top:16px">
-						<label for="b-comp">Competitors</label>
-						<p class="hint" style="margin-bottom:8px">Brands you shouldn't post close to this one.</p>
-						<form style="display:flex;gap:8px" onsubmit={addCompetitor}>
-							<input class="inp" id="b-comp" list="all-brands" placeholder="Add a brand" bind:value={newComp} />
-							<button class="btn" type="submit"><Icon name="plus" />Add</button>
-						</form>
-						<datalist id="all-brands">{#each studio.brands.filter((b) => b.id !== brand.id) as b (b.id)}<option value={b.name}></option>{/each}</datalist>
-						<div class="tags">
-							{#each notes.competitors as comp (comp)}
-								<span class="tag">{comp}<button aria-label="Remove {comp}" onclick={() => saveBrandNotes(brand.id, { competitors: notes.competitors.filter((x) => x !== comp) })}><Icon name="x" /></button></span>
-							{/each}
-						</div>
+			<section class="bd-bento rv" style="--i:7" id="b-notes">
+				<header class="bd-bh"><h2>Private notes</h2><small>only you see these</small></header>
+				<textarea class="inp" placeholder="What they liked, who approves content, how they pay…" value={notes.notes} onchange={(e) => saveBrandNotes(brand.id, { notes: val(e) })}></textarea>
+				<div class="f" style="margin-top:12px">
+					<label for="b-comp">Competitors</label>
+					<p class="hint" style="margin-bottom:8px">Brands you shouldn't post close to this one.</p>
+					<form style="display:flex;gap:8px" onsubmit={addCompetitor}>
+						<input class="inp" id="b-comp" list="all-brands" placeholder="Add a brand" bind:value={newComp} />
+						<button class="btn" type="submit"><Icon name="plus" />Add</button>
+					</form>
+					<datalist id="all-brands">{#each studio.brands.filter((b) => b.id !== brand.id) as b (b.id)}<option value={b.name}></option>{/each}</datalist>
+					<div class="tags">
+						{#each notes.competitors as comp (comp)}
+							<span class="tag">{comp}<button aria-label="Remove {comp}" onclick={() => saveBrandNotes(brand.id, { competitors: notes.competitors.filter((x) => x !== comp) })}><Icon name="x" /></button></span>
+						{/each}
 					</div>
 				</div>
 			</section>
 			{#if contacts.length}
-				<section class="panel rv" style="--i:8">
-					<div class="panel-h"><h2>Contacts</h2></div>
+				<section class="bd-bento rv" style="--i:8">
+					<header class="bd-bh"><h2>Contacts</h2><small>{contacts.length}</small></header>
 					{#each contacts as c (c.id)}
 						<div class="prod-row"><Mono name={c.contact_name || c.contact_email} size="sm" /><div><b>{c.contact_name || '—'}</b><small>{c.contact_email}{c.contact_phone ? ` · ${c.contact_phone}` : ''}</small></div></div>
 					{/each}
 				</section>
 			{/if}
-			{#if others.length}
-				<section class="panel merge-zone rv" style="--i:9">
-					<div class="panel-h"><h2>Merge into another brand</h2></div>
-					<p class="hint dz-text">Added the same brand twice? Pick the one to keep. {s.collabs.length ? `This brand's ${s.collabs.length} collab${s.collabs.length === 1 ? '' : 's'}, ` : "This brand's "}monthly deals, notes and brand logins move there, and this one is removed.</p>
-					<div class="mz-act">
-						<Select ariaLabel="Brand to keep" placeholder="Brand to keep" value={mergeInto} options={others} onchange={(v) => (mergeInto = v)} />
-						<button class="btn" onclick={merge} disabled={merging || !mergeInto}>{#if merging}<span class="spinner"></span>{:else}<Icon name="layers" />{/if}Merge</button>
+			<details class="bd-manage rv" style="--i:9">
+				<summary><span>Merge or delete brand</span><span>▾</span></summary>
+				<div class="bd-mbody">
+					{#if others.length}
+						<div class="bd-msec">
+							<h3>Merge into another brand</h3>
+							<p class="hint">Added the same brand twice? Pick the one to keep. {s.collabs.length ? `This brand's ${s.collabs.length} collab${s.collabs.length === 1 ? '' : 's'}, ` : "This brand's "}monthly deals, notes and brand logins move there, and this one is removed.</p>
+							<div class="mz-act">
+								<Select ariaLabel="Brand to keep" placeholder="Brand to keep" value={mergeInto} options={others} onchange={(v) => (mergeInto = v)} />
+								<button class="btn" onclick={merge} disabled={merging || !mergeInto}>{#if merging}<span class="spinner"></span>{:else}<Icon name="layers" />{/if}Merge</button>
+							</div>
+						</div>
+					{/if}
+					<div class="bd-msec">
+						<h3>Delete brand</h3>
+						<p class="hint">{issued ? `Has ${issued} sent or paid invoice${issued === 1 ? '' : 's'}, kept for your tax records. Cancel ${issued === 1 ? 'it' : 'them'} first to delete this brand.` : s.collabs.length ? `Removes ${brand.name} and its ${s.collabs.length} collab${s.collabs.length === 1 ? '' : 's'} for good.` : `Removes ${brand.name} for good.`}</p>
+						<div><button class="btn danger" onclick={del} disabled={deleting || issued > 0}>{#if deleting}<span class="spinner"></span>{:else}<Icon name="x" />{/if}Delete brand</button></div>
 					</div>
-				</section>
-			{/if}
-			<section class="panel danger-zone rv" style="--i:9">
-				<div class="panel-h"><h2>Delete brand</h2></div>
-				<p class="hint dz-text">{issued ? `Has ${issued} sent or paid invoice${issued === 1 ? '' : 's'}, kept for your tax records. Cancel ${issued === 1 ? 'it' : 'them'} first to delete this brand.` : s.collabs.length ? `Removes ${brand.name} and its ${s.collabs.length} collab${s.collabs.length === 1 ? '' : 's'} for good.` : `Removes ${brand.name} for good.`}</p>
-				<div class="dz-act"><button class="btn danger" onclick={del} disabled={deleting || issued > 0}>{#if deleting}<span class="spinner"></span>{:else}<Icon name="x" />{/if}Delete brand</button></div>
-			</section>
+				</div>
+			</details>
 		</div>
 	</div>
 {/if}
@@ -258,9 +261,25 @@
 	.bdv-orbit a { height: 34px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.18); background: rgba(17, 13, 17, 0.42); color: #fff; text-decoration: none; font-size: 11.5px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; gap: 5px; }
 	.bdv-orbit a :global(svg) { width: 14px; height: 14px; }
 
-	.dz-text { margin: 0; padding: 0 20px; }
-	.dz-act { padding: 14px 20px 20px; }
-	.mz-act { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 14px 20px 20px; }
+	.bd-page { gap: 14px; }
+	.bd-bento {
+		border: 1px solid var(--line);
+		border-radius: 20px;
+		background: linear-gradient(165deg, #211a23, var(--surface) 60%);
+		padding: 16px;
+		display: grid;
+		gap: 12px;
+	}
+	.bd-bh { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+	.bd-bh h2 { margin: 0; font-size: 11px; font-weight: 700; letter-spacing: .15em; text-transform: uppercase; color: var(--ink-3); }
+	.bd-bh small { font-size: 11.5px; color: var(--ink-3); }
+	.bd-form { padding: 0; }
+	.bd-manage { border: 1px solid var(--line); border-radius: 18px; background: var(--surface); padding: 14px 16px; }
+	.bd-manage summary { cursor: pointer; display: flex; justify-content: space-between; align-items: center; list-style: none; font-size: 11px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); }
+	.bd-mbody { display: grid; gap: 16px; padding-top: 14px; margin-top: 12px; border-top: 1px solid var(--line); }
+	.bd-msec { display: grid; gap: 8px; }
+	.bd-msec h3 { margin: 0; font-size: 13px; color: var(--ink); }
+	.mz-act { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; }
 
 	@keyframes bd-spin { to { --bd-rim: 360deg; } }
 	@keyframes bd-sheen { 0%, 58% { transform: translateX(-160%) skewX(-22deg); } 100% { transform: translateX(270%) skewX(-22deg); } }
