@@ -288,3 +288,51 @@
 		{@render body()}
 	</section>
 {/if}
+
+<style>
+	@property --dk-rim { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
+
+	.dk2-card {
+		position: relative;
+		overflow: hidden;
+		border-radius: 24px !important;
+		border: 1.5px solid transparent !important;
+		background:
+			linear-gradient(155deg, #211728 0%, #151017 58%, #1e141f 100%) padding-box,
+			conic-gradient(from var(--dk-rim), rgba(156, 123, 255, 0.88), rgba(242, 90, 144, 0.82), rgba(255, 174, 107, 0.72), rgba(90, 65, 98, 0.35), rgba(156, 123, 255, 0.88)) border-box !important;
+		animation: dk-spin 11s linear infinite;
+		box-shadow: 0 24px 50px -24px rgba(156, 123, 255, 0.42);
+	}
+
+	.dk2-lead {
+		border-radius: 18px !important;
+		border: 1px solid transparent !important;
+		background:
+			linear-gradient(160deg, #1f1823, #151017 70%) padding-box,
+			linear-gradient(135deg, rgba(156, 123, 255, 0.55), rgba(242, 90, 144, 0.42), rgba(255, 174, 107, 0.5)) border-box !important;
+	}
+
+	.dk2-add {
+		position: relative;
+		overflow: hidden;
+	}
+	.dk2-add::after {
+		content: '';
+		position: absolute;
+		inset: 0;
+		width: 42%;
+		background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.34), transparent);
+		transform: translateX(-160%) skewX(-22deg);
+		animation: dk-sheen 4.8s ease-in-out infinite;
+		pointer-events: none;
+	}
+
+	@keyframes dk-spin { to { --dk-rim: 360deg; } }
+	@keyframes dk-sheen {
+		0%, 55% { transform: translateX(-160%) skewX(-22deg); }
+		100% { transform: translateX(270%) skewX(-22deg); }
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.dk2-card, .dk2-add::after { animation: none; }
+	}
+</style>
