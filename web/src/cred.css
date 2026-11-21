@@ -2741,9 +2741,20 @@ html.cd-sheet, html.cd-sheet body { overflow: hidden; }
 
   /* 1. Hero Greeting + Living Multi-Mode Orb + Status Chips + Quick Actions */
   [data-desk] .phone-today .ht {
-    margin: 0 -16px;
-    padding: 14px 16px 12px;
+    position: relative;
+    margin: 4px 0 0;
+    padding: 16px;
     overflow: hidden;
+    border-radius: 24px;
+    border: 1px solid transparent;
+    background:
+      linear-gradient(148deg, #261a2b 0%, #181219 58%, #221621 100%) padding-box,
+      conic-gradient(from var(--ht-rim), rgba(156, 123, 255, 0.72), rgba(242, 90, 144, 0.78), rgba(255, 174, 107, 0.65), rgba(68, 50, 66, 0.26), rgba(156, 123, 255, 0.72)) border-box;
+    animation: ht-spin 12s linear infinite;
+    box-shadow: 0 22px 46px -24px rgba(242, 90, 144, 0.38);
+  }
+  [data-desk] .phone-today .ht .ht-glow {
+    opacity: 0.42;
   }
   [data-desk] .phone-today .fest-pill-wrap {
     margin-bottom: 8px;
@@ -2785,11 +2796,11 @@ html.cd-sheet, html.cd-sheet body { overflow: hidden; }
   }
   [data-desk] .phone-today .ht-hi {
     margin: 5px 0 0;
-    font-family: var(--f-display, inherit);
-    font-size: 27px;
-    font-weight: 700;
-    line-height: 1.05;
-    letter-spacing: -0.025em;
+    font-family: var(--f-serif, Georgia, serif);
+    font-size: 32px;
+    font-weight: 400;
+    line-height: 1.04;
+    letter-spacing: -0.02em;
   }
   [data-desk] .phone-today .ht-hi span {
     display: block;
@@ -2800,7 +2811,7 @@ html.cd-sheet, html.cd-sheet body { overflow: hidden; }
     font-family: var(--f-serif, Georgia, serif);
     font-style: italic;
     font-weight: 400;
-    font-size: 44px;
+    font-size: 42px;
     line-height: 0.98;
     letter-spacing: -0.01em;
     padding-right: 4px;
@@ -2808,13 +2819,13 @@ html.cd-sheet, html.cd-sheet body { overflow: hidden; }
 
   /* Interactive Multi-Mode Orb (in-flow inside .ht-top-row so it never overlaps chips) */
   [data-desk] .phone-today .ht-orb {
-    position: relative !important;
-    top: auto !important;
-    right: auto !important;
-    width: 112px !important;
-    height: 112px !important;
+    position: relative;
+    top: auto;
+    right: auto;
+    width: 104px;
+    height: 104px;
     flex: none;
-    margin-bottom: 6px;
+    margin-bottom: 14px;
     border-radius: 50%;
     border: 0;
     padding: 0;
@@ -2823,6 +2834,21 @@ html.cd-sheet, html.cd-sheet body { overflow: hidden; }
     display: grid;
     place-items: center;
     cursor: pointer;
+    transition: transform .22s cubic-bezier(.34, 1.56, .64, 1);
+  }
+  [data-desk] .phone-today .ht-orb:active {
+    transform: scale(.93);
+  }
+  [data-desk] .phone-today .ht-orb .orb-badge {
+    bottom: -7px;
+    padding: 3px 8px;
+    background: #171118;
+    border: 1px solid #553d56;
+    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.7);
+    font-size: 10px;
+  }
+  [data-desk] .phone-today .ht-orb .orb-badge b {
+    font-size: 10.5px;
   }
   [data-desk] .phone-today .ht-orb .orb-ring-2 {
     position: absolute;
@@ -2871,16 +2897,15 @@ html.cd-sheet, html.cd-sheet body { overflow: hidden; }
   }
   [data-desk] .phone-today .orb-mode-dots {
     position: absolute;
-    bottom: -5px;
+    bottom: -16px;
     left: 50%;
     transform: translateX(-50%);
     display: flex;
-    gap: 3px;
-    padding: 3px 7px;
-    border-radius: 99px;
-    background: var(--surface-2);
-    border: 1px solid var(--line-strong);
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+    gap: 4px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
     z-index: 3;
   }
   [data-desk] .phone-today .orb-mode-dots i {
@@ -2960,12 +2985,12 @@ html.cd-sheet, html.cd-sheet body { overflow: hidden; }
   [data-desk] .phone-today .ht-chip .mini-avs i:first-child { margin-left: 0; }
   [data-desk] .phone-today .ht-spark { color: var(--g3); font-size: 11px; }
 
-  /* 4-Button Tactile Quick Action Dock */
+  /* 4-Button Tactile Quick Action Dock (NeoPOP) */
   [data-desk] .phone-today .qa-strip {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 8px;
-    margin-top: 12px;
+    gap: 7px;
+    margin-top: 14px;
   }
   [data-desk] .phone-today .qa-card {
     position: relative;
@@ -2975,71 +3000,103 @@ html.cd-sheet, html.cd-sheet body { overflow: hidden; }
     justify-content: center;
     gap: 6px;
     padding: 10px 4px 9px;
-    border-radius: 16px;
-    border: 1px solid var(--line);
-    background: var(--surface);
+    border-radius: 0;
+    border: 1px solid #3f3241;
+    background: rgba(25, 19, 26, 0.9);
     color: var(--ink);
-    font: 600 11px/1.15 var(--f-body, inherit);
+    font: 700 9.5px/1.1 var(--f-body, inherit);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
     text-decoration: none;
     cursor: pointer;
-    transition: transform .18s cubic-bezier(.2, 1.4, .4, 1), border-color .18s ease;
+    box-shadow: 2.5px 2.5px 0 #312632;
+    transition: transform .12s cubic-bezier(.22, 1, .36, 1), box-shadow .12s;
   }
-  [data-desk] .phone-today .qa-card:active { transform: scale(.94); }
+  [data-desk] .phone-today .qa-card:active {
+    transform: translate(2px, 2px);
+    box-shadow: none;
+  }
+  [data-desk] .phone-today .qa-card.primary {
+    background: var(--ink);
+    color: var(--bg);
+    border-color: var(--ink);
+    box-shadow: 3px 3px 0 var(--g2);
+  }
   [data-desk] .phone-today .qa-ic {
-    position: relative;
-    width: 38px;
-    height: 38px;
-    border-radius: 12px;
+    position: static;
+    width: auto;
+    height: auto;
+    border-radius: 0;
     display: grid;
     place-items: center;
-    background: var(--surface-2);
-    color: var(--ink);
+    background: transparent;
+    color: inherit;
   }
   [data-desk] .phone-today .qa-card.primary .qa-ic {
-    background: var(--grad);
-    color: #fff;
-    box-shadow: 0 8px 18px -6px color-mix(in oklab, var(--g2) 75%, transparent);
+    background: transparent;
+    color: var(--bg);
+    box-shadow: none;
   }
-  [data-desk] .phone-today .qa-ic .ic { width: 18px; height: 18px; stroke-width: 2.1; }
+  [data-desk] .phone-today .qa-ic .ic { width: 18px; height: 18px; stroke-width: 2; }
   [data-desk] .phone-today .qa-tag {
     position: absolute;
-    top: -4px;
-    right: -5px;
-    padding: 1px 5px;
-    border-radius: 99px;
-    background: var(--g3);
-    color: #1C0912;
-    font: 800 9px/1.1 var(--f-body, inherit);
-    border: 1.5px solid var(--surface);
+    top: 4px;
+    right: 4px;
+    padding: 1.5px 4px;
+    border-radius: 4px;
+    background: linear-gradient(135deg, var(--g1), var(--g2));
+    color: #140c14;
+    font: 800 7.5px/1 var(--f-body, inherit);
+    letter-spacing: 0.04em;
+    border: 0;
   }
 
-  /* 4. Money This Month — Interactive Multi-View Wallet & Goal Hero */
+  /* Contained Live Ticker */
+  [data-desk] .phone-today .cr-ticker.cr-tk {
+    margin: 12px 0 14px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: #171217;
+    overflow: hidden;
+  }
+
+  /* 4. Money This Month — Interactive Multi-View Wallet & Goal Vault Hero */
   [data-desk] .phone-today .m-hero {
-    margin-top: 16px;
-    border-radius: 26px !important;
-    color: #FBF2F6 !important;
+    margin-top: 14px;
+    border-radius: 22px;
+    color: #FBF2F6;
+    border: 1px solid transparent;
     background:
-      radial-gradient(120% 90% at 0% 0%, rgba(242, 90, 144, 0.38), transparent 55%),
-      radial-gradient(90% 90% at 100% 100%, rgba(156, 123, 255, 0.34), transparent 60%),
-      linear-gradient(145deg, #2b1426, #160c15 72%) !important;
-    border: 1px solid rgba(255, 255, 255, 0.12) !important;
-    box-shadow: 0 22px 48px -24px rgba(0, 0, 0, 0.75) !important;
+      linear-gradient(142deg, #271b2e 0%, #1a141b 56%, #241822 100%) padding-box,
+      conic-gradient(from var(--ht-rim), rgba(156, 123, 255, 0.85), rgba(242, 90, 144, 0.8), rgba(255, 174, 107, 0.75), rgba(70, 52, 66, 0.28), rgba(156, 123, 255, 0.85)) border-box;
+    animation: ht-spin 10.5s linear infinite;
+    box-shadow: 0 22px 46px -24px rgba(156, 123, 255, 0.38);
+  }
+  [data-desk] .phone-today .m-hero > .mesh {
+    display: none;
   }
   [data-desk] .phone-today .m-hero .hc-in {
-    padding: 20px 18px 14px;
+    padding: 16px 16px 14px;
+  }
+  [data-desk] .phone-today .m-hero .hc-eb {
+    color: var(--g3);
+    opacity: 1;
+    font-size: 10px;
+    letter-spacing: 0.13em;
   }
   [data-desk] .phone-today .m-hero .glass-chip {
-    height: 30px;
-    padding: 0 11px;
-    border-radius: 0 !important;
-    border: 1px solid rgba(255, 255, 255, 0.26);
-    background: rgba(255, 255, 255, 0.08);
-    color: #fff;
-    font: 700 12px var(--f-body, inherit);
+    height: 26px;
+    padding: 0 9px;
+    border-radius: 0;
+    border: 1px solid rgba(156, 123, 255, 0.4);
+    background: rgba(156, 123, 255, 0.12);
+    color: var(--g1);
+    font: 700 10px var(--f-mono, ui-monospace, Consolas, monospace);
+    text-transform: uppercase;
     display: inline-flex;
     align-items: center;
     gap: 5px;
-    box-shadow: 2.5px 2.5px 0 rgba(0, 0, 0, 0.45);
+    box-shadow: none;
   }
   [data-desk] .phone-today .m-hero .glass-chip .ic {
     width: 13px;
@@ -3047,11 +3104,11 @@ html.cd-sheet, html.cd-sheet body { overflow: hidden; }
     color: var(--g3);
   }
   [data-desk] .phone-today .hc-ctx {
-    margin-top: 14px;
-    padding: 10px 12px;
-    border-radius: 14px;
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    margin-top: 12px;
+    padding: 8px 10px;
+    border-radius: 12px;
+    background: rgba(17, 13, 17, 0.62);
+    border: 1px solid #392c3b;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -3103,15 +3160,15 @@ html.cd-sheet, html.cd-sheet body { overflow: hidden; }
     margin-top: 12px;
   }
   [data-desk] .phone-today .m-hero .hc-foot > a {
-    padding: 10px 10px 9px;
-    border-radius: 14px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.11);
+    padding: 9px 8px;
+    border-radius: 12px;
+    background: rgba(28, 23, 28, 0.75);
+    border: 1px solid #382c38;
   }
   [data-desk] .phone-today .m-hero .hc-foot > a.active-tile {
-    background: rgba(255, 255, 255, 0.15);
-    border-color: rgba(255, 255, 255, 0.42);
-    box-shadow: 0 6px 16px -6px rgba(0, 0, 0, 0.4);
+    background: rgba(242, 90, 144, 0.14);
+    border-color: var(--g2);
+    box-shadow: 0 6px 16px -6px rgba(242, 90, 144, 0.35);
   }
   [data-desk] .phone-today .m-hero .hc-foot b.od {
     color: #FF9BA6;
@@ -3195,24 +3252,33 @@ html.cd-sheet, html.cd-sheet body { overflow: hidden; }
     opacity: 0.5;
   }
 
-  /* 6. Desk AI — Unified Co-Pilot (Aurora Border Card + 3 Segmented Tabs) */
+  /* 6. Desk AI — Unified Co-Pilot (Animated Vault Border Card + 3 Segmented Tabs) */
   [data-desk] .phone-today .dk2-card {
     position: relative;
+    overflow: hidden;
     border-radius: 24px;
-    padding: 1.5px;
-    background: linear-gradient(90deg, var(--g1), var(--g2), var(--g3), var(--g2), var(--g1));
-    background-size: 300% 100%;
-    box-shadow: 0 12px 30px -14px color-mix(in oklab, var(--g1) 40%, transparent);
+    padding: 0;
+    border: 1.5px solid transparent;
+    background:
+      linear-gradient(155deg, #211728 0%, #151017 58%, #1e141f 100%) padding-box,
+      conic-gradient(from var(--dk-rim), rgba(156, 123, 255, 0.88), rgba(242, 90, 144, 0.82), rgba(255, 174, 107, 0.72), rgba(90, 65, 98, 0.35), rgba(156, 123, 255, 0.88)) border-box;
+    animation: dk-spin 11s linear infinite;
+    box-shadow: 0 24px 50px -24px rgba(156, 123, 255, 0.42);
   }
   [data-desk] .phone-today .dk2-in {
     border-radius: 22.5px;
-    background:
-      radial-gradient(120% 70% at 0% 0%, color-mix(in oklab, var(--g1) 16%, transparent), transparent 60%),
-      var(--surface);
+    background: transparent;
     padding: 16px;
     display: flex;
     flex-direction: column;
     gap: 13px;
+  }
+  [data-desk] .phone-today .dk2-lead {
+    border-radius: 18px;
+    border: 1px solid transparent;
+    background:
+      linear-gradient(160deg, #1f1823, #151017 70%) padding-box,
+      linear-gradient(135deg, rgba(156, 123, 255, 0.55), rgba(242, 90, 144, 0.42), rgba(255, 174, 107, 0.5)) border-box;
   }
   [data-desk] .phone-today .dk2-free {
     margin-left: auto;
@@ -3329,4 +3395,14 @@ html.cd-sheet, html.cd-sheet body { overflow: hidden; }
     letter-spacing: 0.09em;
     text-transform: uppercase;
   }
+}
+
+@property --ht-rim { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
+@property --dk-rim { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
+@keyframes ht-spin { to { --ht-rim: 360deg; } }
+@keyframes dk-spin { to { --dk-rim: 360deg; } }
+@media (prefers-reduced-motion: reduce) {
+  [data-desk] .phone-today .ht,
+  [data-desk] .phone-today .m-hero,
+  [data-desk] .phone-today .dk2-card { animation: none; }
 }

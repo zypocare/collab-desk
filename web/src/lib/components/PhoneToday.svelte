@@ -292,12 +292,11 @@
 				{/if}
 			</span>
 			{#if orbMode === 0 && ig?.profile_picture_url}
-				<span class="orb-badge"><b>{compact(ig.followers ?? 0)}</b> followers{#if er}<i>{erText(er)}</i>{/if}</span>
-			{:else}
-				<span class="orb-mode-dots" aria-hidden="true">
-					<i class:on={orbMode === 0}></i><i class:on={orbMode === 1}></i><i class:on={orbMode === 2}></i>
-				</span>
+				<span class="orb-badge"><b>{compact(ig.followers ?? 0)}</b>{#if er}<i>{erText(er)}</i>{:else}<span>followers</span>{/if}</span>
 			{/if}
+			<span class="orb-mode-dots" aria-hidden="true">
+				<i class:on={orbMode === 0}></i><i class:on={orbMode === 1}></i><i class:on={orbMode === 2}></i>
+			</span>
 			<span class="orb-spark s1" aria-hidden="true"></span><span class="orb-spark s2" aria-hidden="true"></span><span class="orb-spark s3" aria-hidden="true"></span>
 		</button>
 	</div>
@@ -577,68 +576,3 @@
 <div class="hs"><BrandQuestions /></div>
 </div>
 
-<style>
-	@property --ht-rim { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
-
-	.ht {
-		border-radius: 24px !important;
-		border: 1px solid transparent !important;
-		background:
-			linear-gradient(148deg, #261a2b 0%, #181219 58%, #221621 100%) padding-box,
-			conic-gradient(from var(--ht-rim), rgba(156, 123, 255, 0.72), rgba(242, 90, 144, 0.78), rgba(255, 174, 107, 0.65), rgba(68, 50, 66, 0.26), rgba(156, 123, 255, 0.72)) border-box !important;
-		animation: ht-spin 12s linear infinite;
-		box-shadow: 0 22px 46px -24px rgba(242, 90, 144, 0.36);
-	}
-
-	.m-hero {
-		border-radius: 22px !important;
-		border: 1px solid transparent !important;
-		background:
-			linear-gradient(142deg, #271b2e 0%, #1a141b 56%, #241822 100%) padding-box,
-			conic-gradient(from var(--ht-rim), rgba(156, 123, 255, 0.85), rgba(242, 90, 144, 0.8), rgba(255, 174, 107, 0.75), rgba(70, 52, 66, 0.28), rgba(156, 123, 255, 0.85)) border-box !important;
-		animation: ht-spin 10.5s linear infinite;
-		box-shadow: 0 22px 46px -24px rgba(156, 123, 255, 0.38);
-	}
-
-	.cr-ticker.cr-tk {
-		margin: 12px 0 14px !important;
-		border: 1px solid var(--line) !important;
-		border-radius: 12px !important;
-		background: var(--surface) !important;
-		overflow: hidden;
-	}
-
-	.ht-orb {
-		transition: transform .22s cubic-bezier(.34, 1.56, .64, 1);
-	}
-	.ht-orb:active {
-		transform: scale(.93);
-	}
-
-	.m-hero > .mesh {
-		display: none !important;
-	}
-
-	.qa-card {
-		border-radius: 0 !important;
-		border: 1px solid #3f3241 !important;
-		background: rgba(25, 19, 26, 0.9) !important;
-		box-shadow: 2.5px 2.5px 0 #312632 !important;
-		transition: transform .14s cubic-bezier(.22, 1, .36, 1), box-shadow .14s;
-	}
-	.qa-card.primary {
-		background: var(--ink) !important;
-		color: var(--bg) !important;
-		border-color: var(--ink) !important;
-		box-shadow: 3px 3px 0 var(--g2) !important;
-	}
-	.qa-card:active {
-		transform: translate(2px, 2px);
-		box-shadow: none !important;
-	}
-
-	@keyframes ht-spin { to { --ht-rim: 360deg; } }
-	@media (prefers-reduced-motion: reduce) {
-		.ht, .m-hero { animation: none; }
-	}
-</style>
