@@ -27,11 +27,14 @@
 	}
 	.phone-today .tix-flt b { font-variant-numeric: tabular-nums; }
 	.phone-today .tix .tix-t:not(.tix-tip) { flex-basis: clamp(195px, 57vw, 250px); width: auto; }
+	.phone-today .tix .tix-row { overflow-y: hidden; overscroll-behavior-y: auto; scroll-snap-type: x proximity; }
 	.phone-today .tix .lead-meta {
 		display: block; margin-top: 5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; color: var(--ink-2);
 	}
 	.phone-today .tix .rail-empty { flex: 1; margin: 0; padding: 16px; background: var(--surface); border: 1px dashed var(--line-strong); border-radius: 14px; color: var(--ink-2); }
 	[data-desk] .phone-today .tix-t {
+		/* Keep the oversized moving highlight inside the ticket's scroll bounds. */
+		overflow: clip;
 		animation: none;
 		isolation: isolate;
 		background: radial-gradient(120% 80% at 0% 0%, var(--tint), transparent 60%), var(--surface);

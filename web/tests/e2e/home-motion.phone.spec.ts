@@ -139,11 +139,16 @@ test('ambient motion runs visibly, pauses off screen and in the background, and 
 	expect(await ring.evaluate((node) => getComputedStyle(node).animationPlayState)).toBe('running');
 	const transform = await ring.evaluate((node) => getComputedStyle(node).transform);
 	await expect.poll(() => ring.evaluate((node) => getComputedStyle(node).transform)).not.toBe(transform);
+	const story = page.locator('.story-ring').first();
+	const orbit = () => story.evaluate((node) => getComputedStyle(node, '::before').transform);
+	const start = await orbit();
+	await expect.poll(orbit).not.toBe(start);
 	await page.getByRole('button', { name: 'Pause numbers ticker' }).click();
 	expect(await page.locator('.cr-ticker > div').evaluate((node) => getComputedStyle(node).animationPlayState)).toBe('paused');
 	await page.getByRole('button', { name: 'Resume numbers ticker' }).click();
 	await page.locator('.wk2').scrollIntoViewIfNeeded();
 	await expect(page.locator('.ht')).toHaveAttribute('data-home-active', 'false');
+	await expect.poll(() => story.evaluate(node => getComputedStyle(node, '::before').animationPlayState)).toBe('paused');
 	expect(await ring.evaluate((node) => getComputedStyle(node).animationPlayState)).toBe('paused');
 	await page.evaluate(() => { Object.defineProperty(document, 'hidden', { configurable: true, value: true }); document.dispatchEvent(new Event('visibilitychange')); });
 	await expect(page.locator('.phone-today')).toHaveAttribute('data-home-paused', 'true');
@@ -151,26 +156,36 @@ test('ambient motion runs visibly, pauses off screen and in the background, and 
 	await expect(page.locator('.phone-today')).toHaveAttribute('data-home-paused', 'false');
 });
 
-test('phone touch swipes change money views while vertical swipes keep scrolling the page', async ({ page }) => {
+test('phone touch swipes browse collabs and money horizontally and scroll the page vertically', async ({ page }) => {
 	await mountHome(page);
 	const card = page.locator('.m-hero');
 	await card.scrollIntoViewIfNeeded();
 	await expect(card.locator('.hc-val')).toHaveText('₹48,000');
 	const touch = await page.context().newCDPSession(page);
-	const swipe = async (dx: number, dy: number) => {
-		const rect = (await card.boundingBox())!;
-		const x = rect.x + rect.width * .7, y = rect.y + 105;
+	const swipe = async (target: typeof card, dx: number, dy: number) => {
+		const rect = (await target.boundingBox())!;
+		const x = rect.x + rect.width * .7, y = rect.y + Math.min(105, rect.height / 2);
 		await touch.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y }] });
 		for (let i = 1; i <= 10; i++) await touch.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: x + dx * i / 10, y: y + dy * i / 10 }] });
 		await touch.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
 	};
-	await swipe(-150, 3);
+	await swipe(card, -150, 3);
 	await expect(card.locator('.hc-eb')).toHaveText('Yet to come');
 	await expect(page).toHaveURL(/__home-motion$/);
 	const before = await page.evaluate(() => scrollY);
-	await swipe(2, -170);
+	await swipe(card, 2, -170);
 	await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThan(before + 30);
 	await expect(card.locator('.hc-eb')).toHaveText('Yet to come');
+	const rail = page.locator('#sec-collabs .tix-row');
+	await rail.evaluate(node => node.scrollIntoView({ block: 'center', behavior: 'instant' }));
+	await expect.poll(() => rail.evaluate(node => node.scrollHeight - node.clientHeight)).toBe(0);
+	await swipe(rail, -160, 6);
+	await expect.poll(() => rail.evaluate(node => node.scrollLeft)).toBeGreaterThan(30);
+	const pageY = await page.evaluate(() => scrollY);
+	await swipe(rail, -18, -165);
+	await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThan(pageY + 60);
+	expect(await rail.evaluate(node => node.scrollTop)).toBe(0);
+	await expect(page).toHaveURL(/__home-motion$/);
 	await touch.detach();
 });
 
@@ -181,6 +196,7 @@ test('reduced motion gives final numbers and narrow screens keep every action ac
 	await expect(page.locator('.g-prog')).toHaveCSS('stroke-dashoffset', '52px');
 	await expect(page.locator('.phone-today')).toHaveAttribute('data-home-paused', 'true');
 	expect(await page.locator('.orb-ring').evaluate((node) => getComputedStyle(node).animationName)).toBe('none');
+	expect(await page.locator('.story-ring').first().evaluate(node => getComputedStyle(node, '::before').animationName)).toBe('none');
 	for (const theme of ['light', 'dark']) {
 		await page.evaluate((value) => document.documentElement.dataset.theme = value, theme);
 		for (const width of [320, 360, 430]) {
