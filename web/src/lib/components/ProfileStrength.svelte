@@ -5,7 +5,7 @@
 	import { loadViews, views } from '../profileViews.svelte';
 	onMount(() => void loadViews());
 
-	// Profile strength on My page: how complete her profile is for brands on Explore, and the next steps
+	// Profile strength on My page: compact progress bar that expands into brand views and the next steps
 	// that lift it (a complete profile is part of her Miracle Score; deals and on-time posts are the rest).
 	const s = $derived(studio.settings);
 	type Step = { id: string; w: number; done: boolean; title: string; sub: string; href: string };
@@ -26,49 +26,68 @@
 	);
 	const pct = $derived(steps.reduce((a, x) => a + (x.done ? x.w : 0), 0));
 	const next = $derived(steps.filter((x) => !x.done).sort((a, b) => b.w - a.w).slice(0, 3));
+	const remaining = $derived(steps.filter((x) => !x.done).length);
 	const owner = $derived(studio.me?.team_role === 'owner');
+	let open = $state(false);
 </script>
 
 {#if s && owner}
-	<section class="ps" aria-label="Profile strength">
-		<div class="ps-h">
-			<span class="ps-ring" style="--p:{pct}" aria-hidden="true"><b>{pct}%</b></span>
-			<div class="ps-t">
-				<span class="ps-eb">Profile strength</span>
-				<b>{pct >= 100 ? 'Complete. Brands see everything they need.' : pct >= 70 ? 'Strong. A few steps to the top.' : 'Brands rank complete profiles higher on Explore.'}</b>
-				<small>Your Miracle Score also counts on-time posts, paid deals and how fast you reply.</small>
+	<section class="ps" class:open aria-label="Profile strength">
+		<button type="button" class="ps-top" aria-expanded={open} onclick={() => (open = !open)}>
+			<span class="ps-l">
+				<span class="ps-pct" class:full={pct >= 100}>{pct}%</span>
+				<span class="ps-txt">
+					<b>Profile strength</b>
+					<small>· {remaining === 0 ? 'Brand-ready ✦' : `${remaining} step${remaining === 1 ? '' : 's'} left`}</small>
+				</span>
+			</span>
+			<span class="ps-chev" aria-hidden="true"><Icon name="chevR" /></span>
+		</button>
+		<div class="ps-bar" aria-hidden="true"><i style="width:{Math.min(100, pct)}%"></i></div>
+
+		{#if open}
+			<div class="ps-body">
+				{#if views.loaded}
+					<div class="ps-views"><Icon name="eye" /><span><b>{views.week} brand{views.week === 1 ? '' : 's'}</b> viewed your profile this week{views.week !== views.before ? (views.week > views.before ? `, up from ${views.before}` : `, down from ${views.before}`) : ''}. {views.month} in the last 30 days.</span></div>
+				{/if}
+				{#if next.length}
+					<ul class="ps-list">
+						{#each next as x (x.id)}
+							<li><a href={x.href}><span class="ps-plus">+{x.w}</span><span class="ps-s"><b>{x.title}</b><small>{x.sub}</small></span><Icon name="chevR" /></a></li>
+						{/each}
+					</ul>
+				{:else}
+					<p class="ps-done">Complete. Brands see everything they need on Explore.</p>
+				{/if}
 			</div>
-		</div>
-		{#if views.loaded}
-			<div class="ps-views"><Icon name="eye" /><span><b>{views.week} brand{views.week === 1 ? '' : 's'}</b> viewed your profile this week{views.week !== views.before ? (views.week > views.before ? `, up from ${views.before}` : `, down from ${views.before}`) : ''}. {views.month} in the last 30 days.</span></div>
-		{/if}
-		{#if next.length}
-			<ul class="ps-list">
-				{#each next as x (x.id)}
-					<li><a href={x.href}><span class="ps-plus">+{x.w}</span><span class="ps-s"><b>{x.title}</b><small>{x.sub}</small></span><Icon name="chevR" /></a></li>
-				{/each}
-			</ul>
 		{/if}
 	</section>
 {/if}
 
 <style>
-	.ps { display: grid; gap: 12px; margin: 4px 0 18px; padding: 16px; border-radius: 20px; border: 1px solid var(--line); background: radial-gradient(120% 80% at 100% 0%, color-mix(in oklab, var(--g1) 14%, transparent), transparent 60%), var(--surface); }
-	.ps-h { display: grid; grid-template-columns: 64px minmax(0, 1fr); gap: 14px; align-items: center; }
-	.ps-ring { width: 64px; height: 64px; border-radius: 50%; display: grid; place-items: center; background: conic-gradient(var(--g2) calc(var(--p) * 1%), color-mix(in oklab, var(--ink) 10%, transparent) 0); }
-	.ps-ring b { width: 52px; height: 52px; border-radius: 50%; display: grid; place-items: center; background: var(--surface); font: 400 19px/1 var(--f-serif); }
-	.ps-t { display: grid; gap: 3px; min-width: 0; }
-	.ps-eb { font-size: 10.5px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; color: var(--ink-3); }
-	.ps-t b { font-size: 15px; line-height: 1.3; }
-	.ps-t small { color: var(--ink-3); font-size: 12.5px; line-height: 1.4; }
-	.ps-views { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border-radius: 14px; background: color-mix(in oklab, var(--g1) 10%, transparent); font-size: 13.5px; line-height: 1.45; color: var(--ink-2); }
+	.ps { display: grid; gap: 9px; margin: 12px 0 4px; padding: 12px 14px; border-radius: 16px; border: 1px solid var(--line); background: var(--surface); }
+	.ps-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; padding: 0; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+	.ps-l { display: flex; align-items: center; gap: 8px; min-width: 0; }
+	.ps-pct { flex: none; padding: 3px 8px; border-radius: 99px; background: color-mix(in oklab, var(--g1) 20%, transparent); color: var(--g1); font: 800 10.5px/1 var(--f-mono, ui-monospace, monospace); }
+	.ps-pct.full { background: color-mix(in oklab, var(--ok) 18%, transparent); color: var(--ok); }
+	.ps-txt { min-width: 0; font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+	.ps-txt b { font-weight: 700; color: var(--ink); }
+	.ps-txt small { color: var(--ink-3); font-weight: 500; margin-left: 3px; }
+	.ps-chev { flex: none; color: var(--ink-3); display: grid; place-items: center; transition: transform .2s ease; }
+	.ps.open .ps-chev { transform: rotate(90deg); }
+	.ps-chev :global(.ic) { width: 15px; height: 15px; }
+	.ps-bar { height: 5px; border-radius: 99px; background: var(--surface-2); overflow: hidden; }
+	.ps-bar i { display: block; height: 100%; border-radius: 99px; background: linear-gradient(90deg, var(--g1), var(--g2), var(--g3)); transition: width .4s ease; }
+	.ps-body { display: grid; gap: 8px; padding-top: 6px; border-top: 1px dashed var(--line); }
+	.ps-views { display: flex; gap: 9px; align-items: flex-start; padding: 9px 11px; border-radius: 12px; background: color-mix(in oklab, var(--g1) 10%, transparent); font-size: 12.5px; line-height: 1.4; color: var(--ink-2); }
 	.ps-views b { color: var(--ink); }
-	.ps-views :global(.ic) { flex: none; width: 17px; height: 17px; margin-top: 2px; color: var(--g1); }
+	.ps-views :global(.ic) { flex: none; width: 15px; height: 15px; margin-top: 2px; color: var(--g1); }
 	.ps-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
-	.ps-list a { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 10px 12px; border-radius: 14px; background: var(--surface-2); color: var(--ink); text-decoration: none; }
-	.ps-plus { font: 400 18px/1 var(--f-serif); color: var(--g2); }
+	.ps-list a { display: grid; grid-template-columns: 38px minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 9px 11px; border-radius: 12px; background: var(--bg); border: 1px solid var(--line); color: var(--ink); text-decoration: none; }
+	.ps-plus { font: 400 17px/1 var(--f-serif, Georgia, serif); color: var(--g2); }
 	.ps-s { display: grid; gap: 2px; min-width: 0; }
-	.ps-s b { font-size: 14px; }
-	.ps-s small { color: var(--ink-3); font-size: 12.5px; }
-	.ps-list :global(.ic) { width: 16px; height: 16px; color: var(--ink-3); }
+	.ps-s b { font-size: 13px; }
+	.ps-s small { color: var(--ink-3); font-size: 11.5px; }
+	.ps-list :global(.ic) { width: 15px; height: 15px; color: var(--ink-3); }
+	.ps-done { margin: 0; font-size: 12.5px; color: var(--ok); }
 </style>

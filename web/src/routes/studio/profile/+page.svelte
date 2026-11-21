@@ -15,8 +15,8 @@
 	import ProfileStrength from '#lib/components/ProfileStrength.svelte';
 	import RingIcons from '#lib/components/RingIcons.svelte';
 
-	// Her profile on the phone, laid out like an Instagram profile: photo and numbers, bio,
-	// buttons, highlight circles into each part of the page, then posts and collabs as grids.
+	// Her profile on the phone, laid out like an Instagram profile: living hero card with photo & stats,
+	// bio, NeoPOP action bar, compact Profile Strength, highlight circles, and filterable 3-column grids.
 	onMount(() => {
 		if (!matchMedia(PHONE_Q).matches) goto('/studio/settings', { replaceState: true });
 	});
@@ -29,6 +29,18 @@
 	// The work wall: what's going on first (newest stage work at the top), then everything wrapped, newest first.
 	const ORDER: Record<string, number> = { live: 0, creating: 1, confirmed: 2, negotiating: 3, request: 4, wrapped: 5 };
 	const wall = $derived([...collabs].sort((a, b) => (ORDER[a.stage] ?? 9) - (ORDER[b.stage] ?? 9) || (b.live_date || b.received_on).localeCompare(a.live_date || a.received_on)));
+	const liveCount = $derived(wall.filter((c) => c.stage === 'live').length);
+	const wrappedCount = $derived(wall.filter((c) => c.stage === 'wrapped').length);
+	let filter = $state<'all' | 'live' | 'wrapped' | 'paid' | 'barter'>('all');
+	const filteredWall = $derived(
+		wall.filter((c) => {
+			if (filter === 'live') return c.stage === 'live';
+			if (filter === 'wrapped') return c.stage === 'wrapped';
+			if (filter === 'paid') return c.type !== 'barter';
+			if (filter === 'barter') return c.type === 'barter';
+			return true;
+		})
+	);
 	const thumb = (c: (typeof collabs)[number]) => c.posts?.find((x) => x.media?.thumbnail_url)?.media.thumbnail_url ?? '';
 	const views = (c: (typeof collabs)[number]) => c.posts?.reduce((a, x) => a + (x.media?.views ?? x.media?.reach ?? 0), 0) ?? 0;
 	const earned = $derived(studio.collabs.reduce((a, c) => a + (c.pay_received || 0), 0));
@@ -36,8 +48,7 @@
 
 	// The QR code opens as a sheet to share; its look is changed in Settings > QR codes.
 	let qrOpen = $state(false);
-	// Quick settings: round shortcuts made like Money's (a turning ring in its own colour, its icon turning through
-	// a few related ones, each a beat after the one before).
+	// Quick settings: round Instagram-style highlight shortcuts into every part of Settings.
 	const HIGHLIGHTS = [
 		{ label: 'QR code', icons: ['qr', 'share', 'link'], tint: 'var(--g2)', href: '#qr' },
 		{ label: 'Rates', icons: ['rupee', 'layers', 'check'], tint: 'var(--g3)', href: '/studio/settings?s=rates' },
@@ -80,34 +91,55 @@
 
 <svelte:head><title>@{s.handle} · {s.app_name}</title></svelte:head>
 
+<div class="pf-page">
 <section class="pf">
-	<div class="pf-top">
-		<a class="pf-av" href="/studio/settings?s=profile" aria-label="Edit profile photo and details"><Avatar name={s.display_name} src={ig?.profile_picture_url ?? ''} size="86px" /></a>
-		<div class="pf-stats">
-			<a href="/studio/collabs"><b>{collabs.length}</b><span>collabs</span></a>
-			<a href="/insights"><b>{followers}</b><span>followers</span></a>
-			<a href="/studio/payments"><b>{inrS(earned)}</b><span>earned</span></a>
+	<div class="pf-hero">
+		<div class="pf-top">
+			<a class="pf-av" href="/studio/settings?s=profile" aria-label="Edit profile photo and details">
+				<span class="pf-ring-dash" aria-hidden="true"></span>
+				<Avatar name={s.display_name} src={ig?.profile_picture_url ?? ''} size="84px" />
+				<span class="pf-av-plus" aria-hidden="true">+</span>
+			</a>
+			<div class="pf-stats">
+				<a class="pf-stat" href="/studio/collabs"><b>{collabs.length}</b><span>collabs</span></a>
+				<a class="pf-stat" href="/insights"><b>{followers}</b><span>followers</span></a>
+				<a class="pf-stat pf-stat-money" href="/studio/payments"><b>{inrS(earned)}</b><span>earned</span></a>
+			</div>
+		</div>
+		<div class="pf-bio">
+			<div class="pf-name-row">
+				<b>{s.display_name}</b>
+				{#if s.niche}<span class="pf-cat">{s.niche}</span>{/if}
+			</div>
+			{#if s.city || s.reply_time}
+				<span class="pf-meta">{[s.city, s.reply_time ? `Replies ${s.reply_time}` : ''].filter(Boolean).join(' · ')}</span>
+			{/if}
+			<span class="pf-meta">
+				<em class="pf-avail" class:paused={!s.accepting}>{s.accepting ? 'Open for collabs' : 'Not taking new requests right now'}</em>{s.engagement ? ` · ${s.engagement} engagement` : ''}
+			</span>
+			<div class="pf-link-row">
+				<button type="button" class="pf-link" onclick={() => copyText(link, 'Link copied')}><Icon name="link" /><span>{link.replace(/^https?:\/\//, '')}</span></button>
+				<a class="pf-preview-pill" href="/?preview=1" target="_blank" rel="noopener"><Icon name="eye" />Brand view</a>
+			</div>
+		</div>
+		<div class="pf-btns">
+			<a class="btn primary" href="/studio/settings?s=profile">Edit profile</a>
+			<button type="button" class="btn" onclick={share}>Share profile</button>
+			<button type="button" class="btn pf-kit" onclick={() => (qrOpen = true)} aria-label="Your QR code" title="Your QR code"><Icon name="qr" /></button>
+			<button type="button" class="btn pf-kit" onclick={kit} disabled={kitBusy} aria-label="Download media kit PDF" title="Download media kit PDF">{#if kitBusy}<span class="spinner"></span>{:else}<Icon name="download" />{/if}</button>
 		</div>
 	</div>
-	<div class="pf-bio">
-		<b>{s.display_name}</b>
-		{#if s.niche}<span class="pf-cat">{s.niche}</span>{/if}
-		<span>{[s.city, s.reply_time ? `Replies ${s.reply_time}` : ''].filter(Boolean).join(' · ')}</span>
-		<span>{s.accepting ? 'Open for collabs' : 'Not taking new requests right now'}{s.engagement ? ` · ${s.engagement} engagement` : ''}</span>
-		<button class="pf-link" onclick={() => copyText(link, 'Link copied')}><Icon name="link" />{link.replace(/^https?:\/\//, '')}</button>
-	</div>
-	<div class="pf-btns">
-		<a class="btn" href="/studio/settings?s=profile">Edit profile</a>
-		<button class="btn" onclick={share}>Share profile</button>
-		<button class="btn pf-kit" onclick={() => (qrOpen = true)} aria-label="Your QR code" title="Your QR code"><Icon name="qr" /></button>
-		<button class="btn pf-kit" onclick={kit} disabled={kitBusy} aria-label="Download media kit PDF">{#if kitBusy}<span class="spinner"></span>{:else}<Icon name="download" />{/if}</button>
-	</div>
+
 	<ProfileStrength />
-	<p class="pf-qs">Quick settings</p>
+
+	<div class="pf-qs-row">
+		<p class="pf-qs">Quick settings</p>
+		<small>{HIGHLIGHTS.length} shortcuts</small>
+	</div>
 	<nav class="cr-rings pf-rings" aria-label="Quick settings">
 		{#each HIGHLIGHTS as h, i (h.label)}
 			{#if h.href === '#qr'}
-				<button class="cr-ring" style="--rt:{h.tint}" onclick={() => (qrOpen = true)} aria-label="Show and share your QR code"><i><span><RingIcons {i} icons={h.icons} /></span></i><b>SHARE</b><small>{h.label}</small></button>
+				<button type="button" class="cr-ring" style="--rt:{h.tint}" onclick={() => (qrOpen = true)} aria-label="Show and share your QR code"><i><span><RingIcons {i} icons={h.icons} /></span></i><b>SHARE</b><small>{h.label}</small></button>
 			{:else}
 				<a class="cr-ring" style="--rt:{h.tint}" href={h.href} target={h.href.startsWith('/insights') ? '_blank' : undefined} rel="noopener"><i><span><RingIcons {i} icons={h.icons} /></span></i><small>{h.label}</small></a>
 			{/if}
@@ -116,13 +148,26 @@
 </section>
 
 <div class="pf-tabs" role="tablist" aria-label="Show" style="--n:2;--i:{tab === 'collabs' ? 0 : 1}">
-	<button role="tab" aria-selected={tab === 'collabs'} class:on={tab === 'collabs'} onclick={() => (tab = 'collabs')} aria-label="Collabs"><Icon name="grid" /></button>
-	<button role="tab" aria-selected={tab === 'posts'} class:on={tab === 'posts'} onclick={() => (tab = 'posts')} aria-label="Instagram posts"><Icon name="film" /></button>
+	<button type="button" role="tab" aria-selected={tab === 'collabs'} class:on={tab === 'collabs'} onclick={() => (tab = 'collabs')} aria-label="Collabs"><Icon name="grid" /><span>Collabs</span></button>
+	<button type="button" role="tab" aria-selected={tab === 'posts'} class:on={tab === 'posts'} onclick={() => (tab = 'posts')} aria-label="Instagram posts"><Icon name="film" /><span>Reels</span></button>
 </div>
 
 {#if tab === 'collabs'}
+	{#if wall.length > 0}
+		<div class="pf-filters" role="group" aria-label="Filter collabs">
+			<button type="button" class="pf-flt" class:on={filter === 'all'} aria-pressed={filter === 'all'} onclick={() => (filter = 'all')}>All · {wall.length}</button>
+			{#if liveCount > 0}
+				<button type="button" class="pf-flt" class:on={filter === 'live'} aria-pressed={filter === 'live'} onclick={() => (filter = 'live')}>Live · {liveCount}</button>
+			{/if}
+			{#if wrappedCount > 0}
+				<button type="button" class="pf-flt" class:on={filter === 'wrapped'} aria-pressed={filter === 'wrapped'} onclick={() => (filter = 'wrapped')}>Wrapped · {wrappedCount}</button>
+			{/if}
+			<button type="button" class="pf-flt" class:on={filter === 'paid'} aria-pressed={filter === 'paid'} onclick={() => (filter = 'paid')}>Paid</button>
+			<button type="button" class="pf-flt" class:on={filter === 'barter'} aria-pressed={filter === 'barter'} onclick={() => (filter = 'barter')}>Barter</button>
+		</div>
+	{/if}
 	<div class="wall">
-		{#each wall as c, i (c.id)}
+		{#each filteredWall as c, i (c.id)}
 			{@const img = thumb(c)}
 			{@const v = views(c)}
 			{@const m = money(c)}
@@ -149,7 +194,11 @@
 				</span>
 			</a>
 		{:else}
-			<div class="m-empty pf-empty"><Icon name="board" /><b>No live collabs yet</b><span>Collabs show up here once they go live.</span></div>
+			<div class="m-empty pf-empty">
+				<Icon name="board" />
+				<b>{wall.length ? 'No matching collabs' : 'No live collabs yet'}</b>
+				<span>{wall.length ? 'Try another filter above.' : 'Collabs show up here once they go live.'}</span>
+			</div>
 		{/each}
 	</div>
 {:else}
@@ -157,6 +206,7 @@
 		{#each studio.media as m (m.id)}
 			<a class="pf-tile pf-post" href={m.permalink} target="_blank" rel="noopener">
 				{#if m.thumbnail_url}<img src={igImg(m.thumbnail_url)} alt="" loading="lazy" referrerpolicy="no-referrer" />{:else}<Icon name="film" />{/if}
+				<span class="pf-reel-mark" aria-hidden="true"><Icon name="film" /></span>
 				{#if m.views ?? m.reach}<span class="pf-views"><Icon name="eye" />{compact(m.views ?? m.reach ?? 0)}</span>{/if}
 			</a>
 		{:else}
@@ -164,6 +214,7 @@
 		{/each}
 	</div>
 {/if}
+</div>
 
 <style>
 	/* Exact 3-column Instagram profile grid (.pf-grid footprint) with pure original media + 2-line footer. */
