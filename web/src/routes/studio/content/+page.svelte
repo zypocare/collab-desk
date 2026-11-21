@@ -56,6 +56,15 @@
 		return [...m].sort((a, b) => b[1] - a[1]).map(([label, value]): Slice => ({ label, value, color: KIND_COL[label] ?? 'var(--m5)' }));
 	});
 	const dayLabel = (iso: string) => (diff(iso) === 0 ? 'Today' : diff(iso) === 1 ? 'Tomorrow' : diff(iso) < 0 ? `${fmtLong(iso)} · missed` : fmtLong(iso));
+	const ctFacts = $derived(
+		[
+			toPost.length ? { b: String(toPost.length), t: ` approved draft${toPost.length === 1 ? '' : 's'} ready to post` } : null,
+			unplanned.length ? { b: String(unplanned.length), t: ` shoot${unplanned.length === 1 ? '' : 's'} ready to schedule` } : null,
+			wk.hours > cap ? { b: `+${wk.hours - cap} h`, t: ` over your ${cap} h weekly cap` } : { b: `${cap - wk.hours} h`, t: ` free in your ${cap} h week` },
+			withBrand.length ? { b: String(withBrand.length), t: ` draft${withBrand.length === 1 ? '' : 's'} with brands` } : null,
+			waitingProduct.length ? { b: String(waitingProduct.length), t: ` barter product${waitingProduct.length === 1 ? '' : 's'} on the way` } : null
+		].filter((x): x is { b: string; t: string } => !!x)
+	);
 </script>
 
 <svelte:head><title>Content · {s.app_name}</title></svelte:head>
@@ -69,38 +78,59 @@
 </header>
 
 {#if phone.on}
-	<section class="hero-card glow m-hero m-pipe m-week" aria-label="This week">
-		<div class="mesh" aria-hidden="true"></div>
-		<div class="hc-in">
-			<div class="hc-top">
-				<span class="hc-eb">Your work this week</span>
-				<a class="glass-chip" href="/studio/calendar"><Icon name="cal" />Calendar</a>
+	<section class="ct-vault rv" aria-label="This week">
+		<div class="ctv-top">
+			<span class="bx-eb">Your work this week</span>
+			<span class="ctv-pill" class:over={wk.hours > cap}>{wk.hours > cap ? `+${wk.hours - cap}h over` : `${cap - wk.hours}h free / ${cap}h`}</span>
+		</div>
+		<div class="ctv-main">
+			<div>
+				<b class="ctv-big num">{wk.n} <em>{wk.n === 1 ? 'piece' : 'pieces'}</em></b>
+				<div class="ctv-sub">{wk.n ? `About ${wk.hours} h of shooting & editing` : 'Nothing to make this week'}</div>
 			</div>
-			<div class="hc-main">
-				<div>
-					<div class="hc-val">{wk.n}<span class="hc-unit"> {wk.n === 1 ? 'piece' : 'pieces'}</span></div>
-					<div class="hc-sub">{wk.n ? `to make, about ${wk.hours} h of work` : 'Nothing to make this week'}</div>
-					<div class="m-wk-note">{wk.hours > cap ? `That's ${wk.hours - cap} h more than the ${cap} h a week you set.` : `You set ${cap} h of work a week.`}</div>
-				</div>
-				<div class="goal" class:over={wk.hours > cap} style="--p:{wkPct}">
-					<svg viewBox="0 0 120 120" aria-hidden="true"
-						><defs
-							><linearGradient id="weekGradM" x1="0" y1="0" x2="1" y2="1"
-								><stop offset="0" style="stop-color:var(--g3)" /><stop offset=".5" style="stop-color:var(--g2)" /><stop offset="1" style="stop-color:var(--g1)" /></linearGradient
-							></defs
-						><circle class="g-track" cx="60" cy="60" r="50" /><circle class="g-prog" cx="60" cy="60" r="50" pathLength="100" style="stroke:url(#weekGradM)" /></svg
-					>
-					<div class="g-txt">{#if wk.hours > cap}<b>+{wk.hours - cap} h</b><small>too much</small>{:else}<b>{cap - wk.hours} h</b><small>free</small>{/if}</div>
-				</div>
+			<div class="goal" class:over={wk.hours > cap} style="--p:{wkPct}">
+				<svg viewBox="0 0 120 120" aria-hidden="true"
+					><defs
+						><linearGradient id="weekGradM" x1="0" y1="0" x2="1" y2="1"
+							><stop offset="0" style="stop-color:var(--g3)" /><stop offset=".5" style="stop-color:var(--g2)" /><stop offset="1" style="stop-color:var(--g1)" /></linearGradient
+						></defs
+					><circle class="g-track" cx="60" cy="60" r="50" /><circle class="g-prog" cx="60" cy="60" r="50" pathLength="100" style="stroke:url(#weekGradM)" /></svg
+				>
+				<div class="g-txt">{#if wk.hours > cap}<b>+{wk.hours - cap} h</b><small>over</small>{:else}<b>{cap - wk.hours} h</b><small>free</small>{/if}</div>
 			</div>
-			<span class="m-wk-cap">Coming weeks</span>
-			<div class="hc-foot">
-				{#each weeks.slice(1) as w (w.w)}
-					<div class:over={w.hours > cap}><small title="From {w.from}">{w.label}</small><b>{w.hours ? `${w.hours} h` : 'Free'}</b><span class="m-wbar"><i style="--p:{Math.min(1, w.hours / (cap || 1))}"></i></span><em>{w.hours > cap ? 'too busy' : w.n ? `${w.n} piece${w.n > 1 ? 's' : ''}` : 'nothing yet'}</em></div>
+		</div>
+
+		<div class="ctv-kpi4">
+			<a href="#m-shoots"><small>To plan</small><b class="num">{unplanned.length}</b></a>
+			<a class="ok" href="#m-post"><small>To post</small><b class="num">{toPost.length}</b></a>
+			<a class="warn" href="#m-brand"><small>With brand</small><b class="num">{withBrand.length}</b></a>
+			<a class="vio" href="#m-prod"><small>Products</small><b class="num">{waitingProduct.length}</b></a>
+		</div>
+
+		<div class="ctv-wk3">
+			{#each weeks.slice(1) as w (w.w)}
+				<div class:over={w.hours > cap}>
+					<small title="From {w.from}">{w.label}</small>
+					<b>{w.hours ? `${w.hours} h · ${w.n}p` : 'Free'}</b>
+					<span class="ctv-wbar"><i style="width:{Math.min(100, Math.round((w.hours / (cap || 1)) * 100))}%"></i></span>
+				</div>
+			{/each}
+		</div>
+
+		<a class="btn primary ctv-cta" href="/studio/calendar"><Icon name="cal" /><span>Open shoot calendar</span><Icon name="arrow" /></a>
+	</section>
+
+	{#if ctFacts.length}
+		<div class="v-ticker" aria-label="Production pulse">
+			<div>
+				{#each [0, 1] as k (k)}
+					{#each ctFacts as f, j (j)}
+						<span aria-hidden={k === 1}><b>{f.b}</b>{f.t}</span><em aria-hidden="true">✦</em>
+					{/each}
 				{/each}
 			</div>
 		</div>
-	</section>
+	{/if}
 {:else}
 	<!-- Laptop: the same dashboard language as Money. -->
 	<section class="md-hero rv" aria-label="This week">
@@ -185,7 +215,7 @@
 
 {#if phone.on}
 <div class="ct-grid">
-	<div class="ct-col">
+	<div class="ct-col" id="m-shoots">
 		{#each days.filter((d) => diff(d.date) <= 0) as d, i (d.date)}
 			<section class="panel rv ct-day" class:late={diff(d.date) < 0} class:today={diff(d.date) === 0} style="--i:{3 + i}">
 				<div class="panel-h"><h2><Icon name="cal" />{dayLabel(d.date)}</h2><small>{d.cs.length} collab{d.cs.length > 1 ? 's' : ''} · about {d.hours} h</small></div>
@@ -210,13 +240,13 @@
 	</div>
 
 	<div class="ct-col">
-		<section class="panel rv" style="--i:2">
+		<section class="panel ct-bento rv" id="m-post" style="--i:2">
 			<div class="panel-h"><h2>Ready to post</h2><small>approved by the brand</small></div>
 			{#each toPost as c (c.id)}
 				<PostCard {c} focus={page.url.searchParams.get('post') === c.code} />
 			{:else}<div class="ct-empty"><span class="ct-empty-ic" aria-hidden="true"><Icon name="send" /></span><span><b>Nothing to post yet</b><small>Approved drafts land here, with the caption ready to copy.</small></span></div>{/each}
 		</section>
-		<section class="panel rv" style="--i:3">
+		<section class="panel ct-bento rv" id="m-brand" style="--i:3">
 			<div class="panel-h"><h2>With the brand</h2><small>drafts waiting for review</small></div>
 			{#each withBrand as c (c.id)}
 				{@const dr = latestDraft(c)}
@@ -228,7 +258,7 @@
 			{:else}<div class="ct-empty"><span class="ct-empty-ic v" aria-hidden="true"><Icon name="clock" /></span><span><b>Nothing waiting on brands</b><small>Drafts you send for approval wait here until the brand replies.</small></span></div>{/each}
 		</section>
 		{#if waitingProduct.length}
-			<section class="panel rv" style="--i:4">
+			<section class="panel ct-bento rv" id="m-prod" style="--i:4">
 				<div class="panel-h"><h2>Waiting for products</h2></div>
 				{#each waitingProduct as c (c.id)}
 					<button class="ct-mini" onclick={() => (ui.openCollab = c.id)}>
@@ -263,4 +293,88 @@
 	.ct-dayh.late b, .ct-dayh.late :global(.ic) { color: var(--bad); }
 	.md-list :global(.ct-row), .md-list :global(.post-card) { margin-left: -24px; margin-right: -24px; padding-left: 24px; padding-right: 24px; }
 	.md-list :global(.ct-mini) { width: calc(100% + 48px); margin-left: -24px; margin-right: -24px; padding-left: 24px; padding-right: 24px; }
+
+	@property --ct-rim { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
+	.ct-vault {
+		position: relative;
+		overflow: hidden;
+		border-radius: 22px;
+		padding: 16px;
+		margin-bottom: 14px;
+		border: 1px solid transparent;
+		background:
+			linear-gradient(142deg, #271b2e 0%, #1a141b 56%, #241822 100%) padding-box,
+			conic-gradient(from var(--ct-rim), rgba(178, 154, 255, 0.85), rgba(242, 90, 144, 0.8), rgba(255, 174, 107, 0.75), rgba(70, 52, 66, 0.28), rgba(178, 154, 255, 0.85)) border-box;
+		animation: ct-spin 10.5s linear infinite;
+		box-shadow: 0 22px 46px -24px rgba(178, 154, 255, 0.38);
+	}
+	.ct-vault::before, .ct-vault::after { content: ''; position: absolute; border-radius: 50%; pointer-events: none; filter: blur(34px); opacity: 0.34; }
+	.ct-vault::before { width: 150px; height: 150px; top: -55px; right: -35px; background: radial-gradient(circle, var(--g2), transparent 70%); }
+	.ct-vault::after { width: 140px; height: 140px; bottom: -60px; left: -30px; background: radial-gradient(circle, var(--g1), transparent 70%); }
+	.ct-vault > * { position: relative; z-index: 1; }
+
+	.ctv-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+	.ctv-pill { padding: 4px 8px; border: 1px solid rgba(111, 208, 140, 0.38); background: rgba(111, 208, 140, 0.14); color: var(--ok); font: 700 10px/1 ui-monospace, Consolas, monospace; text-transform: uppercase; }
+	.ctv-pill.over { border-color: rgba(245, 107, 107, 0.45); background: rgba(245, 107, 107, 0.14); color: var(--bad); }
+
+	.ctv-main { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+	.ctv-big { display: block; font: 400 40px/1 var(--f-serif, Georgia, serif); letter-spacing: -1.8px; color: var(--ink); }
+	.ctv-big em { font: italic 400 .52em var(--f-serif, Georgia, serif); color: var(--g3); }
+	.ctv-sub { font-size: 11.5px; color: var(--ink-2); margin-top: 4px; }
+
+	.ctv-kpi4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin-bottom: 11px; }
+	.ctv-kpi4 a { border: 1px solid #382c38; background: rgba(28, 23, 28, 0.75); border-radius: 12px; padding: 8px 6px; text-decoration: none; display: grid; gap: 2px; }
+	.ctv-kpi4 small { font-size: 8.5px; color: var(--ink-3); text-transform: uppercase; letter-spacing: .06em; font-weight: 700; }
+	.ctv-kpi4 b { font: italic 400 17px/1.1 var(--f-serif, Georgia, serif); color: var(--ink); }
+	.ctv-kpi4 a.ok b { color: var(--ok); }
+	.ctv-kpi4 a.warn b { color: var(--g3); }
+	.ctv-kpi4 a.vio b { color: var(--g1); }
+
+	.ctv-wk3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin-bottom: 12px; }
+	.ctv-wk3 div { padding: 7px 8px; border-radius: 11px; background: rgba(17, 13, 17, 0.6); border: 1px solid #342935; display: grid; gap: 4px; }
+	.ctv-wk3 small { font-size: 9px; color: var(--ink-3); font-weight: 700; text-transform: uppercase; }
+	.ctv-wk3 b { font-size: 12px; color: var(--ink); }
+	.ctv-wk3 div.over b { color: var(--bad); }
+	.ctv-wbar { height: 4px; border-radius: 999px; background: #2e2431; overflow: hidden; display: block; }
+	.ctv-wbar i { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--g1), var(--g2)); }
+
+	.ctv-cta { width: 100%; justify-content: space-between; }
+	.ctv-cta span { flex: 1; text-align: left; }
+	.ct-bento { border: 1px solid var(--line) !important; border-radius: 20px !important; background: linear-gradient(165deg, #211a23, var(--surface) 60%) !important; overflow: hidden; }
+
+	.v-ticker {
+		position: relative;
+		overflow: hidden;
+		margin: 0 0 14px;
+		border: 1px solid var(--line);
+		border-radius: 12px;
+		background: var(--surface);
+	}
+	.v-ticker::before, .v-ticker::after {
+		content: '';
+		position: absolute;
+		top: 0;
+		bottom: 0;
+		width: 18px;
+		z-index: 2;
+		pointer-events: none;
+	}
+	.v-ticker::before { left: 0; background: linear-gradient(90deg, var(--surface), transparent); }
+	.v-ticker::after { right: 0; background: linear-gradient(-90deg, var(--surface), transparent); }
+	.v-ticker div {
+		display: inline-flex;
+		gap: 20px;
+		padding: 9px 0;
+		white-space: nowrap;
+		animation: v-tick 26s linear infinite;
+		font-size: 12px;
+		font-weight: 600;
+		color: var(--ink-2);
+	}
+	.v-ticker b { color: var(--g3); }
+	.v-ticker em { font-style: normal; color: var(--g2); }
+	@keyframes v-tick { to { transform: translateX(-50%); } }
+
+	@keyframes ct-spin { to { --ct-rim: 360deg; } }
+	@media (prefers-reduced-motion: reduce) { .ct-vault, .v-ticker div { animation: none; } }
 </style>

@@ -59,13 +59,19 @@
 	function toBoost() {
 		document.getElementById('pg-boost')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 	}
+	const grFacts = $derived(
+		[
+			cu?.data.findings.length ? { b: `Growth check-up:`, t: ` ${cu.data.findings.length} thing${cu.data.findings.length === 1 ? '' : 's'} holding you back` } : null,
+			h?.score != null ? { b: `Audience ${h.score}/100`, t: ` · ${GRADE[h.grade]} audience` } : null,
+			boost ? { b: `${boost.r.toFixed(1)}× shares`, t: ' — 1 reel ready to boost' } : null,
+			open.length ? { b: `${open.length} reel idea${open.length === 1 ? '' : 's'}`, t: ' ready for your Calendar' } : null
+		].filter((x): x is { b: string; t: string } => !!x)
+	);
 </script>
 
 <div class="pg">
-	<!-- The growth meter -->
-	<section class="hero-card glow pg-hero rv" aria-label="Your growth">
-		<div class="mesh" aria-hidden="true"></div>
-		<div class="pg-orbit" aria-hidden="true"><span></span><i></i><Icon name="spark" /></div>
+	<!-- Growth Vault Hero (matches Money & Collabs Vault) -->
+	<section class="pg-vault pg-hero rv" aria-label="Your growth">
 		<div class="pg-h-in">
 			<div class="pg-h-top">
 				<span class="pg-eb">Followers · 30 days</span>
@@ -80,8 +86,21 @@
 				<span><small>Shares</small><b>{compact(st.shares)}</b>{#if st.sharesUp !== null}<i class:ok={(st.sharesUp ?? 0) >= 0}>{up(st.sharesUp)}</i>{/if}</span>
 				<span><small>Avg. watch</small><b>{st.watch !== null ? `${st.watch.toFixed(1)}s` : '—'}</b><i>per reel</i></span>
 			</div>
+			<a class="btn primary pgv-cta" href="/studio/grow/check"><Icon name="film" /><span>Check a reel before you post</span><Icon name="arrow" /></a>
 		</div>
 	</section>
+
+	{#if grFacts.length}
+		<div class="v-ticker" aria-label="Growth pulse">
+			<div>
+				{#each [0, 1] as k (k)}
+					{#each grFacts as f, j (j)}
+						<span aria-hidden={k === 1}><b>{f.b}</b>{f.t}</span><em aria-hidden="true">✦</em>
+					{/each}
+				{/each}
+			</div>
+		</div>
+	{/if}
 
 	<!-- The tools -->
 	<div class="pg-tools rv" style="--i:1">
@@ -848,10 +867,6 @@
 	.pg-h-in { padding: 22px 20px 18px; }
 	.pg-big { font-size: 64px; padding-right: 90px; margin-top: 6px; }
 	.pg-eb { opacity: .9; }
-	.pg-orbit { position: absolute; z-index: 1; top: 48px; right: 18px; width: 86px; height: 86px; display: grid; place-items: center; pointer-events: none; }
-	.pg-orbit span { position: absolute; inset: 0; border-radius: 50%; background: conic-gradient(from 0deg, var(--g1), transparent 27%, var(--g2) 50%, var(--g3) 72%, transparent 90%, var(--g1)); mask: radial-gradient(closest-side, transparent calc(100% - 2px), #000 calc(100% - 1px)); animation: pg-orbit-turn 24s linear infinite; }
-	.pg-orbit i { position: absolute; inset: 10px; border: 1px solid rgba(255, 255, 255, .16); border-radius: 50%; background: radial-gradient(circle at 30% 30%, color-mix(in oklab, var(--g2) 35%, transparent), color-mix(in oklab, var(--g1) 20%, transparent)); box-shadow: 0 0 30px -10px var(--g1); }
-	.pg-orbit :global(svg) { position: relative; width: 28px; height: 28px; color: var(--hero-ink); }
 	.pg-line { height: 58px; }
 	.pg-fill { fill: url(#grow-chart-fill); }
 	.pg-stroke { stroke: var(--g2); stroke-width: 2.5; filter: drop-shadow(0 0 5px color-mix(in oklab, var(--g2) 75%, transparent)); stroke-dasharray: 1; animation: pg-line-draw 1.2s ease-out both; }
@@ -882,5 +897,61 @@
 	.pg-empty > :global(svg) { box-sizing: content-box; width: 22px; height: 22px; padding: 9px; border-radius: 12px; background: color-mix(in oklab, var(--g1) 15%, transparent); color: var(--g1); }
 	@keyframes pg-orbit-turn { to { transform: rotate(360deg); } }
 	@keyframes pg-line-draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
-	@media (prefers-reduced-motion: reduce) { .pg-orbit span, .pg-stroke, .pg-idea.sk { animation: none; } }
+	@media (prefers-reduced-motion: reduce) { }
+
+	@property --pg-rim { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
+	.pg-vault {
+		position: relative;
+		overflow: hidden;
+		border-radius: 22px;
+		border: 1px solid transparent;
+		background:
+			linear-gradient(142deg, #271b2e 0%, #1a141b 56%, #241822 100%) padding-box,
+			conic-gradient(from var(--pg-rim), rgba(178, 154, 255, 0.85), rgba(242, 90, 144, 0.82), rgba(111, 208, 140, 0.72), rgba(70, 52, 66, 0.28), rgba(178, 154, 255, 0.85)) border-box;
+		animation: pg-spin 10.5s linear infinite;
+		box-shadow: 0 22px 46px -24px rgba(242, 90, 144, 0.36);
+	}
+	.pg-vault::before, .pg-vault::after { content: ''; position: absolute; border-radius: 50%; pointer-events: none; filter: blur(34px); opacity: 0.34; }
+	.pg-vault::before { width: 150px; height: 150px; top: -55px; right: -35px; background: radial-gradient(circle, var(--g2), transparent 70%); }
+	.pg-vault::after { width: 140px; height: 140px; bottom: -60px; left: -30px; background: radial-gradient(circle, var(--g1), transparent 70%); }
+	.pgv-cta { width: 100%; margin-top: 10px; justify-content: space-between; }
+	.pgv-cta span { flex: 1; text-align: left; }
+	.pg-idea, .pg-boost { border: 0 !important; box-shadow: 0 16px 34px -22px rgba(0, 0, 0, 0.85); }
+	.pg-cut::before, .pg-cut::after, .pg-cut2::before, .pg-cut2::after { border: 0 !important; }
+
+	.v-ticker {
+		position: relative;
+		overflow: hidden;
+		margin: 0 0 14px;
+		border: 1px solid var(--line);
+		border-radius: 12px;
+		background: var(--surface);
+	}
+	.v-ticker::before, .v-ticker::after {
+		content: '';
+		position: absolute;
+		top: 0;
+		bottom: 0;
+		width: 18px;
+		z-index: 2;
+		pointer-events: none;
+	}
+	.v-ticker::before { left: 0; background: linear-gradient(90deg, var(--surface), transparent); }
+	.v-ticker::after { right: 0; background: linear-gradient(-90deg, var(--surface), transparent); }
+	.v-ticker div {
+		display: inline-flex;
+		gap: 20px;
+		padding: 9px 0;
+		white-space: nowrap;
+		animation: v-tick 26s linear infinite;
+		font-size: 12px;
+		font-weight: 600;
+		color: var(--ink-2);
+	}
+	.v-ticker b { color: var(--g3); }
+	.v-ticker em { font-style: normal; color: var(--g2); }
+	@keyframes v-tick { to { transform: translateX(-50%); } }
+
+	@keyframes pg-spin { to { --pg-rim: 360deg; } }
+	@media (prefers-reduced-motion: reduce) { .pg-vault, .v-ticker div { animation: none; } }
 </style>
