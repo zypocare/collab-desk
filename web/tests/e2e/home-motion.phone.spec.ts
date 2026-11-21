@@ -88,6 +88,40 @@ test('creator story rings open account summaries and the visible collab rail fil
 	await expect(rail.locator('.rail-empty')).toHaveText('No Instagram leads to review.');
 });
 
+test('Needs you shows one next action and the latest conversation message per collaboration', async ({ page }) => {
+	await mountHome(page);
+	await page.evaluate(async () => {
+		const path = '/src/lib/studio.svelte.ts';
+		const { studio } = await import(path);
+		const thread = [
+			{ id: 'm1', sender: 'brand', body: 'First draft received', created_at: '2026-11-19T10:00:00Z' },
+			{ id: 'm2', sender: 'brand', body: 'Please update the caption', created_at: '2026-11-19T10:30:00Z' }
+		];
+		studio.collabs[2].messages = thread;
+		// A completed collaboration with an already-read conversation needs no action.
+		studio.collabs[0].messages = thread;
+		studio.collabs[0].reads = [{ side: 'creator', read_at: '2026-11-20T10:00:00Z' }];
+	});
+	const needs = page.locator('#sec-needs');
+	await needs.getByRole('button', { name: 'Show all 4' }).click();
+	await expect(needs.locator('.tk')).toHaveCount(4);
+	const ticket = needs.locator('.tk').filter({ has: page.locator('.tk-who', { hasText: 'Dot & Key' }) });
+	await expect(ticket).toHaveCount(1);
+	await expect(ticket.locator('.tk-latest')).toHaveText('Dot & Key: Please update the caption');
+	await expect(ticket.locator('.tk-latest')).toHaveAttribute('href', '/studio/inbox/code-2');
+	await expect(needs).not.toContainText('First draft received');
+	await expect(needs).not.toContainText('Lumière');
+	await page.evaluate(async () => {
+		const path = '/src/lib/studio.svelte.ts';
+		const { studio } = await import(path);
+		studio.collabs[2].messages.push({ id: 'm3', sender: 'creator', body: 'Caption updated', created_at: '2026-11-20T11:00:00Z' });
+		studio.collabs[2].reads = [{ side: 'creator', read_at: '2026-11-20T11:00:00Z' }];
+	});
+	await expect(ticket.locator('.tk-latest')).toHaveText('You: Caption updated');
+	await expect(ticket.locator('.tk-task')).toContainText('Send draft');
+	await expect(needs.locator('.tk')).toHaveCount(4);
+});
+
 test('money swipes, real balances, ticket expansion and day changes respond without accidental navigation', async ({ page }) => {
 	const errors: string[] = [];
 	page.on('pageerror', (error) => errors.push(error.message));
@@ -202,6 +236,11 @@ test('reduced motion gives final numbers and narrow screens keep every action ac
 		for (const width of [320, 360, 430]) {
 			await page.setViewportSize({ width, height: 852 });
 			expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
+			const pills = page.locator('.ht-chips');
+			await expect(pills.locator('a')).toHaveCount(3);
+			expect(await pills.evaluate(row => row.scrollWidth - row.clientWidth)).toBeLessThanOrEqual(1);
+			const pillTops = await pills.locator('a').evaluateAll(links => links.map(link => link.getBoundingClientRect().top));
+			expect(new Set(pillTops).size).toBe(1);
 			for (const button of await page.locator('.home-money-dots button').all()) {
 				const rect = (await button.boundingBox())!;
 				expect(rect.width).toBeGreaterThanOrEqual(44);

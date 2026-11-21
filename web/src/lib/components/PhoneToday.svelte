@@ -75,7 +75,12 @@
 	const ym = iso(T).slice(0, 7);
 
 	const ts = $derived.by(() => {
-		const all = mergeSteps(tasks(list));
+		// Tasks are ordered by deadline and urgency. Keep the first action for each collaboration.
+		const byCollab = new Map<string, Task>();
+		for (const task of mergeSteps(tasks(list))) {
+			if (!byCollab.has(task.c.id)) byCollab.set(task.c.id, task);
+		}
+		const all = [...byCollab.values()];
 		const ranked = all.filter((t) => t.kind === 'new').sort((a, b) => (priorityOf(b.c)?.score ?? 0) - (priorityOf(a.c)?.score ?? 0));
 		let n = 0;
 		return all.map((t) => (t.kind === 'new' ? ranked[n++] : t));
@@ -307,11 +312,11 @@
 
 	<!-- Interactive Status Chips (Replaces static summary line, matching miracle_mobile_home_redesign.html) -->
 	<div class="ht-chips">
-		<a class="ht-chip" class:urgent={urgent > 0} href="#sec-needs">
+		<a class="ht-chip" class:urgent={urgent > 0} href="#sec-needs" aria-label={urgent ? `${urgent} collaboration${urgent === 1 ? '' : 's'} needing attention today` : 'All caught up today'}>
 			<span class="dot-ping" class:calm={!urgent}></span>
-			<span>{#if urgent > 0}<b>{urgent}</b> {urgent === 1 ? 'needs you today' : 'need you today'}{:else}<b>All caught up</b> today{/if}</span>
+			<span>{#if urgent > 0}<b>{urgent}</b> need{urgent === 1 ? 's' : ''} you{:else}<b>Caught up</b>{/if}</span>
 		</a>
-		<a class="ht-chip" href="#sec-collabs">
+		<a class="ht-chip" href="#sec-collabs" aria-label="{active.length} active collab{active.length === 1 ? '' : 's'}">
 			{#if active.length}
 				<span class="mini-avs" aria-hidden="true">
 					{#each active.slice(0, 3) as ac (ac.id)}
@@ -319,7 +324,7 @@
 					{/each}
 				</span>
 			{/if}
-			<span><b>{active.length}</b> active collab{active.length === 1 ? '' : 's'}</span>
+			<span><b>{active.length}</b> active</span>
 		</a>
 		{#if studio.leads.length}
 			<a class="ht-chip" href="#sec-ai">
@@ -452,9 +457,10 @@
 	{#if ts.length}
 		<!-- Tickets: the brand on a band in its colour, a torn line, then what to do and by when. -->
 		<div class="tks">
-			{#each fanned ? ts : ts.slice(0, 2) as t, i (t.c.id + t.kind)}
+			{#each fanned ? ts : ts.slice(0, 2) as t, i (t.c.id)}
 				{@const key = t.c.id + t.kind}
 				{@const chips = ticketChips(t)}
+				{@const latest = t.c.messages?.at(-1)}
 				<article class="tk" class:leaving={leaving === key} style="--h:var(--m{hueOf(t.c.brand.name)});--i:{i}">
 					<a class="tk-band" href="/studio/c/{t.c.code}">
 						<span class="tk-tile">{t.c.brand.name.trim().slice(0, 1).toUpperCase()}</span>
@@ -463,6 +469,12 @@
 					</a>
 					<div class="tk-cut" aria-hidden="true"></div>
 					<div class="tk-body">
+						{#if latest}
+							<a class="tk-latest" href="/studio/inbox/{t.c.code}">
+								<Icon name="inbox" />
+								<span><strong>{latest.sender === 'creator' ? 'You' : t.c.brand.name}:</strong> {latest.body?.trim() || 'Sent an attachment'}</span>
+							</a>
+						{/if}
 						{#if chips.length}
 							<div class="tk-chips tk-chips-row">
 								{#each chips as ch (ch.text)}
