@@ -45,7 +45,6 @@
 		isPaid,
 		outstanding,
 		overdue,
-		payState,
 		stageIndex
 	} from '../util';
 	import Icon from './Icon.svelte';
@@ -81,7 +80,6 @@
 	import CollabPosts from './CollabPosts.svelte';
 	import LiveRecap from './LiveRecap.svelte';
 	import CollabCockpit from './CollabCockpit.svelte';
-	import PaymentReminder from './PaymentReminder.svelte';
 	import { folds, openOnly } from '../folds';
 	import {
 		CHECKLIST,
@@ -131,18 +129,6 @@
 	// Report or block the brand (the ⋯ menu), and a warning when a new request asks her to pay.
 	let moreOpen = $state(false);
 	let moreAt = $state({ top: 0, right: 0 });
-	function renameBrand(e: Event) {
-		const v = val(e).trim();
-		if (!v || !c) return;
-		// Two brands with the same name get mixed up everywhere (stats, pitches, search).
-		const twin = studio.brands.find((b) => b.id !== c!.brand_id && b.name.trim().toLowerCase() === v.toLowerCase());
-		if (twin) {
-			toast(`You already have a brand called ${twin.name}. Use a different name, or add this collab to that brand.`, 'alert');
-			(e.currentTarget as HTMLInputElement).value = c.brand.name;
-			return;
-		}
-		saveBrand(c.brand_id, { name: v });
-	}
 	function openMore(e: MouseEvent) {
 		const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
 		moreAt = { top: r.bottom + 6, right: Math.max(8, innerWidth - r.right) };
@@ -207,7 +193,7 @@
 		}
 		return out;
 	});
-	const sh = (k: string) => !page || sheets || showAll || (FOCUS[c?.stage ?? ''] ?? []).includes(k);
+	const sh = (k: string) => !page || showAll || (FOCUS[c?.stage ?? ''] ?? []).includes(k);
 	// Phone page: the stage and the next step stay open; every other part is a grouped row that opens as a sheet (folds.ts).
 	// A jump link opens the part it goes to.
 	const openSec = (id: string) => {
@@ -220,11 +206,7 @@
 	function jump(id: string) {
 		const el = document.getElementById(id);
 		const sec = el?.matches('section') ? el : el?.querySelector<HTMLElement>('section.sec');
-		if (sec?.classList.contains('fold')) {
-			openOnly(sec);
-			sec.querySelector<HTMLElement>(':scope > h3')?.focus({ preventScroll: true });
-			return;
-		}
+		if (sec?.classList.contains('fold')) return openOnly(sec);
 		sec?.classList.add('open');
 		sec?.querySelector(':scope > h3')?.setAttribute('aria-expanded', 'true');
 		(sec ?? el)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -242,14 +224,14 @@
 			dates: [c.draft_date ? `Draft ${fmt(c.draft_date)}` : '', c.live_date ? `live ${fmt(c.live_date)}` : ''].filter(Boolean).join(' · ') || 'Not set',
 			drafts: dr ? `${c.drafts.length} sent · ${dr.status === 'approved' ? 'approved' : dr.status === 'changes' ? 'changes asked' : 'waiting'}` : 'None yet',
 			check: `${CHECKLIST.length - checklistMissing(c).length} of ${CHECKLIST.length} done`,
-			pay: open.length ? `${open.length} open · ${inr(outstanding(c))} to come` : payState(c) === 'paid' ? 'Paid' : c.invoices.length ? `${c.invoices.length} invoice${c.invoices.length === 1 ? '' : 's'}` : 'No invoice yet',
+			pay: open.length ? `${open.length} open · ${inr(outstanding(c))} to come` : c.pay_status === 'paid' ? 'Paid' : c.invoices.length ? `${c.invoices.length} invoice${c.invoices.length === 1 ? '' : 's'}` : 'No invoice yet',
 			brief: (c.brief || '').replace(/\s+/g, ' ').slice(0, 60) || 'No brief yet',
 			contact: c.contact_name || c.contact_email || 'Not added',
 			act: `${c.events.length} update${c.events.length === 1 ? '' : 's'}`
 		} as Record<string, string>;
 	});
 	$effect(() => {
-		if (!page || sheets) return;
+		if (!page) return;
 		void c?.id;
 		void c?.stage;
 		void c?.type;
@@ -337,8 +319,6 @@
 
 	$effect(() => {
 		void ui.openCollab;
-		showAll = false;
-		moreOpen = false;
 		confirmLive = false;
 		quoteOpen = null;
 		draftForm = { link: '', caption: '', note: '' };
@@ -418,7 +398,6 @@
 		// Going live with the disclosure checklist incomplete needs a second click.
 		if (s === 'live' && !force && checklistMissing(c).length) {
 			confirmLive = true;
-			if (sheets) jump('sec-stage');
 			return;
 		}
 		confirmLive = false;
@@ -468,8 +447,7 @@
 	}
 	async function scrollTo(id: string, focus?: string) {
 		await tick();
-		if (sheets) jump(id);
-		else document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+		document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 		if (focus) setTimeout(() => (document.querySelector(focus) as HTMLElement | null)?.focus(), 350);
 	}
 	async function sendMessage(body: string) {
@@ -486,7 +464,7 @@
 		const q = c.quotes[0];
 		const openInv = c.invoices.find((i) => i.status === 'sent' || i.status === 'partly_paid');
 		switch (key) {
-			case 'reply': if (sheets) return goto('/studio/inbox/' + c.code); return scrollTo('sec-msg', '.drawer .th-box textarea');
+			case 'reply': return scrollTo('sec-msg', '.drawer .th-box textarea');
 			case 'quote': quoteOpen = { editing: false }; return;
 			case 'revise-quote': quoteOpen = { base: q, editing: false }; return;
 			case 'confirm': return changeStage('confirmed');
@@ -545,7 +523,6 @@
 {#if !page}<div class="scrim" class:on={open} role="presentation" onclick={close}></div>{/if}
 <aside class="drawer" class:as-page={page} class:on={open} class:fresh aria-label="Collab details" aria-hidden={!open} inert={!open}>
 	{#if c}
-		{#if !sheets}
 		<header class="dr-h" style="--hue:var(--m{hueOf(c.brand.name)})">
 			<Mono name={c.brand.name} size="lg" />
 			<div class="dr-t">
@@ -554,7 +531,18 @@
 					value={c.brand.name}
 					aria-label="Brand name"
 					autocomplete="off"
-					onchange={renameBrand}
+					onchange={(e) => {
+						const v = val(e).trim();
+						if (!v || !c) return;
+						// Two brands with the same name get mixed up everywhere (stats, pitches, search).
+						const twin = studio.brands.find((b) => b.id !== c!.brand_id && b.name.trim().toLowerCase() === v.toLowerCase());
+						if (twin) {
+							toast(`You already have a brand called ${twin.name}. Use a different name, or add this collab to that brand.`, 'alert');
+							(e.currentTarget as HTMLInputElement).value = c.brand.name;
+							return;
+						}
+						saveBrand(c.brand_id, { name: v });
+					}}
 				/>
 				<div class="dr-sub"><span class="id">{c.code}</span>{#if c.via_agency} · <span class="via">via {c.via_agency}</span>{/if} · {TYPE_LABEL[c.type]} · received {fmt(c.received_on)}{#if c.referred_by && studio.brands.find((b) => b.id === c.referred_by)} · <span class="ref-by"><Icon name="users" />Referred by {studio.brands.find((b) => b.id === c.referred_by)?.name}</span>{/if}</div>
 				<BrandTrust {c} onquote={() => (quoteOpen = { base: quote, editing: false, preset: { advance_pct: 50 } })} />
@@ -562,7 +550,6 @@
 			<button class="icon-btn dr-more-btn" onclick={openMore} aria-label="More" aria-expanded={moreOpen}><Icon name="more" /></button>
 			<button class="icon-btn" onclick={close} aria-label={page ? 'Back' : 'Close'} bind:this={closeBtn}><Icon name={page ? 'back' : 'x'} /></button>
 		</header>
-		{/if}
 
 		{#if reveal && c}
 			<RequestReveal {c} onclose={endReveal} onquote={() => (endReveal(), (quoteOpen = { editing: false }))} ondecline={() => (endReveal(), declineIt())} />
@@ -570,10 +557,7 @@
 		{#if deal && c}
 			<DealMoment {c} q={deal} advance={advanceDue} onclose={endDeal} onadvance={() => (endDeal(), (invoiceOpen = {}))} />
 		{/if}
-		<div class="dr-b" class:collab-mobile={sheets} class:overview-only={sheets && !showAll} use:folds={page && phone.on}>
-			{#if sheets && clashList.length}
-				<button class="btn" onclick={() => jump('sec-stage')}><Icon name="alert" />Review possible brand clash</button>
-			{/if}
+		<div class="dr-b" class:has-cockpit={page && phone.on} use:folds={page && phone.on}>
 			{#if scam}
 				<div class="dr-scam" role="alert">
 					<Icon name="alert" />
@@ -581,7 +565,7 @@
 					<button class="btn sm" onclick={() => (reportOpen = true)}>Report</button>
 				</div>
 			{/if}
-			{#if page && !sheets}
+			{#if page}
 				<!-- Full page: jump straight to a part of the collab. -->
 				<nav class="cx-nav" aria-label="Jump to">
 					{#each JUMPS.filter(([id]) => present.includes(id)) as [id, label] (id)}
@@ -589,19 +573,32 @@
 					{/each}
 				</nav>
 			{/if}
-			{#if sheets}
-				<CollabCockpit {c} next={next ?? null} onrunnext={runNext} onjump={jump} onmore={openMore} {moreOpen}
-					expanded={showAll} ontoggle={() => (showAll = !showAll)} />
+			{#if page && phone.on && c}
+				<CollabCockpit
+					{c}
+					next={next ?? null}
+					onstage={(st) => changeStage(st)}
+					onrunnext={(k) => runNext(k)}
+					onopen={(id) => {
+						showAll = true;
+						tick().then(() => {
+							const el = document.getElementById(id);
+							const sec = el?.matches('section.sec') ? el : el?.querySelector<HTMLElement>('section.sec');
+							if (sec) openOnly(sec);
+							else openSec(id);
+						});
+					}}
+				/>
 			{/if}
-			{#if recap && c && (!sheets || showAll)}<LiveRecap {c} onopen={jump} onpay={(inv) => (paymentOpen = inv)} oninvoice={() => (invoiceOpen = {})} />{/if}
-			{#if next && !recap && !sheets}
+			{#if recap && c}<LiveRecap {c} onopen={jump} onpay={(inv) => (paymentOpen = inv)} oninvoice={() => (invoiceOpen = {})} />{/if}
+			{#if next && !recap}
 				<div class="next-bar">
 					<span class="nb-ic"><Icon name={next.icon} /></span>
 					<div><small>Next step</small><b>{next.hint}</b></div>
 					<button class="btn grad" onclick={() => runNext(next.key)}><Icon name={next.icon} />{next.label}</button>
 				</div>
 			{/if}
-			<section class="sec" id="sec-stage" data-open={sheets || recap ? undefined : true}>
+			<section class="sec" data-open={recap ? undefined : true}>
 				<h3>Stage {#if c.stage === 'declined'}<span class="danger">Declined</span>{/if}</h3>
 				{#if c.someday}
 					<!-- Someday: might happen, no date yet. Out of Today and the reminders until she brings it back, or
@@ -652,9 +649,9 @@
 				<LifecycleControls {c} bind:this={life} />
 			</section>
 
-			{#if isRanked(c) && (!sheets || showAll)}<DecisionCard {c} />{/if}
+			{#if isRanked(c)}<DecisionCard {c} />{/if}
 
-			<section data-g="brand" data-ic="chat" class="sec" id="sec-msg" data-overview-row>
+			<section data-g="brand" data-ic="chat" class="sec" id="sec-msg">
 				<h3 data-sum={sums.msg}>Messages{#if c.contact_name}<small class="sec-sub">with {c.contact_name}</small>{/if}</h3>
 				{#if page}
 					{@const lastMsg = c.messages[c.messages.length - 1]}
@@ -730,7 +727,7 @@
 				{#if c.preferred_live}<p class="hint" style="margin-top:12px">Brand's preferred go-live date: {fmt(c.preferred_live)}</p>{/if}
 			</section>
 
-			<section data-g="money" data-ic="doc" class="sec" hidden={!sh('quote')}>
+			<section data-g="money" data-ic="doc" class="sec" id="sec-quote" hidden={!sh('quote')}>
 				<h3 data-sum={sums.quote}>Quote &amp; agreement {#if quote}<span class="pill tint {QUOTE_STATUS[quote.status].k}">{QUOTE_STATUS[quote.status].label}</span>{/if}</h3>
 				{#if c.stage === 'request' || c.stage === 'negotiating'}
 					<a class="of-entry" href="/studio/offer/{c.code}"><Icon name="shield" /><span><b>Check the offer</b><small>What to push back on before you agree, from their agreement, brief and messages</small></span><Icon name="chevR" /></a>
@@ -788,24 +785,24 @@
 				{/if}
 			</section>
 
-			<section data-g="work" data-ic="pieces" class="sec" id="sec-deliv" data-overview-row hidden={!sh('deliv')}>
+			<section data-g="work" data-ic="pieces" class="sec" id="sec-deliv" hidden={!sh('deliv')}>
 				<DeliverableTracker {c} cards={sheets} />
 			</section>
 
 			{#if c.stage === 'wrapped' && studio.settings?.site_url}
 				{@const s = studio.settings}
-				<section data-g="brand" data-ic="repeat" class="sec rb-sec" hidden={!sh('review')}>
+				<section data-g="brand" data-ic="repeat" class="sec rb-sec" id="sec-rebook" hidden={!sh('review')}>
 					<h3>Book again<small class="sec-sub">{c.rebook_sent_at ? `sent ${fmt(c.rebook_sent_at.slice(0, 10))}` : c.contact_email && s.rebook_offer ? 'emailed a week after it wraps' : 'on WhatsApp'}</small></h3>
 					<p class="hint">Brands that liked working with you come back. Send {c.contact_name ? c.contact_name.split(' ')[0] : c.brand.name} a thank-you{s.rebook_offer && s.rebook_pct ? ` with ${s.rebook_pct}% off their next collab` : ''} and a link that books it again in a minute, with this collab's pieces filled in.</p>
 					<blockquote class="rb-msg">{rebookText(c, s)}</blockquote>
 					<a class="btn sm wa" href={rebookWhatsApp(c, s)} target="_blank" rel="noopener" onclick={rebookSent}><Icon name="send" />{c.rebook_sent_at ? 'Send again on WhatsApp' : 'Send on WhatsApp'}</a>
 				</section>
 			{/if}
-			{#if c.stage === 'live' || c.stage === 'wrapped'}<section data-g="brand" data-ic="star" class="sec" hidden={!sh('review')}><h3>How was {c.brand.name}?<small class="sec-sub">anonymous</small></h3><BrandRating brand={c.brand} compact /></section>{/if}
-			{#if c.stage === 'live' || c.stage === 'wrapped'}<section data-g="brand" data-ic="case" class="sec" hidden={!sh('review')}><h3>Case study<small class="sec-sub">for your page</small></h3>{#key c.id}<CaseStudy {c} />{/key}</section>{/if}
-			{#if c.usage_ends}<section data-g="money" data-ic="shield" class="sec" hidden={!sh('usage')}><h3>Usage rights</h3><UsageRights {c} /></section>{/if}
-			{#if rightsRows([c]).length}<section data-g="money" data-ic="shield" class="sec" hidden={!sh('rights')}><h3>Ads and exclusivity</h3><RightsCard {c} /></section>{/if}
-			{#if ships(c)}<div data-g="work" data-ic="box" class="sec-wrap" hidden={!sh('product')}><ProductShipping {c} /></div>{/if}
+			{#if c.stage === 'live' || c.stage === 'wrapped'}<section data-g="brand" data-ic="star" class="sec" id="sec-rating" hidden={!sh('review')}><h3>How was {c.brand.name}?<small class="sec-sub">anonymous</small></h3><BrandRating brand={c.brand} compact /></section>{/if}
+			{#if c.stage === 'live' || c.stage === 'wrapped'}<section data-g="brand" data-ic="case" class="sec" id="sec-case" hidden={!sh('review')}><h3>Case study<small class="sec-sub">for your page</small></h3>{#key c.id}<CaseStudy {c} />{/key}</section>{/if}
+			{#if c.usage_ends}<section data-g="money" data-ic="shield" class="sec" id="sec-usage" hidden={!sh('usage')}><h3>Usage rights</h3><UsageRights {c} /></section>{/if}
+			{#if rightsRows([c]).length}<section data-g="money" data-ic="shield" class="sec" id="sec-rights" hidden={!sh('rights')}><h3>Ads and exclusivity</h3><RightsCard {c} /></section>{/if}
+			{#if ships(c)}<div data-g="work" data-ic="box" class="sec-wrap" id="sec-shipping" hidden={!sh('product')}><ProductShipping {c} /></div>{/if}
 
 			<section data-g="work" data-ic="cal" class="sec" id="sec-dates" hidden={!sh('dates')}>
 				<h3 data-sum={sums.dates}>Dates</h3>
@@ -926,7 +923,7 @@
 			</section>
 
 			{#if ['confirmed', 'creating', 'live', 'wrapped'].includes(c.stage) && !noPost(c)}
-				<section data-g="work" data-ic="check" class="sec" hidden={!sh('check')}>
+				<section data-g="work" data-ic="check" class="sec" id="sec-check" hidden={!sh('check')}>
 					<h3 data-sum={sums.check}>Posting checklist <span>{CHECKLIST.length - checklistMissing(c).length} of {CHECKLIST.length}</span></h3>
 					<div class="ck-bar" aria-hidden="true">{#each CHECKLIST as item, i (item.key)}<i class:on={i < CHECKLIST.length - checklistMissing(c).length}></i>{/each}</div>
 					{#each CHECKLIST as item (item.key)}
@@ -942,14 +939,14 @@
 			{/if}
 
 			<div data-g="work" data-ic="ig" class="sec-wrap" id="sec-posts" hidden={!sh('posts')}><CollabPosts {c} /></div>
-			{#if c.type !== 'barter' || c.links?.length}<div data-g="work" data-ic="tag" class="sec-wrap" hidden={!sh('link')}><CollabLink {c} /></div>{/if}
+			{#if c.type !== 'barter' || c.links?.length}<div data-g="work" data-ic="tag" class="sec-wrap" id="sec-promo" hidden={!sh('link')}><CollabLink {c} /></div>{/if}
 
 			{#if isPaid(c)}
 				<section data-g="money" data-ic="wallet" class="sec" id="sec-pay" hidden={!sh('pay')}>
 					<h3 data-sum={sums.pay}>Payment {#if issuedInvoices.length}<span>{issuedInvoices.length} invoice{issuedInvoices.length === 1 ? '' : 's'}</span>{/if}</h3>
 					{#if sheets}
 						<!-- Phone sheet: what's owed as one ticket, the one thing to do next, and how it goes from there. -->
-						{@const paid = payState(c) === 'paid'}
+						{@const paid = c.pay_status === 'paid'}
 						{@const sent = c.invoices.some((i) => i.status === 'sent' || i.status === 'partly_paid')}
 						<div class="py-tk">
 							<div class="py-top">
@@ -959,7 +956,6 @@
 							<i aria-hidden="true"></i>
 							<div class="py-foot"><span>Fee agreed {inr(c.fee)}</span><span>{paid && c.paid_on ? `Paid ${fmt(c.paid_on)}` : c.pay_due ? `Due ${fmt(c.pay_due)}` : (c.stage === 'live' || c.stage === 'wrapped') && c.live_date ? `Live since ${fmt(c.live_date)}` : 'Paid after it goes live'}</span></div>
 						</div>
-						{#if !paid && outstanding(c) > 0}<PaymentReminder {c} />{/if}
 						{#if !issuedInvoices.length && !paid}
 							<button class="py-cta" onclick={() => (invoiceOpen = {})}><Icon name="doc" /><span><b>Create invoice</b><small>Filled in from the agreed quote</small></span><Icon name="chevR" /></button>
 							<div class="py-how">
@@ -1063,10 +1059,10 @@
 				</section>
 			{/if}
 
-			{#if ['confirmed', 'creating', 'live', 'wrapped'].includes(c.stage) || c.files?.length}<div data-g="more" data-ic="folder" class="sec-wrap" hidden={!sh('files')}><CollabFiles {c} /></div>{/if}
-			{#if ['confirmed', 'creating', 'live', 'wrapped'].includes(c.stage) || c.expenses?.length}<div data-g="money" data-ic="receipt" class="sec-wrap" hidden={!sh('costs')}><CollabCosts {c} /></div>{/if}
+			{#if ['confirmed', 'creating', 'live', 'wrapped'].includes(c.stage) || c.files?.length}<div data-g="more" data-ic="folder" class="sec-wrap" id="sec-files" hidden={!sh('files')}><CollabFiles {c} /></div>{/if}
+			{#if ['confirmed', 'creating', 'live', 'wrapped'].includes(c.stage) || c.expenses?.length}<div data-g="money" data-ic="receipt" class="sec-wrap" id="sec-costs" hidden={!sh('costs')}><CollabCosts {c} /></div>{/if}
 
-			<section data-g="more" data-ic="bell" class="sec" hidden={!sh('follow')}>
+			<section data-g="more" data-ic="bell" class="sec" id="sec-follow" hidden={!sh('follow')}>
 				<h3>Follow-up reminder</h3>
 				<div class="fields">
 					<div class="f"><label for="fu-d">Remind me on</label><DatePicker id="fu-d" value={c.follow_date} onchange={(v) => save('follow_date', v || null)} /></div>
@@ -1076,13 +1072,7 @@
 			</section>
 
 			<section data-g="brand" data-ic="link" class="sec" id="sec-brand" hidden={!sh('brand')}>
-				<h3>{sheets ? 'Brand details' : 'Brand access'} {#if c.track_sent_at}<span>link sent {fmt(c.track_sent_at.slice(0, 10))}</span>{/if}</h3>
-				{#if sheets}
-					<label class="f">Brand name<input class="inp" value={c.brand.name} onchange={renameBrand} /></label>
-					<BrandTrust {c} onquote={() => (quoteOpen = { base: quote, editing: false, preset: { advance_pct: 50 } })} />
-					{#if c.brand.instagram}<p>@{c.brand.instagram.replace(/^@/, '')}</p>{/if}
-					{#if c.referred_by && studio.brands.find((b) => b.id === c.referred_by)}<p>Referred by {studio.brands.find((b) => b.id === c.referred_by)?.name}</p>{/if}
-				{/if}
+				<h3>Brand access {#if c.track_sent_at}<span>link sent {fmt(c.track_sent_at.slice(0, 10))}</span>{/if}</h3>
 				<div class="trk-box">
 					<span class="lbl-t">Private tracking link</span>
 					<p class="hint" style="margin:0 0 10px">The brand sees the status, dates and what's next, without signing up. Send it in their DM or by email.</p>
@@ -1100,7 +1090,7 @@
 				</div>
 			</section>
 
-			<section data-g="brand" data-ic="doc" class="sec" id="sec-brief" data-overview-row hidden={!sh('brief')}>
+			<section data-g="brand" data-ic="doc" class="sec" id="sec-brief" hidden={!sh('brief')}>
 				<h3 data-sum={sums.brief}>Brief</h3>
 				{#if !['declined', 'wrapped'].includes(c.stage)}
 					<div class="sc-cta">
@@ -1120,7 +1110,7 @@
 				<div class="f" style="margin-top:12px"><label for="f-brief">Notes</label><textarea class="inp" id="f-brief" placeholder="Anything else from the brand" value={c.brief} onchange={(e) => save('brief', val(e))}></textarea></div>
 			</section>
 
-			<section data-g="brand" data-ic="person" class="sec" hidden={!sh('contact')}>
+			<section data-g="brand" data-ic="person" class="sec" id="sec-contact" hidden={!sh('contact')}>
 				<h3 data-sum={sums.contact}>Brand contact</h3>
 				<div class="fields">
 					<div class="f"><label for="c-n">Name</label><input class="inp" id="c-n" value={c.contact_name} onchange={(e) => save('contact_name', val(e))} /></div>
@@ -1163,20 +1153,18 @@
 					{/each}
 				</div>
 			</section>
-			{#if page && !sheets}
+			{#if page}
 				<div class="more-row">
 					<button class="btn" onclick={() => (showAll = !showAll)}><Icon name={showAll ? 'chevL' : 'layers'} />{showAll ? 'Show only what this stage needs' : 'Show all details'}</button>
 				</div>
 			{/if}
 		</div>
 
-		{#if !sheets}
 		<footer class="dr-f">
 			<button class="btn" onclick={() => c && copyText(statusMessage(c), 'Status message copied. Paste it in your DM or email.')}><Icon name="link" /><span class="nav-long">Copy status message</span><span class="nav-short">Copy status</span></button>
 			{#if page && next}<button class="btn grad m-next" onclick={() => next && runNext(next.key)}><Icon name={next.icon} />{next.label}</button>{/if}
 			<button class="btn primary" onclick={close}>{#if page}<span class="nav-long">Back to collabs</span><span class="nav-short">Back</span>{:else}Done{/if}</button>
 		</footer>
-		{/if}
 	{/if}
 </aside>
 
@@ -1184,11 +1172,6 @@
 {#if c && moreOpen}
 	<div class="more-scrim" role="presentation" use:portal onclick={() => (moreOpen = false)}></div>
 	<div class="more-menu" role="menu" use:portal style="top:{moreAt.top}px;right:{moreAt.right}px">
-		{#if sheets}
-			<button role="menuitem" onclick={() => { moreOpen = false; jump('sec-brand'); }}><Icon name="users" />Brand details</button>
-			<button role="menuitem" onclick={() => { moreOpen = false; if (c) copyText(statusMessage(c), 'Status message copied'); }}><Icon name="copy" />Copy status</button>
-			<button role="menuitem" onclick={() => { moreOpen = false; if (c) openOutside(waShare(c.contact_phone || '', statusMessage(c))); }}><Icon name="send" />Share on WhatsApp</button>
-		{/if}
 		{#if canPause}<button role="menuitem" onclick={() => ((moreOpen = false), life?.open('paused'))}><Icon name="clock" />Pause collaboration</button>{/if}
 		{#if canCancel}<button role="menuitem" class="mm-danger" onclick={() => ((moreOpen = false), life?.open('cancelled'))}><Icon name="x" />Cancel collaboration</button>{/if}
 		<button role="menuitem" onclick={() => ((moreOpen = false), (reportOpen = true))}><Icon name="flag" />Report {c.brand.name}</button>
@@ -1210,13 +1193,13 @@
 {/if}
 
 <style>
-	.collab-mobile.overview-only > :global(.sec:not(.open):not([data-overview-row])),
-	.collab-mobile.overview-only > :global(.sec-wrap:not(:has(.open))) { display:none !important }
-	.collab-mobile.overview-only > :global(.sec.fold[data-overview-row]:not(.open)) {
-		margin:0 0 6px; border:1px solid var(--line); border-radius:14px; background:var(--surface);
-	}
-	.collab-mobile.overview-only > :global(.sec.fold[data-overview-row]:not(.open)::before) { display:none }
-	.collab-mobile.overview-only > :global(.sec.fold[data-overview-row]:not(.open) > h3) {
-		min-height:55px; padding:9px 24px 9px 12px; margin:0; border:0;
+	/* Hide legacy stacked mobile jump/stage/fold rows when the new Collab Details concept is active */
+	.dr-b.has-cockpit > :global(.cx-nav),
+	.dr-b.has-cockpit > :global(.next-bar),
+	.dr-b.has-cockpit > :global(.fold-hd),
+	.dr-b.has-cockpit > :global(section.sec:not(.open)),
+	.dr-b.has-cockpit > :global(.sec-wrap:not(:has(.sec.open))),
+	.dr-b.has-cockpit > :global(.dr-all) {
+		display: none !important;
 	}
 </style>
