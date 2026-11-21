@@ -231,7 +231,7 @@
 	const brandId = $derived(/^\/studio\/brands\/./.test(path) ? path.split('/')[3] : '');
 	const title = $derived(
 		path === '/studio/profile' || path === '/studio/inbox' ? (studio.settings?.handle ?? '')
-		: openC ? openC.brand.name
+		: openC ? (phone.on ? 'Collaboration' : openC.brand.name)
 		: sec ? titleCase(SECTIONS[sec] ?? '')
 		: brandId ? (studio.brands.find((b) => b.id === brandId)?.name ?? 'Brand')
 		: path.startsWith('/studio/grow/collab/') ? 'Collab Reel'

@@ -1,501 +1,92 @@
 <script lang="ts">
-	import type { Collab, Stage } from '../types';
-	import { copyText } from '../ui.svelte';
-	import {
-		initials,
-		inr,
-		isPaid,
-		outstanding,
-		stageIndex,
-		STAGES,
-		waShare
-	} from '../util';
-	import { openOutside } from '../native';
+	import type { Collab } from '../types';
+	import { deliverableProgress, fmt, inr, initials, isPaid, PAY_LABEL, payState, stageIndex, stageOf, STAGES, TYPE_LABEL } from '../util';
 	import Icon from './Icon.svelte';
 
-	// Mobile Live Deal Cockpit for Collab Detail (/studio/c/[code]):
-	// Hero brand + deal value card, 6-stage visual progress stepper, 3-tab quick jump (Work/Money/Details),
-	// 1-tap WhatsApp payment nudge tones, and a floating sticky bottom primary CTA bar.
-	let {
-		c,
-		next = null,
-		onstage,
-		onrunnext,
-		onjump
-	}: {
+	let { c, next, onrunnext, onjump, onmore, moreOpen, expanded, ontoggle }: {
 		c: Collab;
 		next: { key: string; label: string; hint: string; icon: string } | null;
-		onstage: (st: Stage) => void;
 		onrunnext: (key: string) => void;
-		onjump: (id: string) => void;
+		onjump: (section: string) => void;
+		onmore: (event: MouseEvent) => void;
+		moreOpen: boolean;
+		expanded: boolean;
+		ontoggle: () => void;
 	} = $props();
 
-	const SHORT_LABEL: Record<string, string> = {
-		request: 'Request',
-		negotiating: 'Quote',
-		confirmed: 'Booked',
-		creating: 'Create',
-		live: 'Live',
-		wrapped: 'Paid'
-	};
-
-	const si = $derived(stageIndex(c.stage));
-	const paid = $derived(isPaid(c));
-	const owes = $derived(outstanding(c));
-	const dealVal = $derived(c.type === 'barter' ? Number(c.product_value) || 0 : Number(c.fee) || 0);
-	const received = $derived(Math.max(0, Number(c.pay_received) || 0));
-
-	const delivTotal = $derived((c.deliverables ?? []).reduce((a, d) => a + (Number(d.qty) || 1), 0));
-	const delivDone = $derived((c.deliverables ?? []).filter((d) => d.done).reduce((a, d) => a + (Number(d.qty) || 1), 0));
-
-	let nudgeOpen = $state(false);
-	let tone = $state<'polite' | 'firm' | 'final'>('polite');
-
-	const brandFirst = $derived(c.contact_name?.trim().split(/\s+/)[0] || c.brand.name);
-	const invLink = $derived(
-		c.invoices?.[0]?.public_token ? `${location.origin}/invoice/${c.invoices[0].public_token}` : `${location.origin}/t/${c.track_token}`
-	);
-
-	const nudgeMsg = $derived.by(() => {
-		const amt = owes > 0 ? inr(owes) : inr(dealVal);
-		if (tone === 'firm') {
-			return `Hi ${brandFirst}, quick reminder that the ${amt} balance for ${c.brand.name} (${c.code}) is due. You can complete the UPI transfer in 1 tap here: ${invLink}`;
-		}
-		if (tone === 'final') {
-			return `Hi ${brandFirst}, the ${amt} payment for ${c.brand.name} (${c.code}) is overdue per our agreed terms. Please clear it by EOD via this link: ${invLink}`;
-		}
-		return `Hi ${brandFirst}! Sharing the quick UPI link for ${amt} on our ${c.brand.name} collab (${c.code}): ${invLink}`;
-	});
-
-	function sendWhatsApp(msg?: string) {
-		const text =
-			msg ||
-			(owes > 0
-				? nudgeMsg
-				: `Hi ${brandFirst}, quick update on our ${c.brand.name} collab (${c.code}). You can check the latest details here: ${location.origin}/t/${c.track_token}`);
-		const href = waShare(c.contact_phone || '', text);
-		copyText(text, 'WhatsApp message copied!');
-		openOutside(href);
-	}
+	const cash = $derived(isPaid(c));
+	const value = $derived(cash ? c.fee : c.product_value);
+	const payment = $derived(payState(c));
+	const pieces = $derived(deliverableProgress(c.deliverables));
+	const stage = $derived(stageIndex(c.stage));
 </script>
 
-<section class="ck" aria-label="Live deal cockpit">
-	<!-- 1. Hero Brand & Deal Value Card -->
-	<div class="ck-hero">
-		<div class="ck-top">
-			<div class="ck-ring"><div class="ck-ring-in">{initials(c.brand.name).slice(0, 2)}</div></div>
-			<div class="ck-id">
-				<b class="ck-brand">{c.brand.name}</b>
-				<span class="ck-sub">{c.code}{#if c.brand.instagram} · @{c.brand.instagram.replace(/^@/, '')}{/if}</span>
-			</div>
-			<button type="button" class="ck-wa" aria-label="WhatsApp brand" onclick={() => sendWhatsApp()}>
-				<Icon name="chat" />
+<section class="overview" aria-label="Collaboration overview">
+	<header class="deal-cover">
+		<div class="identity">
+			<span class="monogram" aria-hidden="true">{initials(c.brand.name)}</span>
+			<span class="reference">{c.code}</span>
+			<button class="more" aria-label="More collaboration actions" aria-expanded={moreOpen} onclick={onmore}><Icon name="more" /></button>
+		</div>
+		<h1>{c.brand.name}</h1>
+		<p class="metadata">{TYPE_LABEL[c.type]} collaboration{#if c.via_agency} · via {c.via_agency}{/if}{#if c.received_on} · Received {fmt(c.received_on)}{/if}</p>
+		<div class="figures">
+			<button onclick={() => onjump('sec-deal')}>
+				<small>{cash ? 'Deal value' : 'Barter value'}</small>
+				<strong>{value ? inr(value) : 'To agree'}</strong>
+			</button>
+			<button onclick={() => onjump(cash ? 'sec-pay' : 'sec-deliv')}>
+				<small>{cash ? 'Payment' : 'Deliverables'}</small>
+				<span class="payment" class:settled={cash && payment === 'paid'}>
+					{#if cash}{payment === 'paid' ? 'Paid in full' : payment === 'overdue' ? 'Overdue' : PAY_LABEL[c.pay_status] || 'Not invoiced'}{:else}{pieces.done} of {pieces.total} done{/if}
+				</span>
 			</button>
 		</div>
+	</header>
 
-		<div class="ck-money">
-			<div>
-				<small>{c.type === 'barter' ? 'Barter Value' : 'Agreed Deal Value'}</small>
-				<b class="ck-val">{dealVal > 0 ? inr(dealVal) : 'TBD'}</b>
+	<div class="action-card">
+		<button class="stage" onclick={() => onjump('sec-stage')} aria-label={'Change stage, currently ' + stageOf(c)}>
+			<span><i aria-hidden="true"></i>{stageOf(c)}</span>
+			<small>{stage >= 0 && !c.someday ? 'Stage ' + (stage + 1) + ' of ' + STAGES.length : 'Manage stage'} <Icon name="chevR" /></small>
+		</button>
+		{#if stage >= 0 && !c.someday}
+			<div class="track" aria-hidden="true">{#each STAGES as step, i (step.id)}<i class:past={i < stage} class:current={i === stage}></i>{/each}</div>
+		{/if}
+		{#if next}
+			<div class="next-action">
+				<small>Next step</small>
+				<p>{next.key === 'quote' ? 'Choose a quote for the brand' : next.hint}</p>
+				<button onclick={() => next && onrunnext(next.key)}><Icon name={next.icon} /><b>{next.label}</b><Icon name="arrow" /></button>
 			</div>
-			{#if paid}
-				<span class="ck-pill ok">✓ Paid in Full</span>
-			{:else if owes > 0}
-				<button type="button" class="ck-pill warn" onclick={() => (nudgeOpen = !nudgeOpen)}>
-					● {received > 0 ? `${inr(received)} paid · ` : ''}{inr(owes)} due
-				</button>
-			{:else}
-				<span class="ck-pill">{c.type === 'barter' ? 'Barter' : 'No invoice yet'}</span>
-			{/if}
-		</div>
+		{/if}
 	</div>
 
-	<!-- 2. Interactive 6-Stage Visual Stepper -->
-	{#if !['declined', 'paused', 'cancelled'].includes(c.stage)}
-		<div class="ck-step-card">
-			<div class="ck-step-h">
-				<span>Deal Progress</span>
-				<b>Stage {Math.min(si + 1, STAGES.length)} of {STAGES.length}</b>
-			</div>
-			<div class="ck-stepper">
-				{#each STAGES as st, i (st.id)}
-					<button
-						type="button"
-						class="ck-st"
-						class:done={i < si}
-						class:active={i === si}
-						onclick={() => onstage(st.id)}
-					>
-						<i class="ck-bar"></i>
-						<span>{SHORT_LABEL[st.id] ?? st.label}</span>
-					</button>
-				{/each}
-			</div>
-			{#if next}
-				<div class="ck-next">
-					<i class="ck-dot" aria-hidden="true"></i>
-					<span><b>Next move:</b> {next.hint}</span>
-				</div>
-			{/if}
-		</div>
-	{/if}
-
-	<!-- 3. 3-Tab Quick Jump Pills (Work · Money · Details) -->
-	<div class="ck-tabs" role="navigation" aria-label="Collab sections">
-		<button type="button" onclick={() => onjump('sec-deliv')}>
-			Work{#if delivTotal > 0} ({delivDone}/{delivTotal}){/if}
-		</button>
-		<button type="button" onclick={() => onjump('sec-pay')}>
-			Money{#if owes > 0} · {inr(owes)}{/if}
-		</button>
-		<button type="button" onclick={() => onjump('sec-brief')}>Details</button>
-	</div>
-
-	<!-- 4. Inline 1-Tap WhatsApp Payment Nudge Drawer (when unpaid balance exists) -->
-	{#if nudgeOpen && owes > 0}
-		<div class="ck-nudge">
-			<div class="ck-step-h">
-				<span>1-Tap WhatsApp Payment Nudge</span>
-				<button type="button" class="ck-close" onclick={() => (nudgeOpen = false)}>Hide</button>
-			</div>
-			<div class="ck-tones">
-				{#each [['polite', 'Polite'], ['firm', 'Firm'], ['final', 'Final']] as [k, lbl] (k)}
-					<button type="button" class:on={tone === k} onclick={() => (tone = k as typeof tone)}>{lbl}</button>
-				{/each}
-			</div>
-			<p class="ck-nmsg">{nudgeMsg}</p>
-			<button type="button" class="btn sm grad" onclick={() => sendWhatsApp(nudgeMsg)}>
-				<Icon name="send" />Send Nudge on WhatsApp
-			</button>
-		</div>
-	{/if}
+	<div class="workspace-title"><h2>{expanded ? 'All details' : 'Workspace'}</h2><button aria-expanded={expanded} onclick={ontoggle}>{expanded ? 'Show less' : 'All details'} <Icon name={expanded ? 'chevD' : 'chevR'} /></button></div>
 </section>
 
-<!-- 5. Floating Smart Sticky Bottom Action Bar -->
-{#if next}
-	<div class="ck-sticky no-print">
-		<button type="button" class="ck-cta" onclick={() => onrunnext(next.key)}>
-			<Icon name={next.icon} /><span>{next.label}</span>
-		</button>
-		<button type="button" class="ck-cta-wa" aria-label="Share update on WhatsApp" onclick={() => sendWhatsApp()}>
-			<Icon name="chat" />
-		</button>
-	</div>
-{/if}
-
 <style>
-	.ck {
-		display: grid;
-		gap: 11px;
-		margin-bottom: 14px;
-	}
-	.ck-hero {
-		border-radius: 20px;
-		padding: 14px;
-		background:
-			radial-gradient(120% 95% at 100% 0%, color-mix(in oklab, var(--g2) 22%, transparent), transparent 58%),
-			radial-gradient(100% 90% at 0% 100%, color-mix(in oklab, var(--g1) 20%, transparent), transparent 60%),
-			var(--surface);
-		border: 1px solid var(--line);
-		display: grid;
-		gap: 12px;
-	}
-	.ck-top {
-		display: flex;
-		align-items: center;
-		gap: 11px;
-	}
-	.ck-ring {
-		width: 46px;
-		height: 46px;
-		border-radius: 14px;
-		padding: 2px;
-		background: linear-gradient(135deg, var(--g1), var(--g2), var(--g3));
-		flex: none;
-	}
-	.ck-ring-in {
-		width: 100%;
-		height: 100%;
-		border-radius: 12px;
-		background: var(--bg);
-		display: grid;
-		place-items: center;
-		font-family: var(--f-serif, Georgia, serif);
-		font-style: italic;
-		font-size: 20px;
-		color: var(--ink);
-	}
-	.ck-id {
-		flex: 1;
-		min-width: 0;
-		display: grid;
-		gap: 2px;
-	}
-	.ck-brand {
-		font-family: var(--f-serif, Georgia, serif);
-		font-style: italic;
-		font-weight: 400;
-		font-size: 22px;
-		line-height: 1.1;
-		color: var(--ink);
-		white-space: nowrap;
-		overflow: hidden;
-		text-overflow: ellipsis;
-	}
-	.ck-sub {
-		font-size: 11.5px;
-		color: var(--ink-3);
-		white-space: nowrap;
-		overflow: hidden;
-		text-overflow: ellipsis;
-	}
-	.ck-wa {
-		appearance: none;
-		width: 36px;
-		height: 36px;
-		border-radius: 11px;
-		border: 1px solid color-mix(in oklab, var(--h-live) 45%, var(--line));
-		background: color-mix(in oklab, var(--h-live) 14%, var(--surface));
-		color: var(--h-live);
-		display: grid;
-		place-items: center;
-		cursor: pointer;
-		flex: none;
-	}
-	.ck-money {
-		padding-top: 10px;
-		border-top: 1px dashed var(--line);
-		display: flex;
-		align-items: flex-end;
-		justify-content: space-between;
-		gap: 8px;
-		flex-wrap: wrap;
-	}
-	.ck-money small {
-		display: block;
-		font-size: 10px;
-		font-weight: 700;
-		letter-spacing: 0.1em;
-		text-transform: uppercase;
-		color: var(--ink-3);
-	}
-	.ck-val {
-		font-family: var(--f-serif, Georgia, serif);
-		font-style: italic;
-		font-weight: 400;
-		font-size: 30px;
-		line-height: 1;
-		color: var(--g3);
-	}
-	.ck-pill {
-		appearance: none;
-		display: inline-flex;
-		align-items: center;
-		gap: 4px;
-		padding: 5px 10px;
-		border-radius: 999px;
-		font: 700 11px/1.1 var(--f-body);
-		border: 1px solid var(--line);
-		background: var(--surface-2);
-		color: var(--ink-2);
-		cursor: pointer;
-	}
-	.ck-pill.ok {
-		border-color: color-mix(in oklab, var(--h-live) 45%, transparent);
-		background: color-mix(in oklab, var(--h-live) 14%, transparent);
-		color: var(--h-live);
-		cursor: default;
-	}
-	.ck-pill.warn {
-		border-color: color-mix(in oklab, var(--g3) 45%, transparent);
-		background: color-mix(in oklab, var(--g3) 14%, transparent);
-		color: var(--g3);
-	}
-	.ck-step-card,
-	.ck-nudge {
-		border-radius: 16px;
-		padding: 12px;
-		background: var(--surface);
-		border: 1px solid var(--line);
-		display: grid;
-		gap: 9px;
-	}
-	.ck-step-h {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		font-size: 11px;
-	}
-	.ck-step-h span {
-		font-weight: 800;
-		letter-spacing: 0.08em;
-		text-transform: uppercase;
-		color: var(--ink-3);
-	}
-	.ck-step-h b {
-		color: var(--g1);
-	}
-	.ck-stepper {
-		display: grid;
-		grid-template-columns: repeat(6, minmax(0, 1fr));
-		gap: 4px;
-	}
-	.ck-st {
-		appearance: none;
-		border: 0;
-		background: none;
-		padding: 2px 0;
-		cursor: pointer;
-		display: grid;
-		justify-items: center;
-		gap: 4px;
-		color: var(--ink-3);
-		font-family: var(--f-body);
-	}
-	.ck-bar {
-		display: block;
-		width: 100%;
-		height: 5px;
-		border-radius: 999px;
-		background: color-mix(in oklab, var(--ink) 10%, transparent);
-	}
-	.ck-st.done .ck-bar {
-		background: var(--h-live);
-	}
-	.ck-st.active .ck-bar {
-		background: linear-gradient(90deg, var(--g1), var(--g2), var(--g3));
-	}
-	.ck-st span {
-		font-size: 9px;
-		font-weight: 700;
-		white-space: nowrap;
-	}
-	.ck-st.active span {
-		color: var(--ink);
-	}
-	.ck-st.done span {
-		color: var(--h-live);
-	}
-	.ck-next {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-		padding: 8px 10px;
-		border-radius: 11px;
-		background: color-mix(in oklab, var(--g1) 12%, var(--surface));
-		border: 1px solid color-mix(in oklab, var(--g1) 30%, transparent);
-		font-size: 12px;
-		color: var(--ink-2);
-	}
-	.ck-dot {
-		width: 7px;
-		height: 7px;
-		border-radius: 50%;
-		background: var(--g2);
-		flex: none;
-	}
-	.ck-tabs {
-		display: grid;
-		grid-template-columns: repeat(3, minmax(0, 1fr));
-		gap: 5px;
-		padding: 3px;
-		border-radius: 999px;
-		background: var(--surface);
-		border: 1px solid var(--line);
-	}
-	.ck-tabs button {
-		appearance: none;
-		border: 0;
-		background: none;
-		color: var(--ink-2);
-		font: 700 11.5px/1 var(--f-body);
-		padding: 8px 6px;
-		border-radius: 999px;
-		cursor: pointer;
-		white-space: nowrap;
-		overflow: hidden;
-		text-overflow: ellipsis;
-	}
-	.ck-tabs button:active {
-		background: var(--ink);
-		color: var(--bg);
-	}
-	.ck-tones {
-		display: grid;
-		grid-template-columns: repeat(3, 1fr);
-		gap: 6px;
-	}
-	.ck-tones button {
-		appearance: none;
-		border: 1px solid var(--line);
-		background: transparent;
-		color: var(--ink-3);
-		font: 700 11px/1 var(--f-body);
-		padding: 7px 6px;
-		border-radius: 8px;
-		cursor: pointer;
-	}
-	.ck-tones button.on {
-		border-color: var(--g1);
-		background: color-mix(in oklab, var(--g1) 16%, var(--surface));
-		color: var(--ink);
-	}
-	.ck-nmsg {
-		margin: 0;
-		font-size: 12px;
-		line-height: 1.45;
-		color: var(--ink-2);
-		padding: 9px 10px;
-		border-radius: 10px;
-		background: color-mix(in oklab, var(--bg) 70%, transparent);
-		border: 1px solid var(--line);
-	}
-	.ck-close {
-		appearance: none;
-		border: 0;
-		background: none;
-		color: var(--ink-3);
-		font-size: 11px;
-		font-weight: 700;
-		cursor: pointer;
-	}
-	.ck-sticky {
-		position: fixed;
-		left: 0;
-		right: 0;
-		bottom: calc(var(--rail-h, 64px) + env(safe-area-inset-bottom, 0px));
-		z-index: 35;
-		padding: 10px 14px;
-		background: linear-gradient(180deg, transparent, color-mix(in oklab, var(--bg) 96%, transparent) 30%, var(--bg));
-		display: flex;
-		align-items: center;
-		gap: 8px;
-	}
-	.ck-cta {
-		flex: 1;
-		height: 46px;
-		border: 0;
-		border-radius: 13px;
-		background: linear-gradient(135deg, var(--g1), var(--g2), var(--g3));
-		color: #120b12;
-		font: 800 13px/1 var(--f-body);
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		gap: 7px;
-		cursor: pointer;
-		box-shadow: 0 10px 24px -10px color-mix(in oklab, var(--g2) 65%, transparent);
-	}
-	.ck-cta-wa {
-		width: 46px;
-		height: 46px;
-		border-radius: 13px;
-		border: 1px solid color-mix(in oklab, var(--h-live) 45%, var(--line));
-		background: var(--surface);
-		color: var(--h-live);
-		display: grid;
-		place-items: center;
-		cursor: pointer;
-		flex: none;
-	}
+	.overview{min-width:0;display:grid;gap:14px;color:var(--ink);font-family:var(--f-body)}
+	.overview button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation}
+	.deal-cover{position:relative;isolation:isolate;overflow:hidden;padding:14px 18px 16px;border-radius:20px;background:linear-gradient(125deg,#211620 28%,#43233c 80%,#5c3544);color:var(--hero-ink);border:1px solid #68435d}
+	.deal-cover::before{content:'';position:absolute;z-index:-1;inset:0 0 30% 16%;background:repeating-radial-gradient(ellipse at 120% -85%,transparent 0 8px,#f5c3cc40 8.5px 9.2px,transparent 10px 13px);mask-image:linear-gradient(105deg,transparent 5%,#000 100%);pointer-events:none}
+	.identity,.stage,.stage span,.stage small,.workspace-title,.workspace-title button{display:flex;align-items:center}
+	.identity{gap:9px}.monogram{width:32px;height:32px;display:grid;place-items:center;border:1px solid #f4d7e645;border-radius:10px;background:#f4d7e611;font:italic 16px var(--f-serif)}.reference{font:600 11px var(--f-mono);letter-spacing:.08em;overflow-wrap:anywhere}
+	.more{margin-left:auto;width:44px;height:44px;display:grid;place-items:center;border:0;border-radius:12px;background:transparent}
+	.deal-cover h1{margin:10px 0 4px;color:inherit;font:400 clamp(32px,9vw,43px)/1.03 var(--f-serif);letter-spacing:-.035em;overflow-wrap:anywhere;text-wrap:balance}
+	.metadata{margin:0;color:#e3cedb;font-size:12px;line-height:1.5;overflow-wrap:anywhere}
+	.figures{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);border-top:1px solid #f9e7f02e;margin-top:19px;padding-top:13px}
+	.figures button{min-width:0;border:0;padding:0 10px 0 0;background:none;text-align:left;display:grid;align-content:start;justify-items:start;gap:5px;min-height:45px}
+	.figures button+button{border-left:1px solid #f9e7f032;padding-left:16px}
+	.figures small,.next-action small{font:650 11px/1.3 var(--f-body);color:#ddcad9}
+	.figures strong{font:400 clamp(24px,6.5vw,29px)/1.1 var(--f-serif);overflow-wrap:anywhere}
+	.payment{font:650 14px/1.3 var(--f-body);margin-top:3px}.settled{color:#98e3b0}
+	.action-card{padding:0 15px 15px;border:1px solid var(--line);background:var(--surface);border-radius:17px}
+	.stage{width:100%;min-height:48px;justify-content:space-between;gap:8px;background:none;border:0;text-align:left;padding:5px 0}
+	.stage span{gap:8px;font-weight:700;font-size:14px}.stage span i{width:7px;height:7px;border-radius:50%;background:var(--g2)}.stage small{gap:3px;color:var(--ink-3);font-size:12px}.stage small :global(svg),.workspace-title :global(svg){width:15px;height:15px}
+	.track{display:flex;gap:4px}.track i{flex:1;height:4px;border-radius:4px;background:var(--line)}.track .past{background:var(--g1)}.track .current{background:var(--grad)}
+	.next-action{margin-top:15px}.next-action small{color:var(--ink-3)}.next-action p{margin:3px 0 12px;font:550 17px/1.3 var(--f-display);color:var(--ink)}
+	.next-action button{display:flex;align-items:center;gap:10px;width:100%;min-height:46px;padding:9px 14px;border:0;border-radius:11px;background:linear-gradient(105deg,color-mix(in srgb,var(--g1) 70%,white),color-mix(in srgb,var(--g2) 76%,white) 56%,var(--g3));color:#21131c}
+	.next-action button :global(svg:last-child){margin-left:auto}.next-action button:active{transform:translateY(1px)}
+	.workspace-title{justify-content:space-between;gap:12px}.workspace-title h2{margin:0;font:600 20px var(--f-display);letter-spacing:-.04em}.workspace-title button{min-height:44px;gap:4px;padding:0 3px;border:0;background:none;color:var(--accent);font-size:13px;font-weight:650}
+	@media(prefers-reduced-motion:no-preference){.next-action button{transition:transform .18s}.deal-cover::before{animation:ink-arrival .8s ease-out both}@keyframes ink-arrival{from{opacity:0;transform:translateX(9px)}to{opacity:1;transform:none}}}
 </style>
