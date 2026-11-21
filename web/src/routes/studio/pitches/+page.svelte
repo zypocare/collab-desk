@@ -14,7 +14,6 @@
 	import OpenBriefs from '#lib/components/OpenBriefs.svelte';
 	import { openBriefs } from '#lib/campaigns.svelte.ts';
 	import type { OpenBrief } from '#lib/types.ts';
-	import { phone } from '#lib/phone.svelte.ts';
 	import { openOutside } from '#lib/native.ts';
 
 	// Brands she'd like to work with: a wishlist, a pitch from her own email, polite follow-ups.
@@ -133,7 +132,22 @@
 		await supabase.from('pitches').update({ dm_sent_at: at }).eq('id', p.id);
 	}
 	const dmNote = (p: Pitch) => (p.dm_sent_at ? ` · DM sent ${fmt(p.dm_sent_at.slice(0, 10))}` : '');
-	const counts = $derived({ idea: list.filter((p) => p.status === 'idea').length, sent: list.filter((p) => p.status === 'sent').length, won: list.filter((p) => p.status === 'won').length });
+	const counts = $derived({
+		idea: list.filter((p) => p.status === 'idea').length,
+		sent: list.filter((p) => p.status === 'sent').length,
+		replied: list.filter((p) => p.status === 'replied').length,
+		won: list.filter((p) => p.status === 'won').length
+	});
+	const totalOutreach = $derived(counts.sent + counts.replied + counts.won);
+	const pitchFacts = $derived(
+		[
+			briefs && briefs.length ? { b: String(briefs.length), t: ` open brand brief${briefs.length === 1 ? '' : 's'} live now` } : null,
+			waiting.length ? { b: String(waiting.length), t: ` autopilot pitch${waiting.length === 1 ? '' : 'es'} waiting for your OK` } : null,
+			counts.replied ? { b: String(counts.replied), t: ` brand${counts.replied === 1 ? '' : 's'} replied — close them now` } : null,
+			counts.sent ? { b: String(counts.sent), t: ` pitched with 2 polite auto follow-ups` } : null,
+			counts.won ? { b: String(counts.won), t: ` collab${counts.won === 1 ? '' : 's'} won from outreach` } : null
+		].filter((x): x is { b: string; t: string } => !!x)
+	);
 
 	function template(p: Partial<Pitch>) {
 		const first = (p.contact_name ?? '').split(' ')[0] || 'there';
@@ -220,6 +234,44 @@
 	</div>
 	<div class="acts"><button class="btn grad" onclick={newPitch}><Icon name="plus" />New pitch</button></div>
 </header>
+
+<!-- Money-inspired Outreach Vault Cockpit -->
+<section class="pt-vault rv" aria-label="Outreach overview">
+	<div class="ptv-top">
+		<span class="bx-eb">Outreach engine</span>
+		<span class="ptv-badge" class:on={s.pitch_auto ?? false}>{s.pitch_auto ? (auto ? '⚡ Autopilot · Auto' : '⚡ Autopilot · On') : 'Manual mode'}</span>
+	</div>
+	<div class="ptv-hero">
+		<b class="ptv-big num">{totalOutreach}</b>
+		<span class="ptv-lbl">brand{totalOutreach === 1 ? '' : 's'} pitched{#if briefs?.length} · <b>{briefs.length} open brief{briefs.length === 1 ? '' : 's'}</b>{/if}</span>
+	</div>
+	<div class="ptv-kpi4">
+		<div><small>Wishlist</small><b class="num">{counts.idea}</b></div>
+		<div><small>Pitched</small><b class="num warn">{counts.sent}</b></div>
+		<div><small>Replied</small><b class="num sky">{counts.replied}</b></div>
+		<div><small>Won</small><b class="num ok">{counts.won}</b></div>
+	</div>
+	<div class="ptv-acts">
+		<button type="button" class="btn primary ptv-main" onclick={newPitch}><Icon name="plus" />New pitch</button>
+		{#if s.pitch_auto}
+			<button type="button" class="btn sm" onclick={findNow} disabled={finding}>{#if finding}<span class="spinner"></span>Finding…{:else}<Icon name="search" />Find brands{/if}</button>
+		{:else if briefs?.length}
+			<button type="button" class="btn sm" onclick={() => (tab = 'briefs')}><Icon name="spark" />Open briefs</button>
+		{/if}
+	</div>
+</section>
+
+{#if pitchFacts.length}
+	<div class="cr-ticker" aria-label="Outreach pulse">
+		<div>
+			{#each [0, 1] as k (k)}
+				{#each pitchFacts as f, j (j)}
+					<span aria-hidden={k === 1}><b>{f.b}</b>{f.t}</span><span aria-hidden="true">✦</span>
+				{/each}
+			{/each}
+		</div>
+	</div>
+{/if}
 
 <div class="m-stages" role="tablist" aria-label="Show">
 	<button role="tab" aria-selected={view === 'briefs'} class:on={view === 'briefs'} onclick={() => (tab = 'briefs')}><i class="dt" style="--hue:var(--accent)"></i>Open briefs<span>{briefs?.length ?? 0}</span></button>
@@ -369,3 +421,48 @@
 		</div>
 	</div>
 {/if}
+
+<style>
+	@property --pt-rim { syntax: '<angle>'; initial-value: 0deg; inherits: false; }
+
+	.pt-vault {
+		position: relative;
+		overflow: hidden;
+		border-radius: 22px;
+		padding: 16px;
+		margin-bottom: 14px;
+		border: 1px solid transparent;
+		background:
+			linear-gradient(142deg, #271b2d 0%, #1a141b 56%, #231824 100%) padding-box,
+			conic-gradient(from var(--pt-rim), rgba(242, 90, 144, 0.85), rgba(255, 174, 107, 0.78), rgba(178, 154, 255, 0.82), rgba(70, 52, 66, 0.28), rgba(242, 90, 144, 0.85)) border-box;
+		animation: pt-spin 11s linear infinite;
+		box-shadow: 0 22px 46px -24px rgba(242, 90, 144, 0.36);
+	}
+	.pt-vault::before, .pt-vault::after { content: ''; position: absolute; border-radius: 50%; pointer-events: none; filter: blur(34px); opacity: 0.34; }
+	.pt-vault::before { width: 150px; height: 150px; top: -55px; right: -35px; background: radial-gradient(circle, var(--g3), transparent 70%); }
+	.pt-vault::after { width: 140px; height: 140px; bottom: -60px; left: -30px; background: radial-gradient(circle, var(--g2), transparent 70%); }
+	.pt-vault > * { position: relative; z-index: 1; }
+
+	.ptv-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+	.ptv-badge { display: inline-flex; align-items: center; padding: 4px 8px; border: 1px solid #493b4b; background: rgba(25, 20, 25, 0.75); color: var(--ink-3); font: 700 10px/1 ui-monospace, Consolas, monospace; text-transform: uppercase; }
+	.ptv-badge.on { border-color: rgba(111, 208, 140, 0.42); background: rgba(111, 208, 140, 0.14); color: var(--ok); }
+
+	.ptv-hero { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin: 8px 0 12px; }
+	.ptv-big { font: 400 42px/1 var(--f-serif, Georgia, serif); letter-spacing: -2px; color: var(--ink); }
+	.ptv-lbl { font-size: 12px; color: var(--ink-2); }
+	.ptv-lbl b { color: var(--g3); }
+
+	.ptv-kpi4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin-bottom: 12px; }
+	.ptv-kpi4 div { border: 1px solid #382c38; background: rgba(28, 23, 28, 0.74); border-radius: 12px; padding: 8px 7px; display: grid; gap: 2px; }
+	.ptv-kpi4 small { font-size: 9px; color: var(--ink-3); text-transform: uppercase; letter-spacing: .06em; font-weight: 700; }
+	.ptv-kpi4 b { font: italic 400 18px/1.1 var(--f-serif, Georgia, serif); color: var(--ink); }
+	.ptv-kpi4 b.warn { color: var(--g3); }
+	.ptv-kpi4 b.sky { color: #8ab4ff; }
+	.ptv-kpi4 b.ok { color: var(--ok); }
+
+	.ptv-acts { display: flex; gap: 8px; align-items: center; }
+	.ptv-main { flex: 1; justify-content: center; }
+
+	@keyframes pt-spin { to { --pt-rim: 360deg; } }
+	@media (prefers-reduced-motion: reduce) { .pt-vault { animation: none; } }
+</style>
