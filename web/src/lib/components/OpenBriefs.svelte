@@ -72,9 +72,7 @@
 				`Hi ${b.brand} team, I'd love to collaborate on this brief!`,
 				ig?.followers ? `My live IG stats (${Math.round(ig.followers / 1000)}K followers) and recent collabs are attached on my Miracle profile.` : 'My live media kit and past collabs are attached on my Miracle profile.'
 			].join(' ');
-			await applyToBrief(b.id, myRate, autoNote);
-			b.mine = { rate: myRate, note: autoNote, status: 'applied', created_at: new Date().toISOString() } as OpenBrief['mine'];
-			briefs = [...briefs];
+			briefs = await applyToBrief(b.id, myRate, autoNote);
 			toast(`Applied to ${b.brand} in 1 tap!`, 'check');
 		} catch (e) {
 			toast(errMessage(e), 'alert');
@@ -206,7 +204,7 @@
 	<section class="tks pt-tks">
 		{#each filteredBriefs as b, i (b.id)}
 			{@const sc = matchScore(b)}
-			<Ticket name={b.brand} sub={[b.verified ? '✓ Verified' : '', b.category].filter(Boolean).join(' · ')} money={budget(b)} moneySub={budgetSub(b)} task={task(b)} status={status(b)} tone={tone(b)} chips={[`${sc}% Match`, ...fitChips(b)]} onopen={() => show(b, !b.mine && fits(b))} {i}>
+			<Ticket name={b.brand} sub={[b.verified ? '✓ Verified' : '', b.category].filter(Boolean).join(' · ')} money={budget(b)} moneySub={budgetSub(b)} task={task(b)} status={status(b)} tone={tone(b)} chips={[{ text: `${sc}% Match`, tone: sc >= 80 ? 'ok' : 'info' }, ...fitChips(b)]} onopen={() => show(b, !b.mine && fits(b))} {i}>
 				<span class="pt-tk-acts">
 					{#if !b.mine && !fits(b)}
 						<button class="btn" onclick={() => show(b, false)}>See the brief</button>

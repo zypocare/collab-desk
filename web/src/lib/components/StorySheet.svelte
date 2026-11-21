@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount, untrack } from 'svelte';
 	import { portal } from '../portal';
 	import { studio } from '../studio.svelte';
 	import { copyText, toast } from '../ui.svelte';
@@ -36,7 +36,7 @@
 	const link = $derived((s.site_url || location.origin).replace(/\/$/, ''));
 	const bare = $derived(link.replace(/^https?:\/\//, ''));
 
-	let mode = $state<'profile' | 'wrapped'>(initialMode);
+	let mode = $state<'profile' | 'wrapped'>(untrack(() => initialMode));
 	let theme = $state<WrappedTheme>('aurora');
 	let showRevenue = $state(false);
 	let photo = $state<HTMLImageElement | null>(null);

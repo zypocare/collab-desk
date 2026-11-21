@@ -262,9 +262,6 @@
 		gap: 12px;
 		padding: 0 18px 18px;
 	}
-	.ro-b > .btn {
-		justify-self: start;
-	}
 	.ro-k {
 		display: grid;
 		grid-template-columns: repeat(3, minmax(0, 1fr));

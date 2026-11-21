@@ -373,50 +373,6 @@
 		box-shadow: inset 0 0 0 1.5px var(--g2);
 		color: var(--ink);
 	}
-	.nc-kinds {
-		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
-		gap: 10px;
-	}
-	.nc-k {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-		padding: 8px 10px 8px 14px;
-		border-radius: 14px;
-		box-shadow: inset 0 0 0 1px var(--line);
-	}
-	.nc-k.on {
-		box-shadow: inset 0 0 0 1.5px var(--g2);
-	}
-	.nc-k span {
-		flex: 1;
-		font-weight: 600;
-		font-size: 14px;
-	}
-	.nc-k b {
-		min-width: 18px;
-		text-align: center;
-	}
-	.nc-k button {
-		width: 34px;
-		height: 34px;
-		border: 0;
-		border-radius: 10px;
-		background: color-mix(in oklab, var(--ink) 6%, transparent);
-		color: var(--ink);
-		font-size: 18px;
-		cursor: pointer;
-	}
-	.nc-chk {
-		display: flex !important;
-		align-items: center;
-		gap: 8px;
-		margin-top: 8px;
-		font-size: 13.5px;
-		color: var(--ink-2);
-		font-weight: 500 !important;
-	}
 	.nc-go,
 	.nc-send {
 		display: flex;
@@ -571,55 +527,8 @@
 	.nc-fit.ok {
 		color: var(--ok);
 	}
-	.nc-fit.warn,
-	.nc-line small.warn {
+	.nc-fit.warn {
 		color: var(--g3);
-	}
-	.nc-rev {
-		display: grid;
-		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-		gap: 20px;
-	}
-	.nc-sum {
-		display: grid;
-		align-content: start;
-		gap: 12px;
-		padding: 22px;
-	}
-	.nc-sum dl {
-		display: grid;
-		grid-template-columns: 120px minmax(0, 1fr);
-		gap: 8px 14px;
-		margin: 0;
-		font-size: 14.5px;
-	}
-	.nc-sum dt {
-		color: var(--ink-3);
-	}
-	.nc-sum dd {
-		margin: 0;
-	}
-	.nc-brief {
-		margin: 0;
-		padding-top: 10px;
-		border-top: 1px solid var(--line);
-		color: var(--ink-2);
-		font-size: 14px;
-		line-height: 1.5;
-		white-space: pre-line;
-	}
-	.nc-line {
-		display: flex;
-		justify-content: space-between;
-		gap: 12px;
-		padding: 8px 0;
-		border-top: 1px solid var(--line);
-		font-size: 14px;
-	}
-	.nc-line small {
-		color: var(--ink-3);
-		font-size: 12.5px;
-		text-align: right;
 	}
 	.nc-link {
 		justify-self: start;
@@ -634,8 +543,7 @@
 		cursor: pointer;
 	}
 	@media (max-width: 760px) {
-		.nc-2,
-		.nc-rev {
+		.nc-2 {
 			grid-template-columns: minmax(0, 1fr);
 		}
 		.nc-neo {
