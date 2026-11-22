@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onDestroy } from 'svelte';
+	import { auth } from '../auth.svelte';
 	import { studio } from '../studio.svelte';
 	import { firstName } from '../util';
 	import Icon from './Icon.svelte';
@@ -14,7 +15,11 @@
 		['nocturne', 'Plum Nocturne', 'Plum · Coral'],
 		['rose', 'Rose Vinyl', 'Blush · Orchid']
 	] as const;
-	const displayName = $derived(firstName(studio.settings?.display_name ?? ''));
+	const displayName = $derived(
+		auth.account?.role === 'brand'
+			? firstName(auth.account.brand?.name || auth.account.profile?.name || auth.account.full_name || '')
+			: firstName(studio.settings?.display_name ?? '')
+	);
 	let dialog: HTMLDialogElement;
 	let saved = 'original';
 	let selected = $state('original');

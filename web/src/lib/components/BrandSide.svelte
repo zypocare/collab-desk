@@ -9,6 +9,7 @@
 	import { alerts } from '../alerts.svelte';
 	import Avatar from './Avatar.svelte';
 	import Icon from './Icon.svelte';
+	import MoodPicker from './MoodPicker.svelte';
 	import Logo from './Logo.svelte';
 	import WorkspaceSwitch from './WorkspaceSwitch.svelte';
 
@@ -50,6 +51,7 @@
 	</div>
 	<div class="side-end">
 		<WorkspaceSwitch />
+		<div class="side-mood"><MoodPicker /><span>Color theme</span></div>
 		<button class="side-ask" onclick={() => (ui.askOpen = true)}><Icon name="spark" />Ask your desk</button>
 		{#if creators.length}
 			<a class="side-ask" href="/brand/campaigns/new"><Icon name="plus" />New campaign</a>
@@ -65,3 +67,7 @@
 		</div>
 	</div>
 </nav>
+
+<style>
+	.side-mood { display: flex; align-items: center; gap: 10px; padding: 4px 2px 6px; font-size: 13px; font-weight: 600; color: var(--ink-2); }
+</style>

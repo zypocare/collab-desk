@@ -39,8 +39,20 @@
 		<small>Paste the link and AI drafts your campaign name, brief, and talking points.</small>
 	</div>
 	<div class="bfl-row">
-		<input class="inp bfl-inp" type="url" inputmode="url" aria-label="Product page link" placeholder="https://yourshop.in/product" maxlength="500" bind:value={url} disabled={busy} />
-		<button type="submit" class="btn grad bfl-go" disabled={busy || !url.trim()}>{#if busy}<span class="spinner"></span>Reading…{:else}✦ Draft brief{/if}</button>
+		<input
+			class="bfl-inp"
+			type="url"
+			inputmode="url"
+			autocomplete="url"
+			aria-label="Product page link"
+			placeholder="https://yourshop.in/product"
+			maxlength="500"
+			bind:value={url}
+			disabled={busy}
+		/>
+		<button type="submit" class="btn grad bfl-go" disabled={busy || !url.trim()}>
+			{#if busy}<span class="spinner"></span>Reading…{:else}✦ Draft brief{/if}
+		</button>
 	</div>
 	{#if error}<small class="bfl-err" role="alert">{error}</small>{:else if done}<small class="bfl-ok" role="status">{done}</small>{/if}
 </form>
@@ -57,7 +69,7 @@
 		position: relative;
 		overflow: hidden;
 		display: grid;
-		gap: 11px;
+		gap: 12px;
 		padding: 16px;
 		border-radius: 22px;
 		border: 1.5px solid transparent;
@@ -109,23 +121,42 @@
 		color: var(--ink-2);
 	}
 	.bfl-row {
-		display: flex;
-		gap: 8px;
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) auto;
+		gap: 10px;
+		align-items: stretch;
 	}
 	.bfl-inp {
-		flex: 1;
+		display: block;
+		width: 100%;
 		min-width: 0;
-		height: 44px !important;
-		padding: 0 13px !important;
+		min-height: 48px !important;
+		height: 48px !important;
+		padding: 12px 14px !important;
+		margin: 0;
+		box-sizing: border-box;
 		border-radius: 12px !important;
 		border: 1px solid #48384c !important;
-		background: rgba(15, 11, 16, 0.85) !important;
-		color: var(--ink);
+		background: rgba(15, 11, 16, 0.92) !important;
+		color: var(--ink, #faf7fc) !important;
+		font: 400 16px/1.35 var(--f-body, system-ui, sans-serif) !important;
+		outline: none;
+		-webkit-appearance: none;
+		appearance: none;
+	}
+	.bfl-inp:focus {
+		border-color: var(--g2, #f25a90) !important;
+		box-shadow: 0 0 0 2px rgba(242, 90, 144, 0.22);
+	}
+	.bfl-inp::placeholder {
+		color: var(--ink-3, #8f8499);
+		opacity: 1;
 	}
 	.bfl-go {
 		position: relative;
 		overflow: hidden;
-		height: 44px !important;
+		min-height: 48px !important;
+		height: 48px !important;
 		padding: 0 18px !important;
 		border-radius: 0 !important;
 		font: 800 12px/1 var(--f-body, inherit) !important;
@@ -154,7 +185,7 @@
 	}
 	@media (max-width: 560px) {
 		.bfl-row {
-			flex-direction: column;
+			grid-template-columns: minmax(0, 1fr);
 		}
 		.bfl-go {
 			width: 100%;

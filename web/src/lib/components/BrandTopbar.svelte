@@ -17,6 +17,7 @@
 	import Select from './Select.svelte';
 	import Avatar from './Avatar.svelte';
 	import Logo from './Logo.svelte';
+	import MoodPicker from './MoodPicker.svelte';
 	import { addressFor, isAppHost } from '../creatorHost';
 	import { brandGroups, groupOf, tabOn } from '../brandNav';
 	import { pageSlug } from '../supabase';
@@ -139,7 +140,8 @@
 			<div class="m-brand" class:wordmark={path === '/brand'}>{title}</div>
 			<div class="m-r">
 				{#if signedIn && path === '/brand'}
-					<!-- The creator's Today bar, piece for piece: new, Ask your desk, search, alerts, messages. -->
+					<!-- The creator's Today bar, piece for piece: mood picker, new, Ask your desk, search, alerts, messages. -->
+					<MoodPicker />
 					<a class="m-ib" href={creators.length ? '/brand/campaigns/new' : '/brand/explore'} aria-label="New campaign"><Icon name="plus" /></a>
 					<button class="m-ib m-ask" onclick={() => (ui.askOpen = true)} aria-label="Ask your desk"><Icon name="spark" /></button>
 					<a class="m-ib" href="/brand/explore" aria-label="Explore creators"><Icon name="search" /></a>
@@ -151,7 +153,8 @@
 				{:else if signedIn && path === '/brand/campaigns'}
 					<a class="m-ib" href={creators.length ? '/brand/campaigns/new' : '/brand/explore'} aria-label="New campaign"><Icon name="plus" /></a>
 				{:else if signedIn && path === '/brand/profile'}
-					<!-- As on the creator's My page: new at the top, settings behind the menu. -->
+					<!-- As on the creator's My page: mood picker, new at the top, settings behind the menu. -->
+					<MoodPicker />
 					<a class="m-ib" href={creators.length ? '/brand/campaigns/new' : '/brand/explore'} aria-label="New campaign"><Icon name="plus" /></a>
 					<a class="m-ib" href="/brand/settings" aria-label="Settings and activity"><Icon name="menu" /></a>
 				{/if}
