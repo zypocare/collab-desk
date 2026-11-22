@@ -37,6 +37,7 @@
 	import BriefView from '#lib/components/BriefView.svelte';
 	import DraftPlayer from '#lib/components/DraftPlayer.svelte';
 	import BrandUsage from '#lib/components/BrandUsage.svelte';
+	import SmartContractCard from '#lib/components/SmartContractCard.svelte';
 	import BrandShipping from '#lib/components/BrandShipping.svelte';
 	import MessageThread from '#lib/components/MessageThread.svelte';
 	import { addressFor } from '#lib/creatorHost.ts';
@@ -440,6 +441,7 @@
 				{/if}
 
 				<section class="sec" data-g="money" data-ic="wallet"><h3 data-sum={offerText}>Deal &amp; invoice</h3>{@render deal()}</section>
+				{#key r.code}<section class="sec" data-g="money" data-ic="doc"><h3>Smart contract &amp; ASCI</h3><SmartContractCard code={r.code} role="brand" brandName={auth.account?.role === 'brand' ? (auth.account.brand?.name || auth.account.profile?.name || 'Your brand') : 'Your brand'} creatorName={creator} deliverables={delivText(r.deliverables)} feeText={offerText} defaultSigner={auth.account?.role === 'brand' ? auth.account.full_name : ''} /></section>{/key}
 				{#key r.code}<section class="sec" data-g="money" data-ic="shield"><h3>Usage rights</h3><BrandUsage code={r.code} {creator} onchange={loadRequests} /></section>{/key}
 				<section class="sec" data-g="money" data-ic="doc"><h3>Documents</h3><CampaignDocs {r} /></section>
 
@@ -462,6 +464,7 @@
 				{@render quoteBlock()}
 				{@render draftBlock()}
 
+				{#key r.code}<SmartContractCard code={r.code} role="brand" brandName={auth.account?.role === 'brand' ? (auth.account.brand?.name || auth.account.profile?.name || 'Your brand') : 'Your brand'} creatorName={creator} deliverables={delivText(r.deliverables)} feeText={offerText} defaultSigner={auth.account?.role === 'brand' ? auth.account.full_name : ''} />{/key}
 				{#key r.code}<BrandShipping code={r.code} {creator} onchange={loadRequests} /><BrandUsage code={r.code} {creator} onchange={loadRequests} /><BrandLink code={r.code} {creator} /><BrandCaseStudy code={r.code} {creator} signer={auth.account?.role === 'brand' ? auth.account.full_name : ''} />{/key}
 
 				<section class="panel rv msg-panel" style="--i:3;margin-top:18px">

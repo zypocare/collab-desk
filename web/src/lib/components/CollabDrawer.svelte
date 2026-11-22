@@ -62,6 +62,7 @@
 	import BrandRating from './BrandRating.svelte';
 	import CaseStudy from './CaseStudy.svelte';
 	import UsageRights from './UsageRights.svelte';
+	import SmartContractCard from './SmartContractCard.svelte';
 	import RightsCard from './RightsCard.svelte';
 	import { rightsRows } from '../rights';
 	import ProductShipping from './ProductShipping.svelte';
@@ -727,6 +728,7 @@
 				{#if c.preferred_live}<p class="hint" style="margin-top:12px">Brand's preferred go-live date: {fmt(c.preferred_live)}</p>{/if}
 			</section>
 
+			<div data-g="money" data-ic="shield" class="sec-wrap" id="sec-smart-contract" hidden={!sh('quote')}>{#key c.code}<SmartContractCard code={c.code} role="creator" brandName={c.brand.name} creatorName={studio.settings?.display_name ?? ''} deliverables={delivText(c.deliverables)} feeText={c.fee ? inr(c.fee) : c.type} defaultSigner={studio.settings?.display_name ?? ''} />{/key}</div>
 			<section data-g="money" data-ic="doc" class="sec" id="sec-quote" hidden={!sh('quote')}>
 				<h3 data-sum={sums.quote}>Quote &amp; agreement {#if quote}<span class="pill tint {QUOTE_STATUS[quote.status].k}">{QUOTE_STATUS[quote.status].label}</span>{/if}</h3>
 				{#if c.stage === 'request' || c.stage === 'negotiating'}
