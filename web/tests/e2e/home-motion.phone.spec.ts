@@ -77,7 +77,7 @@ test('home themes preview, cancel, persist and restore the original palette', as
 	await expect(root).toHaveAttribute('data-mood', 'cherry');
 	const cherryRibbon = await dialog.locator('label[data-swatch="cherry"] .sample').evaluate((sample) => getComputedStyle(sample).backgroundImage);
 	expect(cherryRibbon).toMatch(/linear-gradient\(.*rgb\(255, 83, 116\).*rgb\(188, 153, 255\)/);
-	await expect(page.locator('.qa-card.primary')).toHaveCSS('background-image', cherryRibbon);
+	await expect(page.locator('.phone-today .ht')).toHaveCSS('background-image', /conic-gradient\(.*rgb\(255, 83, 116\).*rgb\(188, 153, 255\)/);
 	await expect(dialog.locator('.preview em')).toHaveCSS('background-image', cherryRibbon);
 	await page.keyboard.press('Escape');
 	await expect(root).not.toHaveAttribute('data-mood', /.+/);
@@ -100,6 +100,29 @@ test('home themes preview, cancel, persist and restore the original palette', as
 	await page.reload();
 	await expect(root).toHaveAttribute('data-mood', 'rose');
 	expect(await page.evaluate(() => localStorage.getItem('cd.mood'))).toBe('rose');
+});
+
+test('home actions and collab tabs keep their Original colors in every mood', async ({ page }) => {
+	await mountHome(page);
+	await page.addStyleTag({ content: '* { transition: none !important; }' });
+	const controls = page.locator('.qa-card, .qa-card .qa-ic, .tix-flt');
+	await expect(page.locator('.qa-card.primary')).toBeVisible();
+	await expect(page.locator('.tix-flt.on')).toBeVisible();
+	const controlColors = () => controls.evaluateAll(elements => elements.map(element => {
+		const style = getComputedStyle(element);
+		return [style.backgroundColor, style.backgroundImage, style.color, style.borderTopColor, style.boxShadow];
+	}));
+	for (const theme of ['dark', 'light']) {
+		await page.evaluate(theme => {
+			document.documentElement.dataset.theme = theme;
+			delete document.documentElement.dataset.mood;
+		}, theme);
+		const original = await controlColors();
+		for (const mood of ['cherry', 'velvet', 'dusk', 'mango', 'peach', 'nocturne', 'rose']) {
+			await page.evaluate(mood => document.documentElement.dataset.mood = mood, mood);
+			expect(await controlColors(), `${theme} / ${mood}`).toEqual(original);
+		}
+	}
 });
 
 test('creator story rings open account summaries and the visible collab rail filters real next steps and DMs', async ({ page }) => {

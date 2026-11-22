@@ -15,24 +15,13 @@
 }
 [data-swatch="original"] { --tone-a: #9c7bff; --tone-b: #f25a90; --tone-c: #ffae6b; }
 
-:root[data-mood] {
-	--g1: light-dark(color-mix(in srgb, var(--tone-a) 52%, #240e22), var(--tone-a));
-	--g2: light-dark(color-mix(in srgb, var(--tone-b) 52%, #240e22), var(--tone-b));
-	--g3: light-dark(color-mix(in srgb, var(--tone-c) 52%, #240e22), var(--tone-c));
-	--accent: var(--g1);
-	--accent-ink: light-dark(white, #151218);
-	--on-grad: light-dark(white, #151218);
-	--bg: light-dark(color-mix(in srgb, var(--tone-a) 7%, #fff), color-mix(in srgb, var(--tone-base) 12%, #0c0c10));
-	--surface: light-dark(#fff, color-mix(in srgb, var(--tone-base) 16%, #19181c));
-	--surface-2: light-dark(color-mix(in srgb, var(--tone-a) 14%, #fff), color-mix(in srgb, var(--tone-base) 24%, #232127));
-	--line-strong: light-dark(color-mix(in srgb, var(--tone-base) 26%, #fff), color-mix(in srgb, var(--tone-a) 28%, #28262a));
-	--hero: color-mix(in srgb, var(--tone-base) 55%, #161218);
-	--chrome: color-mix(in srgb, var(--tone-base) 16%, #101013);
+/* Keep interactive controls on the original light/dark tokens. Paint the mood
+   directly onto the canvas, card surfaces and decorative elements. */
+:root[data-mood][data-desk] body {
+	background-color: light-dark(color-mix(in srgb, var(--tone-a) 7%, #fff), color-mix(in srgb, var(--tone-base) 12%, #0c0c10));
 }
 
 :root[data-mood] :is(.phone-today .ht, .phone-today .m-hero, .phone-today .dk2-card, .pf-page .pf-hero) {
-	--g1: var(--tone-a); --g2: var(--tone-b); --g3: var(--tone-c);
-	--grad: var(--tone-ribbon);
 	--rim-angle: var(--ht-rim);
 	background: var(--tone-panel) padding-box,
 		conic-gradient(from var(--rim-angle), var(--tone-a), var(--tone-c), #493d46, var(--tone-a)) border-box;
@@ -40,9 +29,13 @@
 }
 :root[data-mood] .phone-today .dk2-card { --rim-angle: var(--dk-rim); }
 :root[data-mood] .pf-page .pf-hero { --rim-angle: var(--pf-rim); }
-:root[data-mood] :is(.phone-today .qa-card.primary, .tix .tix-flt.on, .btn.primary) {
-	background: var(--tone-ribbon); color: #21131f; border-color: var(--tone-a);
-	box-shadow: 3px 3px 0 color-mix(in srgb, var(--tone-c) 63%, #21131f);
+:root[data-mood] .lt .l-money { background: var(--tone-panel); }
+:root[data-mood] :is(.aurora, .ht-glow, .ht-hi em, .orb-ring, .tix-prog, .m-hero .goal, .l-goal) {
+	--g1: var(--tone-a); --g2: var(--tone-b); --g3: var(--tone-c);
 }
-:root[data-mood] .phone-today .qa-card.primary .qa-ic { color: inherit; }
-:root[data-mood] .cdv { --cdv-violet: var(--tone-a); --cdv-pink: var(--tone-b); --cdv-peach: var(--tone-c); }
+:root[data-mood] :is(.lt .l-hi h1 em, .lt .l-ai h2 em.l-g, .lt .l-wk h3 em) {
+	--g1: light-dark(color-mix(in srgb, var(--tone-a) 52%, #240e22), var(--tone-a));
+	--g2: light-dark(color-mix(in srgb, var(--tone-b) 52%, #240e22), var(--tone-b));
+	--g3: light-dark(color-mix(in srgb, var(--tone-c) 52%, #240e22), var(--tone-c));
+}
+:root[data-mood] .cdv-track { --cdv-violet: var(--tone-a); --cdv-pink: var(--tone-b); --cdv-peach: var(--tone-c); }
