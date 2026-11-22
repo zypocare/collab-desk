@@ -570,7 +570,7 @@
 	<svg width="0" height="0" style="position:absolute" aria-hidden="true">
 		<defs>
 			<linearGradient id="mp-sg" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="300" y2="0"><stop offset="0" style="stop-color:var(--g1)" /><stop offset=".55" style="stop-color:var(--g2)" /><stop offset="1" style="stop-color:var(--g3)" /></linearGradient>
-			<linearGradient id="mp-kg" gradientUnits="userSpaceOnUse" x1="60" y1="100" x2="560" y2="440"><stop offset="0" stop-color="var(--burgundy)" /><stop offset=".52" stop-color="var(--wine-rose)" /><stop offset="1" stop-color="var(--wine-copper)" /></linearGradient>
+			<linearGradient id="mp-kg" gradientUnits="userSpaceOnUse" x1="60" y1="100" x2="560" y2="440"><stop offset="0" stop-color="#6b3fd4" /><stop offset=".52" stop-color="#d4296a" /><stop offset="1" stop-color="#f2994a" /></linearGradient>
 			<path id="mp-kd" d="M64 128C92 104 132 112 144 156C154 220 158 330 156 392C155 420 182 420 182 392C182 300 176 200 196 160C220 104 290 104 300 160C310 220 312 330 310 392C309 420 336 420 336 392C336 300 330 200 350 160C374 104 444 104 452 160C460 230 456 330 452 392C450 440 500 440 540 360M499 384L540 360L545 408" />
 		</defs>
 	</svg>
@@ -963,7 +963,7 @@
 
 		<footer>
 			<div class="mp-wrap">
-				{#if !p?.white_label}<a class="mp-pw" href="https://www.miracleapp.live/get-brand-deals?utm_source=creator_page" aria-label="Made with Miracle: get brand deals as a creator"><svg viewBox="0 0 512 512" aria-hidden="true"><g transform="translate(256 256) scale(1.04) translate(-256 -256)"><g transform="translate(256 256) scale(.79) skewX(-13) translate(-304.5 -266)" fill="none" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"><use href="#mp-kd" transform="translate(-13 -10)" stroke="#faf1ed" /><use href="#mp-kd" transform="translate(13 10)" stroke="url(#mp-kg)" /></g></g></svg><span>Made with <b>Miracle</b></span></a>{/if}
+				{#if !p?.white_label}<a class="mp-pw" href="https://www.miracleapp.live/get-brand-deals?utm_source=creator_page" aria-label="Made with Miracle: get brand deals as a creator"><svg viewBox="0 0 512 512" aria-hidden="true"><g transform="translate(256 256) scale(1.04) translate(-256 -256)"><g transform="translate(256 256) scale(.79) skewX(-13) translate(-304.5 -266)" fill="none" stroke-width="26" stroke-linecap="round" stroke-linejoin="round"><use href="#mp-kd" transform="translate(-13 -10)" stroke="#F4EEF2" /><use href="#mp-kd" transform="translate(13 10)" stroke="url(#mp-kg)" /></g></g></svg><span>Made with <b>Miracle</b></span></a>{/if}
 				<span>Brands pay {first} directly. Miracle never takes a cut.</span>
 				{#if ins}<a href="/insights" style="color:var(--ink-2)">See {first}'s full insights</a>{/if}
 				{#if signedInBrand}
@@ -980,20 +980,20 @@
 </div>
 
 <style>
-	.mp-pv { position: fixed; z-index: 60; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 16px); transform: translateX(-50%); display: flex; align-items: center; gap: 8px; padding: 11px 18px 11px 14px; border-radius: 999px; background: rgba(26, 21, 26, 0.92); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); box-shadow: inset 0 0 0 1px #583b3f, 0 20px 40px -16px rgba(0, 0, 0, 0.9); color: #faf1ed; font: 600 14px/1.2 'Geist', system-ui, sans-serif; text-decoration: none; white-space: nowrap; }
+	.mp-pv { position: fixed; z-index: 60; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 16px); transform: translateX(-50%); display: flex; align-items: center; gap: 8px; padding: 11px 18px 11px 14px; border-radius: 999px; background: rgba(26, 21, 26, 0.92); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); box-shadow: inset 0 0 0 1px #3e343e, 0 20px 40px -16px rgba(0, 0, 0, 0.9); color: #f4eef2; font: 600 14px/1.2 'Geist', system-ui, sans-serif; text-decoration: none; white-space: nowrap; }
 	.mp-pv svg { width: 18px; height: 18px; }
-	.mp-pv small { margin-left: 4px; font-weight: 500; font-size: 12.5px; color: #b69f9d; }
+	.mp-pv small { margin-left: 4px; font-weight: 500; font-size: 12.5px; color: #a39aa1; }
 	@media (max-width: 380px) { .mp-pv small { display: none; } }
 	/* The app's theme and background art step aside on this page (it's dark only). */
 	:global(html.mp-on) {
 		scroll-behavior: smooth;
 		overflow-x: clip;
 		color-scheme: dark;
-		background: #160e10;
+		background: #110d11;
 	}
 	:global(html.mp-on body) {
 		margin: 0;
-		background: #160e10;
+		background: #110d11;
 		overflow-x: clip;
 	}
 	:global(html.mp-on .aurora),
@@ -1004,21 +1004,21 @@
 	.mp {
 		color-scheme: dark;
 		/* The app's dark theme tokens (app.css :root[data-theme='dark']), set here so the page stays dark. */
-		--bg: #160e10;
-		--surface: #211618;
-		--surface-2: #2e1e20;
-		--line: #3a282b;
-		--line-strong: #583b3f;
-		--ink: #faf1ed;
-		--ink-2: #d3c1bf;
-		--ink-3: #b69f9d;
-		--accent: var(--wine-rose);
-		--g1: var(--wine-highlight);
-		--g2: var(--wine-rose);
-		--g3: var(--wine-copper);
-		--hero: #32191d;
+		--bg: #110d11;
+		--surface: #1a151a;
+		--surface-2: #231d23;
+		--line: #2e262e;
+		--line-strong: #3e343e;
+		--ink: #f4eef2;
+		--ink-2: #c9bfc6;
+		--ink-3: #a39aa1;
+		--accent: #f25a90;
+		--g1: #9c7bff;
+		--g2: #f25a90;
+		--g3: #ffae6b;
+		--hero: #1f151e;
 		--hero-ink: #fbf2f6;
-		--chrome: #100a0b;
+		--chrome: #09070a;
 		--h-request: #7ea2ff;
 		--h-nego: #efb35a;
 		--h-confirmed: #b49cff;
@@ -1563,7 +1563,7 @@
 	}
 	.mp-neo.mp-wa {
 		background: #0c090c;
-		color: #faf1ed;
+		color: #f4eef2;
 		box-shadow:
 			inset 0 0 0 1.5px color-mix(in oklab, #25d366 55%, transparent),
 			5px 5px 0 color-mix(in oklab, #25d366 45%, #0c090c);
@@ -2058,7 +2058,7 @@
 		gap: 12px;
 		padding: 22px;
 		border-radius: 24px;
-		background: radial-gradient(120% 70% at 0% 0%, color-mix(in oklab, var(--h, var(--wine-rose)) 18%, transparent), transparent 60%), var(--surface);
+		background: radial-gradient(120% 70% at 0% 0%, color-mix(in oklab, var(--h, #f25a90) 18%, transparent), transparent 60%), var(--surface);
 		box-shadow: 0 0 0 1px var(--line) inset;
 	}
 	.mp-case-b {
@@ -2113,7 +2113,7 @@
 	.mp-case blockquote {
 		margin: 0;
 		padding-left: 12px;
-		border-left: 3px solid var(--g2, var(--wine-rose));
+		border-left: 3px solid var(--g2, #f25a90);
 		font-style: italic;
 		color: var(--ink);
 	}

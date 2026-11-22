@@ -554,7 +554,6 @@
 		.nc-body { gap: 10px; padding: 4px 18px 12px; scroll-behavior: auto; }
 		:global([data-side]) .nc .nc-h { font-size: clamp(26px, 7.5vw, 31px); line-height: 1.05; }
 		:global([data-side]) .nc .nc-sub { margin: -4px 0 0; font-size: 13px; line-height: 1.35; }
-		.nc-compose textarea { height: 116px; min-height: 116px; padding: 10px 14px 6px; font-size: 15px; line-height: 1.42; }
 		.nc-pill { height: 46px; gap: 3px; }
 		.nc-pill :global(.ic) { width: 18px; height: 18px; }
 		.nc-lbl { margin-bottom: -6px; }
@@ -687,6 +686,9 @@
 		.nc-line { min-height: 44px; }
 		.nc-step { min-height: 50px; }
 		.nc-go { height: 50px; }
+	}
+	@media (max-width: 760px) {
+		.nc-compose textarea { height: 116px; min-height: 116px; padding: 10px 14px 6px; font-size: 16px; line-height: 1.42; }
 	}
 	@media (prefers-reduced-motion: reduce) {
 		.nc-go, .nc-seg button, .nc-opt { transition: none; }

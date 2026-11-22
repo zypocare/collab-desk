@@ -11,6 +11,7 @@
 	import '../dash.css';
 	import '../cred.css';
 	import '../today.css';
+	import '../moods.css';
 	import type { LayoutProps } from './$types';
 	import { onMount } from 'svelte';
 	import { afterNavigate, onNavigate } from '$app/navigation';

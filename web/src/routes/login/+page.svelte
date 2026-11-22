@@ -315,8 +315,8 @@
 <style>
 	/* Always the app's dark look, whatever theme the viewer picked. */
 	.lg {
-		--bg: #160e10; --surface: #211618; --surface-2: #2e1e20; --line: #3a282b; --line-2: #583b3f;
-		--ink: #faf1ed; --ink-2: #d3c1bf; --ink-3: #b69f9d; --g1: var(--wine-highlight); --g2: var(--wine-rose); --g3: var(--wine-copper); --bad: #ff7b70;
+		--bg: #110d11; --surface: #1a151a; --surface-2: #231d23; --line: #2e262e; --line-2: #3e343e;
+		--ink: #f4eef2; --ink-2: #c9bfc6; --ink-3: #a39aa1; --g1: #9c7bff; --g2: #f25a90; --g3: #ffae6b; --bad: #ff7b70;
 		--grad: linear-gradient(115deg, var(--g1), var(--g2) 52%, var(--g3));
 		--f-display: 'Instrument Serif', Georgia, serif;
 		--f-ui: 'Geist', ui-sans-serif, system-ui, sans-serif;

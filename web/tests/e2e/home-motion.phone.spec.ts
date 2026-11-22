@@ -16,7 +16,7 @@ async function mountHome(page: Page) {
 	}));
 	await page.goto('/__home-motion');
 	await page.evaluate(async () => {
-		for (const file of ['app', 'brand', 'studio', 'desk', 'pro', 'mobile-type', 'mobile', 'atelier', 'dash', 'cred', 'today']) await import(`/src/${file}.css`);
+		for (const file of ['app', 'brand', 'studio', 'desk', 'pro', 'mobile-type', 'mobile', 'atelier', 'dash', 'cred', 'today', 'moods']) await import(`/src/${file}.css`);
 		const statePath = '/src/lib/studio.svelte.ts';
 		const { studio } = await import(statePath);
 		const utilPath = '/src/lib/util.ts';
@@ -54,6 +54,46 @@ async function mountHome(page: Page) {
 	});
 	await expect(page.locator('.phone-today')).toBeVisible();
 }
+
+test('home themes preview, cancel, persist and restore the original palette', async ({ page }) => {
+	await mountHome(page);
+	await page.evaluate(async () => {
+		const source = await (await fetch('/src/lib/components/PhoneToday.svelte')).text();
+		const runtime = source.match(/from\s+["']([^"']*\/svelte\.js[^"']*)["']/)![1];
+		const { mount } = await import(runtime);
+		const pickerPath = '/src/lib/components/MoodPicker.svelte';
+		const { default: Picker } = await import(pickerPath);
+		const header = document.createElement('header');
+		document.body.prepend(header);
+		mount(Picker, { target: header });
+	});
+	const root = page.locator('html');
+	const trigger = page.getByRole('button', { name: 'Choose color theme' });
+	await trigger.click();
+	const dialog = page.getByRole('dialog', { name: 'Color theme' });
+	await expect(dialog.getByRole('radio')).toHaveCount(8);
+	await expect(dialog.getByRole('radio', { name: 'Miracle Original' })).toBeChecked();
+	await dialog.getByText('Velvet Hour').click();
+	await expect(root).toHaveAttribute('data-mood', 'velvet');
+	await expect(page.locator('.qa-card.primary')).toHaveCSS('background-color', 'rgb(112, 43, 50)');
+	await page.keyboard.press('Escape');
+	await expect(root).not.toHaveAttribute('data-mood', /.+/);
+	await trigger.click();
+	await dialog.getByText('Tidal Glass').click();
+	await dialog.getByRole('button', { name: 'Apply theme' }).click();
+	await expect(root).toHaveAttribute('data-mood', 'tidal');
+	expect(await page.evaluate(() => localStorage.getItem('cd.mood'))).toBe('tidal');
+	await trigger.click();
+	await dialog.getByText('Miracle Original').click();
+	await dialog.getByRole('button', { name: 'Apply theme' }).click();
+	await expect(root).not.toHaveAttribute('data-mood', /.+/);
+	expect(await page.evaluate(() => localStorage.getItem('cd.mood'))).toBeNull();
+	await trigger.click();
+	await dialog.getByText('Glacier Signal').click();
+	await dialog.getByRole('button', { name: 'Apply theme' }).click();
+	await page.goto('/studio');
+	await expect(root).toHaveAttribute('data-mood', 'glacier');
+});
 
 test('creator story rings open account summaries and the visible collab rail filters real next steps and DMs', async ({ page }) => {
 	await mountHome(page);

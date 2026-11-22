@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import MoodPicker from './MoodPicker.svelte';
 	import { askAi } from '../ai';
 	import { receivedIn } from '../invoice';
 	import { addLeadAsCollab, lastBrandLines } from '../leads';
@@ -178,6 +179,7 @@
 		<button class="l-search" onclick={() => (ui.searchOpen = true)}>
 			<Icon name="search" /><span>search “{hintBrand}”</span><kbd>{mac ? '⌘K' : 'Ctrl K'}</kbd>
 		</button>
+		<MoodPicker />
 		<button class="l-neo l-grad l-shine l-new" onclick={() => (ui.newCollab = true)}><Icon name="plus" />New collab</button>
 	</header>
 

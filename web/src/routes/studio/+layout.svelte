@@ -3,6 +3,7 @@
 	import { refreshSupportUnread } from '#lib/support.svelte.ts';
 	import { afterNavigate, goto } from '$app/navigation';
 	import Logo from '#lib/components/Logo.svelte';
+	import MoodPicker from '#lib/components/MoodPicker.svelte';
 	import { edgeSwipeBack, goBackOr } from '#lib/back.ts';
 	import { page } from '$app/state';
 	import { onMount, tick, untrack } from 'svelte';
@@ -308,8 +309,11 @@
 		const meta = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
 		if (!meta) return;
 		const before = meta.content;
-		requestAnimationFrame(() => (meta.content = phone.on ? getComputedStyle(document.documentElement).getPropertyValue('--bg').trim() || before : before));
-		return () => (meta.content = before);
+		const sync = () => { meta.content = phone.on ? getComputedStyle(document.body).backgroundColor : before; };
+		const frame = requestAnimationFrame(sync);
+		const observer = new MutationObserver(sync);
+		observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-mood'] });
+		return () => { cancelAnimationFrame(frame); observer.disconnect(); meta.content = before; };
 	});
 
 	// Back online: fetch the latest straight away.
@@ -503,6 +507,7 @@
 							{#if path === '/studio'}<span class="m-live-pill" aria-hidden="true"><i></i>Synced</span>{/if}
 						</div>
 						<div class="m-r">
+							{#if path === '/studio'}<MoodPicker />{/if}
 							{#if path === '/studio/collabs' || path === '/studio/profile'}<button class="m-ib add-btn" onclick={() => (ui.newCollab = true)} aria-label="New collab"><Icon name="plus" /></button>{/if}
 							{#if path === '/studio'}<button class="m-ib m-ask" onclick={() => (ui.askOpen = true)} aria-label="Ask your desk"><Icon name="spark" /></button>{/if}
 							{#if path === '/studio/profile'}
