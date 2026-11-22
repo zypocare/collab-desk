@@ -14,6 +14,7 @@
 	import { homeMotion } from '../homeMotion';
 	import '../../home-motion.css';
 	import Icon from './Icon.svelte';
+	import PlayUpdateCard from './PlayUpdateCard.svelte';
 	import Ticket from './Ticket.svelte';
 	import CycleText from './CycleText.svelte';
 	import DiwaliLayer from './DiwaliLayer.svelte';
@@ -212,6 +213,8 @@
 		</a>
 	</div>
 </section>
+
+	<PlayUpdateCard />
 
 <FoundingBanner />
 

@@ -44,6 +44,7 @@
 	import NudgeList from './NudgeList.svelte';
 	import AwayMode from './AwayMode.svelte';
 	import Icon from './Icon.svelte';
+	import PlayUpdateCard from './PlayUpdateCard.svelte';
 	import Mono from './Mono.svelte';
 	import Stories from './Stories.svelte';
 	import TodayStories from './TodayStories.svelte';
@@ -358,6 +359,8 @@
 		</a>
 	</div>
 </section>
+
+	<PlayUpdateCard />
 
 <TodayStories {monthName} {received} {paidN} {od} {nextPayout} />
 <Stories />

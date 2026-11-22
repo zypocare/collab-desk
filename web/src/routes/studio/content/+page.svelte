@@ -377,4 +377,42 @@
 
 	@keyframes ct-spin { to { --ct-rim: 360deg; } }
 	@media (prefers-reduced-motion: reduce) { .ct-vault, .v-ticker div { animation: none; } }
+
+	@media (max-width: 760px) {
+		:global([data-desk][data-side]) .ct-bento {
+			background: transparent !important;
+			border: 0 !important;
+			border-radius: 0 !important;
+			padding: 0 !important;
+			box-shadow: none !important;
+			margin-bottom: 14px;
+		}
+		:global([data-desk][data-side]) .ct-bento > .panel-h {
+			display: flex;
+			align-items: baseline;
+			justify-content: space-between;
+			gap: 8px;
+			padding: 0 4px 8px !important;
+			margin: 0 !important;
+			border: 0 !important;
+		}
+		:global([data-desk][data-side]) .ct-bento > .panel-h h2 {
+			margin: 0;
+			font: 700 10.5px/1.2 var(--f-mono, ui-monospace, monospace);
+			letter-spacing: 0.13em;
+			text-transform: uppercase;
+			color: var(--ink-3);
+		}
+		:global([data-desk][data-side]) .ct-bento > .panel-h small {
+			font-size: 11.5px;
+			color: var(--ink-3);
+		}
+		:global([data-desk][data-side]) .ct-empty {
+			border-radius: 18px !important;
+			padding: 15px 16px !important;
+			background: linear-gradient(180deg, rgba(28, 22, 32, 0.94) 0%, rgba(20, 15, 23, 0.98) 100%) !important;
+			border: 1px solid rgba(255, 255, 255, 0.08) !important;
+		}
+	}
+
 </style>
