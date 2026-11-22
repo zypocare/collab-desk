@@ -1,6 +1,7 @@
 // Speak instead of typing. Uses the browser's own speech recognition where it has one (Chrome,
-// Safari: free, nothing stored); otherwise records up to a minute and has it written out by the
-// free AI (Whisper on Cloudflare). English, Hindi and Hinglish both ways.
+// Safari: free, nothing stored); inside Android WebView or when built-in speech recognition is
+// unavailable, records up to a minute and has it written out by the free AI (Whisper on Cloudflare).
+// English, Hindi and Hinglish both ways.
 import { askAi } from './ai';
 
 type Rec = {
@@ -13,9 +14,29 @@ type Rec = {
 	start: () => void;
 	stop: () => void;
 };
-const SR = typeof window !== 'undefined' ? ((window as unknown as { SpeechRecognition?: new () => Rec }).SpeechRecognition ?? (window as unknown as { webkitSpeechRecognition?: new () => Rec }).webkitSpeechRecognition) : undefined;
 
-export const canSpeak = () => !!SR || (typeof MediaRecorder !== 'undefined' && !!navigator.mediaDevices?.getUserMedia);
+type CapWin = Window & {
+	Capacitor?: {
+		isNativePlatform?: () => boolean;
+		getPlatform?: () => string;
+	};
+};
+
+const SR =
+	typeof window !== 'undefined'
+		? ((window as unknown as { SpeechRecognition?: new () => Rec }).SpeechRecognition ??
+			(window as unknown as { webkitSpeechRecognition?: new () => Rec }).webkitSpeechRecognition)
+		: undefined;
+
+const isNativeAndroid = () => {
+	if (typeof window === 'undefined') return false;
+	const cap = (window as CapWin).Capacitor;
+	return Boolean(cap?.isNativePlatform?.() && cap.getPlatform?.() === 'android');
+};
+
+const hasRecorder = () => typeof MediaRecorder !== 'undefined' && !!navigator.mediaDevices?.getUserMedia;
+
+export const canSpeak = () => !!SR || hasRecorder();
 
 export type Listening = { stop: () => void };
 type Opts = {
@@ -28,38 +49,26 @@ type Opts = {
 	onWorking?: () => void;
 };
 
-export function listen(o: Opts): Listening {
-	if (SR) {
-		const rec = new SR();
-		rec.lang = 'en-IN';
-		rec.interimResults = true;
-		rec.continuous = false;
-		let text = '';
-		rec.onresult = (e) => {
-			text = Array.from(e.results)
-				.map((r) => r[0].transcript)
-				.join(' ')
-				.replace(/\s+/g, ' ')
-				.trim();
-			o.onText?.(text);
-		};
-		rec.onend = () => o.onDone(text);
-		rec.onerror = (e) => {
-			if (e.error === 'not-allowed' || e.error === 'service-not-allowed') o.onError('Allow the microphone for this site to speak.');
-			else if (e.error !== 'no-speech' && e.error !== 'aborted') o.onError("Couldn't hear that. Try again.");
-		};
-		rec.start();
-		return { stop: () => rec.stop() };
-	}
-	// No built-in recognition: record, then write it out with the free AI.
+const permMsg = () =>
+	isNativeAndroid()
+		? 'Allow microphone permission for Miracle in your phone settings to speak.'
+		: 'Allow the microphone for this site to speak.';
+
+function recordAndTranscribe(o: Opts): Listening {
 	let rec: MediaRecorder | null = null;
 	let stream: MediaStream | null = null;
 	let timer: ReturnType<typeof setTimeout> | undefined;
+	let stoppedEarly = false;
 	const chunks: Blob[] = [];
 	const finish = () => stream?.getTracks().forEach((t) => t.stop());
+
 	navigator.mediaDevices
 		.getUserMedia({ audio: true })
 		.then((s) => {
+			if (stoppedEarly) {
+				s.getTracks().forEach((t) => t.stop());
+				return;
+			}
 			stream = s;
 			rec = new MediaRecorder(s);
 			rec.ondataavailable = (e) => e.data.size && chunks.push(e.data);
@@ -85,6 +94,53 @@ export function listen(o: Opts): Listening {
 			rec.start();
 			timer = setTimeout(() => rec?.state === 'recording' && rec.stop(), 60_000);
 		})
-		.catch(() => o.onError('Allow the microphone for this site to speak.'));
-	return { stop: () => (rec?.state === 'recording' ? rec.stop() : finish()) };
+		.catch(() => o.onError(permMsg()));
+
+	return {
+		stop: () => {
+			stoppedEarly = true;
+			if (rec?.state === 'recording') rec.stop();
+			else finish();
+		}
+	};
+}
+
+export function listen(o: Opts): Listening {
+	// Android WebView does not reliably wire Web Speech API; use MediaRecorder + Whisper directly
+	// so Capacitor prompts for RECORD_AUDIO natively and transcribes cleanly.
+	if (isNativeAndroid() && hasRecorder()) {
+		return recordAndTranscribe(o);
+	}
+
+	if (SR) {
+		const rec = new SR();
+		rec.lang = 'en-IN';
+		rec.interimResults = true;
+		rec.continuous = false;
+		let text = '';
+		let fallback: Listening | null = null;
+		rec.onresult = (e) => {
+			text = Array.from(e.results)
+				.map((r) => r[0].transcript)
+				.join(' ')
+				.replace(/\s+/g, ' ')
+				.trim();
+			o.onText?.(text);
+		};
+		rec.onend = () => {
+			if (!fallback) o.onDone(text);
+		};
+		rec.onerror = (e) => {
+			if (e.error === 'service-not-allowed' && hasRecorder()) {
+				fallback = recordAndTranscribe(o);
+				return;
+			}
+			if (e.error === 'not-allowed' || e.error === 'service-not-allowed') o.onError(permMsg());
+			else if (e.error !== 'no-speech' && e.error !== 'aborted') o.onError("Couldn't hear that. Try again.");
+		};
+		rec.start();
+		return { stop: () => (fallback ? fallback.stop() : rec.stop()) };
+	}
+
+	return recordAndTranscribe(o);
 }

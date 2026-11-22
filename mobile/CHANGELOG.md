@@ -18,8 +18,9 @@ How to ship one:
 
 ## Planned
 
-- Add microphone permission for voice notes and voice typing in the phone app.
-## 1.1.3
+- 
+## 1.1.4
+-  Added microphone permission for voice notes and voice typing in the phone app.
 ## 1.1.3
 - Added Bulk Payouts & Auto-TDS (194J 10% / 194C 2% / 0%) with bank-ready NEFT CSV export and batch UTR mark-paid in Brand Payments
 - Added Creator Growth OS (`/studio/suite`) matching the Creator module UI
