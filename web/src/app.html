@@ -24,7 +24,15 @@
 				var t = localStorage.getItem('cd.theme');
 				if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
 				var mood = localStorage.getItem('cd.mood');
-				if (['velvet','tidal','dusk','mango','cherry','glacier','matcha'].includes(mood)) document.documentElement.dataset.mood = mood;
+				// Carry existing selections into the replacement palettes on first load.
+				var replacements = { tidal: 'peach', glacier: 'nocturne', matcha: 'rose' };
+				if (Object.hasOwn(replacements, mood)) {
+					mood = replacements[mood];
+					document.documentElement.dataset.mood = mood;
+					localStorage.setItem('cd.mood', mood);
+				} else if (['velvet','dusk','mango','cherry','peach','nocturne','rose'].includes(mood)) {
+					document.documentElement.dataset.mood = mood;
+				}
 			} catch (e) {}
 		</script>
 		%sveltekit.head%
