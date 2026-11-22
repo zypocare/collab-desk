@@ -20,6 +20,7 @@
 	import Gauge from '#lib/components/charts/Gauge.svelte';
 	import ReportMenu from '#lib/components/ReportMenu.svelte';
 	import HealthCard from '#lib/components/HealthCard.svelte';
+	import CreatorMemoryCard from '#lib/components/CreatorMemoryCard.svelte';
 	import ProNote from '#lib/components/ProNote.svelte';
 	import { healthChips } from '#lib/health.ts';
 	import { goto } from '$app/navigation';
@@ -269,6 +270,7 @@
 				<section class="sec" data-g="work" data-ic="pieces"><h3 data-sum={ft?.label ?? ''}>Why they fit</h3>{@render fitBlock()}<p class="md-note">From their niche, the audience they share, your past collabs with them and their rates.</p></section>
 				<section class="sec" data-g="brand" data-ic="person"><h3 data-sum={c.with_me.collabs ? `${c.with_me.collabs} request${c.with_me.collabs === 1 ? '' : 's'}` : 'Nothing yet'}>What you did together</h3>{@render togetherBlock()}</section>
 				<section class="sec" data-g="brand" data-ic="case"><h3 data-sum="team only">Your rating &amp; notes</h3>{@render ratingBlock()}</section>
+				<section class="sec" data-g="brand" data-ic="wallet"><h3 data-sum="team only">Negotiation memory</h3><CreatorMemoryCard creatorId={c.id} creatorName={firstName(c.name)} /></section>
 			</div>
 		</div>
 	{:else}
@@ -281,6 +283,7 @@
 		</section>
 
 		<HealthCard health={c.health} name={firstName(c.name)} connected={c.followers != null} />
+		<CreatorMemoryCard creatorId={c.id} creatorName={firstName(c.name)} />
 
 		<!-- Audience -->
 		<section class="md-card rv" style="--i:2">

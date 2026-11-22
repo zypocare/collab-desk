@@ -46,6 +46,7 @@
 		{ label: 'Settings', icons: ['gear', 'users', 'check'], tint: 'var(--g1)', href: '/brand/settings' },
 		{ label: 'Insights', icons: ['chart', 'eye', 'users'], tint: 'var(--g2)', href: '/brand/grow/insights' },
 		{ label: 'Grow', icons: ['spark', 'chart', 'check'], tint: 'var(--g3)', href: '/brand/grow' },
+		{ label: 'Growth OS', icons: ['layers', 'spark', 'rupee'], tint: 'var(--g2)', href: '/brand/suite' },
 		{ label: 'Team', icons: ['users', 'mail', 'check'], tint: 'var(--h-live)', href: '/brand/settings?s=team' },
 		{ label: 'Autopilots', icons: ['layers', 'spark', 'gear'], tint: 'var(--g1)', href: '/brand/autopilots' },
 		{ label: 'Content', icons: ['film', 'image', 'check'], tint: 'var(--g3)', href: '/brand/business/content' },

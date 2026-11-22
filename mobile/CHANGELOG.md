@@ -19,9 +19,18 @@ How to ship one:
 ## Planned
 
 - Add microphone permission for voice notes and voice typing in the phone app.
+## 1.1.2
+- Added No-login founder / client approval links
+- Added Public "Apply to Collab" brand funnel
+- Added Creator CRM & negotiation memory
+- Added 1-click Campaign Wrap-Up Report
+- Added Bank-ready Bulk NEFT + TDS Pack
+- Added Live post watchdog & viral alerts
+- Added Pre-campaign ROI & budget simulator
+- Added YouTube Shorts & UGC-only tracking
 ## 1.1.1
--1-tap smart contracts & ASCI checklist
--Timestamped draft comments & brief checklist
+- 1-tap smart contracts & ASCI checklist
+- Timestamped draft comments & brief checklist
 ## 1.0.9
 - Redesigned My Page collab cards to 3-column Instagram profile grid layout
 - Added Creator Bio Storefront (0%-fee UPI checkout), Creator Wrapped Story cards, 60-second onboarding, Zero-Login Brand CTAs, Shareable Roster Pitch Decks, and Open Briefs Matchmaking
