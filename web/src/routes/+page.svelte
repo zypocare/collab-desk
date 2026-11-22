@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { igImg } from '#lib/igImg.ts';
 	import { slotLabel } from '#lib/postTime.ts';
-	import { erText, headlineEr } from '#lib/engagement.ts';
+	import ProfileEngagement from '#lib/components/ProfileEngagement.svelte';
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { onMount, tick } from 'svelte';
@@ -100,15 +100,13 @@
 		if (!p) return null;
 		const followers = ins?.followers ?? p.instagram?.followers ?? null;
 		if (!followers) return null;
-		// Her Reels engagement in full when Instagram has it (the figure Insights leads with), else across all posts.
-		const er = headlineEr(ins?.insights, ins?.engagement_rate ?? p.instagram?.engagement_rate ?? null);
 		const minis = [
 			{ k: 'Avg views', v: ins?.avg_views ?? p.instagram?.avg_views },
 			{ k: 'Avg reach', v: ins?.avg_reach ?? p.instagram?.avg_reach },
 			{ k: 'Last 30 days', v: ins?.insights?.totals?.views }
 		].filter((m): m is { k: string; v: number } => typeof m.v === 'number' && m.v > 0);
 		const updated = ins?.updated_at ?? p.instagram?.updated_at ?? null;
-		return { followers, posts: ins?.media_count ?? null, er, minis, updated: updated ? dayMonth(new Date(updated)) : '', history: (ins?.history ?? []).map((h) => h.followers).filter((n) => typeof n === 'number') };
+		return { followers, posts: ins?.media_count ?? null, minis, updated: updated ? dayMonth(new Date(updated)) : '', history: (ins?.history ?? []).map((h) => h.followers).filter((n) => typeof n === 'number') };
 	});
 	/** A smooth line through her follower counts, in a 300 × 56 box. */
 	function sparkPath(pts: number[]) {
@@ -625,6 +623,7 @@
 							<div style="display:grid;gap:10px">
 								<span class="mp-eb">Brand collaborations{p.city ? ` · ${p.city}` : ''}</span>
 								{#if status}<span class="mp-status" class:mp-off={status.off}><i></i>{status.text}</span>{/if}
+								{#if !ig}<ProfileEngagement insights={ins?.insights} />{/if}
 							</div>
 						</div>
 						<h1 id="mp-name">
@@ -661,9 +660,7 @@
 								<div style="display:flex;justify-content:space-between;align-items:center"><span class="mp-eb" style="font-size:10.5px">Instagram today</span>{#if ig.updated}<span class="mp-updated">updated {ig.updated}</span>{/if}</div>
 								<div class="mp-big-n">
 									<div><span class="mp-num" use:countUp={{ to: ig.followers, delay: 400 }}></span><p>followers{ig.posts ? ` · ${ig.posts.toLocaleString('en-IN')} posts` : ''}</p></div>
-									{#if ig.er !== null}
-										<div class="mp-orb"><span class="mp-orb-ring" aria-hidden="true"></span><span class="mp-orb-in"><b>{erText(ig.er)}</b><i>engagement</i></span><span class="mp-spk mp-s1" aria-hidden="true"></span><span class="mp-spk mp-s2" aria-hidden="true"></span><span class="mp-spk mp-s3" aria-hidden="true"></span></div>
-									{/if}
+									<ProfileEngagement badge insights={ins?.insights} />
 								</div>
 								{#if spark}
 									<div class="mp-spark" role="img" aria-label="Followers over the last {ig.history.length} days"><svg viewBox="0 0 300 56" preserveAspectRatio="none"><path class="mp-l" d={spark} /></svg></div>
@@ -1634,6 +1631,11 @@
 		gap: 8px 16px;
 		align-items: center;
 	}
+	/* The badge opens across the card below both metrics. */
+	.mp-big-n:has(> :global(.audience-rate)) { grid-template-columns: minmax(0, 1fr) 108px; }
+	.mp-big-n:has(> :global(.audience-rate)) > div { grid-area: 1 / 1; align-self: start; margin-top: 12px; }
+	.mp-big-n > :global(.audience-rate) { grid-area: 1 / 1 / 2 / -1; pointer-events: none; }
+	.mp-big-n > :global(.audience-rate > *) { pointer-events: auto; }
 	.mp-big-n .mp-num {
 		font: 400 76px/0.9 var(--f-display);
 		font-variant-numeric: tabular-nums;
@@ -1641,101 +1643,6 @@
 	.mp-big-n p {
 		margin: 4px 0 0;
 		font-size: 13.5px;
-	}
-	/* Engagement in Today's followers orb: a turning gradient ring with sparkles, a glass middle and the
-	   green "eng." pill. */
-	.mp-orb {
-		position: relative;
-		width: 108px;
-		height: 108px;
-		display: grid;
-		place-items: center;
-		border-radius: 50%;
-		animation: orb-in 0.8s 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
-	}
-	.mp-orb-ring {
-		position: absolute;
-		inset: 0;
-		border-radius: 50%;
-		padding: 3px;
-		background: conic-gradient(from 0deg, var(--g3), var(--g2), var(--g1), transparent 70%, var(--g3));
-		-webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 3px));
-		mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 3px));
-		animation: spin 6s linear infinite;
-	}
-	.mp-orb-in {
-		position: absolute;
-		inset: 9px;
-		border-radius: 50%;
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		justify-content: center;
-		text-align: center;
-		color: var(--ink);
-		background: radial-gradient(circle at 30% 25%, color-mix(in oklab, var(--surface) 70%, transparent), color-mix(in oklab, var(--bg) 55%, transparent));
-		border: 1px solid color-mix(in oklab, var(--ink) 10%, transparent);
-		-webkit-backdrop-filter: blur(14px);
-		backdrop-filter: blur(14px);
-		box-shadow:
-			inset 0 1px 0 rgba(255, 255, 255, 0.08),
-			0 18px 36px -18px color-mix(in oklab, var(--g2) 60%, transparent);
-	}
-	.mp-orb-in b {
-		font: 800 20px/1 var(--f-body);
-		letter-spacing: -0.02em;
-	}
-	.mp-orb-in i {
-		margin-top: 6px;
-		padding: 2px 8px;
-		border-radius: 99px;
-		background: color-mix(in oklab, var(--ok) 18%, transparent);
-		color: var(--ok);
-		font: normal 700 10.5px/1.4 var(--f-body);
-	}
-	.mp-spk {
-		position: absolute;
-		width: 6px;
-		height: 6px;
-		border-radius: 50%;
-		background: #fff;
-		box-shadow: 0 0 10px 2px color-mix(in oklab, var(--g2) 80%, transparent);
-		animation: twinkle 2.8s ease-in-out infinite;
-	}
-	.mp-spk.mp-s1 {
-		top: 3px;
-		left: 19px;
-	}
-	.mp-spk.mp-s2 {
-		bottom: 10px;
-		right: 2px;
-		width: 4px;
-		height: 4px;
-		animation-delay: 0.9s;
-	}
-	.mp-spk.mp-s3 {
-		top: 40px;
-		left: -5px;
-		width: 3px;
-		height: 3px;
-		animation-delay: 1.7s;
-	}
-	@keyframes orb-in {
-		from {
-			opacity: 0;
-			transform: scale(0.6) rotate(-20deg);
-		}
-	}
-	@keyframes twinkle {
-		0%,
-		100% {
-			opacity: 0.2;
-			transform: scale(0.6);
-		}
-		50% {
-			opacity: 1;
-			transform: scale(1.2);
-		}
 	}
 	.mp-spark {
 		height: 56px;

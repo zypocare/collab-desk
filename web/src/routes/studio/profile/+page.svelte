@@ -13,6 +13,7 @@
 	import Avatar from '#lib/components/Avatar.svelte';
 	import QrShareSheet from '#lib/components/QrShareSheet.svelte';
 	import ProfileStrength from '#lib/components/ProfileStrength.svelte';
+	import ProfileEngagement from '#lib/components/ProfileEngagement.svelte';
 	import RingIcons from '#lib/components/RingIcons.svelte';
 
 	// Her profile on the phone, laid out like an Instagram profile: living hero card with photo & stats,
@@ -115,8 +116,9 @@
 				<span class="pf-meta">{[s.city, s.reply_time ? `Replies ${s.reply_time}` : ''].filter(Boolean).join(' · ')}</span>
 			{/if}
 			<span class="pf-meta">
-				<em class="pf-avail" class:paused={!s.accepting}>{s.accepting ? 'Open for collabs' : 'Not taking new requests right now'}</em>{s.engagement ? ` · ${s.engagement} engagement` : ''}
+				<em class="pf-avail" class:paused={!s.accepting}>{s.accepting ? 'Open for collabs' : 'Not taking new requests right now'}</em>
 			</span>
+			<ProfileEngagement insights={ig?.insights} />
 			<div class="pf-link-row">
 				<button type="button" class="pf-link" onclick={() => copyText(link, 'Link copied')}><Icon name="link" /><span>{link.replace(/^https?:\/\//, '')}</span></button>
 				<a class="pf-preview-pill" href="/?preview=1" target="_blank" rel="noopener"><Icon name="eye" />Brand view</a>

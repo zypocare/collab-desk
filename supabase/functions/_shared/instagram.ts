@@ -141,6 +141,8 @@ const real = {
         });
         const out: AccountTotals = {};
         for (const m of r.data ?? []) {
+          // A person can appear on several days. These two counts require a period total.
+          if ((m.name === 'reach' || m.name === 'accounts_engaged') && m.total_value?.value == null) continue;
           const v = m.total_value?.value ?? (m.values ?? []).reduce((a: number, x: { value: number }) => a + (Number(x.value) || 0), 0);
           if (typeof v === 'number') out[m.name] = v;
         }

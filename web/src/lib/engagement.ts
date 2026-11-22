@@ -1,5 +1,4 @@
-// The one engagement figure on Home, My page, the share link and the media kit, the same one Insights leads
-// with: her Reels engagement (her last 12 Reels) when Instagram has it, else the rate across all her posts.
+// Follower-based engagement for Home and share cards: prefer Reels, then all recent posts.
 // Shown in full, as Insights shows it (4.34%, not 4.3% or 4%).
 type WithFormats = { formats?: { reels?: { er?: number | null } } } | Record<string, unknown> | null | undefined;
 

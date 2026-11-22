@@ -268,8 +268,7 @@ export async function runSync(db: SupabaseClient, creator: number, opts: SyncOpt
       token_expires_at: (await db.from('ig_token').select('expires_at').eq('id', creator).single()).data?.expires_at,
     });
     if (saveError) throw new Error(saveError.message);
-    // The brand page shows these. Engagement is her Reels engagement when there is one (what Insights leads with),
-    // else across all posts, in full (4.34%).
+    // Keep the follower-based figure for existing settings and exports. The profile uses insights.totals.
     const shownEr = formats.reels.er || engagement;
     await db.from('creator_settings').update({ followers: short(p.followers_count), ...(shownEr ? { engagement: `${+Number(shownEr).toFixed(2)}%` } : {}) }).eq('id', creator);
 

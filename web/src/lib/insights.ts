@@ -108,6 +108,13 @@ export const monthName = (iso: string) => `${MONTHS[Number(iso.slice(5, 7)) - 1]
  *  then it isn't shown. */
 export const reachOk = (t: Record<string, number> | undefined) => !!t?.reach && t.reach >= (t.accounts_engaged ?? 0);
 
+export function engagedShare(totals: InsightsData['totals']) {
+	const reached = totals?.reach, engaged = totals?.accounts_engaged;
+	if (reached == null || engaged == null || !Number.isSafeInteger(reached) || !Number.isSafeInteger(engaged)
+		|| reached <= 0 || engaged < 0 || engaged > reached) return null;
+	return { reached, engaged, percent: (100 * engaged / reached).toFixed(1) };
+}
+
 /** % change from the previous 30 days, or null when there's nothing to compare with. */
 export function change(cur: number | undefined, prev: number | undefined) {
 	if (!cur || !prev) return null;
@@ -138,9 +145,9 @@ export function insightKpis(d: PublicInsights): Kpi[] {
 		{ k: 'Views', v: t.views, sub: '30 days', ch: change(t.views, pv.views) },
 		{ k: 'Accounts engaged', v: t.accounts_engaged, sub: '30 days', ch: change(t.accounts_engaged, pv.accounts_engaged) },
 		// The headline rate is the Reels one (what brands mostly book), labelled as such; all posts if no Reels.
-		f?.reels?.er
-			? { k: 'Reels engagement rate', v: f.reels.er, sub: `based on ${basedOn(f.reels)} Reel${basedOn(f.reels) === 1 ? '' : 's'}`, ch: null, pct: true }
-			: { k: 'Engagement rate', v: d.engagement_rate, sub: 'per post, last 12', ch: null, pct: true },
+		f?.reels?.er != null
+			? { k: 'Reels engagement by followers', v: f.reels.er, sub: `Last ${f.reels.posts} Reel${f.reels.posts === 1 ? '' : 's'}`, ch: null, pct: true }
+			: { k: 'Post engagement by followers', v: d.engagement_rate, sub: 'Up to 12 recent posts', ch: null, pct: true },
 		{ k: 'Interactions', v: t.total_interactions, sub: '30 days', ch: change(t.total_interactions, pv.total_interactions) },
 		{ k: 'Avg. Reel views', v: f?.reels.avg_views ?? d.avg_views, sub: f?.reels.posts ? `based on ${basedOn(f.reels)} Reel${basedOn(f.reels) === 1 ? '' : 's'}` : 'recent posts', ch: null },
 		// How long people watch a Reel, on average per view (from Instagram).
@@ -148,7 +155,7 @@ export function insightKpis(d: PublicInsights): Kpi[] {
 		// Only when she shows Stories (the server leaves them out otherwise); her own average if she typed one.
 		{ k: 'Avg. Story reach', v: f?.stories?.avg_reach, sub: f?.stories?.manual ? 'per Story' : f?.stories?.posts ? `${f.stories.posts} Stories` : '', ch: null }
 	];
-	return all.filter((x): x is Kpi => typeof x.v === 'number' && x.v > 0);
+	return all.filter((x): x is Kpi => typeof x.v === 'number' && (x.v > 0 || (x.pct === true && x.v === 0)));
 }
 
 /** Likes, comments, shares and saves over the 30 days. */
