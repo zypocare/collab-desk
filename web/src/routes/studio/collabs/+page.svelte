@@ -118,6 +118,8 @@
 				(!q.trim() || `${c.brand.name} ${c.code} ${c.brand.category} ${c.brand.instagram} ${c.contact_name}`.toLowerCase().includes(q.trim().toLowerCase()))
 		)
 	);
+	// Cash coming into the bank account only (excludes barter & product value).
+	const cashFee = (c: Collab) => (c.type === 'barter' ? 0 : Number(c.fee) || 0);
 	const key = (d: string | null) => (d ? parse(d).getTime() : 0);
 	const columns = $derived(
 		[...(STAGES as { id: Col; label: string; pub: string }[]), ...(visible.some((c) => c.someday) ? [SOMEDAY] : []), ...HELD_STAGES.filter((s) => visible.some((c) => c.stage === s.id)), ...(showDeclined ? [{ id: 'declined' as Col, label: 'Declined', pub: '' }] : [])].map((s) => {
@@ -129,7 +131,7 @@
 					const ka = key(a.draft_date || a.live_date || a.received_on), kb = key(b.draft_date || b.live_date || b.received_on);
 					return s.id === 'wrapped' || s.id === 'declined' ? kb - ka : ka - kb;
 				});
-			return { s, cs, sum: cs.reduce((a, c) => a + c.fee + c.product_value, 0) };
+			return { s, cs, sum: cs.reduce((a, c) => a + cashFee(c), 0) };
 		})
 	);
 	// Phone: a list instead of the board, filtered by stage with a row of chips.
@@ -144,14 +146,14 @@
 	const mgroups = $derived(
 		[...STAGES, SOMEDAY, ...HELD_STAGES, { id: 'declined' as Stage, label: 'Declined' }]
 			.map((s) => ({ s, cs: columns.find((x) => x.s.id === s.id)?.cs ?? visible.filter((c) => colOf(c) === s.id) }))
-			.map((g) => ({ ...g, sum: g.cs.reduce((a, c) => a + c.fee + c.product_value, 0) }))
+			.map((g) => ({ ...g, sum: g.cs.reduce((a, c) => a + cashFee(c), 0) }))
 			.filter((g) => g.cs.length && (mstage === 'active' ? ACTIVE.includes(g.s.id as Stage) : g.s.id === mstage))
 	);
 	// The pipeline card (phones): a tile per stage of the board, three to a row, from new requests to done.
 	const PIPE_TILES: [Stage, string][] = [['request', 'New'], ['negotiating', 'In talks'], ['confirmed', 'Confirmed'], ['creating', 'Creating'], ['live', 'Live'], ['wrapped', 'Done']];
 	const activeList = $derived(visible.filter((c) => ACTIVE.includes(c.stage) && !c.someday));
 	const activeN = $derived(activeList.length);
-	const pipeValue = $derived(activeList.reduce((a, c) => a + (c.type === 'barter' ? 0 : Number(c.fee) || 0), 0));
+	const pipeValue = $derived(activeList.reduce((a, c) => a + cashFee(c), 0));
 	const pipeProducts = $derived(activeList.reduce((a, c) => a + (c.type === 'paid' ? 0 : Number(c.product_value) || 0), 0));
 	const waiting = $derived(visible.filter((c) => c.stage === 'request' && !c.someday).length);
 	const pipeStages = $derived(ACTIVE.map((id) => ({ id, n: activeList.filter((c) => c.stage === id).length })));
@@ -187,7 +189,7 @@
 		}
 	});
 	const listRows = $derived(visible.filter((c) => (lstage === 'all' ? showDeclined || c.stage !== 'declined' : colOf(c) === lstage)));
-	const stageValue = (id: Stage) => activeList.filter((c) => c.stage === id).reduce((a, c) => a + (Number(c.fee) || 0) + (Number(c.product_value) || 0), 0);
+	const stageValue = (id: Stage) => activeList.filter((c) => c.stage === id).reduce((a, c) => a + cashFee(c), 0);
 	function showStage(id: Stage) {
 		lstage = view === 'list' && lstage === id ? 'all' : id;
 		view = 'list';
