@@ -186,252 +186,669 @@
 
 <svelte:head><title>Brand Growth OS · Miracle</title></svelte:head>
 
-<div class="os-wrap">
-	<header class="os-head">
-		<span class="os-eb">Brand Growth OS · All-in-One Suite</span>
-		<h1>Run your <em>entire</em> show here.</h1>
-		<p>Approvals, inbound creator funnel, ROI planner, YouTube Shorts watchdog, Bulk NEFT + TDS, and executive wrap-ups.</p>
+<div class="md-wrap">
+	<header class="md-head">
+		<h1>Brand Growth OS</h1>
+		<p>Approvals, inbound creator funnel, ROI planner, YouTube Shorts watchdog, Bulk NEFT + TDS, and campaign wrap-ups.</p>
 	</header>
 
-	<nav class="os-pills" aria-label="Brand OS tools">
-		<button type="button" class="os-pill" class:on={tab === 'approvals'} onclick={() => (tab = 'approvals')}>Approvals</button>
-		<button type="button" class="os-pill" class:on={tab === 'apply'} onclick={() => (tab = 'apply')}>Apply Funnel</button>
-		<button type="button" class="os-pill" class:on={tab === 'roi'} onclick={() => (tab = 'roi')}>ROI Planner</button>
-		<button type="button" class="os-pill" class:on={tab === 'watchdog'} onclick={() => (tab = 'watchdog')}>Watchdog &amp; Shorts</button>
-		<button type="button" class="os-pill" class:on={tab === 'finance'} onclick={() => (tab = 'finance')}>NEFT &amp; Wrap-Up</button>
+	<nav class="md-tabs" aria-label="Brand OS tools">
+		<button type="button" class="md-tab" class:on={tab === 'approvals'} onclick={() => (tab = 'approvals')}>Approvals</button>
+		<button type="button" class="md-tab" class:on={tab === 'apply'} onclick={() => (tab = 'apply')}>Apply Funnel</button>
+		<button type="button" class="md-tab" class:on={tab === 'roi'} onclick={() => (tab = 'roi')}>ROI Planner</button>
+		<button type="button" class="md-tab" class:on={tab === 'watchdog'} onclick={() => (tab = 'watchdog')}>Watchdog</button>
+		<button type="button" class="md-tab" class:on={tab === 'finance'} onclick={() => (tab = 'finance')}>NEFT &amp; Wrap-Up</button>
 	</nav>
 
 	{#if tab === 'approvals'}
-		<div class="os-grid">
-			<section class="os-card">
-				<span class="os-eb">No-Login Founder / Client Sign-Off</span>
-				<h2>Create approval link</h2>
-				<form class="os-form" onsubmit={makeApproval}>
-					<div class="os-chips">
-						<button type="button" class="os-chip" class:on={apKind === 'shortlist'} onclick={() => (apKind = 'shortlist')}>Creator Shortlist</button>
-						<button type="button" class="os-chip" class:on={apKind === 'draft'} onclick={() => (apKind = 'draft')}>Reel Draft</button>
+		<section class="md-sec">
+			<div class="md-sec-h">
+				<div>
+					<h2>Create approval link</h2>
+					<p>Get 1-tap founder or client sign-off without requiring a login.</p>
+				</div>
+			</div>
+			<form class="md-form" onsubmit={makeApproval}>
+				<div class="md-f">
+					<span class="md-lbl">Approval type</span>
+					<div class="md-seg">
+						<button type="button" class:on={apKind === 'shortlist'} onclick={() => (apKind = 'shortlist')}>Creator Shortlist</button>
+						<button type="button" class:on={apKind === 'draft'} onclick={() => (apKind = 'draft')}>Reel Draft</button>
 					</div>
-					<input class="os-inp" placeholder="Title (e.g. Diwali Shortlist · 6 Creators)" bind:value={apTitle} required />
-					<textarea class="os-ta" rows="2" placeholder="Optional note for founder or client…" bind:value={apSummary}></textarea>
-					<button type="submit" class="os-grad" disabled={apBusy}>{#if apBusy}<span class="spinner"></span>Creating…{:else}Create &amp; copy link{/if}</button>
-				</form>
-			</section>
+				</div>
+				<div class="md-fields">
+					<div class="md-f span2">
+						<label class="md-lbl" for="bo-title">Title</label>
+						<input class="md-inp" id="bo-title" placeholder="Diwali Shortlist · 6 Creators" bind:value={apTitle} required />
+					</div>
+					<div class="md-f span2">
+						<label class="md-lbl" for="bo-sum">Note for founder or client</label>
+						<textarea class="md-ta" id="bo-sum" rows="2" placeholder="Optional context or deliverables summary…" bind:value={apSummary}></textarea>
+					</div>
+				</div>
+				<div class="md-acts">
+					<button type="submit" class="md-btn-grad" disabled={apBusy}>
+						{#if apBusy}<span class="spinner"></span>Creating…{:else}<Icon name="check" />Create &amp; copy link{/if}
+					</button>
+				</div>
+			</form>
+		</section>
 
-			<section class="os-card">
-				<span class="os-eb">Recent Approval Links ({approvals.length})</span>
-				<h2>Sign-off tracker</h2>
-				{#each approvals as a (a.token)}
-					<div class="os-row">
-						<div>
-							<b>{a.title}</b>
-							<small>{a.status === 'pending' ? 'Waiting for sign-off' : `${a.status} by ${a.reviewer_name}`}</small>
+		<section class="md-sec">
+			<div class="md-sec-h">
+				<div>
+					<h2>Sign-off tracker ({approvals.length})</h2>
+					<p>Recent approval links shared with founders or clients.</p>
+				</div>
+			</div>
+			{#if approvals.length}
+				<div class="md-list">
+					{#each approvals as a (a.token)}
+						<div class="md-row">
+							<div>
+								<b>{a.title}</b>
+								<small>{a.status === 'pending' ? 'Waiting for sign-off' : `${a.status} by ${a.reviewer_name}`}</small>
+							</div>
+							<button type="button" class="md-btn-ghost" onclick={() => copyText(`${location.origin}/approve/${a.token}`, 'Link copied')}>Copy link</button>
 						</div>
-						<button type="button" class="os-soft" onclick={() => copyText(`${location.origin}/approve/${a.token}`, 'Link copied')}>Copy</button>
-					</div>
-				{:else}
-					<p class="os-note">No approval links yet. Create one to get 1-tap founder sign-off without requiring a login.</p>
-				{/each}
-			</section>
-		</div>
+					{/each}
+				</div>
+			{:else}
+				<p class="md-note">No approval links yet. Create one above to share over WhatsApp or Slack.</p>
+			{/if}
+		</section>
+
 	{:else if tab === 'apply'}
-		<div class="os-grid">
-			<section class="os-card os-wide">
-				<div class="os-row-h">
-					<div>
-						<span class="os-eb">Public Bio Link · Zero DMs</span>
-						<h2>Your "Apply to Collab" page</h2>
-					</div>
-					<button type="button" class="os-grad" onclick={() => copyText(applyUrl, 'Apply link copied')}>Copy Bio Link</button>
+		<section class="md-sec">
+			<div class="md-sec-h">
+				<div>
+					<h2>Apply to Collab page</h2>
+					<p>Paste this link in your Instagram bio to capture creator applications without DMs.</p>
 				</div>
-				<div class="os-linkbox">{applyUrl}</div>
-				<div class="os-chips">
-					<button type="button" class="os-chip" class:on={appFilter === 'all'} onclick={() => (appFilter = 'all')}>All ({apps.filter((x) => x.status !== 'archived').length})</button>
-					<button type="button" class="os-chip" class:on={appFilter === 'new'} onclick={() => (appFilter = 'new')}>New</button>
-					<button type="button" class="os-chip" class:on={appFilter === 'shortlisted'} onclick={() => (appFilter = 'shortlisted')}>Shortlisted</button>
+				<button type="button" class="md-btn-grad" onclick={() => copyText(applyUrl, 'Apply link copied')}><Icon name="check" />Copy bio link</button>
+			</div>
+			<div class="md-linkline">{applyUrl}</div>
+			<div class="md-seg">
+				<button type="button" class:on={appFilter === 'all'} onclick={() => (appFilter = 'all')}>All ({apps.filter((x) => x.status !== 'archived').length})</button>
+				<button type="button" class:on={appFilter === 'new'} onclick={() => (appFilter = 'new')}>New</button>
+				<button type="button" class:on={appFilter === 'shortlisted'} onclick={() => (appFilter = 'shortlisted')}>Shortlisted</button>
+			</div>
+			{#if filteredApps.length}
+				<div class="md-list">
+					{#each filteredApps as a (a.id)}
+						<div class="md-row">
+							<div>
+								<b>{a.creator_name} · @{a.handle}</b>
+								<small>{compact(a.followers)} followers · {a.engagement}% eng · {a.reel_rate ? inr(a.reel_rate) : 'Rate on ask'} · {a.city || a.niche}</small>
+							</div>
+							<div class="md-row-acts">
+								<button type="button" class="md-btn-ghost" onclick={() => setAppStatus(a.id, 'shortlisted')}>Shortlist</button>
+								<button type="button" class="md-btn-ghost" onclick={() => setAppStatus(a.id, 'archived')}>Archive</button>
+							</div>
+						</div>
+					{/each}
 				</div>
-				{#each filteredApps as a (a.id)}
-					<div class="os-row">
-						<div>
-							<b>{a.creator_name} · @{a.handle}</b>
-							<small>{compact(a.followers)} followers · {a.engagement}% eng · {a.reel_rate ? inr(a.reel_rate) : 'Rate on ask'} · {a.city || a.niche}</small>
-						</div>
-						<div style="display:flex;gap:6px">
-							<button type="button" class="os-soft" onclick={() => setAppStatus(a.id, 'shortlisted')}>Shortlist</button>
-							<button type="button" class="os-soft" onclick={() => setAppStatus(a.id, 'archived')}>Archive</button>
-						</div>
-					</div>
-				{:else}
-					<p class="os-note">No creator applications yet. Paste your Apply link into your Instagram bio to capture inbound creators automatically.</p>
-				{/each}
-			</section>
-		</div>
+			{:else}
+				<p class="md-note">No creator applications yet. Share your Apply link in your bio to receive inbound creators automatically.</p>
+			{/if}
+		</section>
+
 	{:else if tab === 'roi'}
-		<div class="os-grid">
-			<section class="os-card">
-				<span class="os-eb">Pre-Campaign Simulator</span>
-				<h2>Budget &amp; creator mix</h2>
-				<div class="os-form">
-					<label class="os-lbl"><span>Campaign Budget: <b>{inr(simBudget)}</b></span><input type="range" min="25000" max="1000000" step="25000" bind:value={simBudget} /></label>
-					<label class="os-lbl"><span>Nano Share (₹6k avg): <b>{simNano}%</b></span><input type="range" min="0" max="100" step="5" bind:value={simNano} /></label>
-					<label class="os-lbl"><span>Micro Share (₹18k avg): <b>{simMicro}%</b></span><input type="range" min="0" max="100" step="5" bind:value={simMicro} /></label>
-					<label class="os-lbl"><span>Macro Share (₹55k avg): <b>{simMacro}%</b></span><input type="range" min="0" max="100" step="5" bind:value={simMacro} /></label>
-					<div class="os-two">
-						<label class="os-lbl"><span>Avg Order Value (₹)</span><input class="os-inp" type="number" min="100" bind:value={simAov} /></label>
-						<label class="os-lbl"><span>Click→Order %</span><input class="os-inp" type="number" step="0.2" min="0.2" bind:value={simConv} /></label>
+		<section class="md-sec">
+			<div class="md-sec-h">
+				<div>
+					<h2>Budget &amp; creator mix</h2>
+					<p>Simulate creator count, views, CPV, and break-even orders before spending.</p>
+				</div>
+			</div>
+			<div class="md-form">
+				<div class="md-f">
+					<label class="md-lbl" for="sim-budget">Campaign budget · <b>{inr(simBudget)}</b></label>
+					<input class="md-range" id="sim-budget" type="range" min="25000" max="1000000" step="25000" bind:value={simBudget} />
+				</div>
+				<div class="md-f">
+					<label class="md-lbl" for="sim-nano">Nano share (₹6k avg) · <b>{simNano}%</b></label>
+					<input class="md-range" id="sim-nano" type="range" min="0" max="100" step="5" bind:value={simNano} />
+				</div>
+				<div class="md-f">
+					<label class="md-lbl" for="sim-micro">Micro share (₹18k avg) · <b>{simMicro}%</b></label>
+					<input class="md-range" id="sim-micro" type="range" min="0" max="100" step="5" bind:value={simMicro} />
+				</div>
+				<div class="md-f">
+					<label class="md-lbl" for="sim-macro">Macro share (₹55k avg) · <b>{simMacro}%</b></label>
+					<input class="md-range" id="sim-macro" type="range" min="0" max="100" step="5" bind:value={simMacro} />
+				</div>
+				<div class="md-fields">
+					<div class="md-f">
+						<label class="md-lbl" for="sim-aov">Average order value</label>
+						<div class="md-pre"><span>₹</span><input class="md-inp num" id="sim-aov" type="number" min="100" bind:value={simAov} /></div>
+					</div>
+					<div class="md-f">
+						<label class="md-lbl" for="sim-conv">Click-to-order %</label>
+						<input class="md-inp num" id="sim-conv" type="number" step="0.2" min="0.2" bind:value={simConv} />
 					</div>
 				</div>
-			</section>
+			</div>
+		</section>
 
-			<section class="os-card">
-				<span class="os-eb">Forecasted Outcome</span>
-				<h2>Expected ROI</h2>
-				<div class="os-kpis">
-					<div><small>Est. Creators</small><b>{sim.creators}</b></div>
-					<div><small>Est. Views</small><b>{compact(sim.estViews)}</b></div>
-					<div><small>Est. CPV</small><b>₹{sim.estCpv.toFixed(2)}</b></div>
-					<div><small>Est. Orders</small><b>{sim.estOrders}</b></div>
-					<div><small>Est. Revenue</small><b class="ok">{inr(sim.estRevenue)}</b></div>
-					<div><small>Projected ROAS</small><b class="ok">{sim.roas.toFixed(1)}×</b></div>
+		<section class="md-sec">
+			<div class="md-sec-h">
+				<div>
+					<h2>Expected ROI</h2>
+					<p>Break-even target: <b>{sim.breakEvenOrders} orders</b> at {inr(simAov)} AOV.</p>
 				</div>
-				<p class="os-note">Break-even target: <b>{sim.breakEvenOrders} orders</b> at {inr(simAov)} AOV.</p>
-			</section>
-		</div>
+			</div>
+			<div class="md-kpis">
+				<div class="md-kpi"><small>Est. creators</small><b>{sim.creators}</b></div>
+				<div class="md-kpi"><small>Est. views</small><b>{compact(sim.estViews)}</b></div>
+				<div class="md-kpi"><small>Est. CPV</small><b>₹{sim.estCpv.toFixed(2)}</b></div>
+				<div class="md-kpi"><small>Est. orders</small><b>{sim.estOrders}</b></div>
+				<div class="md-kpi"><small>Est. revenue</small><b class="ok">{inr(sim.estRevenue)}</b></div>
+				<div class="md-kpi"><small>Projected ROAS</small><b class="ok">{sim.roas.toFixed(1)}×</b></div>
+			</div>
+		</section>
+
 	{:else if tab === 'watchdog'}
-		<div class="os-grid">
-			<section class="os-card">
-				<span class="os-eb">Instagram · YouTube Shorts · Raw UGC</span>
-				<h2>Track a live post or asset</h2>
-				<form class="os-form" onsubmit={addMonitor}>
-					<div class="os-chips">
-						<button type="button" class="os-chip" class:on={mPlatform === 'instagram'} onclick={() => (mPlatform = 'instagram')}>Instagram</button>
-						<button type="button" class="os-chip" class:on={mPlatform === 'youtube_shorts'} onclick={() => (mPlatform = 'youtube_shorts')}>YouTube Shorts</button>
-						<button type="button" class="os-chip" class:on={mPlatform === 'ugc_raw'} onclick={() => (mPlatform = 'ugc_raw')}>Raw UGC</button>
-					</div>
-					<input class="os-inp" placeholder="Creator name" bind:value={mCreator} required />
-					<input class="os-inp" type="url" placeholder="https://youtube.com/shorts/… or Reel / Drive URL" bind:value={mUrl} required />
-					<div class="os-two">
-						<input class="os-inp" type="number" min="0" placeholder="48h views" bind:value={m48} />
-						<input class="os-inp" type="number" min="0" placeholder="7d views" bind:value={m7} />
-					</div>
-					<button type="submit" class="os-grad" disabled={mBusy}>{#if mBusy}<span class="spinner"></span>Saving…{:else}Add to Watchdog{/if}</button>
-				</form>
-			</section>
-
-			<section class="os-card">
-				<span class="os-eb">Watchdog &amp; Viral Alerts ({monitors.length})</span>
-				<h2>Monitored posts</h2>
-				{#each monitors as m (m.id)}
-					<div class="os-row">
-						<div>
-							<b>{m.creator_name} · {m.platform.replace('_', ' ')}</b>
-							<small>48h: {compact(m.views_48h)} · 7d: {compact(m.views_7d)} · Status: {m.status}</small>
-						</div>
-						<div style="display:flex;gap:6px">
-							<button type="button" class="os-soft" onclick={() => setMonitorState(m.id, m.status === 'missing' ? 'live' : 'missing')}>{m.status === 'missing' ? 'Mark live' : 'Flag missing'}</button>
-						</div>
-					</div>
-				{:else}
-					<p class="os-note">No monitored posts yet. Add YouTube Shorts, Reels, or raw UGC assets to track 48h/7d spikes and flag deleted posts.</p>
-				{/each}
-			</section>
-		</div>
-	{:else}
-		<div class="os-grid">
-			<section class="os-card">
-				<span class="os-eb">Finance Pack · Zero Gateway Fee</span>
-				<h2>Bank-ready Bulk NEFT + TDS CSV</h2>
-				<p class="os-note">Exports every creator's gross fee, 18% GST, auto-calculated TDS deduction, and net payable amount in a bank-ready CSV.</p>
-				<div class="os-chips">
-					<button type="button" class="os-chip" class:on={tdsPct === 10} onclick={() => (tdsPct = 10)}>194J · 10% TDS</button>
-					<button type="button" class="os-chip" class:on={tdsPct === 2} onclick={() => (tdsPct = 2)}>194C · 2% TDS</button>
+		<section class="md-sec">
+			<div class="md-sec-h">
+				<div>
+					<h2>Track a live post or asset</h2>
+					<p>Monitor Instagram Reels, YouTube Shorts, and raw UGC assets for viral spikes or missing posts.</p>
 				</div>
-				<button type="button" class="os-grad" onclick={exportNeft}><Icon name="download" />Download Bulk NEFT CSV</button>
-			</section>
+			</div>
+			<form class="md-form" onsubmit={addMonitor}>
+				<div class="md-f">
+					<span class="md-lbl">Platform</span>
+					<div class="md-seg">
+						<button type="button" class:on={mPlatform === 'instagram'} onclick={() => (mPlatform = 'instagram')}>Instagram</button>
+						<button type="button" class:on={mPlatform === 'youtube_shorts'} onclick={() => (mPlatform = 'youtube_shorts')}>YT Shorts</button>
+						<button type="button" class:on={mPlatform === 'ugc_raw'} onclick={() => (mPlatform = 'ugc_raw')}>Raw UGC</button>
+					</div>
+				</div>
+				<div class="md-fields">
+					<div class="md-f">
+						<label class="md-lbl" for="wd-creator">Creator</label>
+						<input class="md-inp" id="wd-creator" placeholder="Creator name" bind:value={mCreator} required />
+					</div>
+					<div class="md-f">
+						<label class="md-lbl" for="wd-url">Post or Drive link</label>
+						<input class="md-inp" id="wd-url" type="url" placeholder="https://youtube.com/shorts/…" bind:value={mUrl} required />
+					</div>
+					<div class="md-f">
+						<label class="md-lbl" for="wd-48">48h views</label>
+						<input class="md-inp num" id="wd-48" type="number" min="0" placeholder="0" bind:value={m48} />
+					</div>
+					<div class="md-f">
+						<label class="md-lbl" for="wd-7">7d views</label>
+						<input class="md-inp num" id="wd-7" type="number" min="0" placeholder="0" bind:value={m7} />
+					</div>
+				</div>
+				<div class="md-acts">
+					<button type="submit" class="md-btn-grad" disabled={mBusy}>
+						{#if mBusy}<span class="spinner"></span>Saving…{:else}<Icon name="check" />Add to watchdog{/if}
+					</button>
+				</div>
+			</form>
+		</section>
 
-			<section class="os-card">
-				<span class="os-eb">Board &amp; Client Deck</span>
-				<h2>1-Click Campaign Wrap-Up PDF</h2>
-				<p class="os-note">Generates an executive recap with Total Spend, Total Views, CPV, Top Performing Creators, and Claimable GST/TDS ready for printing or PDF export.</p>
-				<button type="button" class="os-grad" onclick={exportWrapUp}><Icon name="download" />Generate Wrap-Up PDF</button>
-			</section>
-		</div>
+		<section class="md-sec">
+			<div class="md-sec-h">
+				<div>
+					<h2>Monitored posts ({monitors.length})</h2>
+					<p>Flag deleted posts or spot viral performers early.</p>
+				</div>
+			</div>
+			{#if monitors.length}
+				<div class="md-list">
+					{#each monitors as m (m.id)}
+						<div class="md-row">
+							<div>
+								<b>{m.creator_name} · {m.platform.replace('_', ' ')}</b>
+								<small>48h: {compact(m.views_48h)} · 7d: {compact(m.views_7d)} · Status: {m.status}</small>
+							</div>
+							<button type="button" class="md-btn-ghost" onclick={() => setMonitorState(m.id, m.status === 'missing' ? 'live' : 'missing')}>{m.status === 'missing' ? 'Mark live' : 'Flag missing'}</button>
+						</div>
+					{/each}
+				</div>
+			{:else}
+				<p class="md-note">No monitored posts yet. Add YouTube Shorts, Reels, or raw UGC assets above.</p>
+			{/if}
+		</section>
+
+	{:else}
+		<section class="md-sec">
+			<div class="md-sec-h">
+				<div>
+					<h2>Bank-ready Bulk NEFT + TDS CSV</h2>
+					<p>Exports gross fee, 18% GST, auto-calculated TDS deduction, and net payable amount with zero gateway fee.</p>
+				</div>
+			</div>
+			<div class="md-f">
+				<span class="md-lbl">TDS section</span>
+				<div class="md-seg">
+					<button type="button" class:on={tdsPct === 10} onclick={() => (tdsPct = 10)}>194J · 10% TDS</button>
+					<button type="button" class:on={tdsPct === 2} onclick={() => (tdsPct = 2)}>194C · 2% TDS</button>
+				</div>
+			</div>
+			<div class="md-acts">
+				<button type="button" class="md-btn-grad" onclick={exportNeft}><Icon name="download" />Download Bulk NEFT CSV</button>
+			</div>
+		</section>
+
+		<section class="md-sec">
+			<div class="md-sec-h">
+				<div>
+					<h2>1-click Campaign Wrap-Up PDF</h2>
+					<p>Generates an executive recap with total spend, views, CPV, top creators, and claimable GST/TDS.</p>
+				</div>
+			</div>
+			<div class="md-acts">
+				<button type="button" class="md-btn-grad" onclick={exportWrapUp}><Icon name="download" />Generate Wrap-Up PDF</button>
+			</div>
+		</section>
 	{/if}
 </div>
 
 <style>
-	.os-wrap { display: grid; gap: 16px; color: #faf7fc; }
-	.os-head h1 { margin: 4px 0 6px; font: 400 clamp(28px, 5vw, 38px)/1.06 var(--f-serif, Georgia, serif); }
-	.os-head h1 em { font-style: italic; background: linear-gradient(90deg, #9c7bff, #f25a90, #ffae6b); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
-	.os-head p { margin: 0; font-size: 13px; color: #8f8499; }
-	.os-eb {
-		display: inline-block; font: 700 10px/1.2 var(--f-mono, ui-monospace, monospace);
-		letter-spacing: 0.12em; text-transform: uppercase;
-		background: linear-gradient(90deg, #9c7bff, #f25a90, #ffae6b);
-		-webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+	.md-wrap {
+		max-width: 780px;
+		margin: 0 auto;
+		padding: 6px 2px 84px;
+		display: grid;
+		gap: 20px;
 	}
-	.os-pills { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding: 2px 0; }
-	.os-pill {
-		flex-shrink: 0; padding: 9px 14px; border-radius: 11px;
-		background: #1a141d; border: 1px solid rgba(255, 255, 255, 0.1);
-		color: #cfc6d6; font: 700 12px/1 var(--f-body, system-ui, sans-serif); cursor: pointer;
-	}
-	.os-pill.on { background: #faf7fc; color: #140e16; border-color: #faf7fc; box-shadow: 0 3px 0 0 #f25a90; }
 
-	.os-grid { display: grid; grid-template-columns: 1fr; gap: 14px; }
-	@media (min-width: 840px) { .os-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .os-wide { grid-column: span 2; } }
+	.md-head {
+		display: grid;
+		gap: 6px;
+	}
+	.md-head h1 {
+		margin: 0;
+		font: 400 clamp(28px, 6vw, 36px)/1.08 var(--f-serif, Georgia, serif);
+		letter-spacing: -0.01em;
+		color: var(--ink, #faf7fc);
+	}
+	.md-head p {
+		margin: 0;
+		font-size: 13.5px;
+		line-height: 1.5;
+		color: var(--ink-3, #9b8fa8);
+		max-width: 58ch;
+	}
 
-	.os-card {
-		padding: 18px; border-radius: 22px;
-		background: linear-gradient(180deg, rgba(31, 24, 34, 0.94) 0%, rgba(21, 16, 23, 0.98) 100%);
-		border: 1px solid rgba(255, 255, 255, 0.09);
-		display: grid; gap: 12px; align-content: start;
+	/* Sharp NeoPOP sub-navigation strip matching Miracle top tabs */
+	.md-tabs {
+		display: flex;
+		overflow-x: auto;
+		scrollbar-width: none;
+		border: 1px solid rgba(255, 255, 255, 0.12);
+		background: rgba(255, 255, 255, 0.02);
 	}
-	.os-card h2 { margin: 2px 0 0; font: 400 24px/1.1 var(--f-serif, Georgia, serif); }
-	.os-row-h { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
-	.os-form { display: grid; gap: 10px; }
-	.os-two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-	.os-chips { display: flex; flex-wrap: wrap; gap: 7px; }
-	.os-chip {
-		padding: 7px 11px; border-radius: 9px; background: #241c27;
-		border: 1px solid rgba(255, 255, 255, 0.14); color: #cfc6d6; font: 600 12px/1 var(--f-body, system-ui, sans-serif); cursor: pointer;
+	.md-tabs::-webkit-scrollbar {
+		display: none;
 	}
-	.os-chip.on { background: #faf7fc; color: #140e16; border-color: #faf7fc; box-shadow: 0 2px 0 0 #f25a90; }
-	.os-inp, .os-ta {
-		width: 100%; padding: 11px 13px; box-sizing: border-box; border-radius: 12px;
-		background: rgba(12, 9, 14, 0.9); border: 1px solid rgba(255, 255, 255, 0.15);
-		color: #faf7fc; font: 400 14px/1.35 var(--f-body, system-ui, sans-serif); outline: none;
+	.md-tab {
+		flex: 1 0 auto;
+		padding: 12px 14px;
+		border: 0;
+		border-right: 1px solid rgba(255, 255, 255, 0.09);
+		background: transparent;
+		color: var(--ink-3, #9b8fa8);
+		font: 700 10.5px/1 var(--f-mono, ui-monospace, monospace);
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+		white-space: nowrap;
+		cursor: pointer;
+		transition: background 0.15s, color 0.15s;
 	}
-	.os-inp:focus, .os-ta:focus { border-color: #f25a90; }
-	.os-lbl { display: grid; gap: 5px; font-size: 12.5px; color: #cfc6d6; }
-	.os-grad {
-		min-height: 44px; padding: 0 16px; border: 0; border-radius: 0;
-		background: linear-gradient(135deg, #9c7bff, #f25a90 52%, #ffae6b);
-		color: #120b14; font: 800 12px/1 var(--f-body, system-ui, sans-serif);
-		letter-spacing: 0.08em; text-transform: uppercase;
-		display: inline-flex; align-items: center; justify-content: center; gap: 7px;
-		box-shadow: 3px 3px 0 0 #5b3b99; cursor: pointer;
+	.md-tab:last-child {
+		border-right: 0;
 	}
-	.os-grad :global(.ic) { width: 14px; height: 14px; }
-	.os-soft {
-		padding: 7px 11px; border-radius: 9px; background: #241c27;
-		border: 1px solid rgba(255, 255, 255, 0.14); color: #faf7fc; font: 700 11.5px/1 var(--f-body, system-ui, sans-serif); cursor: pointer;
+	.md-tab.on {
+		background: #ffffff;
+		color: #120b14;
+		box-shadow: inset 0 -3px 0 0 #f25a90;
 	}
-	.os-row {
-		display: flex; align-items: center; justify-content: space-between; gap: 10px;
-		padding: 11px 12px; border-radius: 14px; background: rgba(13, 10, 14, 0.6); border: 1px solid rgba(255, 255, 255, 0.08);
+
+	/* Open canvas sections separated by clean hairlines (no heavy boxed cards) */
+	.md-sec {
+		display: grid;
+		gap: 18px;
+		padding-top: 2px;
 	}
-	.os-row b { display: block; font-size: 13.5px; }
-	.os-row small { display: block; font-size: 11.5px; color: #8f8499; }
-	.os-linkbox {
-		padding: 11px 13px; border-radius: 12px; background: rgba(12, 9, 14, 0.75);
-		border: 1px dashed rgba(242, 90, 144, 0.45); font: 600 12.5px/1.3 var(--f-mono, ui-monospace, monospace);
-		color: #ffae6b; word-break: break-all;
+	.md-sec + .md-sec {
+		padding-top: 24px;
+		border-top: 1px solid rgba(255, 255, 255, 0.09);
 	}
-	.os-kpis { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
-	@media (min-width: 540px) { .os-kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
-	.os-kpis > div { padding: 12px; border-radius: 14px; background: rgba(13, 10, 14, 0.6); border: 1px solid rgba(255, 255, 255, 0.08); }
-	.os-kpis small { display: block; font-size: 10.5px; color: #8f8499; margin-bottom: 3px; }
-	.os-kpis b { font: 700 18px/1.1 var(--f-mono, ui-monospace, monospace); }
-	.os-kpis b.ok { color: #3ce29b; }
-	.os-note { margin: 0; font-size: 12.5px; color: #8f8499; line-height: 1.5; }
+	.md-sec-h {
+		display: flex;
+		align-items: flex-end;
+		justify-content: space-between;
+		gap: 12px;
+		flex-wrap: wrap;
+	}
+	.md-sec-h h2 {
+		margin: 0;
+		font: 400 24px/1.12 var(--f-serif, Georgia, serif);
+		color: var(--ink, #faf7fc);
+	}
+	.md-sec-h p {
+		margin: 4px 0 0;
+		font-size: 13px;
+		color: var(--ink-3, #9b8fa8);
+		line-height: 1.45;
+	}
+
+	/* Native Miracle bottom-hairline form fields (matching Set up a monthly deal) */
+	.md-form {
+		display: grid;
+		gap: 18px;
+	}
+	.md-fields {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 18px 20px;
+	}
+	@media (max-width: 600px) {
+		.md-fields {
+			grid-template-columns: 1fr;
+			gap: 16px;
+		}
+	}
+	.md-f {
+		display: grid;
+		gap: 6px;
+		min-width: 0;
+	}
+	.md-f.span2 {
+		grid-column: 1 / -1;
+	}
+	.md-lbl {
+		display: block;
+		font: 700 10.5px/1.2 var(--f-mono, ui-monospace, monospace);
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+		color: var(--ink-3, #9b8fa8);
+	}
+	.md-lbl b {
+		color: var(--ink, #faf7fc);
+		font-weight: 700;
+	}
+	.md-inp,
+	.md-ta {
+		width: 100%;
+		box-sizing: border-box;
+		border: 0;
+		border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+		border-radius: 0;
+		background: transparent;
+		color: var(--ink, #faf7fc);
+		font: 400 16px/1.4 var(--f-body, system-ui, sans-serif);
+		padding: 9px 0 10px;
+		outline: none;
+		transition: border-color 0.15s;
+	}
+	.md-inp::placeholder,
+	.md-ta::placeholder {
+		color: rgba(207, 198, 214, 0.42);
+	}
+	.md-inp:focus,
+	.md-ta:focus {
+		border-bottom-color: #f25a90;
+	}
+	.md-ta {
+		resize: vertical;
+		min-height: 68px;
+		font-size: 14.5px;
+		line-height: 1.5;
+	}
+	.md-pre {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+		transition: border-color 0.15s;
+	}
+	.md-pre:focus-within {
+		border-bottom-color: #f25a90;
+	}
+	.md-pre span {
+		color: var(--ink-3, #9b8fa8);
+		font-size: 15px;
+	}
+	.md-pre .md-inp {
+		border-bottom: 0;
+		padding-left: 0;
+	}
+
+	/* Range slider matching dark accent */
+	.md-range {
+		width: 100%;
+		accent-color: #f25a90;
+		margin: 4px 0 0;
+		cursor: pointer;
+	}
+
+	/* Sharp segmented selector matching Invoice each month in monthly deal */
+	.md-seg {
+		display: grid;
+		grid-auto-flow: column;
+		grid-auto-columns: minmax(0, 1fr);
+		border: 1px solid rgba(255, 255, 255, 0.14);
+		background: rgba(255, 255, 255, 0.02);
+	}
+	.md-seg.wrap {
+		display: flex;
+		flex-wrap: wrap;
+	}
+	.md-seg.wrap button {
+		flex: 1 1 auto;
+	}
+	.md-seg button {
+		padding: 11px 10px;
+		border: 0;
+		border-right: 1px solid rgba(255, 255, 255, 0.1);
+		background: transparent;
+		color: var(--ink-3, #9b8fa8);
+		font: 700 11px/1.2 var(--f-mono, ui-monospace, monospace);
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		cursor: pointer;
+		transition: background 0.15s, color 0.15s;
+	}
+	.md-seg button:last-child {
+		border-right: 0;
+	}
+	.md-seg button.on {
+		background: rgba(242, 90, 144, 0.14);
+		color: var(--ink, #faf7fc);
+		box-shadow: inset 0 -2px 0 0 #f25a90;
+	}
+
+	/* Counter tiles matching Reels - 2 + / Stories - 3 + in Set up a monthly deal */
+	.md-kinds {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 10px;
+	}
+	@media (max-width: 420px) {
+		.md-kinds {
+			grid-template-columns: 1fr;
+		}
+	}
+	.md-kind {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 8px;
+		padding: 11px 12px;
+		border-radius: 12px;
+		border: 1px solid rgba(255, 255, 255, 0.1);
+		background: rgba(255, 255, 255, 0.02);
+		color: var(--ink-3, #9b8fa8);
+		font-size: 13.5px;
+		font-weight: 500;
+	}
+	.md-kind.on {
+		border-color: rgba(242, 90, 144, 0.45);
+		background: rgba(242, 90, 144, 0.07);
+		color: var(--ink, #faf7fc);
+	}
+	.md-step {
+		display: inline-flex;
+		align-items: center;
+		border: 1px solid rgba(255, 255, 255, 0.12);
+		background: rgba(0, 0, 0, 0.25);
+	}
+	.md-step button {
+		width: 28px;
+		height: 28px;
+		border: 0;
+		background: transparent;
+		color: var(--ink, #faf7fc);
+		font-size: 15px;
+		cursor: pointer;
+	}
+	.md-step b {
+		min-width: 24px;
+		text-align: center;
+		font: 700 13px/1 var(--f-mono, ui-monospace, monospace);
+		color: var(--ink, #faf7fc);
+	}
+
+	/* Summary & KPI band matching q-total in Set up a monthly deal */
+	.md-kpis {
+		display: grid;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		border-top: 1px solid rgba(255, 255, 255, 0.12);
+		border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+	}
+	@media (max-width: 520px) {
+		.md-kpis {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+		}
+	}
+	.md-kpi {
+		padding: 13px 10px 13px 0;
+		display: grid;
+		gap: 4px;
+	}
+	.md-kpi small {
+		font: 700 10px/1.2 var(--f-mono, ui-monospace, monospace);
+		letter-spacing: 0.11em;
+		text-transform: uppercase;
+		color: var(--ink-3, #9b8fa8);
+	}
+	.md-kpi b {
+		font: 400 22px/1.1 var(--f-serif, Georgia, serif);
+		color: var(--ink, #faf7fc);
+	}
+	.md-kpi b.ok {
+		color: #4ade80;
+	}
+	.md-kpi b.warn {
+		color: #ffae6b;
+	}
+
+	/* NeoPOP sharp action buttons matching Cancel | Start the deal */
+	.md-acts {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 10px;
+		align-items: center;
+	}
+	.md-btn-grad {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 8px;
+		min-height: 46px;
+		padding: 0 20px;
+		border: 0;
+		border-radius: 0;
+		background: linear-gradient(95deg, #9c7bff 0%, #f25a90 55%, #ffae6b 100%);
+		color: #ffffff;
+		font: 700 14px/1 var(--f-body, system-ui, sans-serif);
+		cursor: pointer;
+		box-shadow: 3px 3px 0 0 rgba(156, 123, 255, 0.45);
+		transition: transform 0.12s;
+	}
+	.md-btn-grad:active {
+		transform: translate(1px, 1px);
+	}
+	.md-btn-grad:disabled {
+		opacity: 0.55;
+		cursor: not-allowed;
+	}
+	.md-btn-grad :global(.ic),
+	.md-btn-ghost :global(.ic) {
+		width: 16px;
+		height: 16px;
+	}
+	.md-btn-ghost {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 7px;
+		min-height: 38px;
+		padding: 0 14px;
+		border: 1px solid rgba(255, 255, 255, 0.16);
+		border-radius: 0;
+		background: rgba(255, 255, 255, 0.02);
+		color: var(--ink, #faf7fc);
+		font: 600 13px/1 var(--f-body, system-ui, sans-serif);
+		cursor: pointer;
+	}
+	.md-btn-ghost.tall {
+		min-height: 46px;
+		padding: 0 18px;
+		font-size: 14px;
+	}
+
+	/* Clean hairline list rows */
+	.md-list {
+		display: grid;
+		border-top: 1px solid rgba(255, 255, 255, 0.09);
+	}
+	.md-row {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
+		padding: 13px 0;
+		border-bottom: 1px solid rgba(255, 255, 255, 0.09);
+	}
+	.md-row > div {
+		min-width: 0;
+		display: grid;
+		gap: 3px;
+	}
+	.md-row b {
+		font-size: 14.5px;
+		font-weight: 600;
+		color: var(--ink, #faf7fc);
+	}
+	.md-row small {
+		font-size: 12.5px;
+		color: var(--ink-3, #9b8fa8);
+		line-height: 1.4;
+	}
+	.md-row-acts {
+		display: inline-flex;
+		gap: 8px;
+		flex-shrink: 0;
+	}
+	.md-note {
+		margin: 0;
+		font-size: 13px;
+		line-height: 1.5;
+		color: var(--ink-3, #9b8fa8);
+	}
+	.md-linkline {
+		padding: 10px 0;
+		border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+		font: 500 13px/1.4 var(--f-mono, ui-monospace, monospace);
+		color: #cfc6d6;
+		word-break: break-all;
+	}
 </style>

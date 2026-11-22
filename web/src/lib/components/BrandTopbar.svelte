@@ -136,8 +136,11 @@
 			<div class="m-title">{title}</div>
 			<div class="m-r"></div>
 		{:else}
-			<!-- The creator studio's bar: a serif title (the wordmark at home), round actions on the right. -->
-			<div class="m-brand" class:wordmark={path === '/brand'}>{title}</div>
+			<!-- The creator studio's bar: Miracle logo mark + serif wordmark at home, round actions on the right. -->
+			<div class="m-brand-wrap">
+				{#if path === '/brand'}<span class="m-logo-mark" aria-hidden="true"><Logo /></span>{/if}
+				<div class="m-brand" class:wordmark={path === '/brand'}>{title}</div>
+			</div>
 			<div class="m-r">
 				{#if signedIn && path === '/brand'}
 					<!-- The creator's Today bar, piece for piece: mood picker, new, Ask your desk, search, alerts, messages. -->
