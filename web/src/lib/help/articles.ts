@@ -477,7 +477,7 @@ export const ARTICLES: Article[] = [
 		keywords: ['insights', 'stats', 'engagement', 'reels engagement', 'collab reels', 'stories', 'audience', 'insights link', 'media kit', 'numbers', 'share insights'],
 		body: [
 			{ p: 'Grow › All your insights shows your full set of numbers, the same layout brands see on your insights page, even if you hide parts from them. A line says whether brands can see it.' },
-			{ list: ['Engagement leads with your Reels (last 12 Reels), the same figure on Today, My page and your page for brands.', 'Two extra tiles compare your own Reels with your collab Reels (linked to a collab, or #ad / #collab in the first line of the caption).', 'Share an insights page with brands and Show Stories are in My page › Profile & Instagram. Add your story averages by hand there if Instagram doesn’t give them.'] }
+			{ list: ['Today and the profile show the share of accounts reached that interacted in the last 30 days. Detailed Insights show Reels engagement by followers.', 'Two extra tiles compare your own Reels with your collab Reels (linked to a collab, or #ad / #collab in the first line of the caption).', 'Share an insights page with brands and Show Stories are in My page › Profile & Instagram. Add your story averages by hand there if Instagram doesn’t give them.'] }
 		],
 		links: [{ label: 'All your insights', href: '/studio/grow/insights' }, { label: 'Profile & Instagram', href: '/studio/settings?s=profile' }]
 	},

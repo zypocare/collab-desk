@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import MoodPicker from './MoodPicker.svelte';
+	import ProfileEngagement from './ProfileEngagement.svelte';
 	import { askAi } from '../ai';
 	import { receivedIn } from '../invoice';
 	import { addLeadAsCollab, lastBrandLines } from '../leads';
@@ -175,6 +176,7 @@
 		<div class="l-hi">
 			<span class="l-eb">{T.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}{urgent ? ` · ${urgent} due today` : ''}</span>
 			<h1>{greet}, <em>{firstName(s.display_name)}</em></h1>
+			<ProfileEngagement insights={studio.ig?.connected ? studio.ig.insights : null} />
 		</div>
 		<button class="l-search" onclick={() => (ui.searchOpen = true)}>
 			<Icon name="search" /><span>search “{hintBrand}”</span><kbd>{mac ? '⌘K' : 'Ctrl K'}</kbd>

@@ -55,6 +55,32 @@ async function mountHome(page: Page) {
 	await expect(page.locator('.phone-today')).toBeVisible();
 }
 
+test('Today shows 30-day audience engagement on phone and laptop', async ({ page }) => {
+	await mountHome(page);
+	await page.evaluate(async () => {
+		const statePath = '/src/lib/studio.svelte.ts';
+		const { studio } = await import(statePath);
+		studio.ig = { connected: true, followers: 20000, engagement_rate: 2.58,
+			insights: { totals: { accounts_engaged: 1090, reach: 10000 }, formats: { reels: { er: 4.1 } } } };
+	});
+	for (const width of [320, 1440]) {
+		await page.setViewportSize({ width, height: 900 });
+		const home = page.locator(width === 320 ? '.phone-today' : '.lt');
+		const summary = home.locator('.audience-rate summary');
+		await expect(summary).toContainText('10.9% audience engagement');
+		await expect(summary).toContainText('Last 30 days');
+		await summary.click();
+		await expect(home.locator('.audience-rate p')).toContainText('1,090 accounts engaged ÷ 10,000 accounts reached');
+		await expect(home).not.toContainText('2.58%');
+	}
+	await page.evaluate(async () => {
+		const statePath = '/src/lib/studio.svelte.ts';
+		const { studio } = await import(statePath);
+		studio.ig.insights.totals = {};
+	});
+	await expect(page.locator('.lt .audience-rate')).toHaveCount(0);
+});
+
 test('home themes preview, cancel, persist and restore the original palette', async ({ page }) => {
 	await mountHome(page);
 	await page.evaluate(async () => {

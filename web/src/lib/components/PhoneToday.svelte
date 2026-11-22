@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { igImg } from '../igImg';
 	import { receivedIn } from '../invoice';
-	import { erText, headlineEr } from '../engagement';
+	import ProfileEngagement from './ProfileEngagement.svelte';
 	import { onMount, untrack } from 'svelte';
 	import { addLeadAsCollab } from '../leads';
 	import { askPaid, completeFollow, markPaid, markReceived, priorityOf, studio } from '../studio.svelte';
@@ -263,8 +263,6 @@
 	);
 	// Beside the greeting: live Instagram numbers, or this month's goal when Instagram isn't connected.
 	const ig = $derived(studio.ig?.connected ? studio.ig : null);
-	// Her Reels engagement in full, the same figure Insights leads with.
-	const er = $derived(ig ? headlineEr(ig.insights, ig.engagement_rate) : null);
 </script>
 
 <div class="phone-today" use:homeMotion>
@@ -289,7 +287,6 @@
 					<img class="orb-pic" src={igImg(ig.profile_picture_url)} alt="" />
 				{:else if orbMode === 0 && ig}
 					<b>{compact(ig.followers ?? 0)}</b><small>followers</small>
-					{#if er}<span class="orb-pill">↗ {erText(er)} eng.</span>{/if}
 				{:else if orbMode === 0}
 					<b>{initials(s.display_name)}</b><small>Your studio</small>
 				{:else if orbMode === 1}
@@ -301,7 +298,7 @@
 				{/if}
 			</span>
 			{#if orbMode === 0 && ig?.profile_picture_url}
-				<span class="orb-badge"><b>{compact(ig.followers ?? 0)}</b>{#if er}<i>{erText(er)}</i>{:else}<span>followers</span>{/if}</span>
+				<span class="orb-badge"><b>{compact(ig.followers ?? 0)}</b><span>followers</span></span>
 			{/if}
 			<span class="orb-mode-dots" aria-hidden="true">
 				<i class:on={orbMode === 0}></i><i class:on={orbMode === 1}></i><i class:on={orbMode === 2}></i>
@@ -309,6 +306,8 @@
 			<span class="orb-spark s1" aria-hidden="true"></span><span class="orb-spark s2" aria-hidden="true"></span><span class="orb-spark s3" aria-hidden="true"></span>
 		</button>
 	</div>
+
+	<ProfileEngagement insights={ig?.insights} />
 
 	<!-- Interactive Status Chips (Replaces static summary line, matching miracle_mobile_home_redesign.html) -->
 	<div class="ht-chips">

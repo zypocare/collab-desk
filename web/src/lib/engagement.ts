@@ -1,4 +1,4 @@
-// Follower-based engagement for Home and share cards: prefer Reels, then all recent posts.
+// Follower-based engagement for share cards: prefer Reels, then all recent posts.
 // Shown in full, as Insights shows it (4.34%, not 4.3% or 4%).
 type WithFormats = { formats?: { reels?: { er?: number | null } } } | Record<string, unknown> | null | undefined;
 

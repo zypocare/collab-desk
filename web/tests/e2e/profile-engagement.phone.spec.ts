@@ -13,7 +13,7 @@ test('public profile explains audience engagement and respects Insights sharing'
 	}));
 	await page.goto('/?preview=1');
 	const card = page.locator('.mp-card').filter({ hasText: 'Instagram today' });
-	const summary = card.locator('summary').filter({ hasText: '11.6% of accounts reached engaged' });
+	const summary = card.locator('summary').filter({ hasText: '11.6% audience engagement' });
 	const calculation = card.getByText('3,159 accounts engaged ÷ 27,150 accounts reached × 100 = 11.6%');
 	for (const width of [1440, 320]) {
 		await page.setViewportSize({ width, height: 900 });
@@ -24,10 +24,13 @@ test('public profile explains audience engagement and respects Insights sharing'
 		expect(followers!.x + followers!.width).toBeLessThanOrEqual(badge!.x);
 		await summary.click();
 		await expect(calculation).toBeVisible();
-		const cardBounds = await card.boundingBox();
-		const formulaBounds = await calculation.boundingBox();
-		expect(formulaBounds!.x).toBeGreaterThanOrEqual(cardBounds!.x);
-		expect(formulaBounds!.x + formulaBounds!.width).toBeLessThanOrEqual(cardBounds!.x + cardBounds!.width + 1);
+		const insets = await calculation.evaluate(el => {
+			const card = el.closest('.mp-card')!.getBoundingClientRect();
+			const formula = el.getBoundingClientRect();
+			return { left: formula.left - card.left, right: card.right - formula.right };
+		});
+		expect(insets.left).toBeGreaterThanOrEqual(0);
+		expect(insets.right).toBeGreaterThanOrEqual(-1);
 		expect(await calculation.evaluate(el => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(1);
 		await summary.press('Enter');
 		await expect(calculation).toBeHidden();
