@@ -11,20 +11,22 @@
 	import { pageSlug } from '../supabase';
 	import { countUp } from '../ui.svelte';
 	import { compact, firstName, fmt, hueOf, inr, inrS, iso, today } from '../util';
+	import { homeMotion } from '../homeMotion';
+	import '../../home-motion.css';
 	import Icon from './Icon.svelte';
 	import Ticket from './Ticket.svelte';
 	import CycleText from './CycleText.svelte';
 	import DiwaliLayer from './DiwaliLayer.svelte';
 	import { diwaliWords, festivalNow } from '../festival';
 
-	// Today for a brand on a phone: the creator's Today, piece for piece (the living header, the row of
-	// tickets, the set-up card, the moving line, the money card, Needs you and This week), with the brand's numbers.
+	// Today for a brand on a phone: matches the Creator Living Today Cockpit (living hero card with
+	// 3-mode orb, interactive status chips, 4 NeoPOP quick actions, creator tickets, live ticker,
+	// dark Money Vault, Autopilots, Needs you deck, and This week leaf calendar).
 	const acc = $derived(auth.account?.role === 'brand' ? auth.account : null);
 	const d = $derived(brandHome.dash);
 	const m = $derived(brandToday.money);
 	const T = today();
 	const hour = new Date().getHours();
-	// A festival on now (festival.ts): its theme on this card and its greeting on the day, as on the creator's Today.
 	const fest = festivalNow();
 	const dw = fest ? diwaliWords(fest) : null;
 	const greet = dw?.greet ?? (hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening');
@@ -35,8 +37,6 @@
 	const waiting = $derived(d?.waiting ?? []);
 	const ig = $derived(brandIg.data);
 	const at = (slug: string, path: string) => (slug === pageSlug ? path : addressFor(slug, path));
-	// Each creator card comes alive like the creator's collab cards: a light runs round its edge in its own colour
-	// (amber when it's your turn), and its line turns through a few facts about them, each card a beat after the last.
 	const HUES = ['var(--g2)', 'var(--g1)', 'var(--g3)', 'var(--h-live)', 'var(--h-request)'];
 	const cardHue = (waitingOn: boolean, i: number) => (waitingOn ? 'var(--g3)' : HUES[i % HUES.length]);
 	const cardLines = (c: (typeof creators)[number]) =>
@@ -50,6 +50,13 @@
 		addEventListener('scroll', on, { passive: true });
 		return () => removeEventListener('scroll', on);
 	});
+
+	// Interactive 3-mode orb + pauseable ticker
+	let orbMode = $state(0);
+	function cycleOrbMode() {
+		orbMode = (orbMode + 1) % 3;
+	}
+	let tickerPaused = $state(false);
 
 	// Money: spent this month against what's still to pay.
 	const spent = $derived(m?.paid_month ?? d?.spent_month ?? 0);
@@ -98,7 +105,7 @@
 	// Needs you: two, then "+N more" fans out the rest.
 	let fanned = $state(false);
 
-	// This week: the next seven days as capsules, the picked one below (today first).
+	// This week: the next seven days as tear-off leaves, the picked one below (today first).
 	let pick = $state(0);
 	const NUM = ['No', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten'];
 	const week = $derived(
@@ -111,46 +118,120 @@
 	const busiest = $derived([...week].sort((a, b) => b.list.length - a.list.length)[0]);
 	const dayName = (dt: Date, i: number) => (i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : dt.toLocaleDateString('en-IN', { weekday: 'long' }));
 	const picked = $derived(week[pick]);
-	// Each day is a calendar leaf, its band in the colour of the day's first thing (as on the creator's Today).
 	const LEAF_ORDER = ['shoot', 'draft', 'live'];
 	const LEAF: Record<string, string> = { shoot: '#9C7BFF', draft: '#C9B6FF', live: '#F25A90' };
 </script>
 
+<div class="phone-today" use:homeMotion>
 <section class="ht" class:dw-on={!!fest} style="--sy:{sy}">
 	<div class="ht-glow" aria-hidden="true"><i></i><i></i><i></i></div>
 	{#if fest}<DiwaliLayer />{/if}
-	<a class="ht-orb" href={ig ? '/brand/settings' : '/brand/creators'} aria-label={ig ? 'Your Instagram' : 'Your creators'}>
-		<span class="orb-ring" aria-hidden="true"></span>
-		<span class="orb-in">
-			{#if ig?.picture}
-				<img class="orb-pic" src={igImg(ig.picture)} alt="" />
-			{:else}
-				<b>{creators.length}</b><small>creator{creators.length === 1 ? '' : 's'}</small>
+	{#if note}
+		<div class="fest-pill-wrap">
+			<span class="fest-banner">🪔 {note}</span>
+		</div>
+	{/if}
+	<div class="ht-top-row">
+		<div class="ht-copy">
+			<p class="ht-date">{T.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
+			<h1 class="ht-hi"><span>{greet},</span><em>{who}</em></h1>
+		</div>
+		<button type="button" class="ht-orb" onclick={cycleOrbMode} aria-label="Cycle live brand metrics">
+			<span class="orb-ring" aria-hidden="true"></span>
+			<span class="orb-ring-2" aria-hidden="true"></span>
+			<span class="orb-in">
+				{#if orbMode === 0 && ig?.picture}
+					<img class="orb-pic" src={igImg(ig.picture)} alt="" />
+				{:else if orbMode === 0}
+					<b>{creators.length}</b><small>creator{creators.length === 1 ? '' : 's'}</small>
+					<span class="orb-pill pink">{d?.open ?? 0} open</span>
+				{:else if orbMode === 1}
+					<b>{pctN}%</b><small>paid this mo.</small>
+					<span class="orb-pill gold">{inrS(spent)}</span>
+				{:else}
+					<b>{creators.length}</b><small>on your roster</small>
+					<span class="orb-pill">★ {waiting.length} waiting</span>
+				{/if}
+			</span>
+			{#if orbMode === 0 && ig?.picture}
+				<span class="orb-badge"><b>{compact(ig.followers ?? 0)}</b> <i>IG</i></span>
 			{/if}
-		</span>
-		{#if ig?.picture}<span class="orb-badge"><b>{compact(ig.followers ?? 0)}</b> followers</span>{/if}
-		<span class="orb-spark s1" aria-hidden="true"></span><span class="orb-spark s2" aria-hidden="true"></span><span class="orb-spark s3" aria-hidden="true"></span>
-	</a>
-	<p class="ht-date">{T.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}{#if note}<span class="dw-note">{note}</span>{/if}</p>
-	<h1 class="ht-hi">{greet},<br /><em>{who}</em></h1>
-	<p class="ht-sum">
-		<span class="ht-dot" class:calm={!waiting.length}></span>
-		{waiting.length ? `${waiting.length} waiting on you` : 'Nothing waiting on you'} · {d?.open ?? 0} open request{d?.open === 1 ? '' : 's'}
-	</p>
+			<span class="orb-mode-dots" aria-hidden="true">
+				<i class:on={orbMode === 0}></i><i class:on={orbMode === 1}></i><i class:on={orbMode === 2}></i>
+			</span>
+			<span class="orb-spark s1" aria-hidden="true"></span><span class="orb-spark s2" aria-hidden="true"></span><span class="orb-spark s3" aria-hidden="true"></span>
+		</button>
+	</div>
+
+	<!-- Interactive Status Chips -->
+	<div class="ht-chips">
+		<a class="ht-chip" class:urgent={waiting.length > 0} href="#sec-needs">
+			<span class="dot-ping" class:calm={!waiting.length}></span>
+			<span>{#if waiting.length > 0}<b>{waiting.length}</b> waiting on you{:else}<b>All caught up</b> today{/if}</span>
+		</a>
+		<a class="ht-chip" href="/brand/creators">
+			{#if creators.length}
+				<span class="mini-avs" aria-hidden="true">
+					{#each creators.slice(0, 3) as cr (cr.id)}
+						<i style="--h:var(--m{hueOf(cr.name)})">{cr.name.trim().slice(0, 1).toUpperCase()}</i>
+					{/each}
+				</span>
+			{/if}
+			<span><b>{creators.length}</b> creator{creators.length === 1 ? '' : 's'}</span>
+		</a>
+		{#if apWaiting > 0}
+			<a class="ht-chip" href="/brand/autopilots#inbox">
+				<span class="ht-spark" aria-hidden="true">✦</span>
+				<span><b>{apWaiting}</b> autopilot{apWaiting === 1 ? '' : 's'}</span>
+			</a>
+		{:else}
+			<a class="ht-chip" href="/brand/requests">
+				<span class="ht-spark" aria-hidden="true">✦</span>
+				<span><b>{d?.open ?? 0}</b> open request{(d?.open ?? 0) === 1 ? '' : 's'}</span>
+			</a>
+		{/if}
+	</div>
+
+	<!-- 4 Tactile NeoPOP Quick Actions -->
+	<div class="qa-strip">
+		<a class="qa-card primary" href="/brand/explore">
+			<span class="qa-ic"><Icon name="search" /></span>
+			<span>Find creators</span>
+		</a>
+		<a class="qa-card" href={creators.length ? '/brand/campaigns/new' : '/brand/explore'}>
+			<span class="qa-ic"><span class="qa-tag">NEW</span><Icon name="send" /></span>
+			<span>Campaign</span>
+		</a>
+		<a class="qa-card" href="/brand/business/money">
+			<span class="qa-ic"><Icon name="wallet" /></span>
+			<span>Payments</span>
+		</a>
+		<a class="qa-card" href="/brand/autopilots">
+			<span class="qa-ic"><span class="qa-tag">AI</span><Icon name="spark" /></span>
+			<span>Autopilots</span>
+		</a>
+	</div>
 </section>
 
-<!-- The creator's row of collab tickets: here, the creators the brand works with. -->
 <FoundingBanner />
 
-<section class="tix" aria-label="Your creators">
+<!-- Your creators horizontal ticket rail -->
+<section class="tix" id="sec-creators" aria-label="Your creators">
 	<div class="tix-h">
-		<span>Your creators</span>
-		{#if creators.length}<a href="/brand/creators">See all</a>{/if}
+		<span class="tix-h-left">
+			<span>Your creators</span>
+			{#if creators.length}<b class="tix-cnt">{creators.length}</b>{/if}
+		</span>
+		{#if creators.length}<a href="/brand/creators">See all →</a>{/if}
 	</div>
 	<div class="tix-row">
 		{#each creators as c, i (c.id)}
 			{@const lines = cardLines(c)}
 			<a class="tix-t tone-{c.waiting ? 'now' : c.open ? 'calm' : 'ok'}" style="--rt:{cardHue(!!c.waiting, i)};--k:{i}" href={at(c.slug, '/brand/requests')} aria-label="{c.name}: {c.open ?? 0} open">
+				<span class="tix-top">
+					<span class="tix-av">{c.name.trim().slice(0, 1).toUpperCase() || 'C'}</span>
+					<small class="tix-step">{c.waiting ? 'Your turn' : c.open ? 'Active' : 'Done'}</small>
+				</span>
 				<b class="tix-n">{c.name}</b>
 				<span class="tix-l" aria-hidden="true">{#if lines.length}<CycleText {i} items={lines} />{:else}Creator{/if}</span>
 				<i class="tix-cut" aria-hidden="true"></i>
@@ -164,7 +245,7 @@
 	</div>
 </section>
 
-<!-- A new brand's first steps (gone once they're done): the creator's set-up card. -->
+<!-- A new brand's first steps (gone once they're done) -->
 {#if showSetup}
 	<section class="ob ob-ph" aria-label="Finish setting up">
 		<header class="ob-h">
@@ -172,7 +253,7 @@
 				<span class="ob-eb">Set up · {doneN} of {steps.length} done</span>
 				<h2>Finish setting up, <em>{who || 'your brand'}</em></h2>
 			</div>
-			<button class="ob-x" onclick={hide} aria-label="Hide this for good"><Icon name="x" /></button>
+			<button type="button" class="ob-x" onclick={hide} aria-label="Hide this for good"><Icon name="x" /></button>
 		</header>
 		<div class="ob-bar" style="--n:{steps.length}" aria-hidden="true">{#each steps as st (st.id)}<i class:on={st.done}></i>{/each}</div>
 		<ol class="ob-list">
@@ -188,10 +269,10 @@
 {/if}
 
 {#if ticker.length > 1}
-	<div class="cr-ticker cr-tk" aria-label="Today in numbers"><div>{#each [0, 1] as k (k)}{#each ticker as f, j (j)}<span aria-hidden={k === 1}><b>{f.b}</b>{f.t}</span><i aria-hidden="true">✦</i>{/each}{/each}</div></div>
+	<div class="cr-ticker cr-tk" data-paused={tickerPaused} aria-label="Today in numbers"><div>{#each [0, 1] as k (k)}{#each ticker as f, j (j)}<span aria-hidden={k === 1}><b>{f.b}</b>{f.t}</span><i aria-hidden="true">✦</i>{/each}{/each}</div><button type="button" class="home-ticker-pause" aria-label={tickerPaused ? 'Resume numbers ticker' : 'Pause numbers ticker'} aria-pressed={tickerPaused} onclick={() => (tickerPaused = !tickerPaused)}>{tickerPaused ? '▶' : 'Ⅱ'}</button></div>
 {/if}
 
-<section class="hero-card glow m-hero" aria-label="Money this month">
+<section class="hero-card glow m-hero" id="sec-money" aria-label="Money this month">
 	<div class="mesh" aria-hidden="true"></div>
 	<div class="hc-in">
 		<div class="hc-top"><span class="hc-eb">Paid in {monthName}</span><a class="glass-chip" href="/brand/business/money"><Icon name="wallet" />Payments</a></div>
@@ -220,7 +301,7 @@
 </section>
 
 {#if apWaiting}
-	<section class="hs">
+	<section class="hs" id="sec-ai">
 		<header class="hs-h"><h2>Autopilots</h2><span class="hs-n">{apWaiting}</span></header>
 		<div class="tks">
 			<Ticket name="Autopilots" mark="AI" hue="var(--g1)" title="{apWaiting} waiting for your OK" sub="Your autopilots" task="Approve or edit what they drafted" status="Waiting on you" tone="hot" href="/brand/autopilots#inbox">
@@ -230,8 +311,16 @@
 	</section>
 {/if}
 
-<section class="hs">
-	<header class="hs-h"><h2>Needs you</h2>{#if waiting.length}<span class="hs-n">{waiting.length}</span>{/if}</header>
+<section class="hs" id="sec-needs">
+	<header class="hs-h">
+		<h2>Needs you</h2>
+		{#if waiting.length}<span class="hs-n">{waiting.length}</span>{/if}
+		{#if waiting.length > 2}
+			<button type="button" class="sec-link-btn" onclick={() => (fanned = !fanned)}>
+				{fanned ? 'Collapse' : `Show all ${waiting.length}`}
+			</button>
+		{/if}
+	</header>
 	{#if waiting.length}
 		<div class="tks">
 			{#each fanned ? waiting : waiting.slice(0, 2) as w, i (w.kind + w.code + (w.round ?? ''))}
@@ -249,15 +338,19 @@
 					<a class="btn grad" href={at(w.slug, `/brand/r/${w.code}`)}>{w.kind === 'quote' ? 'Review' : 'Approve'}</a>
 				</Ticket>
 			{/each}
-			{#if !fanned && waiting.length > 2}<span class="cr-edge tk-edge" aria-hidden="true"></span>{/if}
 		</div>
+		{#if !fanned && waiting.length > 2}
+			<div class="tk-stack-edges" aria-hidden="true">
+				<span class="tk-edge-1"></span>
+				{#if waiting.length > 3}<span class="tk-edge-2"></span>{/if}
+			</div>
+		{/if}
 		{#if waiting.length > 2}
-			<button class="cr-more" onclick={() => (fanned = !fanned)}>
+			<button type="button" class="cr-more" aria-expanded={fanned} onclick={() => (fanned = !fanned)}>
 				{#if !fanned}<span class="cr-dots" aria-hidden="true">{#each waiting.slice(2, 5) as w (w.kind + w.code)}<i style="--h:var(--m{hueOf(w.creator)})"></i>{/each}</span>+{waiting.length - 2} more{:else}Show less{/if}
 			</button>
 		{/if}
 	{:else}
-		<!-- Nothing to do: the same glowing card as the money one, with two good next steps. -->
 		<div class="clear hero-card glow">
 			<div class="mesh" aria-hidden="true"></div>
 			<span class="clear-ic"><Icon name="check" /></span>
@@ -271,8 +364,8 @@
 	{/if}
 </section>
 
-<section class="hs wk2">
-	<header class="hs-h"><h2>This week</h2><a href="/brand/business/calendar">Calendar</a></header>
+<section class="hs wk2" id="sec-week">
+	<header class="hs-h"><h2>This week</h2><a href="/brand/business/calendar">Full Calendar →</a></header>
 	<p class="wk2-say">
 		{#if weekN}{NUM[weekN] ?? weekN} thing{weekN === 1 ? '' : 's'} this week.{#if busiest.list.length > 1}{' '}<em>{dayName(busiest.dt, busiest.i)}</em> is the big one.{:else}{' '}Next up: <em>{dayName(week.find((x) => x.list.length)!.dt, week.find((x) => x.list.length)!.i).toLowerCase()}</em>.{/if}
 		{:else}A quiet week. <em>Plan a campaign.</em>{/if}
@@ -280,7 +373,7 @@
 	<div class="wk2-days" role="group" aria-label="Pick a day">
 		{#each week as x (x.i)}
 			{@const first = [...x.list].sort((a, b) => LEAF_ORDER.indexOf(a.kind) - LEAF_ORDER.indexOf(b.kind))[0]}
-			<button class="wk2-d" class:now={x.i === 0} class:on={x.i === pick} class:free={!x.list.length} style={first ? `--h:${LEAF[first.kind] ?? '#C9B6FF'}` : ''} onclick={() => (pick = x.i)} aria-label="{dayName(x.dt, x.i)}, {x.list.length || 'nothing'} {x.list.length === 1 ? 'thing' : 'things'}" aria-pressed={x.i === pick}>
+			<button type="button" class="wk2-d" class:now={x.i === 0} class:on={x.i === pick} class:free={!x.list.length} style={first ? `--h:${LEAF[first.kind] ?? '#C9B6FF'}` : ''} onclick={() => (pick = x.i)} aria-label="{dayName(x.dt, x.i)}, {x.list.length || 'nothing'} {x.list.length === 1 ? 'thing' : 'things'}" aria-pressed={x.i === pick}>
 				<em>{x.i === 0 ? 'Today' : x.dt.toLocaleDateString('en-IN', { weekday: 'short' })}</em>
 				<b>{x.dt.getDate()}</b>
 				<span class="wk2-dots">{#each x.list.slice(0, 3) as e (e.code + e.kind)}<i class="k-{e.kind}"></i>{/each}</span>
@@ -297,6 +390,7 @@
 							<a href={at(e.slug, `/brand/r/${e.code}`)}>
 								<span class="wk2-node" aria-hidden="true"></span>
 								<span class="wk2-ev"><em>{KIND_WORD[e.kind]}</em><b>{e.creator} · {e.code}</b><small>{KIND_LINE[e.kind]}</small></span>
+								<span class="wk2-open">Open</span>
 							</a>
 						</li>
 					{/each}
@@ -304,12 +398,13 @@
 			{:else}
 				<p class="wk2-free">Nothing booked. A free day is a good day to line up the next campaign:</p>
 				<div class="wk2-ideas">
-					<a href="/brand/explore"><span class="k-shoot"><Icon name="search" /></span>Find creators</a>
-					<a href="/brand/campaigns"><span class="k-live"><Icon name="send" /></span>New campaign</a>
-					<a href="/brand/business/content"><span class="k-draft"><Icon name="film" /></span>Reuse content</a>
+					<a href="/brand/explore" class="k-shoot"><span><Icon name="search" /></span>Find creators</a>
+					<a href="/brand/campaigns" class="k-live"><span><Icon name="send" /></span>New campaign</a>
+					<a href="/brand/business/content" class="k-draft"><span><Icon name="film" /></span>Reuse content</a>
 				</div>
 			{/if}
 		</div>
 	{/key}
 	<div class="wk2-key" aria-hidden="true"><span class="k-shoot"><i></i>Shoot</span><span class="k-draft"><i></i>Draft due</span><span class="k-live"><i></i>Goes live</span></div>
 </section>
+</div>
