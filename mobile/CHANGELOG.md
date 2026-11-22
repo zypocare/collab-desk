@@ -18,7 +18,9 @@ How to ship one:
 
 ## Planned
 
-- 
+-
+## 1.1.5
+-  Fixed Dual Header in Android App
 ## 1.1.4
 -  Added microphone permission for voice notes and voice typing in the phone app.
 ## 1.1.3
