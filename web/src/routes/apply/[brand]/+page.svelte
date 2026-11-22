@@ -98,10 +98,10 @@
 		display: inline-block; font: 700 10px/1.2 var(--f-mono, ui-monospace, monospace);
 		letter-spacing: 0.12em; text-transform: uppercase;
 		background: linear-gradient(90deg, #9c7bff, #f25a90, #ffae6b);
-		-webkit-background-clip: text; -webkit-text-fill-color: transparent;
+		-webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
 	}
 	h1 { margin: 0; font: 400 32px/1.08 var(--f-serif, Georgia, serif); }
-	h1 em { font-style: italic; background: linear-gradient(90deg, #9c7bff, #f25a90, #ffae6b); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+	h1 em { font-style: italic; background: linear-gradient(90deg, #9c7bff, #f25a90, #ffae6b); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
 	.af-sub { margin: 0; font-size: 13px; color: #cfc6d6; line-height: 1.5; }
 	.af-form { display: grid; gap: 12px; }
 	.af-two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }

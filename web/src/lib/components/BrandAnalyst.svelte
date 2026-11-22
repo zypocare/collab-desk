@@ -118,6 +118,7 @@
 		padding: 1.5px;
 		background: conic-gradient(from var(--ba-rim), #9c7bff, #f25a90, #ffae6b, rgba(255, 255, 255, 0.08) 48%, #9c7bff);
 		-webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+		mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
 		-webkit-mask-composite: xor;
 		mask-composite: exclude;
 		pointer-events: none;
@@ -146,7 +147,7 @@
 		letter-spacing: 0.12em;
 		text-transform: uppercase;
 		background: linear-gradient(90deg, #9c7bff 0%, #f25a90 52%, #ffae6b 100%);
-		-webkit-background-clip: text;
+		-webkit-background-clip: text; background-clip: text;
 		-webkit-text-fill-color: transparent;
 	}
 	.ba-live-pill {

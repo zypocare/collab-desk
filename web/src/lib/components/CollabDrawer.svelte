@@ -45,8 +45,7 @@
 		isPaid,
 		outstanding,
 		overdue,
-		stageIndex
-	} from '../util';
+		stageIndex, delivText } from '../util';
 	import Icon from './Icon.svelte';
 	import RequestReveal from './RequestReveal.svelte';
 	import DealMoment from './DealMoment.svelte';

@@ -92,7 +92,7 @@
 		letter-spacing: 0.12em;
 		text-transform: uppercase;
 		background: linear-gradient(90deg, #9c7bff, #f25a90, #ffae6b);
-		-webkit-background-clip: text;
+		-webkit-background-clip: text; background-clip: text;
 		-webkit-text-fill-color: transparent;
 	}
 	.dc-head h4 { margin: 3px 0 0; font: 400 22px/1.1 var(--f-serif, Georgia, serif); color: #faf7fc; }

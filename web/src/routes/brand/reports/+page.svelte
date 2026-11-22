@@ -400,6 +400,7 @@
 		padding: 1px;
 		background: linear-gradient(135deg, rgba(156, 123, 255, 0.55), rgba(242, 90, 144, 0.4), rgba(255, 174, 107, 0.22), transparent 70%);
 		-webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+		mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
 		-webkit-mask-composite: xor;
 		mask-composite: exclude;
 		pointer-events: none;
@@ -431,7 +432,7 @@
 		letter-spacing: 0.12em;
 		text-transform: uppercase;
 		background: linear-gradient(90deg, #9c7bff 0%, #f25a90 52%, #ffae6b 100%);
-		-webkit-background-clip: text;
+		-webkit-background-clip: text; background-clip: text;
 		-webkit-text-fill-color: transparent;
 	}
 	.br-src {

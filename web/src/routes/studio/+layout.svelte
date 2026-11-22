@@ -42,7 +42,7 @@
 		{ href: '/studio', label: 'Today', icon: 'home' },
 		{ href: '/studio/collabs', label: 'Collabs', icon: 'board', tabs: [{ href: '/studio/collabs', label: 'Board' }, { href: '/studio/brands', label: 'Brands' }, { href: '/studio/pitches', label: 'Pitches' }], also: ['/studio/c/', '/studio/import', '/studio/possible-collabs'] },
 		{ href: '/studio/inbox', label: 'Messages', icon: 'inbox', desk: true },
-		{ href: '/studio/content', label: 'Plan', icon: 'cal', tabs: [{ href: '/studio/content', label: 'Content' }, { href: '/studio/calendar', label: 'Calendar' }, { href: '/studio/grow', label: 'Grow' }], also: ['/studio/grow/'] },
+		{ href: '/studio/content', label: 'Plan', icon: 'cal', tabs: [{ href: '/studio/content', label: 'Content' }, { href: '/studio/calendar', label: 'Calendar' }, { href: '/studio/grow', label: 'Grow' }, { href: '/studio/suite', label: 'Creator OS' }], also: ['/studio/grow/', '/studio/suite'] },
 		{ href: '/studio/money', label: 'Money', icon: 'wallet', tabs: [{ href: '/studio/money', label: 'Overview' }, { href: '/studio/payments', label: 'Payments' }, { href: '/studio/invoices', label: 'Invoices' }, { href: '/studio/reports', label: 'Reports' }] },
 		{ href: '/studio/settings', label: 'My page', short: 'Page', icon: 'link', also: ['/studio/profile', '/studio/qr', '/studio/help'] }
 	];
@@ -207,6 +207,7 @@
 		'/studio/help/tickets': 'Your tickets',
 		'/studio/tax': 'Tax desk',
 		'/studio/grow': 'Grow',
+		'/studio/suite': 'Creator OS',
 		'/studio/grow/check': 'Check a reel',
 		'/studio/grow/checkup': 'Growth check-up',
 		'/studio/grow/insights': 'Your insights'
@@ -337,6 +338,7 @@
 		{ href: '/studio/calendar', label: 'Calendar', icon: 'cal', on: ['/studio/calendar'] },
 		{ href: '/studio/content', label: 'Content', icon: 'film', on: ['/studio/content', '/studio/instagram'] },
 		{ href: '/studio/grow', label: 'Grow', icon: 'spark', on: ['/studio/grow'] },
+		{ href: '/studio/suite', label: 'Creator OS', icon: 'layers', on: ['/studio/suite'] },
 		{ href: '/studio/money', label: 'Money', icon: 'wallet', on: ['/studio/money', '/studio/payments', '/studio/invoices', '/studio/reports'] },
 		{ href: '/studio/page', label: 'Brand page', icon: 'link', on: ['/studio/page', '/studio/profile', '/studio/qr'] },
 		{ href: '/studio/settings', label: 'Settings', icon: 'gear', on: ['/studio/settings'] },

@@ -361,13 +361,13 @@
 <style>
 	.os-wrap { display: grid; gap: 16px; color: #faf7fc; }
 	.os-head h1 { margin: 4px 0 6px; font: 400 clamp(28px, 5vw, 38px)/1.06 var(--f-serif, Georgia, serif); }
-	.os-head h1 em { font-style: italic; background: linear-gradient(90deg, #9c7bff, #f25a90, #ffae6b); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+	.os-head h1 em { font-style: italic; background: linear-gradient(90deg, #9c7bff, #f25a90, #ffae6b); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
 	.os-head p { margin: 0; font-size: 13px; color: #8f8499; }
 	.os-eb {
 		display: inline-block; font: 700 10px/1.2 var(--f-mono, ui-monospace, monospace);
 		letter-spacing: 0.12em; text-transform: uppercase;
 		background: linear-gradient(90deg, #9c7bff, #f25a90, #ffae6b);
-		-webkit-background-clip: text; -webkit-text-fill-color: transparent;
+		-webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
 	}
 	.os-pills { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding: 2px 0; }
 	.os-pill {

@@ -19,6 +19,19 @@ How to ship one:
 ## Planned
 
 - Add microphone permission for voice notes and voice typing in the phone app.
+## 1.1.3
+## 1.1.3
+- Added Bulk Payouts & Auto-TDS (194J 10% / 194C 2% / 0%) with bank-ready NEFT CSV export and batch UTR mark-paid in Brand Payments
+- Added Creator Growth OS (`/studio/suite`) matching the Creator module UI
+- Added off-platform WhatsApp Smart Contract & Draft Approval links (`/c-approve/[token]`) for Creators
+- Added Fair Rate, Usage-Rights & Net Take-Home calculator for Creators
+- Added private Brand CRM & payment memory for Creators
+- Added Creator Viral Upsell & YouTube Shorts / Raw UGC post tracker
+- Added CA-ready Form 26AS TDS & GST Tax Pack CSV and 1-click Creator Proof Report PDF
+- Added Bio Link "Work With Me" Budget Gate to filter low-budget inquiries
+- Added 8-palette Color Theme configurator (`MoodPicker`) to the Brand side on mobile and desktop
+- Synced Brand-side creator engagement rates with Creator profile 30-day Insights and fixed mobile input, pool layout, and build check issues
+
 ## 1.1.2
 - Added No-login founder / client approval links
 - Added Public "Apply to Collab" brand funnel

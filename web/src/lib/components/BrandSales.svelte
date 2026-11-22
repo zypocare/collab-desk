@@ -119,7 +119,7 @@
 		letter-spacing: 0.12em;
 		text-transform: uppercase;
 		background: linear-gradient(90deg, #9c7bff 0%, #f25a90 52%, #ffae6b 100%);
-		-webkit-background-clip: text;
+		-webkit-background-clip: text; background-clip: text;
 		-webkit-text-fill-color: transparent;
 	}
 	.bs-up {

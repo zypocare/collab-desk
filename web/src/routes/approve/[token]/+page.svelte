@@ -113,7 +113,7 @@
 		display: inline-block; font: 700 10px/1.2 var(--f-mono, ui-monospace, monospace);
 		letter-spacing: 0.12em; text-transform: uppercase;
 		background: linear-gradient(90deg, #9c7bff, #f25a90, #ffae6b);
-		-webkit-background-clip: text; -webkit-text-fill-color: transparent;
+		-webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
 	}
 	h1 { margin: 4px 0 0; font: 400 30px/1.08 var(--f-serif, Georgia, serif); color: #faf7fc; }
 	.ap-sub { margin: 0; font-size: 13.5px; color: #cfc6d6; line-height: 1.5; }

@@ -383,7 +383,7 @@
 		letter-spacing: 0.12em;
 		text-transform: uppercase;
 		background: linear-gradient(90deg, #9c7bff, #f25a90, #ffae6b);
-		-webkit-background-clip: text;
+		-webkit-background-clip: text; background-clip: text;
 		-webkit-text-fill-color: transparent;
 	}
 	.ex-pool-info b {
