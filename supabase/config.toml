@@ -530,3 +530,8 @@ verify_jwt = false
 # Razorpay's webhook for plan renewals and cancellations (checked by its signature).
 [functions.billing-webhook]
 verify_jwt = false
+
+# Live Google Play version check (public, cached 15m): prevents showing update banners while a
+# release is still "In review" on Play Console.
+[functions.play-version]
+verify_jwt = false
