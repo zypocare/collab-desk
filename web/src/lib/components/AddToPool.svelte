@@ -7,7 +7,7 @@
 	import Icon from './Icon.svelte';
 
 	// "+ Pool" on a creator's card: put them in one of the brand's pools (or a new one), or take them out.
-	// With `pool` set (arrived from a pool's "Add creators"), it's one button for that pool.
+	// With `pool` set (arrived from a pool's "Add creators"), it's one full-width button for that pool.
 	let { creator, name, pool = '' }: { creator: number; name: string; pool?: string } = $props();
 	let open = $state(false);
 	let wrap = $state<HTMLElement>();
@@ -61,20 +61,22 @@
 </script>
 
 {#if target}
-	<button class="btn ap-one" class:in={!!memberIn(target.id)} onclick={() => toggle(target.id)}>
-		{#if memberIn(target.id)}<Icon name="check" />In {target.name}{:else}<Icon name="plus" />Add to {target.name}{/if}
+	{@const inPool = !!memberIn(target.id)}
+	<button type="button" class="ap-one" class:in={inPool} aria-pressed={inPool} onclick={() => toggle(target.id)}>
+		<Icon name={inPool ? 'check' : 'plus'} />
+		<span class="ap-one-lbl">{#if inPool}In {target.name}{:else}Add to {target.name}{/if}</span>
 	</button>
 {:else}
 	<div class="ap" bind:this={wrap}>
-		<button class="btn ap-btn" onclick={openMenu} aria-expanded={open} aria-haspopup="menu" aria-label="Add {name} to a pool"><Icon name="plus" />Pool</button>
+		<button type="button" class="btn ap-btn" onclick={openMenu} aria-expanded={open} aria-haspopup="menu" aria-label="Add {name} to a pool"><Icon name="plus" />Pool</button>
 		{#if open}
 			<div class="ap-menu" class:to-left={side === 'left'} class:down={!up} role="menu">
 				{#each pools.list as p (p.id)}
-					<button role="menuitemcheckbox" aria-checked={!!memberIn(p.id)} onclick={() => toggle(p.id)}>
+					<button type="button" role="menuitemcheckbox" aria-checked={!!memberIn(p.id)} onclick={() => toggle(p.id)}>
 						<span class="ap-box" class:on={!!memberIn(p.id)} aria-hidden="true">{#if memberIn(p.id)}<Icon name="check" />{/if}</span>{p.name}
 					</button>
 				{/each}
-				<button role="menuitem" class="ap-new" onclick={makeNew}>+ New pool</button>
+				<button type="button" role="menuitem" class="ap-new" onclick={makeNew}>+ New pool</button>
 			</div>
 		{/if}
 	</div>
@@ -83,41 +85,56 @@
 <style>
 	.ap {
 		position: relative;
-	}
-	/* The app's own button (.btn), like every other button on a ticket. */
-	.ap-btn,
-	.ap-one {
-		white-space: nowrap;
-	}
-	.ap-one {
-		height: 44px;
-		display: inline-flex;
-		align-items: center;
-		gap: 6px;
-		padding: 0 14px;
-		border: 0;
-		background: transparent;
-		color: var(--ink);
-		box-shadow:
-			inset 0 0 0 1.5px var(--ink-3),
-			4px 4px 0 var(--line);
-		font: 700 12px/1 var(--f-body);
-		letter-spacing: 0.12em;
-		text-transform: uppercase;
-		cursor: pointer;
-		white-space: nowrap;
-	}
-	.ap-one {
 		width: 100%;
+	}
+	.ap-btn {
+		width: 100%;
+		white-space: nowrap;
 		justify-content: center;
 	}
+	/* Full-width, self-contained pool toggle button (no .btn border conflicts or overflow) */
+	.ap-one {
+		width: 100%;
+		min-width: 0;
+		height: 42px;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 7px;
+		padding: 0 14px;
+		border-radius: 12px;
+		border: 1px solid rgba(242, 90, 144, 0.45);
+		background: linear-gradient(135deg, rgba(156, 123, 255, 0.14), rgba(242, 90, 144, 0.12));
+		color: #faf7fc;
+		font: 700 12px/1 var(--f-body, system-ui, sans-serif);
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		cursor: pointer;
+		transition: background 0.16s ease, border-color 0.16s ease, transform 0.14s ease, color 0.16s ease;
+	}
+	.ap-one:hover {
+		border-color: rgba(242, 90, 144, 0.75);
+		background: linear-gradient(135deg, rgba(156, 123, 255, 0.22), rgba(242, 90, 144, 0.2));
+	}
+	.ap-one:active {
+		transform: scale(0.985);
+	}
 	.ap-one.in {
-		color: var(--ok);
+		background: rgba(60, 226, 155, 0.14);
+		border-color: rgba(60, 226, 155, 0.5);
+		color: #3ce29b;
+	}
+	.ap-one-lbl {
+		min-width: 0;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
 	}
 	.ap-btn :global(.ic),
 	.ap-one :global(.ic) {
 		width: 15px;
 		height: 15px;
+		flex-shrink: 0;
 	}
 	.ap-menu {
 		position: absolute;

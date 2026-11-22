@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import { auth } from '../auth.svelte';
 	import { discover, loadDiscover } from '../brand.svelte';
+	import { pools } from '../campaigns.svelte';
 	import { blockedCreators, blocks, loadBlocks } from '../safety.svelte';
 	import { addressFor } from '../creatorHost';
 	import { fit, NO_FILTERS, reelRate } from '../fit';
@@ -22,6 +23,7 @@
 	const acct = $derived(auth.account?.role === 'brand' ? auth.account : null);
 	const category = $derived(acct?.brand?.category || acct?.profile?.category || '');
 	const company = $derived(acct?.brand?.name || acct?.profile?.name || 'your brand');
+	const activePool = $derived(toPool ? pools.list.find((p) => p.id === toPool) ?? null : null);
 	const at = (slug: string, path: string) => (slug === pageSlug ? path : addressFor(slug, path));
 	// What brands said after working with each creator (averages; migration 190).
 	let reviews = $state<Record<string, { avg: number; n: number }>>({});
@@ -143,14 +145,23 @@
 
 <header class="ex-h">
 	<div class="ex-ht">
-		<span class="eb">Creators open to brands</span>
+		<span class="eb ex-eb">Creators open to brands</span>
 		<h1>Hire on <em>proof</em>, not followers.</h1>
 		<p>{all.length} creator{all.length === 1 ? '' : 's'} open to brands, ranked by their record on Miracle. <button class="ex-how" onclick={() => (how = true)}>How ranking works</button></p>
 	</div>
 	<label class="search ex-search"><Icon name="search" /><span class="sr">Search creators</span><input type="search" placeholder="Search by name, niche or city" bind:value={q} autocomplete="off" /></label>
 </header>
 
-{#if toPool}<div class="cr-banner">Adding to a pool. Tap <b>Pool</b> on the creators you want. <a href="/brand/creators?tab=pools&pool={toPool}">Done</a></div>{/if}
+{#if toPool}
+	<div class="ex-pool-banner" role="region" aria-label="Adding creators to pool">
+		<div class="ex-pool-info">
+			<span class="ex-pool-eb">Adding to pool</span>
+			<b>{activePool ? activePool.name : 'Your pool'}</b>
+			<small>{activePool ? `${activePool.members.length} creator${activePool.members.length === 1 ? '' : 's'} in pool · tap below to add or remove` : 'Tap Add on the creators you want'}</small>
+		</div>
+		<a class="ex-pool-done" href="/brand/creators?tab=pools&pool={toPool}">Done</a>
+	</div>
+{/if}
 
 {#if SHELVES.length}
 	<section class="ex-shelves" aria-label="Collections">
@@ -171,7 +182,7 @@
 		{#each NICHES as n, k (n)}<button class:on={niches.includes(n)} aria-pressed={niches.includes(n)} onclick={() => (niches = toggle(niches, n))}><i class="dt" style="--hue:var(--m{(k % 6) + 1})"></i>{n}</button>{/each}
 	</div>
 	<div class="ex-sort">
-		<label for="ex-sort" class="sr">Sort</label>
+		<label for="ex-sort" class="ex-sort-lbl">Sort</label>
 		<select id="ex-sort" class="inp" bind:value={sort}>
 			<option value="score">Miracle Score</option>
 			<option value="fit">Best fit</option>
@@ -212,10 +223,12 @@
 						{#each proofLines(c, reviews[c.id]) as p (p.text)}<span class="tone-{p.tone}">{p.text}</span>{/each}
 					</div>
 				{/if}
-				<div class="ex-acts">
-					<AddToPool creator={c.id} name={c.name} pool={toPool} />
+				<div class="ex-acts" class:pool-mode={!!toPool}>
+					<div class="ex-pool-slot">
+						<AddToPool creator={c.id} name={c.name} pool={toPool} />
+					</div>
 					<button class="btn ex-cmp" class:on={picked.includes(c.id)} aria-pressed={picked.includes(c.id)} onclick={() => pick(c.id)}><Icon name={picked.includes(c.id) ? 'check' : 'layers'} />Compare</button>
-					{#if c.accepting !== false}<a class="btn primary" href={at(c.slug, '/brand/new')}>Request</a>{:else}<a class="btn" href="/brand/creator/{c.id}">View</a>{/if}
+					{#if c.accepting !== false}<a class="btn primary ex-req" href={at(c.slug, '/brand/new')}>Request</a>{:else}<a class="btn ex-req" href="/brand/creator/{c.id}">View</a>{/if}
 				</div>
 			</article>
 		{:else}
@@ -334,12 +347,80 @@
 {/if}
 
 <style>
-	.ex-h { display: grid; gap: 14px; margin-bottom: 18px; }
-	.ex-ht h1 { margin: 6px 0 6px; font-size: clamp(28px, 6vw, 40px); }
+	.ex-h { display: grid; gap: 14px; padding-top: 10px; margin-bottom: 16px; }
+	.ex-eb { display: block; margin-bottom: 4px; }
+	.ex-ht h1 { margin: 4px 0 6px; font-size: clamp(28px, 6vw, 40px); line-height: 1.08; }
 	.ex-ht h1 em { font-family: var(--f-serif); font-weight: 400; font-style: italic; background: linear-gradient(90deg, var(--g1), var(--g2) 60%, var(--g3)); -webkit-background-clip: text; background-clip: text; color: transparent; padding-right: 4px; }
-	.ex-ht p { margin: 0; color: var(--ink-2); }
+	.ex-ht p { margin: 0; color: var(--ink-2); line-height: 1.45; }
 	.ex-how { border: 0; background: none; padding: 0; color: var(--accent); font: inherit; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
 	.ex-search { max-width: 560px; }
+
+	/* Pool-mode banner */
+	.ex-pool-banner {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 12px;
+		padding: 13px 14px;
+		margin: 0 0 14px;
+		border-radius: 18px;
+		background:
+			radial-gradient(110% 100% at 95% 0%, rgba(242, 90, 144, 0.22), transparent 60%),
+			radial-gradient(90% 90% at 0% 100%, rgba(156, 123, 255, 0.18), transparent 60%),
+			#1a141d;
+		border: 1px solid rgba(242, 90, 144, 0.35);
+		box-shadow: 0 10px 26px rgba(0, 0, 0, 0.32);
+	}
+	.ex-pool-info {
+		display: grid;
+		gap: 2px;
+		min-width: 0;
+	}
+	.ex-pool-eb {
+		font-family: var(--f-mono, ui-monospace, monospace);
+		font-size: 9.5px;
+		font-weight: 700;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+		background: linear-gradient(90deg, #9c7bff, #f25a90, #ffae6b);
+		-webkit-background-clip: text;
+		-webkit-text-fill-color: transparent;
+	}
+	.ex-pool-info b {
+		font-family: var(--f-serif, Georgia, serif);
+		font-size: 21px;
+		font-weight: 400;
+		line-height: 1.1;
+		color: #faf7fc;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+	.ex-pool-info small {
+		font-size: 12px;
+		color: #b8adc2;
+		line-height: 1.35;
+	}
+	.ex-pool-done {
+		flex-shrink: 0;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		padding: 9px 16px;
+		border-radius: 10px;
+		background: #faf7fc;
+		color: #140e16;
+		font: 800 12.5px/1 var(--f-body, system-ui, sans-serif);
+		letter-spacing: 0.02em;
+		text-decoration: none;
+		box-shadow: 0 3px 0 0 #f25a90;
+		transition: transform 0.14s ease, box-shadow 0.14s ease;
+	}
+	.ex-pool-done:active {
+		transform: translateY(2px);
+		box-shadow: 0 1px 0 0 #f25a90;
+	}
+
 	.ex-shelves { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(180px, 220px); gap: 10px; overflow-x: auto; padding: 2px 2px 12px; margin-bottom: 8px; scroll-snap-type: x mandatory; scrollbar-width: none; }
 	.ex-shelf { scroll-snap-align: start; display: grid; gap: 4px; text-align: left; padding: 14px; border-radius: 18px; border: 1px solid var(--line); background: radial-gradient(120% 90% at 100% 0%, color-mix(in oklab, var(--m1) 18%, transparent), transparent 60%), var(--surface); color: var(--ink); font: inherit; cursor: pointer; transition: border-color .2s, transform .2s; }
 	.ex-shelf:nth-child(3n + 2) { background: radial-gradient(120% 90% at 100% 0%, color-mix(in oklab, var(--m2) 18%, transparent), transparent 60%), var(--surface); }
@@ -351,14 +432,21 @@
 	.ex-faces i { width: 30px; height: 30px; border-radius: 50%; overflow: hidden; display: grid; place-items: center; margin-left: -8px; border: 2px solid var(--surface); background: var(--surface-2); font: 700 11px/1 var(--f-body); font-style: normal; color: var(--ink-2); }
 	.ex-faces i:first-child { margin-left: 0; }
 	.ex-faces img { width: 100%; height: 100%; object-fit: cover; }
-	.ex-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 12px; min-width: 0; }
+
+	.ex-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 14px; min-width: 0; }
 	.ex-niches { flex: 1 1 320px; min-width: 0; overflow-x: auto; flex-wrap: nowrap; scrollbar-width: none; }
 	.ex-fbtn span { margin-left: 4px; min-width: 18px; height: 18px; border-radius: 9px; display: inline-grid; place-items: center; background: var(--g2); color: #fff; font-size: 11px; }
-	.ex-sort { margin-left: auto; }
+	.ex-sort { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+	.ex-sort-lbl { font-family: var(--f-mono, ui-monospace, monospace); font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); }
 	.ex-sort select { height: 38px; min-width: 150px; }
+	@media (max-width: 600px) {
+		.ex-sort { width: 100%; margin-left: 0; justify-content: space-between; }
+		.ex-sort select { flex: 1; min-width: 0; }
+	}
+
 	.ex-now { margin: -4px 0 12px; color: var(--ink-2); font-size: 14px; }
 	.ex-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 330px), 1fr)); gap: 12px; }
-	.ex-card { display: grid; gap: 12px; padding: 14px; border-radius: 20px; border: 1px solid var(--line); background: var(--surface); animation: rise .45s cubic-bezier(.2, .9, .25, 1) both; animation-delay: calc(var(--i) * 30ms); min-width: 0; }
+	.ex-card { display: grid; gap: 12px; padding: 14px; border-radius: 20px; border: 1px solid var(--line); background: var(--surface); animation: rise .45s cubic-bezier(.2, .9, .25, 1) both; animation-delay: calc(var(--i) * 30ms); min-width: 0; max-width: 100%; }
 	.ex-top { display: grid; grid-template-columns: 54px minmax(0, 1fr) auto; gap: 12px; align-items: center; color: inherit; text-decoration: none; }
 	.ex-pic { width: 54px; height: 54px; border-radius: 50%; overflow: hidden; display: grid; place-items: center; background: linear-gradient(135deg, var(--g1), var(--g2) 60%, var(--g3)); padding: 2px; }
 	.ex-pic img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; border: 2px solid var(--surface); }
@@ -380,10 +468,34 @@
 	.ex-proof .tone-ok { background: color-mix(in oklab, var(--ok) 14%, transparent); color: var(--ok); }
 	.ex-proof .tone-warn { background: color-mix(in oklab, var(--warn) 14%, transparent); color: var(--warn); }
 	.ex-proof .tone-info { background: color-mix(in oklab, var(--g1) 12%, transparent); color: var(--g1); }
-	.ex-acts { display: grid; grid-template-columns: auto auto minmax(0, 1fr); gap: 8px; align-items: center; }
-	.ex-acts :global(.btn) { justify-content: center; }
+
+	/* Card Actions: clean non-overflowing grid on mobile & desktop */
+	.ex-acts {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.15fr);
+		gap: 8px;
+		align-items: center;
+		min-width: 0;
+	}
+	.ex-acts.pool-mode {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+	.ex-acts.pool-mode .ex-pool-slot {
+		grid-column: 1 / -1;
+	}
+	.ex-pool-slot {
+		min-width: 0;
+	}
+	.ex-acts :global(.btn) {
+		width: 100%;
+		min-width: 0;
+		padding-inline: 10px;
+		justify-content: center;
+		white-space: nowrap;
+	}
 	.ex-cmp.on { border-color: var(--g2); color: var(--g2); }
 	.ex-more { display: flex; margin: 16px auto 0; }
+
 	.ex-tray { position: fixed; z-index: 45; left: 50%; transform: translateX(-50%); bottom: calc(20px + env(safe-area-inset-bottom, 0px)); display: flex; align-items: center; gap: 10px; padding: 10px 10px 10px 14px; border-radius: 18px; border: 1px solid var(--line-strong); background: var(--surface); box-shadow: 0 20px 40px -18px rgba(0, 0, 0, .55); max-width: calc(100% - 24px); }
 	.ex-tray.ex-tray-ph { bottom: calc(84px + env(safe-area-inset-bottom, 0px)); }
 	.ex-tray .ex-faces { margin: 0; }
@@ -418,6 +530,6 @@
 	.ex-howd li b { color: var(--ink); font-size: 14.5px; }
 	.ex-howd li span { grid-row: 1; grid-column: 2; font: 400 20px/1 var(--f-serif); color: var(--g2); }
 	.ex-note { font-size: 13.5px; }
-	@media (min-width: 761px) { .ex-h { grid-template-columns: minmax(0, 1fr) minmax(280px, 420px); align-items: end; } }
+	@media (min-width: 761px) { .ex-h { grid-template-columns: minmax(0, 1fr) minmax(280px, 420px); align-items: end; padding-top: 0; } }
 	@media (prefers-reduced-motion: reduce) { .ex-card { animation: none; } }
 </style>
