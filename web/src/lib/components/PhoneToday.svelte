@@ -212,7 +212,7 @@
 	const selDay = $derived(week[sel]);
 	const ORDER = ['shoot', 'draft', 'product', 'live', 'pay', 'follow'];
 	// The leaf's band takes the colour of the day's first thing, as on a collab's Dates.
-	const LEAF: Record<string, string> = { shoot: '#9C7BFF', draft: '#C9B6FF', product: '#FFAE6B', live: '#F25A90', pay: '#6FD08C', follow: '#EFB35A' };
+	const LEAF: Record<string, string> = { shoot: 'var(--g2)', draft: 'var(--g1)', product: 'var(--g3)', live: 'var(--h-creating)', pay: '#6FD08C', follow: '#EFB35A' };
 	const selList = $derived([...selDay.list].sort((a, b) => ORDER.indexOf(a.kind) - ORDER.indexOf(b.kind)));
 	const short = (d: Date, i: number) => (i === 0 ? 'Today' : d.toLocaleDateString('en-IN', { weekday: 'short' }));
 	const longDate = (d: Date) => d.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'short' });

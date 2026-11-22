@@ -1,17 +1,19 @@
 /* Layout: a creator's atelier desk. A glass rail on the left, a dark "earnings" signature card that leads the day,
    the collab board as the workbench. Phones get a glass bottom dock, a floating add button and a full-screen drawer.
-   Signature: the Instagram story-ring gradient (plum → cerise → peach) used sparingly on rings, goal, hero mesh and confetti. */
+   Signature: burgundy, rose and copper on rings, goals and primary actions. */
 :root{
+  --burgundy:#702B32; --on-burgundy:#FFF5EF;
+  --wine-highlight:#D7978E; --wine-rose:#D17B7C; --wine-copper:#E2AE8E;
   --bg:#F7F4F4; --surface:#FFFFFF; --surface-2:#F2EDED; --line:#EAE2E2; --line-strong:#D9CFCF;
   --ink:#1E171C; --ink-2:#4F464C; --ink-3:#6F656C;
-  --accent:#C8255E; --accent-ink:#FFFFFF;
-  --g1:#6B3FD4; --g2:#D4296A; --g3:#F2994A; --on-grad:#FFFFFF;
+  --accent:var(--burgundy); --accent-ink:#FFFFFF;
+  --g1:var(--burgundy); --g2:#934549; --g3:#a4523c; --on-grad:#FFFFFF;
   --grad:linear-gradient(115deg,var(--g1),var(--g2) 52%,var(--g3));
-  --hero:#1C1219; --hero-ink:#FBF2F6;
+  --hero:#291417; --hero-ink:#FBF2F6;
   --chrome:#1E171C; --chrome-ink:#F7F4F4;
-  --h-request:#3A67D8; --h-nego:#B4700A; --h-confirmed:#7550D0; --h-creating:#C8255E; --h-live:#0B877D; --h-wrapped:#4A7A3A;
+  --h-request:#3A67D8; --h-nego:#B4700A; --h-confirmed:#955758; --h-creating:var(--burgundy); --h-live:#0B877D; --h-wrapped:#4A7A3A;
   --ok:#2C7A45; --warn:#B4700A; --bad:#C2372E;
-  --m1:#A8466E; --m2:#2F6F9F; --m3:#3D7F6A; --m4:#A66A2C; --m5:#6A55B4; --m6:#7D6A3E;
+  --m1:#A8466E; --m2:#2F6F9F; --m3:#3D7F6A; --m4:#A66A2C; --m5:#975355; --m6:#7D6A3E;
   --aur-o:.16; --grain-o:.07; --grain-blend:multiply;
   --shadow-sm:0 1px 2px rgba(40,22,32,.06);
   --shadow:0 1px 2px rgba(40,22,32,.05),0 10px 30px rgba(40,22,32,.08);
@@ -28,15 +30,15 @@
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
-    --bg:#110D11; --surface:#1A151A; --surface-2:#231D23; --line:#2E262E; --line-strong:#3E343E;
-    --ink:#F4EEF2; --ink-2:#C9BFC6; --ink-3:#A39AA1;
-    --accent:#F25A90; --accent-ink:#1C0912;
-    --g1:#9C7BFF; --g2:#F25A90; --g3:#FFAE6B;
-    --hero:#1F151E; --hero-ink:#FBF2F6;
-    --chrome:#09070A; --chrome-ink:#EDE6EB;
-    --h-request:#7EA2FF; --h-nego:#EFB35A; --h-confirmed:#B49CFF; --h-creating:#F25A90; --h-live:#4CCFC2; --h-wrapped:#93CF82;
+    --bg:#160e10; --surface:#211618; --surface-2:#2e1e20; --line:#3a282b; --line-strong:#583b3f;
+    --ink:#faf1ed; --ink-2:#d3c1bf; --ink-3:#b69f9d;
+    --accent:var(--wine-rose); --accent-ink:#291013; --on-grad:#281416;
+    --g1:var(--wine-highlight); --g2:var(--wine-rose); --g3:var(--wine-copper);
+    --hero:#32191d; --hero-ink:#FBF2F6;
+    --chrome:#100a0b; --chrome-ink:#EDE6EB;
+    --h-request:#7EA2FF; --h-nego:#EFB35A; --h-confirmed:#d99c96; --h-creating:var(--wine-rose); --h-live:#4CCFC2; --h-wrapped:#93CF82;
     --ok:#6FD08C; --warn:#EFB35A; --bad:#FF7B70;
-    --m1:#E58AB0; --m2:#7DB4E3; --m3:#7CC7AE; --m4:#E3A665; --m5:#AE9CF0; --m6:#CDB083;
+    --m1:#E58AB0; --m2:#7DB4E3; --m3:#7CC7AE; --m4:#E3A665; --m5:#c48b82; --m6:#CDB083;
     --aur-o:.2; --grain-o:.06; --grain-blend:soft-light;
     --shadow-sm:0 1px 2px rgba(0,0,0,.35);
     --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px rgba(0,0,0,.4);
@@ -46,15 +48,15 @@
   }
 }
 :root[data-theme="dark"]{
-  --bg:#110D11; --surface:#1A151A; --surface-2:#231D23; --line:#2E262E; --line-strong:#3E343E;
-  --ink:#F4EEF2; --ink-2:#C9BFC6; --ink-3:#A39AA1;
-  --accent:#F25A90; --accent-ink:#1C0912;
-  --g1:#9C7BFF; --g2:#F25A90; --g3:#FFAE6B;
-  --hero:#1F151E; --hero-ink:#FBF2F6;
-  --chrome:#09070A; --chrome-ink:#EDE6EB;
-  --h-request:#7EA2FF; --h-nego:#EFB35A; --h-confirmed:#B49CFF; --h-creating:#F25A90; --h-live:#4CCFC2; --h-wrapped:#93CF82;
+  --bg:#160e10; --surface:#211618; --surface-2:#2e1e20; --line:#3a282b; --line-strong:#583b3f;
+  --ink:#faf1ed; --ink-2:#d3c1bf; --ink-3:#b69f9d;
+  --accent:var(--wine-rose); --accent-ink:#291013; --on-grad:#281416;
+  --g1:var(--wine-highlight); --g2:var(--wine-rose); --g3:var(--wine-copper);
+  --hero:#32191d; --hero-ink:#FBF2F6;
+  --chrome:#100a0b; --chrome-ink:#EDE6EB;
+  --h-request:#7EA2FF; --h-nego:#EFB35A; --h-confirmed:#d99c96; --h-creating:var(--wine-rose); --h-live:#4CCFC2; --h-wrapped:#93CF82;
   --ok:#6FD08C; --warn:#EFB35A; --bad:#FF7B70;
-  --m1:#E58AB0; --m2:#7DB4E3; --m3:#7CC7AE; --m4:#E3A665; --m5:#AE9CF0; --m6:#CDB083;
+  --m1:#E58AB0; --m2:#7DB4E3; --m3:#7CC7AE; --m4:#E3A665; --m5:#c48b82; --m6:#CDB083;
   --aur-o:.2; --grain-o:.06; --grain-blend:soft-light;
   --shadow-sm:0 1px 2px rgba(0,0,0,.35);
   --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px rgba(0,0,0,.4);
@@ -2155,7 +2157,7 @@ body{font-feature-settings:'cv11','ss01';letter-spacing:-.005em}
 
 /* The phone app (Android draws apps edge to edge): a solid strip behind the clock and status icons, so the
    page never scrolls underneath them. */
-html.native body::after{content:"";position:fixed;z-index:10000;top:0;left:0;right:0;height:env(safe-area-inset-top,0px);background:var(--bg,#110D11);pointer-events:none}
+html.native body::after{content:"";position:fixed;z-index:10000;top:0;left:0;right:0;height:env(safe-area-inset-top,0px);background:var(--bg,#160e10);pointer-events:none}
 
 /* Phones and the phone app: no scrollbars anywhere (they still scroll), like a native app. */
 @media (hover:none) and (pointer:coarse){html,html *{scrollbar-width:none}html ::-webkit-scrollbar{display:none;width:0;height:0}}

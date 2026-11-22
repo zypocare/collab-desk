@@ -27,7 +27,7 @@
   /* ---------- NeoPOP buttons ---------- */
   [data-side] .btn { --edge: var(--line-strong); border-radius: 0; border: 1px solid var(--line); background: var(--surface); box-shadow: 3px 3px 0 var(--edge); transition: transform .08s ease, box-shadow .08s ease, background .2s; }
   [data-side] .btn.grad { --edge: color-mix(in oklab, var(--g1) 72%, #000); border-color: transparent; box-shadow: 4px 4px 0 var(--edge); }
-  [data-side] .btn.primary { --edge: var(--accent); background: var(--ink); color: var(--bg); border-color: transparent; box-shadow: 4px 4px 0 var(--edge); }
+  [data-side] .btn.primary { --edge: var(--accent); background: var(--burgundy); color: var(--on-burgundy); border-color: transparent; box-shadow: 4px 4px 0 var(--edge); }
   [data-side] :is(.btn, .btn.grad, .btn.primary):active { transform: translate(3px, 3px); opacity: 1; box-shadow: 0 0 0 var(--edge); }
   [data-side] .btn.lg { border-radius: 0; }
   [data-side] .btn.sm { border-radius: 0; box-shadow: 2.5px 2.5px 0 var(--edge); }
@@ -932,10 +932,10 @@
   [data-desk] .side-it .ic { width: 19px; height: 19px; }
   [data-desk] .side-it:hover { background: rgba(255, 255, 255, .04); color: rgba(255, 255, 255, .8); }
   [data-desk] .side-it[aria-current="page"] { background: rgba(255, 255, 255, .06); color: #fff; box-shadow: none; }
-  [data-desk] .side-it[aria-current="page"]::before { content: ''; position: absolute; left: -16px; top: 10px; bottom: 10px; width: 3px; border-radius: 0 3px 3px 0; background: linear-gradient(180deg, #9C7BFF, #F25A90, #FFAE6B); }
+  [data-desk] .side-it[aria-current="page"]::before { content: ''; position: absolute; left: -16px; top: 10px; bottom: 10px; width: 3px; border-radius: 0 3px 3px 0; background: linear-gradient(180deg, var(--wine-highlight), var(--wine-rose), var(--wine-copper)); }
   [data-desk] .side-badge { min-width: 20px; height: 20px; padding: 0 6px; box-sizing: border-box; border-radius: 999px; background: #FF7B70; color: #1C0912; font: 800 11px/20px var(--f-body, inherit); letter-spacing: 0; text-align: center; }
   [data-desk] .side-end { margin-top: auto; display: flex; flex-direction: column; gap: 16px; padding: 0 4px; }
-  [data-desk] .side-ask { position: relative; overflow: hidden; height: 48px; border: 0; border-radius: 0; background: #F4EEF2; color: #1E171C; font: 700 14.5px var(--f-body, inherit); display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 4px 4px 0 #F25A90; cursor: pointer; transition: transform .07s, box-shadow .07s; }
+  [data-desk] .side-ask { position: relative; overflow: hidden; height: 48px; border: 0; border-radius: 0; background: #F4EEF2; color: #1E171C; font: 700 14.5px var(--f-body, inherit); display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 4px 4px 0 var(--wine-rose); cursor: pointer; transition: transform .07s, box-shadow .07s; }
   [data-desk] .side-ask .ic { width: 17px; height: 17px; color: #C8255E; }
   [data-desk] .side-ask:active { transform: translate(3px, 3px); box-shadow: none; }
   [data-desk] .side-ask::after { content: ''; position: absolute; top: 0; bottom: 0; left: -60%; width: 45%; background: linear-gradient(100deg, transparent, rgba(255, 255, 255, .55), transparent); transform: skewX(-18deg); animation: cr-sweep 5s ease-in-out 1s infinite; }
@@ -946,7 +946,7 @@
   [data-desk] .side-av { width: 40px; height: 40px; flex: none; display: grid; place-items: center; }
   @keyframes cr-sweep { 0%, 70% { left: -60%; } 100% { left: 130%; } }
   /* Today's page: the design's margins and glow. */
-  [data-desk] .main:has(.lt) { --lt-gut: 40px; padding: 0 40px 48px; background: radial-gradient(900px 420px at 85% -10%, rgba(156, 123, 255, .16), transparent 60%), radial-gradient(700px 380px at 10% 0%, rgba(242, 90, 144, .10), transparent 60%); }
+  [data-desk] .main:has(.lt) { --lt-gut: 40px; padding: 0 40px 48px; background: radial-gradient(900px 420px at 85% -10%, color-mix(in srgb, var(--wine-highlight) 16%, transparent), transparent 60%), radial-gradient(700px 380px at 10% 0%, color-mix(in srgb, var(--wine-rose) 10%, transparent), transparent 60%); }
   [data-desk] .pg:has(> .lt) { padding-top: 30px; }
 }
 
@@ -994,7 +994,7 @@
 @media (min-width: 761px) {
   [data-side] .btn { --edge: var(--line-strong); border-radius: 0; border: 1px solid var(--line); background: var(--surface); box-shadow: 3px 3px 0 var(--edge); transition: transform .08s ease, box-shadow .08s ease, background .2s; }
   [data-side] .btn.grad { --edge: color-mix(in oklab, var(--g1) 72%, #000); border-color: transparent; box-shadow: 4px 4px 0 var(--edge); }
-  [data-side] .btn.primary { --edge: var(--accent); background: var(--ink); color: var(--bg); border-color: transparent; box-shadow: 4px 4px 0 var(--edge); }
+  [data-side] .btn.primary { --edge: var(--accent); background: var(--burgundy); color: var(--on-burgundy); border-color: transparent; box-shadow: 4px 4px 0 var(--edge); }
   [data-side] :is(.btn, .btn.grad, .btn.primary):active { transform: translate(3px, 3px); opacity: 1; box-shadow: 0 0 0 var(--edge); }
   [data-side] .btn.lg { border-radius: 0; }
   [data-side] .btn.sm { border-radius: 0; box-shadow: 2.5px 2.5px 0 var(--edge); }
@@ -1429,7 +1429,7 @@
 /* ===== LAPTOP FRAME: page headers, the top-right buttons and tabs, cards, tables and lists ===== */
 @media (min-width: 761px) {
   /* Every page sits on the same glow as Today, with the same margins. */
-  [data-desk] .main { --lt-gut: 40px; padding: 0 40px 56px; background: radial-gradient(900px 420px at 85% -10%, rgba(156, 123, 255, .16), transparent 60%), radial-gradient(700px 380px at 10% 0%, rgba(242, 90, 144, .10), transparent 60%); }
+  [data-desk] .main { --lt-gut: 40px; padding: 0 40px 56px; background: radial-gradient(900px 420px at 85% -10%, color-mix(in srgb, var(--wine-highlight) 16%, transparent), transparent 60%), radial-gradient(700px 380px at 10% 0%, color-mix(in srgb, var(--wine-rose) 10%, transparent), transparent 60%); }
   [data-desk] .pg { padding-top: 30px; }
 
   /* Page header: spaced-capital eyebrow, serif title with the gradient word. */
@@ -1442,7 +1442,7 @@
   /* Top right: Ask Desk and New collab as NeoPOP blocks; page tabs as an outlined pill. */
   [data-desk] .at-bar { gap: 14px; }
   [data-desk] .at-bar .btn { height: 44px; padding: 0 18px; font-weight: 700; }
-  [data-desk] .at-bar .at-ask { --edge: #F25A90; background: var(--ink); color: var(--bg); border: 0; box-shadow: 4px 4px 0 #F25A90; }
+  [data-desk] .at-bar .at-ask { --edge: var(--wine-rose); background: var(--ink); color: var(--bg); border: 0; box-shadow: 4px 4px 0 var(--wine-rose); }
   [data-desk] .at-bar .at-ask .ic { color: var(--g3); }
   [data-desk] .at-bar .at-new { box-shadow: 4px 4px 0 #5c3ea0; }
   [data-desk] .at-tabs { display: inline-flex; gap: 0; padding: 3px; border: 1px solid var(--line-strong); border-radius: 999px; background: transparent; }
@@ -1457,7 +1457,7 @@
   [data-desk] :is(.at-h, .md-h) .bx-eb { font-size: 10.5px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; color: var(--ink-3); }
   /* Money cards and glowing heroes: the plum card from Today. */
   [data-desk] :is(.kpi.glow, .hero-card, .md-hero, .bx-hero.at-hero) { position: relative; overflow: hidden; border: 0; color: #fff;
-    background: radial-gradient(120% 90% at 0% 0%, rgba(242, 90, 144, .35), transparent 55%), radial-gradient(90% 90% at 100% 100%, rgba(156, 123, 255, .30), transparent 60%), linear-gradient(140deg, #2a1424, #160c14 70%); }
+    background: radial-gradient(120% 90% at 0% 0%, color-mix(in srgb, var(--wine-rose) 35%, transparent), transparent 55%), radial-gradient(90% 90% at 100% 100%, color-mix(in srgb, var(--wine-highlight) 30%, transparent), transparent 60%), linear-gradient(140deg, #402125, #211215 70%); }
   [data-desk] .kpi.glow :is(.lbl, .sub) { color: rgba(255, 255, 255, .66); }
   [data-desk] .kpi .lbl { font-size: 10.5px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; }
   [data-desk] .kpi .big { font-family: var(--f-serif, Georgia, serif); font-weight: 400; font-size: 40px; letter-spacing: -.01em; }
@@ -2520,31 +2520,31 @@ html.cd-sheet, html.cd-sheet body { overflow: hidden; }
   [data-desk] :is(.drawer.as-page, .fold-page) .dr-b .sec.fold.open > h3::before { display: none; }
   [data-desk] :is(.drawer.as-page, .fold-page) .dr-b .sec.fold.open > h3::after, [data-desk] :is(.drawer.as-page, .fold-page) .dr-b .sec.fold.open > h3[data-sum]::after { display: block; content: "Done"; order: 2; flex: none; margin-left: auto; padding: 6px 2px; cursor: pointer; font: 700 14px var(--f-body, inherit); color: var(--ink); }
   [data-desk] :is(.drawer.as-page, .fold-page) .dr-b .sec.fold.open > h3 > :is(span, small) { order: 3; flex-basis: 100%; margin: 2px 0 0; padding: 0; border: 0; background: none; font: 400 12.5px/1.4 var(--f-body, inherit); letter-spacing: 0; text-transform: none; color: var(--ink-3); }
-  [data-desk] :is(.drawer.as-page, .fold-page) .dr-b .sec.fold[data-ri^="work-"] { --rh: #9C7BFF; }
-  [data-desk] :is(.drawer.as-page, .fold-page) .dr-b .sec.fold[data-ri^="money-"] { --rh: #FFAE6B; }
-  [data-desk] :is(.drawer.as-page, .fold-page) .dr-b .sec.fold[data-ri^="brand-"] { --rh: #F25A90; }
+  [data-desk] :is(.drawer.as-page, .fold-page) .dr-b .sec.fold[data-ri^="work-"] { --rh: var(--wine-highlight); }
+  [data-desk] :is(.drawer.as-page, .fold-page) .dr-b .sec.fold[data-ri^="money-"] { --rh: var(--wine-copper); }
+  [data-desk] :is(.drawer.as-page, .fold-page) .dr-b .sec.fold[data-ri^="brand-"] { --rh: var(--wine-rose); }
   [data-desk] :is(.drawer.as-page, .fold-page) .dr-b .sec.fold[data-ri^="more-"] { --rh: #A79CB0; }
-  [data-desk] :is(.drawer.as-page, .fold-page) .dr-b .sec.fold[data-ri="brand-chat"] { --ri: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23F25A90%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M4 5h16v11H9l-5 4z%22/%3E%3C/svg%3E"); }
-  [data-desk] :is(.drawer.as-page, .fold-page) .dr-b .sec.fold[data-ri="money-deal"] { --ri: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23FFAE6B%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M7 4h10M7 9h10M7 4c6 0 6 10 0 10h-1l8 7%22/%3E%3C/svg%3E"); }
-  [data-desk] :is(.drawer.as-page, .fold-page) .dr-b .sec.fold[data-ri="money-doc"] { --ri: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23FFAE6B%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M6 3h9l4 4v14H6z%22/%3E%3Cpath d=%22M9 12h7M9 16h7%22/%3E%3C/svg%3E"); }
-  [data-desk] :is(.drawer.as-page, .fold-page) .dr-b .sec.fold[data-ri="work-pieces"] { --ri: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%239C7BFF%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Crect x=%223%22 y=%224%22 width=%2218%22 height=%2216%22 rx=%223%22/%3E%3Cpath d=%22M10 9l5 3-5 3z%22/%3E%3C/svg%3E"); }
-  [data-desk] :is(.drawer.as-page, .fold-page) .dr-b .sec.fold[data-ri="brand-repeat"] { --ri: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23F25A90%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M17 2l3 3-3 3M4 11V9a4 4 0 014-4h12M7 22l-3-3 3-3M20 13v2a4 4 0 01-4 4H4%22/%3E%3C/svg%3E"); }
-  [data-desk] :is(.drawer.as-page, .fold-page) .dr-b .sec.fold[data-ri="brand-star"] { --ri: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23F25A90%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z%22/%3E%3C/svg%3E"); }
-  [data-desk] :is(.drawer.as-page, .fold-page) .dr-b .sec.fold[data-ri="brand-case"] { --ri: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23F25A90%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Crect x=%223%22 y=%227%22 width=%2218%22 height=%2213%22 rx=%222%22/%3E%3Cpath d=%22M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2%22/%3E%3C/svg%3E"); }
-  [data-desk] :is(.drawer.as-page, .fold-page) .dr-b .sec.fold[data-ri="money-shield"] { --ri: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23FFAE6B%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z%22/%3E%3C/svg%3E"); }
-  [data-desk] :is(.drawer.as-page, .fold-page) .dr-b .sec.fold[data-ri="work-box"] { --ri: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%239C7BFF%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M3 7l9-4 9 4-9 4z%22/%3E%3Cpath d=%22M3 7v10l9 4 9-4V7M12 11v10%22/%3E%3C/svg%3E"); }
-  [data-desk] :is(.drawer.as-page, .fold-page) .dr-b .sec.fold[data-ri="work-cal"] { --ri: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%239C7BFF%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Crect x=%223%22 y=%225%22 width=%2218%22 height=%2216%22 rx=%223%22/%3E%3Cpath d=%22M3 10h18M8 3v4M16 3v4%22/%3E%3C/svg%3E"); }
-  [data-desk] :is(.drawer.as-page, .fold-page) .dr-b .sec.fold[data-ri="work-film"] { --ri: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%239C7BFF%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Ccircle cx=%2212%22 cy=%2212%22 r=%229%22/%3E%3Cpath d=%22M10 8.5l5 3.5-5 3.5z%22/%3E%3C/svg%3E"); }
-  [data-desk] :is(.drawer.as-page, .fold-page) .dr-b .sec.fold[data-ri="work-check"] { --ri: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%239C7BFF%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M10 6h10M10 12h10M10 18h10M4 6l1.2 1.2L7.5 5M4 12l1.2 1.2L7.5 11M4 18l1.2 1.2L7.5 17%22/%3E%3C/svg%3E"); }
-  [data-desk] :is(.drawer.as-page, .fold-page) .dr-b .sec.fold[data-ri="work-ig"] { --ri: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%239C7BFF%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Crect x=%223%22 y=%223%22 width=%2218%22 height=%2218%22 rx=%225%22/%3E%3Ccircle cx=%2212%22 cy=%2212%22 r=%224%22/%3E%3C/svg%3E"); }
-  [data-desk] :is(.drawer.as-page, .fold-page) .dr-b .sec.fold[data-ri="work-tag"] { --ri: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%239C7BFF%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M3 12V4h8l10 10-8 8z%22/%3E%3Ccircle cx=%227.5%22 cy=%227.5%22 r=%221.5%22/%3E%3C/svg%3E"); }
-  [data-desk] :is(.drawer.as-page, .fold-page) .dr-b .sec.fold[data-ri="money-wallet"] { --ri: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23FFAE6B%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Crect x=%223%22 y=%226%22 width=%2218%22 height=%2214%22 rx=%223%22/%3E%3Cpath d=%22M3 10h18M16 15h2%22/%3E%3C/svg%3E"); }
+  [data-desk] :is(.drawer.as-page, .fold-page) .dr-b .sec.fold[data-ri="brand-chat"] { --ri: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23D17B7C%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M4 5h16v11H9l-5 4z%22/%3E%3C/svg%3E"); }
+  [data-desk] :is(.drawer.as-page, .fold-page) .dr-b .sec.fold[data-ri="money-deal"] { --ri: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23E2AE8E%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M7 4h10M7 9h10M7 4c6 0 6 10 0 10h-1l8 7%22/%3E%3C/svg%3E"); }
+  [data-desk] :is(.drawer.as-page, .fold-page) .dr-b .sec.fold[data-ri="money-doc"] { --ri: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23E2AE8E%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M6 3h9l4 4v14H6z%22/%3E%3Cpath d=%22M9 12h7M9 16h7%22/%3E%3C/svg%3E"); }
+  [data-desk] :is(.drawer.as-page, .fold-page) .dr-b .sec.fold[data-ri="work-pieces"] { --ri: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23D7978E%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Crect x=%223%22 y=%224%22 width=%2218%22 height=%2216%22 rx=%223%22/%3E%3Cpath d=%22M10 9l5 3-5 3z%22/%3E%3C/svg%3E"); }
+  [data-desk] :is(.drawer.as-page, .fold-page) .dr-b .sec.fold[data-ri="brand-repeat"] { --ri: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23D17B7C%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M17 2l3 3-3 3M4 11V9a4 4 0 014-4h12M7 22l-3-3 3-3M20 13v2a4 4 0 01-4 4H4%22/%3E%3C/svg%3E"); }
+  [data-desk] :is(.drawer.as-page, .fold-page) .dr-b .sec.fold[data-ri="brand-star"] { --ri: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23D17B7C%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z%22/%3E%3C/svg%3E"); }
+  [data-desk] :is(.drawer.as-page, .fold-page) .dr-b .sec.fold[data-ri="brand-case"] { --ri: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23D17B7C%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Crect x=%223%22 y=%227%22 width=%2218%22 height=%2213%22 rx=%222%22/%3E%3Cpath d=%22M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2%22/%3E%3C/svg%3E"); }
+  [data-desk] :is(.drawer.as-page, .fold-page) .dr-b .sec.fold[data-ri="money-shield"] { --ri: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23E2AE8E%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z%22/%3E%3C/svg%3E"); }
+  [data-desk] :is(.drawer.as-page, .fold-page) .dr-b .sec.fold[data-ri="work-box"] { --ri: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23D7978E%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M3 7l9-4 9 4-9 4z%22/%3E%3Cpath d=%22M3 7v10l9 4 9-4V7M12 11v10%22/%3E%3C/svg%3E"); }
+  [data-desk] :is(.drawer.as-page, .fold-page) .dr-b .sec.fold[data-ri="work-cal"] { --ri: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23D7978E%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Crect x=%223%22 y=%225%22 width=%2218%22 height=%2216%22 rx=%223%22/%3E%3Cpath d=%22M3 10h18M8 3v4M16 3v4%22/%3E%3C/svg%3E"); }
+  [data-desk] :is(.drawer.as-page, .fold-page) .dr-b .sec.fold[data-ri="work-film"] { --ri: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23D7978E%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Ccircle cx=%2212%22 cy=%2212%22 r=%229%22/%3E%3Cpath d=%22M10 8.5l5 3.5-5 3.5z%22/%3E%3C/svg%3E"); }
+  [data-desk] :is(.drawer.as-page, .fold-page) .dr-b .sec.fold[data-ri="work-check"] { --ri: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23D7978E%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M10 6h10M10 12h10M10 18h10M4 6l1.2 1.2L7.5 5M4 12l1.2 1.2L7.5 11M4 18l1.2 1.2L7.5 17%22/%3E%3C/svg%3E"); }
+  [data-desk] :is(.drawer.as-page, .fold-page) .dr-b .sec.fold[data-ri="work-ig"] { --ri: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23D7978E%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Crect x=%223%22 y=%223%22 width=%2218%22 height=%2218%22 rx=%225%22/%3E%3Ccircle cx=%2212%22 cy=%2212%22 r=%224%22/%3E%3C/svg%3E"); }
+  [data-desk] :is(.drawer.as-page, .fold-page) .dr-b .sec.fold[data-ri="work-tag"] { --ri: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23D7978E%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M3 12V4h8l10 10-8 8z%22/%3E%3Ccircle cx=%227.5%22 cy=%227.5%22 r=%221.5%22/%3E%3C/svg%3E"); }
+  [data-desk] :is(.drawer.as-page, .fold-page) .dr-b .sec.fold[data-ri="money-wallet"] { --ri: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23E2AE8E%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Crect x=%223%22 y=%226%22 width=%2218%22 height=%2214%22 rx=%223%22/%3E%3Cpath d=%22M3 10h18M16 15h2%22/%3E%3C/svg%3E"); }
   [data-desk] :is(.drawer.as-page, .fold-page) .dr-b .sec.fold[data-ri="more-folder"] { --ri: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23A79CB0%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M3 6h7l2 2h9v11H3z%22/%3E%3C/svg%3E"); }
-  [data-desk] :is(.drawer.as-page, .fold-page) .dr-b .sec.fold[data-ri="money-receipt"] { --ri: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23FFAE6B%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M6 3h12v18l-3-2-3 2-3-2-3 2z%22/%3E%3Cpath d=%22M9 8h6M9 12h6%22/%3E%3C/svg%3E"); }
+  [data-desk] :is(.drawer.as-page, .fold-page) .dr-b .sec.fold[data-ri="money-receipt"] { --ri: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23E2AE8E%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M6 3h12v18l-3-2-3 2-3-2-3 2z%22/%3E%3Cpath d=%22M9 8h6M9 12h6%22/%3E%3C/svg%3E"); }
   [data-desk] :is(.drawer.as-page, .fold-page) .dr-b .sec.fold[data-ri="more-bell"] { --ri: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23A79CB0%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M6 16v-5a6 6 0 0112 0v5l2 2H4z%22/%3E%3Cpath d=%22M10 21h4%22/%3E%3C/svg%3E"); }
-  [data-desk] :is(.drawer.as-page, .fold-page) .dr-b .sec.fold[data-ri="brand-link"] { --ri: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23F25A90%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M10 14a4 4 0 006 0l3-3a4 4 0 00-6-6l-1 1M14 10a4 4 0 00-6 0l-3 3a4 4 0 006 6l1-1%22/%3E%3C/svg%3E"); }
-  [data-desk] :is(.drawer.as-page, .fold-page) .dr-b .sec.fold[data-ri="brand-doc"] { --ri: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23F25A90%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M6 3h9l4 4v14H6z%22/%3E%3Cpath d=%22M9 12h7M9 16h7%22/%3E%3C/svg%3E"); }
-  [data-desk] :is(.drawer.as-page, .fold-page) .dr-b .sec.fold[data-ri="brand-person"] { --ri: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23F25A90%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Ccircle cx=%2212%22 cy=%228%22 r=%224%22/%3E%3Cpath d=%22M4 21c1-4 4-6 8-6s7 2 8 6%22/%3E%3C/svg%3E"); }
+  [data-desk] :is(.drawer.as-page, .fold-page) .dr-b .sec.fold[data-ri="brand-link"] { --ri: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23D17B7C%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M10 14a4 4 0 006 0l3-3a4 4 0 00-6-6l-1 1M14 10a4 4 0 00-6 0l-3 3a4 4 0 006 6l1-1%22/%3E%3C/svg%3E"); }
+  [data-desk] :is(.drawer.as-page, .fold-page) .dr-b .sec.fold[data-ri="brand-doc"] { --ri: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23D17B7C%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cpath d=%22M6 3h9l4 4v14H6z%22/%3E%3Cpath d=%22M9 12h7M9 16h7%22/%3E%3C/svg%3E"); }
+  [data-desk] :is(.drawer.as-page, .fold-page) .dr-b .sec.fold[data-ri="brand-person"] { --ri: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23D17B7C%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Ccircle cx=%2212%22 cy=%228%22 r=%224%22/%3E%3Cpath d=%22M4 21c1-4 4-6 8-6s7 2 8 6%22/%3E%3C/svg%3E"); }
   [data-desk] :is(.drawer.as-page, .fold-page) .dr-b .sec.fold[data-ri="more-clock"] { --ri: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23A79CB0%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Ccircle cx=%2212%22 cy=%2212%22 r=%229%22/%3E%3Cpath d=%22M12 7v5l3 2%22/%3E%3C/svg%3E"); }
 }
 @media (max-width: 760px) {
@@ -2555,7 +2555,7 @@ html.cd-sheet, html.cd-sheet body { overflow: hidden; }
   [data-desk] .drawer.as-page .py-top em { font-style: normal; font-size: 10.5px; font-weight: 800; letter-spacing: .17em; text-transform: uppercase; color: var(--ink-3); }
   [data-desk] .drawer.as-page .py-top b { font: 400 44px/1 var(--f-serif, Georgia, serif); }
   [data-desk] .drawer.as-page .py-pill { flex: none; height: 24px; display: inline-flex; align-items: center; padding: 0 10px; border-radius: 999px; font-size: 11.5px; font-weight: 700; background: color-mix(in oklab, var(--h-p) 16%, transparent); color: var(--h-p); }
-  [data-desk] .drawer.as-page .py-pill.warn { --h-p: #FFAE6B; }
+  [data-desk] .drawer.as-page .py-pill.warn { --h-p: var(--wine-copper); }
   [data-desk] .drawer.as-page .py-pill.bad { --h-p: var(--bad); }
   [data-desk] .drawer.as-page .py-pill.ok { --h-p: var(--ok); }
   [data-desk] .drawer.as-page .py-pill.info { --h-p: #7EA2FF; }
@@ -2637,7 +2637,7 @@ html.cd-sheet, html.cd-sheet body { overflow: hidden; }
 }
 @media (max-width: 760px) {
   /* The person icon in a work group (a creator's audience, on the brand's creator page). */
-  [data-desk] :is(.drawer.as-page, .fold-page) .dr-b .sec.fold[data-ri="work-person"] { --ri: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%239C7BFF%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Ccircle cx=%2212%22 cy=%228%22 r=%224%22/%3E%3Cpath d=%22M4 21c1-4 4-6 8-6s7 2 8 6%22/%3E%3C/svg%3E"); }
+  [data-desk] :is(.drawer.as-page, .fold-page) .dr-b .sec.fold[data-ri="work-person"] { --ri: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23D7978E%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Ccircle cx=%2212%22 cy=%228%22 r=%224%22/%3E%3Cpath d=%22M4 21c1-4 4-6 8-6s7 2 8 6%22/%3E%3C/svg%3E"); }
 }
 @media (max-width: 760px) {
   /* Brand pages: the grouped rows line up with the cards above them. */
@@ -2740,15 +2740,20 @@ html.cd-sheet, html.cd-sheet body { overflow: hidden; }
   }
 
   /* 1. Hero Greeting + Living Multi-Mode Orb + Status Chips + Quick Actions */
-  [data-desk] .phone-today .ht {
-    /* The greeting sits on deep plum in both app themes. */
-    --ink: #f4eef2;
-    --ink-2: #c9bfc6;
-    --ink-3: #a39aa1;
-    --bg: #110d11;
-    --surface: #1a151a;
-    --line-strong: #3e343e;
+  /* These panels retain their dark burgundy finish in either app theme. */
+  [data-desk] .phone-today :is(.ht, .m-hero, .dk2-card, .cr-ticker) {
+    --g1: var(--wine-highlight);
+    --g2: var(--wine-rose);
+    --g3: var(--wine-copper);
+    --ink: #faf1ed;
+    --ink-2: #d3c1bf;
+    --ink-3: #b69f9d;
+    --bg: #160e10;
+    --surface: #211618;
+    --line-strong: #583b3f;
     color: var(--ink);
+  }
+  [data-desk] .phone-today .ht {
     position: relative;
     margin: 4px 0 0;
     padding: 16px;
@@ -2756,10 +2761,10 @@ html.cd-sheet, html.cd-sheet body { overflow: hidden; }
     border-radius: 24px;
     border: 1px solid transparent;
     background:
-      linear-gradient(148deg, #261a2b 0%, #181219 58%, #221621 100%) padding-box,
-      conic-gradient(from var(--ht-rim), rgba(156, 123, 255, 0.72), rgba(242, 90, 144, 0.78), rgba(255, 174, 107, 0.65), rgba(68, 50, 66, 0.26), rgba(156, 123, 255, 0.72)) border-box;
+      linear-gradient(148deg, #4a2329 0%, #241416 58%, #3c1c21 100%) padding-box,
+      conic-gradient(from var(--ht-rim), color-mix(in srgb, var(--wine-highlight) 72%, transparent), color-mix(in srgb, var(--wine-rose) 78%, transparent), color-mix(in srgb, var(--wine-copper) 65%, transparent), rgba(83, 48, 51, 0.26), color-mix(in srgb, var(--wine-highlight) 72%, transparent)) border-box;
     animation: ht-spin 12s linear infinite;
-    box-shadow: 0 22px 46px -24px rgba(242, 90, 144, 0.38);
+    box-shadow: 0 22px 46px -24px color-mix(in srgb, var(--wine-rose) 38%, transparent);
   }
   [data-desk] .phone-today .ht .ht-glow {
     opacity: 0.42;
@@ -2775,7 +2780,7 @@ html.cd-sheet, html.cd-sheet body { overflow: hidden; }
     border-radius: 99px;
     font-size: 11px;
     font-weight: 700;
-    background: linear-gradient(90deg, rgba(255, 209, 102, 0.18), rgba(242, 90, 144, 0.18));
+    background: linear-gradient(90deg, rgba(255, 209, 102, 0.18), color-mix(in srgb, var(--wine-rose) 18%, transparent));
     border: 1px solid rgba(255, 209, 102, 0.4);
     color: #FFD166;
   }
@@ -3012,15 +3017,15 @@ html.cd-sheet, html.cd-sheet body { overflow: hidden; }
     gap: 6px;
     padding: 10px 4px 9px;
     border-radius: 0;
-    border: 1px solid #3f3241;
-    background: rgba(25, 19, 26, 0.9);
+    border: 1px solid #56383c;
+    background: rgba(38, 22, 25, 0.9);
     color: var(--ink);
     font: 700 9.5px/1.1 var(--f-body, inherit);
     letter-spacing: 0.04em;
     text-transform: uppercase;
     text-decoration: none;
     cursor: pointer;
-    box-shadow: 2.5px 2.5px 0 #312632;
+    box-shadow: 2.5px 2.5px 0 #442a2d;
     transition: transform .12s cubic-bezier(.22, 1, .36, 1), box-shadow .12s;
   }
   [data-desk] .phone-today .qa-card:active {
@@ -3028,9 +3033,9 @@ html.cd-sheet, html.cd-sheet body { overflow: hidden; }
     box-shadow: none;
   }
   [data-desk] .phone-today .qa-card.primary {
-    background: var(--ink);
-    color: var(--bg);
-    border-color: var(--ink);
+    background: var(--burgundy);
+    color: var(--on-burgundy);
+    border-color: var(--wine-rose);
     box-shadow: 3px 3px 0 var(--g2);
   }
   [data-desk] .phone-today .qa-ic {
@@ -3045,7 +3050,7 @@ html.cd-sheet, html.cd-sheet body { overflow: hidden; }
   }
   [data-desk] .phone-today .qa-card.primary .qa-ic {
     background: transparent;
-    color: var(--bg);
+    color: var(--on-burgundy);
     box-shadow: none;
   }
   [data-desk] .phone-today .qa-ic .ic { width: 18px; height: 18px; stroke-width: 2; }
@@ -3067,7 +3072,7 @@ html.cd-sheet, html.cd-sheet body { overflow: hidden; }
     margin: 12px 0 14px;
     border: 1px solid var(--line);
     border-radius: 12px;
-    background: #171217;
+    background: var(--bg);
     overflow: hidden;
   }
 
@@ -3078,10 +3083,10 @@ html.cd-sheet, html.cd-sheet body { overflow: hidden; }
     color: #FBF2F6;
     border: 1px solid transparent;
     background:
-      linear-gradient(142deg, #271b2e 0%, #1a141b 56%, #241822 100%) padding-box,
-      conic-gradient(from var(--ht-rim), rgba(156, 123, 255, 0.85), rgba(242, 90, 144, 0.8), rgba(255, 174, 107, 0.75), rgba(70, 52, 66, 0.28), rgba(156, 123, 255, 0.85)) border-box;
+      linear-gradient(142deg, #442127 0%, #221315 56%, #351b1e 100%) padding-box,
+      conic-gradient(from var(--ht-rim), color-mix(in srgb, var(--wine-highlight) 85%, transparent), color-mix(in srgb, var(--wine-rose) 80%, transparent), color-mix(in srgb, var(--wine-copper) 75%, transparent), rgba(83, 48, 51, 0.28), color-mix(in srgb, var(--wine-highlight) 85%, transparent)) border-box;
     animation: ht-spin 10.5s linear infinite;
-    box-shadow: 0 22px 46px -24px rgba(156, 123, 255, 0.38);
+    box-shadow: 0 22px 46px -24px color-mix(in srgb, var(--wine-highlight) 38%, transparent);
   }
   [data-desk] .phone-today .m-hero > .mesh {
     display: none;
@@ -3112,8 +3117,8 @@ html.cd-sheet, html.cd-sheet body { overflow: hidden; }
     height: 26px;
     padding: 0 9px;
     border-radius: 0;
-    border: 1px solid rgba(156, 123, 255, 0.4);
-    background: rgba(156, 123, 255, 0.12);
+    border: 1px solid color-mix(in srgb, var(--wine-highlight) 40%, transparent);
+    background: color-mix(in srgb, var(--wine-highlight) 12%, transparent);
     color: var(--g1);
     font: 700 10px var(--f-mono, ui-monospace, Consolas, monospace);
     text-transform: uppercase;
@@ -3132,7 +3137,7 @@ html.cd-sheet, html.cd-sheet body { overflow: hidden; }
     padding: 8px 10px;
     border-radius: 12px;
     background: rgba(17, 13, 17, 0.62);
-    border: 1px solid #392c3b;
+    border: 1px solid #4d3135;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -3195,9 +3200,9 @@ html.cd-sheet, html.cd-sheet body { overflow: hidden; }
     overflow-wrap: anywhere;
   }
   [data-desk] .phone-today .m-hero .hc-foot > a.active-tile {
-    background: rgba(242, 90, 144, 0.14);
+    background: color-mix(in srgb, var(--wine-rose) 14%, transparent);
     border-color: var(--g2);
-    box-shadow: 0 6px 16px -6px rgba(242, 90, 144, 0.35);
+    box-shadow: 0 6px 16px -6px color-mix(in srgb, var(--wine-rose) 35%, transparent);
   }
   [data-desk] .phone-today .m-hero .hc-foot b.od {
     color: #FF9BA6;
@@ -3300,10 +3305,10 @@ html.cd-sheet, html.cd-sheet body { overflow: hidden; }
     padding: 0;
     border: 1.5px solid transparent;
     background:
-      linear-gradient(155deg, #211728 0%, #151017 58%, #1e141f 100%) padding-box,
-      conic-gradient(from var(--dk-rim), rgba(156, 123, 255, 0.88), rgba(242, 90, 144, 0.82), rgba(255, 174, 107, 0.72), rgba(90, 65, 98, 0.35), rgba(156, 123, 255, 0.88)) border-box;
+      linear-gradient(155deg, #3b1d22 0%, #231517 58%, #2e171a 100%) padding-box,
+      conic-gradient(from var(--dk-rim), color-mix(in srgb, var(--wine-highlight) 88%, transparent), color-mix(in srgb, var(--wine-rose) 82%, transparent), color-mix(in srgb, var(--wine-copper) 72%, transparent), rgba(91, 50, 54, 0.35), color-mix(in srgb, var(--wine-highlight) 88%, transparent)) border-box;
     animation: dk-spin 11s linear infinite;
-    box-shadow: 0 24px 50px -24px rgba(156, 123, 255, 0.42);
+    box-shadow: 0 24px 50px -24px color-mix(in srgb, var(--wine-highlight) 42%, transparent);
   }
   [data-desk] .phone-today .dk2-in {
     border-radius: 22.5px;
@@ -3317,8 +3322,8 @@ html.cd-sheet, html.cd-sheet body { overflow: hidden; }
     border-radius: 18px;
     border: 1px solid transparent;
     background:
-      linear-gradient(160deg, #1f1823, #151017 70%) padding-box,
-      linear-gradient(135deg, rgba(156, 123, 255, 0.55), rgba(242, 90, 144, 0.42), rgba(255, 174, 107, 0.5)) border-box;
+      linear-gradient(160deg, #311a1e, #231517 70%) padding-box,
+      linear-gradient(135deg, color-mix(in srgb, var(--wine-highlight) 55%, transparent), color-mix(in srgb, var(--wine-rose) 42%, transparent), color-mix(in srgb, var(--wine-copper) 50%, transparent)) border-box;
   }
   [data-desk] .phone-today .dk2-free {
     margin-left: auto;
@@ -3465,10 +3470,10 @@ html.cd-sheet, html.cd-sheet body { overflow: hidden; }
     padding: 15px 14px 14px;
     border: 1px solid transparent;
     background:
-      linear-gradient(150deg, #25192b 0%, #171119 56%, #211521 100%) padding-box,
-      conic-gradient(from var(--pf-rim), rgba(156, 123, 255, 0.78), rgba(242, 90, 144, 0.78), rgba(255, 174, 107, 0.68), rgba(68, 50, 66, 0.28), rgba(156, 123, 255, 0.78)) border-box;
+      linear-gradient(150deg, #4b252b 0%, #251619 56%, #3a1c22 100%) padding-box,
+      conic-gradient(from var(--pf-rim), color-mix(in srgb, var(--wine-highlight) 78%, transparent), color-mix(in srgb, var(--wine-rose) 78%, transparent), color-mix(in srgb, var(--wine-copper) 68%, transparent), rgba(83, 48, 51, 0.28), color-mix(in srgb, var(--wine-highlight) 78%, transparent)) border-box;
     animation: pf-spin 12s linear infinite;
-    box-shadow: 0 22px 44px -24px rgba(242, 90, 144, 0.34);
+    box-shadow: 0 22px 44px -24px color-mix(in srgb, var(--wine-rose) 34%, transparent);
     display: flex;
     flex-direction: column;
     gap: 13px;
@@ -3494,7 +3499,7 @@ html.cd-sheet, html.cd-sheet body { overflow: hidden; }
     position: absolute;
     inset: -5px;
     border-radius: 50%;
-    border: 1px dashed rgba(255, 174, 107, 0.36);
+    border: 1px dashed color-mix(in srgb, var(--wine-copper) 36%, transparent);
     pointer-events: none;
   }
   [data-desk] .pf-page .pf-av-plus {
@@ -3575,8 +3580,8 @@ html.cd-sheet, html.cd-sheet body { overflow: hidden; }
   [data-desk] .pf-page .pf-cat {
     padding: 2.5px 8px;
     border-radius: 99px;
-    background: rgba(156, 123, 255, 0.16);
-    border: 1px solid rgba(156, 123, 255, 0.36);
+    background: color-mix(in srgb, var(--wine-highlight) 16%, transparent);
+    border: 1px solid color-mix(in srgb, var(--wine-highlight) 36%, transparent);
     color: #d6c8ff;
     font: 700 10px/1.2 var(--f-body, inherit);
   }
@@ -3606,8 +3611,8 @@ html.cd-sheet, html.cd-sheet body { overflow: hidden; }
     gap: 5px;
     padding: 4px 10px;
     border-radius: 99px;
-    border: 1px solid rgba(242, 90, 144, 0.35);
-    background: rgba(242, 90, 144, 0.1);
+    border: 1px solid color-mix(in srgb, var(--wine-rose) 35%, transparent);
+    background: color-mix(in srgb, var(--wine-rose) 10%, transparent);
     color: #ffc2da;
     font: 600 11.5px/1.1 var(--f-mono, ui-monospace, monospace);
     margin-top: 0;
@@ -3657,9 +3662,9 @@ html.cd-sheet, html.cd-sheet body { overflow: hidden; }
     justify-content: center;
   }
   [data-desk] .pf-page .pf-btns .btn.primary {
-    background: var(--ink);
-    color: var(--bg);
-    border-color: var(--ink);
+    background: var(--burgundy);
+    color: var(--on-burgundy);
+    border-color: var(--wine-rose);
     box-shadow: 3px 3px 0 var(--g2);
   }
   [data-desk] .pf-page .pf-btns .btn:active {

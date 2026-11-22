@@ -443,9 +443,9 @@
 		--cdv-line: #3b303a;
 		--cdv-ink: #f4eef2;
 		--cdv-muted: #b2a6af;
-		--cdv-pink: #f25a90;
-		--cdv-violet: #b29aff;
-		--cdv-peach: #ffae6b;
+		--cdv-pink: var(--wine-rose);
+		--cdv-wine: var(--wine-highlight);
+		--cdv-peach: var(--wine-copper);
 		color: var(--cdv-ink);
 		padding: 4px 0 18px;
 	}
@@ -489,7 +489,7 @@
 		margin-bottom: 16px;
 		border: 1px solid #503949;
 		border-radius: 16px;
-		background: linear-gradient(125deg, #261c27, var(--cdv-panel) 70%);
+		background: linear-gradient(125deg, #332024, var(--cdv-panel) 70%);
 	}
 	.cdv-stage-btn {
 		appearance: none;
@@ -532,8 +532,8 @@
 		border-radius: 4px;
 		background: var(--cdv-line);
 	}
-	.cdv-track i.done { background: var(--cdv-violet); }
-	.cdv-track i.current { background: linear-gradient(90deg, var(--cdv-violet), var(--cdv-pink), var(--cdv-peach)); }
+	.cdv-track i.done { background: var(--cdv-wine); }
+	.cdv-track i.current { background: linear-gradient(90deg, var(--cdv-wine), var(--cdv-pink), var(--cdv-peach)); }
 	.cdv-next { margin: 14px 0 10px; }
 	.cdv-next p {
 		margin: 3px 0 0;
@@ -550,7 +550,7 @@
 		padding: 9px 13px;
 		border: 0;
 		border-radius: 10px;
-		background: linear-gradient(105deg, var(--cdv-violet), #f28cb3 58%, var(--cdv-peach));
+		background: linear-gradient(105deg, var(--cdv-wine), var(--wine-rose) 58%, var(--cdv-peach));
 		color: #231323;
 		font: 700 14px/1.2 var(--f-body);
 		text-align: left;
@@ -592,9 +592,9 @@
 	.cdv-tabs button:active { transform: translate(2px, 2px); box-shadow: none; }
 
 	/* Tab Panel Accent Tokens */
-	.cdv-panel { --accent: var(--cdv-violet); --tint: #46314f; }
+	.cdv-panel { --accent: var(--cdv-wine); --tint: #49272c; }
 	.cdv-panel[data-tab='Money'] { --accent: var(--cdv-peach); --tint: #4e332c; }
-	.cdv-panel[data-tab='Brand'] { --accent: #ff9aba; --tint: #512d40; }
+	.cdv-panel[data-tab='Brand'] { --accent: var(--wine-rose); --tint: #4d2c30; }
 
 	/* Accent Hero Card + Stacked Art */
 	.cdv-hero {
