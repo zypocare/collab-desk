@@ -10,7 +10,7 @@
 {#if metric}
 	<details class="audience-rate" class:badge>
 		<summary>
-			<span class="rate"><strong>{metric.percent}%</strong> audience engagement</span>
+			<span class="rate"><strong>{metric.percent}%</strong> engagement rate</span>
 			<small>{badge ? 'Last 30 days' : 'Last 30 days · Instagram Insights'}</small>
 			<Icon name="chevD" />
 		</summary>

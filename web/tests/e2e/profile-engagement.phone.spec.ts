@@ -13,7 +13,7 @@ test('public profile explains audience engagement and respects Insights sharing'
 	}));
 	await page.goto('/?preview=1');
 	const card = page.locator('.mp-card').filter({ hasText: 'Instagram today' });
-	const summary = card.locator('summary').filter({ hasText: '11.6% audience engagement' });
+	const summary = card.locator('summary').filter({ hasText: '11.6% engagement rate' });
 	const calculation = card.getByText('3,159 accounts engaged ÷ 27,150 accounts reached × 100 = 11.6%');
 	for (const width of [1440, 320]) {
 		await page.setViewportSize({ width, height: 900 });
