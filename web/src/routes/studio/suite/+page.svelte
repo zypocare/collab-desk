@@ -233,11 +233,11 @@
 	</header>
 
 	<nav class="md-tabs" aria-label="Creator OS tools">
-		<button type="button" class="md-tab" class:on={tab === 'links'} onclick={() => (tab = 'links')}>Contracts &amp; Links</button>
-		<button type="button" class="md-tab" class:on={tab === 'calc'} onclick={() => (tab = 'calc')}>Rate &amp; Take-Home</button>
-		<button type="button" class="md-tab" class:on={tab === 'crm'} onclick={() => (tab = 'crm')}>Brand CRM</button>
-		<button type="button" class="md-tab" class:on={tab === 'viral'} onclick={() => (tab = 'viral')}>Viral &amp; Shorts</button>
-		<button type="button" class="md-tab" class:on={tab === 'tax'} onclick={() => (tab = 'tax')}>Tax, Proof &amp; Gate</button>
+		<button type="button" class="md-tab" class:on={tab === 'links'} onclick={() => (tab = 'links')}>Links</button>
+		<button type="button" class="md-tab" class:on={tab === 'calc'} onclick={() => (tab = 'calc')}>Rates</button>
+		<button type="button" class="md-tab" class:on={tab === 'crm'} onclick={() => (tab = 'crm')}>CRM</button>
+		<button type="button" class="md-tab" class:on={tab === 'viral'} onclick={() => (tab = 'viral')}>Viral</button>
+		<button type="button" class="md-tab" class:on={tab === 'tax'} onclick={() => (tab = 'tax')}>Tax</button>
 	</nav>
 
 	{#if tab === 'links'}
@@ -595,9 +595,9 @@
 	.md-wrap {
 		max-width: 780px;
 		margin: 0 auto;
-		padding: 6px 2px 84px;
+		padding: 6px 2px calc(150px + env(safe-area-inset-bottom, 0px));
 		display: grid;
-		gap: 20px;
+		gap: 18px;
 	}
 
 	.md-head {
@@ -610,36 +610,40 @@
 		letter-spacing: -0.01em;
 		color: var(--ink, #faf7fc);
 	}
+	@media (max-width: 760px) {
+		.md-head h1 {
+			display: none;
+		}
+	}
 	.md-head p {
 		margin: 0;
-		font-size: 13.5px;
-		line-height: 1.5;
+		font-size: 13px;
+		line-height: 1.45;
 		color: var(--ink-3, #9b8fa8);
 		max-width: 58ch;
 	}
 
-	/* Sharp NeoPOP sub-navigation strip matching Miracle top tabs */
+	/* Sharp 5-column NeoPOP sub-navigation bar: fits 100% on one row with zero clipping */
 	.md-tabs {
-		display: flex;
-		overflow-x: auto;
-		scrollbar-width: none;
+		display: grid;
+		grid-template-columns: repeat(5, minmax(0, 1fr));
 		border: 1px solid rgba(255, 255, 255, 0.12);
 		background: rgba(255, 255, 255, 0.02);
 	}
-	.md-tabs::-webkit-scrollbar {
-		display: none;
-	}
 	.md-tab {
-		flex: 1 0 auto;
-		padding: 12px 14px;
+		min-width: 0;
+		padding: 12px 4px;
 		border: 0;
 		border-right: 1px solid rgba(255, 255, 255, 0.09);
 		background: transparent;
 		color: var(--ink-3, #9b8fa8);
-		font: 700 10.5px/1 var(--f-mono, ui-monospace, monospace);
-		letter-spacing: 0.12em;
+		font: 700 10px/1.15 var(--f-mono, ui-monospace, monospace);
+		letter-spacing: 0.08em;
 		text-transform: uppercase;
+		text-align: center;
 		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
 		cursor: pointer;
 		transition: background 0.15s, color 0.15s;
 	}
@@ -718,6 +722,7 @@
 	}
 	.md-inp,
 	.md-ta {
+		scroll-margin-bottom: 140px;
 		width: 100%;
 		box-sizing: border-box;
 		border: 0;
