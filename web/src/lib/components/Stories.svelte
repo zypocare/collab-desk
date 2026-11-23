@@ -4,6 +4,7 @@
 	import { delivText, fmt, inrS, isActive, stageIndex, stageLabel, tasks, type Task } from '../util';
 	import type { Collab } from '../types';
 	import Icon from './Icon.svelte';
+	import HomeTicketRail from './HomeTicketRail.svelte';
 	import CycleText from './CycleText.svelte';
 
 	// Pending Instagram collabs and active collabs in a stage-aware living ticket rail.
@@ -97,29 +98,12 @@
 		{ id: 'need' as const, label: 'Needs action', count: needItems.length },
 		{ id: 'dm' as const, label: 'DM leads', count: dmItems.length }
 	]);
-	let railEl = $state<HTMLElement>();
-	function setFilter(next: Filter) {
-		selected = next;
-		if (railEl) railEl.scrollLeft = 0;
-	}
 	const shown = $derived(filter === 'dm' ? dmItems : filter === 'need' ? needItems : activeItems);
 </script>
 
-<section class="tix" id="sec-collabs" aria-label="Your collabs">
-	<div class="tix-h">
-		<h2>Your collabs</h2>
-		<a href="/studio/collabs">See board →</a>
-	</div>
-	{#if allItems.length || dmItems.length}
-		<div class="tix-filters" role="group" aria-label="Filter collaborations">
-			{#each filters as f (f.id)}
-				<button type="button" class="tix-flt" class:on={filter === f.id} aria-pressed={filter === f.id} onclick={() => setFilter(f.id)}>
-					{f.label} <b>{f.count}</b>
-				</button>
-			{/each}
-		</div>
-	{/if}
-	<div class="tix-row" bind:this={railEl}>
+<HomeTicketRail id="sec-collabs" title="Your collabs" href="/studio/collabs" linkLabel="See board"
+	filterLabel="Filter collaborations" filters={allItems.length || dmItems.length ? filters : []}
+	selected={filter} onselect={(id) => (selected = id)}>
 		{#each shown as k, i (k.id)}
 			<a class="tix-t tone-{k.tone || 'calm'}" class:tix-dm={k.group === 'dm'} style="--rt:{hue(k.tone, i)};--k:{i}" href={k.href} aria-label="{k.name}, {k.stage}: {k.line}, {k.money}, {k.pill}">
 				<span class="tix-top">
@@ -151,5 +135,4 @@
 				<a class="tix-t tix-tip" href="/studio/settings?s=rates"><Icon name="rupee" /><b class="tix-n">Rate card</b><span class="tix-l">Set your prices</span></a>
 			{/if}
 		{/each}
-	</div>
-</section>
+</HomeTicketRail>

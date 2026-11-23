@@ -835,8 +835,8 @@
     --spring-ig:cubic-bezier(.2,.9,.3,1.15);
     overscroll-behavior-y:contain;
   }
-  [data-side="brand"] body{background:var(--bg);overscroll-behavior-y:contain}
-  [data-side="brand"] :is(button,a,label,summary,[role="button"]){touch-action:manipulation;-webkit-user-select:none;user-select:none}
+  [data-side="brand"]:not([data-desk]) body{background:var(--bg);overscroll-behavior-y:contain}
+  [data-side="brand"]:not([data-desk]) :is(button,a,label,summary,[role="button"]){touch-action:manipulation;-webkit-user-select:none;user-select:none}
 
   /* Top bar */
   [data-side="brand"]:not([data-desk]) .m-bar{margin:0;padding-left:16px;padding-right:6px}
@@ -853,7 +853,7 @@
   [data-side="brand"] .wrap{padding-top:12px;padding-bottom:calc(100px + env(safe-area-inset-bottom,0px))}
   [data-side="brand"] .back{display:none}
   [data-side="brand"] .ph .acts:has(> a[href="/brand/new"]:only-child){display:none}
-  [data-side="brand"] .ph{margin-bottom:16px}
+  [data-side="brand"]:where(:not([data-desk])) .ph{margin-bottom:16px}
 
   /* Tab bar: docked, with a raised "+" in the middle for a new request. */
   [data-side="brand"] .brand-tabs{grid-template-columns:repeat(4,minmax(0,1fr));padding:0 4px env(safe-area-inset-bottom,0px);border-top:1px solid var(--ig-sep);background:var(--ig-bar);-webkit-backdrop-filter:none;backdrop-filter:none;box-shadow:none;view-transition-name:m-tabs}
@@ -872,13 +872,13 @@
   .brand-tabs a:active :is(.bt-ic,.bt-plus,.bt-av){transform:scale(.86)}
   [data-side="brand"] .bx-dock.tabs{bottom:calc(70px + env(safe-area-inset-bottom,0px))}
   [data-side="brand"] .rq-bar{bottom:calc(72px + env(safe-area-inset-bottom,0px))}
-  [data-side="brand"] .toasts{bottom:calc(76px + env(safe-area-inset-bottom,0px))}
+  [data-side="brand"]:not([data-desk]) .toasts{bottom:calc(76px + env(safe-area-inset-bottom,0px))}
 
   /* Motion: lists rise in, cards press in and spring back. */
   [data-side="brand"] .req{animation:m-rise .5s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(min(var(--i,0), 8) * 50ms);transition:transform .25s var(--spring-ig)}
   [data-side="brand"] :is(.req,.prod-row,.again-chip,.bx-pkg,.b-row):active{transform:scale(.97)}
-  [data-side="brand"] .btn{transition:transform .25s var(--spring-ig),opacity .2s,background .2s}
-  [data-side="brand"] .btn:active{transform:scale(.95)}
+  [data-side="brand"]:where(:not([data-desk])) .btn{transition:transform .25s var(--spring-ig),opacity .2s,background .2s}
+  [data-side="brand"]:where(:not([data-desk])) .btn:active{transform:scale(.95)}
 
   /* ---------- Brand side, screen by screen: an app, not a squeezed web page ---------- */
   [data-side="brand"]{--bx-gut:16px;--top-h:calc(var(--m-bar) + env(safe-area-inset-top,0px) - 8px)}
@@ -903,13 +903,13 @@
   [data-side="brand"] .rq-main{padding-bottom:90px}
 
   /* Flat sections split by hairlines; only the small tiles inside stay as cards. */
-  [data-side="brand"] :is(.bx-hero,.bx-marquee,.bx-avail,.again,.panel,.rq-card,.ins-hero,.bx-book){margin-inline:-16px;border:0;border-radius:0;box-shadow:none;border-bottom:1px solid var(--ig-sep)}
-  [data-side="brand"] :is(.bx-avail,.again,.panel,.rq-card,.bx-book){background:transparent;-webkit-backdrop-filter:none;backdrop-filter:none;padding-inline:16px}
-  [data-side="brand"] .panel{padding-inline:0}
-  [data-side="brand"] .panel > :not(.mesh){padding-left:16px;padding-right:16px}
-  [data-side="brand"] .panel [style*="padding:0 20px"],[data-side="brand"] .panel [style*="padding:20px"]{padding-left:16px!important;padding-right:16px!important}
+  [data-side="brand"]:where(:not([data-desk])) .panel,[data-side="brand"] :is(.bx-hero,.bx-marquee,.bx-avail,.again,.rq-card,.ins-hero,.bx-book){margin-inline:-16px;border:0;border-radius:0;box-shadow:none;border-bottom:1px solid var(--ig-sep)}
+  [data-side="brand"]:where(:not([data-desk])) .panel,[data-side="brand"] :is(.bx-avail,.again,.rq-card,.bx-book){background:transparent;-webkit-backdrop-filter:none;backdrop-filter:none;padding-inline:16px}
+  [data-side="brand"]:where(:not([data-desk])) .panel{padding-inline:0}
+  [data-side="brand"]:where(:not([data-desk])) .panel > :not(.mesh){padding-left:16px;padding-right:16px}
+  [data-side="brand"]:where(:not([data-desk])) .panel [style*="padding:0 20px"],[data-side="brand"]:where(:not([data-desk])) .panel [style*="padding:20px"]{padding-left:16px!important;padding-right:16px!important}
   [data-side="brand"] .ins-hero{padding-left:16px;padding-right:16px}
-  [data-side="brand"] :is(.panel,.rq-card){margin-top:0;margin-bottom:0}
+  [data-side="brand"]:where(:not([data-desk])) .panel,[data-side="brand"] .rq-card{margin-top:0;margin-bottom:0}
   [data-side="brand"] .bx-hero{margin-top:0}
   [data-side="brand"] .bx-hero .bx-hero-main{padding-inline:16px}
   [data-side="brand"] .bx-marquee{margin-top:0;background:transparent}

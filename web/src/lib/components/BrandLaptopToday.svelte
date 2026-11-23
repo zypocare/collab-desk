@@ -1,4 +1,7 @@
 <script lang="ts">
+	import ProfileEngagement from './ProfileEngagement.svelte';
+	import { brandIg } from '../brandIg.svelte';
+	import MoodPicker from './MoodPicker.svelte';
 	import FoundingBanner from './FoundingBanner.svelte';
 	import { auth } from '../auth.svelte';
 	import { autopilots } from '../autopilots.svelte';
@@ -101,10 +104,12 @@
 		<div class="l-hi">
 			<span class="l-eb">{T.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}{waiting.length ? ` · ${waiting.length} waiting on you` : ''}</span>
 			<h1>{greet}, <em>{who}</em></h1>
+			<ProfileEngagement insights={brandIg.data?.insights} />
 		</div>
 		<a class="l-search" href="/brand/explore">
 			<Icon name="search" /><span>search “{hint}”</span><kbd>{mac ? '⌘K' : 'Ctrl K'}</kbd>
 		</a>
+		<MoodPicker />
 		<a class="l-neo l-grad l-shine l-new" href={hasCreators ? '/brand/campaigns/new' : '/brand/explore'}><Icon name="plus" />New campaign</a>
 	</header>
 

@@ -1,12 +1,10 @@
 <script lang="ts">
-	import { igImg } from '../igImg';
 	import { receivedIn } from '../invoice';
-	import ProfileEngagement from './ProfileEngagement.svelte';
 	import { onMount, untrack } from 'svelte';
 	import { addLeadAsCollab } from '../leads';
 	import { askPaid, completeFollow, markPaid, markReceived, priorityOf, studio } from '../studio.svelte';
 	import { copyText, ui } from '../ui.svelte';
-	import { homeMotion, homeCount, homeChange, moneySwipe } from '../homeMotion';
+	import { homeMotion, homeCount, homeChange } from '../homeMotion';
 	import '../../home-motion.css';
 	import {
 		KIND_ICON,
@@ -47,9 +45,9 @@
 	import PlayUpdateCard from './PlayUpdateCard.svelte';
 	import Mono from './Mono.svelte';
 	import Stories from './Stories.svelte';
+	import HomeMoneyCard from './HomeMoneyCard.svelte';
 	import TodayStories from './TodayStories.svelte';
-	import DiwaliLayer from './DiwaliLayer.svelte';
-	import BirthdayLayer from './BirthdayLayer.svelte';
+	import HomeGreeting from './HomeGreeting.svelte';
 	import { birthdayNow, diwaliWords, festivalNow } from '../festival';
 	import AlertsPrompt from './AlertsPrompt.svelte';
 	import BrandQuestions from './BrandQuestions.svelte';
@@ -107,10 +105,6 @@
 	);
 	let moneyView = $state(0);
 	let tickerPaused = $state(false);
-	let orbMode = $state(0);
-	function cycleOrbMode() {
-		orbMode = (orbMode + 1) % 3;
-	}
 	const moneyLabels = $derived([`Received in ${monthName}`, 'Yet to come', 'Overdue payments', 'Next payout']);
 	const moneyValue = $derived([received, outs, odSum, nextPayout ? outstanding(nextPayout) : 0][moneyView]);
 	const moneyCaption = $derived([
@@ -125,18 +119,6 @@
 	const evs = $derived(events(list));
 	const week = $derived(Array.from({ length: 7 }, (_, i) => ({ i, dt: parse(rel(i)), list: evs.filter((e) => e.date === rel(i)) })));
 	const upcoming = $derived(evs.filter((e) => diff(e.date) >= 0 && diff(e.date) <= 6).sort((a, b) => a.date.localeCompare(b.date)).slice(0, 3));
-
-	// The header drifts and fades a little as the screen scrolls.
-	function headerDrift(node: HTMLElement) {
-		let frame = 0;
-		const preference = matchMedia('(prefers-reduced-motion: reduce)');
-		const paint = () => { frame = 0; node.style.setProperty('--sy', String(preference.matches ? 0 : Math.min(240, scrollY))); };
-		const scroll = () => { if (scrollY < 500) frame ||= requestAnimationFrame(paint); };
-		paint();
-		addEventListener('scroll', scroll, { passive: true });
-		preference.addEventListener('change', paint);
-		return { destroy() { cancelAnimationFrame(frame); removeEventListener('scroll', scroll); preference.removeEventListener('change', paint); } };
-	}
 
 	// A new possible collab spotted in her Instagram DMs opens "Add a collab" with its chat read in, the same as tapping
 	// Add on it: once per chat (remembered on this phone), only here on Today, never over something already open.
@@ -267,51 +249,22 @@
 </script>
 
 <div class="phone-today" use:homeMotion>
-<section class="ht" class:dw-on={!!fest && !bday} class:bd-on={!!bday} use:headerDrift>
-	<div class="ht-glow" aria-hidden="true"><i></i><i></i><i></i></div>
-	{#if bday}<BirthdayLayer />{:else if fest}<DiwaliLayer />{/if}
-	{#if note}
-		<div class="fest-pill-wrap">
-			<span class="fest-banner">{bday ? '🎂' : '🪔'} {note}</span>
-		</div>
-	{/if}
-	<div class="ht-top-row">
-		<div class="ht-copy">
-			<p class="ht-date">{T.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}</p>
-			<h1 class="ht-hi"><span>{greet},</span><em>{firstName(s.display_name)}</em></h1>
-		</div>
-		<button type="button" class="ht-orb" onclick={cycleOrbMode} aria-label="Cycle live creator metrics">
-			<span class="orb-ring" aria-hidden="true"></span>
-			<span class="orb-ring-2" aria-hidden="true"></span>
-			<span class="orb-in">
-				{#if orbMode === 0 && ig?.profile_picture_url}
-					<img class="orb-pic" src={igImg(ig.profile_picture_url)} alt="" />
-				{:else if orbMode === 0 && ig}
-					<b>{compact(ig.followers ?? 0)}</b><small>followers</small>
-				{:else if orbMode === 0}
-					<b>{initials(s.display_name)}</b><small>Your studio</small>
-				{:else if orbMode === 1}
-					<b>{pctN}%</b><small>of {monthName.slice(0, 3)} goal</small>
-					<span class="orb-pill gold">{inrS(received)}{goal ? ` / ${inrS(goal)}` : ''}</span>
-				{:else}
-					<b>{views.week || active.length}</b><small>{views.week ? 'brand views' : 'active deals'}</small>
-					<span class="orb-pill pink">★ {active.length} active</span>
-				{/if}
-			</span>
-			{#if orbMode === 0 && ig?.profile_picture_url}
-				<span class="orb-badge"><b>{compact(ig.followers ?? 0)}</b><span>followers</span></span>
-			{/if}
-			<span class="orb-mode-dots" aria-hidden="true">
-				<i class:on={orbMode === 0}></i><i class:on={orbMode === 1}></i><i class:on={orbMode === 2}></i>
-			</span>
-			<span class="orb-spark s1" aria-hidden="true"></span><span class="orb-spark s2" aria-hidden="true"></span><span class="orb-spark s3" aria-hidden="true"></span>
-		</button>
-	</div>
-
-	<ProfileEngagement insights={ig?.insights} />
-
-	<!-- Interactive Status Chips (Replaces static summary line, matching miracle_mobile_home_redesign.html) -->
-	<div class="ht-chips">
+<HomeGreeting date={T} {greet} {note} festival={!!fest} name={firstName(s.display_name)} birthday={!!bday} picture={ig?.profile_picture_url} metricLabel="Cycle live creator metrics"
+	followers={ig?.followers ?? 0} insights={ig?.insights}>
+	{#snippet metrics(orbMode: number)}
+		{#if orbMode === 0 && ig}
+			<b>{compact(ig.followers ?? 0)}</b><small>followers</small>
+		{:else if orbMode === 0}
+			<b>{initials(s.display_name)}</b><small>Your studio</small>
+		{:else if orbMode === 1}
+			<b>{pctN}%</b><small>of {monthName.slice(0, 3)} goal</small>
+			<span class="orb-pill gold">{inrS(received)}{goal ? ` / ${inrS(goal)}` : ''}</span>
+		{:else}
+			<b>{views.week || active.length}</b><small>{views.week ? 'brand views' : 'active deals'}</small>
+			<span class="orb-pill pink">★ {active.length} active</span>
+		{/if}
+	{/snippet}
+	{#snippet chips()}
 		<a class="ht-chip" class:urgent={urgent > 0} href="#sec-needs" aria-label={urgent ? `${urgent} collaboration${urgent === 1 ? '' : 's'} needing attention today` : 'All caught up today'}>
 			<span class="dot-ping" class:calm={!urgent}></span>
 			<span>{#if urgent > 0}<b>{urgent}</b> need{urgent === 1 ? 's' : ''} you{:else}<b>Caught up</b>{/if}</span>
@@ -337,10 +290,8 @@
 				<span><b>{views.week}</b> page view{views.week === 1 ? '' : 's'}</span>
 			</a>
 		{/if}
-	</div>
-
-	<!-- 4 Tactile Quick Actions -->
-	<div class="qa-strip">
+	{/snippet}
+	{#snippet actions()}
 		<button type="button" class="qa-card primary" onclick={() => (ui.newCollab = true)}>
 			<span class="qa-ic"><Icon name="plus" /></span>
 			<span>Add collab</span>
@@ -357,8 +308,8 @@
 			<span class="qa-ic"><Icon name="qr" /></span>
 			<span>Bio & QR</span>
 		</a>
-	</div>
-</section>
+	{/snippet}
+</HomeGreeting>
 
 	<PlayUpdateCard />
 
@@ -369,28 +320,12 @@
 	<div class="cr-ticker cr-tk" data-paused={tickerPaused} aria-label="Today in numbers"><div>{#each [0, 1] as k (k)}{#each ticker as f, j (j)}<span aria-hidden={k === 1}><b>{f.b}</b>{f.t}</span><i aria-hidden="true">✦</i>{/each}{/each}</div><button class="home-ticker-pause" aria-label={tickerPaused ? 'Resume numbers ticker' : 'Pause numbers ticker'} aria-pressed={tickerPaused} onclick={() => tickerPaused = !tickerPaused}>{tickerPaused ? '▶' : 'Ⅱ'}</button></div>
 {/if}
 
-<section class="hero-card glow m-hero" id="sec-money" aria-label="Money this month" use:moneySwipe={(direction) => showMoney(moneyView + direction)}>
-	<div class="mesh" aria-hidden="true"></div>
-	<a class="hc-go" href={moneyView ? '/studio/payments' : '/studio/money'} aria-label={moneyView ? 'Open payments' : 'Open Money'} draggable="false"></a>
-	<div class="hc-in">
-		<div class="hc-top"><span class="hc-eb">{moneyLabels[moneyView]}</span>{#if goal}<a class="glass-chip" href="/studio/settings?s=payments"><Icon name="spark" />Goal {inrS(goal)}</a>{/if}</div>
-		<div class="hc-main">
-			<div use:homeChange={moneyView}>
-				<div class="hc-val" use:homeCount={{ value: moneyValue, money: true }}>{inr(moneyValue)}</div>
-				<div class="hc-sub" aria-live="polite">{moneyCaption}</div>
-			</div>
-			<div class="goal" style="--p:{pct}">
-				<svg viewBox="0 0 120 120" aria-hidden="true"
-					><defs
-						><linearGradient id="goalGradM" x1="0" y1="0" x2="1" y2="1"
-							><stop offset="0" style="stop-color:var(--g3)" /><stop offset=".5" style="stop-color:var(--g2)" /><stop offset="1" style="stop-color:var(--g1)" /></linearGradient
-						></defs
-					><circle class="g-track" cx="60" cy="60" r="50" /><circle class="g-prog" cx="60" cy="60" r="50" pathLength="100" style="stroke:url(#goalGradM)" use:homeCount={{ value: pct, ring: true }} /></svg
-				>
-				<div class="g-txt"><b use:homeCount={{ value: pctN, suffix: '%' }}>{pctN}%</b><small>of goal</small></div>
-			</div>
-		</div>
-		<div class="hc-ctx">
+<HomeMoneyCard {moneyView} {moneyLabels} {moneyValue} {moneyCaption} {pct} {pctN} ringLabel="of goal" {showMoney}
+	href={moneyView ? '/studio/payments' : '/studio/money'} openLabel={moneyView ? 'Open payments' : 'Open Money'}>
+	{#snippet action()}
+		{#if goal}<a class="glass-chip" href="/studio/settings?s=payments"><Icon name="spark" />Goal {inrS(goal)}</a>{/if}
+	{/snippet}
+	{#snippet context()}
 			{#if moneyView === 0}
 				{#if paidCollabs.length > 0}
 					<div class="hc-ctx-pills">
@@ -424,8 +359,8 @@
 			{:else}
 				<span class="hc-ctx-alert">No upcoming scheduled payouts</span>
 			{/if}
-		</div>
-		<div class="hc-foot">
+	{/snippet}
+	{#snippet tiles()}
 			<a href="/studio/payments" class:active-tile={moneyView === 1} onclick={(e) => { if (moneyView !== 1) { e.preventDefault(); showMoney(1); } }}>
 				<small>Yet to come</small>
 				<b use:homeCount={{ value: outs, money: true }}>{inr(outs)}</b>
@@ -441,10 +376,8 @@
 				<b>{nextPayout ? fmt(nextPayout.pay_due) : 'None'}</b>
 				<span class="hc-who">{nextPayout ? `${nextPayout.brand.name} · ${inrS(outstanding(nextPayout))}` : 'None scheduled'}</span>
 			</a>
-		</div>
-		<div class="home-money-nav"><span>Tap a tile or swipe to inspect</span><div class="home-money-dots" role="group" aria-label="Money views">{#each moneyLabels as label, i (i)}<button aria-label={label} aria-pressed={moneyView === i} onclick={() => showMoney(i)}></button>{/each}</div></div>
-	</div>
-</section>
+	{/snippet}
+</HomeMoneyCard>
 
 <section class="hs" id="sec-needs">
 	<header class="hs-h">

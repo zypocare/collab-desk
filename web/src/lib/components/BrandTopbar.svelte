@@ -1,10 +1,10 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
+	import { afterNavigate, goto } from '$app/navigation';
 	import { edgeSwipeBack, goBackOr } from '../back';
 	import { page } from '$app/state';
 	import { onMount } from 'svelte';
 	import { auth, signOut, signOutTo, switchBrand } from '../auth.svelte';
-	import { allRequests, brandData, loadRequests } from '../brand.svelte';
+	import { allRequests, brandHome, brandData, loadRequests } from '../brand.svelte';
 	import { phone, startPhone } from '../phone.svelte';
 	import { loadPublicPage } from '../publicPage.svelte';
 	import { toast, ui } from '../ui.svelte';
@@ -118,8 +118,9 @@
 	// Unread messages from every creator (the inbox).
 	const unread = $derived(allRequests.list.reduce((a, r) => a + r.unread, 0));
 	let inApp = false;
+	afterNavigate(({ from }) => { if (from) inApp = true; });
 	onMount(() => {
-		inApp = history.length > 1 && document.referrer.startsWith(location.origin);
+		inApp ||= history.length > 1 && document.referrer.startsWith(location.origin);
 		return startPhone(async () => {
 			await loadPublicPage();
 			if (signedIn) await loadRequests();
@@ -140,25 +141,22 @@
 			<div class="m-brand-wrap">
 				{#if path === '/brand'}<span class="m-logo-mark" aria-hidden="true"><Logo /></span>{/if}
 				<div class="m-brand" class:wordmark={path === '/brand'}>{title}</div>
+				{#if path === '/brand' && brandHome.dash && !brandHome.error}<span class="m-live-pill" aria-hidden="true"><i></i>Synced</span>{/if}
 			</div>
 			<div class="m-r">
 				{#if signedIn && path === '/brand'}
-					<!-- The creator's Today bar, piece for piece: mood picker, new, Ask your desk, search, alerts, messages. -->
 					<MoodPicker />
-					<a class="m-ib" href={creators.length ? '/brand/campaigns/new' : '/brand/explore'} aria-label="New campaign"><Icon name="plus" /></a>
 					<button class="m-ib m-ask" onclick={() => (ui.askOpen = true)} aria-label="Ask your desk"><Icon name="spark" /></button>
 					<a class="m-ib" href="/brand/explore" aria-label="Explore creators"><Icon name="search" /></a>
 					<a class="m-ib" href="/brand/alerts" aria-label="Alerts{alerts.unread ? `, ${alerts.unread} new` : ''}"><Icon name="bell" />{#if alerts.unread}<span class="m-badge">{alerts.unread > 99 ? '99+' : alerts.unread}</span>{/if}</a>
 					<a class="m-ib" href="/brand/inbox" aria-label="Messages{unread ? `, ${unread} unread` : ''}"><Icon name="send" />{#if unread}<span class="m-badge">{unread}</span>{/if}</a>
 				{:else if signedIn && path === '/brand/requests'}
-					<a class="m-ib" href="/brand/explore" aria-label="Find creators"><Icon name="plus" /></a>
+					<a class="m-ib add-btn" href="/brand/explore" aria-label="Find creators"><Icon name="plus" /></a>
 					<a class="m-ib" href="/brand/inbox" aria-label="Messages{unread ? `, ${unread} unread` : ''}"><Icon name="send" />{#if unread}<span class="m-badge">{unread}</span>{/if}</a>
 				{:else if signedIn && path === '/brand/campaigns'}
-					<a class="m-ib" href={creators.length ? '/brand/campaigns/new' : '/brand/explore'} aria-label="New campaign"><Icon name="plus" /></a>
+					<a class="m-ib add-btn" href={creators.length ? '/brand/campaigns/new' : '/brand/explore'} aria-label="New campaign"><Icon name="plus" /></a>
 				{:else if signedIn && path === '/brand/profile'}
-					<!-- As on the creator's My page: mood picker, new at the top, settings behind the menu. -->
-					<MoodPicker />
-					<a class="m-ib" href={creators.length ? '/brand/campaigns/new' : '/brand/explore'} aria-label="New campaign"><Icon name="plus" /></a>
+					<a class="m-ib add-btn" href={creators.length ? '/brand/campaigns/new' : '/brand/explore'} aria-label="New campaign"><Icon name="plus" /></a>
 					<a class="m-ib" href="/brand/settings" aria-label="Settings and activity"><Icon name="menu" /></a>
 				{/if}
 				{#if !signedIn}<button class="m-ib" onclick={toggleTheme} aria-label="Switch light or dark mode"><Icon name={theme.value === 'dark' ? 'sun' : 'moon'} /></button>{/if}

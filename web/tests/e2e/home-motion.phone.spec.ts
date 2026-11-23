@@ -6,16 +6,16 @@ declare global {
 	}
 }
 
-async function mountHome(page: Page) {
+async function mountHome(page: Page, role: 'studio' | 'brand' = 'studio') {
 	await page.setViewportSize({ width: 393, height: 852 });
 	// Keep this component test independent of accounts and live services.
 	await page.route('https://**', (route) => route.fulfill({ contentType: 'application/json', body: '[]' }));
 	await page.route('**/__home-motion', (route) => route.fulfill({
 		contentType: 'text/html',
-		body: '<!doctype html><html data-side="studio" data-desk="studio" data-theme="dark"><head><meta name="viewport" content="width=device-width,initial-scale=1"></head><body><main style="padding:16px;overflow:clip"></main></body></html>'
+		body: `<!doctype html><html data-side="${role}" data-desk="${role}" data-theme="dark"><head><meta name="viewport" content="width=device-width,initial-scale=1"></head><body><main style="padding:16px;overflow:clip"></main></body></html>`
 	}));
 	await page.goto('/__home-motion');
-	await page.evaluate(async () => {
+	await page.evaluate(async role => {
 		for (const file of ['app', 'brand', 'studio', 'desk', 'pro', 'mobile-type', 'mobile', 'atelier', 'dash', 'cred', 'today', 'moods']) await import(`/src/${file}.css`);
 		const statePath = '/src/lib/studio.svelte.ts';
 		const { studio } = await import(statePath);
@@ -43,7 +43,19 @@ async function mountHome(page: Page) {
 		const phonePath = '/src/lib/phone.svelte.ts';
 		const { startPhone } = await import(phonePath);
 		const stopPhone = startPhone(async () => {});
-		const componentPath = '/src/routes/studio/+page.svelte';
+		if (role === 'brand') {
+			const brandPath = '/src/lib/brand.svelte.ts';
+			const { brandHome } = await import(brandPath);
+			brandHome.dash = {
+				name: 'North Studio', open: 2, spent_month: 48000, to_pay: 15000, live_soon: [], waiting: [],
+				creators: [
+					{ id: 'a', slug: 'asha', name: 'Asha Sharma', niche: 'Lifestyle', open: 2, waiting: 1, done: 0 },
+					{ id: 'b', slug: 'mina', name: 'Mina Rao', niche: 'Travel', open: 0, waiting: 0, done: 1 }
+				]
+			};
+			localStorage.setItem('cd-bsetup-hide-', '1');
+		}
+		const componentPath = role === 'brand' ? '/src/lib/components/BrandPhoneToday.svelte' : '/src/routes/studio/+page.svelte';
 		const { default: Home } = await import(componentPath);
 		const source = await (await fetch('/src/lib/components/PhoneToday.svelte')).text();
 		const runtime = source.match(/from\s+["']([^"']*\/svelte\.js[^"']*)["']/)?.[1];
@@ -51,7 +63,7 @@ async function mountHome(page: Page) {
 		const { mount, unmount } = await import(runtime);
 		const component = mount(Home, { target: document.querySelector('main')! });
 		window.homeTest = { received: (value) => studio.collabs[0].pay_received = value, destroy: async () => { stopPhone(); await unmount(component); } };
-	});
+	}, role);
 	await expect(page.locator('.phone-today')).toBeVisible();
 }
 
@@ -349,4 +361,41 @@ test('reduced motion gives final numbers and narrow screens keep every action ac
 	await expect(page.locator('.phone-today')).toHaveAttribute('data-home-paused', 'false');
 	await page.evaluate(() => window.homeTest.destroy());
 	await expect(page.locator('.phone-today')).toHaveCount(0);
+});
+
+test('brand and creator use the same phone layout and home controls', async ({ page, context }) => {
+	const brand = await context.newPage();
+	await Promise.all([mountHome(page), mountHome(brand, 'brand')]);
+	for (const width of [320, 393, 430]) {
+		const sizes = await Promise.all([page, brand].map(async p => {
+			await p.setViewportSize({ width, height: 852 });
+			await p.emulateMedia({ reducedMotion: 'reduce' });
+			await p.evaluate(() => document.fonts.ready);
+			return p.evaluate(() => {
+				const box = (selector: string) => {
+					const el = document.querySelector<HTMLElement>(selector)!;
+					const style = getComputedStyle(el);
+					return [el.offsetLeft, el.offsetWidth, el.offsetHeight, style.fontSize, style.borderRadius];
+				};
+				return ['.ht-orb', '.qa-card.primary', '.story-ring', '.tix-h h2', '.tix-flt', '.home-money-dots button'].map(box);
+			});
+		}));
+		// Role-specific headings have different text widths.
+		expect(sizes[1][3].slice(2)).toEqual(sizes[0][3].slice(2));
+		expect(sizes[1].filter((_, i) => i !== 3)).toEqual(sizes[0].filter((_, i) => i !== 3));
+		for (const p of [page, brand]) {
+			expect(await p.evaluate(() => document.documentElement.scrollWidth)).toBe(width);
+			expect(await p.locator('.ht-chip').evaluateAll(els => new Set(els.map(el => el.getBoundingClientRect().top)).size)).toBe(1);
+		}
+	}
+	await brand.getByRole('button', { name: 'Recap' }).click();
+	await expect(brand.getByRole('dialog')).toContainText('48,000');
+	await brand.keyboard.press('Escape');
+	await brand.getByRole('button', { name: 'Needs action 1' }).click();
+	await expect(brand.locator('.tix-n')).toHaveText(['Asha Sharma']);
+	await brand.getByRole('button', { name: 'All creators 2' }).click();
+	await expect(brand.locator('.tix-n')).toHaveCount(2);
+	await brand.getByRole('button', { name: 'Still to pay' }).click();
+	await expect(brand.locator('.hc-val')).toContainText('15,000');
+	await expect(brand.locator('.hc-go')).toHaveAttribute('href', '/brand/business/money');
 });

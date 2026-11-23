@@ -52,7 +52,7 @@
 	</div>
 	<div class="side-end">
 		<WorkspaceSwitch />
-		<div class="side-mood"><MoodPicker /><span>Color theme</span></div>
+		{#if path !== '/brand'}<div class="side-mood"><MoodPicker /><span>Color theme</span></div>{/if}
 		<button class="side-ask" onclick={() => (ui.askOpen = true)}><Icon name="spark" />Ask your desk</button>
 		{#if creators.length}
 			<a class="side-ask" href="/brand/campaigns/new"><Icon name="plus" />New campaign</a>

@@ -18,11 +18,11 @@
 
 /* ---------- buttons are buttons (never underlined), with a tactile press ---------- */
 a.btn{text-decoration:none}
-[data-side="brand"] .btn{transition:transform .25s var(--spring),background .25s,border-color .25s,box-shadow .3s,color .2s}
-[data-side="brand"] .btn:active:not(:disabled){transform:scale(.97)}
-[data-side="brand"] .btn.grad{position:relative;overflow:hidden}
-[data-side="brand"] .btn.grad::after{content:"";position:absolute;inset:0;background:linear-gradient(105deg,transparent 30%,rgba(255,255,255,.28) 50%,transparent 70%);transform:translateX(-120%);transition:transform .9s var(--ease);pointer-events:none}
-[data-side="brand"] .btn.grad:hover::after{transform:translateX(120%)}
+[data-side="brand"]:where(:not([data-desk])) .btn{transition:transform .25s var(--spring),background .25s,border-color .25s,box-shadow .3s,color .2s}
+[data-side="brand"]:where(:not([data-desk])) .btn:active:not(:disabled){transform:scale(.97)}
+[data-side="brand"]:where(:not([data-desk])) .btn.grad{position:relative;overflow:hidden}
+[data-side="brand"]:where(:not([data-desk])) .btn.grad::after{content:"";position:absolute;inset:0;background:linear-gradient(105deg,transparent 30%,rgba(255,255,255,.28) 50%,transparent 70%);transform:translateX(-120%);transition:transform .9s var(--ease);pointer-events:none}
+[data-side="brand"]:where(:not([data-desk])) .btn.grad:hover::after{transform:translateX(120%)}
 
 /* ---------- page frame: one centred column with room to breathe ---------- */
 [data-side="brand"] .topbar{padding-inline:max(var(--bx-gut),calc((100vw - var(--bx-max)) / 2));border-bottom:1px solid color-mix(in oklab,var(--line) 60%,transparent)}
@@ -35,8 +35,8 @@ a.btn{text-decoration:none}
 @media print{[data-side="brand"] .rv{opacity:1!important;transform:none!important}}
 
 /* Cards: one consistent surface. */
-[data-side="brand"] .panel{border-radius:var(--bx-r);background:var(--bx-card);border:1px solid var(--bx-border);box-shadow:var(--shadow-sm)}
-[data-side="brand"] .panel-h h2{font-size:19px}
+[data-side="brand"]:where(:not([data-desk])) .panel{border-radius:var(--bx-r);background:var(--bx-card);border:1px solid var(--bx-border);box-shadow:var(--shadow-sm)}
+[data-side="brand"]:where(:not([data-desk])) .panel-h h2{font-size:19px}
 
 /* Small gradient label above headings. */
 .bx-eb{display:inline-block;font-size:12.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
@@ -235,10 +235,10 @@ html:has([data-side="brand"]),[data-side="brand"]{scroll-behavior:smooth}
 /* ==========================================================================================
    Page headers on brand pages (My requests, New request, Company, a request)
    ========================================================================================== */
-[data-side="brand"] .ph{margin-bottom:clamp(20px,3vw,32px)}
-[data-side="brand"] .ph .eb{font-size:12.5px;letter-spacing:.14em;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;margin-bottom:8px}
-[data-side="brand"] .ph h1{font-size:clamp(32px,4.4vw,54px);letter-spacing:-.05em}
-[data-side="brand"] .ph p{color:var(--ink-3);font-size:17px;flex-wrap:wrap}
+[data-side="brand"]:where(:not([data-desk])) .ph{margin-bottom:clamp(20px,3vw,32px)}
+[data-side="brand"]:where(:not([data-desk])) .ph .eb{font-size:12.5px;letter-spacing:.14em;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;margin-bottom:8px}
+[data-side="brand"]:where(:not([data-desk])) .ph h1{font-size:clamp(32px,4.4vw,54px);letter-spacing:-.05em}
+[data-side="brand"]:where(:not([data-desk])) .ph p{color:var(--ink-3);font-size:17px;flex-wrap:wrap}
 [data-side="brand"] .back{display:inline-flex;align-items:center;gap:6px;padding:7px 12px 7px 9px;margin-bottom:18px;border-radius:999px;background:var(--bx-card);border:1px solid var(--bx-border);font-size:14.5px;transition:gap .3s var(--spring),border-color .2s}
 [data-side="brand"] .back:hover{gap:10px;border-color:var(--line-strong)}
 [data-side="brand"] .back svg{width:16px;height:16px}
@@ -374,13 +374,13 @@ html:has([data-side="brand"]),[data-side="brand"]{scroll-behavior:smooth}
 }
 @media (max-width: 1060px){ [data-side="brand"] .rq-bar .btn.lg{width:auto} [data-side="brand"] .rq-bar p{display:flex;flex-direction:column;gap:0} .rq-bar .lt-what{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--ink-2)} }
 
-/* Forms on brand pages: taller fields, same feel as the studio. */
-[data-side="brand"] .inp,[data-side="brand"] .sel{height:48px;padding:0 15px;font-size:16px;border-radius:13px}
-[data-side="brand"] textarea.inp{height:auto;min-height:108px;padding:13px 15px}
-[data-side="brand"] .pre > span{left:15px}
-[data-side="brand"] .pre .inp{padding-left:32px}
-[data-side="brand"] .f label{font-size:15px;margin-bottom:8px}
-[data-side="brand"] .fields{gap:16px 18px}
+/* Public request forms use taller fields. */
+[data-side="brand"]:where(:not([data-desk])) .inp,[data-side="brand"]:where(:not([data-desk])) .sel{height:48px;padding:0 15px;font-size:16px;border-radius:13px}
+[data-side="brand"]:where(:not([data-desk])) textarea.inp{height:auto;min-height:108px;padding:13px 15px}
+[data-side="brand"]:where(:not([data-desk])) .pre > span{left:15px}
+[data-side="brand"]:where(:not([data-desk])) .pre .inp{padding-left:32px}
+[data-side="brand"]:where(:not([data-desk])) .f label{font-size:15px;margin-bottom:8px}
+[data-side="brand"]:where(:not([data-desk])) .fields{gap:16px 18px}
 
 /* Brand request: what a barter is (a product or an experience) */
 .bk{margin-top:14px}

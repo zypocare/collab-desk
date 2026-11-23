@@ -2,8 +2,8 @@
 	import { addressFor } from '../creatorHost';
 	import { pageSlug } from '../supabase';
 	import type { BrandRow } from '../types';
-	import { fmt, hueOf, inr, inrS } from '../util';
-	import Icon from './Icon.svelte';
+	import { fmt, inr, inrS } from '../util';
+	import WalletRow from './WalletRow.svelte';
 
 	// One request in the brand's list as the creator's wallet card (CollabRow): the creator in their colour,
 	// the money and where it stands on top, what waits on you at the bottom.
@@ -16,14 +16,7 @@
 	const tag = $derived(r.needs ? 'Your turn' : r.unread ? `${r.unread} new` : '');
 </script>
 
-<a class="wc st-{r.stage}" {href} style="--h:var(--m{hueOf(r.creator.name)});--i:{Math.min(i, 8)}">
-	<span class="wc-top">
-		<span class="wc-bn">{r.creator.name}</span>
-		<span class="wc-money">{#if r.needs}<i></i>{/if}{money}<small>{r.needs === 'quote' ? 'quote' : r.needs === 'pay' ? 'to pay' : r.stage_label}</small></span>
-	</span>
-	<span class="wc-meta">{r.code} · {r.deliverables || 'Details to fill'}</span>
-	<span class="wc-foot">
-		<span class="wc-next"><Icon name={r.needs ? 'bell' : r.unread ? 'send' : 'clock'} /><span>{next}</span></span>
-		{#if tag}<span class="wc-tag">{tag.toUpperCase()}</span>{/if}
-	</span>
-</a>
+<WalletRow name={r.creator.name} stage={r.stage} {href} {money}
+	status={r.needs === 'quote' ? 'quote' : r.needs === 'pay' ? 'to pay' : r.stage_label}
+	meta="{r.code} · {r.deliverables || 'Details to fill'}"
+	icon={r.needs ? 'bell' : r.unread ? 'send' : 'clock'} {next} {tag} attention={!!r.needs} {i} />

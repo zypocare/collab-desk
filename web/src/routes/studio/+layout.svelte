@@ -28,7 +28,7 @@
 	import { phone, startPhone } from '#lib/phone.svelte.ts';
 	import { agency, loadStudios, useCreator } from '#lib/agency.svelte.ts';
 	import { isNative } from '#lib/native.ts';
-	import { lively } from '#lib/lively.ts';
+	import WorkspaceMotion from '#lib/components/WorkspaceMotion.svelte';
 	import { net } from '#lib/offline.svelte.ts';
 
 	let palette = $state<CommandPalette>();
@@ -266,23 +266,6 @@
 		if (!studio.loaded) return;
 		(n ? nav.setAppBadge?.(n) : nav.clearAppBadge?.())?.catch(() => {});
 	});
-	// Phone: cards tilt under the finger, sheets swipe closed, a tapped card grows into its collab.
-	lively();
-	// Phone: a short vibration on every pressable button (CRED's feel). Android only; iPhone ignores it.
-	onMount(() => {
-		const press = (e: PointerEvent) => {
-			if (!phone.on) return;
-			if ((e.target as Element | null)?.closest?.('.btn, .rail .nav, .m-seg a, .cr-more, .wc, .nc-add, .nc-cancel, .nc-pill, .gm-send, .gm-pill, .gm-chip, .gm-yes, .gm-no, .ail-add, .m-stages button')) {
-				try {
-					navigator.vibrate?.(9);
-				} catch {
-					/* no vibration */
-				}
-			}
-		};
-		addEventListener('pointerdown', press, { passive: true });
-		return () => removeEventListener('pointerdown', press);
-	});
 	// Home-screen shortcuts (long-press the app icon): /studio?new=1 and /studio?ask=1.
 	onMount(() => {
 		const q = new URLSearchParams(location.search);
@@ -400,6 +383,7 @@
 <svelte:window onkeydown={shortcuts} />
 
 {#if allowed}
+	<WorkspaceMotion />
 	<div class="app" class:at={!phone.on} class:m-detail={detail || chat || path === '/studio/inbox' || path === '/studio/import'}>
 		{#if !phone.on}
 			<nav class="side" aria-label="Main">

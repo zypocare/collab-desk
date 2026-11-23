@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { milestones } from '../campaign';
 	import type { BrandRequest } from '../types';
-	import { delivText, hueOf, inr, inrS } from '../util';
-	import Icon from './Icon.svelte';
+	import { delivText, inr, inrS } from '../util';
+	import WalletRow from './WalletRow.svelte';
 
 	// One request on the brand's board as the creator's wallet card (CollabRow): the creator in their
 	// colour, the money and where it stands on top, the next step at the bottom.
@@ -14,14 +14,7 @@
 	const tag = $derived(unread ? `${unread} new` : mine ? 'Your turn' : '');
 </script>
 
-<a class="wc st-{r.stage}" href="/brand/r/{r.code}" style="--h:var(--m{hueOf(r.code)});--i:{Math.min(i, 8)}">
-	<span class="wc-top">
-		<span class="wc-bn">{delivText(r.deliverables) || 'New request'}</span>
-		<span class="wc-money">{#if mine}<i></i>{/if}{money}<small>{state}</small></span>
-	</span>
-	<span class="wc-meta">{r.code}{creator ? ` · with ${creator}` : ''}</span>
-	<span class="wc-foot">
-		<span class="wc-next"><Icon name={mine ? 'bell' : 'clock'} /><span>{next ? (mine ? next.title : `${creator || 'Creator'}: ${next.title}`) : 'All done'}</span></span>
-		{#if tag}<span class="wc-tag">{tag.toUpperCase()}</span>{/if}
-	</span>
-</a>
+<WalletRow name={delivText(r.deliverables) || 'New request'} colorKey={r.code} stage={r.stage} href="/brand/r/{r.code}"
+	{money} status={state} meta="{r.code}{creator ? ` · with ${creator}` : ''}"
+	icon={mine ? 'bell' : 'clock'} next={next ? (mine ? next.title : `${creator || 'Creator'}: ${next.title}`) : 'All done'}
+	{tag} attention={mine} {i} />

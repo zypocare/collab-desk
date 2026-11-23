@@ -196,3 +196,15 @@ export function visibleCycle(node: HTMLElement, advance: () => void, delay: numb
 	});
 	return () => { stop(); clearTimeout(timer); };
 }
+
+// The header drifts and fades a little as the screen scrolls.
+export function headerDrift(node: HTMLElement) {
+	let frame = 0;
+	const preference = matchMedia('(prefers-reduced-motion: reduce)');
+	const paint = () => { frame = 0; node.style.setProperty('--sy', String(preference.matches ? 0 : Math.min(240, scrollY))); };
+	const scroll = () => { if (scrollY < 500) frame ||= requestAnimationFrame(paint); };
+	paint();
+	addEventListener('scroll', scroll, { passive: true });
+	preference.addEventListener('change', paint);
+	return { destroy() { cancelAnimationFrame(frame); removeEventListener('scroll', scroll); preference.removeEventListener('change', paint); } };
+}

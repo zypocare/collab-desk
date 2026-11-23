@@ -21,7 +21,7 @@ const RISE = ['.hs', '.wc', '.md-card', '.m-hero', '.md-hero', '.set-list', '.se
 
 type DocVT = Document & { startViewTransition?: unknown };
 
-/** Call once from the studio layout while it sets up. */
+/** Mount once inside the signed-in workspace. */
 export function lively() {
 	let lastCard: HTMLElement | null = null;
 
@@ -33,8 +33,8 @@ export function lively() {
 		if (!(document as DocVT).startViewTransition || REDUCED || IOS || nativePlatform() === 'android' || !onPhone() || !nav.to || !card?.isConnected) return;
 		const root = document.documentElement;
 		// Today's money card grows into the Money screen's card.
-		const toMoney = card.matches('.m-hero') && nav.to.url.pathname === '/studio/money';
-		if (!toMoney && !nav.to.url.pathname.startsWith('/studio/c/')) return;
+		const toMoney = card.matches('.m-hero') && ['/studio/money', '/brand/business/money'].includes(nav.to.url.pathname);
+		if (!toMoney && !/^\/(studio\/c|brand\/r)\//.test(nav.to.url.pathname)) return;
 		const name = toMoney ? 'mc-money' : 'cr-card', cls = toMoney ? 'mc-money' : 'cr-grow';
 		card.style.viewTransitionName = name;
 		root.classList.add(cls);

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import ProfileWall from '#lib/components/ProfileWall.svelte';
 	import { igImg } from '#lib/igImg.ts';
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
@@ -168,7 +169,7 @@
 			<button type="button" class="pf-flt" class:on={filter === 'barter'} aria-pressed={filter === 'barter'} onclick={() => (filter = 'barter')}>Barter</button>
 		</div>
 	{/if}
-	<div class="wall">
+	<ProfileWall>
 		{#each filteredWall as c, i (c.id)}
 			{@const img = thumb(c)}
 			{@const v = views(c)}
@@ -202,7 +203,7 @@
 				<span>{wall.length ? 'Try another filter above.' : 'Collabs show up here once they go live.'}</span>
 			</div>
 		{/each}
-	</div>
+	</ProfileWall>
 {:else}
 	<div class="pf-grid">
 		{#each studio.media as m (m.id)}
@@ -218,33 +219,6 @@
 {/if}
 </div>
 
-<style>
-	/* Exact 3-column Instagram profile grid (.pf-grid footprint) with pure original media + 2-line footer. */
-	.wall { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; margin: 0 -16px; padding: 4px; }
-	.wt { min-width: 0; display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); color: var(--ink); text-decoration: none;
-		animation: wt-in .35s var(--ease) both; animation-delay: calc(var(--i) * 24ms); transition: transform .18s var(--ease), border-color .18s; }
-	.wt.st-live { border-color: color-mix(in oklab, var(--h-live) 34%, var(--line)); }
-	.wt:active { transform: scale(.97); border-color: var(--accent); }
-	.wt-cover { position: relative; isolation: isolate; display: grid; place-items: center; flex: none; width: 100%; aspect-ratio: 1 / 0.94; overflow: hidden;
-		background: radial-gradient(ellipse at 100% 0%, color-mix(in oklab, var(--h) 60%, transparent), transparent 70%), radial-gradient(ellipse at 0% 100%, color-mix(in oklab, var(--g2) 36%, transparent), transparent 70%), var(--hero); }
-	.wt-cover > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-	.wt-mark { display: grid; place-items: center; width: 44px; height: 44px; border: 1px solid rgba(255, 255, 255, .2); border-radius: 14px; background: rgba(255, 255, 255, .06); color: rgba(255, 255, 255, .88); font: 600 17px/1 var(--f-display); letter-spacing: -.03em; }
-	.wt-b { display: flex; flex-direction: column; gap: 2.5px; min-width: 0; padding: 5px 6.5px 5.5px; border-top: 1px solid var(--line); background: linear-gradient(180deg, color-mix(in oklab, var(--surface) 94%, var(--g1) 6%), var(--surface)); }
-	.wt-r1 { display: flex; align-items: center; justify-content: space-between; gap: 4px; min-width: 0; }
-	.wt-brand-line { display: flex; align-items: center; gap: 4px; min-width: 0; flex: 1; }
-	.wt-dot { flex: none; width: 5.5px; height: 5.5px; border-radius: 50%; background: var(--g1); }
-	.wt-dot.live { background: var(--h-live); box-shadow: 0 0 6px var(--h-live); animation: wt-pulse 1.8s ease-in-out infinite; }
-	.wt-brand-line > b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 700 11px/1.15 var(--f-body); color: var(--ink); }
-	.wt-views-txt { flex: none; display: inline-flex; align-items: center; gap: 2.5px; font-size: 9px; font-weight: 700; line-height: 1; color: color-mix(in oklab, var(--g1) 75%, var(--ink)); font-variant-numeric: tabular-nums; }
-	.wt-views-txt.ok { color: var(--h-live); }
-	.wt-views-txt :global(.ic) { width: 10px; height: 10px; }
-	.wt-r2 { display: flex; align-items: center; justify-content: space-between; gap: 4px; min-width: 0; }
-	.wt-r2 small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--ink-3); font-size: 9.5px; font-weight: 600; line-height: 1.2; }
-	.wt-r2 em { flex: none; color: var(--g3); font-family: var(--f-serif, Georgia, serif); font-style: italic; font-size: 11.5px; font-weight: 400; line-height: 1; white-space: nowrap; }
-	.wall :global(.pf-empty) { grid-column: 1 / -1; }
-	@keyframes wt-in { from { opacity: 0; transform: translateY(6px); } }
-	@keyframes wt-pulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.35); opacity: .55; } }
-	@media (prefers-reduced-motion: reduce) { .wt, .wt-dot.live { animation: none; } }
-</style>
+
 
 {#if qrOpen}<QrShareSheet onclose={() => (qrOpen = false)} />{/if}

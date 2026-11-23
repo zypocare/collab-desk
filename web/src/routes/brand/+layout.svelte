@@ -12,6 +12,7 @@
 	import { brandIg } from '#lib/brandIg.svelte.ts';
 	import { joinTeam } from '#lib/business.svelte.ts';
 	import { loadWorkspaces } from '#lib/workspaces.svelte.ts';
+	import WorkspaceMotion from '#lib/components/WorkspaceMotion.svelte';
 	import WorkspaceSwitch from '#lib/components/WorkspaceSwitch.svelte';
 	import { appAddress, isAppHost } from '#lib/creatorHost.ts';
 	import { loadPublicPage, pub } from '#lib/publicPage.svelte.ts';
@@ -135,6 +136,7 @@
 
 {#if allowed}
 	{#if app}
+		<WorkspaceMotion />
 		<div class="app" class:at={!phone.on} class:m-detail={detail}>
 			{#if !phone.on}
 				<BrandSide />

@@ -2288,7 +2288,7 @@
   [data-side] .m-hero .hc-go { position: absolute; inset: 0; z-index: 1; border-radius: inherit; }
   [data-side] .m-hero .hc-in { position: relative; z-index: 2; pointer-events: none; }
   [data-side] .m-hero .hc-in a { pointer-events: auto; }
-  html.mc-money .md-hero { view-transition-name: mc-money; }
+  html.mc-money .md-hero, html.mc-money[data-desk="brand"] .m-pipe { view-transition-name: mc-money; }
   ::view-transition-group(mc-money) { z-index: 4; animation-duration: .55s; animation-timing-function: cubic-bezier(.2, .9, .25, 1); }
   ::view-transition-old(mc-money), ::view-transition-new(mc-money) { height: 100%; object-fit: cover; }
   /* While the card carries over, Today sinks back and dims, and the Money screen fades in behind the card. */
@@ -2786,6 +2786,7 @@ html.cd-sheet, html.cd-sheet body { overflow: hidden; }
     gap: 12px;
   }
   [data-desk] .phone-today .ht-copy {
+    container-type: inline-size;
     flex: 1;
     min-width: 0;
     padding-top: 2px;
@@ -2821,6 +2822,7 @@ html.cd-sheet, html.cd-sheet body { overflow: hidden; }
     font-style: italic;
     font-weight: 400;
     font-size: 42px;
+    font-size: clamp(26px, calc(175cqi / var(--name-length, 1)), 42px);
     line-height: 0.98;
     letter-spacing: -0.01em;
     padding-right: 4px;
@@ -3009,6 +3011,8 @@ html.cd-sheet, html.cd-sheet body { overflow: hidden; }
     margin-top: 14px;
   }
   [data-desk] .phone-today .qa-card {
+    min-height: 55px;
+    text-align: center;
     position: relative;
     display: flex;
     flex-direction: column;
@@ -3027,6 +3031,9 @@ html.cd-sheet, html.cd-sheet body { overflow: hidden; }
     cursor: pointer;
     box-shadow: 2.5px 2.5px 0 #312632;
     transition: transform .12s cubic-bezier(.22, 1, .36, 1), box-shadow .12s;
+  }
+  @media (max-width: 360px) {
+    [data-desk] .phone-today .qa-card { min-height: 66px; }
   }
   [data-desk] .phone-today .qa-card:active {
     transform: translate(2px, 2px);
@@ -3704,6 +3711,7 @@ html.cd-sheet, html.cd-sheet body { overflow: hidden; }
 
   /* Instagram Icon Tab Bar (Collabs / Reels) */
   [data-desk] .pf-page .pf-tabs {
+    grid-template-columns: repeat(var(--n), minmax(0, 1fr));
     margin: 10px -16px 0;
     border-top: 1px solid #261d28;
     border-bottom: 1px solid #261d28;
@@ -3794,10 +3802,7 @@ html.cd-sheet, html.cd-sheet body { overflow: hidden; }
 
 /* ===== Brand Side Mobile UI Parity (Requests, Business Money, Grow, 3-Tab Profile) ===== */
 @media (max-width: 760px) {
-  [data-desk="brand"] .pf-page .pf-tabs.bp-tabs {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-  [data-desk="brand"] :is(.m-hero.m-pipe, .bg-hero.hero-card) {
+  [data-desk="brand"] .bg-hero.hero-card {
     border-radius: 22px;
     color: #FBF2F6;
     border: 1px solid transparent;
@@ -3807,24 +3812,15 @@ html.cd-sheet, html.cd-sheet body { overflow: hidden; }
     animation: ht-spin 11s linear infinite;
     box-shadow: 0 22px 46px -24px rgba(156, 123, 255, 0.36);
   }
-  [data-desk="brand"] :is(.m-hero.m-pipe, .bg-hero.hero-card) > .mesh {
+  [data-desk="brand"] .bg-hero.hero-card > .mesh {
     display: none;
   }
-  [data-desk="brand"] .m-hero.m-pipe .hc-eb,
   [data-desk="brand"] .bg-hero .bg-eb {
     color: var(--g3);
     opacity: 1;
   }
-  [data-desk="brand"] .m-hero.m-pipe .hc-foot > button {
-    border-radius: 12px;
-    background: rgba(28, 23, 28, 0.75);
-    border: 1px solid #382c38;
-  }
-  [data-desk="brand"] .m-hero.m-pipe .hc-foot > button.on {
-    background: rgba(242, 90, 144, 0.16);
-    border-color: var(--g2);
-  }
+
 }
 @media (prefers-reduced-motion: reduce) {
-  [data-desk="brand"] :is(.m-hero.m-pipe, .bg-hero.hero-card) { animation: none; }
+  [data-desk="brand"] .bg-hero.hero-card { animation: none; }
 }

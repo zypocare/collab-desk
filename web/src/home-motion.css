@@ -18,7 +18,7 @@
 	[data-desk] .phone-today .orb-ring { animation: home-orbit 5s linear infinite; }
 	[data-desk] .phone-today .ht-orb { animation: home-float 4.8s ease-in-out infinite; }
 	[data-desk] .phone-today .orb-spark { animation: home-spark 2.6s ease-in-out infinite; }
-	.phone-today #sec-collabs { scroll-margin-top: calc(64px + env(safe-area-inset-top, 0px)); }
+	.phone-today .tix[id] { scroll-margin-top: calc(64px + env(safe-area-inset-top, 0px)); }
 	.phone-today .tix-h h2 { margin: 0; font: 600 19px/1.2 var(--f-body); color: var(--ink); }
 	.phone-today .tix .tix-filters { display: grid; grid-template-columns: 1fr 1.15fr 1fr; gap: 5px; }
 	.phone-today .tix .tix-flt {

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { Collab } from '../types';
-	import { delivText, hueOf, inr, inrS, nextLine, overdue, stageOf, unreadFor } from '../util';
-	import Icon from './Icon.svelte';
+	import { delivText, inr, inrS, nextLine, overdue, stageOf, unreadFor } from '../util';
+	import WalletRow from './WalletRow.svelte';
 	import { loadBrandTrust, payHint, trust } from '../trust.svelte';
 
 	// One collab on the phone board as a wallet card (CRED's card stack): the brand in its colour,
@@ -28,14 +28,6 @@
 	const tag = $derived(unread ? `${unread} new` : c.stage === 'request' && !c.someday ? 'New' : '');
 </script>
 
-<a class="wc st-{c.someday ? 'someday' : c.stage}" href="/studio/c/{c.code}" style="--h:var(--m{hueOf(c.brand.name)});--i:{Math.min(i, 8)}">
-	<span class="wc-top">
-		<span class="wc-bn">{c.brand.name}</span>
-		<span class="wc-money">{#if late}<i></i>{/if}{money}<small>{state}</small></span>
-	</span>
-	<span class="wc-meta">{c.code} · {c.retainer_id ? 'Monthly · ' : ''}{delivText(c.deliverables) || 'Details to fill'}{pays ? ` · ${pays}` : ''}</span>
-	<span class="wc-foot">
-		<span class="wc-next"><Icon name={n.icon} /><span>{n.text}</span></span>
-		{#if tag}<span class="wc-tag">{tag.toUpperCase()}</span>{/if}
-	</span>
-</a>
+<WalletRow name={c.brand.name} stage={c.someday ? 'someday' : c.stage} href="/studio/c/{c.code}"
+	{money} status={state} meta="{c.code} · {c.retainer_id ? 'Monthly · ' : ''}{delivText(c.deliverables) || 'Details to fill'}{pays ? ` · ${pays}` : ''}"
+	icon={n.icon} next={n.text} {tag} attention={late} {i} />
