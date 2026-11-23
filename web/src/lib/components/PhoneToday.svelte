@@ -523,8 +523,25 @@
 </section>
 
 <!-- Growth check-up, setup steps, and brand questions -->
-<CheckupCard phone />
-<SetupChecklist phone />
-<div class="hs"><BrandQuestions /></div>
+<div class="home-tail">
+	<CheckupCard phone />
+	<SetupChecklist phone />
+	<div class="hs"><BrandQuestions /></div>
+</div>
 </div>
 
+
+<style>
+	.home-tail {
+		display: grid;
+		gap: 16px;
+		margin-top: 16px;
+	}
+	.home-tail > :global(*) {
+		margin-top: 0 !important;
+		margin-bottom: 0 !important;
+	}
+	.home-tail > .hs:empty {
+		display: none;
+	}
+</style>
