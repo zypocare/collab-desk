@@ -192,12 +192,12 @@
 		<p>Approvals, inbound creator funnel, ROI planner, YouTube Shorts watchdog, Bulk NEFT + TDS, and campaign wrap-ups.</p>
 	</header>
 
-	<nav class="md-tabs" aria-label="Brand OS tools">
-		<button type="button" class="md-tab" class:on={tab === 'approvals'} onclick={() => (tab = 'approvals')}>Approve</button>
-		<button type="button" class="md-tab" class:on={tab === 'apply'} onclick={() => (tab = 'apply')}>Apply</button>
-		<button type="button" class="md-tab" class:on={tab === 'roi'} onclick={() => (tab = 'roi')}>ROI</button>
-		<button type="button" class="md-tab" class:on={tab === 'watchdog'} onclick={() => (tab = 'watchdog')}>Watch</button>
-		<button type="button" class="md-tab" class:on={tab === 'finance'} onclick={() => (tab = 'finance')}>NEFT</button>
+	<nav class="md-tabs section-tabs" aria-label="Brand OS tools">
+		<button type="button" class="md-tab" class:on={tab === 'approvals'} aria-pressed={tab === 'approvals'} onclick={() => (tab = 'approvals')}>Approve</button>
+		<button type="button" class="md-tab" class:on={tab === 'apply'} aria-pressed={tab === 'apply'} onclick={() => (tab = 'apply')}>Apply</button>
+		<button type="button" class="md-tab" class:on={tab === 'roi'} aria-pressed={tab === 'roi'} onclick={() => (tab = 'roi')}>ROI</button>
+		<button type="button" class="md-tab" class:on={tab === 'watchdog'} aria-pressed={tab === 'watchdog'} onclick={() => (tab = 'watchdog')}>Watch</button>
+		<button type="button" class="md-tab" class:on={tab === 'finance'} aria-pressed={tab === 'finance'} onclick={() => (tab = 'finance')}>NEFT</button>
 	</nav>
 
 	{#if tab === 'approvals'}
@@ -481,38 +481,40 @@
 		max-width: 58ch;
 	}
 
-	/* Sharp 5-column NeoPOP sub-navigation bar: fits 100% on one row with zero clipping */
-	.md-tabs {
-		display: grid;
-		grid-template-columns: repeat(5, minmax(0, 1fr));
-		border: 1px solid rgba(255, 255, 255, 0.12);
-		background: rgba(255, 255, 255, 0.02);
+	@media (width > 760px) {
+		.md-tabs {
+			display: grid;
+			grid-template-columns: repeat(5, minmax(0, 1fr));
+			border: 1px solid rgba(255, 255, 255, 0.12);
+			background: rgba(255, 255, 255, 0.02);
+		}
+		.md-tab {
+			min-width: 0;
+			padding: 12px 4px;
+			border: 0;
+			border-right: 1px solid rgba(255, 255, 255, 0.09);
+			background: transparent;
+			color: var(--ink-3, #9b8fa8);
+			font: 700 10px/1.15 var(--f-mono, ui-monospace, monospace);
+			letter-spacing: 0.08em;
+			text-transform: uppercase;
+			text-align: center;
+			white-space: nowrap;
+			overflow: hidden;
+			text-overflow: ellipsis;
+			cursor: pointer;
+			transition: background 0.15s, color 0.15s;
+		}
+		.md-tab:last-child {
+			border-right: 0;
+		}
+		.md-tab.on {
+			background: #ffffff;
+			color: #120b14;
+			box-shadow: inset 0 -3px 0 0 #f25a90;
+		}
 	}
-	.md-tab {
-		min-width: 0;
-		padding: 12px 4px;
-		border: 0;
-		border-right: 1px solid rgba(255, 255, 255, 0.09);
-		background: transparent;
-		color: var(--ink-3, #9b8fa8);
-		font: 700 10px/1.15 var(--f-mono, ui-monospace, monospace);
-		letter-spacing: 0.08em;
-		text-transform: uppercase;
-		text-align: center;
-		white-space: nowrap;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		cursor: pointer;
-		transition: background 0.15s, color 0.15s;
-	}
-	.md-tab:last-child {
-		border-right: 0;
-	}
-	.md-tab.on {
-		background: #ffffff;
-		color: #120b14;
-		box-shadow: inset 0 -3px 0 0 #f25a90;
-	}
+
 
 	/* Open canvas sections separated by clean hairlines (no heavy boxed cards) */
 	.md-sec {

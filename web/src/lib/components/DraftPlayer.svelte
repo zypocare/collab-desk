@@ -196,7 +196,7 @@
 					oninput={pin}
 					disabled={busy}
 				/>
-				<button class="dp-pin-btn" type="submit" disabled={busy || !body.trim()}>
+				<button class="btn primary dp-pin-btn" type="submit" disabled={busy || !body.trim()}>
 					{#if busy}<span class="spinner"></span>{:else}Pin{/if}
 				</button>
 			</div>
@@ -357,16 +357,19 @@
 		outline: none;
 	}
 	.dp-inp:focus { border-color: #f25a90; }
-	.dp-pin-btn {
-		height: 44px;
-		padding: 0 16px;
-		border: 0;
-		border-radius: 10px;
-		background: #faf7fc;
-		color: #140e16;
-		font: 800 12px/1 var(--f-body, system-ui, sans-serif);
-		box-shadow: 0 3px 0 0 #f25a90;
-		cursor: pointer;
+	.dp-pin-btn { min-height: 44px; }
+	@media (width > 760px) {
+		.dp-pin-btn {
+			height: 44px;
+			padding: 0 16px;
+			border: 0;
+			border-radius: 10px;
+			background: #faf7fc;
+			color: #140e16;
+			font: 800 12px/1 var(--f-body, system-ui, sans-serif);
+			box-shadow: 0 3px 0 0 #f25a90;
+			cursor: pointer;
+		}
 	}
 	.dp-pin-btn:disabled { opacity: 0.45; cursor: default; }
 

@@ -145,7 +145,7 @@
 		<h2 id="ss-title">{mode === 'wrapped' ? 'Creator Wrapped Story' : 'Share to your Story'}</h2>
 		<p>{mode === 'wrapped' ? 'Share your verified monthly reach and top collab to Instagram Stories.' : 'A picture of your page for Instagram. Brands and followers who see it know where to book you.'}</p>
 
-		<div class="ss-tabs" role="tablist" aria-label="Story card style">
+		<div class="ss-tabs section-tabs" role="tablist" aria-label="Story card style">
 			<button type="button" role="tab" aria-selected={mode === 'profile'} class:on={mode === 'profile'} onclick={() => (mode = 'profile')}>Book Me Card</button>
 			<button type="button" role="tab" aria-selected={mode === 'wrapped'} class:on={mode === 'wrapped'} onclick={() => (mode = 'wrapped')}>Month Wrapped</button>
 		</div>
@@ -177,9 +177,12 @@
 <style>
 	.ss { width: min(440px, 100%); }
 	.ss p { margin: 4px 0 12px; color: var(--ink-3); }
-	.ss-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 3px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface-2); margin-bottom: 12px; }
-	.ss-tabs button { appearance: none; border: 0; background: none; color: var(--ink-2); font: 700 12.5px/1 var(--f-body); padding: 9px 10px; border-radius: 999px; cursor: pointer; }
-	.ss-tabs button.on { background: var(--ink); color: var(--bg); }
+	.ss-tabs { margin-bottom: 12px; }
+	@media (width > 760px) {
+		.ss-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 3px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface-2); }
+		.ss-tabs button { appearance: none; border: 0; background: none; color: var(--ink-2); font: 700 12.5px/1 var(--f-body); padding: 9px 10px; border-radius: 999px; cursor: pointer; }
+		.ss-tabs button.on { background: var(--ink); color: var(--bg); }
+	}
 	.ss-opts { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
 	.ss-themes { display: flex; gap: 6px; }
 	.ss-th { appearance: none; border: 1px solid var(--line); background: var(--surface-2); color: var(--ink-2); font: 600 11.5px/1 var(--f-body); padding: 6px 10px; border-radius: 999px; cursor: pointer; }

@@ -320,7 +320,7 @@
 				<span class="cdv-eb">Next step</span>
 				<p>{next.hint}</p>
 			</div>
-			<button type="button" class="cdv-cta" onclick={() => onrunnext(next.key)}>
+			<button type="button" class="btn grad cdv-cta" onclick={() => onrunnext(next.key)}>
 				<span class="cdv-cta-ic"><Icon name={next.icon} /></span>
 				<span>{next.label}</span>
 				<span class="cdv-cta-arr"><Icon name="arrow" /></span>
@@ -540,21 +540,21 @@
 		font: 500 20px/1.25 var(--f-serif, Georgia, serif);
 		color: var(--cdv-ink);
 	}
-	.cdv-cta {
-		appearance: none;
-		display: flex;
-		align-items: center;
-		gap: 9px;
-		width: 100%;
-		min-height: 44px;
-		padding: 9px 13px;
-		border: 0;
-		border-radius: 10px;
-		background: linear-gradient(105deg, var(--cdv-violet), #f28cb3 58%, var(--cdv-peach));
-		color: #231323;
-		font: 700 14px/1.2 var(--f-body);
-		text-align: left;
-		cursor: pointer;
+	.cdv-cta { width: 100%; min-width: 0; min-height: 44px; justify-content: flex-start; text-align: left; white-space: normal; }
+	@media (width > 760px) {
+		.cdv-cta {
+			appearance: none;
+			display: flex;
+			align-items: center;
+			gap: 9px;
+			padding: 9px 13px;
+			border: 0;
+			border-radius: 10px;
+			background: linear-gradient(105deg, var(--cdv-violet), #f28cb3 58%, var(--cdv-peach));
+			color: #231323;
+			font: 700 14px/1.2 var(--f-body);
+			cursor: pointer;
+		}
 	}
 	.cdv-cta-ic { display: flex; }
 	.cdv-cta-arr { margin-left: auto; display: flex; }

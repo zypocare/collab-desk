@@ -67,7 +67,7 @@
 		<div><span>Follower trend</span><p>{#if focus.followerChange !== null}<b>{focus.followerChange > 0 ? '+' : ''}{focus.followerChange.toLocaleString('en-IN')}</b>{:else}<b class="gc-pending">History pending</b>{/if}</p><small>{focus.followerDays !== null ? `Over ${focus.followerDays} days` : 'Needs about 28 days'}</small></div>
 	</div>
 	<div class="gc-content">
-		<div class="gc-tabs" role="tablist" aria-label="Growth goal">
+		<div class="gc-tabs section-tabs" role="tablist" aria-label="Growth goal">
 			{#each goals as g (g.id)}<button id="growth-goal-{g.id}" role="tab" aria-selected={active === g.id} aria-controls="growth-goal-panel" tabindex={active === g.id ? 0 : -1} onclick={() => (active = g.id)} onkeydown={changeGoal}><Icon name={g.icon} />{g.label}</button>{/each}
 		</div>
 		{#key active}
@@ -107,9 +107,8 @@
 	.gc-summary i.gc-up { color: var(--ok); }
 	.gc small { display: block; color: var(--ink-3); font-size: 11px; line-height: 1.5; }
 	.gc-content { grid-column: 1; grid-row: 2 / 5; min-width: 0; }
-	.gc-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; padding: 4px; border: 1px solid var(--line); border-radius: 12px; background: color-mix(in oklab, var(--ink) 3%, transparent); }
-	.gc-tabs button { display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 38px; padding: 6px; border: 0; border-radius: 8px; background: transparent; color: var(--ink-3); font: 600 12px/1.3 var(--f-body, sans-serif); cursor: pointer; }
-	.gc-tabs button[aria-selected="true"] { background: color-mix(in oklab, var(--accent) 12%, var(--surface)); color: var(--accent); }
+	@media (width > 760px) {
+	}
 	.gc-tabs :global(svg) { width: 15px; height: 15px; flex: none; }
 	.gc-panel { padding-top: 18px; outline-offset: 4px; }
 	.gc h3 { margin: 0 0 8px; font-size: 18px; line-height: 1.35; }
@@ -154,7 +153,6 @@
 		.gc-head { align-items: start; flex-direction: column; gap: 3px; }
 		.gc { padding: 16px; }
 		.gc-summary { gap: 12px; }
-		.gc-tabs button { gap: 4px; font-size: 11px; }
 	}
 	@media (max-width: 760px) {
 		.gc {
@@ -169,12 +167,9 @@
 		.gc-summary > div + div { border-color: color-mix(in oklab, var(--g2) 22%, var(--line)); background: linear-gradient(145deg, color-mix(in oklab, var(--g2) 16%, transparent), color-mix(in oklab, var(--g3) 5%, transparent)); }
 		.gc-summary b { font: 400 32px/1.1 var(--f-serif, Georgia, serif); }
 		.gc-summary b.gc-pending { font-size: 14px; line-height: 2.5; font-family: var(--f-body, sans-serif); }
-		.gc-tabs { padding: 4px; gap: 4px; border-radius: 15px; border-color: color-mix(in oklab, var(--goal) 25%, var(--line)); background: color-mix(in oklab, var(--surface) 75%, transparent); }
-		.gc-tabs button { min-height: 42px; border-radius: 11px; color: var(--ink-2); transition: color .2s, background .2s, box-shadow .2s; }
 		.gc-tabs button:nth-child(1) :global(svg) { color: var(--g1); }
 		.gc-tabs button:nth-child(2) :global(svg) { color: var(--g2); }
 		.gc-tabs button:nth-child(3) :global(svg) { color: var(--g3); }
-		.gc-tabs button[aria-selected="true"] { color: var(--bg); background: var(--ink); box-shadow: 0 4px 14px -6px color-mix(in oklab, var(--goal) 80%, transparent); }
 		.gc-tabs button[aria-selected="true"] :global(svg) { color: inherit; }
 		.gc-panel { position: relative; margin-top: 12px; padding: 18px 16px 4px; border-radius: 18px; border: 1px solid color-mix(in oklab, var(--goal) 26%, var(--line)); background: radial-gradient(110% 80% at 100% 0%, color-mix(in oklab, var(--goal) 16%, transparent), transparent 70%), color-mix(in oklab, var(--surface) 85%, transparent); animation: gc-arrive .28s ease-out both; }
 		.gc h3 { max-width: 24ch; font: italic 400 27px/1.1 var(--f-serif, Georgia, serif); letter-spacing: -.01em; margin-bottom: 10px; }

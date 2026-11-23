@@ -1553,11 +1553,19 @@
    edge (like the NeoPOP buttons), never rounded pills. Bookings weeks and priority rules as CRED pieces. ===== */
 @media (max-width: 760px) {
   /* Page tabs (Board · Brands · Pitches): one outlined bar, the current tab an ink block with a pink edge. */
-  [data-side] .m-seg { padding: 0; border: 1px solid var(--line-strong); border-radius: 0; background: transparent; overflow: visible; }
-  [data-side] .m-seg a { height: 44px; border-radius: 0; transition: background .2s, color .2s, transform .12s, box-shadow .12s; }
-  [data-side] .m-seg a + a { border-left: 1px solid var(--line); }
-  [data-side] .m-seg a[aria-current="page"] { background: var(--ink); color: var(--bg); box-shadow: 3px 3px 0 var(--accent); position: relative; z-index: 1; }
-  [data-side] .m-seg a:active { transform: translate(2px, 2px); box-shadow: none; }
+  [data-side] .section-tabs { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 0; }
+  [data-side] :is(.m-seg, .section-tabs) { padding: 0; border: 1px solid var(--line-strong); border-radius: 0; background: transparent; overflow: visible; }
+  [data-side] .section-tabs > button {
+    appearance: none; display: flex; align-items: center; justify-content: center; gap: 4px; min-width: 0;
+    padding: 0 3px; border: 0; background: transparent; color: var(--ink-3); cursor: pointer;
+    font: 700 11px/1.15 var(--f-body); letter-spacing: .07em; text-transform: uppercase;
+  }
+  [data-side] :is(.m-seg a, .section-tabs > button) { height: 44px; border-radius: 0; transition: background .2s, color .2s, transform .12s, box-shadow .12s; }
+  [data-side] :is(.m-seg a + a, .section-tabs > button + button) { border-left: 1px solid var(--line); }
+  [data-side] :is(.m-seg a[aria-current="page"], .section-tabs > button[aria-selected="true"], .section-tabs > button[aria-pressed="true"]) {
+    background: var(--ink); color: var(--bg); box-shadow: 3px 3px 0 var(--accent); position: relative; z-index: 1;
+  }
+  [data-side] :is(.m-seg a, .section-tabs > button):active { transform: translate(2px, 2px); box-shadow: none; }
 
   /* Segmented choices inside pages (Open · Selective · Paid only, Own car · Scooter ...). */
   [data-side] :is(.pills, .btabs) { padding: 0; gap: 0; border: 1px solid var(--line-strong); border-radius: 0; background: transparent; box-shadow: none; overflow: visible; }

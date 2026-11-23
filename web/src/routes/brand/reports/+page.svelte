@@ -83,7 +83,7 @@
 
 <div class="br-bar">
 	<Segmented label="Period" bind:value={period} options={PERIODS.map((p) => ({ value: p.id, label: p.label }))} />
-	<button class="br-excel-btn" onclick={excel} disabled={busy || !r}>
+	<button class="btn grad br-excel-btn" onclick={excel} disabled={busy || !r}>
 		{#if busy}<span class="spinner"></span>{:else}<Icon name="download" />{/if}
 		Download Excel
 	</button>
@@ -262,7 +262,7 @@
 			</header>
 			<p class="br-note">One .xlsx with a sheet each: Summary, Requests, Invoices, Content, Campaigns, Creators and Shipping, for {label.toLowerCase()}.</p>
 			<div>
-				<button class="br-white-btn" onclick={excel} disabled={busy}>
+				<button class="btn primary br-white-btn" onclick={excel} disabled={busy}>
 					{#if busy}<span class="spinner"></span>{:else}<Icon name="download" />{/if}
 					Download .xlsx
 				</button>
@@ -296,7 +296,7 @@
 					<span class="br-empty-ic"><Icon name="chart" /></span>
 					<b>No results yet</b>
 					<small>Once creators go live, their views and what they cost show up here.</small>
-					<a class="br-excel-btn" href="/brand/explore"><Icon name="search" />Find creators</a>
+					<a class="btn grad br-excel-btn" href="/brand/explore"><Icon name="search" />Find creators</a>
 				</div>
 			{/each}
 		</div>
@@ -313,70 +313,74 @@
 		margin: 0 0 16px;
 	}
 
-	.br-excel-btn {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		gap: 7px;
-		padding: 10px 16px;
-		border: 0;
-		border-radius: 10px;
-		background: linear-gradient(135deg, #9c7bff 0%, #f25a90 52%, #ffae6b 100%);
-		color: #120b14;
-		font: 800 12.5px/1 var(--f-body, system-ui, sans-serif);
-		letter-spacing: 0.01em;
-		text-decoration: none;
-		cursor: pointer;
-		box-shadow: 3px 3px 0 0 rgba(156, 123, 255, 0.55), 0 8px 22px rgba(242, 90, 144, 0.25);
-		transition: transform 0.14s ease, box-shadow 0.14s ease, filter 0.14s ease;
+	@media (max-width: 760px) {
+		.br-bar .btn, .br-white-btn, .br-excel-btn { min-height: 44px; }
 	}
-	.br-excel-btn:hover:not(:disabled) {
-		filter: brightness(1.06);
-		transform: translate(-1px, -1px);
-		box-shadow: 4px 4px 0 0 rgba(156, 123, 255, 0.65), 0 10px 26px rgba(242, 90, 144, 0.32);
-	}
-	.br-excel-btn:active:not(:disabled) {
-		transform: translate(2px, 2px);
-		box-shadow: 1px 1px 0 0 rgba(156, 123, 255, 0.5);
-	}
-	.br-excel-btn:disabled {
-		opacity: 0.55;
-		cursor: default;
-	}
-	.br-excel-btn :global(.ic) {
-		width: 15px;
-		height: 15px;
-	}
+	@media (width > 760px) {
+		.br-excel-btn {
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			gap: 7px;
+			padding: 10px 16px;
+			border: 0;
+			border-radius: 10px;
+			background: linear-gradient(135deg, #9c7bff 0%, #f25a90 52%, #ffae6b 100%);
+			color: #120b14;
+			font: 800 12.5px/1 var(--f-body, system-ui, sans-serif);
+			letter-spacing: 0.01em;
+			text-decoration: none;
+			cursor: pointer;
+			box-shadow: 3px 3px 0 0 rgba(156, 123, 255, 0.55), 0 8px 22px rgba(242, 90, 144, 0.25);
+			transition: transform 0.14s ease, box-shadow 0.14s ease, filter 0.14s ease;
+		}
+		.br-excel-btn:hover:not(:disabled) {
+			filter: brightness(1.06);
+			transform: translate(-1px, -1px);
+			box-shadow: 4px 4px 0 0 rgba(156, 123, 255, 0.65), 0 10px 26px rgba(242, 90, 144, 0.32);
+		}
+		.br-excel-btn:active:not(:disabled) {
+			transform: translate(2px, 2px);
+			box-shadow: 1px 1px 0 0 rgba(156, 123, 255, 0.5);
+		}
+		.br-excel-btn:disabled {
+			opacity: 0.55;
+			cursor: default;
+		}
+		.br-excel-btn :global(.ic) {
+			width: 15px;
+			height: 15px;
+		}
 
-	.br-white-btn {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		gap: 7px;
-		padding: 10px 15px;
-		border: 0;
-		border-radius: 10px;
-		background: #faf7fc;
-		color: #140e16;
-		font: 800 12.5px/1 var(--f-body, system-ui, sans-serif);
-		letter-spacing: 0.01em;
-		cursor: pointer;
-		box-shadow: 0 3px 0 0 #f25a90;
-		transition: transform 0.14s ease, box-shadow 0.14s ease;
+		.br-white-btn {
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			gap: 7px;
+			padding: 10px 15px;
+			border: 0;
+			border-radius: 10px;
+			background: #faf7fc;
+			color: #140e16;
+			font: 800 12.5px/1 var(--f-body, system-ui, sans-serif);
+			letter-spacing: 0.01em;
+			cursor: pointer;
+			box-shadow: 0 3px 0 0 #f25a90;
+			transition: transform 0.14s ease, box-shadow 0.14s ease;
+		}
+		.br-white-btn:active:not(:disabled) {
+			transform: translateY(2px);
+			box-shadow: 0 1px 0 0 #f25a90;
+		}
+		.br-white-btn:disabled {
+			opacity: 0.55;
+			cursor: default;
+		}
+		.br-white-btn :global(.ic) {
+			width: 15px;
+			height: 15px;
+		}
 	}
-	.br-white-btn:active:not(:disabled) {
-		transform: translateY(2px);
-		box-shadow: 0 1px 0 0 #f25a90;
-	}
-	.br-white-btn:disabled {
-		opacity: 0.55;
-		cursor: default;
-	}
-	.br-white-btn :global(.ic) {
-		width: 15px;
-		height: 15px;
-	}
-
 	/* Hero Spend Vault */
 	.br-hero {
 		position: relative;
