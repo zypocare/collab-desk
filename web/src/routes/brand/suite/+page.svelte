@@ -644,13 +644,6 @@
 		border: 1px solid rgba(255, 255, 255, 0.14);
 		background: rgba(255, 255, 255, 0.02);
 	}
-	.md-seg.wrap {
-		display: flex;
-		flex-wrap: wrap;
-	}
-	.md-seg.wrap button {
-		flex: 1 1 auto;
-	}
 	.md-seg button {
 		padding: 11px 10px;
 		border: 0;
@@ -672,56 +665,6 @@
 		box-shadow: inset 0 -2px 0 0 #f25a90;
 	}
 
-	/* Counter tiles matching Reels - 2 + / Stories - 3 + in Set up a monthly deal */
-	.md-kinds {
-		display: grid;
-		grid-template-columns: repeat(2, minmax(0, 1fr));
-		gap: 10px;
-	}
-	@media (max-width: 420px) {
-		.md-kinds {
-			grid-template-columns: 1fr;
-		}
-	}
-	.md-kind {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 8px;
-		padding: 11px 12px;
-		border-radius: 12px;
-		border: 1px solid rgba(255, 255, 255, 0.1);
-		background: rgba(255, 255, 255, 0.02);
-		color: var(--ink-3, #9b8fa8);
-		font-size: 13.5px;
-		font-weight: 500;
-	}
-	.md-kind.on {
-		border-color: rgba(242, 90, 144, 0.45);
-		background: rgba(242, 90, 144, 0.07);
-		color: var(--ink, #faf7fc);
-	}
-	.md-step {
-		display: inline-flex;
-		align-items: center;
-		border: 1px solid rgba(255, 255, 255, 0.12);
-		background: rgba(0, 0, 0, 0.25);
-	}
-	.md-step button {
-		width: 28px;
-		height: 28px;
-		border: 0;
-		background: transparent;
-		color: var(--ink, #faf7fc);
-		font-size: 15px;
-		cursor: pointer;
-	}
-	.md-step b {
-		min-width: 24px;
-		text-align: center;
-		font: 700 13px/1 var(--f-mono, ui-monospace, monospace);
-		color: var(--ink, #faf7fc);
-	}
 
 	/* Summary & KPI band matching q-total in Set up a monthly deal */
 	.md-kpis {
@@ -752,9 +695,6 @@
 	}
 	.md-kpi b.ok {
 		color: #4ade80;
-	}
-	.md-kpi b.warn {
-		color: #ffae6b;
 	}
 
 	/* NeoPOP sharp action buttons matching Cancel | Start the deal */
@@ -805,11 +745,6 @@
 		color: var(--ink, #faf7fc);
 		font: 600 13px/1 var(--f-body, system-ui, sans-serif);
 		cursor: pointer;
-	}
-	.md-btn-ghost.tall {
-		min-height: 46px;
-		padding: 0 18px;
-		font-size: 14px;
 	}
 
 	/* Clean hairline list rows */

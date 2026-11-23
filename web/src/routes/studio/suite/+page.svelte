@@ -718,10 +718,6 @@
 		text-transform: uppercase;
 		color: var(--ink-3, #9b8fa8);
 	}
-	.md-lbl b {
-		color: var(--ink, #faf7fc);
-		font-weight: 700;
-	}
 	.md-inp,
 	.md-ta {
 		scroll-margin-bottom: 140px;
@@ -770,13 +766,6 @@
 		padding-left: 0;
 	}
 
-	/* Range slider matching dark accent */
-	.md-range {
-		width: 100%;
-		accent-color: #f25a90;
-		margin: 4px 0 0;
-		cursor: pointer;
-	}
 
 	/* Sharp segmented selector matching Invoice each month in monthly deal */
 	.md-seg {
@@ -982,22 +971,10 @@
 		color: var(--ink-3, #9b8fa8);
 		line-height: 1.4;
 	}
-	.md-row-acts {
-		display: inline-flex;
-		gap: 8px;
-		flex-shrink: 0;
-	}
 	.md-note {
 		margin: 0;
 		font-size: 13px;
 		line-height: 1.5;
 		color: var(--ink-3, #9b8fa8);
-	}
-	.md-linkline {
-		padding: 10px 0;
-		border-bottom: 1px solid rgba(255, 255, 255, 0.14);
-		font: 500 13px/1.4 var(--f-mono, ui-monospace, monospace);
-		color: #cfc6d6;
-		word-break: break-all;
 	}
 </style>
