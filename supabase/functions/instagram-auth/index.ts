@@ -101,9 +101,13 @@ async function connect(db: ReturnType<typeof admin>, creator: number, code: stri
   const p = await ig.profile(t.token);
   const { data: owner } = await db.from('ig_account').select('id').eq('ig_user_id', p.user_id).neq('id', creator).limit(1);
   if (owner?.length) throw new Error(`@${p.username} is already connected to another creator on Miracle.`);
-  const { error } = await db.from('ig_token').upsert({ id: creator, access_token: t.token, obtained_at: new Date().toISOString(), expires_at: new Date(Date.now() + t.expiresIn * 1000).toISOString(), permissions: (t as { permissions?: string }).permissions ?? '' });
+  const { data: before } = await db.from('ig_account').select('ig_user_id').eq('id', creator).maybeSingle();
+  if (before?.ig_user_id && before.ig_user_id !== p.user_id) {
+    await db.from('ig_followers_history').delete().eq('creator_id', creator);
+  }
+  const expiresAt = new Date(Date.now() + t.expiresIn * 1000).toISOString();
+  const { error } = await db.from('ig_token').upsert({ id: creator, access_token: t.token, obtained_at: new Date().toISOString(), expires_at: expiresAt, permissions: (t as { permissions?: string }).permissions ?? '' });
   if (error) throw new Error(error.message);
-  // Mark connected immediately so the app shows @username right away without waiting 5-6s for full media/insights sync.
   await db.from('ig_account').upsert({
     id: creator,
     connected: true,
@@ -111,12 +115,13 @@ async function connect(db: ReturnType<typeof admin>, creator: number, code: stri
     username: p.username ?? '',
     name: p.name ?? '',
     profile_picture_url: p.profile_picture_url ?? '',
-    followers_count: p.followers_count ?? 0,
+    followers: p.followers_count ?? 0,
+    follows: p.follows_count ?? 0,
     media_count: p.media_count ?? 0,
+    token_expires_at: expiresAt,
     last_error: ''
   });
   const finish = async () => {
-    // Start receiving her DMs (Meta sends them only after this), then run full posts/insights sync.
     await ensureMessages(db, creator).catch((e) => console.error('[subscribe messages]', e));
     return await runSync(db, creator).catch((e) => console.error('[initial ig sync]', e));
   };
@@ -169,12 +174,8 @@ Deno.serve(async (req) => {
     if (q.get('error')) return back('/studio/instagram', { error: q.get('error')!, error_description: q.get('error_description') || 'Instagram sign-in was cancelled.' });
     const code = (q.get('code') ?? '').replace(/#_$/, '');
     if (!code) return back('/studio/instagram', { error: 'missing_code', error_description: 'Instagram did not send a sign-in code. Start again from My page.' });
-    try {
-      await connect(db, creator, code, CALLBACK, true);
-      return back('/studio/settings', { s: 'profile', ig: 'connected' });
-    } catch (e) {
-      return back('/studio/instagram', { error: 'connect_failed', error_description: (e instanceof Error ? e.message : String(e)).slice(0, 300) });
-    }
+    // Redirect immediately to the Miracle connecting animation screen so the WebView never sits on a blank black screen.
+    return back('/studio/instagram', { code, state: q.get('state') ?? '', cb: '1' });
   }
 
   const { action, code, redirect_uri, state, extra, comments, app, as } = await req.json().catch(() => ({}));
@@ -224,12 +225,13 @@ Deno.serve(async (req) => {
   if (!code || !redirect_uri) return reply({ error: 'Missing sign-in code.' }, 400);
   // A state signed here must be for the creator who is signed in. (The studio's own page makes its
   // own state and checks it in the browser; that still works.)
-  if (typeof state === 'string' && state.split('.').length === 4 && (await readState(state)) !== creator) {
+  if (typeof state === 'string' && state.split('.').length === 4 && (await readWho(state))?.creator !== creator) {
     return reply({ error: "This sign-in link isn't valid any more. Start again from My page." }, 400);
   }
 
+  const useServerCb = redirect_uri === 'server';
   try {
-    const summary = await connect(db, creator, String(code), String(redirect_uri));
+    const summary = await connect(db, creator, String(code), useServerCb ? CALLBACK : String(redirect_uri), useServerCb);
     return reply({ ok: true, summary });
   } catch (e) {
     return reply({ error: e instanceof Error ? e.message : String(e) }, 400);
