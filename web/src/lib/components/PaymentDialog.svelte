@@ -4,7 +4,7 @@
 	import { untrack } from 'svelte';
 	import { recordPayment } from '../studio.svelte';
 	import { balanceDue, type Invoice } from '../invoice';
-	import { inr, todayIso } from '../util';
+	import { todayIso } from '../util';
 	import Icon from './Icon.svelte';
 	import DatePicker from './DatePicker.svelte';
 
@@ -12,17 +12,28 @@
 
 	const start = untrack(() => ({ due: balanceDue(inv), tds: inv.tds_deducted ? 0 : inv.tds_amount }));
 	let amount = $state(start.due);
+	let amountEdited = $state(false);
 	let tds = $state(start.tds);
 	let date = $state(todayIso());
 	let ref = $state('');
 	let busy = $state(false);
-	// Never more than what's left on the invoice (an extra zero would inflate every report).
-	const room = $derived(Math.max(0, inv.total - inv.amount_received - Math.max(inv.tds_deducted, Number(tds) || 0)));
+
+	// Remaining cash allowed on the invoice after accounting for TDS deducted.
+	const room = $derived(Math.max(0, inv.total - inv.amount_received - Math.max(inv.tds_deducted, Math.max(0, Number(tds) || 0))));
 	const tooMuch = $derived((Number(amount) || 0) > room + 1);
+
+	function onTdsInput() {
+		const nextRoom = Math.max(0, inv.total - inv.amount_received - Math.max(inv.tds_deducted, Math.max(0, Number(tds) || 0)));
+		// Auto-reduce Amount received when TDS is entered so total + TDS stays equal to the invoice total
+		// and Record payment stays enabled instead of silently locking.
+		if (!amountEdited || (Number(amount) || 0) > nextRoom) {
+			amount = Math.round(nextRoom * 100) / 100;
+		}
+	}
 
 	async function submit(e: SubmitEvent) {
 		e.preventDefault();
-		if (tooMuch) return;
+		if (tooMuch || busy) return;
 		busy = true;
 		const ok = await recordPayment(inv, { amount: Number(amount) || 0, tds: Number(tds) || 0, date, ref: ref.trim() });
 		busy = false;
@@ -38,12 +49,23 @@
 			<h2 id="pay-title">Record a payment</h2>
 			<p>{inv.number} · {money(inv.total, inv.currency)} total{inv.tds_amount ? `, ${money(inv.payable, inv.currency)} after TDS` : ''}{inv.amount_received ? ` · ${money(inv.amount_received, inv.currency)} received before` : ''}</p>
 			<div class="fields">
-				<div class="f"><label for="pd-amt">Amount received</label><div class="pre"><span>₹</span><input class="inp num" id="pd-amt" type="number" min="0" step="0.01" bind:value={amount} /></div></div>
-				<div class="f"><label for="pd-tds">TDS deducted</label><div class="pre"><span>₹</span><input class="inp num" id="pd-tds" type="number" min="0" step="0.01" bind:value={tds} /></div></div>
+				<div class="f">
+					<label for="pd-amt">Amount received</label>
+					<div class="pre"><span>₹</span><input class="inp num" id="pd-amt" type="number" min="0" step="0.01" bind:value={amount} oninput={() => (amountEdited = true)} /></div>
+				</div>
+				<div class="f">
+					<label for="pd-tds">TDS deducted</label>
+					<div class="pre"><span>₹</span><input class="inp num" id="pd-tds" type="number" min="0" step="0.01" bind:value={tds} oninput={onTdsInput} /></div>
+				</div>
 				<div class="f"><label for="pd-date">Date</label><DatePicker id="pd-date" bind:value={date} clearable={false} /></div>
 				<div class="f"><label for="pd-ref">UTR / reference <span class="hint">(optional)</span></label><input class="inp" id="pd-ref" bind:value={ref} /></div>
 			</div>
-			{#if tooMuch}<p class="err" style="margin:12px 0 0">That's more than the {money(room, inv.currency)} still to receive on {inv.number}. Check the amount.</p>{/if}
+			{#if tooMuch}
+				<p class="err" style="margin:12px 0 0">
+					That's more than the {money(room, inv.currency)} still to receive on {inv.number} after TDS.
+					<button type="button" class="link-btn" style="margin-left:6px;text-decoration:underline;background:none;border:0;color:inherit;font:inherit;cursor:pointer;padding:0" onclick={() => { amount = Math.round(room * 100) / 100; amountEdited = false; }}>Set to {money(room, inv.currency)}</button>
+				</p>
+			{/if}
 			<p class="hint" style="margin:12px 0 0">TDS the brand deducted counts as paid; you claim it back when you file your income tax return.</p>
 			<div class="row">
 				<button type="button" class="btn ghost" onclick={onclose}>Cancel</button>
