@@ -94,8 +94,8 @@ async function saveBrand(db: ReturnType<typeof admin>, owner: string, token: str
   return p;
 }
 
-/** Swaps the code, saves the token as this creator's, starts her DMs and runs the first sync. */
-async function connect(db: ReturnType<typeof admin>, creator: number, code: string, redirectUri: string) {
+/** Swaps the code, saves the token & basic profile immediately, then subscribes DMs & syncs. */
+async function connect(db: ReturnType<typeof admin>, creator: number, code: string, redirectUri: string, background = false) {
   const t = await ig.exchangeCode(code, redirectUri);
   // An Instagram account belongs to one creator: refuse before saving the token.
   const p = await ig.profile(t.token);
@@ -103,9 +103,31 @@ async function connect(db: ReturnType<typeof admin>, creator: number, code: stri
   if (owner?.length) throw new Error(`@${p.username} is already connected to another creator on Miracle.`);
   const { error } = await db.from('ig_token').upsert({ id: creator, access_token: t.token, obtained_at: new Date().toISOString(), expires_at: new Date(Date.now() + t.expiresIn * 1000).toISOString(), permissions: (t as { permissions?: string }).permissions ?? '' });
   if (error) throw new Error(error.message);
-  // Start receiving her DMs (Meta sends them only after this).
-  await ensureMessages(db, creator).catch((e) => console.error('[subscribe messages]', e));
-  return await runSync(db, creator);
+  // Mark connected immediately so the app shows @username right away without waiting 5-6s for full media/insights sync.
+  await db.from('ig_account').upsert({
+    id: creator,
+    connected: true,
+    ig_user_id: p.user_id,
+    username: p.username ?? '',
+    name: p.name ?? '',
+    profile_picture_url: p.profile_picture_url ?? '',
+    followers_count: p.followers_count ?? 0,
+    media_count: p.media_count ?? 0,
+    last_error: ''
+  });
+  const finish = async () => {
+    // Start receiving her DMs (Meta sends them only after this), then run full posts/insights sync.
+    await ensureMessages(db, creator).catch((e) => console.error('[subscribe messages]', e));
+    return await runSync(db, creator).catch((e) => console.error('[initial ig sync]', e));
+  };
+  if (background) {
+    const rt = (globalThis as unknown as { EdgeRuntime?: { waitUntil?: (p: Promise<unknown>) => void } }).EdgeRuntime;
+    if (rt?.waitUntil) {
+      rt.waitUntil(finish());
+      return { queued: true, username: p.username };
+    }
+  }
+  return await finish();
 }
 
 Deno.serve(async (req) => {
@@ -148,7 +170,7 @@ Deno.serve(async (req) => {
     const code = (q.get('code') ?? '').replace(/#_$/, '');
     if (!code) return back('/studio/instagram', { error: 'missing_code', error_description: 'Instagram did not send a sign-in code. Start again from My page.' });
     try {
-      await connect(db, creator, code, CALLBACK);
+      await connect(db, creator, code, CALLBACK, true);
       return back('/studio/settings', { s: 'profile', ig: 'connected' });
     } catch (e) {
       return back('/studio/instagram', { error: 'connect_failed', error_description: (e instanceof Error ? e.message : String(e)).slice(0, 300) });
