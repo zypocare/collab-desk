@@ -202,7 +202,7 @@ export function invoiceWaMessage(opts: {
 			? `${contactFirst} (${brand} Team)`
 			: contactFirst
 		: brand
-			? `${brand} Team`
+			? `${brand}`
 			: 'there';
 
 	const smile = '\u{1F60A}';
