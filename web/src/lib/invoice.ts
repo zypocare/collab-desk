@@ -176,8 +176,8 @@ export function receivedIn(c: import('./types').Collab, ym: string): number {
 }
 
 /**
- * Clean, personal first-person ("I") WhatsApp message for sending or reminding about an invoice.
- * Always includes the brand name in the greeting, avoids broken emojis, and uses native WhatsApp *bold*.
+ * Warm, personal first-person ("I") WhatsApp message for sending or reminding about an invoice.
+ * Always includes the brand name with Hi, and uses Unicode escapes so emojis never corrupt in WhatsApp.
  */
 export function invoiceWaMessage(opts: {
 	brandName: string;
@@ -199,30 +199,39 @@ export function invoiceWaMessage(opts: {
 
 	const who = validContact
 		? brand
-			? `${contactFirst} (${brand} team)`
+			? `${contactFirst} (${brand} Team)`
 			: contactFirst
 		: brand
-			? `${brand} team`
+			? `${brand} Team`
 			: 'there';
 
-	const lines = [
-		`Hi ${who},`,
+	const smile = '\u{1F60A}';
+	const heart = '\u2764\uFE0F';
+	const duePart = opts.dueText ? `, due ${opts.dueText}` : '';
+
+	if (opts.late) {
+		return [
+			`Hi ${who}! ${smile}`,
+			'',
+			`Hope you're all doing great!`,
+			'',
+			`Just a gentle reminder regarding my invoice (${opts.invoiceNumber}) for ${opts.amountText}${opts.dueText ? `, which was due on ${opts.dueText}` : ''}. You can conveniently make the payment via UPI or bank transfer using the link below:`,
+			'',
+			opts.link,
+			'',
+			`Please let me know once it's processed. Thank you for your support and trust—it's always a pleasure working with your team! ${heart}`
+		].join('\n');
+	}
+
+	return [
+		`Hi ${who}! ${smile}`,
 		'',
-		opts.late
-			? `Just a gentle reminder on my invoice for our collaboration${opts.dueText ? ` — it was due on ${opts.dueText}` : ''}. Here are the details again:`
-			: `I'm sharing my invoice for our collaboration. Here are the details:`,
+		`Hope you're all doing great!`,
 		'',
-		`*Invoice:* ${opts.invoiceNumber}`,
-		`*${opts.late ? 'Amount due' : 'Amount'}:* ${opts.amountText}`,
-		...(opts.dueText ? [`*Due date:* ${opts.dueText}`] : []),
+		`Sharing the invoice (${opts.invoiceNumber}) for ${opts.amountText}${duePart}. You can conveniently make the payment via UPI or bank transfer using the link below:`,
 		'',
-		`You can view the invoice and pay directly via UPI or bank transfer here:`,
 		opts.link,
 		'',
-		opts.late
-			? `Could you please let me know when I can expect this to be processed? Thank you!`
-			: `Please let me know once it's processed. Thank you so much!`,
-		...(creatorFirst ? [`— ${creatorFirst}`] : [])
-	];
-	return lines.join('\n');
+		`Thank you for your support and trust. It's always a pleasure working with your team, and I look forward to many more collaborations! ${heart}`
+	].join('\n');
 }
