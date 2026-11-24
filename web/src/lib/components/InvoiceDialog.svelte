@@ -4,7 +4,7 @@
 	import { saveBrand, saveInvoice, studio } from '../studio.svelte';
 	import { ensurePlan, hasFeature } from '../plan.svelte';
 	import type { Collab } from '../types';
-	import { INDIAN_STATES, KIND_LABEL, type Invoice, type InvoiceItem } from '../invoice';
+	import { INDIAN_STATES, KIND_LABEL, invoiceWaMessage, type Invoice, type InvoiceItem } from '../invoice';
 	import { acceptedQuote, fmt, inr, todayIso, waShare } from '../util';
 	import { copyText } from '../ui.svelte';
 	import { invoiceStart } from '../invoiceDraft';
@@ -141,30 +141,7 @@
 			<p>{c.brand.name} has no email here, so nothing was emailed. Send it on WhatsApp: they can pay by UPI or bank transfer from the link.</p>
 			<div class="row">
 				<button class="btn ghost" onclick={() => made && copyText(`${location.origin}/invoice/${made.token}`, 'Invoice link copied')}><Icon name="copy" />Copy link</button>
-				
-<a
-  class="btn grad"
-  href={waShare(
-    c.contact_phone,
-    `Hi${first ? ' ' + first : ''}! 😊
-
-Hope you’re all doing great!
-
-Sharing the invoice (${made.number}) for ${money(total, cur)}.${dueDate ? `\n\nWe kindly request you to complete the payment by ${fmt(dueDate)}. We would really appreciate it.` : ''}
-
-You can conveniently make the payment via UPI or bank transfer using the link below:
-
-${location.origin}/invoice/${made.token}
-
-Thank you for your support and trust. It's always a pleasure working with you, and we look forward to many more collaborations! ❤️`
-  )}
-  target="_blank"
-  rel="noopener"
-  onclick={onclose}
->
-  <Icon name="send" />Send on WhatsApp
-</a>
-
+				<a class="btn grad" href={waShare(c.contact_phone, invoiceWaMessage({ brandName: c.brand.name, contactName: c.contact_name, creatorName: s.display_name, invoiceNumber: made.number, amountText: money(total, cur), dueText: dueDate ? fmt(dueDate) : '', link: `${location.origin}/invoice/${made.token}` }))} target="_blank" rel="noopener" onclick={onclose}><Icon name="send" />Send on WhatsApp</a>
 			</div>
 		{:else}
 		<h2 id="inv-title">{editing ? 'Edit draft invoice' : 'New invoice'} · {c.brand.name}</h2>

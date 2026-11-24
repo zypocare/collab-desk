@@ -5,7 +5,7 @@
 	import { supabase } from '../supabase';
 	import { toast } from '../ui.svelte';
 	import type { Collab, IgMedia } from '../types';
-	import type { Invoice } from '../invoice';
+	import { invoiceWaMessage, type Invoice } from '../invoice';
 	import { invoiceStart } from '../invoiceDraft';
 	import { captionCheck, CHECKLIST, delivText, inr, isPaid, noPost, parse, todayIso, waShare } from '../util';
 	import DatePicker from './DatePicker.svelte';
@@ -247,31 +247,7 @@
 					{#if mode === 'live'}<button type="button" class="gl-text" disabled={busy} onclick={() => finish(false)}>{delivery ? 'Mark delivered' : 'Mark live'}, invoice later</button>{/if}
 				{/if}
 			{:else}
-				
-{#if sent}
-  <a
-    class="gl-go"
-    href={waShare(
-      c.contact_phone,
-      `Hi${first ? ' ' + first : ''}! 😊
-
-Hope you’re all doing great!
-
-Sharing the invoice (${sent.number}) for ${inr(total)}.${due ? `\n\nWe kindly request you to complete the payment by ${day(due)}. We would really appreciate it.` : ''}
-
-You can conveniently make the payment via UPI or bank transfer using the link below:
-
-${location.origin}/invoice/${sent.token}
-
-Thank you for your support and trust. It's always a pleasure working with you, and we look forward to many more collaborations! ❤️`
-    )}
-    target="_blank"
-    rel="noopener"
-  >
-    {emailed ? 'Send on WhatsApp too' : 'Send on WhatsApp'}
-  </a>
-{/if}
-
+				{#if sent}<a class="gl-go" href={waShare(c.contact_phone, invoiceWaMessage({ brandName: c.brand.name, contactName: c.contact_name, creatorName: s.display_name, invoiceNumber: sent.number, amountText: inr(total), dueText: day(due), link: `${location.origin}/invoice/${sent.token}` }))} target="_blank" rel="noopener">{emailed ? 'Send on WhatsApp too' : 'Send on WhatsApp'}</a>{/if}
 				<button type="button" class={sent ? 'gl-text' : 'gl-go'} onclick={onclose}>Back to the collab</button>
 			{/if}
 		</footer>

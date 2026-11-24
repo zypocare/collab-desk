@@ -174,3 +174,55 @@ export function receivedIn(c: import('./types').Collab, ym: string): number {
 		.filter((i) => i.status === 'paid' && (i.paid_on ?? '').startsWith(ym))
 		.reduce((a, i) => a + (Number(i.subtotal) || 0) * (Number(i.inr_rate) || 1), 0);
 }
+
+/**
+ * Clean, personal first-person ("I") WhatsApp message for sending or reminding about an invoice.
+ * Always includes the brand name in the greeting, avoids broken emojis, and uses native WhatsApp *bold*.
+ */
+export function invoiceWaMessage(opts: {
+	brandName: string;
+	contactName?: string | null;
+	creatorName?: string | null;
+	invoiceNumber: string;
+	amountText: string;
+	dueText?: string;
+	link: string;
+	late?: boolean;
+}): string {
+	const brand = (opts.brandName ?? '').trim();
+	const creatorFirst = (opts.creatorName ?? '').trim().split(/\s+/)[0] ?? '';
+	const contactFirst = (opts.contactName ?? '').trim().split(/\s+/)[0] ?? '';
+	const validContact =
+		contactFirst &&
+		(!creatorFirst || contactFirst.toLowerCase() !== creatorFirst.toLowerCase()) &&
+		contactFirst.toLowerCase() !== brand.toLowerCase();
+
+	const who = validContact
+		? brand
+			? `${contactFirst} (${brand} team)`
+			: contactFirst
+		: brand
+			? `${brand} team`
+			: 'there';
+
+	const lines = [
+		`Hi ${who},`,
+		'',
+		opts.late
+			? `Just a gentle reminder on my invoice for our collaboration${opts.dueText ? ` — it was due on ${opts.dueText}` : ''}. Here are the details again:`
+			: `I'm sharing my invoice for our collaboration. Here are the details:`,
+		'',
+		`*Invoice:* ${opts.invoiceNumber}`,
+		`*${opts.late ? 'Amount due' : 'Amount'}:* ${opts.amountText}`,
+		...(opts.dueText ? [`*Due date:* ${opts.dueText}`] : []),
+		'',
+		`You can view the invoice and pay directly via UPI or bank transfer here:`,
+		opts.link,
+		'',
+		opts.late
+			? `Could you please let me know when I can expect this to be processed? Thank you!`
+			: `Please let me know once it's processed. Thank you so much!`,
+		...(creatorFirst ? [`— ${creatorFirst}`] : [])
+	];
+	return lines.join('\n');
+}

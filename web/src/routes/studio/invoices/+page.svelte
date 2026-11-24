@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { studio } from '#lib/studio.svelte.ts';
 	import { countUp, ui } from '#lib/ui.svelte.ts';
-	import { balanceDue, type Invoice } from '#lib/invoice.ts';
+	import { balanceDue, invoiceWaMessage, type Invoice } from '#lib/invoice.ts';
 	import { money } from '#lib/currency.ts';
 	import { fyOf } from '#lib/reports.ts';
 	import { delivText, diff, fmt, inrS, today, todayIso, waShare } from '#lib/util.ts';
@@ -73,27 +73,17 @@
 	const TONE: Record<St, 'ok' | 'warn' | 'calm' | 'hot'> = { late: 'hot', unpaid: 'warn', part: 'warn', paid: 'ok', draft: 'calm', cancelled: 'calm' };
 	const what = (r: Row) => (r.inv.items?.length ? r.inv.items.map((x) => x.description).filter(Boolean).join(', ') : '') || delivText(r.c.deliverables) || 'Collab';
 	const first = (c: Collab) => (c.contact_name ? c.contact_name.split(' ')[0] : '');
-	
-const waText = (r: Row) =>
-  `Hi${first(r.c) ? ' ' + first(r.c) : ''}! 😊
-
-Hope you’re all doing great!
-
-${r.st === 'late'
-  ? `Just a gentle reminder regarding invoice (${r.inv.number}) with an outstanding amount of ${money(r.left, r.inv.currency)}, which was due on ${fmt(r.inv.due_date)}.
-
-We understand that things can get busy, and we would really appreciate it if you could arrange the payment at your earliest convenience.`
-  : `Sharing the invoice (${r.inv.number}) for ${money(r.left, r.inv.currency)}.${r.inv.due_date
-    ? `\n\nWe kindly request you to complete the payment by ${fmt(r.inv.due_date)}. We would really appreciate it.`
-    : ''}`
-}
-
-You can conveniently make the payment via UPI or bank transfer using the link below:
-
-${location.origin}/invoice/${r.inv.public_token}
-
-${r.st === 'late' ? `If you've already made the payment, please disregard this reminder. 😊\n\n` : ''}Thank you for your support and trust. It's always a pleasure working with you, and we look forward to many more collaborations! ❤️`;
-
+	const waText = (r: Row) =>
+		invoiceWaMessage({
+			brandName: r.c.brand.name,
+			contactName: r.c.contact_name,
+			creatorName: studio.settings?.display_name,
+			invoiceNumber: r.inv.number ?? '',
+			amountText: money(r.left, r.inv.currency),
+			dueText: r.inv.due_date ? fmt(r.inv.due_date) : '',
+			link: `${location.origin}/invoice/${r.inv.public_token}`,
+			late: r.st === 'late'
+		});
 </script>
 
 <svelte:head><title>Invoices · {studio.settings?.app_name}</title></svelte:head>

@@ -2,7 +2,7 @@
 	import { igImg } from '../igImg';
 	import type { Collab } from '../types';
 	import type { Invoice } from '../invoice';
-	import { balanceDue } from '../invoice';
+	import { balanceDue, invoiceWaMessage } from '../invoice';
 	import { money } from '../currency';
 	import { studio } from '../studio.svelte';
 	import { compact, diff, fmt, latestDraft, mediaLabel, noPost, plural, waShare } from '../util';
@@ -94,23 +94,20 @@
 		return { t: inv.status === 'partly_paid' ? 'Part paid' : 'Sent · waiting', k: 'info' };
 	});
 	const first = $derived(c.contact_name ? c.contact_name.split(' ')[0] : '');
-	
-const waText = $derived(
-  inv
-    ? `Hi${first ? ' ' + first : ''}! 😊
-
-Hope you’re all doing great!
-
-Sharing the invoice (${inv.number}) for ${money(invLeft, inv.currency)}.${inv.due_date ? `\n\nWe kindly request you to complete the payment by ${fmt(inv.due_date)}. We would really appreciate it.` : ''}
-
-You can conveniently make the payment via UPI or bank transfer using the link below:
-
-${location.origin}/invoice/${inv.public_token}
-
-Thank you for your support and trust. It's always a pleasure working with you, and we look forward to many more collaborations! ❤️`
-    : ''
-);
-
+	const waText = $derived(
+		inv
+			? invoiceWaMessage({
+					brandName: c.brand.name,
+					contactName: c.contact_name,
+					creatorName: studio.settings?.display_name,
+					invoiceNumber: inv.number ?? '',
+					amountText: money(invLeft, inv.currency),
+					dueText: inv.due_date ? fmt(inv.due_date) : '',
+					link: `${location.origin}/invoice/${inv.public_token}`,
+					late: invState?.k === 'bad'
+				})
+			: ''
+	);
 </script>
 
 <div class="lr">
