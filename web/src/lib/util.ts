@@ -30,14 +30,16 @@ export const phoneOk = (v: string | null | undefined) => {
 	return !t || (/^\+?[\d\s\-()]+$/.test(t) && t.replace(/\D/g, '').length >= 8 && t.replace(/\D/g, '').length <= 15);
 };
 
-/** WhatsApp to this number, or (with no number) WhatsApp's own chat picker. */
-export const waShare = (phone: string | null | undefined, text: string) => waLink(phone, text) || `https://wa.me/?text=${encodeURIComponent(text)}`;
+/** WhatsApp to this number, or (with no number) WhatsApp's own chat picker.
+ *  Uses api.whatsapp.com/send directly so emojis (😊, ❤️) are never corrupted to  by wa.me's redirect. */
+export const waShare = (phone: string | null | undefined, text: string) =>
+	waLink(phone, text) || `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
 
 export function waLink(phone: string | null | undefined, text: string) {
 	let n = (phone ?? '').replace(/\D/g, '');
 	if (n.length === 11 && n.startsWith('0')) n = n.slice(1);
 	if (n.length === 10) n = '91' + n;
-	return n.length >= 11 ? `https://wa.me/${n}?text=${encodeURIComponent(text)}` : '';
+	return n.length >= 11 ? `https://api.whatsapp.com/send?phone=${n}&text=${encodeURIComponent(text)}` : '';
 }
 
 export const KINDS = ['Reel', 'Story', 'Static post', 'Carousel', 'UGC video', 'Shoot'];
