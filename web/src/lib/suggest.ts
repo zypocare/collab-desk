@@ -284,7 +284,9 @@ export function nextStep(c: Collab, s?: Settings | null): NextStep | null {
 export type Reply = { label: string; text: string };
 
 export function replySuggestions(c: Collab, s: Settings): Reply[] {
-	const hi = `Hi ${c.contact_name ? c.contact_name.split(' ')[0] : 'there'}`;
+	const contactFirst = (c.contact_name ?? '').trim().split(/\s+/)[0] ?? '';
+	const meFirst = (s.display_name ?? '').trim().split(/\s+/)[0]?.toLowerCase() ?? '';
+	const hi = `Hi ${contactFirst && contactFirst.toLowerCase() !== meFirst ? contactFirst : `${c.brand.name} team`}`;
 	const me = (s.display_name ?? '').split(' ')[0];
 	const sign = me ? `\n${me}` : '';
 	const q = latestQuote(c);

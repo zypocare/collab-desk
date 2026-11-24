@@ -481,7 +481,7 @@
 	}
 	async function runNext(key: string) {
 		if (!c) return;
-		const first = c.contact_name ? c.contact_name.split(' ')[0] : 'there';
+		const first = brandGreeting(c);
 		const me = (studio.settings?.display_name ?? '').split(' ')[0];
 		const q = c.quotes[0];
 		const openInv = c.invoices.find((i) => i.status === 'sent' || i.status === 'partly_paid');
@@ -515,9 +515,16 @@
 
 	// The brand's private tracking link: no sign-in to see where things stand.
 	const trackUrl = (x: Collab) => `${(studio.settings?.site_url ?? location.origin).replace(/\/$/, '')}/t/${x.track_token}`;
+	function brandGreeting(x: Collab) {
+		const raw = (x.contact_name ?? '').trim();
+		const first = raw.split(/\s+/)[0] ?? '';
+		const me = (studio.settings?.display_name ?? '').trim().split(/\s+/)[0]?.toLowerCase() ?? '';
+		if (!first || (me && first.toLowerCase() === me)) return `${x.brand.name} team`;
+		return first;
+	}
 	function statusMessage(x: Collab) {
 		const name = (studio.settings?.display_name ?? '').split(' ')[0];
-		return `Hi ${x.contact_name ? x.contact_name.split(' ')[0] : 'there'}! You can follow our collaboration (${x.code}) here any time, no sign-up needed: ${trackUrl(x)}\n${name}`;
+		return `Hi ${brandGreeting(x)}! You can follow our collaboration (${x.code}) here any time, no sign-up needed: ${trackUrl(x)}\n${name}`;
 	}
 	let trackBusy = $state(false);
 	async function emailTrack(x: Collab) {
@@ -785,7 +792,7 @@
 								<button class="btn sm primary" onclick={() => (quoteOpen = { base: quote, editing: true })}><Icon name="edit" />Edit and send</button>
 							{:else if quote.status === 'sent'}
 								<button class="btn sm" onclick={() => (quoteOpen = { base: quote, editing: false })}><Icon name="edit" />New version</button>
-								<a class="btn sm ghost wa" href={waShare(c.contact_phone, `Hi ${c.contact_name ? c.contact_name.split(' ')[0] : ''}, I've sent the quote for ${c.code}: ${money(quote.total, quote.currency)}, ${payTerms(quote).toLowerCase()}. It's in your email${c.contact_email ? ` (${c.contact_email})` : ''}; you can accept it there in a minute, or here: ${location.origin}/brand/r/${c.code}`)} target="_blank" rel="noopener"><Icon name="send" />WhatsApp</a>
+								<a class="btn sm ghost wa" href={waShare(c.contact_phone, `Hi ${brandGreeting(c)}, I've sent the quote for ${c.code}: ${money(quote.total, quote.currency)}, ${payTerms(quote).toLowerCase()}. It's in your email${c.contact_email ? ` (${c.contact_email})` : ''}; you can accept it there in a minute, or here: ${location.origin}/brand/r/${c.code}`)} target="_blank" rel="noopener"><Icon name="send" />WhatsApp</a>
 								<button class="btn sm ghost" onclick={async () => quote && (await ask({ title: `Withdraw quote v${quote.version}?`, body: 'The brand can no longer accept it. You can send a new version any time.', ok: 'Withdraw', danger: true })) && withdrawQuote(quote)}>Withdraw</button>
 							{:else if quote.status === 'changes' || quote.status === 'withdrawn'}
 								<button class="btn sm primary" onclick={() => (quoteOpen = { base: quote, editing: false })}><Icon name="edit" />Revise quote</button>
@@ -1021,7 +1028,7 @@
 									<button class="btn sm ghost" onclick={() => copyText(`${location.origin}/invoice/${inv.public_token}`, 'Invoice link copied')}><Icon name="copy" />Link</button>
 									{#if inv.status === 'sent' || inv.status === 'partly_paid'}
 										{@const late = !!inv.due_date && inv.due_date < todayIso()}
-										<a class="btn sm ghost wa" href={waShare(c.contact_phone, `Hi ${c.contact_name ? c.contact_name.split(' ')[0] : ''}, ${late ? `a reminder: invoice ${inv.number} for ${inr(balanceDue(inv))} was due on ${fmt(inv.due_date)}` : `here's invoice ${inv.number} for ${inr(balanceDue(inv))}${inv.due_date ? `, due ${fmt(inv.due_date)}` : ''}`}. You can pay by UPI or bank transfer here: ${location.origin}/invoice/${inv.public_token}`)} target="_blank" rel="noopener"><Icon name="send" />WhatsApp</a>
+										<a class="btn sm ghost wa" href={waShare(c.contact_phone, `Hi ${brandGreeting(c)}, ${late ? `a reminder: invoice ${inv.number} for ${inr(balanceDue(inv))} was due on ${fmt(inv.due_date)}` : `here's invoice ${inv.number} for ${inr(balanceDue(inv))}${inv.due_date ? `, due ${fmt(inv.due_date)}` : ''}`}. You can pay by UPI or bank transfer here: ${location.origin}/invoice/${inv.public_token}`)} target="_blank" rel="noopener"><Icon name="send" />WhatsApp</a>
 									{/if}
 									{#if inv.status === 'sent' || inv.status === 'partly_paid'}
 										<button class="btn sm primary" onclick={() => (paymentOpen = inv)}><Icon name="wallet" />Record payment</button>
@@ -1136,7 +1143,7 @@
 			<section data-g="brand" data-ic="person" class="sec" id="sec-contact" hidden={!sh('contact')}>
 				<h3 data-sum={sums.contact}>Brand contact</h3>
 				<div class="fields">
-					<div class="f"><label for="c-n">Name</label><input class="inp" id="c-n" value={c.contact_name} onchange={(e) => save('contact_name', val(e))} /></div>
+					<div class="f"><label for="c-n">Name</label><input class="inp" id="c-n" autocomplete="off" placeholder="Brand contact name" value={c.contact_name} onchange={(e) => save('contact_name', val(e))} /></div>
 					<div class="f"><label for="c-p">Phone</label><input class="inp" id="c-p" value={c.contact_phone} inputmode="tel" onchange={(e) => save('contact_phone', val(e))} /></div>
 					<div class="f span2">
 						<label for="c-e">Email</label>
