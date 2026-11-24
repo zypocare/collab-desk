@@ -251,11 +251,16 @@ export function nextStep(c: Collab, s?: Settings | null): NextStep | null {
 			if (inTransit(c)) return { key: 'received', label: 'Mark received', hint: `On its way via ${c.ship_carrier}`, icon: 'box' };
 			if (!c.draft_date || !c.live_date) return { key: 'dates', label: 'Set dates', hint: noPost(c) ? 'Suggested draft and delivery dates are ready' : 'Suggested draft and go-live dates are ready', icon: 'cal' };
 			return { key: 'start', label: 'Start creating', hint: `Draft due ${fmt(c.draft_date)}`, icon: 'film' };
-		case 'creating':
+		case 'creating': {
+			const allDelivered = (c.deliverables?.length ?? 0) > 0 && c.deliverables.every((d) => d.done);
+			if (allDelivered || dr?.status === 'approved')
+				return noPost(c)
+					? { key: 'go-live', label: 'Mark delivered', hint: allDelivered ? 'All pieces delivered: move to Live' : 'Draft approved: send the final files', icon: 'send' }
+					: { key: 'go-live', label: "I've posted it", hint: allDelivered ? 'All pieces delivered: mark it Live & send invoice' : 'Draft approved: post it, then link it here with the invoice', icon: 'spark' };
 			if (!dr && shootDone(c)) return shootDone(c);
 			if (!dr || dr.status === 'changes') return { key: 'share-draft', label: dr ? 'Share revised draft' : 'Share draft', hint: dr ? 'They asked for changes' : 'Send it for approval', icon: 'send' };
-			if (dr.status === 'approved') return noPost(c) ? { key: 'go-live', label: 'Mark delivered', hint: 'Draft approved: send the final files', icon: 'send' } : { key: 'go-live', label: "I've posted it", hint: 'Draft approved: post it, then link it here with the invoice', icon: 'spark' };
 			return null; // waiting for the brand's review
+		}
 		case 'live':
 			if (readyReport) return { key: 'report', label: 'Send results', hint: '7-day report is ready', icon: 'chart' };
 			if (c.type === 'barter' || c.pay_status === 'paid') return null;

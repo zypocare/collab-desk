@@ -395,10 +395,22 @@
 
 	async function changeStage(s: Stage, force = false) {
 		if (!c) return;
-		// Going live with the disclosure checklist incomplete needs a second click.
+		// Going live with the disclosure checklist incomplete needs confirmation.
+		// On mobile cockpit (where the inline Stage section is hidden), show the confirmation dialog directly.
 		if (s === 'live' && !force && checklistMissing(c).length) {
-			confirmLive = true;
-			return;
+			const missing = checklistMissing(c);
+			if (sheets) {
+				const ok = await ask({
+					title: "The posting checklist isn't finished",
+					body: `Still unchecked: ${missing.join(' · ')}. Move this collab to Live anyway?`,
+					ok: 'Move to Live anyway',
+					cancel: 'Not yet'
+				});
+				if (!ok) return;
+			} else {
+				confirmLive = true;
+				return;
+			}
 		}
 		confirmLive = false;
 		// Wrapping up with money still to come: ask first.
@@ -446,6 +458,16 @@
 		await reloadCollabs();
 	}
 	async function scrollTo(id: string, focus?: string) {
+		if (sheets) {
+			showAll = true;
+			await tick();
+			const el = document.getElementById(id);
+			const sec = el?.matches('section.sec') ? el : el?.querySelector<HTMLElement>('section.sec');
+			if (sec) openOnly(sec);
+			else openSec(id);
+			if (focus) setTimeout(() => (document.querySelector(focus) as HTMLElement | null)?.focus(), 250);
+			return;
+		}
 		await tick();
 		document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 		if (focus) setTimeout(() => (document.querySelector(focus) as HTMLElement | null)?.focus(), 350);
