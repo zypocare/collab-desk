@@ -247,7 +247,31 @@
 					{#if mode === 'live'}<button type="button" class="gl-text" disabled={busy} onclick={() => finish(false)}>{delivery ? 'Mark delivered' : 'Mark live'}, invoice later</button>{/if}
 				{/if}
 			{:else}
-				{#if sent}<a class="gl-go" href={waShare(c.contact_phone, `Hi${first ? ' ' + first : ''}, here's invoice ${sent.number} for ${inr(total)}, due ${day(due)}. You can pay by UPI or bank transfer here: ${location.origin}/invoice/${sent.token}`)} target="_blank" rel="noopener">{emailed ? 'Send on WhatsApp too' : 'Send on WhatsApp'}</a>{/if}
+				
+{#if sent}
+  <a
+    class="gl-go"
+    href={waShare(
+      c.contact_phone,
+      `Hi${first ? ' ' + first : ''}! 😊
+
+Hope you’re all doing great!
+
+Sharing the invoice (${sent.number}) for ${inr(total)}.${due ? `\n\nWe kindly request you to complete the payment by ${day(due)}. We would really appreciate it.` : ''}
+
+You can conveniently make the payment via UPI or bank transfer using the link below:
+
+${location.origin}/invoice/${sent.token}
+
+Thank you for your support and trust. It's always a pleasure working with you, and we look forward to many more collaborations! ❤️`
+    )}
+    target="_blank"
+    rel="noopener"
+  >
+    {emailed ? 'Send on WhatsApp too' : 'Send on WhatsApp'}
+  </a>
+{/if}
+
 				<button type="button" class={sent ? 'gl-text' : 'gl-go'} onclick={onclose}>Back to the collab</button>
 			{/if}
 		</footer>

@@ -94,11 +94,23 @@
 		return { t: inv.status === 'partly_paid' ? 'Part paid' : 'Sent · waiting', k: 'info' };
 	});
 	const first = $derived(c.contact_name ? c.contact_name.split(' ')[0] : '');
-	const waText = $derived(
-		inv
-			? `Hi${first ? ' ' + first : ''}, here's invoice ${inv.number} for ${money(invLeft, inv.currency)}${inv.due_date ? `, due ${fmt(inv.due_date)}` : ''}. You can pay by UPI or bank transfer here: ${location.origin}/invoice/${inv.public_token}`
-			: ''
-	);
+	
+const waText = $derived(
+  inv
+    ? `Hi${first ? ' ' + first : ''}! 😊
+
+Hope you’re all doing great!
+
+Sharing the invoice (${inv.number}) for ${money(invLeft, inv.currency)}.${inv.due_date ? `\n\nWe kindly request you to complete the payment by ${fmt(inv.due_date)}. We would really appreciate it.` : ''}
+
+You can conveniently make the payment via UPI or bank transfer using the link below:
+
+${location.origin}/invoice/${inv.public_token}
+
+Thank you for your support and trust. It's always a pleasure working with you, and we look forward to many more collaborations! ❤️`
+    : ''
+);
+
 </script>
 
 <div class="lr">

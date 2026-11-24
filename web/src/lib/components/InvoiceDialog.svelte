@@ -141,7 +141,30 @@
 			<p>{c.brand.name} has no email here, so nothing was emailed. Send it on WhatsApp: they can pay by UPI or bank transfer from the link.</p>
 			<div class="row">
 				<button class="btn ghost" onclick={() => made && copyText(`${location.origin}/invoice/${made.token}`, 'Invoice link copied')}><Icon name="copy" />Copy link</button>
-				<a class="btn grad" href={waShare(c.contact_phone, `Hi${first ? ' ' + first : ''}, here's invoice ${made.number} for ${money(total, cur)}${dueDate ? `, due ${fmt(dueDate)}` : ''}. You can pay by UPI or bank transfer here: ${location.origin}/invoice/${made.token}`)} target="_blank" rel="noopener" onclick={onclose}><Icon name="send" />Send on WhatsApp</a>
+				
+<a
+  class="btn grad"
+  href={waShare(
+    c.contact_phone,
+    `Hi${first ? ' ' + first : ''}! 😊
+
+Hope you’re all doing great!
+
+Sharing the invoice (${made.number}) for ${money(total, cur)}.${dueDate ? `\n\nWe kindly request you to complete the payment by ${fmt(dueDate)}. We would really appreciate it.` : ''}
+
+You can conveniently make the payment via UPI or bank transfer using the link below:
+
+${location.origin}/invoice/${made.token}
+
+Thank you for your support and trust. It's always a pleasure working with you, and we look forward to many more collaborations! ❤️`
+  )}
+  target="_blank"
+  rel="noopener"
+  onclick={onclose}
+>
+  <Icon name="send" />Send on WhatsApp
+</a>
+
 			</div>
 		{:else}
 		<h2 id="inv-title">{editing ? 'Edit draft invoice' : 'New invoice'} · {c.brand.name}</h2>
