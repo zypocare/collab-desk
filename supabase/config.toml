@@ -535,3 +535,7 @@ verify_jwt = false
 # release is still "In review" on Play Console.
 [functions.play-version]
 verify_jwt = false
+
+# Daily 12:00 PM IST push reminder to follow up on negotiating collabs (called by pg_cron with shared secret).
+[functions.negotiating-alerts]
+verify_jwt = false
