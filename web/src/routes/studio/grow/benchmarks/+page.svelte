@@ -40,7 +40,7 @@
 
 	// Creator's own baseline metrics for side-by-side comparison
 	const myStats = $derived.by(() => {
-		const followers = Number(studio.ig?.followers_count ?? 0);
+		const followers = Number(studio.ig?.followers ?? 0);
 		const recent = studio.media.slice(0, 12);
 		const avgEng = recent.length
 			? recent.reduce((a, m) => a + Number(m.likes ?? 0) + Number(m.comments ?? 0), 0) / recent.length
