@@ -42,7 +42,7 @@
 		{ href: '/studio', label: 'Today', icon: 'home' },
 		{ href: '/studio/collabs', label: 'Collabs', icon: 'board', tabs: [{ href: '/studio/collabs', label: 'Board' }, { href: '/studio/brands', label: 'Brands' }, { href: '/studio/pitches', label: 'Pitches' }], also: ['/studio/c/', '/studio/import', '/studio/possible-collabs'] },
 		{ href: '/studio/inbox', label: 'Messages', icon: 'inbox', desk: true },
-		{ href: '/studio/content', label: 'Plan', icon: 'cal', tabs: [{ href: '/studio/content', label: 'Content' }, { href: '/studio/calendar', label: 'Calendar' }, { href: '/studio/grow', label: 'Grow' }, { href: '/studio/suite', label: 'Creator OS' }], also: ['/studio/grow/', '/studio/suite'] },
+		{ href: '/studio/content', label: 'Plan', icon: 'cal', tabs: [{ href: '/studio/content', label: 'Content' }, { href: '/studio/calendar', label: 'Calendar' }, { href: '/studio/grow', label: 'Grow' }, { href: '/studio/suite', label: 'Creator OS' }], also: ['/studio/grow/', '/studio/suite', '/studio/content/'] },
 		{ href: '/studio/money', label: 'Money', icon: 'wallet', tabs: [{ href: '/studio/money', label: 'Overview' }, { href: '/studio/payments', label: 'Payments' }, { href: '/studio/invoices', label: 'Invoices' }, { href: '/studio/reports', label: 'Reports' }] },
 		{ href: '/studio/settings', label: 'My page', short: 'Page', icon: 'link', also: ['/studio/profile', '/studio/qr', '/studio/help'] }
 	];
@@ -210,7 +210,9 @@
 		'/studio/suite': 'Creator OS',
 		'/studio/grow/check': 'Check a reel',
 		'/studio/grow/checkup': 'Growth check-up',
-		'/studio/grow/insights': 'Your insights'
+		'/studio/grow/insights': 'Your insights',
+		'/studio/grow/pulse': 'Golden Hour Pulse',
+		'/studio/grow/studio': 'Script Studio'
 	};
 	const SECTIONS: Record<string, string> = {
 		profile: 'Edit profile',
@@ -236,6 +238,7 @@
 		: openC ? (phone.on ? 'Collaboration' : openC.brand.name)
 		: sec ? titleCase(SECTIONS[sec] ?? '')
 		: brandId ? (studio.brands.find((b) => b.id === brandId)?.name ?? 'Brand')
+		: path.startsWith('/studio/content/') ? 'Shot List'
 		: path.startsWith('/studio/grow/collab/') ? 'Collab Reel'
 		: path.startsWith('/studio/help/tickets/') ? 'Ticket'
 		: path.startsWith('/studio/help/') && !TITLES[path] ? 'Help'
@@ -247,6 +250,7 @@
 		: path === '/studio/settings' ? '/studio/profile'
 		: path === '/studio/inbox' ? '/studio'
 		: brandId ? '/studio/brands'
+		: path.startsWith('/studio/content/') ? '/studio/content'
 		: path.startsWith('/studio/instagram') ? '/studio/content'
 		: path.startsWith('/studio/grow/') ? '/studio/grow'
 		: /^\/studio\/(import|share|rights)/.test(path) ? '/studio/collabs'

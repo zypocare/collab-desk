@@ -9,6 +9,7 @@
 	import { delivText, fmt } from '../util';
 	import AiThinking from './AiThinking.svelte';
 	import Icon from './Icon.svelte';
+	import Select from './Select.svelte';
 
 	// Brief to Reel script: the free AI turns the brand's brief into a ready-to-shoot script (three
 	// hooks, scene by scene with what to say and on-screen text, must-says, caption). Saved on the
@@ -28,6 +29,9 @@
 		const o = scriptLanguages(studio.settings?.content_languages);
 		return language && !o.includes(language) ? [...o, language] : o;
 	});
+	const styleOpts = STYLES.map((o) => ({ value: o, label: o }));
+	const langOpts = $derived(LANGS.map((o) => ({ value: o, label: o })));
+	const lengthOpts = LENGTHS.map((o) => ({ value: o, label: o }));
 	let s = $state<ReelScript | null>(saved ? structuredClone($state.snapshot(saved) as ReelScript) : null);
 	let hook = $state(saved?.hook ?? saved?.hooks?.[0] ?? '');
 	let busy = $state(false);
@@ -111,9 +115,9 @@
 		</header>
 
 		<div class="sc-opts">
-			<label class="f"><span class="lbl-t">Style</span><select class="inp" bind:value={style}>{#each STYLES as o (o)}<option>{o}</option>{/each}</select></label>
-			<label class="f"><span class="lbl-t">Language</span><select class="inp" bind:value={language}>{#each LANGS as o (o)}<option>{o}</option>{/each}</select></label>
-			<label class="f"><span class="lbl-t">Length</span><select class="inp" bind:value={length}>{#each LENGTHS as o (o)}<option>{o}</option>{/each}</select></label>
+			<div class="f"><label class="lbl-t" for="sc-style">Style</label><Select id="sc-style" ariaLabel="Script style" bind:value={style} options={styleOpts} /></div>
+			<div class="f"><label class="lbl-t" for="sc-lang">Language</label><Select id="sc-lang" ariaLabel="Script language" bind:value={language} options={langOpts} /></div>
+			<div class="f"><label class="lbl-t" for="sc-len">Length</label><Select id="sc-len" ariaLabel="Script length" bind:value={length} options={lengthOpts} /></div>
 		</div>
 		{#if noBrief}<p class="hint sc-note"><Icon name="info" />No brief yet: the script will use the deal details only. Add the brand's brief on the collab for a sharper script.</p>{/if}
 
