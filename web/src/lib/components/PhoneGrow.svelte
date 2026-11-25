@@ -8,6 +8,7 @@
 	import Avatar from './Avatar.svelte';
 	import HealthCard from './HealthCard.svelte';
 	import GrowthCoach from './GrowthCoach.svelte';
+	import FeedBalanceCard from './FeedBalanceCard.svelte';
 	import GoldenHourBanner from './GoldenHourBanner.svelte';
 	import DayPerformance from './DayPerformance.svelte';
 	import Icon from './Icon.svelte';
@@ -105,6 +106,8 @@
 
 	<GoldenHourBanner />
 
+	<FeedBalanceCard />
+
 	<!-- The tools -->
 	<div class="pg-tools rv" style="--i:1">
 		<a class="pg-tool pg-wide" href="/studio/grow/insights" style="--hue:var(--g1)">
@@ -117,10 +120,15 @@
 			<b>Golden Hour</b>
 			<small>First 60 min after posting</small>
 		</a>
+		<a class="pg-tool" href="/studio/grow/studio" style="--hue:var(--g1)">
+			<span class="pg-ti"><Icon name="script" /></span>
+			<b>Script studio</b>
+			<small>Hooks &amp; viral series</small>
+		</a>
 		<a class="pg-tool" href="/studio/grow/check" style="--hue:var(--g2)">
 			<span class="pg-ti"><Icon name="film" /></span>
 			<b>Check a reel</b>
-			<small>Before you post it</small>
+			<small>0–5s hook audit</small>
 		</a>
 		<a class="pg-tool" href="/studio/grow/checkup" style="--hue:{cu?.data.findings.length ? 'var(--warn)' : 'var(--g1)'}">
 			<span class="pg-ti"><Icon name="chart" /></span>

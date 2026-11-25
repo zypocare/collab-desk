@@ -10,6 +10,7 @@
 	import Icon from '#lib/components/Icon.svelte';
 	import HealthCard from '#lib/components/HealthCard.svelte';
 	import PhoneGrow from '#lib/components/PhoneGrow.svelte';
+	import FeedBalanceCard from '#lib/components/FeedBalanceCard.svelte';
 	import GoldenHourBanner from '#lib/components/GoldenHourBanner.svelte';
 	import GrowthCoach from '#lib/components/GrowthCoach.svelte';
 	import DayPerformance from '#lib/components/DayPerformance.svelte';
@@ -95,6 +96,13 @@
 
 	<a class="gr-cu rv" href="/studio/grow/pulse">
 		<span class="gr-it"><b>Golden Hour Launch Pulse</b><small>Track your Reel's first 60 minutes vs your 90-day median with 1-tap comment replies &amp; Story hooks</small></span>
+		<Icon name="chevR" />
+	</a>
+
+	<FeedBalanceCard />
+
+	<a class="gr-cu rv" href="/studio/grow/studio">
+		<span class="gr-it"><b>Viral Script &amp; Series Studio</b><small>Turn your highest-share topics into shoot-ready 0–2s hooks, beat sheets &amp; Comment-to-DM magnets</small></span>
 		<Icon name="chevR" />
 	</a>
 
