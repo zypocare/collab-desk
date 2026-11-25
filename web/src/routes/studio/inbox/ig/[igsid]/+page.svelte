@@ -11,10 +11,20 @@
 	import Icon from '#lib/components/Icon.svelte';
 	import Mono from '#lib/components/Mono.svelte';
 
-	// One Instagram DM conversation: read it, reply (within Instagram's 24-hour window), or turn it
-	// into a collab.
+	// One Instagram DM conversation: read it (including photos, videos, reels & voice notes),
+	// reply (within Instagram's 24-hour window), or turn it into a collab.
 	type T = { igsid: string; username: string; name: string; picture: string; last_from_them_at: string | null; collab_id: string | null; collab_flag: string; collab_hint: string };
-	type M = { mid: string; from_me: boolean; text: string; created_at: string };
+	type IgAttachment = {
+		type?: string;
+		payload?: {
+			url?: string;
+			title?: string;
+			reel_video_id?: string;
+			sticker_id?: number;
+		};
+	};
+	type M = { mid: string; from_me: boolean; text: string; attachments?: IgAttachment[] | null; created_at: string };
+
 	const igsid = $derived(page.params.igsid ?? '');
 	let t = $state<T | null>(null);
 	let msgs = $state<M[]>([]);
@@ -24,6 +34,39 @@
 	let drafts = $state<string[]>([]);
 	let drafting = $state(false);
 	let loaded = $state(false);
+	let brokenUrls = $state<Record<string, boolean>>({});
+
+	function markBroken(url: string) {
+		brokenUrls = { ...brokenUrls, [url]: true };
+	}
+
+	function attList(m: M): IgAttachment[] {
+		return Array.isArray(m.attachments) ? m.attachments.filter((a) => !!a?.payload?.url || !!a?.type) : [];
+	}
+
+	function attKind(a: IgAttachment): 'image' | 'video' | 'audio' | 'share' {
+		const k = (a.type ?? '').toLowerCase();
+		const u = (a.payload?.url ?? '').toLowerCase();
+		if (k === 'image' || k === 'sticker' || /\.(jpe?g|png|webp|gif)(\?|$)/.test(u)) return 'image';
+		if (k === 'video' || k === 'ig_reel' || k === 'reel' || /\.(mp4|mov|webm)(\?|$)/.test(u)) return 'video';
+		if (k === 'audio' || /\.(mp3|m4a|ogg|aac|wav)(\?|$)/.test(u)) return 'audio';
+		return 'share';
+	}
+
+	function attLabel(a: IgAttachment): string {
+		const k = (a.type ?? '').toLowerCase();
+		if (k === 'ig_reel' || k === 'reel') return a.payload?.title || 'Instagram Reel';
+		if (k === 'story_mention') return 'Mentioned you in a Story';
+		if (k === 'story_reply') return 'Replied to a Story';
+		if (k === 'share') return a.payload?.title || 'Shared Instagram post';
+		if (k === 'video') return 'Video';
+		if (k === 'audio') return 'Voice message';
+		if (k === 'image') return 'Photo';
+		return a.payload?.title || 'Instagram attachment';
+	}
+
+	const hasCaption = (m: M, atts: IgAttachment[]) =>
+		Boolean(m.text && !(atts.length > 0 && m.text.trim() === '[Photo or video]'));
 
 	// AI reply ideas: as her, from the chat and (if it's become a collab) the collab's facts.
 	async function suggest() {
@@ -48,7 +91,7 @@
 	async function load() {
 		const [a, b] = await Promise.all([
 			supabase.from('ig_threads').select('*').eq('igsid', igsid).maybeSingle(),
-			supabase.from('ig_dms').select('mid, from_me, text, created_at').eq('igsid', igsid).order('created_at')
+			supabase.from('ig_dms').select('mid, from_me, text, attachments, created_at').eq('igsid', igsid).order('created_at')
 		]);
 		t = (a.data as T | null) ?? null;
 		msgs = (b.data as M[]) ?? [];
@@ -95,8 +138,6 @@
 		text = '';
 		load();
 	}
-	// Not a collab: the chat is removed from the app (their messages and details), and their later
-	// messages stay out.
 	async function notCollab() {
 		const { error } = await supabase.rpc('ig_not_collab', { p_igsid: igsid });
 		if (error) return toast(errMessage(error), 'alert');
@@ -104,7 +145,6 @@
 		history.back();
 	}
 	function addCollab() {
-		// The conversation goes into "Add a collab", where the AI can read it.
 		ui.pasteText = msgs.slice(-15).map((m) => `${m.from_me ? studio.settings?.display_name ?? 'Me' : t?.username || 'Brand'}: ${m.text}`).join('\n');
 		ui.fromIg = igsid;
 		ui.newCollab = true;
@@ -137,7 +177,48 @@
 	<div class="thread">
 		<div class="th-list" bind:this={list}>
 			{#each msgs as m (m.mid)}
-				<div class="bub-row first last" class:mine={m.from_me}><div class="bub" title={time(m.created_at)}><p>{m.text}</p></div><time class="bub-t" datetime={m.created_at}>{time(m.created_at)}</time></div>
+				{@const atts = attList(m)}
+				<div class="bub-row first last" class:mine={m.from_me}>
+					<div class="bub" class:has-media={atts.length > 0} title={time(m.created_at)}>
+						{#if atts.length}
+							<div class="ig-atts">
+								{#each atts as a, idx (idx)}
+									{@const url = a.payload?.url ?? ''}
+									{@const kind = attKind(a)}
+									{#if kind === 'image' && url && !brokenUrls[url]}
+										<a class="ig-media-link" href={url} target="_blank" rel="noopener">
+											<img class="ig-att-img" src={igImg(url)} alt={attLabel(a)} loading="lazy" referrerpolicy="no-referrer" onerror={() => markBroken(url)} />
+										</a>
+									{:else if kind === 'video' && url && !brokenUrls[url]}
+										<div class="ig-vid-wrap">
+											<!-- svelte-ignore a11y_media_has_caption -->
+											<video class="ig-att-vid" src={url} controls playsinline preload="metadata" onerror={() => markBroken(url)}></video>
+											{#if a.type === 'ig_reel' || a.type === 'reel'}
+												<a class="ig-att-foot" href={url} target="_blank" rel="noopener"><Icon name="film" /><span>{attLabel(a)}</span></a>
+											{/if}
+										</div>
+									{:else if kind === 'audio' && url && !brokenUrls[url]}
+										<audio class="ig-att-aud" src={url} controls preload="metadata" onerror={() => markBroken(url)}></audio>
+									{:else}
+										<a class="ig-att-card" href={url || `https://ig.me/m/${t?.username ?? ''}`} target="_blank" rel="noopener">
+											<span class="ig-att-ic"><Icon name={kind === 'video' ? 'film' : kind === 'image' ? 'image' : 'link'} /></span>
+											<span class="ig-att-meta">
+												<b>{attLabel(a)}</b>
+												<small>{brokenUrls[url] ? 'Media link expired · Open in Instagram' : 'Tap to open'}</small>
+											</span>
+										</a>
+									{/if}
+								{/each}
+							</div>
+						{/if}
+						{#if hasCaption(m, atts)}
+							<p>{m.text}</p>
+						{:else if !atts.length && m.text}
+							<p>{m.text}</p>
+						{/if}
+					</div>
+					<time class="bub-t" datetime={m.created_at}>{time(m.created_at)}</time>
+				</div>
 			{:else}
 				<div class="th-empty"><Icon name="send" /><p>No messages yet.</p></div>
 			{/each}
@@ -159,3 +240,67 @@
 	</div>
 </div>
 {/if}
+
+<style>
+	.bub.has-media { padding: 6px; overflow: hidden; }
+	.bub.has-media p { padding: 6px 8px 4px; margin: 0; }
+	.ig-atts { display: grid; gap: 6px; }
+	.ig-media-link { display: block; line-height: 0; }
+	.ig-att-img {
+		display: block;
+		max-width: 240px;
+		max-height: 300px;
+		width: 100%;
+		object-fit: cover;
+		border-radius: 12px;
+		background: rgba(255, 255, 255, 0.04);
+	}
+	.ig-vid-wrap { display: grid; gap: 4px; }
+	.ig-att-vid {
+		display: block;
+		max-width: 250px;
+		max-height: 340px;
+		width: 100%;
+		border-radius: 12px;
+		background: #000;
+	}
+	.ig-att-foot {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		padding: 4px 6px 2px;
+		font-size: 12px;
+		font-weight: 600;
+		color: inherit;
+		text-decoration: none;
+		opacity: 0.9;
+	}
+	.ig-att-foot :global(.ic) { width: 14px; height: 14px; }
+	.ig-att-aud { max-width: 240px; width: 100%; height: 38px; }
+	.ig-att-card {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		padding: 10px 12px;
+		border-radius: 12px;
+		border: 1px solid rgba(255, 255, 255, 0.14);
+		background: rgba(255, 255, 255, 0.05);
+		color: inherit;
+		text-decoration: none;
+		min-width: 190px;
+	}
+	.ig-att-ic {
+		width: 34px;
+		height: 34px;
+		border-radius: 10px;
+		background: rgba(242, 90, 144, 0.16);
+		color: #ffae6b;
+		display: grid;
+		place-items: center;
+		flex-shrink: 0;
+	}
+	.ig-att-ic :global(.ic) { width: 16px; height: 16px; }
+	.ig-att-meta { display: grid; gap: 2px; min-width: 0; }
+	.ig-att-meta b { font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+	.ig-att-meta small { font-size: 11px; opacity: 0.72; }
+</style>
