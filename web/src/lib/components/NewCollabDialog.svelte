@@ -344,6 +344,35 @@
 	}
 	const back = () => go(step === 'when' ? 'deal' : step === 'deal' ? 'ask' : 'paste');
 	let showChat = $state(false);
+	let brandOpen = $state(false);
+	let brandBlurTimer: ReturnType<typeof setTimeout> | null = null;
+	const brandMatches = $derived.by(() => {
+		const q = name.trim().toLowerCase();
+		const list = studio.brands;
+		const filtered = q
+			? list.filter((b) => b.name.toLowerCase().includes(q))
+			: list;
+		return filtered.filter((b) => b.name.toLowerCase() !== q).slice(0, 6);
+	});
+	function openBrandMenu() {
+		if (brandBlurTimer) clearTimeout(brandBlurTimer);
+		brandOpen = true;
+	}
+	function closeBrandMenuSoon() {
+		if (brandBlurTimer) clearTimeout(brandBlurTimer);
+		brandBlurTimer = setTimeout(() => { brandOpen = false; }, 140);
+	}
+	function pickBrand(brandName: string) {
+		if (brandBlurTimer) clearTimeout(brandBlurTimer);
+		name = brandName;
+		nameTouched = true;
+		brandOpen = false;
+	}
+	function clearBrand() {
+		name = '';
+		nameTouched = true;
+		brandOpen = true;
+	}
 </script>
 
 <svelte:window onkeydown={(e) => e.key === 'Escape' && close()} />
@@ -375,9 +404,33 @@
 				</div>
 				{#if aiNote}<p class="nc-note"><AiThinking label={aiNote.replace('…', '')} /></p>{/if}
 				<label for="nc-brand" class="nc-lbl">Brand</label>
-				<input class="nc-brand" id="nc-brand" list="nc-brands" placeholder="Brand name" autocomplete="off" bind:value={name} oninput={() => (nameTouched = true)} />
-				<datalist id="nc-brands">{#each studio.brands as b (b.id)}<option value={b.name}></option>{/each}</datalist>
-				<p class="nc-more">Adding many? <a href="/studio/import" onclick={close}>Import them at once</a> · Ambassador deal? <a href="/studio/brands" onclick={close}>Set up a monthly deal</a></p>
+				<div class="nc-bwrap">
+					<input
+						class="nc-brand"
+						id="nc-brand"
+						placeholder="Brand name"
+						autocomplete="off"
+						autocorrect="off"
+						spellcheck="false"
+						bind:value={name}
+						onfocus={openBrandMenu}
+						onblur={closeBrandMenuSoon}
+						oninput={() => { nameTouched = true; openBrandMenu(); }}
+					/>
+					{#if name.trim()}
+						<button type="button" class="nc-bclear" aria-label="Clear brand" onmousedown={(e) => e.preventDefault()} onclick={clearBrand}><Icon name="x" /></button>
+					{/if}
+				</div>
+				{#if brandOpen && brandMatches.length}
+					<div class="nc-bsug" role="listbox" aria-label="Saved brands">
+						{#each brandMatches as b (b.id)}
+							<button type="button" class="nc-bsug-it" role="option" aria-selected={false} onmousedown={(e) => e.preventDefault()} onclick={() => pickBrand(b.name)}>
+								<span>{b.name}</span>
+								<small>Saved</small>
+							</button>
+						{/each}
+					</div>
+				{/if}
 			{:else if step === 'ask'}
 				<div class="nc-head">
 					<span class="nc-eb">New collab{fromIg ? ' · from Instagram' : ''}</span>
@@ -411,8 +464,33 @@
 				</div>
 				<p class="nc-hint">Tap any line to change it. Nothing is sent to the brand.</p>
 				<label for="nc-brand2" class="nc-lbl">Brand</label>
-				<input class="nc-brand" id="nc-brand2" list="nc-brands2" placeholder="Brand name" autocomplete="off" bind:value={name} oninput={() => (nameTouched = true)} />
-				<datalist id="nc-brands2">{#each studio.brands as b (b.id)}<option value={b.name}></option>{/each}</datalist>
+				<div class="nc-bwrap">
+					<input
+						class="nc-brand"
+						id="nc-brand2"
+						placeholder="Brand name"
+						autocomplete="off"
+						autocorrect="off"
+						spellcheck="false"
+						bind:value={name}
+						onfocus={openBrandMenu}
+						onblur={closeBrandMenuSoon}
+						oninput={() => { nameTouched = true; openBrandMenu(); }}
+					/>
+					{#if name.trim()}
+						<button type="button" class="nc-bclear" aria-label="Clear brand" onmousedown={(e) => e.preventDefault()} onclick={clearBrand}><Icon name="x" /></button>
+					{/if}
+				</div>
+				{#if brandOpen && brandMatches.length}
+					<div class="nc-bsug" role="listbox" aria-label="Saved brands">
+						{#each brandMatches as b (b.id)}
+							<button type="button" class="nc-bsug-it" role="option" aria-selected={false} onmousedown={(e) => e.preventDefault()} onclick={() => pickBrand(b.name)}>
+								<span>{b.name}</span>
+								<small>Saved</small>
+							</button>
+						{/each}
+					</div>
+				{/if}
 				<small class="nc-hint">{name.trim() ? (known ? 'A brand you know: their details are filled in' : 'New brand: their Instagram is saved too') : 'Who is the content for?'}</small>
 				{#if agency || agencyOpen}
 					<label for="nc-agency" class="nc-lbl">Sent by an agency</label>
@@ -519,6 +597,9 @@
 				{#if !busy && step !== 'when'}<Icon name="arrow" />{/if}
 			</button>
 			{#if step === 'ask'}<button type="button" class="nc-text" onclick={notCollab}>{fromIg ? 'Not a collab' : 'Cancel'}</button>{/if}
+			{#if step === 'paste' && !brandOpen}
+				<p class="nc-more">Adding many? <a href="/studio/import" onclick={close}>Import</a> · Ambassador? <a href="/studio/brands" onclick={close}>Monthly deal</a></p>
+			{/if}
 		</footer>
 	</div>
 </div>
@@ -562,7 +643,7 @@
 		.nc-foot { padding: 10px 18px calc(12px + env(safe-area-inset-bottom, 0px)); }
 		.nc-go { height: 48px; }
 	}
-	.nc-top { display: flex; flex: none; align-items: center; gap: 10px; padding: 10px 10px 4px 14px; }
+	.nc-top { position: relative; z-index: 2; display: flex; flex: none; align-items: center; gap: 10px; padding: 10px 10px 8px 14px; background: var(--surface); border-bottom: 1px solid var(--line); }
 	.nc-ib { width: 44px; height: 44px; flex: none; display: grid; place-items: center; border: 0; background: none; color: var(--ink-2); cursor: pointer; }
 	.nc-ib :global(.ic) { width: 20px; height: 20px; }
 	.nc-prog { flex: 1; display: flex; gap: 6px; }
@@ -571,7 +652,7 @@
 	.nc-prog i.on { background: var(--ink); }
 	.nc-eb { font-size: 10.5px; font-weight: 800; letter-spacing: .17em; text-transform: uppercase; color: var(--ink-3); }
 	.nc-grow { flex: 1; padding-left: 6px; }
-	.nc-body { flex: 1; min-height: 0; overflow-y: auto; overflow-anchor: none; overscroll-behavior: contain; scrollbar-width: none; display: flex; flex-direction: column; gap: 16px; padding: 8px 20px 18px; }
+	.nc-body { flex: 1; min-height: 0; overflow-y: auto; overflow-anchor: none; overscroll-behavior: contain; scroll-padding-top: 16px; scrollbar-width: none; display: flex; flex-direction: column; gap: 14px; padding: 14px 20px 18px; }
 	.nc-body > * { flex-shrink: 0; }
 	.nc-body::-webkit-scrollbar { display: none; }
 	.nc-head { display: flex; flex-direction: column; gap: 6px; }
@@ -591,9 +672,17 @@
 	.nc-pill:disabled { opacity: .5; }
 	.nc-note { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 14px; color: var(--ink-2); }
 	.nc-lbl { margin-bottom: -10px; font-size: 10.5px; font-weight: 800; letter-spacing: .17em; text-transform: uppercase; color: var(--ink-3); }
-	.nc-brand { width: 100%; height: 54px; box-sizing: border-box; padding: 0 2px; border: 0; border-bottom: 2px solid var(--line-strong); outline: 0; border-radius: 0; background: transparent; color: var(--ink); font: 400 28px var(--f-serif, Georgia, serif); }
+	.nc-bwrap { position: relative; display: flex; align-items: center; }
+	.nc-brand { width: 100%; height: 52px; box-sizing: border-box; padding: 0 36px 0 2px; border: 0; border-bottom: 2px solid var(--line-strong); outline: 0; border-radius: 0; background: transparent; color: var(--ink); font: 400 28px var(--f-serif, Georgia, serif); }
 	.nc-brand:focus { border-bottom-color: var(--ink); }
-	.nc-more { margin: 0; font-size: 13px; color: var(--ink-3); line-height: 1.5; }
+	.nc-bclear { position: absolute; right: 0; width: 32px; height: 32px; display: grid; place-items: center; border: 0; border-radius: 50%; background: var(--surface-2); color: var(--ink-2); cursor: pointer; }
+	.nc-bclear :global(.ic) { width: 14px; height: 14px; }
+	.nc-bsug { display: flex; flex-direction: column; border-radius: 14px; border: 1px solid var(--line-strong); background: var(--bg); overflow: hidden; margin-top: -6px; }
+	.nc-bsug-it { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; padding: 11px 14px; border: 0; border-top: 1px solid var(--line); background: transparent; color: var(--ink); font: 500 14.5px var(--f-body, inherit); text-align: left; cursor: pointer; }
+	.nc-bsug-it:first-child { border-top: 0; }
+	.nc-bsug-it:active, .nc-bsug-it:hover { background: var(--surface-2); }
+	.nc-bsug-it small { font-size: 11px; font-weight: 600; color: var(--g1); text-transform: uppercase; letter-spacing: .08em; }
+	.nc-more { margin: 8px 0 0; text-align: center; font-size: 12.5px; color: var(--ink-3); line-height: 1.4; }
 	.nc-more a { color: var(--ink-2); font-weight: 600; }
 	.nc-from { display: flex; align-items: center; gap: 12px; }
 	.nc-av { width: 40px; height: 40px; flex: none; display: grid; place-items: center; background: var(--g1); color: #fff; font-weight: 800; }
@@ -668,7 +757,7 @@
 	.nc-foot { display: flex; flex: none; flex-direction: column; gap: 4px; padding: 12px 20px calc(16px + env(safe-area-inset-bottom, 0px)); border-top: 1px solid var(--line); background: var(--surface); }
 	.nc-go { display: flex; align-items: center; justify-content: center; gap: 10px; height: 54px; border: 0; background: var(--ink); color: var(--bg); font: 800 16px var(--f-body, inherit); box-shadow: 4px 4px 0 var(--g2); cursor: pointer; transition: transform .07s, box-shadow .07s, opacity .2s; }
 	.nc-go:not(:disabled):active { transform: translate(4px, 4px); box-shadow: 0 0 0 var(--g2); }
-	.nc-go:disabled { opacity: .4; cursor: default; }
+	.nc-go:disabled { background: var(--surface-2); color: var(--ink-3); border: 1px solid var(--line); box-shadow: none; opacity: 1; cursor: default; }
 	.nc-go :global(.ic) { width: 18px; height: 18px; }
 	.nc-multi { display: flex; flex-direction: column; gap: 10px; padding: 14px; border: 1px solid color-mix(in oklab, var(--g1) 45%, transparent); background: color-mix(in oklab, var(--g1) 8%, transparent); }
 	.nc-multi p { margin: 0; font-size: 14px; line-height: 1.45; color: var(--ink-2); }

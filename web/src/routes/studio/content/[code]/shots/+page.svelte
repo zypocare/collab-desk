@@ -24,6 +24,7 @@
 	const hours = $derived(c ? hoursLeft(c, studio.settings) : 0);
 	const shots = $derived(c?.shot_list ?? []);
 	const doneShots = $derived(shots.filter((x) => x.done).length);
+	const firstOpenIdx = $derived(shots.findIndex((x) => !x.done));
 	const pct = $derived(shots.length ? Math.round((doneShots / shots.length) * 100) : 0);
 
 	type ParsedShot = { time: string; visual: string; spoken: string };
@@ -64,9 +65,20 @@
 		return { time, visual: rest || raw.trim(), spoken };
 	}
 
+	function shotTag(i: number, total: number, done: boolean): string {
+		if (done) return 'FILMED';
+		if (i === 0) return 'HOOK';
+		if (i === total - 1 && total > 2) return 'CLOSING';
+		return 'SCENE';
+	}
+
 	async function save(list: Shot[]) {
 		if (!c) return;
 		await updateCollab(c.id, { shot_list: list });
+	}
+
+	function toggleShot(i: number) {
+		void save(shots.map((x, j) => (j === i ? { ...x, done: !x.done } : x)));
 	}
 
 	function addShot(e: SubmitEvent) {
@@ -147,8 +159,8 @@
 			<a class="btn sm" href="/studio/content">Back to Content</a>
 		</section>
 	{:else}
-		<!-- Collab Hero + Progress -->
-		<section class="slp-hero">
+		<!-- Compact Header & Controls -->
+		<header class="slp-head">
 			<div class="slp-hero-top">
 				<Mono name={c.brand.name} size="sm" />
 				<div class="slp-ht">
@@ -163,7 +175,7 @@
 			{#if shots.length}
 				<div class="slp-prog-wrap">
 					<div class="slp-prog-hd">
-						<span class="slp-prog-lbl">Shoot storyboard</span>
+						<span class="slp-prog-lbl">Shoot timeline</span>
 						<span class="slp-prog-stat">{doneShots} / {shots.length} filmed · {pct}%</span>
 					</div>
 					<div class="slp-prog" aria-hidden="true"><i style="width:{pct}%"></i></div>
@@ -173,7 +185,7 @@
 			<div class="slp-acts">
 				<button class="slp-neopop" type="button" onclick={regenerateWithAi} disabled={regenBusy}>
 					<Icon name="refresh" />
-					<span>{regenBusy ? 'Regenerating…' : shots.length ? 'Regenerate with AI' : 'Generate with AI'}</span>
+					<span>{regenBusy ? 'Regenerating…' : shots.length ? 'Regenerate' : 'Generate with AI'}</span>
 				</button>
 				<button class="slp-soft" type="button" onclick={() => (scriptOpen = true)}>
 					<Icon name="spark" />
@@ -194,59 +206,79 @@
 					</button>
 				{/if}
 			</div>
-		</section>
+		</header>
 
 		{#if regenBusy}
 			<section class="slp-card slp-busy">
-				<AiThinking label="Writing a fresh shot-by-shot storyboard from your brief" />
+				<AiThinking label="Writing a fresh shot-by-shot timeline from your brief" />
 			</section>
 		{:else if !shots.length}
 			<section class="slp-card slp-empty">
 				<span class="slp-ic"><Icon name="layers" /></span>
 				<b>No shots yet</b>
-				<small>Generate a full second-by-second shot list with spoken lines using AI, or build a quick checklist from the brief.</small>
+				<small>Generate a shot-by-shot timeline with spoken lines using AI, or build a quick checklist from the brief.</small>
 				<div class="slp-empty-acts">
 					<button class="slp-neopop" type="button" onclick={regenerateWithAi}><Icon name="spark" />Generate with AI</button>
 					<button class="slp-soft" type="button" onclick={() => save(makeShotList(c))}>Quick checklist</button>
 				</div>
 			</section>
 		{:else}
-			<div class="sb-deck">
+			<!-- Activity-style editorial vertical timeline -->
+			<ol class="tl">
 				{#each shots as s, i (i)}
 					{@const ps = parseShot(s.t)}
-					<article class="sb-card" class:done={s.done}>
-						<header class="sb-top">
-							<label class="sb-check" aria-label="Mark shot {i + 1} filmed">
-								<input
-									type="checkbox"
-									checked={s.done}
-									onchange={(e) =>
-										save(shots.map((x, j) => (j === i ? { ...x, done: (e.currentTarget as HTMLInputElement).checked } : x)))}
-								/>
-							</label>
-							<span class="sb-num">Shot {String(i + 1).padStart(2, '0')}</span>
-							{#if ps.time}<span class="sb-time">{ps.time}</span>{/if}
+					{@const isNext = i === firstOpenIdx}
+					<li class="tl-item" class:done={s.done} class:next={isNext}>
+						<!-- Left Serif Index Rail (matches Activity's date column) -->
+						<div class="tl-rail" aria-hidden="true">
+							<span class="tl-idx">{String(i + 1).padStart(2, '0')}</span>
+							<span class="tl-unit">SHOT</span>
+						</div>
+
+						<!-- Spine + Interactive Node -->
+						<div class="tl-spine">
 							<button
-								class="sb-x"
 								type="button"
-								aria-label="Remove shot"
-								onclick={() => save(shots.filter((_, j) => j !== i))}
+								class="tl-node"
+								class:done={s.done}
+								class:next={isNext}
+								aria-pressed={s.done}
+								aria-label="Mark shot {i + 1} as {s.done ? 'not filmed' : 'filmed'}"
+								onclick={() => toggleShot(i)}
 							>
-								<Icon name="x" />
+								{#if s.done}<Icon name="check" />{/if}
 							</button>
-						</header>
+						</div>
 
-						<p class="sb-vis">{ps.visual}</p>
-
-						{#if ps.spoken}
-							<div class="sb-say">
-								<span class="sb-say-ic" aria-hidden="true"><Icon name="mic" /></span>
-								<span class="sb-say-txt">“{ps.spoken}”</span>
+						<!-- Clean Borderless Content Column -->
+						<div class="tl-body">
+							<div class="tl-meta">
+								{#if ps.time}<span class="tl-time">{ps.time.toUpperCase()}</span>{/if}
+								<span class="tl-tag" class:ok={s.done}>{shotTag(i, shots.length, s.done)}</span>
+								<button
+									class="tl-x"
+									type="button"
+									aria-label="Remove shot"
+									onclick={() => save(shots.filter((_, j) => j !== i))}
+								>
+									<Icon name="x" />
+								</button>
 							</div>
-						{/if}
-					</article>
+
+							<button type="button" class="tl-vis" onclick={() => toggleShot(i)}>
+								{ps.visual}
+							</button>
+
+							{#if ps.spoken}
+								<p class="tl-say">
+									<Icon name="mic" />
+									<span>“{ps.spoken}”</span>
+								</p>
+							{/if}
+						</div>
+					</li>
 				{/each}
-			</div>
+			</ol>
 
 			<form class="sb-add" onsubmit={addShot}>
 				<label class="sr" for="shot-add-{c.id}">Add a shot or note</label>
@@ -272,18 +304,14 @@
 		max-width: 660px;
 		margin: 0 auto;
 		display: grid;
-		gap: 14px;
-		padding-bottom: 32px;
+		gap: 18px;
+		padding-bottom: 36px;
 	}
-	.slp-hero {
-		border-radius: 20px;
-		border: 1px solid var(--line-strong);
-		background:
-			radial-gradient(240px 150px at 85% 0%, color-mix(in oklab, var(--g1) 18%, transparent), transparent 72%),
-			linear-gradient(180deg, #1d1620 0%, #151017 100%);
-		padding: 16px;
+	.slp-head {
 		display: grid;
 		gap: 14px;
+		padding-bottom: 16px;
+		border-bottom: 1px solid var(--line);
 	}
 	.slp-hero-top {
 		display: flex;
@@ -298,8 +326,8 @@
 		font-family: var(--f-serif, Georgia, serif);
 		font-style: italic;
 		font-weight: 400;
-		font-size: 28px;
-		line-height: 1.08;
+		font-size: 30px;
+		line-height: 1.06;
 		margin: 0;
 	}
 	.slp-ht small {
@@ -324,7 +352,7 @@
 	}
 	.slp-prog-wrap {
 		display: grid;
-		gap: 7px;
+		gap: 6px;
 	}
 	.slp-prog-hd {
 		display: flex;
@@ -347,7 +375,7 @@
 		font-variant-numeric: tabular-nums;
 	}
 	.slp-prog {
-		height: 5px;
+		height: 4px;
 		border-radius: 99px;
 		background: var(--line);
 		overflow: hidden;
@@ -370,7 +398,7 @@
 		align-items: center;
 		justify-content: center;
 		gap: 6px;
-		padding: 9px 14px;
+		padding: 8px 14px;
 		border-radius: 7px;
 		border: 0;
 		background: #f4eef2;
@@ -389,7 +417,7 @@
 		align-items: center;
 		justify-content: center;
 		gap: 6px;
-		padding: 9px 13px;
+		padding: 8px 12px;
 		border-radius: 9px;
 		border: 1px solid var(--line-strong);
 		background: var(--surface);
@@ -402,6 +430,202 @@
 		color: var(--ink);
 		border-color: var(--ink-3);
 	}
+
+	/* Activity-style vertical timeline */
+	.tl {
+		list-style: none;
+		margin: 0;
+		padding: 2px 0 0;
+		display: grid;
+		gap: 0;
+	}
+	.tl-item {
+		display: grid;
+		grid-template-columns: 42px 26px minmax(0, 1fr);
+		gap: 0 10px;
+		align-items: stretch;
+	}
+	.tl-rail {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-end;
+		padding-top: 1px;
+		user-select: none;
+	}
+	.tl-idx {
+		font-family: var(--f-serif, Georgia, serif);
+		font-size: 27px;
+		line-height: 0.95;
+		color: var(--ink-3);
+		font-variant-numeric: tabular-nums;
+	}
+	.tl-item.next .tl-idx {
+		color: var(--g1);
+	}
+	.tl-item.done .tl-idx {
+		color: var(--ok);
+		opacity: 0.65;
+	}
+	.tl-unit {
+		font-family: var(--f-mono, ui-monospace, monospace);
+		font-size: 9px;
+		font-weight: 700;
+		letter-spacing: 0.12em;
+		color: var(--ink-3);
+		margin-top: 3px;
+		opacity: 0.7;
+	}
+
+	.tl-spine {
+		position: relative;
+		display: flex;
+		justify-content: center;
+		padding-top: 5px;
+	}
+	.tl-spine::before {
+		content: '';
+		position: absolute;
+		top: 0;
+		bottom: 0;
+		left: 50%;
+		width: 1px;
+		transform: translateX(-50%);
+		background: var(--line-strong);
+	}
+	.tl-item:first-child .tl-spine::before {
+		top: 14px;
+	}
+	.tl-item:last-child .tl-spine::before {
+		bottom: calc(100% - 14px);
+	}
+
+	.tl-node {
+		position: relative;
+		z-index: 1;
+		width: 16px;
+		height: 16px;
+		padding: 0;
+		border-radius: 50%;
+		border: 1.5px solid var(--line-strong);
+		background: var(--bg);
+		display: grid;
+		place-items: center;
+		cursor: pointer;
+		transition: transform 0.15s, border-color 0.2s, background 0.2s, box-shadow 0.2s;
+	}
+	.tl-node.next {
+		width: 18px;
+		height: 18px;
+		border-color: var(--g2);
+		background: var(--g2);
+		box-shadow: 0 0 0 5px color-mix(in oklab, var(--g2) 22%, transparent);
+	}
+	.tl-node.done {
+		width: 18px;
+		height: 18px;
+		border-color: var(--ok);
+		background: var(--ok);
+		color: var(--bg);
+	}
+	.tl-node.done :global(.ic) {
+		width: 11px;
+		height: 11px;
+		stroke-width: 2.6;
+	}
+
+	.tl-body {
+		min-width: 0;
+		padding: 2px 0 22px;
+		display: grid;
+		gap: 5px;
+	}
+	.tl-item:last-child .tl-body {
+		padding-bottom: 6px;
+	}
+	.tl-meta {
+		display: flex;
+		align-items: center;
+		gap: 9px;
+		min-height: 20px;
+	}
+	.tl-time {
+		font-family: var(--f-mono, ui-monospace, monospace);
+		font-size: 11px;
+		font-weight: 600;
+		letter-spacing: 0.06em;
+		color: var(--ink-3);
+	}
+	.tl-tag {
+		font-family: var(--f-mono, ui-monospace, monospace);
+		font-size: 10.5px;
+		font-weight: 700;
+		letter-spacing: 0.1em;
+		color: var(--g2);
+	}
+	.tl-tag.ok {
+		color: var(--ok);
+	}
+	.tl-x {
+		margin-left: auto;
+		width: 24px;
+		height: 24px;
+		padding: 0;
+		border: 0;
+		border-radius: 50%;
+		background: transparent;
+		color: var(--ink-3);
+		opacity: 0.45;
+		display: grid;
+		place-items: center;
+		cursor: pointer;
+	}
+	.tl-x:hover {
+		opacity: 1;
+		background: var(--surface);
+	}
+	.tl-x :global(.ic) {
+		width: 13px;
+		height: 13px;
+	}
+
+	.tl-vis {
+		padding: 0;
+		border: 0;
+		background: none;
+		text-align: left;
+		font: inherit;
+		font-size: 15.5px;
+		font-weight: 500;
+		line-height: 1.4;
+		color: var(--ink);
+		cursor: pointer;
+		overflow-wrap: anywhere;
+	}
+	.tl-item.done .tl-vis {
+		color: var(--ink-3);
+		text-decoration: line-through;
+	}
+
+	.tl-say {
+		margin: 2px 0 0;
+		display: flex;
+		align-items: flex-start;
+		gap: 7px;
+		font-size: 13.5px;
+		line-height: 1.46;
+		color: var(--ink-2);
+	}
+	.tl-say :global(.ic) {
+		width: 13px;
+		height: 13px;
+		margin-top: 3px;
+		color: var(--g2);
+		flex-shrink: 0;
+	}
+	.tl-item.done .tl-say {
+		opacity: 0.55;
+	}
+
 	.slp-card {
 		background: var(--surface);
 		border: 1px solid var(--line);
@@ -446,137 +670,6 @@
 		color: var(--g1);
 	}
 
-	.sb-deck {
-		display: grid;
-		gap: 10px;
-	}
-	.sb-card {
-		display: grid;
-		gap: 9px;
-		padding: 14px 15px;
-		border-radius: 16px;
-		border: 1px solid var(--line);
-		background: var(--surface);
-		transition: border-color 0.2s, opacity 0.2s, background 0.2s;
-	}
-	.sb-card.done {
-		border-color: color-mix(in oklab, var(--ok) 35%, var(--line));
-		background: color-mix(in oklab, var(--ok) 5%, var(--surface));
-		opacity: 0.68;
-	}
-	.sb-top {
-		display: flex;
-		align-items: center;
-		gap: 9px;
-	}
-	.sb-check {
-		display: grid;
-		place-items: center;
-		cursor: pointer;
-	}
-	.sb-check input {
-		appearance: none;
-		-webkit-appearance: none;
-		width: 21px;
-		height: 21px;
-		margin: 0;
-		border: 1.5px solid var(--line-strong);
-		border-radius: 50%;
-		background: var(--surface-2);
-		display: grid;
-		place-items: center;
-		cursor: pointer;
-		transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
-	}
-	.sb-check input:checked {
-		border-color: var(--ok);
-		background: var(--ok);
-		box-shadow: 0 0 10px color-mix(in oklab, var(--ok) 45%, transparent);
-	}
-	.sb-check input:checked::after {
-		content: '';
-		width: 8px;
-		height: 4.5px;
-		margin-top: -2px;
-		border-left: 2px solid var(--bg);
-		border-bottom: 2px solid var(--bg);
-		transform: rotate(-45deg);
-	}
-	.sb-num {
-		font-family: var(--f-mono, ui-monospace, monospace);
-		font-size: 11px;
-		font-weight: 700;
-		letter-spacing: 0.08em;
-		text-transform: uppercase;
-		color: var(--ink-3);
-	}
-	.sb-time {
-		font-family: var(--f-mono, ui-monospace, monospace);
-		font-size: 11px;
-		font-weight: 700;
-		padding: 2px 8px;
-		border-radius: 99px;
-		color: var(--g1);
-		background: color-mix(in oklab, var(--g1) 14%, var(--surface-2));
-		border: 1px solid color-mix(in oklab, var(--g1) 32%, var(--line));
-	}
-	.sb-x {
-		margin-left: auto;
-		width: 26px;
-		height: 26px;
-		padding: 0;
-		display: grid;
-		place-items: center;
-		border: 0;
-		border-radius: 50%;
-		background: transparent;
-		color: var(--ink-3);
-		opacity: 0.5;
-		cursor: pointer;
-	}
-	.sb-x:hover {
-		opacity: 1;
-		background: var(--surface-2);
-	}
-	.sb-x :global(.ic) {
-		width: 13px;
-		height: 13px;
-	}
-	.sb-vis {
-		margin: 0;
-		font-size: 15px;
-		font-weight: 600;
-		line-height: 1.42;
-		color: var(--ink);
-		overflow-wrap: anywhere;
-	}
-	.sb-card.done .sb-vis {
-		color: var(--ink-3);
-		text-decoration: line-through;
-	}
-	.sb-say {
-		display: flex;
-		align-items: flex-start;
-		gap: 8px;
-		padding: 6px 0 6px 11px;
-		border-left: 2px solid var(--g2);
-		background: linear-gradient(90deg, color-mix(in oklab, var(--g2) 8%, transparent), transparent 85%);
-		border-radius: 0 8px 8px 0;
-	}
-	.sb-say-ic {
-		color: var(--g2);
-		padding-top: 2px;
-		flex-shrink: 0;
-	}
-	.sb-say-ic :global(.ic) {
-		width: 14px;
-		height: 14px;
-	}
-	.sb-say-txt {
-		font-size: 13.5px;
-		line-height: 1.48;
-		color: var(--ink-2);
-	}
 	.sb-add {
 		display: flex;
 		align-items: center;
