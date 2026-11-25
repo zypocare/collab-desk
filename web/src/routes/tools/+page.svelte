@@ -37,6 +37,22 @@
 				<p>Calculate Cost Per View (`₹ ÷ Views`), CPM, and compare against Indian D2C creator benchmarks in real time.</p>
 				<span class="ft-go">Calculate CPV <Icon name="arrow" /></span>
 			</a>
+
+			<a class="ft-card" href="https://www.miracleapp.live/tools/rate-calculator">
+				<span class="ft-ic"><Icon name="chart" /></span>
+				<span class="ft-pill">Creators</span>
+				<h2>Rate Calculator</h2>
+				<p>Estimate what to charge for Reels, Stories, and usage rights based on your niche and reach in India.</p>
+				<span class="ft-go">Check my rates <Icon name="arrow" /></span>
+			</a>
+
+			<a class="ft-card" href="https://www.miracleapp.live/tools/engagement-calculator">
+				<span class="ft-ic"><Icon name="eye" /></span>
+				<span class="ft-pill">Creators &amp; Brands</span>
+				<h2>Engagement Calculator</h2>
+				<p>Check true Instagram engagement rate against India creator benchmarks before pitching or shortlisting.</p>
+				<span class="ft-go">Check engagement <Icon name="arrow" /></span>
+			</a>
 		</div>
 	</main>
 </div>
