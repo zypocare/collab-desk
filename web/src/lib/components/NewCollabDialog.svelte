@@ -431,6 +431,16 @@
 						{/each}
 					</div>
 				{/if}
+				{#if !brandOpen && !name.trim() && studio.brands.length}
+					<div class="nc-quick">
+						<span class="nc-qlbl">Recent brands</span>
+						<div class="nc-qchips">
+							{#each studio.brands.slice(0, 6) as b (b.id)}
+								<button type="button" class="nc-qchip" onclick={() => pickBrand(b.name)}>{b.name}</button>
+							{/each}
+						</div>
+					</div>
+				{/if}
 			{:else if step === 'ask'}
 				<div class="nc-head">
 					<span class="nc-eb">New collab{fromIg ? ' · from Instagram' : ''}</span>
@@ -615,13 +625,18 @@
 			top: var(--vv-top, 0px) !important;
 			bottom: auto !important;
 			height: var(--vv-h, 100dvh) !important;
-			padding-top: max(8px, env(safe-area-inset-top, 0px));
+			padding: 0 !important;
 			overflow: hidden;
 			overscroll-behavior: none;
 			animation: none !important;
 			transition: none !important;
 		}
 		:global([data-side]) .nc-scrim > .dialog.nc {
+			border: 0 !important;
+			border-radius: 0 !important;
+			height: 100% !important;
+			max-height: 100% !important;
+			box-shadow: none !important;
 			width: 100%;
 			height: 100%;
 			max-height: 100%;
@@ -776,8 +791,17 @@
 		.nc-step { min-height: 50px; }
 		.nc-go { height: 50px; }
 	}
+	.nc-quick { display: flex; flex-direction: column; gap: 8px; margin-top: 2px; }
+	.nc-qlbl { font-size: 10px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; color: var(--ink-3); }
+	.nc-qchips { display: flex; flex-wrap: wrap; gap: 7px; }
+	.nc-qchip { padding: 7px 12px; border-radius: 999px; border: 1px solid var(--line-strong); background: var(--surface-2); color: var(--ink-2); font: 600 12.5px var(--f-body, inherit); cursor: pointer; }
+	.nc-qchip:active, .nc-qchip:hover { border-color: var(--g1); color: var(--ink); }
 	@media (max-width: 760px) {
-		.nc-compose textarea { height: 116px; min-height: 116px; padding: 10px 14px 6px; font-size: 16px; line-height: 1.42; }
+		.nc-top { padding-top: calc(10px + env(safe-area-inset-top, 0px)); }
+		.nc-compose textarea { height: 180px; min-height: 180px; padding: 14px 16px 8px; font-size: 16px; line-height: 1.48; }
+	}
+	@media (max-width: 760px) and (max-height: 620px) {
+		.nc-compose textarea { height: 104px; min-height: 104px; padding: 10px 14px 6px; }
 	}
 	@media (prefers-reduced-motion: reduce) {
 		.nc-go, .nc-seg button, .nc-opt { transition: none; }
