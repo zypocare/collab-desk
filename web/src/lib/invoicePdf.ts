@@ -235,24 +235,28 @@ export async function invoicePdf(inv: InvoiceView): Promise<Uint8Array> {
 		trow(`IGST @ ${inv.gst_rate}%`, money(inv.igst));
 	}
 
-	// Highlighted Total / Amount Payable strip
+	// Highlighted Total / Amount Payable strip (explicit gap below previous row so text never overlaps)
 	const showPayable = inv.tds_amount > 0;
 	if (showPayable) {
-		hr(y + 10, tx, W - M, 0.6);
-		y -= 2;
+		hr(y + 9, tx, W - M, 0.6);
+		y -= 6;
 		trow('Total', money(inv.total), true);
 		trow(`Less TDS @ ${inv.tds_rate}%`, '− ' + money(inv.tds_amount));
-		const barH = 26;
-		page.drawRectangle({ x: tx, y: y - 8, width: totW, height: barH, color: SURFACE_DARK });
-		text('Amount payable', tx + 10, y + 1, 10, bold, INK);
-		right(money(inv.payable), W - M - 10, y + 1, 11, bold, ROSE);
-		y -= 24;
+		y -= 10;
+		const barH = 28;
+		const barBottom = y - 10;
+		page.drawRectangle({ x: tx, y: barBottom, width: totW, height: barH, color: SURFACE_DARK });
+		text('Amount payable', tx + 10, barBottom + 10, 10, bold, INK);
+		right(money(inv.payable), W - M - 10, barBottom + 10, 11, bold, ROSE);
+		y = barBottom - 16;
 	} else {
-		const barH = 26;
-		page.drawRectangle({ x: tx, y: y - 8, width: totW, height: barH, color: SURFACE_DARK });
-		text('Total', tx + 10, y + 1, 10.5, bold, INK);
-		right(money(inv.total), W - M - 10, y + 1, 11, bold, INK);
-		y -= 24;
+		y -= 10;
+		const barH = 28;
+		const barBottom = y - 10;
+		page.drawRectangle({ x: tx, y: barBottom, width: totW, height: barH, color: SURFACE_DARK });
+		text('Total', tx + 10, barBottom + 10, 10.5, bold, INK);
+		right(money(inv.total), W - M - 10, barBottom + 10, 11, bold, INK);
+		y = barBottom - 16;
 	}
 
 	if (inv.amount_received > 0 && inv.status !== 'paid') {
@@ -383,12 +387,23 @@ export async function invoicePdf(inv: InvoiceView): Promise<Uint8Array> {
 		}
 	}
 
-	// Free plan subtle footer line
-	if (inv.miracle_line) {
-		const t = 'Sent with Miracle · miracleapp.live';
-		const last = doc.getPage(doc.getPageCount() - 1);
-		last.drawText(t, { x: (W - reg.widthOfTextAtSize(t, 7.5)) / 2, y: 24, size: 7.5, font: reg, color: MUTED });
-	}
+	// Miracle App branding footer on the bottom of the invoice
+	const last = doc.getPage(doc.getPageCount() - 1);
+	last.drawLine({ start: { x: M, y: 42 }, end: { x: W - M, y: 42 }, thickness: 0.5, color: LINE });
+	const prefix = 'Created with ';
+	const brand = 'Miracle App';
+	const suffix = '  ·  miracleapp.live';
+	const fSize = 8;
+	const totalW =
+		reg.widthOfTextAtSize(prefix, fSize) +
+		bold.widthOfTextAtSize(brand, fSize) +
+		reg.widthOfTextAtSize(suffix, fSize);
+	let fx = (W - totalW) / 2;
+	last.drawText(prefix, { x: fx, y: 26, size: fSize, font: reg, color: MUTED });
+	fx += reg.widthOfTextAtSize(prefix, fSize);
+	last.drawText(brand, { x: fx, y: 26, size: fSize, font: bold, color: ROSE });
+	fx += bold.widthOfTextAtSize(brand, fSize);
+	last.drawText(suffix, { x: fx, y: 26, size: fSize, font: reg, color: MUTED });
 
 	return doc.save();
 }
