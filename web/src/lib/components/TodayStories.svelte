@@ -39,6 +39,7 @@
 		{
 			label: 'Wrapped',
 			icon: 'spark',
+			animation: 'celebrate',
 			color: 'var(--g2, #f25a90)',
 			stamp: `${monthName.toUpperCase()} RECAP`,
 			title: `${monthName} wrapped`,
@@ -67,6 +68,7 @@
 		{
 			label: 'AI Tips',
 			icon: 'chart',
+			animation: 'radar',
 			color: 'var(--g1, #9c7bff)',
 			stamp: slot ? 'PEAK WINDOW' : 'AI INSIGHT',
 			title: slot ? slotLabel(slot) : 'Find your best posting time',
@@ -88,6 +90,7 @@
 		{
 			label: 'Due soon',
 			icon: 'wallet',
+			animation: 'vault',
 			color: 'var(--g3, #ffae6b)',
 			stamp: od.length ? `${od.length} OVERDUE` : pendingTotal > 0 ? 'YET TO COME' : 'ALL CLEAR',
 			title: payment ? payment.brand.name : 'All payments clear',
@@ -115,6 +118,7 @@
 		{
 			label: 'Top Reel',
 			icon: 'film',
+			animation: 'reel',
 			color: 'var(--ok, #6fd08c)',
 			stamp: reel ? '90-DAY WINNER' : 'REEL STATS',
 			title: reel ? 'Your top reel in 90 days' : 'Your reel highlights',
@@ -137,6 +141,7 @@
 		{
 			label: 'Briefs',
 			icon: 'inbox',
+			animation: 'briefs',
 			color: 'var(--sky, #75bbef)',
 			stamp: 'OPEN OPPORTUNITIES',
 			title: 'Open brand briefs',
