@@ -97,7 +97,7 @@
 	import { DRAFT_MAX_MB, cancelInvoice, recordPayment, reloadCollabs, setChecklist, setInvoiceFlags, setSomeday, shareDraft, releaseDraft, withdrawQuote, type DraftProgress } from '../studio.svelte';
 	import { emailOk, errMessage, rel, todayIso, unreadFor, waShare } from '../util';
 	import type { Quote } from '../types';
-	import { INVOICE_STATUS, KIND_LABEL, balanceDue, invoiceWaMessage, type Invoice } from '../invoice';
+	import { INVOICE_STATUS, KIND_LABEL, balanceDue, type Invoice } from '../invoice';
 	import InvoiceDialog from './InvoiceDialog.svelte';
 	import GoLiveSheet from './GoLiveSheet.svelte';
 	import PaymentDialog from './PaymentDialog.svelte';
@@ -241,7 +241,7 @@
 	const c = $derived(byId(ui.openCollab));
 	const canDecline = $derived(!!c && (c.stage === 'request' || c.stage === 'negotiating') && !['paid', 'invoiced', 'advance'].includes(c.pay_status));
 	const canPause = $derived(!!c && studio.me?.team_role !== 'accountant' && !canDecline && !['paused', 'cancelled', 'wrapped', 'declined', 'request', 'negotiating'].includes(c.stage));
-	const canCancel = $derived(!!c && studio.me?.team_role !== 'accountant' && !canDecline && !['cancelled', 'wrapped', 'declined'].includes(c.stage));
+	const canCancel = $derived(!!c && studio.me?.team_role !== 'accountant' && !['cancelled', 'wrapped', 'declined'].includes(c.stage));
 	const scam = $derived(!!c && ['request', 'negotiating'].includes(c.stage) && asksToPay(c.brief, JSON.stringify(c.brief_details ?? {}), c.note_for_brand));
 	// Phones: short stage names so the six labels fit side by side.
 	const SHORT_STAGE: Record<string, string> = { request: 'New', negotiating: 'Talks', confirmed: 'Agreed', creating: 'Creating', live: 'Live', wrapped: 'Done' };
@@ -606,7 +606,10 @@
 				<CollabCockpit
 					{c}
 					next={next ?? null}
+					{canCancel}
 					onstage={(st) => changeStage(st)}
+					oncancel={() => life?.open('cancelled')}
+					onresume={() => life?.resumeNow()}
 					onrunnext={(k) => runNext(k)}
 					onopen={(id) => {
 						showAll = true;
@@ -1028,7 +1031,7 @@
 									<button class="btn sm ghost" onclick={() => copyText(`${location.origin}/invoice/${inv.public_token}`, 'Invoice link copied')}><Icon name="copy" />Link</button>
 									{#if inv.status === 'sent' || inv.status === 'partly_paid'}
 										{@const late = !!inv.due_date && inv.due_date < todayIso()}
-										<a class="btn sm ghost wa" href={waShare(c.contact_phone, invoiceWaMessage({ brandName: c.brand.name, contactName: c.contact_name, creatorName: studio.settings?.display_name, invoiceNumber: inv.number ?? '', amountText: inr(balanceDue(inv)), dueText: inv.due_date ? fmt(inv.due_date) : '', link: `${location.origin}/invoice/${inv.public_token}`, late }))} target="_blank" rel="noopener"><Icon name="send" />WhatsApp</a>
+										<a class="btn sm ghost wa" href={waShare(c.contact_phone, `Hi ${brandGreeting(c)}, ${late ? `a reminder: invoice ${inv.number} for ${inr(balanceDue(inv))} was due on ${fmt(inv.due_date)}` : `here's invoice ${inv.number} for ${inr(balanceDue(inv))}${inv.due_date ? `, due ${fmt(inv.due_date)}` : ''}`}. You can pay by UPI or bank transfer here: ${location.origin}/invoice/${inv.public_token}`)} target="_blank" rel="noopener"><Icon name="send" />WhatsApp</a>
 									{/if}
 									{#if inv.status === 'sent' || inv.status === 'partly_paid'}
 										<button class="btn sm primary" onclick={() => (paymentOpen = inv)}><Icon name="wallet" />Record payment</button>

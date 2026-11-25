@@ -22,13 +22,19 @@
 	let {
 		c,
 		next = null,
+		canCancel = false,
 		onstage,
+		oncancel,
+		onresume,
 		onrunnext,
 		onopen
 	}: {
 		c: Collab;
 		next: { key: string; label: string; hint: string; icon: string } | null;
+		canCancel?: boolean;
 		onstage: (st: Stage) => void;
+		oncancel?: () => void;
+		onresume?: () => void;
 		onrunnext: (key: string) => void;
 		onopen: (secId: string) => void;
 	} = $props();
@@ -315,7 +321,17 @@
 			</div>
 		{/if}
 
-		{#if next}
+		{#if c.stage === 'cancelled' || c.stage === 'paused'}
+			<div class="cdv-held">
+				<b>{c.stage === 'cancelled' ? 'Cancelled collaboration' : 'Paused collaboration'}</b>
+				{#if c.lifecycle_reason}<p>{c.lifecycle_reason}</p>{/if}
+				{#if onresume}
+					<button type="button" class="btn sm cdv-reopen" onclick={onresume}>
+						{c.stage === 'cancelled' ? 'Reopen collaboration' : 'Resume collaboration'}
+					</button>
+				{/if}
+			</div>
+		{:else if next}
 			<div class="cdv-next">
 				<span class="cdv-eb">Next step</span>
 				<p>{next.hint}</p>
@@ -431,6 +447,15 @@
 							{#if i === si}<Icon name="check" />{:else}<Icon name="chevR" />{/if}
 						</button>
 					{/each}
+					{#if canCancel && oncancel}
+						<button type="button" class="cdv-cancel-row" onclick={() => { sheet = null; oncancel(); }}>
+							<span>
+								<b>Cancel collaboration</b>
+								<small>Didn't work out · moves to Cancelled tab</small>
+							</span>
+							<Icon name="x" />
+						</button>
+					{/if}
 				</div>
 			{/if}
 		</div>
@@ -838,4 +863,23 @@
 	.cdv-results small,
 	.cdv-empty { color: #b2a6af; font-size: 12px; }
 	.cdv-empty { padding: 14px 0; margin: 0; }
+
+	.cdv-held {
+		margin-top: 12px;
+		padding: 12px 14px;
+		border-radius: 12px;
+		border: 1px solid rgba(244, 63, 94, 0.32);
+		background: rgba(244, 63, 94, 0.08);
+		display: grid;
+		gap: 6px;
+	}
+	.cdv-held b { font-size: 13.5px; color: #fda4af; }
+	.cdv-held p { margin: 0; font-size: 12.5px; color: var(--cdv-muted); line-height: 1.45; }
+	.cdv-reopen { justify-self: start; margin-top: 4px; }
+	.cdv-cancel-row {
+		margin-top: 6px;
+		border-top: 1px solid rgba(244, 63, 94, 0.25) !important;
+		color: #fda4af !important;
+	}
+	.cdv-cancel-row b { color: #fda4af !important; }
 </style>

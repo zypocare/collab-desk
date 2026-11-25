@@ -13,6 +13,8 @@
 	const held = $derived(c.stage === 'paused' || c.stage === 'cancelled');
 	/** Pause or cancel: opened from the collab's ⋯ menu. */
 	export function open(value: 'paused' | 'cancelled') { reason = ''; resumeOn = null; mode = value; }
+	export function resumeNow() { return resume(); }
+	const CANCEL_REASONS = ['Budget mismatch', "Timeline didn't work", 'Brand went silent', 'Not a fit'];
 	async function submit(e: SubmitEvent) {
 		e.preventDefault();
 		if (!mode || !reason.trim() || (mode === 'paused' && resumeOn && resumeOn < todayIso())) return;
@@ -45,7 +47,14 @@
 			<form onsubmit={submit}>
 				<h2 id="lifecycle-title">{mode === 'paused' ? 'Pause' : 'Cancel'} collaboration</h2>
 				<p>{mode === 'paused' ? 'Work reminders and scheduled posts will be held until you resume and review the schedule.' : 'Production stops. Review existing invoices separately to settle completed work or arrange refunds.'} The brand can see the reason.</p>
-				<div class="f"><label for="lifecycle-reason">Reason</label><textarea id="lifecycle-reason" class="inp" rows="3" maxlength="600" required bind:value={reason}></textarea></div>
+				{#if mode === 'cancelled'}
+					<div class="lc-chips" role="group" aria-label="Quick reasons">
+						{#each CANCEL_REASONS as r (r)}
+							<button type="button" class="lc-chip" class:on={reason === r} onclick={() => (reason = r)}>{r}</button>
+						{/each}
+					</div>
+				{/if}
+				<div class="f"><label for="lifecycle-reason">Reason</label><textarea id="lifecycle-reason" class="inp" rows="3" maxlength="600" placeholder="Why didn't this collab move forward?" required bind:value={reason}></textarea></div>
 				{#if mode === 'paused'}<div class="f"><label for="lifecycle-review">Review on (optional)</label><DatePicker id="lifecycle-review" bind:value={resumeOn} /><small>This is a reminder to review; resuming is manual.</small></div>{/if}
 				{#if resumeOn && resumeOn < todayIso()}<p class="err">Choose today or a future review date.</p>{/if}
 				<div class="row"><button type="button" class="btn ghost" disabled={busy} onclick={() => (mode = null)}>Keep current stage</button><button type="submit" class="btn primary" disabled={busy || !reason.trim() || !!(resumeOn && resumeOn < todayIso())}>{mode === 'paused' ? 'Pause collaboration' : 'Cancel collaboration'}</button></div>
@@ -53,3 +62,21 @@
 		</div>
 	</div>
 {/if}
+
+<style>
+	.lc-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+	.lc-chip {
+		padding: 6px 11px;
+		border-radius: 999px;
+		border: 1px solid var(--line, rgba(255, 255, 255, 0.14));
+		background: transparent;
+		color: var(--ink-2, #cfc6d6);
+		font: 600 11.5px/1.2 var(--f-body, system-ui, sans-serif);
+		cursor: pointer;
+	}
+	.lc-chip.on {
+		border-color: var(--g2, #f25a90);
+		background: color-mix(in oklab, var(--g2, #f25a90) 16%, transparent);
+		color: var(--ink, #faf7fc);
+	}
+</style>
