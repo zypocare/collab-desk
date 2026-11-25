@@ -115,6 +115,12 @@ Deno.serve(async (req) => {
       const text = String(m.text ?? (m.attachments?.length ? '[Photo or video]' : ''));
 
       const { data: thread } = await db.from('ig_threads').select('igsid, username, unread, collab_flag, collab_id').eq('creator_id', creator).eq('igsid', igsid).maybeSingle();
+      // Trigger DM Keyword or Story Reply automations in the background for incoming text messages.
+      if (!fromMe && m.text) {
+        const isStoryReply = Boolean(m.reply_to?.story);
+        const autoJob = dmOrStoryAutoReply(db, owner, { mid: String(m.mid), igsid, text: String(m.text), isStoryReply, username: thread?.username ?? '' }).catch((e) => console.error('[auto-dm]', e));
+        (globalThis as unknown as { EdgeRuntime?: { waitUntil: (p: Promise<unknown>) => void } }).EdgeRuntime?.waitUntil(autoJob);
+      }
       const kept = !!thread && (!!thread.collab_id || thread.collab_flag === 'likely' || thread.collab_flag === 'maybe');
 
       if (kept) {
@@ -179,17 +185,82 @@ Deno.serve(async (req) => {
 
 // A comment on her post. Off: nothing. Ask: kept for her to send from the app. Auto: sent now.
 // Her own comments, comments with no keyword and repeats are skipped; at most 200 a day go out.
+type AutoRule = {
+  id: string;
+  keyword: string;
+  reply: string;
+  public_reply?: string | null;
+  trigger_type?: string | null;
+  match_type?: string | null;
+  media_id?: string | null;
+  uses?: number | null;
+};
+
+function pickAutoRule(rules: AutoRule[], text: string, mediaId?: string): AutoRule | null {
+  const norm = text.trim().toLowerCase();
+  if (!norm) return null;
+  // Prefer post-specific rules over global rules, and exact/contains over 'any'.
+  const scoped = rules
+    .filter((r) => !r.media_id || (mediaId && r.media_id === mediaId))
+    .sort((a, b) => (b.media_id ? 1 : 0) - (a.media_id ? 1 : 0));
+
+  for (const r of scoped) {
+    const mt = r.match_type ?? 'contains';
+    const kw = (r.keyword ?? '').trim().toLowerCase();
+    if (mt === 'any') continue;
+    if (mt === 'exact' && norm === kw) return r;
+    if (mt === 'contains' && kw && matchRule([r], text)) return r;
+  }
+  return scoped.find((r) => r.match_type === 'any') ?? null;
+}
+
+async function postPublicCommentReply(token: string, commentId: string, message: string): Promise<boolean> {
+  if (!message.trim()) return false;
+  try {
+    const form = new URLSearchParams({ message: message.trim().slice(0, 500), access_token: token });
+    const res = await fetch(`${GRAPH}/${commentId}/replies`, { method: 'POST', body: form });
+    const j = await res.json().catch(() => ({}));
+    return res.ok && !j.error;
+  } catch {
+    return false;
+  }
+}
+
+async function sendDirectMessage(token: string, igsid: string, text: string) {
+  const res = await fetch(`${GRAPH}/me/messages`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` },
+    body: JSON.stringify({ recipient: { id: igsid }, message: { text: text.slice(0, 1000) } }),
+  });
+  const j = await res.json().catch(() => ({}));
+  if (!res.ok || j.error) throw new Error(j.error?.message ?? 'Instagram did not accept the DM');
+}
+
 async function commentToDm(db: ReturnType<typeof admin>, owner: { creator: number; me: string; token: string }, v: { id: string; text?: string; from?: { id?: string; username?: string }; media?: { id?: string } }) {
   if (!v.text || String(v.from?.id ?? '') === owner.me) return;
   const { data: s } = await db.from('creator_settings').select('comment_dm_mode, site_url').eq('id', owner.creator).maybeSingle();
   if (!s || s.comment_dm_mode === 'off') return;
-  const { data: rules } = await db.from('dm_rules').select('id, keyword, reply, uses').eq('creator_id', owner.creator).eq('active', true);
-  const rule = matchRule(rules ?? [], v.text);
+  const { data: rules } = await db
+    .from('dm_rules')
+    .select('id, keyword, reply, public_reply, trigger_type, match_type, media_id, uses')
+    .eq('creator_id', owner.creator)
+    .eq('active', true)
+    .eq('trigger_type', 'comment');
+  const rule = pickAutoRule((rules ?? []) as AutoRule[], v.text, String(v.media?.id ?? ''));
   if (!rule) return;
   const reply = fillReply(rule.reply, String(s.site_url ?? '').replace(/\/$/, ''));
-  const row = { creator_id: owner.creator, comment_id: String(v.id), media_id: String(v.media?.id ?? ''), from_username: String(v.from?.username ?? ''), text: String(v.text).slice(0, 500), rule_id: rule.id, reply };
+  const row = {
+    creator_id: owner.creator,
+    comment_id: String(v.id),
+    media_id: String(v.media?.id ?? ''),
+    from_username: String(v.from?.username ?? ''),
+    text: String(v.text).slice(0, 500),
+    rule_id: rule.id,
+    reply,
+    trigger_type: 'comment',
+  };
   const { data: log, error } = await db.from('dm_auto_log').insert({ ...row, status: 'pending' }).select('id').maybeSingle();
-  if (error || !log) return; // a repeat delivery of the same comment
+  if (error || !log) return;
   if (s.comment_dm_mode !== 'auto' || !owner.token) {
     await db.from('outbox').insert({ creator_id: owner.creator, kind: 'comment_dm', to_email: '', payload: { from: row.from_username || 'Someone', keyword: rule.keyword, text: row.text.slice(0, 140) } });
     return;
@@ -199,6 +270,57 @@ async function commentToDm(db: ReturnType<typeof admin>, owner: { creator: numbe
   if ((count ?? 0) >= 200) return void (await db.from('dm_auto_log').update({ status: 'skipped', error: 'Daily limit of 200 reached' }).eq('id', log.id));
   try {
     await privateReply(owner.token, row.comment_id, reply);
+    const pubOk = rule.public_reply ? await postPublicCommentReply(owner.token, row.comment_id, rule.public_reply) : false;
+    await db.from('dm_auto_log').update({ status: 'sent', sent_at: new Date().toISOString(), public_replied: pubOk }).eq('id', log.id);
+    await db.from('dm_rules').update({ uses: (rule.uses ?? 0) + 1 }).eq('id', rule.id);
+  } catch (e) {
+    await db.from('dm_auto_log').update({ status: 'failed', error: String((e as Error)?.message ?? e).slice(0, 300) }).eq('id', log.id);
+  }
+}
+
+async function dmOrStoryAutoReply(
+  db: ReturnType<typeof admin>,
+  owner: { creator: number; me: string; token: string },
+  opts: { mid: string; igsid: string; text: string; isStoryReply: boolean; username?: string },
+) {
+  const { data: s } = await db.from('creator_settings').select('comment_dm_mode, site_url').eq('id', owner.creator).maybeSingle();
+  if (!s || s.comment_dm_mode === 'off') return;
+  const trigger = opts.isStoryReply ? 'story_reply' : 'dm';
+  const { data: rules } = await db
+    .from('dm_rules')
+    .select('id, keyword, reply, trigger_type, match_type, uses')
+    .eq('creator_id', owner.creator)
+    .eq('active', true)
+    .eq('trigger_type', trigger);
+  const rule = pickAutoRule((rules ?? []) as AutoRule[], opts.text);
+  if (!rule) return;
+  const reply = fillReply(rule.reply, String(s.site_url ?? '').replace(/\/$/, ''));
+  const { data: log, error } = await db
+    .from('dm_auto_log')
+    .insert({
+      creator_id: owner.creator,
+      comment_id: `msg:${opts.mid}`,
+      media_id: '',
+      from_username: opts.username ?? '',
+      sender_igsid: opts.igsid,
+      text: opts.text.slice(0, 500),
+      rule_id: rule.id,
+      reply,
+      trigger_type: trigger,
+      status: 'pending',
+    })
+    .select('id')
+    .maybeSingle();
+  if (error || !log) return;
+  if (s.comment_dm_mode !== 'auto' || !owner.token) {
+    await db.from('outbox').insert({ creator_id: owner.creator, kind: 'comment_dm', to_email: '', payload: { from: opts.username || 'Someone', keyword: rule.keyword, text: opts.text.slice(0, 140) } });
+    return;
+  }
+  const since = new Date(Date.now() - 864e5).toISOString();
+  const { count } = await db.from('dm_auto_log').select('id', { count: 'exact', head: true }).eq('creator_id', owner.creator).eq('status', 'sent').gte('sent_at', since);
+  if ((count ?? 0) >= 200) return void (await db.from('dm_auto_log').update({ status: 'skipped', error: 'Daily limit of 200 reached' }).eq('id', log.id));
+  try {
+    await sendDirectMessage(owner.token, opts.igsid, reply);
     await db.from('dm_auto_log').update({ status: 'sent', sent_at: new Date().toISOString() }).eq('id', log.id);
     await db.from('dm_rules').update({ uses: (rule.uses ?? 0) + 1 }).eq('id', rule.id);
   } catch (e) {

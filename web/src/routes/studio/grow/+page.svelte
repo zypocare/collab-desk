@@ -10,8 +10,6 @@
 	import Icon from '#lib/components/Icon.svelte';
 	import HealthCard from '#lib/components/HealthCard.svelte';
 	import PhoneGrow from '#lib/components/PhoneGrow.svelte';
-	import FeedBalanceCard from '#lib/components/FeedBalanceCard.svelte';
-	import GoldenHourBanner from '#lib/components/GoldenHourBanner.svelte';
 	import GrowthCoach from '#lib/components/GrowthCoach.svelte';
 	import DayPerformance from '#lib/components/DayPerformance.svelte';
 	import InstagramPanel from '#lib/components/InstagramPanel.svelte';
@@ -92,27 +90,8 @@
 		<Icon name="chevR" />
 	</a>
 
-	<GoldenHourBanner />
-
-	<a class="gr-cu rv" href="/studio/grow/pulse">
-		<span class="gr-it"><b>Golden Hour Launch Pulse</b><small>Track your Reel's first 60 minutes vs your 90-day median with 1-tap comment replies &amp; Story hooks</small></span>
-		<Icon name="chevR" />
-	</a>
-
-	<FeedBalanceCard />
-
-	<a class="gr-cu rv" href="/studio/grow/studio">
-		<span class="gr-it"><b>Viral Script &amp; Series Studio</b><small>Turn your highest-share topics into shoot-ready 0–2s hooks, beat sheets &amp; Comment-to-DM magnets</small></span>
-		<Icon name="chevR" />
-	</a>
-
-	<a class="gr-cu rv" href="/studio/grow/trends">
-		<span class="gr-it"><b>Trend Radar &amp; Audience Questions</b><small>Rising Reel formats in your niche &amp; real questions mined from your comments</small></span>
-		<Icon name="chevR" />
-	</a>
-
-	<a class="gr-cu rv" href="/studio/grow/benchmarks">
-		<span class="gr-it"><b>Peer Benchmarks</b><small>Compare engagement and posting pace against creators in your niche</small></span>
+	<a class="gr-cu rv" href="/studio/grow/automations">
+		<span class="gr-it"><b>Instagram Automations (Free Auto-DM)</b><small>Auto-reply publicly to comments, send keyword DMs, and reply to Story replies</small></span>
 		<Icon name="chevR" />
 	</a>
 

@@ -20,20 +20,53 @@ Deno.serve(async (req) => {
   const { igsid, text, comment_log } = await req.json().catch(() => ({}));
   // Comment-to-DM, "ask" mode: she sends (or skips) a reply that was waiting for her.
   if (comment_log) {
-    const { data: log } = await db.from('dm_auto_log').select('id, comment_id, reply, status, rule_id').eq('creator_id', creator).eq('id', comment_log).maybeSingle();
+    const { data: log } = await db
+      .from('dm_auto_log')
+      .select('id, comment_id, reply, status, rule_id, trigger_type, sender_igsid')
+      .eq('creator_id', creator)
+      .eq('id', comment_log)
+      .maybeSingle();
     if (!log || log.status !== 'pending') return reply({ error: 'That reply was already handled.' }, 400);
     if (text === false) {
       await db.from('dm_auto_log').update({ status: 'skipped' }).eq('id', log.id);
       return reply({ ok: true });
     }
-    if (!String(tok.permissions ?? '').includes('instagram_business_manage_comments')) return reply({ error: 'Allow comments first: turn on Comment-to-DM again and say yes on Instagram.' }, 400);
+    const msgText = typeof text === 'string' && text.trim() ? text.trim() : log.reply;
+    const isComment = (log.trigger_type ?? 'comment') === 'comment';
+    if (isComment && !String(tok.permissions ?? '').includes('instagram_business_manage_comments')) {
+      return reply({ error: 'Allow comments first: turn on Instagram Automations and say yes on Instagram.' }, 400);
+    }
+    let pubOk = false;
     try {
-      await privateReply(tok.access_token, log.comment_id, typeof text === 'string' && text.trim() ? text.trim() : log.reply);
+      if (isComment) {
+        await privateReply(tok.access_token, log.comment_id, msgText);
+        if (log.rule_id) {
+          const { data: r } = await db.from('dm_rules').select('public_reply, uses').eq('id', log.rule_id).maybeSingle();
+          if (r?.public_reply) {
+            const form = new URLSearchParams({ message: String(r.public_reply).slice(0, 500), access_token: tok.access_token });
+            const pr = await fetch(`${GRAPH}/${log.comment_id}/replies`, { method: 'POST', body: form }).catch(() => null);
+            pubOk = !!pr?.ok;
+          }
+          if (r) await db.from('dm_rules').update({ uses: (r.uses ?? 0) + 1 }).eq('id', log.rule_id);
+        }
+      } else if (log.sender_igsid) {
+        const res = await fetch(`${GRAPH}/me/messages`, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json', authorization: `Bearer ${tok.access_token}` },
+          body: JSON.stringify({ recipient: { id: log.sender_igsid }, message: { text: msgText.slice(0, 1000) } }),
+        });
+        const j = await res.json().catch(() => ({}));
+        if (!res.ok || j.error) throw new Error(j.error?.message ?? 'Instagram did not accept the DM');
+        if (log.rule_id) {
+          const { data: r } = await db.from('dm_rules').select('uses').eq('id', log.rule_id).maybeSingle();
+          if (r) await db.from('dm_rules').update({ uses: (r.uses ?? 0) + 1 }).eq('id', log.rule_id);
+        }
+      }
     } catch (e) {
       await db.from('dm_auto_log').update({ status: 'failed', error: String((e as Error)?.message ?? e).slice(0, 300) }).eq('id', log.id);
       return reply({ error: String((e as Error)?.message ?? e) }, 400);
     }
-    await db.from('dm_auto_log').update({ status: 'sent', sent_at: new Date().toISOString() }).eq('id', log.id);
+    await db.from('dm_auto_log').update({ status: 'sent', sent_at: new Date().toISOString(), public_replied: pubOk }).eq('id', log.id);
     return reply({ ok: true });
   }
   if (!igsid) return reply({ error: 'Missing conversation.' }, 400);

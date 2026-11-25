@@ -8,8 +8,6 @@
 	import Avatar from './Avatar.svelte';
 	import HealthCard from './HealthCard.svelte';
 	import GrowthCoach from './GrowthCoach.svelte';
-	import FeedBalanceCard from './FeedBalanceCard.svelte';
-	import GoldenHourBanner from './GoldenHourBanner.svelte';
 	import DayPerformance from './DayPerformance.svelte';
 	import Icon from './Icon.svelte';
 
@@ -104,10 +102,6 @@
 		</div>
 	{/if}
 
-	<GoldenHourBanner />
-
-	<FeedBalanceCard />
-
 	<!-- The tools -->
 	<div class="pg-tools rv" style="--i:1">
 		<a class="pg-tool pg-wide" href="/studio/grow/insights" style="--hue:var(--g1)">
@@ -115,30 +109,15 @@
 			<b>All your insights</b>
 			<small>Reach, views, audience, your best posts: everything brands see</small>
 		</a>
-		<a class="pg-tool" href="/studio/grow/pulse" style="--hue:var(--ok)">
-			<span class="pg-ti"><Icon name="clock" /></span>
-			<b>Golden Hour</b>
-			<small>First 60 min after posting</small>
-		</a>
-		<a class="pg-tool" href="/studio/grow/studio" style="--hue:var(--g1)">
-			<span class="pg-ti"><Icon name="script" /></span>
-			<b>Script studio</b>
-			<small>Hooks &amp; viral series</small>
-		</a>
-		<a class="pg-tool" href="/studio/grow/trends" style="--hue:var(--g2)">
-			<span class="pg-ti"><Icon name="spark" /></span>
-			<b>Trend radar</b>
-			<small>Rising formats &amp; Qs</small>
-		</a>
-		<a class="pg-tool" href="/studio/grow/benchmarks" style="--hue:var(--g3)">
-			<span class="pg-ti"><Icon name="users" /></span>
-			<b>Benchmarks</b>
-			<small>Compare niche peers</small>
+		<a class="pg-tool" href="/studio/grow/automations" style="--hue:var(--ok)">
+			<span class="pg-ti"><Icon name="send" /></span>
+			<b>Auto-DM</b>
+			<small>Comments, DMs &amp; Stories</small>
 		</a>
 		<a class="pg-tool" href="/studio/grow/check" style="--hue:var(--g2)">
 			<span class="pg-ti"><Icon name="film" /></span>
 			<b>Check a reel</b>
-			<small>0–5s hook audit</small>
+			<small>Before you post it</small>
 		</a>
 		<a class="pg-tool" href="/studio/grow/checkup" style="--hue:{cu?.data.findings.length ? 'var(--warn)' : 'var(--g1)'}">
 			<span class="pg-ti"><Icon name="chart" /></span>
