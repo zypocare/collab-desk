@@ -27,6 +27,13 @@
                 <data android:mimeType="text/plain" />
             </intent-filter>
 
+            <!-- Instagram Edits / CapCut / VN / Gallery › Share › Check Reel in Miracle: opens /studio/grow/check. -->
+            <intent-filter android:label="Check Reel in Miracle">
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="video/*" />
+            </intent-filter>
+
             <!-- Miracle links (a creator's page, an invoice, an agreement) open in the app. -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />

@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
-	import { askAi } from '#lib/ai.ts';
+	import { askAi, shrinkImage } from '#lib/ai.ts';
 	import { insights, nextSlots, bestSlot, slotLabel, stats } from '#lib/grow.svelte.ts';
 	import { postingEvidence } from '#lib/postTime.ts';
 	import { loadInstagram, studio } from '#lib/studio.svelte.ts';
@@ -10,8 +10,8 @@
 	import { errMessage } from '#lib/util.ts';
 	import Icon from '#lib/components/Icon.svelte';
 
-	// Deep 0-5s Reel Hook Audit: samples 3 frames (0.2s, 2.0s, 4.5s) + optional spoken opening line,
-	// checks length vs her avg watch time, visual motion, safe-zone text, and returns concrete pre-post fixes.
+	// Deep 0-5s Reel Hook Audit: works directly with Instagram Edits (via Share -> Check Reel in Miracle,
+	// Edits screenshot before export, or exported video file), sampling 0.2s, 2.0s, and 4.5s frames.
 	type Result = {
 		score: number;
 		verdict: string;
@@ -23,10 +23,14 @@
 		dm_keyword?: string;
 	};
 	type FrameShot = { label: string; at: number; data: string };
+	type SharedReelPayload = { name?: string; seconds?: number; source?: string; frames?: FrameShot[] };
 
+	let mode = $state<'edits' | 'video' | 'shot'>('edits');
 	let file = $state<File | null>(null);
 	let url = $state('');
+	let sharedName = $state('');
 	let seconds = $state(0);
+	let manualSeconds = $state('');
 	let frame = $state('');
 	let frames = $state<FrameShot[]>([]);
 	let spokenHook = $state('');
@@ -36,8 +40,33 @@
 	let dmActivated = $state(false);
 	let video = $state<HTMLVideoElement>();
 
+	const hasReelReady = $derived(!!file || frames.length > 0 || !!frame);
+	const effectiveSeconds = $derived(seconds || Math.max(0, Math.round(Number(manualSeconds) || 0)));
+
+	function loadSharedFromAndroid() {
+		const bridge = (window as unknown as { MiracleShare?: { consumeSharedReel?: () => string } }).MiracleShare;
+		if (!bridge?.consumeSharedReel) return;
+		try {
+			const raw = bridge.consumeSharedReel();
+			if (!raw) return;
+			const data = JSON.parse(raw) as SharedReelPayload;
+			if (Array.isArray(data.frames) && data.frames.length) {
+				frames = data.frames;
+				frame = data.frames[0].data;
+				seconds = Number(data.seconds) || 0;
+				sharedName = data.name || 'Reel from Edits';
+				mode = 'edits';
+				res = null;
+				toast('Loaded Reel directly from Edits — ready to audit');
+			}
+		} catch {
+			/* ignore malformed bridge payload */
+		}
+	}
+
 	onMount(() => {
 		if (!studio.media.length) loadInstagram();
+		loadSharedFromAndroid();
 		return () => url && URL.revokeObjectURL(url);
 	});
 
@@ -46,17 +75,38 @@
 		slot ? slot.toLocaleString('en-IN', { weekday: 'short', hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Kolkata' }) : ''
 	);
 
-	function pick(e: Event) {
+	function pickVideo(e: Event) {
 		const f = (e.currentTarget as HTMLInputElement).files?.[0];
 		if (!f) return;
 		if (url) URL.revokeObjectURL(url);
 		file = f;
 		url = URL.createObjectURL(f);
+		sharedName = '';
 		res = null;
 		frame = '';
 		frames = [];
 		dmActivated = false;
 		seconds = 0;
+		mode = 'video';
+	}
+
+	async function pickEditsScreenshot(e: Event) {
+		const f = (e.currentTarget as HTMLInputElement).files?.[0];
+		if (!f) return;
+		try {
+			const data = await shrinkImage(f, 720);
+			file = null;
+			if (url) URL.revokeObjectURL(url);
+			url = '';
+			sharedName = f.name || 'Edits preview frame';
+			frame = data;
+			frames = [{ label: '0.0s', at: 0, data }];
+			res = null;
+			dmActivated = false;
+			mode = 'shot';
+		} catch (err) {
+			toast(errMessage(err), 'alert');
+		}
 	}
 
 	// Sample 3 key frames in the first 5 seconds (0.2s, 2.0s, 4.5s) to inspect visual hook & early pacing.
@@ -109,7 +159,7 @@
 				frame: lineOnly ? '' : frame,
 				frames: lineOnly ? [] : frames.map((f) => ({ label: f.label, data: f.data })),
 				spoken_hook: spokenHook.trim(),
-				seconds,
+				seconds: effectiveSeconds,
 				caption,
 				avg_watch_s: st.watch ? Math.round(st.watch * 10) / 10 : 0,
 				best_formats: insights(studio.media, studio.followersHistory).map((t) => t.bold),
@@ -179,17 +229,19 @@
 				sp = (data as { id: string }).id;
 			}
 			const title =
-				(res?.line || caption || file?.name || 'Reel').split('\n')[0].replace(/[👇🔥✨]+/gu, '').trim().slice(0, 120) || 'Reel';
-			const { error } = await supabase
-				.from('content_plans')
-				.insert({
-					title,
-					why: postIt ? 'Checked in Grow · posts by itself' : 'Checked in Grow',
-					post_at: slot.toISOString(),
-					status: 'planned',
-					source: 'check',
-					scheduled_post_id: sp
-				});
+				(res?.line || caption || sharedName || file?.name || 'Reel')
+					.split('\n')[0]
+					.replace(/[👇🔥✨]+/gu, '')
+					.trim()
+					.slice(0, 120) || 'Reel';
+			const { error } = await supabase.from('content_plans').insert({
+				title,
+				why: postIt ? 'Checked in Grow · posts by itself' : 'Checked in Grow',
+				post_at: slot.toISOString(),
+				status: 'planned',
+				source: 'check',
+				scheduled_post_id: sp
+			});
 			if (error) throw error;
 			toast(postIt ? `Scheduled for ${slotText}. Miracle posts it to Instagram.` : `In your Calendar for ${slotText}`, 'cal');
 			goto('/studio/grow');
@@ -208,19 +260,28 @@
 <a class="back rv" href="/studio/grow"><Icon name="back" />Grow</a>
 <header class="ph rv">
 	<div>
-		<div class="eb">Before you post · 0–5s hook audit</div>
+		<div class="eb">Before you post · Works with Instagram Edits</div>
 		<h1>Check a <em>reel</em></h1>
-		<p>Miracle inspects your first 5 seconds across 3 frames, checks your opening hook, and gives exact fixes before you publish.</p>
+		<p>Share straight from Instagram Edits, drop a pre-export frame, or pick an exported video to audit your first 5 seconds.</p>
 	</div>
 </header>
 
 <div class="rc">
 	<section class="panel rc-pick rv" style="--i:1">
+		<!-- Source switcher -->
+		<div class="rc-modes" role="tablist" aria-label="How to load your reel">
+			<button class:on={mode === 'edits'} onclick={() => (mode = 'edits')} role="tab" aria-selected={mode === 'edits'}>Edits App</button>
+			<button class:on={mode === 'video'} onclick={() => (mode = 'video')} role="tab" aria-selected={mode === 'video'}>Video File</button>
+			<button class:on={mode === 'shot'} onclick={() => (mode = 'shot')} role="tab" aria-selected={mode === 'shot'}>Pre-Export</button>
+		</div>
+
 		{#if url}
 			<!-- svelte-ignore a11y_media_has_caption -->
 			<video bind:this={video} src={url} playsinline muted preload="auto" onloadeddata={grab} controls></video>
-			{#if frames.length > 1}
-				<div class="rc-strip" aria-label="First 5 seconds preview">
+		{:else if frames.length > 0}
+			<div class="rc-shared-ok">
+				<span class="rc-sh-badge"><Icon name="check" /><span>{sharedName || 'Loaded from Edits'}</span></span>
+				<div class="rc-strip" aria-label="Captured opening frames">
 					{#each frames as f (f.label)}
 						<figure>
 							<img src={f.data} alt="Frame at {f.label}" />
@@ -228,18 +289,65 @@
 						</figure>
 					{/each}
 				</div>
-			{/if}
+			</div>
+		{:else if mode === 'edits'}
+			<div class="rc-edits-guide">
+				<span class="rc-em-ic"><Icon name="share" /></span>
+				<b>Share straight from Instagram Edits</b>
+				<ol class="rc-steps">
+					<li>Finish your cut in <b>Edits</b> (or CapCut / VN / InShot)</li>
+					<li>Tap <b>Export → Share → Check Reel in Miracle</b></li>
+					<li>Miracle opens here with your 0–5s frames already loaded</li>
+				</ol>
+				<label class="btn primary rc-file">
+					<Icon name="film" />Or pick an Edits export now
+					<input type="file" accept="video/*" onchange={pickVideo} hidden />
+				</label>
+			</div>
+		{:else if mode === 'shot'}
+			<label class="rc-empty">
+				<span class="rc-em-ic"><Icon name="image" /></span>
+				<b>Check before exporting from Edits</b>
+				<small>Take a screenshot of frame 1 inside Edits and drop it here — no need to export the full video first.</small>
+				<span class="rc-tips"><i>0.0s hook</i><i>Covered text</i><i>Spoken intro</i></span>
+				<input type="file" accept="image/*" onchange={pickEditsScreenshot} hidden />
+			</label>
 		{:else}
 			<label class="rc-empty">
 				<span class="rc-em-ic"><Icon name="film" /></span>
-				<b>Tap to pick your reel</b>
-				<small>From your gallery. It stays on this phone until you schedule it.</small>
+				<b>Pick a video from Files or Gallery</b>
+				<small>Supports exports from Instagram Edits, CapCut, InShot, VN, or your camera roll.</small>
 				<span class="rc-tips"><i>0–5s frames</i><i>Spoken hook</i><i>Covered text</i><i>Pin comment</i></span>
-				<input type="file" accept="video/*" onchange={pick} hidden />
+				<input type="file" accept="video/*" onchange={pickVideo} hidden />
 			</label>
 		{/if}
-		{#if file}<label class="btn rc-file"><Icon name="film" />Pick another video<input type="file" accept="video/*" onchange={pick} hidden /></label>{/if}
-		{#if seconds}<small class="hint">{seconds}s long · {frames.length} opening frame{frames.length === 1 ? '' : 's'} captured</small>{/if}
+
+		{#if url && frames.length > 1}
+			<div class="rc-strip" aria-label="First 5 seconds preview">
+				{#each frames as f (f.label)}
+					<figure>
+						<img src={f.data} alt="Frame at {f.label}" />
+						<figcaption>{f.label}</figcaption>
+					</figure>
+				{/each}
+			</div>
+		{/if}
+
+		{#if hasReelReady}
+			<div class="rc-swap-row">
+				<label class="btn sm rc-file"><Icon name="film" />Pick video<input type="file" accept="video/*" onchange={pickVideo} hidden /></label>
+				<label class="btn sm rc-file"><Icon name="image" />Pick Edits frame<input type="file" accept="image/*" onchange={pickEditsScreenshot} hidden /></label>
+			</div>
+		{/if}
+
+		{#if seconds}
+			<small class="hint">{seconds}s long · {frames.length} opening frame{frames.length === 1 ? '' : 's'} captured</small>
+		{:else if mode === 'shot'}
+			<label class="f">
+				<span class="rc-eb">Reel length in seconds (optional)</span>
+				<input class="inp" type="number" min="3" max="180" bind:value={manualSeconds} placeholder="e.g. 24" />
+			</label>
+		{/if}
 
 		<label class="f">
 			<span class="rc-eb">Opening spoken line (optional)</span>
@@ -256,9 +364,9 @@
 			<textarea class="inp" rows="3" bind:value={caption} placeholder="What you'd write under it"></textarea>
 		</label>
 
-		<button class="btn primary" onclick={() => check()} disabled={!file || !!busy}>
+		<button class="btn primary" onclick={() => check()} disabled={!hasReelReady || !!busy}>
 			{#if busy === 'check'}<span class="spinner"></span>{:else}<Icon name="spark" />{/if}
-			{file ? 'Run 0–5s hook audit' : 'Pick a reel to check'}
+			{hasReelReady ? 'Run 0–5s hook audit' : 'Load a reel or Edits frame first'}
 		</button>
 	</section>
 
@@ -341,19 +449,19 @@
 
 			{#if slot}
 				<div class="rc-go">
-					{#if studio.ig?.connected}
+					{#if studio.ig?.connected && file}
 						<button class="btn primary" onclick={() => schedule(true)} disabled={!!busy}>
 							{#if busy === 'post'}<span class="spinner"></span>{:else}<Icon name="send" />{/if}Schedule for {slotText}
 						</button>
 					{/if}
 					<button class="btn" onclick={() => schedule(false)} disabled={!!busy}>
-						{#if busy === 'plan'}<span class="spinner"></span>{:else}<Icon name="cal" />{/if}Just add to Calendar
+						{#if busy === 'plan'}<span class="spinner"></span>{:else}<Icon name="cal" />{/if}Add to Calendar for {slotText}
 					</button>
 					<small class="hint">
 						{studio.ig?.connected
-							? bestSlot(studio.media)
+							? file
 								? 'Your suggested time from your own posts. Miracle posts it to Instagram for you.'
-								: 'A starter time while we gather enough posting data. Miracle posts it to Instagram for you.'
+								: 'Saved to your Calendar so you can post straight from Instagram Edits at your best time.'
 							: 'Connect Instagram to have Miracle post it for you.'}
 					</small>
 				</div>
@@ -373,6 +481,83 @@
 		display: grid;
 		gap: 12px;
 		padding: 20px;
+	}
+	.rc-modes {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: 4px;
+		padding: 4px;
+		border-radius: 12px;
+		background: var(--surface-2, var(--surface));
+		border: 1px solid var(--line);
+	}
+	.rc-modes button {
+		padding: 7px 6px;
+		border-radius: 8px;
+		border: 0;
+		background: transparent;
+		color: var(--ink-3);
+		font-size: 12px;
+		font-weight: 600;
+		cursor: pointer;
+	}
+	.rc-modes button.on {
+		background: var(--surface);
+		color: var(--ink);
+		box-shadow: inset 0 0 0 1px var(--line-strong);
+	}
+	.rc-edits-guide {
+		display: grid;
+		justify-items: center;
+		text-align: center;
+		gap: 10px;
+		padding: 22px 16px;
+		border-radius: 16px;
+		background:
+			radial-gradient(90% 60% at 50% 0%, color-mix(in oklab, var(--g1) 18%, transparent), transparent 70%),
+			var(--surface-2, var(--surface));
+		border: 1px solid var(--line-strong);
+	}
+	.rc-edits-guide b {
+		font: 400 22px/1.15 var(--f-serif, Georgia, serif);
+		color: var(--ink);
+	}
+	.rc-steps {
+		margin: 0;
+		padding: 0 0 0 18px;
+		text-align: left;
+		display: grid;
+		gap: 6px;
+		font-size: 13px;
+		line-height: 1.45;
+		color: var(--ink-2);
+	}
+	.rc-steps b {
+		font-family: inherit;
+		font-size: inherit;
+		font-weight: 600;
+		color: var(--ink);
+	}
+	.rc-shared-ok {
+		display: grid;
+		gap: 10px;
+		padding: 12px;
+		border-radius: 14px;
+		background: color-mix(in oklab, var(--ok) 7%, var(--surface-2));
+		border: 1px solid color-mix(in oklab, var(--ok) 35%, var(--line));
+	}
+	.rc-sh-badge {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		font-size: 12.5px;
+		font-weight: 600;
+		color: var(--ok);
+	}
+	.rc-swap-row {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 8px;
 	}
 	.rc-pick video,
 	.rc-empty {
@@ -432,8 +617,8 @@
 	.rc-em-ic {
 		display: grid;
 		place-items: center;
-		width: 64px;
-		height: 64px;
+		width: 58px;
+		height: 58px;
 		margin-bottom: 4px;
 		border-radius: 50%;
 		background: color-mix(in oklab, var(--g1) 16%, transparent);
@@ -441,8 +626,8 @@
 		box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--g1) 32%, transparent);
 	}
 	.rc-em-ic :global(.ic) {
-		width: 28px;
-		height: 28px;
+		width: 26px;
+		height: 26px;
 	}
 	.rc-tips {
 		display: flex;
@@ -593,7 +778,7 @@
 		}
 		.rc-empty {
 			aspect-ratio: auto;
-			min-height: 340px;
+			min-height: 300px;
 		}
 	}
 </style>
