@@ -1,6 +1,10 @@
-// Creator Peer Benchmarks & Comment Question Miner:
-// - Uses Instagram's official business_discovery Graph API to fetch public peer creator metrics & top posts.
-// - Scans the creator's own recent Reels' comments to surface repeated audience questions for Trend Radar.
+// Creator Peer Benchmarks, Comment Question Miner & Weekly Trend Radar Push:
+// - Resolves public Instagram handles via 3-tier lookup (works with Instagram Login without needing Facebook Login):
+//   1) Miracle's own synced ig_account/ig_media if the peer is on Miracle
+//   2) Instagram's public web_profile_info JSON + public profile OG metadata parser
+//   3) Clean manual-entry fallback if Instagram rate-limits the server IP
+// - Scans the creator's own recent Reels' comments for repeated audience questions.
+// - Runs every Monday 10:00 AM IST via cron to send proactive Trend Radar push nudges.
 import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2';
 import { admin, cronAllowed } from '../_shared/admin.ts';
 import { activeCreators, creatorOfCaller } from '../_shared/creators.ts';
@@ -23,6 +27,20 @@ type PeerPost = {
   timestamp: string;
 };
 
+type PeerData = {
+  username: string;
+  name: string;
+  profile_picture_url: string;
+  followers_count: number;
+  media_count: number;
+  avg_likes: number;
+  avg_comments: number;
+  engagement_rate: number;
+  posts_per_week: number;
+  top_posts: PeerPost[];
+  synced_at: string;
+};
+
 async function getIgCreds(db: SupabaseClient, creatorId: number) {
   const [tokRes, acctRes] = await Promise.all([
     db.from('ig_token').select('access_token, permissions').eq('id', creatorId).maybeSingle(),
@@ -35,45 +53,46 @@ async function getIgCreds(db: SupabaseClient, creatorId: number) {
   };
 }
 
-async function fetchPeer(token: string, igUserId: string, rawHandle: string) {
-  const handle = rawHandle.replace(/^@/, '').trim().toLowerCase();
-  if (!/^[a-z0-9._]{1,40}$/.test(handle)) {
-    throw new Error('Enter a valid Instagram handle (letters, numbers, dots, or underscores).');
-  }
-  const fields = `business_discovery.username(${handle}){username,name,profile_picture_url,followers_count,media_count,media.limit(12){id,caption,like_count,comments_count,media_type,permalink,timestamp}}`;
-  const u = new URL(`${GRAPH}/${igUserId || 'me'}`);
-  u.searchParams.set('fields', fields);
-  u.searchParams.set('access_token', token);
+function parseCompactCount(raw: string): number {
+  const s = raw.replace(/,/g, '').trim().toUpperCase();
+  const m = s.match(/^(\d+(?:\.\d+)?)\s*([KMB])?$/);
+  if (!m) return 0;
+  const n = Number(m[1]) || 0;
+  const mult = m[2] === 'M' ? 1e6 : m[2] === 'K' ? 1e3 : m[2] === 'B' ? 1e9 : 1;
+  return Math.round(n * mult);
+}
 
-  const res = await fetch(u);
-  const json = await res.json().catch(() => ({}));
-  if (!res.ok || json.error) {
-    const msg = json.error?.message ?? 'Could not fetch this Instagram account.';
-    if (/business_discovery|not found|invalid/i.test(msg)) {
-      throw new Error(`@${handle} must be a public Instagram Business or Creator account.`);
-    }
-    throw new Error(msg);
-  }
-  const bd = json.business_discovery;
-  if (!bd) throw new Error(`No public Creator/Business profile found for @${handle}.`);
+/** Tier 1: Check if this handle is already synced on Miracle. */
+async function lookupInMiracle(db: SupabaseClient, handle: string): Promise<PeerData | null> {
+  const { data: acct } = await db
+    .from('ig_account')
+    .select('id, username, name, profile_picture_url, followers, media_count, engagement_rate')
+    .ilike('username', handle)
+    .eq('connected', true)
+    .maybeSingle();
+  if (!acct) return null;
 
-  const followers = Number(bd.followers_count) || 0;
-  const mediaCount = Number(bd.media_count) || 0;
-  const rawMedia = Array.isArray(bd.media?.data) ? (bd.media.data as Record<string, unknown>[]) : [];
+  const { data: media } = await db
+    .from('ig_media')
+    .select('id, caption, likes, comments, media_type, permalink, posted_at')
+    .eq('creator_id', acct.id)
+    .order('posted_at', { ascending: false })
+    .limit(12);
 
-  const posts: PeerPost[] = rawMedia.map((m) => ({
-    id: String(m.id ?? ''),
+  const posts: PeerPost[] = (media ?? []).map((m) => ({
+    id: String(m.id),
     caption: String(m.caption ?? '').slice(0, 220),
-    likes: Number(m.like_count) || 0,
-    comments: Number(m.comments_count) || 0,
-    media_type: String(m.media_type ?? ''),
+    likes: Number(m.likes ?? 0),
+    comments: Number(m.comments ?? 0),
+    media_type: String(m.media_type ?? 'VIDEO'),
     permalink: String(m.permalink ?? ''),
-    timestamp: String(m.timestamp ?? ''),
+    timestamp: String(m.posted_at ?? ''),
   }));
 
+  const followers = Number(acct.followers ?? 0);
   const avgLikes = posts.length ? Math.round(posts.reduce((a, p) => a + p.likes, 0) / posts.length) : 0;
   const avgComments = posts.length ? Math.round(posts.reduce((a, p) => a + p.comments, 0) / posts.length) : 0;
-  const er = followers > 0 ? Number((((avgLikes + avgComments) / followers) * 100).toFixed(2)) : 0;
+  const er = Number(acct.engagement_rate ?? (followers > 0 ? (((avgLikes + avgComments) / followers) * 100).toFixed(2) : 0));
 
   let postsPerWeek = 0;
   if (posts.length >= 2) {
@@ -84,23 +103,136 @@ async function fetchPeer(token: string, igUserId: string, rawHandle: string) {
     }
   }
 
-  const topPosts = [...posts]
-    .sort((a, b) => b.likes + b.comments * 4 - (a.likes + a.comments * 4))
-    .slice(0, 3);
-
   return {
-    username: String(bd.username ?? handle),
-    name: String(bd.name ?? ''),
-    profile_picture_url: String(bd.profile_picture_url ?? ''),
+    username: String(acct.username || handle),
+    name: String(acct.name ?? ''),
+    profile_picture_url: String(acct.profile_picture_url ?? ''),
     followers_count: followers,
-    media_count: mediaCount,
+    media_count: Number(acct.media_count ?? posts.length),
     avg_likes: avgLikes,
     avg_comments: avgComments,
     engagement_rate: er,
     posts_per_week: postsPerWeek,
-    top_posts: topPosts,
+    top_posts: [...posts].sort((a, b) => b.likes + b.comments * 4 - (a.likes + a.comments * 4)).slice(0, 3),
     synced_at: new Date().toISOString(),
   };
+}
+
+/** Tier 2: Fetch public profile via Instagram web_profile_info or public OG metadata. */
+async function lookupPublicInstagram(handle: string): Promise<PeerData | null> {
+  const ua = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36';
+  try {
+    const res = await fetch(`https://www.instagram.com/api/v1/users/web_profile_info/?username=${encodeURIComponent(handle)}`, {
+      headers: {
+        'user-agent': ua,
+        'x-ig-app-id': '936619743392459',
+        accept: 'application/json',
+      },
+      signal: AbortSignal.timeout(7000),
+    });
+    if (res.ok) {
+      const json = await res.json().catch(() => null);
+      const u = json?.data?.user;
+      if (u && u.username) {
+        const followers = Number(u.edge_followed_by?.count ?? 0);
+        const mediaCount = Number(u.edge_owner_to_timeline_media?.count ?? 0);
+        const edges = Array.isArray(u.edge_owner_to_timeline_media?.edges) ? u.edge_owner_to_timeline_media.edges : [];
+        const posts: PeerPost[] = edges.slice(0, 12).map((e: Record<string, unknown>) => {
+          const n = (e.node ?? {}) as Record<string, unknown>;
+          const capEdges = ((n.edge_media_to_caption as { edges?: { node?: { text?: string } }[] })?.edges ?? []);
+          const cap = String(capEdges[0]?.node?.text ?? '');
+          const sc = String(n.shortcode ?? '');
+          return {
+            id: String(n.id ?? sc),
+            caption: cap.slice(0, 220),
+            likes: Number((n.edge_liked_by as { count?: number })?.count ?? (n.edge_media_preview_like as { count?: number })?.count ?? 0),
+            comments: Number((n.edge_media_to_comment as { count?: number })?.count ?? 0),
+            media_type: n.is_video ? 'VIDEO' : 'IMAGE',
+            permalink: sc ? `https://www.instagram.com/p/${sc}/` : `https://www.instagram.com/${handle}/`,
+            timestamp: n.taken_at_timestamp ? new Date(Number(n.taken_at_timestamp) * 1000).toISOString() : '',
+          };
+        });
+        const avgLikes = posts.length ? Math.round(posts.reduce((a, p) => a + p.likes, 0) / posts.length) : 0;
+        const avgComments = posts.length ? Math.round(posts.reduce((a, p) => a + p.comments, 0) / posts.length) : 0;
+        const er = followers > 0 ? Number((((avgLikes + avgComments) / followers) * 100).toFixed(2)) : 0;
+        let postsPerWeek = 0;
+        if (posts.length >= 2) {
+          const times = posts.map((p) => Date.parse(p.timestamp)).filter((t) => Number.isFinite(t)).sort((a, b) => b - a);
+          if (times.length >= 2) {
+            const spanDays = Math.max(1, (times[0] - times[times.length - 1]) / 864e5);
+            postsPerWeek = Number(Math.min(28, (times.length / spanDays) * 7).toFixed(1));
+          }
+        }
+        return {
+          username: String(u.username),
+          name: String(u.full_name ?? ''),
+          profile_picture_url: String(u.profile_pic_url_hd || u.profile_pic_url || ''),
+          followers_count: followers,
+          media_count: mediaCount,
+          avg_likes: avgLikes,
+          avg_comments: avgComments,
+          engagement_rate: er,
+          posts_per_week: postsPerWeek,
+          top_posts: [...posts].sort((a, b) => b.likes + b.comments * 4 - (a.likes + a.comments * 4)).slice(0, 3),
+          synced_at: new Date().toISOString(),
+        };
+      }
+    }
+  } catch {
+    /* fall through to HTML OG meta parser */
+  }
+
+  // Fallback: public profile HTML meta tags (<meta property="og:description" content="42K Followers, 512 Following, 184 Posts - ...">)
+  try {
+    const res = await fetch(`https://www.instagram.com/${encodeURIComponent(handle)}/`, {
+      headers: { 'user-agent': ua, accept: 'text/html' },
+      signal: AbortSignal.timeout(7000),
+    });
+    if (!res.ok) return null;
+    const html = await res.text();
+    const descMatch = html.match(/property="og:description"\s+content="([^"]+)"/i) || html.match(/name="description"\s+content="([^"]+)"/i);
+    if (!descMatch) return null;
+    const desc = descMatch[1];
+    const statsMatch = desc.match(/([\d.,]+[KMB]?)\s+Followers,\s*([\d.,]+[KMB]?)\s+Following,\s*([\d.,]+[KMB]?)\s+Posts/i);
+    if (!statsMatch) return null;
+    const followers = parseCompactCount(statsMatch[1]);
+    const mediaCount = parseCompactCount(statsMatch[3]);
+    const imgMatch = html.match(/property="og:image"\s+content="([^"]+)"/i);
+    const titleMatch = html.match(/property="og:title"\s+content="([^"(]+)/i);
+    return {
+      username: handle,
+      name: titleMatch ? titleMatch[1].trim() : '',
+      profile_picture_url: imgMatch ? imgMatch[1].replace(/&amp;/g, '&') : '',
+      followers_count: followers,
+      media_count: mediaCount,
+      avg_likes: 0,
+      avg_comments: 0,
+      engagement_rate: 0,
+      posts_per_week: 0,
+      top_posts: [],
+      synced_at: new Date().toISOString(),
+    };
+  } catch {
+    return null;
+  }
+}
+
+async function upsertPeer(db: SupabaseClient, creatorId: number, peer: PeerData) {
+  const { data: existing } = await db
+    .from('creator_benchmarks')
+    .select('id')
+    .eq('creator_id', creatorId)
+    .ilike('username', peer.username)
+    .maybeSingle();
+
+  if (existing) {
+    const upd = await db.from('creator_benchmarks').update(peer).eq('id', existing.id).select('*').single();
+    if (upd.error) throw new Error(upd.error.message);
+    return upd.data;
+  }
+  const ins = await db.from('creator_benchmarks').insert({ creator_id: creatorId, ...peer }).select('*').single();
+  if (ins.error) throw new Error(ins.error.message);
+  return ins.data;
 }
 
 async function mineAudienceQuestions(db: SupabaseClient, creatorId: number, token: string, perms: string) {
@@ -141,7 +273,7 @@ async function mineAudienceQuestions(db: SupabaseClient, creatorId: number, toke
         }
       }
     } catch {
-      /* continue to next post */
+      /* continue */
     }
   }
   return { questions: questions.slice(0, 20), needsPerm: false };
@@ -199,13 +331,11 @@ Deno.serve(async (req) => {
   const action = String(body.action ?? 'refresh');
 
   try {
-    const { token, perms, igUserId } = await getIgCreds(db, creatorId);
-    if (!token && action !== 'remove') {
-      return reply({ error: 'Connect Instagram first to fetch live peer benchmarks.' }, 400);
-    }
-
     if (action === 'add') {
-      const handle = String(body.username ?? '').trim();
+      const handle = String(body.username ?? '').replace(/^@/, '').trim().toLowerCase();
+      if (!/^[a-z0-9._]{1,40}$/.test(handle)) {
+        return reply({ error: 'Enter a valid Instagram handle (letters, numbers, dots, or underscores).' }, 400);
+      }
       const { count } = await db
         .from('creator_benchmarks')
         .select('id', { count: 'exact', head: true })
@@ -213,45 +343,59 @@ Deno.serve(async (req) => {
       if ((count ?? 0) >= 8) {
         return reply({ error: 'You can track up to 8 peer creators at a time.' }, 400);
       }
-      const peer = await fetchPeer(token, igUserId, handle);
-      const { data, error } = await db
-        .from('creator_benchmarks')
-        .upsert({ creator_id: creatorId, ...peer }, { onConflict: 'creator_id,username' })
-        .select('*')
-        .single();
-      if (error) {
-        // Fallback if unique index is expression-based lower(btrim(username))
-        const { data: existing } = await db
-          .from('creator_benchmarks')
-          .select('id')
-          .eq('creator_id', creatorId)
-          .ilike('username', peer.username)
-          .maybeSingle();
-        if (existing) {
-          const upd = await db.from('creator_benchmarks').update(peer).eq('id', existing.id).select('*').single();
-          if (upd.error) throw new Error(upd.error.message);
-          return reply({ peer: upd.data });
-        }
-        const ins = await db.from('creator_benchmarks').insert({ creator_id: creatorId, ...peer }).select('*').single();
-        if (ins.error) throw new Error(ins.error.message);
-        return reply({ peer: ins.data });
+
+      const peer = (await lookupInMiracle(db, handle)) ?? (await lookupPublicInstagram(handle));
+      if (!peer) {
+        // Return clean manual fallback trigger instead of a dead-end error!
+        return reply({ manual: true, username: handle });
       }
-      return reply({ peer: data });
+      const saved = await upsertPeer(db, creatorId, peer);
+      return reply({ peer: saved });
+    }
+
+    if (action === 'add_manual') {
+      const handle = String(body.username ?? '').replace(/^@/, '').trim().toLowerCase();
+      if (!/^[a-z0-9._]{1,40}$/.test(handle)) {
+        return reply({ error: 'Enter a valid Instagram handle.' }, 400);
+      }
+      const followers = Math.max(0, Math.round(Number(body.followers_count) || 0));
+      const avgLikes = Math.max(0, Math.round(Number(body.avg_likes) || 0));
+      const avgComments = Math.max(0, Math.round(Number(body.avg_comments) || 0));
+      const ppw = Math.max(0, Math.min(28, Number(Number(body.posts_per_week || 0).toFixed(1))));
+      const er = followers > 0 ? Number((((avgLikes + avgComments) / followers) * 100).toFixed(2)) : 0;
+      const topTopic = String(body.top_topic ?? '').trim();
+      const topPosts: PeerPost[] = topTopic
+        ? [{ id: 'manual-1', caption: topTopic.slice(0, 220), likes: avgLikes, comments: avgComments, media_type: 'VIDEO', permalink: `https://www.instagram.com/${handle}/`, timestamp: new Date().toISOString() }]
+        : [];
+      const saved = await upsertPeer(db, creatorId, {
+        username: handle,
+        name: String(body.name ?? '').trim(),
+        profile_picture_url: '',
+        followers_count: followers,
+        media_count: 0,
+        avg_likes: avgLikes,
+        avg_comments: avgComments,
+        engagement_rate: er,
+        posts_per_week: ppw,
+        top_posts: topPosts,
+        synced_at: new Date().toISOString(),
+      });
+      return reply({ peer: saved });
     }
 
     if (action === 'refresh') {
       const { data: rows } = await db
         .from('creator_benchmarks')
-        .select('id, username')
+        .select('*')
         .eq('creator_id', creatorId);
       const updated = [];
       for (const r of rows ?? []) {
-        try {
-          const peer = await fetchPeer(token, igUserId, r.username);
-          const { data } = await db.from('creator_benchmarks').update(peer).eq('id', r.id).select('*').single();
-          if (data) updated.push(data);
-        } catch {
-          /* skip individual failed peer */
+        const fresh = (await lookupInMiracle(db, r.username)) ?? (await lookupPublicInstagram(r.username));
+        if (fresh) {
+          const { data } = await db.from('creator_benchmarks').update(fresh).eq('id', r.id).select('*').single();
+          updated.push(data ?? r);
+        } else {
+          updated.push(r);
         }
       }
       return reply({ peers: updated });
@@ -265,6 +409,8 @@ Deno.serve(async (req) => {
     }
 
     if (action === 'mine_comments') {
+      const { token, perms } = await getIgCreds(db, creatorId);
+      if (!token) return reply({ questions: [], needsPerm: false });
       const out = await mineAudienceQuestions(db, creatorId, token, perms);
       return reply(out);
     }

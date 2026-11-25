@@ -35,10 +35,17 @@
 	let peers = $state<Peer[]>([]);
 	let handle = $state('');
 	let loading = $state(true);
-	let busy = $state<'' | 'add' | 'refresh'>('');
+	let busy = $state<'' | 'add' | 'refresh' | 'manual'>('');
+
+	// Quick manual fallback when Instagram blocks automated public profile reads
+	let manualFor = $state('');
+	let mFollowers = $state('');
+	let mLikes = $state('');
+	let mPpw = $state('4');
+	let mTopic = $state('');
+
 	const connected = $derived(!!studio.ig?.connected);
 
-	// Creator's own baseline metrics for side-by-side comparison
 	const myStats = $derived.by(() => {
 		const followers = Number(studio.ig?.followers ?? 0);
 		const recent = studio.media.slice(0, 12);
@@ -78,11 +85,48 @@
 		const clean = handle.replace(/^@/, '').trim();
 		if (!clean || busy) return;
 		busy = 'add';
+		manualFor = '';
 		try {
-			const res = (await invokeFn('creator-benchmarks', { action: 'add', username: clean })) as { peer?: Peer };
+			const res = (await invokeFn('creator-benchmarks', { action: 'add', username: clean })) as {
+				peer?: Peer;
+				manual?: boolean;
+				username?: string;
+			};
 			if (res?.peer) {
 				peers = [res.peer, ...peers.filter((x) => x.id !== res.peer!.id)];
 				handle = '';
+				toast(`Added @${res.peer.username} to your benchmarks`);
+			} else if (res?.manual) {
+				manualFor = res.username || clean;
+				toast(`Instagram limited auto-fetch for @${manualFor} — enter their quick numbers below`);
+			}
+		} catch (err) {
+			toast(errMessage(err), 'alert');
+		} finally {
+			busy = '';
+		}
+	}
+
+	async function saveManual(e: SubmitEvent) {
+		e.preventDefault();
+		if (!manualFor || busy) return;
+		busy = 'manual';
+		try {
+			const res = (await invokeFn('creator-benchmarks', {
+				action: 'add_manual',
+				username: manualFor,
+				followers_count: Number(mFollowers) || 0,
+				avg_likes: Number(mLikes) || 0,
+				posts_per_week: Number(mPpw) || 0,
+				top_topic: mTopic.trim()
+			})) as { peer?: Peer };
+			if (res?.peer) {
+				peers = [res.peer, ...peers.filter((x) => x.id !== res.peer!.id)];
+				handle = '';
+				manualFor = '';
+				mFollowers = '';
+				mLikes = '';
+				mTopic = '';
 				toast(`Added @${res.peer.username} to your benchmarks`);
 			}
 		} catch (err) {
@@ -134,7 +178,7 @@
 <div class="bm">
 	<header class="bm-head">
 		<div class="bm-top">
-			<h1>Peer Benchmarks</h1>
+			<p>Compare your engagement and posting pace against creators in your niche, and remix what is breaking out for them.</p>
 			{#if peers.length}
 				<button class="bm-sync" onclick={refreshAll} disabled={busy === 'refresh'}>
 					<Icon name="refresh" />
@@ -142,27 +186,43 @@
 				</button>
 			{/if}
 		</div>
-		<p>Compare your engagement and posting pace against creators in your niche, and remix what is breaking out for them.</p>
 	</header>
 
 	{#if !connected}
 		<section class="bm-card bm-empty">
 			<span class="bm-ic"><Icon name="link" /></span>
 			<b>Connect Instagram to benchmark peers</b>
-			<small>Miracle uses Instagram's official Business Discovery API to read public Creator and Business profiles.</small>
+			<small>Connect your Instagram account so Miracle can compare your metrics against niche peers.</small>
 			<a class="bm-neopop" href="/studio/settings?s=profile"><Icon name="link" />Connect Instagram</a>
 		</section>
 	{:else}
-		<!-- Add peer handle -->
 		<form class="bm-add" onsubmit={addPeer}>
 			<span class="bm-at">@</span>
-			<input type="text" bind:value={handle} placeholder="Add a creator handle (e.g. bengaluru_foodie)" autocomplete="off" />
+			<input type="text" bind:value={handle} placeholder="Add a creator handle (e.g. honee_buneee)" autocomplete="off" />
 			<button class="bm-neopop" type="submit" disabled={!handle.trim() || busy === 'add'}>
 				{busy === 'add' ? 'Adding…' : 'Track'}
 			</button>
 		</form>
 
-		<!-- You vs Peer Average -->
+		{#if manualFor}
+			<form class="bm-card bm-man" onsubmit={saveManual}>
+				<div class="bm-man-h">
+					<div>
+						<b>Quick-add @{manualFor}</b>
+						<small>Instagram rate-limited auto-fetch for this handle — enter their public numbers once to benchmark them.</small>
+					</div>
+					<button type="button" class="bm-del" aria-label="Cancel" onclick={() => (manualFor = '')}><Icon name="x" /></button>
+				</div>
+				<div class="bm-man-grid">
+					<label><span>Followers</span><input type="number" min="0" bind:value={mFollowers} placeholder="e.g. 45000" required /></label>
+					<label><span>Avg likes / post</span><input type="number" min="0" bind:value={mLikes} placeholder="e.g. 1800" required /></label>
+					<label><span>Posts / week</span><input type="number" min="0" max="28" step="0.5" bind:value={mPpw} placeholder="4" /></label>
+				</div>
+				<label class="bm-man-f"><span>Their breakout Reel topic (optional)</span><input type="text" bind:value={mTopic} placeholder="e.g. Indiranagar thrift haul under ₹1k" /></label>
+				<button class="bm-neopop" type="submit" disabled={busy === 'manual'}>{busy === 'manual' ? 'Saving…' : `Save @${manualFor}`}</button>
+			</form>
+		{/if}
+
 		{#if peerAvg}
 			<section class="bm-vs">
 				<div class="bm-stat">
@@ -185,13 +245,13 @@
 
 		{#if loading}
 			<div class="bm-empty"><span class="ring"><span></span></span></div>
-		{:else if !peers.length}
+		{:else if !peers.length && !manualFor}
 			<section class="bm-card bm-empty">
 				<span class="bm-ic"><Icon name="users" /></span>
 				<b>Track 3–5 creators in your niche</b>
 				<small>Add public Creator or Business handles above to see how often they post, their engagement rate, and their top-performing Reels.</small>
 			</section>
-		{:else}
+		{:else if peers.length}
 			<div class="bm-list">
 				{#each peers as p (p.id)}
 					<article class="bm-card">
@@ -251,19 +311,12 @@
 	}
 	.bm-top {
 		display: flex;
-		align-items: center;
+		align-items: flex-start;
 		justify-content: space-between;
 		gap: 10px;
 	}
-	.bm-head h1 {
-		font-family: var(--f-serif, Georgia, serif);
-		font-weight: 400;
-		font-size: 30px;
-		line-height: 1.08;
-		margin: 0;
-	}
 	.bm-head p {
-		margin: 5px 0 0;
+		margin: 0;
 		font-size: 13.5px;
 		color: var(--ink-2);
 		line-height: 1.45;
@@ -280,6 +333,7 @@
 		font-size: 12.5px;
 		font-weight: 600;
 		cursor: pointer;
+		flex-shrink: 0;
 	}
 	.bm-add {
 		display: flex;
@@ -326,6 +380,60 @@
 	.bm-neopop:disabled {
 		opacity: 0.55;
 		cursor: default;
+	}
+	.bm-man {
+		border-color: color-mix(in oklab, var(--g1) 42%, var(--line));
+	}
+	.bm-man-h {
+		display: flex;
+		align-items: flex-start;
+		justify-content: space-between;
+		gap: 8px;
+	}
+	.bm-man-h b {
+		display: block;
+		font-size: 15px;
+	}
+	.bm-man-h small {
+		display: block;
+		font-size: 12px;
+		color: var(--ink-3);
+		margin-top: 2px;
+		line-height: 1.4;
+	}
+	.bm-man-grid {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: 8px;
+	}
+	@media (max-width: 520px) {
+		.bm-man-grid {
+			grid-template-columns: 1fr;
+		}
+	}
+	.bm-man-grid label,
+	.bm-man-f {
+		display: grid;
+		gap: 4px;
+	}
+	.bm-man-grid span,
+	.bm-man-f span {
+		font-size: 10.5px;
+		font-weight: 700;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		color: var(--ink-3);
+	}
+	.bm-man-grid input,
+	.bm-man-f input {
+		width: 100%;
+		padding: 9px 11px;
+		border-radius: 10px;
+		border: 1px solid var(--line-strong);
+		background: var(--surface-2);
+		color: var(--ink);
+		font: inherit;
+		font-size: 14px;
 	}
 	.bm-vs {
 		display: grid;
