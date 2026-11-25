@@ -34,8 +34,12 @@
 
 	type ParsedShot = { time: string; visual: string; spoken: string };
 
+	function stripQuotes(str: string): string {
+		return str.trim().replace(/^["“”'‘’]+|["“”'‘’]+$/g, '').trim();
+	}
+
 	// Parses strings like: `0-3s · Creator holding a gift hamper (say: "I'm so excited...")`
-	// into structured timecode, visual shot direction, and spoken line while keeping plain notes intact.
+	// into structured timecode, visual direction, and clean spoken dialogue without duplicate quotes.
 	function parseShot(raw: string): ParsedShot {
 		let rest = raw.trim();
 		let time = '';
@@ -47,14 +51,14 @@
 			rest = rest.slice(timeMatch[0].length).trim();
 		}
 
-		const sayParen = rest.match(/\s*\(\s*say\s*:\s*["“]?([\s\S]*?)["”]?\s*\)\s*$/i);
+		const sayParen = rest.match(/\s*\(\s*say\s*:\s*([\s\S]*?)\)\s*$/i);
 		if (sayParen) {
-			spoken = sayParen[1].trim();
+			spoken = stripQuotes(sayParen[1]);
 			rest = rest.slice(0, sayParen.index).trim();
 		} else {
-			const sayInline = rest.match(/\s*[·—-]\s*say\s*:\s*["“]?([\s\S]*?)["”]?\s*$/i);
+			const sayInline = rest.match(/\s*[·—-]\s*say\s*:\s*([\s\S]*?)$/i);
 			if (sayInline) {
-				spoken = sayInline[1].trim();
+				spoken = stripQuotes(sayInline[1]);
 				rest = rest.slice(0, sayInline.index).trim();
 			}
 		}
@@ -94,67 +98,64 @@
 	</div>
 
 	{#if open}
-		<div class="ct-list">
+		<div class="ct-list sb-wrap">
 			{#if !shots.length}
-				<div class="ct-empty">
+				<div class="sb-empty">
 					<p class="hint">Make a storyboard shot list from the brief: every shot for {delivText(c.deliverables)}, what to say, and what to frame.</p>
 					<button class="btn sm grad" onclick={() => save(makeShotList(c))}><Icon name="spark" />Make from the brief</button>
 				</div>
 			{:else}
-				<div class="ct-prog-wrap">
-					<div class="ct-prog-hd">
-						<span class="ct-prog-lbl">Shoot storyboard</span>
-						<span class="ct-prog-stat">{doneShots} of {shots.length} filmed · {pct}%</span>
+				<div class="sb-prog-wrap">
+					<div class="sb-prog-hd">
+						<span class="sb-prog-lbl">Shoot storyboard</span>
+						<span class="sb-prog-stat">{doneShots} / {shots.length} filmed</span>
 					</div>
-					<div class="ct-prog" aria-hidden="true"><i style="width:{pct}%"></i></div>
+					<div class="sb-prog" aria-hidden="true"><i style="width:{pct}%"></i></div>
 				</div>
 
-				<div class="shot-deck">
+				<div class="sb-deck">
 					{#each shots as s, i (i)}
 						{@const ps = parseShot(s.t)}
-						<div class="shot-card" class:done={s.done}>
-							<label class="shot-check" aria-label="Mark shot {i + 1} filmed">
-								<input
-									type="checkbox"
-									checked={s.done}
-									onchange={(e) => save(shots.map((x, j) => (j === i ? { ...x, done: (e.currentTarget as HTMLInputElement).checked } : x)))}
-								/>
-							</label>
+						<article class="sb-card" class:done={s.done}>
+							<header class="sb-top">
+								<label class="sb-check" aria-label="Mark shot {i + 1} filmed">
+									<input
+										type="checkbox"
+										checked={s.done}
+										onchange={(e) => save(shots.map((x, j) => (j === i ? { ...x, done: (e.currentTarget as HTMLInputElement).checked } : x)))}
+									/>
+								</label>
+								<span class="sb-num">Shot {String(i + 1).padStart(2, '0')}</span>
+								{#if ps.time}<span class="sb-time">{ps.time}</span>{/if}
+								<button
+									class="sb-x"
+									type="button"
+									aria-label="Remove shot"
+									onclick={() => save(shots.filter((_, j) => j !== i))}
+								>
+									<Icon name="x" />
+								</button>
+							</header>
 
-							<div class="shot-body">
-								<div class="shot-top">
-									<span class="shot-num">SHOT {String(i + 1).padStart(2, '0')}</span>
-									{#if ps.time}<span class="shot-time">{ps.time}</span>{/if}
-									<button
-										class="shot-x"
-										type="button"
-										aria-label="Remove shot"
-										onclick={() => save(shots.filter((_, j) => j !== i))}
-									>
-										<Icon name="x" />
-									</button>
+							<p class="sb-vis">{ps.visual}</p>
+
+							{#if ps.spoken}
+								<div class="sb-say">
+									<span class="sb-say-ic" aria-hidden="true"><Icon name="mic" /></span>
+									<span class="sb-say-txt">“{ps.spoken}”</span>
 								</div>
-
-								<p class="shot-vis">{ps.visual}</p>
-
-								{#if ps.spoken}
-									<div class="shot-say">
-										<span class="shot-say-ic"><Icon name="mic" /></span>
-										<span>“{ps.spoken}”</span>
-									</div>
-								{/if}
-							</div>
-						</div>
+							{/if}
+						</article>
 					{/each}
 				</div>
 
-				<form class="shot-add" onsubmit={addShot}>
+				<form class="sb-add" onsubmit={addShot}>
 					<label class="sr" for="shot-add-{c.id}">Add a shot or note</label>
 					<input id="shot-add-{c.id}" placeholder="Add a shot (e.g. 22–26s · Close-up product)" bind:value={adding} />
 					<button type="submit" disabled={!adding.trim()} aria-label="Add"><Icon name="plus" /></button>
 				</form>
 
-				<div class="ct-links">
+				<div class="sb-links">
 					<button type="button" onclick={() => copyText(`${c.brand.name} shot list\n` + shots.map((x) => `${x.done ? '☑' : '☐'} ${x.t}`).join('\n'), 'Shot list copied')}><Icon name="copy" />Copy list</button>
 					<button type="button" onclick={async () => (await ask({ title: 'Start the shot list over?', body: 'A fresh list is made from the brief. Your ticks and edits are replaced.', ok: 'Start over', danger: true })) && save(makeShotList(c))}><Icon name="refresh" />Start over</button>
 				</div>
@@ -181,13 +182,18 @@
 </div>
 
 <style>
-	.ct-list {
+	/* Remove outer nested box from app.css so cards breathe cleanly inside the collab card */
+	.ct-list.sb-wrap {
 		display: flex;
 		flex-direction: column;
 		gap: 12px;
-		padding-top: 6px;
+		margin-top: 14px;
+		padding: 14px 0 2px;
+		border-radius: 0;
+		background: transparent;
+		border-top: 1px solid var(--line);
 	}
-	.ct-empty {
+	.sb-empty {
 		display: grid;
 		gap: 10px;
 		justify-items: start;
@@ -196,37 +202,37 @@
 		border: 1px dashed var(--line-strong);
 		background: var(--surface-2, var(--surface));
 	}
-	.ct-prog-wrap {
+	.sb-prog-wrap {
 		display: grid;
-		gap: 6px;
+		gap: 7px;
 	}
-	.ct-prog-hd {
+	.sb-prog-hd {
 		display: flex;
-		align-items: baseline;
+		align-items: center;
 		justify-content: space-between;
 		gap: 8px;
 	}
-	.ct-prog-lbl {
+	.sb-prog-lbl {
 		font-size: 10.5px;
 		font-weight: 700;
-		letter-spacing: 0.12em;
+		letter-spacing: 0.14em;
 		text-transform: uppercase;
 		color: var(--ink-3);
 	}
-	.ct-prog-stat {
+	.sb-prog-stat {
 		font-family: var(--f-mono, ui-monospace, monospace);
 		font-size: 11.5px;
 		font-weight: 600;
 		color: var(--ink-2);
 		font-variant-numeric: tabular-nums;
 	}
-	.ct-prog {
-		height: 5px;
+	.sb-prog {
+		height: 4px;
 		border-radius: 99px;
 		background: var(--line);
 		overflow: hidden;
 	}
-	.ct-prog i {
+	.sb-prog i {
 		display: block;
 		height: 100%;
 		border-radius: inherit;
@@ -234,37 +240,40 @@
 		transition: width 0.35s ease;
 	}
 
-	.shot-deck {
+	.sb-deck {
 		display: grid;
 		gap: 10px;
 	}
-	.shot-card {
+	.sb-card {
 		display: grid;
-		grid-template-columns: 26px minmax(0, 1fr);
-		gap: 11px;
-		align-items: start;
-		padding: 12px 13px;
-		border-radius: 15px;
+		gap: 9px;
+		padding: 13px 14px;
+		border-radius: 16px;
 		border: 1px solid var(--line);
-		background: linear-gradient(180deg, color-mix(in oklab, var(--surface-2) 92%, var(--g1) 4%), var(--surface));
+		background: var(--surface-2, #1e1820);
 		transition: border-color 0.2s, opacity 0.2s, background 0.2s;
 	}
-	.shot-card.done {
+	.sb-card.done {
 		border-color: color-mix(in oklab, var(--ok) 35%, var(--line));
 		background: color-mix(in oklab, var(--ok) 5%, var(--surface));
-		opacity: 0.72;
+		opacity: 0.68;
 	}
-	.shot-check {
+
+	.sb-top {
+		display: flex;
+		align-items: center;
+		gap: 9px;
+	}
+	.sb-check {
 		display: grid;
 		place-items: center;
-		padding-top: 2px;
 		cursor: pointer;
 	}
-	.shot-check input {
+	.sb-check input {
 		appearance: none;
 		-webkit-appearance: none;
-		width: 22px;
-		height: 22px;
+		width: 20px;
+		height: 20px;
 		margin: 0;
 		border: 1.5px solid var(--line-strong);
 		border-radius: 50%;
@@ -274,43 +283,34 @@
 		cursor: pointer;
 		transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
 	}
-	.shot-check input:checked {
+	.sb-check input:checked {
 		border-color: var(--ok);
 		background: var(--ok);
-		box-shadow: 0 0 12px color-mix(in oklab, var(--ok) 45%, transparent);
+		box-shadow: 0 0 10px color-mix(in oklab, var(--ok) 45%, transparent);
 	}
-	.shot-check input:checked::after {
+	.sb-check input:checked::after {
 		content: '';
-		width: 9px;
-		height: 5px;
+		width: 8px;
+		height: 4.5px;
 		margin-top: -2px;
 		border-left: 2px solid var(--bg);
 		border-bottom: 2px solid var(--bg);
 		transform: rotate(-45deg);
 	}
-	.shot-check input:focus-visible {
+	.sb-check input:focus-visible {
 		outline: 2px solid var(--accent);
 		outline-offset: 2px;
 	}
 
-	.shot-body {
-		min-width: 0;
-		display: grid;
-		gap: 7px;
-	}
-	.shot-top {
-		display: flex;
-		align-items: center;
-		gap: 7px;
-	}
-	.shot-num {
+	.sb-num {
 		font-family: var(--f-mono, ui-monospace, monospace);
-		font-size: 10px;
+		font-size: 11px;
 		font-weight: 700;
-		letter-spacing: 0.1em;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
 		color: var(--ink-3);
 	}
-	.shot-time {
+	.sb-time {
 		font-family: var(--f-mono, ui-monospace, monospace);
 		font-size: 11px;
 		font-weight: 700;
@@ -318,9 +318,9 @@
 		border-radius: 99px;
 		color: var(--g1);
 		background: color-mix(in oklab, var(--g1) 14%, var(--surface));
-		border: 1px solid color-mix(in oklab, var(--g1) 34%, var(--line));
+		border: 1px solid color-mix(in oklab, var(--g1) 32%, var(--line));
 	}
-	.shot-x {
+	.sb-x {
 		margin-left: auto;
 		width: 26px;
 		height: 26px;
@@ -331,54 +331,57 @@
 		border-radius: 50%;
 		background: transparent;
 		color: var(--ink-3);
-		opacity: 0.55;
+		opacity: 0.5;
 		cursor: pointer;
 	}
-	.shot-x:hover {
+	.sb-x:hover {
 		opacity: 1;
-		background: var(--surface-2);
+		background: var(--surface);
 	}
-	.shot-x :global(.ic) {
+	.sb-x :global(.ic) {
 		width: 13px;
 		height: 13px;
 	}
 
-	.shot-vis {
+	.sb-vis {
 		margin: 0;
-		font-size: 14.5px;
+		font-size: 15px;
 		font-weight: 600;
-		line-height: 1.4;
+		line-height: 1.42;
 		color: var(--ink);
 		overflow-wrap: anywhere;
 	}
-	.shot-card.done .shot-vis {
+	.sb-card.done .sb-vis {
 		color: var(--ink-3);
 		text-decoration: line-through;
 	}
 
-	.shot-say {
+	/* Editorial left-accented voiceover line (no heavy nested rounded box) */
+	.sb-say {
 		display: flex;
 		align-items: flex-start;
 		gap: 8px;
-		padding: 8px 10px;
-		border-radius: 10px;
-		background: color-mix(in oklab, var(--g2) 8%, var(--surface-2));
-		border: 1px solid color-mix(in oklab, var(--g2) 24%, var(--line));
-		font-size: 13px;
-		line-height: 1.45;
-		color: var(--ink-2);
+		padding: 6px 0 6px 11px;
+		border-left: 2px solid var(--g2);
+		background: linear-gradient(90deg, color-mix(in oklab, var(--g2) 8%, transparent), transparent 85%);
+		border-radius: 0 8px 8px 0;
 	}
-	.shot-say-ic {
+	.sb-say-ic {
 		color: var(--g2);
 		padding-top: 2px;
 		flex-shrink: 0;
 	}
-	.shot-say-ic :global(.ic) {
+	.sb-say-ic :global(.ic) {
 		width: 14px;
 		height: 14px;
 	}
+	.sb-say-txt {
+		font-size: 13.5px;
+		line-height: 1.48;
+		color: var(--ink-2);
+	}
 
-	.shot-add {
+	.sb-add {
 		display: flex;
 		align-items: center;
 		gap: 8px;
@@ -387,10 +390,10 @@
 		border-radius: 12px;
 		background: var(--surface-2);
 	}
-	.shot-add:focus-within {
+	.sb-add:focus-within {
 		border-color: var(--g1);
 	}
-	.shot-add input {
+	.sb-add input {
 		flex: 1;
 		min-width: 0;
 		height: 36px;
@@ -402,10 +405,10 @@
 		font: inherit;
 		font-size: 14px;
 	}
-	.shot-add input::placeholder {
+	.sb-add input::placeholder {
 		color: var(--ink-3);
 	}
-	.shot-add button {
+	.sb-add button {
 		flex: none;
 		width: 34px;
 		height: 34px;
@@ -419,21 +422,21 @@
 		cursor: pointer;
 		transition: opacity 0.2s;
 	}
-	.shot-add button:disabled {
+	.sb-add button:disabled {
 		opacity: 0.25;
 		cursor: default;
 	}
-	.shot-add button :global(.ic) {
+	.sb-add button :global(.ic) {
 		width: 17px;
 		height: 17px;
 	}
 
-	.ct-links {
+	.sb-links {
 		display: flex;
 		flex-wrap: wrap;
 		gap: 8px;
 	}
-	.ct-links button {
+	.sb-links button {
 		display: inline-flex;
 		align-items: center;
 		gap: 6px;
@@ -447,11 +450,11 @@
 		font-weight: 600;
 		cursor: pointer;
 	}
-	.ct-links button:hover {
+	.sb-links button:hover {
 		color: var(--ink);
 		border-color: var(--ink-3);
 	}
-	.ct-links button :global(.ic) {
+	.sb-links button :global(.ic) {
 		width: 14px;
 		height: 14px;
 	}
