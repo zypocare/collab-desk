@@ -17,6 +17,11 @@
 	const slot = $derived(bestSlot(studio.media));
 	const topList = $derived(topReels(studio.media, 3));
 	const reel = $derived(topList[0]);
+	const reelCollab = $derived(
+		reel
+			? studio.collabs.find((c) => c.posts.some((p) => p.media.id === reel.id || (reel.permalink && p.media.permalink === reel.permalink)))
+			: undefined
+	);
 	const goal = $derived(studio.settings?.monthly_goal || 0);
 	const goalPct = $derived(goal ? Math.min(100, Math.round((received / goal) * 100)) : 0);
 	const activeCollabs = $derived(studio.collabs.filter(isActive));
@@ -125,9 +130,18 @@
 			heroNumeric: reel ? (reel.views || reel.reach || 0) : undefined,
 			heroFormat: 'compact',
 			heroSub: reel ? (reel.views ? 'Views on your #1 Reel' : 'Accounts reached') : undefined,
-			body: reel?.caption
-				? reel.caption.slice(0, 110) + (reel.caption.length > 110 ? '…' : '')
+			body: reel
+				? ''
 				: 'Your highest-performing reel appears here once Instagram shares its numbers.',
+			media: reel
+				? {
+						thumbnail: reel.thumbnail_url || undefined,
+						permalink: reel.permalink || undefined,
+						caption: reel.caption || 'Instagram Reel',
+						postedAt: reel.posted_at ? `Posted ${fmt(reel.posted_at.slice(0, 10))}` : undefined,
+						badge: reelCollab ? `Collab · ${reelCollab.brand.name}` : 'Instagram Reel'
+					}
+				: undefined,
 			stats: reel
 				? [
 						{ label: 'Reach', value: compact(reel.reach ?? 0) },

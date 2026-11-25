@@ -1,8 +1,9 @@
 // Creator Peer Benchmarks, Comment Question Miner & Weekly Trend Radar Push:
-// - Resolves public Instagram handles via 3-tier lookup (works with Instagram Login without needing Facebook Login):
+// - 100% automated 4-tier peer lookup (zero manual entry):
 //   1) Miracle's own synced ig_account/ig_media if the peer is on Miracle
-//   2) Instagram's public web_profile_info JSON + public profile OG metadata parser
-//   3) Clean manual-entry fallback if Instagram rate-limits the server IP
+//   2) Official Meta Graph business_discovery (if META_BUSINESS_TOKEN + META_IG_BUSINESS_ID secrets exist)
+//   3) Instagram's public web_profile_info JSON + public profile OG metadata parser
+//   4) Automated Gemini + Google Search grounding via Miracle's Cloudflare Worker (/api/ai/peerlookup)
 // - Scans the creator's own recent Reels' comments for repeated audience questions.
 // - Runs every Monday 10:00 AM IST via cron to send proactive Trend Radar push nudges.
 import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2';
@@ -11,6 +12,9 @@ import { activeCreators, creatorOfCaller } from '../_shared/creators.ts';
 import { pushToCreator } from '../_shared/push.ts';
 
 const GRAPH = 'https://graph.instagram.com';
+const FB_GRAPH = 'https://graph.facebook.com/v21.0';
+const DEFAULT_AI_SITE = 'https://app.miracleapp.live';
+
 const cors = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-creator',
@@ -40,6 +44,10 @@ type PeerData = {
   top_posts: PeerPost[];
   synced_at: string;
 };
+
+type ResolveOutcome =
+  | { ok: true; peer: PeerData; source: string }
+  | { ok: false; suggested_handle?: string; error: string };
 
 async function getIgCreds(db: SupabaseClient, creatorId: number) {
   const [tokRes, acctRes] = await Promise.all([
@@ -118,7 +126,62 @@ async function lookupInMiracle(db: SupabaseClient, handle: string): Promise<Peer
   };
 }
 
-/** Tier 2: Fetch public profile via Instagram web_profile_info or public OG metadata. */
+/** Tier 2: Official Meta Graph business_discovery (when META_BUSINESS_TOKEN & META_IG_BUSINESS_ID are configured). */
+async function lookupMetaBusinessDiscovery(handle: string): Promise<PeerData | null> {
+  const token = (Deno.env.get('META_BUSINESS_TOKEN') ?? '').trim();
+  const igBizId = (Deno.env.get('META_IG_BUSINESS_ID') ?? '').trim();
+  if (!token || !igBizId) return null;
+  try {
+    const fields = `business_discovery.username(${handle}){username,name,profile_picture_url,followers_count,media_count,media.limit(12){id,caption,like_count,comments_count,media_type,permalink,timestamp}}`;
+    const u = new URL(`${FB_GRAPH}/${igBizId}`);
+    u.searchParams.set('fields', fields);
+    u.searchParams.set('access_token', token);
+    const res = await fetch(u, { signal: AbortSignal.timeout(8000) });
+    if (!res.ok) return null;
+    const json = await res.json().catch(() => null);
+    const bd = json?.business_discovery;
+    if (!bd?.username) return null;
+    const rawMedia = Array.isArray(bd.media?.data) ? (bd.media.data as Record<string, unknown>[]) : [];
+    const posts: PeerPost[] = rawMedia.map((m) => ({
+      id: String(m.id ?? ''),
+      caption: String(m.caption ?? '').slice(0, 220),
+      likes: Number(m.like_count ?? 0),
+      comments: Number(m.comments_count ?? 0),
+      media_type: String(m.media_type ?? 'VIDEO'),
+      permalink: String(m.permalink ?? `https://www.instagram.com/${handle}/`),
+      timestamp: String(m.timestamp ?? ''),
+    }));
+    const followers = Number(bd.followers_count ?? 0);
+    const avgLikes = posts.length ? Math.round(posts.reduce((a, p) => a + p.likes, 0) / posts.length) : 0;
+    const avgComments = posts.length ? Math.round(posts.reduce((a, p) => a + p.comments, 0) / posts.length) : 0;
+    const er = followers > 0 ? Number((((avgLikes + avgComments) / followers) * 100).toFixed(2)) : 0;
+    let postsPerWeek = 0;
+    if (posts.length >= 2) {
+      const times = posts.map((p) => Date.parse(p.timestamp)).filter((t) => Number.isFinite(t)).sort((a, b) => b - a);
+      if (times.length >= 2) {
+        const spanDays = Math.max(1, (times[0] - times[times.length - 1]) / 864e5);
+        postsPerWeek = Number(Math.min(28, (times.length / spanDays) * 7).toFixed(1));
+      }
+    }
+    return {
+      username: String(bd.username),
+      name: String(bd.name ?? ''),
+      profile_picture_url: String(bd.profile_picture_url ?? ''),
+      followers_count: followers,
+      media_count: Number(bd.media_count ?? posts.length),
+      avg_likes: avgLikes,
+      avg_comments: avgComments,
+      engagement_rate: er,
+      posts_per_week: postsPerWeek,
+      top_posts: [...posts].sort((a, b) => b.likes + b.comments * 4 - (a.likes + a.comments * 4)).slice(0, 3),
+      synced_at: new Date().toISOString(),
+    };
+  } catch {
+    return null;
+  }
+}
+
+/** Tier 3: Fetch public profile via Instagram web_profile_info or public OG metadata. */
 async function lookupPublicInstagram(handle: string): Promise<PeerData | null> {
   const ua = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36';
   try {
@@ -128,7 +191,7 @@ async function lookupPublicInstagram(handle: string): Promise<PeerData | null> {
         'x-ig-app-id': '936619743392459',
         accept: 'application/json',
       },
-      signal: AbortSignal.timeout(7000),
+      signal: AbortSignal.timeout(6000),
     });
     if (res.ok) {
       const json = await res.json().catch(() => null);
@@ -179,14 +242,13 @@ async function lookupPublicInstagram(handle: string): Promise<PeerData | null> {
       }
     }
   } catch {
-    /* fall through to HTML OG meta parser */
+    /* fall through */
   }
 
-  // Fallback: public profile HTML meta tags (<meta property="og:description" content="42K Followers, 512 Following, 184 Posts - ...">)
   try {
     const res = await fetch(`https://www.instagram.com/${encodeURIComponent(handle)}/`, {
       headers: { 'user-agent': ua, accept: 'text/html' },
-      signal: AbortSignal.timeout(7000),
+      signal: AbortSignal.timeout(6000),
     });
     if (!res.ok) return null;
     const html = await res.text();
@@ -215,6 +277,82 @@ async function lookupPublicInstagram(handle: string): Promise<PeerData | null> {
   } catch {
     return null;
   }
+}
+
+/** Tier 4: Automated Google Search Grounding via Miracle's Cloudflare Worker (/api/ai/peerlookup). */
+async function lookupViaSearchWorker(db: SupabaseClient, handle: string, site: string): Promise<ResolveOutcome> {
+  const ticket = crypto.randomUUID() + crypto.randomUUID();
+  const { error: tErr } = await db.from('ai_tickets').insert({ token: ticket, kind: 'peerlookup', creator_id: null });
+  if (tErr) {
+    return { ok: false, error: `Could not start automated lookup for @${handle}.` };
+  }
+  try {
+    const res = await fetch(`${site.replace(/\/$/, '')}/api/ai/peerlookup`, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-ai-ticket': ticket,
+        apikey: Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      },
+      body: JSON.stringify({ username: handle }),
+      signal: AbortSignal.timeout(25_000),
+    });
+    const j = (await res.json().catch(() => null)) as {
+      found?: boolean;
+      suggested_handle?: string;
+      peer?: PeerData;
+      error?: string;
+    } | null;
+    if (res.ok && j?.found && j.peer) {
+      return { ok: true, peer: j.peer, source: 'search' };
+    }
+    const suggested = String(j?.suggested_handle ?? '').trim().toLowerCase();
+    if (suggested && suggested !== handle) {
+      return {
+        ok: false,
+        suggested_handle: suggested,
+        error: `Couldn't find public Instagram profile @${handle}. Did you mean @${suggested}?`,
+      };
+    }
+    return {
+      ok: false,
+      error: `Couldn't find a public Instagram profile for @${handle}. Double-check the spelling or make sure the account is public.`,
+    };
+  } catch {
+    return { ok: false, error: `Lookup timed out for @${handle}. Please try again in a moment.` };
+  }
+}
+
+async function resolvePeerAutomated(db: SupabaseClient, handle: string, site: string): Promise<ResolveOutcome> {
+  const fromMiracle = await lookupInMiracle(db, handle);
+  if (fromMiracle) return { ok: true, peer: fromMiracle, source: 'miracle' };
+
+  const fromMeta = await lookupMetaBusinessDiscovery(handle);
+  if (fromMeta) return { ok: true, peer: fromMeta, source: 'meta' };
+
+  const fromPublic = await lookupPublicInstagram(handle);
+  if (fromPublic && fromPublic.followers_count > 0) {
+    // If OG HTML only gave followers/posts without engagement/Reels, enrich via search worker when possible.
+    if (fromPublic.engagement_rate === 0 && fromPublic.top_posts.length === 0) {
+      const enriched = await lookupViaSearchWorker(db, handle, site);
+      if (enriched.ok) {
+        return {
+          ok: true,
+          source: 'public+search',
+          peer: {
+            ...enriched.peer,
+            profile_picture_url: fromPublic.profile_picture_url || enriched.peer.profile_picture_url,
+            followers_count: fromPublic.followers_count || enriched.peer.followers_count,
+            media_count: fromPublic.media_count || enriched.peer.media_count,
+            name: fromPublic.name || enriched.peer.name,
+          },
+        };
+      }
+    }
+    return { ok: true, peer: fromPublic, source: 'public' };
+  }
+
+  return await lookupViaSearchWorker(db, handle, site);
 }
 
 async function upsertPeer(db: SupabaseClient, creatorId: number, peer: PeerData) {
@@ -283,6 +421,8 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
   const reply = (body: unknown, status = 200) => Response.json(body, { status, headers: cors });
   const db = admin();
+  const reqUrl = new URL(req.url);
+  const aiSite = (reqUrl.searchParams.get('site') || Deno.env.get('AI_SITE_URL') || DEFAULT_AI_SITE).replace(/\/$/, '');
 
   // Weekly Monday 10:00 AM IST proactive Trend Radar & Comment Question push nudge.
   if (cronAllowed(req)) {
@@ -344,43 +484,12 @@ Deno.serve(async (req) => {
         return reply({ error: 'You can track up to 8 peer creators at a time.' }, 400);
       }
 
-      const peer = (await lookupInMiracle(db, handle)) ?? (await lookupPublicInstagram(handle));
-      if (!peer) {
-        // Return clean manual fallback trigger instead of a dead-end error!
-        return reply({ manual: true, username: handle });
+      const resolved = await resolvePeerAutomated(db, handle, aiSite);
+      if (!resolved.ok) {
+        return reply({ not_found: true, suggested_handle: resolved.suggested_handle ?? '', error: resolved.error });
       }
-      const saved = await upsertPeer(db, creatorId, peer);
-      return reply({ peer: saved });
-    }
-
-    if (action === 'add_manual') {
-      const handle = String(body.username ?? '').replace(/^@/, '').trim().toLowerCase();
-      if (!/^[a-z0-9._]{1,40}$/.test(handle)) {
-        return reply({ error: 'Enter a valid Instagram handle.' }, 400);
-      }
-      const followers = Math.max(0, Math.round(Number(body.followers_count) || 0));
-      const avgLikes = Math.max(0, Math.round(Number(body.avg_likes) || 0));
-      const avgComments = Math.max(0, Math.round(Number(body.avg_comments) || 0));
-      const ppw = Math.max(0, Math.min(28, Number(Number(body.posts_per_week || 0).toFixed(1))));
-      const er = followers > 0 ? Number((((avgLikes + avgComments) / followers) * 100).toFixed(2)) : 0;
-      const topTopic = String(body.top_topic ?? '').trim();
-      const topPosts: PeerPost[] = topTopic
-        ? [{ id: 'manual-1', caption: topTopic.slice(0, 220), likes: avgLikes, comments: avgComments, media_type: 'VIDEO', permalink: `https://www.instagram.com/${handle}/`, timestamp: new Date().toISOString() }]
-        : [];
-      const saved = await upsertPeer(db, creatorId, {
-        username: handle,
-        name: String(body.name ?? '').trim(),
-        profile_picture_url: '',
-        followers_count: followers,
-        media_count: 0,
-        avg_likes: avgLikes,
-        avg_comments: avgComments,
-        engagement_rate: er,
-        posts_per_week: ppw,
-        top_posts: topPosts,
-        synced_at: new Date().toISOString(),
-      });
-      return reply({ peer: saved });
+      const saved = await upsertPeer(db, creatorId, resolved.peer);
+      return reply({ peer: saved, source: resolved.source });
     }
 
     if (action === 'refresh') {
@@ -390,9 +499,9 @@ Deno.serve(async (req) => {
         .eq('creator_id', creatorId);
       const updated = [];
       for (const r of rows ?? []) {
-        const fresh = (await lookupInMiracle(db, r.username)) ?? (await lookupPublicInstagram(r.username));
-        if (fresh) {
-          const { data } = await db.from('creator_benchmarks').update(fresh).eq('id', r.id).select('*').single();
+        const resolved = await resolvePeerAutomated(db, r.username, aiSite);
+        if (resolved.ok) {
+          const { data } = await db.from('creator_benchmarks').update(resolved.peer).eq('id', r.id).select('*').single();
           updated.push(data ?? r);
         } else {
           updated.push(r);

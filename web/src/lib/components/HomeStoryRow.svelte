@@ -1,9 +1,17 @@
 <script lang="ts">
+	import { igImg } from '../igImg';
 	import { portal } from '../portal';
 	import Icon from './Icon.svelte';
 
 	export type StoryStat = { label: string; value: string };
 	export type StoryItem = { title: string; sub?: string; right?: string };
+	export type StoryMedia = {
+		thumbnail?: string;
+		permalink?: string;
+		caption?: string;
+		postedAt?: string;
+		badge?: string;
+	};
 	export type StoryAnim = 'celebrate' | 'radar' | 'vault' | 'reel' | 'briefs';
 	export type Story = {
 		label: string;
@@ -21,6 +29,7 @@
 		heroFormat?: 'inr' | 'compact' | 'number' | 'pct';
 		heroSub?: string;
 		progress?: { label: string; valueText: string; pct: number };
+		media?: StoryMedia;
 		stats?: StoryStat[];
 		items?: StoryItem[];
 	};
@@ -31,10 +40,12 @@
 	let animKey = $state(0);
 	let displayNum = $state(0);
 	let fillPct = $state(0);
+	let thumbFailed = $state(false);
 	let stageBox = $state<HTMLElement>();
 	let canvas = $state<HTMLCanvasElement>();
 
 	const story = $derived(stories[selected] ?? stories[0]);
+	const mediaThumb = $derived(!thumbFailed && story?.media?.thumbnail ? igImg(story.media.thumbnail) : '');
 	const animKind = $derived<StoryAnim>(
 		story?.animation ??
 			(story?.icon === 'chart'
@@ -50,6 +61,7 @@
 
 	function openStory(index: number) {
 		selected = index;
+		thumbFailed = false;
 		animKey += 1;
 		open = true;
 	}
@@ -314,8 +326,18 @@
 						{:else}
 							<span class="hs-orbit-dot"></span>
 						{/if}
-						<div class="hs-medal">
-							<Icon name={story.icon} />
+						<div class="hs-medal" class:has-img={!!mediaThumb}>
+							{#if mediaThumb}
+								<img
+									class="hs-medal-img"
+									src={mediaThumb}
+									alt=""
+									referrerpolicy="no-referrer"
+									onerror={() => (thumbFailed = true)}
+								/>
+							{:else}
+								<Icon name={story.icon} />
+							{/if}
 						</div>
 					</div>
 
@@ -333,11 +355,65 @@
 						<h2 id="hs-title" class="hs-title-big">{story.title}</h2>
 					{/if}
 
-					<p class="hs-desc">{story.body}</p>
+					{#if story.body}
+						<p class="hs-desc">{story.body}</p>
+					{/if}
 
 					<!-- Rich Animated Frosted Vault Card -->
-					{#if story.progress || story.stats?.length || story.items?.length}
+					{#if story.media || story.progress || story.stats?.length || story.items?.length}
 						<div class="hs-card">
+							{#if story.media}
+								{#if story.media.permalink}
+									<a class="hs-post" href={story.media.permalink} target="_blank" rel="noopener">
+										{#if mediaThumb}
+											<img
+												class="hs-post-thumb"
+												src={mediaThumb}
+												alt=""
+												referrerpolicy="no-referrer"
+												onerror={() => (thumbFailed = true)}
+											/>
+										{:else}
+											<span class="hs-post-ph"><Icon name="film" /></span>
+										{/if}
+										<div class="hs-post-meta">
+											<div class="hs-post-top">
+												<span class="hs-post-badge">{story.media.badge || 'Instagram Reel'}</span>
+												{#if story.media.postedAt}<small>{story.media.postedAt}</small>{/if}
+											</div>
+											{#if story.media.caption}
+												<p class="hs-post-cap">{story.media.caption}</p>
+											{/if}
+											<span class="hs-post-open"><Icon name="insta" /><span>Open post on Instagram</span></span>
+										</div>
+										<span class="hs-post-go" aria-hidden="true"><Icon name="chevR" /></span>
+									</a>
+								{:else}
+									<div class="hs-post">
+										{#if mediaThumb}
+											<img
+												class="hs-post-thumb"
+												src={mediaThumb}
+												alt=""
+												referrerpolicy="no-referrer"
+												onerror={() => (thumbFailed = true)}
+											/>
+										{:else}
+											<span class="hs-post-ph"><Icon name="film" /></span>
+										{/if}
+										<div class="hs-post-meta">
+											<div class="hs-post-top">
+												<span class="hs-post-badge">{story.media.badge || 'Instagram Reel'}</span>
+												{#if story.media.postedAt}<small>{story.media.postedAt}</small>{/if}
+											</div>
+											{#if story.media.caption}
+												<p class="hs-post-cap">{story.media.caption}</p>
+											{/if}
+										</div>
+									</div>
+								{/if}
+							{/if}
+
 							{#if story.progress}
 								<div class="hs-prog">
 									<div class="hs-prog-top">
@@ -482,6 +558,7 @@
 		border-radius: 50%;
 		border: 1px dashed color-mix(in oklab, var(--story-color) 40%, transparent);
 	}
+	.hs-medal.has-img::before { display: none; }
 	.hs-medal::after {
 		content: '';
 		position: absolute;
@@ -489,6 +566,13 @@
 		width: 48%;
 		background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.42), transparent);
 		animation: hs-sheen 2.5s ease-in-out infinite;
+		pointer-events: none;
+	}
+	.hs-medal-img {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+		display: block;
 	}
 	.hs-medal :global(.ic) { width: 34px; height: 34px; stroke-width: 1.7; }
 
@@ -616,6 +700,92 @@
 		box-shadow: 0 20px 44px -22px #000d;
 		animation: hs-card-in .46s cubic-bezier(.22, 1, .36, 1) .24s both;
 	}
+
+	/* Featured Post Preview Row (shows which Reel/Post won + opens on Instagram) */
+	.hs-post {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+		padding: 8px;
+		margin: -4px -4px 0;
+		border-radius: 13px;
+		background: rgba(255, 255, 255, 0.04);
+		border: 1px solid rgba(255, 255, 255, 0.08);
+		text-decoration: none;
+		color: inherit;
+		transition: background 0.16s, border-color 0.16s;
+	}
+	a.hs-post:hover,
+	a.hs-post:active {
+		background: color-mix(in oklab, var(--story-color) 10%, rgba(255, 255, 255, 0.04));
+		border-color: color-mix(in oklab, var(--story-color) 42%, rgba(255, 255, 255, 0.12));
+	}
+	.hs-post-thumb,
+	.hs-post-ph {
+		width: 48px;
+		height: 64px;
+		border-radius: 9px;
+		flex: none;
+		object-fit: cover;
+		border: 1px solid rgba(255, 255, 255, 0.12);
+	}
+	.hs-post-ph {
+		display: grid;
+		place-items: center;
+		background: linear-gradient(155deg, color-mix(in oklab, var(--story-color) 22%, #241928), #140f17);
+		color: var(--story-color);
+	}
+	.hs-post-ph :global(.ic) { width: 20px; height: 20px; }
+	.hs-post-meta {
+		flex: 1;
+		min-width: 0;
+		display: grid;
+		gap: 4px;
+	}
+	.hs-post-top {
+		display: flex;
+		align-items: center;
+		gap: 7px;
+		flex-wrap: wrap;
+	}
+	.hs-post-badge {
+		font: 700 9.5px/1 var(--f-mono, ui-monospace, monospace);
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		color: var(--story-color);
+	}
+	.hs-post-top small {
+		font-size: 11px;
+		color: #9b8fa8;
+	}
+	.hs-post-cap {
+		margin: 0;
+		font-size: 12.5px;
+		line-height: 1.38;
+		color: #efe8f4;
+		display: -webkit-box;
+		-webkit-line-clamp: 2;
+		line-clamp: 2;
+		-webkit-box-orient: vertical;
+		overflow: hidden;
+	}
+	.hs-post-open {
+		display: inline-flex;
+		align-items: center;
+		gap: 5px;
+		font: 600 11px/1 var(--f-body, system-ui, sans-serif);
+		color: var(--story-color);
+	}
+	.hs-post-open :global(.ic) { width: 12px; height: 12px; }
+	.hs-post-go {
+		flex: none;
+		color: #9b8fa8;
+		display: grid;
+		place-items: center;
+	}
+	.hs-post-go :global(.ic) { width: 16px; height: 16px; }
+	.hs-post + .hs-stats { padding-top: 10px; border-top: 1px dashed #3e3140; }
+
 	.hs-prog { display: grid; gap: 6px; }
 	.hs-prog-top { display: flex; justify-content: space-between; align-items: center; font-size: 11.5px; }
 	.hs-prog-top span { color: #9b8fa8; }

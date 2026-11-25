@@ -25,7 +25,7 @@ type Env = {
 type Run = { env: Env; gemini: boolean; neurons: number };
 
 // Expected size of each job in Cloudflare neurons (reserved before, corrected after).
-const COST: Record<string, number> = { dm: 160, reply: 110, caption: 110, pitch: 140, fit: 230, classify: 40, summary: 220, negotiate: 210, script: 330, nudge: 120, ask: 260, voice: 60, embed: 8, cheer: 60, reelcheck: 320, viralstudio: 360, trendradar: 320, growplan: 200, checkup: 420, offercheck: 700, precheck: 220, getfound: 180, brandask: 450, brandchat: 380, brandbrief: 600, safety: 300, helpask: 200, casestudy: 400 };
+const COST: Record<string, number> = { dm: 160, reply: 110, caption: 110, pitch: 140, fit: 230, classify: 40, summary: 220, negotiate: 210, script: 330, nudge: 120, ask: 260, voice: 60, embed: 8, cheer: 60, reelcheck: 320, viralstudio: 360, trendradar: 320, peerlookup: 260, growplan: 200, checkup: 420, offercheck: 700, precheck: 220, getfound: 180, brandask: 450, brandchat: 380, brandbrief: 600, safety: 300, helpask: 200, casestudy: 400 };
 // Cloudflare's price list in neurons per token (Llama 3.3 70B fast; Llama 3.2 11B vision).
 const PER_TOKEN = { text: [0.0267, 0.2048], vision: [0.0045, 0.0615] };
 const USED_UP = "Today's free AI is used up. It's back at 5:30 am.";
@@ -65,21 +65,21 @@ export default {
 		try {
 			const kind = url.pathname.slice('/api/ai/'.length);
 			if (kind === 'status') return json(await status(req, env));
-			if (!['dm', 'reply', 'caption', 'pitch', 'classify', 'fit', 'summary', 'negotiate', 'script', 'nudge', 'ask', 'voice', 'embed', 'cheer', 'scout', 'reelcheck', 'viralstudio', 'trendradar', 'growplan', 'checkup', 'offercheck', 'precheck', 'getfound', 'brandask', 'brandchat', 'brandbrief', 'safety', 'helpask', 'compwatch', 'casestudy', 'growthscout', 'growthmail'].includes(kind)) return json({ error: 'Unknown.' }, 404);
+			if (!['dm', 'reply', 'caption', 'pitch', 'classify', 'fit', 'summary', 'negotiate', 'script', 'nudge', 'ask', 'voice', 'embed', 'cheer', 'scout', 'reelcheck', 'viralstudio', 'trendradar', 'growplan', 'checkup', 'offercheck', 'precheck', 'getfound', 'brandask', 'brandchat', 'brandbrief', 'safety', 'helpask', 'compwatch', 'peerlookup', 'casestudy', 'growthscout', 'growthmail'].includes(kind)) return json({ error: 'Unknown.' }, 404);
 			const body = (await req.json()) as Record<string, unknown>;
 			const job = (x: Run) =>
-				kind === 'cheer' ? cheer(x, body) : kind === 'scout' ? scout(x, body) : kind === 'dm' ? readDm(x, body) : kind === 'reply' ? replies(x, body) : kind === 'pitch' ? pitch(x, body) : kind === 'classify' ? classify(x, body) : kind === 'fit' ? fit(x, body) : kind === 'summary' ? summary(x, body) : kind === 'negotiate' ? creatorOf(req, env).then((me) => negotiate(x, body, me)) : kind === 'script' ? script(x, body) : kind === 'nudge' ? nudge(x, body) : kind === 'ask' ? creatorOf(req, env).then((me) => ask(x, body, me)) : kind === 'voice' ? voice(x, body) : kind === 'embed' ? embed(x, body) : kind === 'reelcheck' ? reelCheck(x, body) : kind === 'viralstudio' ? viralStudio(x, body) : kind === 'trendradar' ? trendRadar(x, body) : kind === 'growplan' ? growPlan(x, body) : kind === 'checkup' ? checkup(x, body) : kind === 'safety' ? safety(x, body) : kind === 'helpask' ? helpAsk(x, body) : kind === 'compwatch' ? compWatch(x, body) : kind === 'casestudy' ? caseStudy(x, body) : kind === 'growthscout' ? growthScout(x, body) : kind === 'growthmail' ? growthMail(x, body) : kind === 'offercheck' ? offerCheck(x, body) : kind === 'precheck' ? preCheck(x, body) : kind === 'getfound' ? getFound(x, body) : kind === 'brandask' ? brandAsk(x, body) : kind === 'brandchat' ? brandChat(x, body) : kind === 'brandbrief' ? brandBrief(x, body) : creatorOf(req, env).then((me) => caption(x, body, me));
+				kind === 'cheer' ? cheer(x, body) : kind === 'scout' ? scout(x, body) : kind === 'dm' ? readDm(x, body) : kind === 'reply' ? replies(x, body) : kind === 'pitch' ? pitch(x, body) : kind === 'classify' ? classify(x, body) : kind === 'fit' ? fit(x, body) : kind === 'summary' ? summary(x, body) : kind === 'negotiate' ? creatorOf(req, env).then((me) => negotiate(x, body, me)) : kind === 'script' ? script(x, body) : kind === 'nudge' ? nudge(x, body) : kind === 'ask' ? creatorOf(req, env).then((me) => ask(x, body, me)) : kind === 'voice' ? voice(x, body) : kind === 'embed' ? embed(x, body) : kind === 'reelcheck' ? reelCheck(x, body) : kind === 'viralstudio' ? viralStudio(x, body) : kind === 'trendradar' ? trendRadar(x, body) : kind === 'growplan' ? growPlan(x, body) : kind === 'checkup' ? checkup(x, body) : kind === 'safety' ? safety(x, body) : kind === 'helpask' ? helpAsk(x, body) : kind === 'compwatch' ? compWatch(x, body) : kind === 'peerlookup' ? peerLookup(x, body) : kind === 'casestudy' ? caseStudy(x, body) : kind === 'growthscout' ? growthScout(x, body) : kind === 'growthmail' ? growthMail(x, body) : kind === 'offercheck' ? offerCheck(x, body) : kind === 'precheck' ? preCheck(x, body) : kind === 'getfound' ? getFound(x, body) : kind === 'brandask' ? brandAsk(x, body) : kind === 'brandchat' ? brandChat(x, body) : kind === 'brandbrief' ? brandBrief(x, body) : creatorOf(req, env).then((me) => caption(x, body, me));
 
 			// Checking an incoming Instagram DM comes from the DM webhook with a single-use pass, and the
 			// hourly fun nudge from its job the same way. DMs stay on Cloudflare (never sent to Google);
 			// the fun nudges are written by Gemini first (wittier), Cloudflare if Gemini can't.
 			// The daily pitch finder comes the same way for finding brands (Gemini with Google Search) and
 			// writing their pitches (Gemini first).
-			if (kind === 'classify' || kind === 'cheer' || kind === 'scout' || kind === 'compwatch' || kind === 'growthscout' || kind === 'growthmail' || ((kind === 'pitch' || kind === 'checkup' || kind === 'safety') && req.headers.get('x-ai-ticket'))) {
+			if (kind === 'classify' || kind === 'cheer' || kind === 'scout' || kind === 'compwatch' || kind === 'peerlookup' || kind === 'growthscout' || kind === 'growthmail' || ((kind === 'pitch' || kind === 'checkup' || kind === 'safety') && req.headers.get('x-ai-ticket'))) {
 				const allowed = await takeTicket(req, env, kind);
 				if (allowed !== true) return json({ error: allowed }, 403);
 				let why = env.GEMINI_API_KEY ? '' : 'no Gemini key';
-				if ((kind === 'cheer' || kind === 'scout' || kind === 'compwatch' || kind === 'growthscout') && env.GEMINI_API_KEY) {
+				if ((kind === 'cheer' || kind === 'scout' || kind === 'compwatch' || kind === 'peerlookup' || kind === 'growthscout') && env.GEMINI_API_KEY) {
 					try {
 						return json({ ...(await job({ env, gemini: true, neurons: 0 })), by: 'gemini' });
 					} catch (e) {
@@ -831,6 +831,97 @@ Give 3 to 5 checks covering: length versus her avg watch time (a reel much longe
 }
 
 
+
+
+// ---------- Grow: Automated Peer Benchmark Lookup (Gemini + Google Search Grounding) ----------
+async function peerLookup(x: Run, b: Record<string, unknown>) {
+	const handle = String(b.username ?? '').replace(/^@+/, '').trim().toLowerCase().slice(0, 40);
+	if (!handle || !x.gemini) return { found: false, why: x.gemini ? 'invalid handle' : 'needs search' };
+	const reply = await gemini(
+		x.env,
+		`You are an Instagram creator research assistant. Use Google Search to look up the public Instagram account "@${handle}" (search site:instagram.com/${handle} as well as public creator analytics sites like HypeAuditor, Modash, SocialBlade, StarNgage, Qoruz, or public Instagram snippets showing "Followers, Following, Posts").
+Extract ONLY real public numbers and recent public Reels/posts found in search results. Never fabricate metrics for a handle that does not exist.
+If "@${handle}" looks like a slight spelling mistake and Google Search clearly shows the real creator handle (e.g. one extra or missing letter), set "found": false and put the exact real handle in "suggested_handle".
+Return ONLY JSON with this exact shape:
+{
+  "found": true,
+  "suggested_handle": "",
+  "username": "${handle}",
+  "name": "public display name if found, else empty string",
+  "followers_count": 0,
+  "media_count": 0,
+  "avg_likes": 0,
+  "avg_comments": 0,
+  "engagement_rate": 0,
+  "posts_per_week": 0,
+  "top_posts": [
+    { "caption": "short caption or topic of a real public Reel/post", "likes": 0, "comments": 0, "permalink": "https://www.instagram.com/reel/... or https://www.instagram.com/${handle}/", "timestamp": "" }
+  ]
+}`,
+		`Look up public Instagram creator @${handle}.`,
+		1200,
+		0.15,
+		true
+	);
+	const j = firstJson(reply) ?? {};
+	const suggested = String(j.suggested_handle ?? '').replace(/^@+/, '').trim().toLowerCase().replace(/[^a-z0-9._]/g, '').slice(0, 40);
+	const found = j.found === true;
+	const followers = Math.max(0, Math.round(Number(j.followers_count) || 0));
+	const mediaCount = Math.max(0, Math.round(Number(j.media_count) || 0));
+	let avgLikes = Math.max(0, Math.round(Number(j.avg_likes) || 0));
+	let avgComments = Math.max(0, Math.round(Number(j.avg_comments) || 0));
+	let er = Math.max(0, Math.min(100, Number(Number(j.engagement_rate || 0).toFixed(2))));
+	const ppw = Math.max(0, Math.min(28, Number(Number(j.posts_per_week || 0).toFixed(1))));
+
+	if (followers > 0 && er > 0 && avgLikes === 0) {
+		const avgEng = followers * (er / 100);
+		avgLikes = Math.round(avgEng * 0.94);
+		avgComments = Math.max(1, Math.round(avgEng * 0.06));
+	} else if (followers > 0 && er === 0 && (avgLikes > 0 || avgComments > 0)) {
+		er = Number((((avgLikes + avgComments) / followers) * 100).toFixed(2));
+	}
+
+	const rawPosts = Array.isArray(j.top_posts) ? (j.top_posts as Record<string, unknown>[]) : [];
+	const topPosts = rawPosts
+		.map((p, idx) => {
+			const link = String(p.permalink ?? '').trim();
+			return {
+				id: `web-${idx + 1}`,
+				caption: String(p.caption ?? '').trim().slice(0, 220),
+				likes: Math.max(0, Math.round(Number(p.likes) || 0)),
+				comments: Math.max(0, Math.round(Number(p.comments) || 0)),
+				media_type: 'VIDEO',
+				permalink: /^https:\/\/(www\.)?instagram\.com\//i.test(link) ? link : `https://www.instagram.com/${handle}/`,
+				timestamp: String(p.timestamp ?? '').trim().slice(0, 40)
+			};
+		})
+		.filter((p) => p.caption)
+		.slice(0, 3);
+
+	if (!found || (followers === 0 && mediaCount === 0 && !String(j.name ?? '').trim())) {
+		return {
+			found: false,
+			suggested_handle: suggested && suggested !== handle ? suggested : ''
+		};
+	}
+
+	return {
+		found: true,
+		peer: {
+			username: String(j.username ?? handle).replace(/^@+/, '').trim().toLowerCase() || handle,
+			name: String(j.name ?? '').trim().slice(0, 120),
+			profile_picture_url: '',
+			followers_count: followers,
+			media_count: mediaCount,
+			avg_likes: avgLikes,
+			avg_comments: avgComments,
+			engagement_rate: er,
+			posts_per_week: ppw,
+			top_posts: topPosts,
+			synced_at: new Date().toISOString()
+		}
+	};
+}
 
 // ---------- Grow: Viral Script & Series Studio ----------
 async function viralStudio(x: Run, b: Record<string, unknown>) {
