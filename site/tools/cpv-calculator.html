@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en-IN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Free Instagram CPV Calculator (India) · Miracle</title>
+<meta name="description" content="Calculate Instagram Reel Cost Per View (CPV) and CPM in ₹ against Indian D2C creator benchmarks. Free for brands and creators.">
+<link rel="canonical" href="https://www.miracleapp.live/tools/cpv-calculator">
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@500;600&family=Instrument+Serif:ital@0;1&display=swap">
+<style>
+:root{
+  color-scheme:dark;
+  --bg:#110D11; --surface:#1A151A; --surface-2:#231D23; --line:#2E262E; --line-2:#3E343E;
+  --ink:#F4EEF2; --ink-2:#C9BFC6; --ink-3:#A39AA1;
+  --g1:#9C7BFF; --g2:#F25A90; --g3:#FFAE6B; --ok:#6FD08C; --warn:#EFB35A;
+  --f-display:'Instrument Serif',Georgia,serif;
+  --f-body:'Geist',ui-sans-serif,system-ui,-apple-system,sans-serif;
+  --f-mono:'Geist Mono',ui-monospace,monospace;
+}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:radial-gradient(60% 40% at 50% 0%,rgba(242,90,144,.16),transparent 70%),var(--bg);color:var(--ink);font:400 16px/1.55 var(--f-body);-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+button{font-family:inherit;cursor:pointer}
+.wrap{max-width:740px;margin:0 auto;padding:20px 18px 64px;display:grid;gap:18px}
+.nav{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px}
+.brand{display:inline-flex;align-items:center;gap:9px;font:italic 400 26px/1 var(--f-display)}
+.brand img{border-radius:8px}
+.nav-r{display:flex;align-items:center;gap:14px}
+.nav-r a.lnk{font-size:13.5px;font-weight:600;color:var(--ink-2)}
+.cta{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:7px;background:#F4EEF2;color:#110D11;font-size:13px;font-weight:700;box-shadow:3px 3px 0 var(--g2)}
+.eb{display:block;font-size:11px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--g3)}
+h1{font:400 clamp(34px,6vw,46px)/1.05 var(--f-display);margin:6px 0 8px}
+h1 em{font-style:italic;color:var(--g2)}
+.sub{margin:0;font-size:15px;color:var(--ink-2)}
+.role{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:4px;border-radius:12px;background:var(--surface);border:1px solid var(--line)}
+.role button{padding:10px;border-radius:9px;border:0;background:transparent;color:var(--ink-3);font-size:13.5px;font-weight:700}
+.role button.on{background:var(--surface-2);color:var(--ink);box-shadow:inset 0 0 0 1px var(--line-2)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:18px;display:grid;gap:14px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:560px){.row2{grid-template-columns:1fr}}
+.f{display:grid;gap:6px}
+.f label,.lbl{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3)}
+.f input{width:100%;padding:11px 13px;border-radius:11px;border:1px solid var(--line-2);background:var(--surface-2);color:var(--ink);font:600 16px var(--f-mono)}
+.chips{display:flex;flex-wrap:wrap;gap:7px}
+.chips button{padding:7px 12px;border-radius:99px;border:1px solid var(--line-2);background:var(--surface-2);color:var(--ink-2);font-size:12.5px;font-weight:600}
+.chips button.on{border-color:var(--g1);color:var(--ink);background:rgba(156,123,255,.18)}
+.hero{border-radius:20px;border:1px solid var(--line-2);background:linear-gradient(160deg,#201724,#151018);padding:20px;display:grid;gap:14px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.badge{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:5px 11px;border-radius:99px;border:1px solid currentColor}
+.soft{padding:7px 12px;border-radius:8px;border:1px solid var(--line-2);background:var(--surface-2);color:var(--ink-2);font-size:12.5px;font-weight:600}
+.metrics{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.metrics small{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-3)}
+.metrics b{display:block;font:400 44px/1.05 var(--f-display);margin-top:2px}
+.note{margin:0;font-size:14px;color:var(--ink-2)}
+.fair{padding-top:12px;border-top:1px dashed var(--line-2);display:flex;align-items:baseline;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:13.5px;color:var(--ink-2)}
+.fair b{font:600 14.5px var(--f-mono);color:var(--ink)}
+.upsell{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;padding:18px;border-radius:18px;border:1px solid rgba(156,123,255,.38);background:linear-gradient(125deg,rgba(156,123,255,.12),rgba(242,90,144,.1))}
+.upsell b{display:block;font-size:15.5px;margin-bottom:3px}
+.upsell small{display:block;font-size:13px;color:var(--ink-2)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="nav">
+    <a class="brand" href="/tools"><img src="/icon.svg" alt="" width="30" height="30">Miracle</a>
+    <div class="nav-r">
+      <a class="lnk" href="/tools/profile-review">AI Profile Reviewer</a>
+      <a class="cta" href="https://app.miracleapp.live/signup?as=creator">Start free</a>
+    </div>
+  </header>
+
+  <div>
+    <span class="eb">Free calculator · Indian creator benchmarks</span>
+    <h1>Instagram <em>CPV</em> Calculator</h1>
+    <p class="sub">Know what a view is actually worth (₹ ÷ Views) before you quote a brand or approve an influencer budget.</p>
+  </div>
+
+  <div class="role" role="tablist">
+    <button type="button" id="rBrand" class="on">I’m a Brand</button>
+    <button type="button" id="rCreator">I’m a Creator</button>
+  </div>
+
+  <section class="card">
+    <div class="row2">
+      <div class="f">
+        <label for="fee" id="feeLbl">Creator fee / budget (₹)</label>
+        <input id="fee" type="number" min="0" step="500" value="15000">
+      </div>
+      <div class="f">
+        <label for="views">Average Reel views</label>
+        <input id="views" type="number" min="100" step="1000" value="45000">
+      </div>
+    </div>
+    <div class="f">
+      <span class="lbl">Niche benchmark</span>
+      <div class="chips" id="nicheChips">
+        <button type="button" class="on" data-n="lifestyle">Lifestyle &amp; Fashion</button>
+        <button type="button" data-n="beauty">Beauty &amp; Skincare</button>
+        <button type="button" data-n="food">Food, Cafes &amp; Travel</button>
+        <button type="button" data-n="tech">Tech &amp; Gadgets</button>
+        <button type="button" data-n="finance">Finance &amp; SaaS</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="hero">
+    <div class="top">
+      <span class="badge" id="badge">Fair Market Rate</span>
+      <button class="soft" type="button" id="copyBtn">Copy report</button>
+    </div>
+    <div class="metrics">
+      <div><small>Cost per view (CPV)</small><b id="cpvVal">₹0.33</b></div>
+      <div><small>Cost per 1,000 views (CPM)</small><b id="cpmVal">₹333</b></div>
+    </div>
+    <p class="note" id="noteText"></p>
+    <div class="fair">
+      <span id="fairLbl"></span>
+      <b id="fairVal"></b>
+    </div>
+  </section>
+
+  <section class="upsell">
+    <div>
+      <b id="upTitle">Manage briefs, creators &amp; payouts without spreadsheets</b>
+      <small id="upSub">Miracle tracks every Reel, deliverable, and real verified CPV automatically.</small>
+    </div>
+    <a class="cta" href="https://app.miracleapp.live/signup?as=creator">Start free on Miracle →</a>
+  </section>
+</div>
+
+<script>
+(() => {
+  const BM = {
+    lifestyle: { label: 'Lifestyle & Fashion', low: 0.25, high: 0.55 },
+    beauty: { label: 'Beauty & Skincare', low: 0.30, high: 0.65 },
+    food: { label: 'Food, Cafes & Travel', low: 0.20, high: 0.45 },
+    tech: { label: 'Tech & Gadgets', low: 0.45, high: 0.90 },
+    finance: { label: 'Finance & SaaS', low: 0.60, high: 1.25 }
+  };
+  let role = 'brand', niche = 'lifestyle';
+  const $ = (id) => document.getElementById(id);
+
+  function calc() {
+    const fee = Math.max(0, Number($('fee').value) || 0);
+    const views = Math.max(1, Number($('views').value) || 1);
+    const bm = BM[niche];
+    const cpv = fee / views;
+    const cpm = cpv * 1000;
+    const fairLow = Math.round((views * bm.low) / 500) * 500;
+    const fairHigh = Math.round((views * bm.high) / 500) * 500;
+
+    $('cpvVal').textContent = '₹' + cpv.toFixed(2);
+    $('cpmVal').textContent = '₹' + Math.round(cpm).toLocaleString('en-IN');
+
+    let label = 'Fair Market Rate', color = '#9C7BFF', note = 'Right inside the standard Indian Instagram Reel benchmark.';
+    if (cpv <= bm.low) { label = 'High ROI / Great Value'; color = '#6FD08C'; note = 'Well below typical Indian D2C creator CPV for this niche.'; }
+    else if (cpv > bm.high) { label = 'Premium CPV'; color = '#EFB35A'; note = 'Above average CPV — justified if usage rights, whitelisting, or high-intent conversion is included.'; }
+
+    const b = $('badge');
+    b.textContent = label;
+    b.style.color = color;
+    $('noteText').textContent = note;
+    $('fairLbl').textContent = `Suggested fair range for ${views.toLocaleString('en-IN')} views in ${bm.label}:`;
+    $('fairVal').textContent = `₹${fairLow.toLocaleString('en-IN')} – ₹${fairHigh.toLocaleString('en-IN')}`;
+  }
+
+  $('rBrand').onclick = () => {
+    role = 'brand'; $('rBrand').classList.add('on'); $('rCreator').classList.remove('on');
+    $('feeLbl').textContent = 'Creator fee / budget (₹)';
+    $('upTitle').textContent = 'Manage briefs, creators & payouts without spreadsheets';
+    $('upSub').textContent = 'Miracle tracks every Reel, deliverable, and real verified CPV automatically.';
+  };
+  $('rCreator').onclick = () => {
+    role = 'creator'; $('rCreator').classList.add('on'); $('rBrand').classList.remove('on');
+    $('feeLbl').textContent = 'Your quoted fee (₹)';
+    $('upTitle').textContent = 'Send polished quotes, GST invoices & run free Auto-DM';
+    $('upSub').textContent = 'Create your free Miracle creator workspace in under 2 minutes.';
+  };
+  $('fee').oninput = calc;
+  $('views').oninput = calc;
+  document.querySelectorAll('#nicheChips button').forEach((btn) => {
+    btn.onclick = () => {
+      niche = btn.dataset.n;
+      document.querySelectorAll('#nicheChips button').forEach((x) => x.classList.toggle('on', x === btn));
+      calc();
+    };
+  });
+  $('copyBtn').onclick = () => {
+    const txt = `Miracle CPV Report (${BM[niche].label})\nFee: ₹${Number($('fee').value).toLocaleString('en-IN')} · Views: ${Number($('views').value).toLocaleString('en-IN')}\nCPV: ${$('cpvVal').textContent} · CPM: ${$('cpmVal').textContent}\n${$('badge').textContent} (${$('fairVal').textContent})\nhttps://www.miracleapp.live/tools/cpv-calculator`;
+    navigator.clipboard?.writeText(txt).then(() => { $('copyBtn').textContent = 'Copied!'; setTimeout(() => ($('copyBtn').textContent = 'Copy report'), 1800); });
+  };
+  calc();
+})();
+</script>
+</body>
+</html>

@@ -48,18 +48,6 @@
     {
       "source": "/creators/:path*",
       "destination": "https://app.miracleapp.live/creators/:path*"
-    },
-    {
-      "source": "/tools",
-      "destination": "https://app.miracleapp.live/tools"
-    },
-    {
-      "source": "/tools/profile-review",
-      "destination": "https://app.miracleapp.live/tools/profile-review"
-    },
-    {
-      "source": "/tools/cpv-calculator",
-      "destination": "https://app.miracleapp.live/tools/cpv-calculator"
     }
   ]
 }

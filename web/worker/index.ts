@@ -25,7 +25,7 @@ type Env = {
 type Run = { env: Env; gemini: boolean; neurons: number };
 
 // Expected size of each job in Cloudflare neurons (reserved before, corrected after).
-const COST: Record<string, number> = { dm: 160, reply: 110, caption: 110, pitch: 140, fit: 230, classify: 40, summary: 220, negotiate: 210, script: 330, nudge: 120, ask: 260, voice: 60, embed: 8, cheer: 60, reelcheck: 260, growplan: 200, checkup: 420, offercheck: 700, precheck: 220, getfound: 180, brandask: 450, brandchat: 380, brandbrief: 600, safety: 300, helpask: 200, casestudy: 400 };
+const COST: Record<string, number> = { dm: 160, reply: 110, caption: 110, pitch: 140, fit: 230, classify: 40, summary: 220, negotiate: 210, script: 330, nudge: 120, ask: 260, voice: 60, embed: 8, cheer: 60, reelcheck: 320, viralstudio: 360, trendradar: 320, growplan: 200, checkup: 420, offercheck: 700, precheck: 220, getfound: 180, brandask: 450, brandchat: 380, brandbrief: 600, safety: 300, helpask: 200, casestudy: 400 };
 // Cloudflare's price list in neurons per token (Llama 3.3 70B fast; Llama 3.2 11B vision).
 const PER_TOKEN = { text: [0.0267, 0.2048], vision: [0.0045, 0.0615] };
 const USED_UP = "Today's free AI is used up. It's back at 5:30 am.";
@@ -48,13 +48,16 @@ export default {
 		// The public creator directory (the website shows it at www.miracleapp.live/creators).
 		if ((url.pathname === '/creators' || url.pathname.startsWith('/creators/')) && req.method === 'GET') return directory(req, env, url, ctx);
 		if (url.pathname === '/api/img' && req.method === 'GET') return igImage(req, url, ctx);
-				if (url.pathname === '/api/public/profile-review' && req.method === 'POST') {
+				if (url.pathname === '/api/public/profile-review') {
+			const corsH = { 'content-type': 'application/json', 'cache-control': 'no-store', 'access-control-allow-origin': '*', 'access-control-allow-methods': 'POST, OPTIONS', 'access-control-allow-headers': 'content-type' };
+			if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: corsH });
+			if (req.method !== 'POST') return new Response(JSON.stringify({ error: 'Use POST.' }), { status: 405, headers: corsH });
 			try {
 				const b = (await req.json().catch(() => ({}))) as Record<string, unknown>;
 				const out = await publicProfileReview({ env, gemini: false, neurons: 0 }, b);
-				return json(out);
+				return new Response(JSON.stringify(out), { status: 200, headers: corsH });
 			} catch (e) {
-				return json({ error: (e as Error)?.message || 'Audit unavailable' }, 500);
+				return new Response(JSON.stringify({ error: (e as Error)?.message || 'Audit unavailable' }), { status: 500, headers: corsH });
 			}
 		}
 		if (!url.pathname.startsWith('/api/ai/')) return env.ASSETS.fetch(req);
@@ -62,10 +65,10 @@ export default {
 		try {
 			const kind = url.pathname.slice('/api/ai/'.length);
 			if (kind === 'status') return json(await status(req, env));
-			if (!['dm', 'reply', 'caption', 'pitch', 'classify', 'fit', 'summary', 'negotiate', 'script', 'nudge', 'ask', 'voice', 'embed', 'cheer', 'scout', 'reelcheck', 'growplan', 'checkup', 'offercheck', 'precheck', 'getfound', 'brandask', 'brandchat', 'brandbrief', 'safety', 'helpask', 'compwatch', 'casestudy', 'growthscout', 'growthmail'].includes(kind)) return json({ error: 'Unknown.' }, 404);
+			if (!['dm', 'reply', 'caption', 'pitch', 'classify', 'fit', 'summary', 'negotiate', 'script', 'nudge', 'ask', 'voice', 'embed', 'cheer', 'scout', 'reelcheck', 'viralstudio', 'trendradar', 'growplan', 'checkup', 'offercheck', 'precheck', 'getfound', 'brandask', 'brandchat', 'brandbrief', 'safety', 'helpask', 'compwatch', 'casestudy', 'growthscout', 'growthmail'].includes(kind)) return json({ error: 'Unknown.' }, 404);
 			const body = (await req.json()) as Record<string, unknown>;
 			const job = (x: Run) =>
-				kind === 'cheer' ? cheer(x, body) : kind === 'scout' ? scout(x, body) : kind === 'dm' ? readDm(x, body) : kind === 'reply' ? replies(x, body) : kind === 'pitch' ? pitch(x, body) : kind === 'classify' ? classify(x, body) : kind === 'fit' ? fit(x, body) : kind === 'summary' ? summary(x, body) : kind === 'negotiate' ? creatorOf(req, env).then((me) => negotiate(x, body, me)) : kind === 'script' ? script(x, body) : kind === 'nudge' ? nudge(x, body) : kind === 'ask' ? creatorOf(req, env).then((me) => ask(x, body, me)) : kind === 'voice' ? voice(x, body) : kind === 'embed' ? embed(x, body) : kind === 'reelcheck' ? reelCheck(x, body) : kind === 'growplan' ? growPlan(x, body) : kind === 'checkup' ? checkup(x, body) : kind === 'safety' ? safety(x, body) : kind === 'helpask' ? helpAsk(x, body) : kind === 'compwatch' ? compWatch(x, body) : kind === 'casestudy' ? caseStudy(x, body) : kind === 'growthscout' ? growthScout(x, body) : kind === 'growthmail' ? growthMail(x, body) : kind === 'offercheck' ? offerCheck(x, body) : kind === 'precheck' ? preCheck(x, body) : kind === 'getfound' ? getFound(x, body) : kind === 'brandask' ? brandAsk(x, body) : kind === 'brandchat' ? brandChat(x, body) : kind === 'brandbrief' ? brandBrief(x, body) : creatorOf(req, env).then((me) => caption(x, body, me));
+				kind === 'cheer' ? cheer(x, body) : kind === 'scout' ? scout(x, body) : kind === 'dm' ? readDm(x, body) : kind === 'reply' ? replies(x, body) : kind === 'pitch' ? pitch(x, body) : kind === 'classify' ? classify(x, body) : kind === 'fit' ? fit(x, body) : kind === 'summary' ? summary(x, body) : kind === 'negotiate' ? creatorOf(req, env).then((me) => negotiate(x, body, me)) : kind === 'script' ? script(x, body) : kind === 'nudge' ? nudge(x, body) : kind === 'ask' ? creatorOf(req, env).then((me) => ask(x, body, me)) : kind === 'voice' ? voice(x, body) : kind === 'embed' ? embed(x, body) : kind === 'reelcheck' ? reelCheck(x, body) : kind === 'viralstudio' ? viralStudio(x, body) : kind === 'trendradar' ? trendRadar(x, body) : kind === 'growplan' ? growPlan(x, body) : kind === 'checkup' ? checkup(x, body) : kind === 'safety' ? safety(x, body) : kind === 'helpask' ? helpAsk(x, body) : kind === 'compwatch' ? compWatch(x, body) : kind === 'casestudy' ? caseStudy(x, body) : kind === 'growthscout' ? growthScout(x, body) : kind === 'growthmail' ? growthMail(x, body) : kind === 'offercheck' ? offerCheck(x, body) : kind === 'precheck' ? preCheck(x, body) : kind === 'getfound' ? getFound(x, body) : kind === 'brandask' ? brandAsk(x, body) : kind === 'brandchat' ? brandChat(x, body) : kind === 'brandbrief' ? brandBrief(x, body) : creatorOf(req, env).then((me) => caption(x, body, me));
 
 			// Checking an incoming Instagram DM comes from the DM webhook with a single-use pass, and the
 			// hourly fun nudge from its job the same way. DMs stay on Cloudflare (never sent to Google);
@@ -786,7 +789,7 @@ ${sources.length ? `Messages, emails, briefs and notes that may answer the quest
 // The first frame (a small JPEG) is read by the vision model; the length, caption and her own numbers
 // (how long people watch her reels, which formats work) decide the rest. Advice only, never a promise of views.
 async function reelCheck(x: Run, b: Record<string, unknown>) {
-	const facts = { seconds: Number(b.seconds) || 0, caption: String(b.caption ?? '').slice(0, 600), avg_watch_s: Number(b.avg_watch_s) || 0, best_formats: b.best_formats ?? [], best_time: String(b.best_time ?? ''), posting_evidence: String(b.posting_evidence ?? ''), niche: String(b.niche ?? '') };
+	const facts = { seconds: Number(b.seconds) || 0, spoken_hook: String(b.spoken_hook ?? '').slice(0, 240), caption: String(b.caption ?? '').slice(0, 600), avg_watch_s: Number(b.avg_watch_s) || 0, best_formats: b.best_formats ?? [], best_time: String(b.best_time ?? ''), posting_evidence: String(b.posting_evidence ?? ''), niche: String(b.niche ?? '') };
 	let frame = '';
 	const image = String(b.frame ?? '');
 	if (image.startsWith('data:image/') && !x.gemini) {
@@ -814,7 +817,7 @@ async function reelCheck(x: Run, b: Record<string, unknown>) {
 	const reply = await chat(
 		x,
 		`You are a short-video coach for an Indian Instagram creator. Check one Reel before she posts it, using ONLY these facts and the first-frame description. Compare with HER numbers (avg_watch_s = how long people watch her reels on average; best_formats = formats that get her the most shares/saves). Be specific and kind, plain English. Never promise views or followers. Posting times and their evidence come only from best_time and posting_evidence, supplied by the shared posting-time engine. Never invent a different time, percentage or growth probability; if best_time is empty, skip timing advice.
-Return ONLY JSON: {"score": 0-100, "verdict": "short line like 'Good, fix 2 things first'", "checks": [{"ok": true|false, "title": "under 8 words", "detail": "one or two sentences"}], "line": "a scroll-stopping first caption line under 14 words, in her voice, matching the reel"}.
+Return ONLY JSON: {"score": 0-100, "verdict": "short line like 'Good, fix 2 things first'", "checks": [{"ok": true|false, "title": "under 8 words", "detail": "one or two sentences"}], "line": "a scroll-stopping first caption line under 14 words, in her voice, matching the reel", "hook_rewrite": "crisp 4-6 word on-screen hook for 0.0s", "trim_tip": "specific opening cut or pacing fix under 18 words", "pin_comment": "question or value comment to pin first", "dm_keyword": "ONE_WORD_UPPERCASE_KEYWORD"}.
 Give 3 to 5 checks covering: length versus her avg watch time (a reel much longer than people watch loses them; if seconds is 0 skip it), the first second (from the frame), text covered by Instagram's buttons, the caption's first line, and whether it matches a format that works for her. Score lower for each real problem.`,
 		JSON.stringify({ ...facts, first_frame: frame || 'not available' }),
 		600
@@ -824,9 +827,84 @@ Give 3 to 5 checks covering: length versus her avg watch time (a reel much longe
 		.map((c) => ({ ok: c.ok === true, title: String(c.title ?? '').trim().slice(0, 80), detail: String(c.detail ?? '').trim().slice(0, 300) }))
 		.filter((c) => c.title)
 		.slice(0, 5);
-	return { score: Math.max(0, Math.min(100, Math.round(Number(j.score) || 0))), verdict: String(j.verdict ?? '').slice(0, 80), checks, line: String(j.line ?? '').trim().slice(0, 160), frame };
+	return { score: Math.max(0, Math.min(100, Math.round(Number(j.score) || 0))), verdict: String(j.verdict ?? '').slice(0, 80), checks, line: String(j.line ?? '').trim().slice(0, 160), hook_rewrite: String(j.hook_rewrite ?? '').trim().slice(0, 80), trim_tip: String(j.trim_tip ?? '').trim().slice(0, 180), pin_comment: String(j.pin_comment ?? '').trim().slice(0, 220), dm_keyword: String(j.dm_keyword ?? '').trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '').slice(0, 20), frame };
 }
 
+
+
+// ---------- Grow: Viral Script & Series Studio ----------
+async function viralStudio(x: Run, b: Record<string, unknown>) {
+	const reply = await chat(
+		x,
+		`You are a viral short-form Instagram Reels strategist for an Indian creator. Build ONE shoot-ready 20-30s Reel blueprint designed to maximize non-follower reach (3-second hold rate, Shares/Sends, Saves, and Follows).
+Use the creator's topic, niche, goal (followers/shares/saves), optional series_name, and her top_reels. Write in natural Indian-English with zero fake promises of views.
+Return ONLY JSON:
+{
+  "series": { "name": "short series title under 6 words", "episode": "Episode 1", "reason_to_follow": "one crisp sentence" },
+  "hooks": [
+    { "angle": "Curiosity gap", "onscreen": "max 6 words", "spoken": "under 14 words" },
+    { "angle": "Contrarian / mistake", "onscreen": "max 6 words", "spoken": "under 14 words" },
+    { "angle": "Specific / hyper-local", "onscreen": "max 6 words", "spoken": "under 14 words" }
+  ],
+  "beats": [
+    { "time": "0-2s", "shot": "visual framing", "onscreen": "short text", "spoken": "exact line" },
+    { "time": "2-6s", "shot": "visual proof", "onscreen": "short text", "spoken": "exact line" },
+    { "time": "6-16s", "shot": "fast value beats", "onscreen": "short text", "spoken": "exact line" },
+    { "time": "16-22s", "shot": "payoff + CTA", "onscreen": "CTA text", "spoken": "closing line with keyword" }
+  ],
+  "caption": "2-3 line caption with Comment-to-DM CTA",
+  "pin_comment": "question or value comment to pin first",
+  "dm_magnet": { "keyword": "ONE_WORD_UPPERCASE", "reply": "warm DM auto-reply with {link}" }
+}`,
+		JSON.stringify(b).slice(0, 6000),
+		900
+	);
+	const j = firstJson(reply) ?? {};
+	const s = (j.series ?? {}) as Record<string, unknown>;
+	const hooks = (Array.isArray(j.hooks) ? (j.hooks as Record<string, unknown>[]) : [])
+		.map((h) => ({ angle: String(h.angle ?? 'Hook').trim().slice(0, 40), onscreen: String(h.onscreen ?? '').trim().slice(0, 70), spoken: String(h.spoken ?? '').trim().slice(0, 140) }))
+		.filter((h) => h.onscreen || h.spoken)
+		.slice(0, 3);
+	const beats = (Array.isArray(j.beats) ? (j.beats as Record<string, unknown>[]) : [])
+		.map((bt) => ({ time: String(bt.time ?? '').trim().slice(0, 16), shot: String(bt.shot ?? '').trim().slice(0, 120), onscreen: String(bt.onscreen ?? '').trim().slice(0, 80), spoken: String(bt.spoken ?? '').trim().slice(0, 180) }))
+		.filter((bt) => bt.shot || bt.spoken)
+		.slice(0, 5);
+	const dm = (j.dm_magnet ?? {}) as Record<string, unknown>;
+	const kw = String(dm.keyword ?? 'LINK').trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '').slice(0, 20) || 'LINK';
+	return {
+		series: { name: String(s.name ?? 'Creator Series').trim().slice(0, 80), episode: String(s.episode ?? 'Episode 1').trim().slice(0, 30), reason_to_follow: String(s.reason_to_follow ?? 'Follow for the next episode.').trim().slice(0, 180) },
+		hooks,
+		beats,
+		caption: String(j.caption ?? '').trim().slice(0, 500),
+		pin_comment: String(j.pin_comment ?? '').trim().slice(0, 220),
+		dm_magnet: { keyword: kw, reply: String(dm.reply ?? 'Hi! Thanks for commenting — here is the link: {link}').trim().slice(0, 400) }
+	};
+}
+
+// ---------- Grow: Niche Trend Radar & Comment Question Miner ----------
+async function trendRadar(x: Run, b: Record<string, unknown>) {
+	const reply = await chat(
+		x,
+		`You are an Instagram growth strategist for an Indian creator. Surface 4 rising Reel formats tailored to her niche, city, top_reels, and peer_topics, and turn audience_questions into Reel ideas. Never promise views.
+Return ONLY JSON:
+{
+  "trends": [{ "title": "under 11 words", "format": "2-3 word format", "why_now": "1 sentence", "hook": "0-2s hook", "dm_keyword": "ONE_WORD_UPPERCASE" }],
+  "question_ideas": [{ "question": "follower question", "reel_title": "Reel title", "hook": "0-2s line" }]
+}`,
+		JSON.stringify(b).slice(0, 6000),
+		850
+	);
+	const j = firstJson(reply) ?? {};
+	const trends = (Array.isArray(j.trends) ? (j.trends as Record<string, unknown>[]) : [])
+		.map((t) => ({ title: String(t.title ?? '').trim().slice(0, 110), format: String(t.format ?? 'Reel format').trim().slice(0, 32), why_now: String(t.why_now ?? '').trim().slice(0, 180), hook: String(t.hook ?? '').trim().slice(0, 140), dm_keyword: String(t.dm_keyword ?? '').trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '').slice(0, 20) }))
+		.filter((t) => t.title)
+		.slice(0, 4);
+	const question_ideas = (Array.isArray(j.question_ideas) ? (j.question_ideas as Record<string, unknown>[]) : [])
+		.map((q) => ({ question: String(q.question ?? '').trim().slice(0, 180), reel_title: String(q.reel_title ?? '').trim().slice(0, 110), hook: String(q.hook ?? '').trim().slice(0, 140) }))
+		.filter((q) => q.reel_title)
+		.slice(0, 4);
+	return { trends, question_ideas };
+}
 
 // ---------- Public Free Tool: 100-point AI Instagram Profile Reviewer (no login) ----------
 async function publicProfileReview(x: Run, b: Record<string, unknown>) {
