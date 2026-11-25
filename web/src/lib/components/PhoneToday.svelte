@@ -251,7 +251,7 @@
 
 <div class="phone-today" use:homeMotion>
 <HomeGreeting date={T} {greet} {note} festival={!!fest} name={firstName(s.display_name)} birthday={!!bday} picture={ig?.profile_picture_url} metricLabel="Cycle live creator metrics"
-	followers={ig?.followers ?? 0} insights={ig?.insights}>
+	followers={ig?.followers ?? 0} insights={ig?.insights} engagementRate={ig?.engagement_rate ?? null} posts={studio.media}>
 	{#snippet metrics(orbMode: number)}
 		{#if orbMode === 0 && ig}
 			<b>{compact(ig.followers ?? 0)}</b><small>followers</small>

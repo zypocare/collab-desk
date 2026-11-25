@@ -134,18 +134,17 @@ export async function runSync(db: SupabaseClient, creator: number, opts: SyncOpt
     const { count: removed } = await others;
     if (removed) summary.removed_other_account = removed;
 
-    // 4. Account averages from the last 12 posts that are at least 3 days old.
-    const settledBefore = new Date(Date.now() - SETTLE).toISOString();
-    const { data: last12 } = await db.from('ig_media').select('views, reach, interactions, likes, comments').eq('creator_id', creator).neq('product_type', 'STORY').lt('posted_at', settledBefore).order('posted_at', { ascending: false }).limit(12);
+    // 4. Centralized industry-standard Engagement Rate from the last 10 non-Story posts:
+    // Avg(Likes + Comments + Shares + Saves) ÷ Followers × 100.
+    const { data: last10 } = await db.from('ig_media').select('views, reach, interactions, likes, comments, saves, shares').eq('creator_id', creator).neq('product_type', 'STORY').neq('media_type', 'STORY').order('posted_at', { ascending: false }).limit(10);
     const avg = (xs: (number | null)[]) => {
       const v = xs.filter((x): x is number => typeof x === 'number');
       return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null;
     };
-    // Posts without detailed figures still count with their likes and comments.
-    const avgInteractions = avg((last12 ?? []).map((r) => r.interactions ?? (r.likes === null && r.comments === null ? null : (r.likes ?? 0) + (r.comments ?? 0))));
+    const avgInteractions = avg((last10 ?? []).map((r) => r.interactions ?? (r.likes === null && r.comments === null ? null : (r.likes ?? 0) + (r.comments ?? 0) + (r.saves ?? 0) + (r.shares ?? 0))));
     const engagement = avgInteractions !== null && p.followers_count ? Math.round((avgInteractions / p.followers_count) * 10000) / 100 : null;
-    const avgViews = avg((last12 ?? []).map((r) => r.views));
-    const avgReach = avg((last12 ?? []).map((r) => r.reach));
+    const avgViews = avg((last10 ?? []).map((r) => r.views));
+    const avgReach = avg((last10 ?? []).map((r) => r.reach));
 
     // 4b. What brands ask for: the last 30 days (and the 30 before, for the change), averages per
     // format over 90 days, and follower growth.
@@ -166,7 +165,7 @@ export async function runSync(db: SupabaseClient, creator: number, opts: SyncOpt
       return v.length % 2 ? v[h] : (v[h - 1] + v[h]) / 2;
     };
     const round = (n: number | null, dp = 0) => (n === null ? null : Math.round(n * 10 ** dp) / 10 ** dp);
-    const interOf = (r: Post) => r.interactions ?? (r.likes === null && r.comments === null ? null : (r.likes ?? 0) + (r.comments ?? 0));
+    const interOf = (r: Post) => r.interactions ?? (r.likes === null && r.comments === null ? null : (r.likes ?? 0) + (r.comments ?? 0) + (r.saves ?? 0) + (r.shares ?? 0));
     const fmtStats = (xs: Post[]) => {
       const inter = avg(xs.map(interOf));
       // Saves and shares per 100 accounts reached: the strongest signs people found it worth keeping.
@@ -188,7 +187,7 @@ export async function runSync(db: SupabaseClient, creator: number, opts: SyncOpt
     // saved within their 24 hours, so they all count.
     const all90 = (m90 ?? []).filter((r) => r.product_type === 'STORY' || Date.parse(r.posted_at) < Date.now() - SETTLE);
     const isStory = (r: { product_type: string }) => r.product_type === 'STORY';
-    const recent12 = <T,>(xs: T[]) => xs.slice(0, 12);
+    const recent12 = <T,>(xs: T[]) => xs.slice(0, 10);
     const formats = {
       reels: fmtStats(recent12(all90.filter((r) => !isStory(r) && (r.product_type === 'REELS' || r.media_type === 'VIDEO')))),
       carousels: fmtStats(recent12(all90.filter((r) => !isStory(r) && r.media_type === 'CAROUSEL_ALBUM'))),
@@ -269,7 +268,7 @@ export async function runSync(db: SupabaseClient, creator: number, opts: SyncOpt
     });
     if (saveError) throw new Error(saveError.message);
     // Keep the follower-based figure for existing settings and exports. The profile uses insights.totals.
-    const shownEr = formats.reels.er || engagement;
+    const shownEr = engagement;
     await db.from('creator_settings').update({ followers: short(p.followers_count), ...(shownEr ? { engagement: `${+Number(shownEr).toFixed(2)}%` } : {}) }).eq('id', creator);
 
     // 5b. Audience health and brand safety (brands see it before booking). Never stops the sync.

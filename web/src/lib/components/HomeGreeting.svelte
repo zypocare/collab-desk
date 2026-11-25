@@ -1,15 +1,16 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import type { InsightsData } from '../insights';
+	import type { EngagementPost } from '../engagement';
 	import { headerDrift } from '../homeMotion';
 	import { igImg } from '../igImg';
 	import { compact } from '../util';
 	import DiwaliLayer from './DiwaliLayer.svelte';
 	import BirthdayLayer from './BirthdayLayer.svelte';
 	import ProfileEngagement from './ProfileEngagement.svelte';
-	let { date, name, greet, note, birthday = false, festival, picture, followers, insights, metricLabel, metrics, chips, actions }: {
+	let { date, name, greet, note, birthday = false, festival, picture, followers, insights, engagementRate = null, posts = null, metricLabel, metrics, chips, actions }: {
 		date: Date; name: string; greet: string; note: string; birthday?: boolean; festival: boolean;
-		picture?: string | null; followers: number; insights?: InsightsData | null; metricLabel: string;
+		picture?: string | null; followers: number; insights?: InsightsData | null; engagementRate?: number | null; posts?: EngagementPost[] | null; metricLabel: string;
 		metrics: Snippet<[number]>; chips: Snippet; actions: Snippet;
 	} = $props();
 	let orbMode = $state(0);
@@ -49,7 +50,7 @@
 		</button>
 	</div>
 
-	<ProfileEngagement {insights} />
+	<ProfileEngagement rate={engagementRate} {posts} {followers} {insights} />
 
 	<div class="ht-chips">{@render chips()}</div>
 	<div class="qa-strip">{@render actions()}</div>

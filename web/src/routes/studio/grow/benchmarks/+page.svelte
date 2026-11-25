@@ -3,6 +3,7 @@
 	import { invokeFn, loadInstagram, studio } from '#lib/studio.svelte.ts';
 	import { supabase } from '#lib/supabase.ts';
 	import { toast } from '#lib/ui.svelte.ts';
+	import { calcPublicEngagementRate } from '#lib/engagement.ts';
 	import { compact, errMessage } from '#lib/util.ts';
 	import { igImg } from '#lib/igImg.ts';
 	import { portal } from '#lib/portal.ts';
@@ -86,15 +87,11 @@
 
 	const connected = $derived(!!studio.ig?.connected);
 
-	// Exclude Stories so engagement rate and posts/week reflect actual feed/Reel posts.
 	const myStats = $derived.by(() => {
 		const followers = Number(studio.ig?.followers ?? 0);
 		const feed = studio.media.filter((m) => m.media_type !== 'STORY' && m.product_type !== 'STORY');
-		const recent = feed.slice(0, 12);
-		const avgEng = recent.length
-			? recent.reduce((a, m) => a + Number(m.likes ?? 0) + Number(m.comments ?? 0), 0) / recent.length
-			: 0;
-		const er = followers > 0 && recent.length ? Number(((avgEng / followers) * 100).toFixed(2)) : 0;
+		const recent = feed.slice(0, 10);
+		const er = calcPublicEngagementRate(studio.media, followers, 10) ?? Number(studio.ig?.engagement_rate ?? 0);
 		const viewed = recent.map((m) => Number(m.views ?? 0)).filter((v) => v > 0);
 		const avgViews = viewed.length ? Math.round(viewed.reduce((a, b) => a + b, 0) / viewed.length) : 0;
 		let ppw = 0;
@@ -118,7 +115,6 @@
 		return { er, ppw, followers, avgViews };
 	});
 
-	// Concrete, actionable takeaways comparing you vs your tracked peers.
 	const takeaways = $derived.by(() => {
 		if (!peerAvg || !peers.length) return [];
 		const out: { title: string; detail: string; href: string; cta: string }[] = [];
@@ -269,7 +265,7 @@
 <div class="bm">
 	<header class="bm-head">
 		<div class="bm-top">
-			<p>See what actually drives views, comments, and brand deals for creators in your niche—then remix their winning angles.</p>
+			<p>See what drives views, comments, and brand deals for creators in your niche—then remix their winning angles.</p>
 			{#if peers.length}
 				<button class="bm-sync" onclick={refreshAll} disabled={busy === 'refresh'}>
 					<Icon name="refresh" />
@@ -309,23 +305,23 @@
 		{#if peerAvg}
 			<section class="bm-vs">
 				<div class="bm-stat">
-					<small>Your Engagement</small>
+					<small>Public ER</small>
 					<b>{myStats.er}%</b>
 					<span class:good={myStats.er >= peerAvg.er} class:warn={myStats.er < peerAvg.er}>
-						Peers avg {peerAvg.er}%
+						Peers {peerAvg.er}%
 					</span>
 				</div>
 				<div class="bm-stat">
-					<small>Your Posts / wk</small>
+					<small>Posts / wk</small>
 					<b>{myStats.ppw}</b>
 					<span class:good={myStats.ppw >= peerAvg.ppw} class:warn={myStats.ppw < peerAvg.ppw}>
-						Peers avg {peerAvg.ppw}
+						Peers {peerAvg.ppw}
 					</span>
 				</div>
 				<div class="bm-stat">
-					<small>{peerAvg.avgViews ? 'Avg Reel Views' : 'Your Followers'}</small>
+					<small>{peerAvg.avgViews ? 'Avg views' : 'Followers'}</small>
 					<b>{peerAvg.avgViews ? compact(myStats.avgViews) : compact(myStats.followers)}</b>
-					<span>Peers avg {compact(peerAvg.avgViews || peerAvg.followers)}</span>
+					<span>Peers {compact(peerAvg.avgViews || peerAvg.followers)}</span>
 				</div>
 			</section>
 
@@ -373,7 +369,7 @@
 									<a href="https://www.instagram.com/{p.username}/" target="_blank" rel="noopener">@{p.username}</a>
 									{#if myStats.er > 0 && Number(p.engagement_rate) > 0}
 										<span class="bm-delta" class:good={erDiff >= 0} class:warn={erDiff < 0}>
-											{erDiff >= 0 ? `You +${erDiff}% ER` : `Peer +${Math.abs(erDiff)}% ER`}
+											{erDiff >= 0 ? `You +${erDiff}%` : `Peer +${Math.abs(erDiff)}%`}
 										</span>
 									{/if}
 								</div>
@@ -395,7 +391,7 @@
 							{:else}
 								<div><small>Avg likes</small><b>{compact(p.avg_likes)}</b></div>
 							{/if}
-							<div><small>Avg comments</small><b>{compact(p.avg_comments)}</b></div>
+							<div><small>Comments</small><b>{compact(p.avg_comments)}</b></div>
 						</div>
 
 						{#if mixText || ins?.best_time || ins?.comment_magnet_posts || ins?.collab_posts || ins?.top_hashtags?.length}
@@ -528,7 +524,7 @@
 	}
 	.bm-top p {
 		margin: 0;
-		font-size: 13.5px;
+		font-size: 15px;
 		line-height: 1.5;
 		color: var(--ink-2);
 	}
@@ -536,18 +532,18 @@
 		display: inline-flex;
 		align-items: center;
 		gap: 6px;
-		padding: 7px 12px;
+		padding: 9px 14px;
 		border-radius: 99px;
 		border: 1px solid var(--line-strong);
 		background: var(--surface);
 		color: var(--ink);
-		font: 600 12px var(--f-body, inherit);
+		font: 600 13.5px var(--f-body, inherit);
 		cursor: pointer;
 		flex-shrink: 0;
 	}
 	.bm-sync :global(.ic) {
-		width: 14px;
-		height: 14px;
+		width: 15px;
+		height: 15px;
 	}
 	.bm-add {
 		display: flex;
@@ -559,6 +555,7 @@
 		border: 1px solid var(--line-strong);
 	}
 	.bm-at {
+		font-size: 16px;
 		font-weight: 700;
 		color: var(--g1);
 	}
@@ -569,23 +566,25 @@
 		background: transparent;
 		color: var(--ink);
 		font: inherit;
-		font-size: 14px;
+		font-size: 15.5px;
 		outline: none;
 	}
+	/* Sharp NeoPOP button matching Miracle app */
 	.bm-neopop {
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
 		gap: 6px;
-		padding: 9px 15px;
-		border-radius: 9px;
+		min-height: 40px;
+		padding: 9px 16px;
+		border-radius: 0;
 		border: 1px solid var(--ink);
 		background: var(--ink);
 		color: var(--bg);
-		font: 700 12.5px var(--f-body, inherit);
+		font: 700 14px var(--f-body, inherit);
 		text-decoration: none;
 		cursor: pointer;
-		box-shadow: 2.5px 2.5px 0 var(--g2);
+		box-shadow: 3px 3px 0 var(--g2);
 		flex-shrink: 0;
 	}
 	.bm-neopop:disabled {
@@ -601,7 +600,7 @@
 	}
 	.bm-hint p {
 		margin: 0;
-		font-size: 13px;
+		font-size: 14.5px;
 		line-height: 1.45;
 		color: var(--ink-2);
 	}
@@ -613,24 +612,24 @@
 	.bm-stat {
 		background: var(--surface);
 		border: 1px solid var(--line);
-		border-radius: 14px;
-		padding: 12px 11px;
+		border-radius: 16px;
+		padding: 13px 12px;
 		display: grid;
-		gap: 3px;
+		gap: 4px;
 	}
 	.bm-stat small {
-		font-size: 10px;
-		font-weight: 700;
-		letter-spacing: 0.08em;
+		font: 700 11px/1.2 var(--f-mono, ui-monospace, monospace);
+		letter-spacing: 0.06em;
 		text-transform: uppercase;
 		color: var(--ink-3);
 	}
 	.bm-stat b {
-		font: 400 24px/1.1 var(--f-serif, Georgia, serif);
+		font: 400 28px/1.05 var(--f-serif, Georgia, serif);
 		color: var(--ink);
+		font-variant-numeric: tabular-nums;
 	}
 	.bm-stat span {
-		font-size: 11px;
+		font-size: 13px;
 		color: var(--ink-3);
 	}
 	.bm-stat span.good {
@@ -643,9 +642,9 @@
 		background: var(--surface);
 		border: 1px solid var(--line);
 		border-radius: 18px;
-		padding: 15px;
+		padding: 16px;
 		display: grid;
-		gap: 12px;
+		gap: 13px;
 	}
 	.bm-play {
 		border-color: color-mix(in oklab, var(--g1) 34%, var(--line));
@@ -653,40 +652,41 @@
 	}
 	.bm-act-list {
 		display: grid;
-		gap: 9px;
+		gap: 10px;
 	}
 	.bm-act {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		gap: 10px;
-		padding: 10px 11px;
-		border-radius: 12px;
+		gap: 12px;
+		padding: 12px 13px;
+		border-radius: 14px;
 		background: var(--surface-2);
 		border: 1px solid var(--line);
 	}
 	.bm-act > div {
 		min-width: 0;
 		display: grid;
-		gap: 2px;
+		gap: 3px;
 	}
 	.bm-act b {
-		font-size: 13px;
+		font-size: 15px;
+		line-height: 1.35;
 		color: var(--ink);
 	}
 	.bm-act small {
-		font-size: 11.5px;
-		line-height: 1.4;
+		font-size: 13.5px;
+		line-height: 1.45;
 		color: var(--ink-2);
 	}
 	.bm-act-btn {
 		flex-shrink: 0;
-		padding: 6px 10px;
-		border-radius: 8px;
-		border: 1px solid color-mix(in oklab, var(--g1) 42%, var(--line));
+		padding: 8px 12px;
+		border-radius: 0;
+		border: 1px solid color-mix(in oklab, var(--g1) 48%, var(--line));
 		background: color-mix(in oklab, var(--g1) 14%, transparent);
 		color: var(--ink);
-		font: 600 11.5px var(--f-body, inherit);
+		font: 700 13px var(--f-body, inherit);
 		text-decoration: none;
 		white-space: nowrap;
 	}
@@ -697,17 +697,17 @@
 		gap: 8px;
 	}
 	.bm-empty b {
-		font-size: 16px;
+		font-size: 17px;
 	}
 	.bm-empty small {
-		font-size: 13px;
+		font-size: 14.5px;
 		color: var(--ink-3);
 		max-width: 34ch;
 		line-height: 1.45;
 	}
 	.bm-ic {
-		width: 40px;
-		height: 40px;
+		width: 44px;
+		height: 44px;
 		border-radius: 12px;
 		display: grid;
 		place-items: center;
@@ -717,16 +717,16 @@
 	}
 	.bm-list {
 		display: grid;
-		gap: 12px;
+		gap: 14px;
 	}
 	.bm-peer-h {
 		display: flex;
 		align-items: flex-start;
-		gap: 11px;
+		gap: 12px;
 	}
 	.bm-av {
-		width: 44px;
-		height: 44px;
+		width: 48px;
+		height: 48px;
 		border-radius: 50%;
 		object-fit: cover;
 		border: 1px solid var(--line-strong);
@@ -737,30 +737,31 @@
 		place-items: center;
 		background: var(--surface-2);
 		color: var(--g1);
+		font-size: 18px;
 		font-weight: 700;
 	}
 	.bm-peer-meta {
 		flex: 1;
 		min-width: 0;
 		display: grid;
-		gap: 3px;
+		gap: 4px;
 	}
 	.bm-peer-t {
 		display: flex;
 		align-items: center;
-		gap: 7px;
+		gap: 8px;
 		flex-wrap: wrap;
 	}
 	.bm-peer-t a {
 		font-weight: 700;
-		font-size: 15px;
+		font-size: 17px;
 		color: var(--ink);
 		text-decoration: none;
 	}
 	.bm-delta {
-		padding: 2px 7px;
+		padding: 3px 9px;
 		border-radius: 99px;
-		font: 700 10px/1.2 var(--f-mono, ui-monospace, monospace);
+		font: 700 11.5px/1.2 var(--f-mono, ui-monospace, monospace);
 	}
 	.bm-delta.good {
 		color: var(--ok);
@@ -773,13 +774,13 @@
 		border: 1px solid color-mix(in oklab, var(--g2) 32%, var(--line));
 	}
 	.bm-peer-meta small {
-		font-size: 12px;
+		font-size: 13.5px;
 		color: var(--ink-3);
 	}
 	.bm-bio {
 		margin: 2px 0 0;
-		font-size: 12px;
-		line-height: 1.4;
+		font-size: 13.5px;
+		line-height: 1.45;
 		color: var(--ink-2);
 		display: -webkit-box;
 		-webkit-line-clamp: 2;
@@ -795,48 +796,52 @@
 		cursor: pointer;
 	}
 	.bm-del :global(.ic) {
-		width: 16px;
-		height: 16px;
+		width: 18px;
+		height: 18px;
 	}
 	.bm-metrics {
 		display: grid;
 		grid-template-columns: repeat(4, 1fr);
-		gap: 6px;
-		padding: 10px 11px;
-		border-radius: 12px;
+		gap: 8px;
+		padding: 12px;
+		border-radius: 14px;
 		background: var(--surface-2);
 		border: 1px solid var(--line);
 	}
 	.bm-metrics small {
 		display: block;
-		font-size: 9.5px;
+		font-size: 11px;
+		font-weight: 600;
 		text-transform: uppercase;
-		letter-spacing: 0.06em;
+		letter-spacing: 0.05em;
 		color: var(--ink-3);
 	}
 	.bm-metrics b {
-		font-size: 14px;
+		display: block;
+		margin-top: 2px;
+		font-size: 16px;
+		font-variant-numeric: tabular-nums;
 		color: var(--ink);
 	}
 	.bm-signals {
 		display: grid;
-		gap: 7px;
-		padding: 10px 11px;
-		border-radius: 12px;
+		gap: 9px;
+		padding: 12px 13px;
+		border-radius: 14px;
 		background: color-mix(in oklab, var(--surface-2) 65%, transparent);
 		border: 1px solid var(--line);
 	}
 	.bm-sig {
 		display: flex;
 		align-items: flex-start;
-		gap: 8px;
-		font-size: 12px;
-		line-height: 1.4;
+		gap: 9px;
+		font-size: 13.5px;
+		line-height: 1.45;
 		color: var(--ink-2);
 	}
 	.bm-sig :global(.ic) {
-		width: 14px;
-		height: 14px;
+		width: 16px;
+		height: 16px;
 		margin-top: 2px;
 		flex-shrink: 0;
 		color: var(--g1);
@@ -851,46 +856,45 @@
 	.bm-tags {
 		display: flex;
 		flex-wrap: wrap;
-		gap: 5px;
+		gap: 6px;
 		margin-top: 2px;
 	}
 	.bm-tags span {
-		padding: 3px 8px;
+		padding: 4px 10px;
 		border-radius: 99px;
 		background: var(--surface);
 		border: 1px solid var(--line);
-		font: 600 10.5px var(--f-mono, ui-monospace, monospace);
-		color: var(--ink-3);
+		font: 600 12px var(--f-mono, ui-monospace, monospace);
+		color: var(--ink-2);
 	}
 	.bm-refresh-note {
 		margin: 0;
-		font-size: 12px;
+		font-size: 13.5px;
 		color: var(--ink-3);
 	}
 	.bm-sub {
-		font-size: 10.5px;
-		font-weight: 700;
-		letter-spacing: 0.1em;
+		font: 700 12px/1.2 var(--f-mono, ui-monospace, monospace);
+		letter-spacing: 0.09em;
 		text-transform: uppercase;
 		color: var(--ink-3);
 	}
 	.bm-posts {
 		display: grid;
-		gap: 8px;
+		gap: 9px;
 	}
 	.bm-post {
 		display: flex;
 		align-items: center;
-		gap: 10px;
-		padding: 9px 10px;
-		border-radius: 12px;
+		gap: 11px;
+		padding: 10px 11px;
+		border-radius: 14px;
 		background: var(--surface-2);
 		border: 1px solid var(--line);
 	}
 	.bm-pthumb {
-		width: 40px;
-		height: 52px;
-		border-radius: 8px;
+		width: 44px;
+		height: 58px;
+		border-radius: 9px;
 		overflow: hidden;
 		flex-shrink: 0;
 		border: 1px solid var(--line);
@@ -909,17 +913,17 @@
 		color: var(--ink-3);
 	}
 	.bm-pthumb-ph :global(.ic) {
-		width: 16px;
-		height: 16px;
+		width: 18px;
+		height: 18px;
 	}
 	.bm-post-body {
 		min-width: 0;
 		flex: 1;
 		display: grid;
-		gap: 3px;
+		gap: 4px;
 	}
 	.bm-post-body a {
-		font-size: 13px;
+		font-size: 14.5px;
 		font-weight: 600;
 		color: var(--ink);
 		text-decoration: none;
@@ -930,34 +934,34 @@
 	.bm-pmeta {
 		display: flex;
 		align-items: center;
-		gap: 6px;
+		gap: 7px;
 		flex-wrap: wrap;
 	}
 	.bm-pmeta small {
-		font-size: 11px;
+		font-size: 12.5px;
 		color: var(--ink-3);
 	}
 	.bm-mult {
-		padding: 1px 6px;
+		padding: 2px 7px;
 		border-radius: 99px;
-		font: 700 9.5px/1.3 var(--f-mono, ui-monospace, monospace);
+		font: 700 11px/1.3 var(--f-mono, ui-monospace, monospace);
 		color: var(--ok);
 		background: color-mix(in oklab, var(--ok) 14%, transparent);
 	}
 	.bm-dm {
-		padding: 1px 6px;
+		padding: 2px 7px;
 		border-radius: 99px;
-		font: 700 9.5px/1.3 var(--f-mono, ui-monospace, monospace);
+		font: 700 11px/1.3 var(--f-mono, ui-monospace, monospace);
 		color: var(--g2);
 		background: color-mix(in oklab, var(--g2) 14%, transparent);
 	}
 	.bm-remix {
-		padding: 6px 11px;
+		padding: 7px 13px;
 		border-radius: 99px;
-		border: 1px solid color-mix(in oklab, var(--g1) 45%, var(--line));
+		border: 1px solid color-mix(in oklab, var(--g1) 48%, var(--line));
 		background: color-mix(in oklab, var(--g1) 14%, transparent);
 		color: var(--g1);
-		font: 600 11.5px var(--f-body, inherit);
+		font: 600 13px var(--f-body, inherit);
 		text-decoration: none;
 		flex-shrink: 0;
 	}
@@ -1046,7 +1050,7 @@
 		place-items: center;
 	}
 	.bm-ov-eb {
-		font: 700 10px/1.2 var(--f-mono, ui-monospace, monospace);
+		font: 700 11px/1.2 var(--f-mono, ui-monospace, monospace);
 		letter-spacing: 0.14em;
 		text-transform: uppercase;
 		color: #9b8fa8;
@@ -1059,7 +1063,7 @@
 	}
 	.bm-ov-sub {
 		margin: 0;
-		font-size: 13px;
+		font-size: 14px;
 		line-height: 1.5;
 		color: #cfc6d6;
 		max-width: 32ch;
@@ -1077,7 +1081,7 @@
 		display: flex;
 		align-items: center;
 		gap: 10px;
-		font-size: 13px;
+		font-size: 14px;
 		color: #7d7288;
 		transition: color 0.2s;
 	}
@@ -1115,5 +1119,10 @@
 	.bm-step.done .bm-sdot :global(.ic) {
 		width: 12px;
 		height: 12px;
+	}
+	@media (max-width: 520px) {
+		.bm-metrics {
+			grid-template-columns: repeat(2, 1fr);
+		}
 	}
 </style>

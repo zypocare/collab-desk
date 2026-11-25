@@ -35,7 +35,7 @@
 				{#if change !== null}<small class:up={change >= 0} class:down={change < 0}>{change >= 0 ? '+' : ''}{change.toLocaleString('en-IN')} in 30 days</small>{/if}
 				{#if spark}<svg class="spark" viewBox="0 0 100 32" preserveAspectRatio="none" aria-hidden="true"><polyline points={spark} fill="none" stroke="var(--accent)" stroke-width="1.6" vector-effect="non-scaling-stroke" /></svg>{/if}
 			</div>
-			<div class="ig-stat"><span class="lbl">Engagement</span><b class="big">{ig.engagement_rate ?? '—'}%</b><small>last 12 posts</small></div>
+			<div class="ig-stat"><span class="lbl">Engagement</span><b class="big">{ig.engagement_rate ?? '—'}%</b><small>last 10 posts</small></div>
 			<div class="ig-stat"><span class="lbl">Avg. views</span><b class="big">{compact(ig.avg_views)}</b><small>avg. reach {compact(ig.avg_reach)}</small></div>
 			{#if reachOk(t30)}
 				{@const ch = pctChange(t30.reach, p30.reach)}

@@ -623,7 +623,7 @@
 							<div style="display:grid;gap:10px">
 								<span class="mp-eb">Brand collaborations{p.city ? ` · ${p.city}` : ''}</span>
 								{#if status}<span class="mp-status" class:mp-off={status.off}><i></i>{status.text}</span>{/if}
-								{#if !ig}<ProfileEngagement insights={ins?.insights} />{/if}
+								{#if !ig}<ProfileEngagement rate={ins?.engagement_rate ?? null} followers={ins?.followers ?? null} insights={ins?.insights} />{/if}
 							</div>
 						</div>
 						<h1 id="mp-name">
@@ -660,7 +660,7 @@
 								<div style="display:flex;justify-content:space-between;align-items:center"><span class="mp-eb" style="font-size:10.5px">Instagram today</span>{#if ig.updated}<span class="mp-updated">updated {ig.updated}</span>{/if}</div>
 								<div class="mp-big-n">
 									<div><span class="mp-num" use:countUp={{ to: ig.followers, delay: 400 }}></span><p>followers{ig.posts ? ` · ${ig.posts.toLocaleString('en-IN')} posts` : ''}</p></div>
-									<ProfileEngagement badge insights={ins?.insights} />
+									<ProfileEngagement badge rate={ins?.engagement_rate ?? null} followers={ig?.followers ?? ins?.followers ?? null} insights={ins?.insights} />
 								</div>
 								{#if spark}
 									<div class="mp-spark" role="img" aria-label="Followers over the last {ig.history.length} days"><svg viewBox="0 0 300 56" preserveAspectRatio="none"><path class="mp-l" d={spark} /></svg></div>

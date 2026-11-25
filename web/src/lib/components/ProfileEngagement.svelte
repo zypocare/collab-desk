@@ -1,21 +1,49 @@
 <script lang="ts">
+	import { calcEngagementRate, erText, type EngagementPost } from '../engagement';
 	import { engagedShare, type InsightsData } from '../insights';
-	import { fmt } from '../util';
+	import { compact } from '../util';
 	import Icon from './Icon.svelte';
 
-	let { insights, badge = false }: { insights?: InsightsData | null; badge?: boolean } = $props();
-	const metric = $derived(engagedShare(insights?.totals));
+	let {
+		rate = null,
+		posts = null,
+		followers = null,
+		insights = null,
+		badge = false
+	}: {
+		rate?: number | null;
+		posts?: EngagementPost[] | null;
+		followers?: number | null;
+		insights?: InsightsData | null;
+		badge?: boolean;
+	} = $props();
+
+	const computed = $derived(calcEngagementRate(posts, followers));
+	const finalRate = $derived(
+		computed !== null
+			? computed
+			: typeof rate === 'number' && Number.isFinite(rate) && rate >= 0
+				? Math.round(rate * 100) / 100
+				: null
+	);
+	const legacy = $derived(finalRate === null ? engagedShare(insights?.totals) : null);
+	const shown = $derived(finalRate !== null ? erText(finalRate) : legacy ? `${legacy.percent}%` : '');
 </script>
 
-{#if metric}
+{#if shown}
 	<details class="audience-rate" class:badge>
 		<summary>
-			<span class="rate"><strong>{metric.percent}%</strong> engagement rate</span>
-			<small>{badge ? 'Last 30 days' : 'Last 30 days · Instagram Insights'}</small>
+			<span class="rate"><strong>{shown}</strong> engagement rate</span>
+			<small>{finalRate !== null ? 'Last 10 posts · Instagram' : badge ? 'Last 30 days' : 'Last 30 days · Instagram'}</small>
 			<Icon name="chevD" />
 		</summary>
-		<p>{metric.engaged.toLocaleString('en-IN')} accounts engaged ÷ {metric.reached.toLocaleString('en-IN')} accounts reached × 100 = {metric.percent}%</p>
-		{#if insights?.from && insights.to}<small>{fmt(insights.from)} – {fmt(insights.to)}</small>{/if}
+		{#if finalRate !== null}
+			<p>
+				Avg (Likes + Comments + Shares + Saves) across last 10 posts ÷ {followers ? `${compact(followers)} followers` : 'Followers'} × 100 = {shown}
+			</p>
+		{:else if legacy}
+			<p>{legacy.engaged.toLocaleString('en-IN')} accounts engaged ÷ {legacy.reached.toLocaleString('en-IN')} accounts reached × 100 = {legacy.percent}%</p>
+		{/if}
 	</details>
 {/if}
 

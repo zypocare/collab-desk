@@ -176,7 +176,7 @@
 		<div class="l-hi">
 			<span class="l-eb">{T.toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}{urgent ? ` · ${urgent} due today` : ''}</span>
 			<h1>{greet}, <em>{firstName(s.display_name)}</em></h1>
-			<ProfileEngagement insights={studio.ig?.connected ? studio.ig.insights : null} />
+			<ProfileEngagement rate={studio.ig?.connected ? studio.ig.engagement_rate : null} posts={studio.ig?.connected ? studio.media : null} followers={studio.ig?.connected ? studio.ig.followers : null} insights={studio.ig?.connected ? studio.ig.insights : null} />
 		</div>
 		<button class="l-search" onclick={() => (ui.searchOpen = true)}>
 			<Icon name="search" /><span>search “{hintBrand}”</span><kbd>{mac ? '⌘K' : 'Ctrl K'}</kbd>

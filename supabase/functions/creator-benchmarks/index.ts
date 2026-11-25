@@ -97,10 +97,12 @@ function analyzePeerPosts(
   topPosts: PeerPost[];
   insights: PeerInsights;
 } {
-  const n = posts.length;
-  const avgLikes = n ? Math.round(posts.reduce((a, p) => a + p.likes, 0) / n) : 0;
-  const avgComments = n ? Math.round(posts.reduce((a, p) => a + p.comments, 0) / n) : 0;
-  const er = followers > 0 && n ? Number((((avgLikes + avgComments) / followers) * 100).toFixed(2)) : 0;
+  const recent10 = posts.slice(0, 10);
+  const n = recent10.length;
+  const avgLikes = n ? Math.round(recent10.reduce((a, p) => a + p.likes, 0) / n) : 0;
+  const avgComments = n ? Math.round(recent10.reduce((a, p) => a + p.comments, 0) / n) : 0;
+  const avgEng10 = n ? recent10.reduce((a, p) => a + p.likes + p.comments, 0) / n : 0;
+  const er = followers > 0 && n ? Math.round((avgEng10 / followers) * 10000) / 100 : 0;
 
   let postsPerWeek = 0;
   if (n >= 2) {
@@ -275,7 +277,7 @@ async function lookupInMiracle(db: SupabaseClient, handle: string): Promise<Peer
     media_count: Number(acct.media_count ?? posts.length),
     avg_likes: a.avgLikes,
     avg_comments: a.avgComments,
-    engagement_rate: Number(acct.engagement_rate ?? a.er),
+    engagement_rate: a.er,
     posts_per_week: a.postsPerWeek,
     top_posts: a.topPosts,
     insights: a.insights,

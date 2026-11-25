@@ -144,10 +144,8 @@ export function insightKpis(d: PublicInsights): Kpi[] {
 		{ k: 'Accounts reached', v: reachOk(t) ? t.reach : undefined, sub: '30 days', ch: reachOk(pv) ? change(t.reach, pv.reach) : null },
 		{ k: 'Views', v: t.views, sub: '30 days', ch: change(t.views, pv.views) },
 		{ k: 'Accounts engaged', v: t.accounts_engaged, sub: '30 days', ch: change(t.accounts_engaged, pv.accounts_engaged) },
-		// The headline rate is the Reels one (what brands mostly book), labelled as such; all posts if no Reels.
-		f?.reels?.er != null
-			? { k: 'Reels engagement by followers', v: f.reels.er, sub: `Last ${f.reels.posts} Reel${f.reels.posts === 1 ? '' : 's'}`, ch: null, pct: true }
-			: { k: 'Post engagement by followers', v: d.engagement_rate, sub: 'Up to 12 recent posts', ch: null, pct: true },
+		// Centralized industry-standard Engagement Rate across the last 10 non-Story posts.
+		{ k: 'Engagement rate', v: d.engagement_rate ?? f?.reels?.er, sub: 'Last 10 posts', ch: null, pct: true },
 		{ k: 'Interactions', v: t.total_interactions, sub: '30 days', ch: change(t.total_interactions, pv.total_interactions) },
 		{ k: 'Avg. Reel views', v: f?.reels.avg_views ?? d.avg_views, sub: f?.reels.posts ? `based on ${basedOn(f.reels)} Reel${basedOn(f.reels) === 1 ? '' : 's'}` : 'recent posts', ch: null },
 		// How long people watch a Reel, on average per view (from Instagram).
