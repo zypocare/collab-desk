@@ -1,10 +1,12 @@
 // Creator Peer Benchmarks, Comment Question Miner & Weekly Trend Radar Push:
-// - 100% automated 4-tier peer lookup (zero manual entry):
+// - 100% automated 4-tier peer lookup + rich competitor intelligence:
 //   1) Miracle's own synced ig_account/ig_media if the peer is on Miracle
-//   2) Official Meta Graph business_discovery (if META_BUSINESS_TOKEN + META_IG_BUSINESS_ID secrets exist)
+//   2) Official Meta Graph business_discovery (META_BUSINESS_TOKEN + META_IG_BUSINESS_ID)
+//   2b) Apify Instagram Profile Scraper (APIFY_API_TOKEN) — extracts Reel views, thumbnails, bio, format mix, collabs
 //   3) Instagram's public web_profile_info JSON + public profile OG metadata parser
 //   4) Automated Gemini + Google Search grounding via Miracle's Cloudflare Worker (/api/ai/peerlookup)
-// - Scans the creator's own recent Reels' comments for repeated audience questions.
+// - Computes actionable peer insights: format mix, avg Reel views, median likes, comment-magnet lift,
+//   collab/sponsored post ratio & brand mentions, peak posting day/window (IST), and breakout multipliers.
 // - Runs every Monday 10:00 AM IST via cron to send proactive Trend Radar push nudges.
 import { createClient, type SupabaseClient } from 'npm:@supabase/supabase-js@2';
 import { admin, cronAllowed } from '../_shared/admin.ts';
@@ -26,9 +28,31 @@ type PeerPost = {
   caption: string;
   likes: number;
   comments: number;
+  views?: number;
+  thumbnail_url?: string;
   media_type: string;
   permalink: string;
   timestamp: string;
+  multiplier?: number;
+  has_dm_cta?: boolean;
+};
+
+type PeerInsights = {
+  bio?: string;
+  category?: string;
+  avg_views?: number;
+  median_likes?: number;
+  reels_pct?: number;
+  carousel_pct?: number;
+  photo_pct?: number;
+  comment_magnet_posts?: number;
+  comment_magnet_lift?: number;
+  collab_posts?: number;
+  collab_brands?: string[];
+  best_day?: string;
+  best_time?: string;
+  top_hashtags?: string[];
+  sample_size?: number;
 };
 
 type PeerData = {
@@ -42,12 +66,153 @@ type PeerData = {
   engagement_rate: number;
   posts_per_week: number;
   top_posts: PeerPost[];
+  insights: PeerInsights;
   synced_at: string;
 };
 
 type ResolveOutcome =
   | { ok: true; peer: PeerData; source: string }
   | { ok: false; suggested_handle?: string; error: string };
+
+const DM_CTA_RE = /\b(comment\s+(?:["'“”]?[a-z0-9]+["'“”]?\s+)?(?:for|to\s+get|below)|dm\s+(?:me|for)|drop\s+a?\s*comment|link\s+in\s+(?:dm|bio)|type\s+["'“”]?[a-z0-9]+["'“”]?)\b/i;
+const COLLAB_RE = /(#(ad|collab|sponsored|paidpartnership|brandpartner|gifted|pr)\b|\bpaid\s+partnership\b|\bin\s+collaboration\s+with\b|\buse\s+(?:my\s+)?code\b|\bshop\s+@)/i;
+
+function median(nums: number[]): number {
+  if (!nums.length) return 0;
+  const s = [...nums].sort((a, b) => a - b);
+  const mid = Math.floor(s.length / 2);
+  return s.length % 2 ? s[mid] : Math.round((s[mid - 1] + s[mid]) / 2);
+}
+
+/** Analyze a peer's recent posts into concrete, actionable strategy signals. */
+function analyzePeerPosts(
+  posts: PeerPost[],
+  followers: number,
+  extra: { bio?: string; category?: string } = {}
+): {
+  avgLikes: number;
+  avgComments: number;
+  er: number;
+  postsPerWeek: number;
+  topPosts: PeerPost[];
+  insights: PeerInsights;
+} {
+  const n = posts.length;
+  const avgLikes = n ? Math.round(posts.reduce((a, p) => a + p.likes, 0) / n) : 0;
+  const avgComments = n ? Math.round(posts.reduce((a, p) => a + p.comments, 0) / n) : 0;
+  const er = followers > 0 && n ? Number((((avgLikes + avgComments) / followers) * 100).toFixed(2)) : 0;
+
+  let postsPerWeek = 0;
+  if (n >= 2) {
+    const times = posts.map((p) => Date.parse(p.timestamp)).filter((t) => Number.isFinite(t)).sort((a, b) => b - a);
+    if (times.length >= 2) {
+      const spanDays = Math.max(1, (times[0] - times[times.length - 1]) / 864e5);
+      postsPerWeek = Number(Math.min(28, (times.length / spanDays) * 7).toFixed(1));
+    }
+  }
+
+  // Avg views across video/Reel posts that expose views
+  const viewed = posts.map((p) => p.views ?? 0).filter((v) => v > 0);
+  const avgViews = viewed.length ? Math.round(viewed.reduce((a, b) => a + b, 0) / viewed.length) : 0;
+
+  // Format mix
+  let reels = 0;
+  let carousels = 0;
+  let photos = 0;
+  for (const p of posts) {
+    const t = p.media_type.toUpperCase();
+    if (t.includes('VIDEO') || t.includes('REEL')) reels++;
+    else if (t.includes('CAROUSEL') || t.includes('SIDECAR')) carousels++;
+    else photos++;
+  }
+
+  // Comment-to-DM magnet detection & comment lift
+  const dmPosts = posts.filter((p) => DM_CTA_RE.test(p.caption));
+  const nonDmPosts = posts.filter((p) => !DM_CTA_RE.test(p.caption));
+  const dmAvgCom = dmPosts.length ? dmPosts.reduce((a, p) => a + p.comments, 0) / dmPosts.length : 0;
+  const baseCom = nonDmPosts.length ? nonDmPosts.reduce((a, p) => a + p.comments, 0) / nonDmPosts.length : avgComments;
+  const dmLift = dmPosts.length && baseCom > 0 ? Number((dmAvgCom / baseCom).toFixed(1)) : 0;
+
+  // Collab / brand partnership detection
+  const collabPosts = posts.filter((p) => COLLAB_RE.test(p.caption));
+  const brandSet = new Set<string>();
+  for (const p of collabPosts) {
+    for (const m of p.caption.matchAll(/@([a-z0-9._]{2,30})/gi)) {
+      brandSet.add(m[1].toLowerCase());
+    }
+  }
+
+  // Peak posting day & IST time window
+  const dayCounts = new Map<string, { n: number; eng: number }>();
+  const bandCounts = new Map<string, { n: number; eng: number }>();
+  const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  for (const p of posts) {
+    const ms = Date.parse(p.timestamp);
+    if (!Number.isFinite(ms)) continue;
+    // Shift UTC -> IST (+5:30)
+    const ist = new Date(ms + 330 * 60_000);
+    const day = DAYS[ist.getUTCDay()];
+    const hr = ist.getUTCHours();
+    const band =
+      hr < 11 ? 'Morning (8–11 AM IST)' : hr < 15 ? 'Midday (11 AM–3 PM IST)' : hr < 18 ? 'Afternoon (3–6 PM IST)' : hr < 21 ? 'Evening (6–9 PM IST)' : 'Night (9 PM–12 AM IST)';
+    const score = p.likes + p.comments * 4;
+    const dCur = dayCounts.get(day) ?? { n: 0, eng: 0 };
+    dayCounts.set(day, { n: dCur.n + 1, eng: dCur.eng + score });
+    const bCur = bandCounts.get(band) ?? { n: 0, eng: 0 };
+    bandCounts.set(band, { n: bCur.n + 1, eng: bCur.eng + score });
+  }
+  const bestDay = [...dayCounts.entries()].sort((a, b) => b[1].eng / b[1].n - a[1].eng / a[1].n)[0]?.[0];
+  const bestTime = [...bandCounts.entries()].sort((a, b) => b[1].n - a[1].n || b[1].eng - a[1].eng)[0]?.[0];
+
+  // Top recurring hashtags
+  const tagCounts = new Map<string, number>();
+  for (const p of posts) {
+    for (const m of p.caption.matchAll(/#([a-z0-9_]{2,30})/gi)) {
+      const tag = m[1].toLowerCase();
+      if (['reels', 'reel', 'instagram', 'viral', 'trending', 'explore', 'explorepage', 'fyp', 'instagood', 'reelsinstagram'].includes(tag)) continue;
+      tagCounts.set(tag, (tagCounts.get(tag) ?? 0) + 1);
+    }
+  }
+  const topHashtags = [...tagCounts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([t]) => `#${t}`);
+
+  // Score & annotate top 3 breakout posts with multiplier vs baseline
+  const avgScore = n ? posts.reduce((a, p) => a + p.likes + p.comments * 4, 0) / n : 1;
+  const topPosts = [...posts]
+    .map((p) => {
+      const score = p.likes + p.comments * 4;
+      const mult = avgScore > 0 ? Number((score / avgScore).toFixed(1)) : 1;
+      return {
+        ...p,
+        multiplier: mult >= 1.2 ? mult : undefined,
+        has_dm_cta: DM_CTA_RE.test(p.caption),
+      };
+    })
+    .sort((a, b) => b.likes + b.comments * 4 - (a.likes + a.comments * 4))
+    .slice(0, 3);
+
+  const insights: PeerInsights = {
+    bio: extra.bio?.trim().slice(0, 180) || undefined,
+    category: extra.category?.trim().slice(0, 60) || undefined,
+    avg_views: avgViews || undefined,
+    median_likes: n ? median(posts.map((p) => p.likes)) : undefined,
+    reels_pct: n ? Math.round((reels / n) * 100) : undefined,
+    carousel_pct: n ? Math.round((carousels / n) * 100) : undefined,
+    photo_pct: n ? Math.round((photos / n) * 100) : undefined,
+    comment_magnet_posts: dmPosts.length || undefined,
+    comment_magnet_lift: dmLift >= 1.3 ? dmLift : undefined,
+    collab_posts: collabPosts.length || undefined,
+    collab_brands: [...brandSet].slice(0, 4),
+    best_day: bestDay,
+    best_time: bestTime,
+    top_hashtags: topHashtags.length ? topHashtags : undefined,
+    sample_size: n || undefined,
+  };
+
+  return { avgLikes, avgComments, er, postsPerWeek, topPosts, insights };
+}
 
 async function getIgCreds(db: SupabaseClient, creatorId: number) {
   const [tokRes, acctRes] = await Promise.all([
@@ -82,46 +247,38 @@ async function lookupInMiracle(db: SupabaseClient, handle: string): Promise<Peer
 
   const { data: media } = await db
     .from('ig_media')
-    .select('id, caption, likes, comments, media_type, permalink, posted_at')
+    .select('id, caption, likes, comments, views, thumbnail_url, media_type, product_type, permalink, posted_at')
     .eq('creator_id', acct.id)
+    .neq('media_type', 'STORY')
     .order('posted_at', { ascending: false })
     .limit(12);
 
   const posts: PeerPost[] = (media ?? []).map((m) => ({
     id: String(m.id),
-    caption: String(m.caption ?? '').slice(0, 220),
+    caption: String(m.caption ?? '').slice(0, 260),
     likes: Number(m.likes ?? 0),
     comments: Number(m.comments ?? 0),
-    media_type: String(m.media_type ?? 'VIDEO'),
+    views: Number(m.views ?? 0) || undefined,
+    thumbnail_url: String(m.thumbnail_url ?? '') || undefined,
+    media_type: String(m.product_type || m.media_type || 'VIDEO'),
     permalink: String(m.permalink ?? ''),
     timestamp: String(m.posted_at ?? ''),
   }));
 
   const followers = Number(acct.followers ?? 0);
-  const avgLikes = posts.length ? Math.round(posts.reduce((a, p) => a + p.likes, 0) / posts.length) : 0;
-  const avgComments = posts.length ? Math.round(posts.reduce((a, p) => a + p.comments, 0) / posts.length) : 0;
-  const er = Number(acct.engagement_rate ?? (followers > 0 ? (((avgLikes + avgComments) / followers) * 100).toFixed(2) : 0));
-
-  let postsPerWeek = 0;
-  if (posts.length >= 2) {
-    const times = posts.map((p) => Date.parse(p.timestamp)).filter((t) => Number.isFinite(t)).sort((a, b) => b - a);
-    if (times.length >= 2) {
-      const spanDays = Math.max(1, (times[0] - times[times.length - 1]) / 864e5);
-      postsPerWeek = Number(Math.min(28, (times.length / spanDays) * 7).toFixed(1));
-    }
-  }
-
+  const a = analyzePeerPosts(posts, followers);
   return {
     username: String(acct.username || handle),
     name: String(acct.name ?? ''),
     profile_picture_url: String(acct.profile_picture_url ?? ''),
     followers_count: followers,
     media_count: Number(acct.media_count ?? posts.length),
-    avg_likes: avgLikes,
-    avg_comments: avgComments,
-    engagement_rate: er,
-    posts_per_week: postsPerWeek,
-    top_posts: [...posts].sort((a, b) => b.likes + b.comments * 4 - (a.likes + a.comments * 4)).slice(0, 3),
+    avg_likes: a.avgLikes,
+    avg_comments: a.avgComments,
+    engagement_rate: Number(acct.engagement_rate ?? a.er),
+    posts_per_week: a.postsPerWeek,
+    top_posts: a.topPosts,
+    insights: a.insights,
     synced_at: new Date().toISOString(),
   };
 }
@@ -132,7 +289,7 @@ async function lookupMetaBusinessDiscovery(handle: string): Promise<PeerData | n
   const igBizId = (Deno.env.get('META_IG_BUSINESS_ID') ?? '').trim();
   if (!token || !igBizId) return null;
   try {
-    const fields = `business_discovery.username(${handle}){username,name,profile_picture_url,followers_count,media_count,media.limit(12){id,caption,like_count,comments_count,media_type,permalink,timestamp}}`;
+    const fields = `business_discovery.username(${handle}){username,name,biography,profile_picture_url,followers_count,media_count,media.limit(12){id,caption,like_count,comments_count,media_type,media_url,thumbnail_url,permalink,timestamp}}`;
     const u = new URL(`${FB_GRAPH}/${igBizId}`);
     u.searchParams.set('fields', fields);
     u.searchParams.set('access_token', token);
@@ -144,36 +301,28 @@ async function lookupMetaBusinessDiscovery(handle: string): Promise<PeerData | n
     const rawMedia = Array.isArray(bd.media?.data) ? (bd.media.data as Record<string, unknown>[]) : [];
     const posts: PeerPost[] = rawMedia.map((m) => ({
       id: String(m.id ?? ''),
-      caption: String(m.caption ?? '').slice(0, 220),
+      caption: String(m.caption ?? '').slice(0, 260),
       likes: Number(m.like_count ?? 0),
       comments: Number(m.comments_count ?? 0),
+      thumbnail_url: String(m.thumbnail_url || m.media_url || '') || undefined,
       media_type: String(m.media_type ?? 'VIDEO'),
       permalink: String(m.permalink ?? `https://www.instagram.com/${handle}/`),
       timestamp: String(m.timestamp ?? ''),
     }));
     const followers = Number(bd.followers_count ?? 0);
-    const avgLikes = posts.length ? Math.round(posts.reduce((a, p) => a + p.likes, 0) / posts.length) : 0;
-    const avgComments = posts.length ? Math.round(posts.reduce((a, p) => a + p.comments, 0) / posts.length) : 0;
-    const er = followers > 0 ? Number((((avgLikes + avgComments) / followers) * 100).toFixed(2)) : 0;
-    let postsPerWeek = 0;
-    if (posts.length >= 2) {
-      const times = posts.map((p) => Date.parse(p.timestamp)).filter((t) => Number.isFinite(t)).sort((a, b) => b - a);
-      if (times.length >= 2) {
-        const spanDays = Math.max(1, (times[0] - times[times.length - 1]) / 864e5);
-        postsPerWeek = Number(Math.min(28, (times.length / spanDays) * 7).toFixed(1));
-      }
-    }
+    const a = analyzePeerPosts(posts, followers, { bio: String(bd.biography ?? '') });
     return {
       username: String(bd.username),
       name: String(bd.name ?? ''),
       profile_picture_url: String(bd.profile_picture_url ?? ''),
       followers_count: followers,
       media_count: Number(bd.media_count ?? posts.length),
-      avg_likes: avgLikes,
-      avg_comments: avgComments,
-      engagement_rate: er,
-      posts_per_week: postsPerWeek,
-      top_posts: [...posts].sort((a, b) => b.likes + b.comments * 4 - (a.likes + a.comments * 4)).slice(0, 3),
+      avg_likes: a.avgLikes,
+      avg_comments: a.avgComments,
+      engagement_rate: a.er,
+      posts_per_week: a.postsPerWeek,
+      top_posts: a.topPosts,
+      insights: a.insights,
       synced_at: new Date().toISOString(),
     };
   } catch {
@@ -181,8 +330,7 @@ async function lookupMetaBusinessDiscovery(handle: string): Promise<PeerData | n
   }
 }
 
-
-/** Tier 2b: Apify Instagram Profile Scraper (when APIFY_API_TOKEN is configured in Supabase secrets). */
+/** Tier 2b: Apify Instagram Profile Scraper (extracts Reel views, thumbnails, bio, category, format mix & collabs). */
 async function lookupViaApify(handle: string): Promise<PeerData | null> {
   const token = (Deno.env.get('APIFY_API_TOKEN') ?? '').trim();
   if (!token) return null;
@@ -203,37 +351,37 @@ async function lookupViaApify(handle: string): Promise<PeerData | null> {
     const followers = Number(u.followersCount ?? 0);
     const mediaCount = Number(u.postsCount ?? 0);
     const latest = Array.isArray(u.latestPosts) ? (u.latestPosts as Record<string, unknown>[]) : [];
-    const posts: PeerPost[] = latest.slice(0, 12).map((p, idx) => ({
-      id: String(p.id ?? p.shortCode ?? `apify-${idx}`),
-      caption: String(p.caption ?? '').slice(0, 220),
-      likes: Number(p.likesCount ?? 0),
-      comments: Number(p.commentsCount ?? 0),
-      media_type: String(p.type ?? 'Video').toUpperCase().includes('VIDEO') ? 'VIDEO' : 'IMAGE',
-      permalink: String(p.url ?? (p.shortCode ? `https://www.instagram.com/p/${p.shortCode}/` : `https://www.instagram.com/${handle}/`)),
-      timestamp: String(p.timestamp ?? ''),
-    }));
-    const avgLikes = posts.length ? Math.round(posts.reduce((a, p) => a + p.likes, 0) / posts.length) : 0;
-    const avgComments = posts.length ? Math.round(posts.reduce((a, p) => a + p.comments, 0) / posts.length) : 0;
-    const er = followers > 0 ? Number((((avgLikes + avgComments) / followers) * 100).toFixed(2)) : 0;
-    let postsPerWeek = 0;
-    if (posts.length >= 2) {
-      const times = posts.map((p) => Date.parse(p.timestamp)).filter((t) => Number.isFinite(t)).sort((a, b) => b - a);
-      if (times.length >= 2) {
-        const spanDays = Math.max(1, (times[0] - times[times.length - 1]) / 864e5);
-        postsPerWeek = Number(Math.min(28, (times.length / spanDays) * 7).toFixed(1));
-      }
-    }
+    const posts: PeerPost[] = latest.slice(0, 12).map((p, idx) => {
+      const views = Number(p.videoPlayCount ?? p.videoViewCount ?? 0);
+      const rawType = String(p.type ?? (views > 0 ? 'Video' : 'Image'));
+      return {
+        id: String(p.id ?? p.shortCode ?? `apify-${idx}`),
+        caption: String(p.caption ?? '').slice(0, 260),
+        likes: Number(p.likesCount ?? 0),
+        comments: Number(p.commentsCount ?? 0),
+        views: views > 0 ? views : undefined,
+        thumbnail_url: String(p.displayUrl ?? '') || undefined,
+        media_type: rawType.toUpperCase().includes('VIDEO') ? 'VIDEO' : rawType.toUpperCase().includes('SIDECAR') ? 'CAROUSEL' : 'IMAGE',
+        permalink: String(p.url ?? (p.shortCode ? `https://www.instagram.com/p/${p.shortCode}/` : `https://www.instagram.com/${handle}/`)),
+        timestamp: String(p.timestamp ?? ''),
+      };
+    });
+    const a = analyzePeerPosts(posts, followers, {
+      bio: String(u.biography ?? ''),
+      category: String(u.businessCategoryName ?? ''),
+    });
     return {
       username: String(u.username),
       name: String(u.fullName ?? ''),
       profile_picture_url: String(u.profilePicUrlHD || u.profilePicUrl || ''),
       followers_count: followers,
       media_count: mediaCount,
-      avg_likes: avgLikes,
-      avg_comments: avgComments,
-      engagement_rate: er,
-      posts_per_week: postsPerWeek,
-      top_posts: [...posts].sort((a, b) => b.likes + b.comments * 4 - (a.likes + a.comments * 4)).slice(0, 3),
+      avg_likes: a.avgLikes,
+      avg_comments: a.avgComments,
+      engagement_rate: a.er,
+      posts_per_week: a.postsPerWeek,
+      top_posts: a.topPosts,
+      insights: a.insights,
       synced_at: new Date().toISOString(),
     };
   } catch {
@@ -265,38 +413,35 @@ async function lookupPublicInstagram(handle: string): Promise<PeerData | null> {
           const capEdges = ((n.edge_media_to_caption as { edges?: { node?: { text?: string } }[] })?.edges ?? []);
           const cap = String(capEdges[0]?.node?.text ?? '');
           const sc = String(n.shortcode ?? '');
+          const views = Number(n.video_view_count ?? 0);
           return {
             id: String(n.id ?? sc),
-            caption: cap.slice(0, 220),
+            caption: cap.slice(0, 260),
             likes: Number((n.edge_liked_by as { count?: number })?.count ?? (n.edge_media_preview_like as { count?: number })?.count ?? 0),
             comments: Number((n.edge_media_to_comment as { count?: number })?.count ?? 0),
-            media_type: n.is_video ? 'VIDEO' : 'IMAGE',
+            views: views > 0 ? views : undefined,
+            thumbnail_url: String(n.thumbnail_src || n.display_url || '') || undefined,
+            media_type: n.is_video ? 'VIDEO' : String(n.__typename ?? '').includes('Sidecar') ? 'CAROUSEL' : 'IMAGE',
             permalink: sc ? `https://www.instagram.com/p/${sc}/` : `https://www.instagram.com/${handle}/`,
             timestamp: n.taken_at_timestamp ? new Date(Number(n.taken_at_timestamp) * 1000).toISOString() : '',
           };
         });
-        const avgLikes = posts.length ? Math.round(posts.reduce((a, p) => a + p.likes, 0) / posts.length) : 0;
-        const avgComments = posts.length ? Math.round(posts.reduce((a, p) => a + p.comments, 0) / posts.length) : 0;
-        const er = followers > 0 ? Number((((avgLikes + avgComments) / followers) * 100).toFixed(2)) : 0;
-        let postsPerWeek = 0;
-        if (posts.length >= 2) {
-          const times = posts.map((p) => Date.parse(p.timestamp)).filter((t) => Number.isFinite(t)).sort((a, b) => b - a);
-          if (times.length >= 2) {
-            const spanDays = Math.max(1, (times[0] - times[times.length - 1]) / 864e5);
-            postsPerWeek = Number(Math.min(28, (times.length / spanDays) * 7).toFixed(1));
-          }
-        }
+        const a = analyzePeerPosts(posts, followers, {
+          bio: String(u.biography ?? ''),
+          category: String(u.category_name ?? ''),
+        });
         return {
           username: String(u.username),
           name: String(u.full_name ?? ''),
           profile_picture_url: String(u.profile_pic_url_hd || u.profile_pic_url || ''),
           followers_count: followers,
           media_count: mediaCount,
-          avg_likes: avgLikes,
-          avg_comments: avgComments,
-          engagement_rate: er,
-          posts_per_week: postsPerWeek,
-          top_posts: [...posts].sort((a, b) => b.likes + b.comments * 4 - (a.likes + a.comments * 4)).slice(0, 3),
+          avg_likes: a.avgLikes,
+          avg_comments: a.avgComments,
+          engagement_rate: a.er,
+          posts_per_week: a.postsPerWeek,
+          top_posts: a.topPosts,
+          insights: a.insights,
           synced_at: new Date().toISOString(),
         };
       }
@@ -332,6 +477,7 @@ async function lookupPublicInstagram(handle: string): Promise<PeerData | null> {
       engagement_rate: 0,
       posts_per_week: 0,
       top_posts: [],
+      insights: {},
       synced_at: new Date().toISOString(),
     };
   } catch {
@@ -364,7 +510,7 @@ async function lookupViaSearchWorker(db: SupabaseClient, creatorId: number, hand
       error?: string;
     } | null;
     if (res.ok && j?.found && j.peer) {
-      return { ok: true, peer: j.peer, source: 'search' };
+      return { ok: true, peer: { ...j.peer, insights: j.peer.insights ?? {} }, source: 'search' };
     }
     const suggested = String(j?.suggested_handle ?? '').trim().toLowerCase();
     if (suggested && suggested !== handle) {
@@ -376,7 +522,7 @@ async function lookupViaSearchWorker(db: SupabaseClient, creatorId: number, hand
     }
     return {
       ok: false,
-      error: `Instagram blocked automated lookup for @${handle} and Google has not indexed this handle yet. Add META_BUSINESS_TOKEN + META_IG_BUSINESS_ID (or APIFY_API_TOKEN) in Supabase secrets to fetch any public handle automatically.`,
+      error: `Instagram blocked automated lookup for @${handle} and Google has not indexed this handle yet. Add APIFY_API_TOKEN (or META_BUSINESS_TOKEN + META_IG_BUSINESS_ID) in Supabase secrets to fetch any public handle automatically.`,
     };
   } catch {
     return { ok: false, error: `Lookup timed out for @${handle}. Please try again in a moment.` };
@@ -395,7 +541,6 @@ async function resolvePeerAutomated(db: SupabaseClient, creatorId: number, handl
 
   const fromPublic = await lookupPublicInstagram(handle);
   if (fromPublic && fromPublic.followers_count > 0) {
-    // If OG HTML only gave followers/posts without engagement/Reels, enrich via search worker when possible.
     if (fromPublic.engagement_rate === 0 && fromPublic.top_posts.length === 0) {
       const enriched = await lookupViaSearchWorker(db, creatorId, handle, site);
       if (enriched.ok) {
