@@ -125,6 +125,16 @@
 			<b>Script studio</b>
 			<small>Hooks &amp; viral series</small>
 		</a>
+		<a class="pg-tool" href="/studio/grow/trends" style="--hue:var(--g2)">
+			<span class="pg-ti"><Icon name="spark" /></span>
+			<b>Trend radar</b>
+			<small>Rising formats &amp; Qs</small>
+		</a>
+		<a class="pg-tool" href="/studio/grow/benchmarks" style="--hue:var(--g3)">
+			<span class="pg-ti"><Icon name="users" /></span>
+			<b>Benchmarks</b>
+			<small>Compare niche peers</small>
+		</a>
 		<a class="pg-tool" href="/studio/grow/check" style="--hue:var(--g2)">
 			<span class="pg-ti"><Icon name="film" /></span>
 			<b>Check a reel</b>

@@ -25,7 +25,7 @@ type Env = {
 type Run = { env: Env; gemini: boolean; neurons: number };
 
 // Expected size of each job in Cloudflare neurons (reserved before, corrected after).
-const COST: Record<string, number> = { dm: 160, reply: 110, caption: 110, pitch: 140, fit: 230, classify: 40, summary: 220, negotiate: 210, script: 330, nudge: 120, ask: 260, voice: 60, embed: 8, cheer: 60, reelcheck: 320, viralstudio: 360, growplan: 200, checkup: 420, offercheck: 700, precheck: 220, getfound: 180, brandask: 450, brandchat: 380, brandbrief: 600, safety: 300, helpask: 200, casestudy: 400 };
+const COST: Record<string, number> = { dm: 160, reply: 110, caption: 110, pitch: 140, fit: 230, classify: 40, summary: 220, negotiate: 210, script: 330, nudge: 120, ask: 260, voice: 60, embed: 8, cheer: 60, reelcheck: 320, viralstudio: 360, trendradar: 320, growplan: 200, checkup: 420, offercheck: 700, precheck: 220, getfound: 180, brandask: 450, brandchat: 380, brandbrief: 600, safety: 300, helpask: 200, casestudy: 400 };
 // Cloudflare's price list in neurons per token (Llama 3.3 70B fast; Llama 3.2 11B vision).
 const PER_TOKEN = { text: [0.0267, 0.2048], vision: [0.0045, 0.0615] };
 const USED_UP = "Today's free AI is used up. It's back at 5:30 am.";
@@ -53,10 +53,10 @@ export default {
 		try {
 			const kind = url.pathname.slice('/api/ai/'.length);
 			if (kind === 'status') return json(await status(req, env));
-			if (!['dm', 'reply', 'caption', 'pitch', 'classify', 'fit', 'summary', 'negotiate', 'script', 'nudge', 'ask', 'voice', 'embed', 'cheer', 'scout', 'reelcheck', 'viralstudio', 'growplan', 'checkup', 'offercheck', 'precheck', 'getfound', 'brandask', 'brandchat', 'brandbrief', 'safety', 'helpask', 'compwatch', 'casestudy', 'growthscout', 'growthmail'].includes(kind)) return json({ error: 'Unknown.' }, 404);
+			if (!['dm', 'reply', 'caption', 'pitch', 'classify', 'fit', 'summary', 'negotiate', 'script', 'nudge', 'ask', 'voice', 'embed', 'cheer', 'scout', 'reelcheck', 'viralstudio', 'trendradar', 'growplan', 'checkup', 'offercheck', 'precheck', 'getfound', 'brandask', 'brandchat', 'brandbrief', 'safety', 'helpask', 'compwatch', 'casestudy', 'growthscout', 'growthmail'].includes(kind)) return json({ error: 'Unknown.' }, 404);
 			const body = (await req.json()) as Record<string, unknown>;
 			const job = (x: Run) =>
-				kind === 'cheer' ? cheer(x, body) : kind === 'scout' ? scout(x, body) : kind === 'dm' ? readDm(x, body) : kind === 'reply' ? replies(x, body) : kind === 'pitch' ? pitch(x, body) : kind === 'classify' ? classify(x, body) : kind === 'fit' ? fit(x, body) : kind === 'summary' ? summary(x, body) : kind === 'negotiate' ? creatorOf(req, env).then((me) => negotiate(x, body, me)) : kind === 'script' ? script(x, body) : kind === 'nudge' ? nudge(x, body) : kind === 'ask' ? creatorOf(req, env).then((me) => ask(x, body, me)) : kind === 'voice' ? voice(x, body) : kind === 'embed' ? embed(x, body) : kind === 'reelcheck' ? reelCheck(x, body) : kind === 'viralstudio' ? viralStudio(x, body) : kind === 'growplan' ? growPlan(x, body) : kind === 'checkup' ? checkup(x, body) : kind === 'safety' ? safety(x, body) : kind === 'helpask' ? helpAsk(x, body) : kind === 'compwatch' ? compWatch(x, body) : kind === 'casestudy' ? caseStudy(x, body) : kind === 'growthscout' ? growthScout(x, body) : kind === 'growthmail' ? growthMail(x, body) : kind === 'offercheck' ? offerCheck(x, body) : kind === 'precheck' ? preCheck(x, body) : kind === 'getfound' ? getFound(x, body) : kind === 'brandask' ? brandAsk(x, body) : kind === 'brandchat' ? brandChat(x, body) : kind === 'brandbrief' ? brandBrief(x, body) : creatorOf(req, env).then((me) => caption(x, body, me));
+				kind === 'cheer' ? cheer(x, body) : kind === 'scout' ? scout(x, body) : kind === 'dm' ? readDm(x, body) : kind === 'reply' ? replies(x, body) : kind === 'pitch' ? pitch(x, body) : kind === 'classify' ? classify(x, body) : kind === 'fit' ? fit(x, body) : kind === 'summary' ? summary(x, body) : kind === 'negotiate' ? creatorOf(req, env).then((me) => negotiate(x, body, me)) : kind === 'script' ? script(x, body) : kind === 'nudge' ? nudge(x, body) : kind === 'ask' ? creatorOf(req, env).then((me) => ask(x, body, me)) : kind === 'voice' ? voice(x, body) : kind === 'embed' ? embed(x, body) : kind === 'reelcheck' ? reelCheck(x, body) : kind === 'viralstudio' ? viralStudio(x, body) : kind === 'trendradar' ? trendRadar(x, body) : kind === 'growplan' ? growPlan(x, body) : kind === 'checkup' ? checkup(x, body) : kind === 'safety' ? safety(x, body) : kind === 'helpask' ? helpAsk(x, body) : kind === 'compwatch' ? compWatch(x, body) : kind === 'casestudy' ? caseStudy(x, body) : kind === 'growthscout' ? growthScout(x, body) : kind === 'growthmail' ? growthMail(x, body) : kind === 'offercheck' ? offerCheck(x, body) : kind === 'precheck' ? preCheck(x, body) : kind === 'getfound' ? getFound(x, body) : kind === 'brandask' ? brandAsk(x, body) : kind === 'brandchat' ? brandChat(x, body) : kind === 'brandbrief' ? brandBrief(x, body) : creatorOf(req, env).then((me) => caption(x, body, me));
 
 			// Checking an incoming Instagram DM comes from the DM webhook with a single-use pass, and the
 			// hourly fun nudge from its job the same way. DMs stay on Cloudflare (never sent to Google);
@@ -893,6 +893,48 @@ Return ONLY JSON with this exact shape:
 	};
 }
 
+
+
+// ---------- Grow: Niche Trend Radar & Comment Question Miner ----------
+async function trendRadar(x: Run, b: Record<string, unknown>) {
+	const reply = await chat(
+		x,
+		`You are an Instagram growth strategist for an Indian creator. Given her niche, city, top_reels, peer_topics (what similar creators in her niche are getting engagement on), and audience_questions (real questions followers asked in her comments), surface timely Reel formats and turn follower questions into high-share Reels.
+Be specific, grounded, and practical for Indian Instagram creators. Never invent fake statistics or promise views.
+Return ONLY JSON:
+{
+  "trends": [
+    { "title": "specific shootable Reel idea under 11 words", "format": "2-3 word format label like POV / List / Myth-bust / Local guide", "why_now": "1 crisp sentence on why this format drives shares & saves", "hook": "scroll-stopping 0-2s spoken or on-screen hook under 14 words", "dm_keyword": "ONE_WORD_UPPERCASE" }
+  ],
+  "question_ideas": [
+    { "question": "the follower question being answered", "reel_title": "catchy Reel title answering it", "hook": "0-2s opening line" }
+  ]
+}
+Return 4 trends. If audience_questions is empty, return an empty question_ideas array; otherwise return up to 4 question_ideas.`,
+		JSON.stringify(b).slice(0, 6000),
+		850
+	);
+	const j = firstJson(reply) ?? {};
+	const trends = (Array.isArray(j.trends) ? (j.trends as Record<string, unknown>[]) : [])
+		.map((t) => ({
+			title: String(t.title ?? '').trim().slice(0, 110),
+			format: String(t.format ?? 'Reel format').trim().slice(0, 32),
+			why_now: String(t.why_now ?? '').trim().slice(0, 180),
+			hook: String(t.hook ?? '').trim().slice(0, 140),
+			dm_keyword: String(t.dm_keyword ?? '').trim().toUpperCase().replace(/[^A-Z0-9_-]/g, '').slice(0, 20)
+		}))
+		.filter((t) => t.title)
+		.slice(0, 4);
+	const question_ideas = (Array.isArray(j.question_ideas) ? (j.question_ideas as Record<string, unknown>[]) : [])
+		.map((q) => ({
+			question: String(q.question ?? '').trim().slice(0, 180),
+			reel_title: String(q.reel_title ?? '').trim().slice(0, 110),
+			hook: String(q.hook ?? '').trim().slice(0, 140)
+		}))
+		.filter((q) => q.reel_title)
+		.slice(0, 4);
+	return { trends, question_ideas };
+}
 
 // ---------- Grow: this week's three reel ideas ----------
 async function growPlan(x: Run, b: Record<string, unknown>) {

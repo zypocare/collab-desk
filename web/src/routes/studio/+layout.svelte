@@ -212,7 +212,9 @@
 		'/studio/grow/checkup': 'Growth check-up',
 		'/studio/grow/insights': 'Your insights',
 		'/studio/grow/pulse': 'Golden Hour Pulse',
-		'/studio/grow/studio': 'Script Studio'
+		'/studio/grow/studio': 'Script Studio',
+		'/studio/grow/benchmarks': 'Peer Benchmarks',
+		'/studio/grow/trends': 'Trend Radar'
 	};
 	const SECTIONS: Record<string, string> = {
 		profile: 'Edit profile',

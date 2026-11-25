@@ -539,3 +539,7 @@ verify_jwt = false
 # Golden Hour Launch Pulse (cron every 10m + authenticated creator calls checked inside).
 [functions.golden-hour-pulse]
 verify_jwt = false
+
+# Creator Peer Benchmarks & Comment Question Miner (creator auth checked inside).
+[functions.creator-benchmarks]
+verify_jwt = false

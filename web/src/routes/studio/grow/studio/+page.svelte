@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
+	import { page } from '$app/state';
 	import { askAi } from '#lib/ai.ts';
 	import { nextSlots } from '#lib/grow.svelte.ts';
 	import { loadInstagram, studio } from '#lib/studio.svelte.ts';
@@ -149,6 +150,8 @@
 
 	onMount(() => {
 		if (!studio.media.length) void loadInstagram();
+		const q = page.url.searchParams.get('topic');
+		if (q && !topic) topic = q;
 	});
 </script>
 

@@ -106,6 +106,16 @@
 		<Icon name="chevR" />
 	</a>
 
+	<a class="gr-cu rv" href="/studio/grow/trends">
+		<span class="gr-it"><b>Trend Radar &amp; Audience Questions</b><small>Rising Reel formats in your niche &amp; real questions mined from your comments</small></span>
+		<Icon name="chevR" />
+	</a>
+
+	<a class="gr-cu rv" href="/studio/grow/benchmarks">
+		<span class="gr-it"><b>Peer Benchmarks</b><small>Compare engagement and posting pace against creators in your niche</small></span>
+		<Icon name="chevR" />
+	</a>
+
 	<a class="gr-cu rv" href="/studio/grow/insights">
 		<span class="gr-it"><b>All your insights</b><small>Reach, views, engagement, your audience and best posts: everything brands see</small></span>
 		<Icon name="chevR" />
