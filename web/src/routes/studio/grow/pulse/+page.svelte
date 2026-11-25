@@ -241,18 +241,16 @@
 <svelte:head><title>Golden Hour Pulse · Miracle</title></svelte:head>
 
 <div class="gh">
-	<header class="gh-top">
-		<a class="gh-back" href="/studio/grow"><Icon name="chevL" /><span>Grow</span></a>
-		<button class="gh-sync" onclick={() => refreshLive(false)} disabled={syncing || !connected}>
-			<Icon name="refresh" />
-			<span>{syncing ? 'Syncing…' : 'Sync now'}</span>
-		</button>
-	</header>
-
-	<div class="gh-head">
-		<h1>Golden Hour Pulse</h1>
+	<header class="gh-head">
+		<div class="gh-top">
+			<h1>Golden Hour Pulse</h1>
+			<button class="gh-sync" onclick={() => refreshLive(false)} disabled={syncing || !connected}>
+				<Icon name="refresh" />
+				<span>{syncing ? 'Syncing…' : 'Sync now'}</span>
+			</button>
+		</div>
 		<p>First-60-minute momentum vs your 90-day median — so you can ride Explore early or rescue a slow start.</p>
-	</div>
+	</header>
 
 	{#if loading}
 		<div class="gh-empty"><span class="ring"><span></span></span></div>
@@ -546,18 +544,6 @@
 		align-items: center;
 		justify-content: space-between;
 		gap: 10px;
-	}
-	.gh-back {
-		display: inline-flex;
-		align-items: center;
-		gap: 4px;
-		color: var(--ink-2);
-		font-weight: 600;
-		font-size: 14px;
-		text-decoration: none;
-	}
-	.gh-back:hover {
-		color: var(--ink);
 	}
 	.gh-sync {
 		display: inline-flex;

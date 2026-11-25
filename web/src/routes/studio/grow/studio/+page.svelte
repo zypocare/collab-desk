@@ -155,8 +155,6 @@
 <svelte:head><title>Viral Script Studio · Miracle</title></svelte:head>
 
 <div class="vs">
-	<a class="vs-back" href="/studio/grow"><Icon name="chevL" /><span>Grow</span></a>
-
 	<header class="vs-head">
 		<span class="vs-eb">Before you film</span>
 		<h1>Viral Script &amp; <em>Series</em> Studio</h1>
@@ -310,16 +308,6 @@
 		display: grid;
 		gap: 14px;
 		padding-bottom: 32px;
-	}
-	.vs-back {
-		display: inline-flex;
-		align-items: center;
-		gap: 4px;
-		color: var(--ink-2);
-		font-size: 14px;
-		font-weight: 600;
-		text-decoration: none;
-		width: fit-content;
 	}
 	.vs-eb {
 		font-size: 11px;
