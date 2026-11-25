@@ -280,11 +280,11 @@ async function lookupPublicInstagram(handle: string): Promise<PeerData | null> {
 }
 
 /** Tier 4: Automated Google Search Grounding via Miracle's Cloudflare Worker (/api/ai/peerlookup). */
-async function lookupViaSearchWorker(db: SupabaseClient, handle: string, site: string): Promise<ResolveOutcome> {
+async function lookupViaSearchWorker(db: SupabaseClient, creatorId: number, handle: string, site: string): Promise<ResolveOutcome> {
   const ticket = crypto.randomUUID() + crypto.randomUUID();
-  const { error: tErr } = await db.from('ai_tickets').insert({ token: ticket, kind: 'peerlookup', creator_id: null });
+  const { error: tErr } = await db.from('ai_tickets').insert({ creator_id: creatorId, token: ticket, kind: 'peerlookup' });
   if (tErr) {
-    return { ok: false, error: `Could not start automated lookup for @${handle}.` };
+    return { ok: false, error: `Could not start automated lookup for @${handle} (${tErr.message}).` };
   }
   try {
     const res = await fetch(`${site.replace(/\/$/, '')}/api/ai/peerlookup`, {
@@ -323,7 +323,7 @@ async function lookupViaSearchWorker(db: SupabaseClient, handle: string, site: s
   }
 }
 
-async function resolvePeerAutomated(db: SupabaseClient, handle: string, site: string): Promise<ResolveOutcome> {
+async function resolvePeerAutomated(db: SupabaseClient, creatorId: number, handle: string, site: string): Promise<ResolveOutcome> {
   const fromMiracle = await lookupInMiracle(db, handle);
   if (fromMiracle) return { ok: true, peer: fromMiracle, source: 'miracle' };
 
@@ -334,7 +334,7 @@ async function resolvePeerAutomated(db: SupabaseClient, handle: string, site: st
   if (fromPublic && fromPublic.followers_count > 0) {
     // If OG HTML only gave followers/posts without engagement/Reels, enrich via search worker when possible.
     if (fromPublic.engagement_rate === 0 && fromPublic.top_posts.length === 0) {
-      const enriched = await lookupViaSearchWorker(db, handle, site);
+      const enriched = await lookupViaSearchWorker(db, creatorId, handle, site);
       if (enriched.ok) {
         return {
           ok: true,
@@ -352,7 +352,7 @@ async function resolvePeerAutomated(db: SupabaseClient, handle: string, site: st
     return { ok: true, peer: fromPublic, source: 'public' };
   }
 
-  return await lookupViaSearchWorker(db, handle, site);
+  return await lookupViaSearchWorker(db, creatorId, handle, site);
 }
 
 async function upsertPeer(db: SupabaseClient, creatorId: number, peer: PeerData) {
@@ -484,7 +484,7 @@ Deno.serve(async (req) => {
         return reply({ error: 'You can track up to 8 peer creators at a time.' }, 400);
       }
 
-      const resolved = await resolvePeerAutomated(db, handle, aiSite);
+      const resolved = await resolvePeerAutomated(db, creatorId, handle, aiSite);
       if (!resolved.ok) {
         return reply({ not_found: true, suggested_handle: resolved.suggested_handle ?? '', error: resolved.error });
       }
@@ -499,7 +499,7 @@ Deno.serve(async (req) => {
         .eq('creator_id', creatorId);
       const updated = [];
       for (const r of rows ?? []) {
-        const resolved = await resolvePeerAutomated(db, r.username, aiSite);
+        const resolved = await resolvePeerAutomated(db, creatorId, r.username, aiSite);
         if (resolved.ok) {
           const { data } = await db.from('creator_benchmarks').update(resolved.peer).eq('id', r.id).select('*').single();
           updated.push(data ?? r);
