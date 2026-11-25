@@ -209,7 +209,7 @@
 
 		{#if loading}
 			<div class="bm-empty"><span class="ring"><span></span></span></div>
-		{:else if !peers.length && !manualFor}
+		{:else if !peers.length}
 			<section class="bm-card bm-empty">
 				<span class="bm-ic"><Icon name="users" /></span>
 				<b>Track 3–5 creators in your niche</b>
