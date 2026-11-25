@@ -181,6 +181,66 @@ async function lookupMetaBusinessDiscovery(handle: string): Promise<PeerData | n
   }
 }
 
+
+/** Tier 2b: Apify Instagram Profile Scraper (when APIFY_API_TOKEN is configured in Supabase secrets). */
+async function lookupViaApify(handle: string): Promise<PeerData | null> {
+  const token = (Deno.env.get('APIFY_API_TOKEN') ?? '').trim();
+  if (!token) return null;
+  try {
+    const res = await fetch(
+      `https://api.apify.com/v2/acts/apify~instagram-profile-scraper/run-sync-get-dataset-items?token=${encodeURIComponent(token)}`,
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ usernames: [handle] }),
+        signal: AbortSignal.timeout(25_000),
+      }
+    );
+    if (!res.ok) return null;
+    const arr = (await res.json().catch(() => null)) as Record<string, unknown>[] | null;
+    const u = Array.isArray(arr) ? arr[0] : null;
+    if (!u || !u.username) return null;
+    const followers = Number(u.followersCount ?? 0);
+    const mediaCount = Number(u.postsCount ?? 0);
+    const latest = Array.isArray(u.latestPosts) ? (u.latestPosts as Record<string, unknown>[]) : [];
+    const posts: PeerPost[] = latest.slice(0, 12).map((p, idx) => ({
+      id: String(p.id ?? p.shortCode ?? `apify-${idx}`),
+      caption: String(p.caption ?? '').slice(0, 220),
+      likes: Number(p.likesCount ?? 0),
+      comments: Number(p.commentsCount ?? 0),
+      media_type: String(p.type ?? 'Video').toUpperCase().includes('VIDEO') ? 'VIDEO' : 'IMAGE',
+      permalink: String(p.url ?? (p.shortCode ? `https://www.instagram.com/p/${p.shortCode}/` : `https://www.instagram.com/${handle}/`)),
+      timestamp: String(p.timestamp ?? ''),
+    }));
+    const avgLikes = posts.length ? Math.round(posts.reduce((a, p) => a + p.likes, 0) / posts.length) : 0;
+    const avgComments = posts.length ? Math.round(posts.reduce((a, p) => a + p.comments, 0) / posts.length) : 0;
+    const er = followers > 0 ? Number((((avgLikes + avgComments) / followers) * 100).toFixed(2)) : 0;
+    let postsPerWeek = 0;
+    if (posts.length >= 2) {
+      const times = posts.map((p) => Date.parse(p.timestamp)).filter((t) => Number.isFinite(t)).sort((a, b) => b - a);
+      if (times.length >= 2) {
+        const spanDays = Math.max(1, (times[0] - times[times.length - 1]) / 864e5);
+        postsPerWeek = Number(Math.min(28, (times.length / spanDays) * 7).toFixed(1));
+      }
+    }
+    return {
+      username: String(u.username),
+      name: String(u.fullName ?? ''),
+      profile_picture_url: String(u.profilePicUrlHD || u.profilePicUrl || ''),
+      followers_count: followers,
+      media_count: mediaCount,
+      avg_likes: avgLikes,
+      avg_comments: avgComments,
+      engagement_rate: er,
+      posts_per_week: postsPerWeek,
+      top_posts: [...posts].sort((a, b) => b.likes + b.comments * 4 - (a.likes + a.comments * 4)).slice(0, 3),
+      synced_at: new Date().toISOString(),
+    };
+  } catch {
+    return null;
+  }
+}
+
 /** Tier 3: Fetch public profile via Instagram web_profile_info or public OG metadata. */
 async function lookupPublicInstagram(handle: string): Promise<PeerData | null> {
   const ua = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36';
@@ -316,7 +376,7 @@ async function lookupViaSearchWorker(db: SupabaseClient, creatorId: number, hand
     }
     return {
       ok: false,
-      error: `Couldn't find a public Instagram profile for @${handle}. Double-check the spelling or make sure the account is public.`,
+      error: `Instagram blocked automated lookup for @${handle} and Google has not indexed this handle yet. Add META_BUSINESS_TOKEN + META_IG_BUSINESS_ID (or APIFY_API_TOKEN) in Supabase secrets to fetch any public handle automatically.`,
     };
   } catch {
     return { ok: false, error: `Lookup timed out for @${handle}. Please try again in a moment.` };
@@ -329,6 +389,9 @@ async function resolvePeerAutomated(db: SupabaseClient, creatorId: number, handl
 
   const fromMeta = await lookupMetaBusinessDiscovery(handle);
   if (fromMeta) return { ok: true, peer: fromMeta, source: 'meta' };
+
+  const fromApify = await lookupViaApify(handle);
+  if (fromApify) return { ok: true, peer: fromApify, source: 'apify' };
 
   const fromPublic = await lookupPublicInstagram(handle);
   if (fromPublic && fromPublic.followers_count > 0) {

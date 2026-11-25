@@ -6,6 +6,8 @@
 	import { compact, errMessage } from '#lib/util.ts';
 	import { igImg } from '#lib/igImg.ts';
 	import Icon from '#lib/components/Icon.svelte';
+	import Logo from '#lib/components/Logo.svelte';
+	import { portal } from '#lib/portal.ts';
 
 	type PeerPost = {
 		id: string;
@@ -36,8 +38,28 @@
 	let handle = $state('');
 	let loading = $state(true);
 	let busy = $state<'' | 'add' | 'refresh'>('');
+	let fetchingHandle = $state('');
+	let fetchStep = $state(0);
 	let suggestedHandle = $state('');
 	let lookupNotice = $state('');
+
+	const FETCH_STEPS = [
+		'Locating public Instagram profile',
+		'Reading followers & engagement pace',
+		'Scanning recent breakout Reels'
+	];
+
+	$effect(() => {
+		if (!busy) {
+			fetchStep = 0;
+			return;
+		}
+		fetchStep = 0;
+		const timer = setInterval(() => {
+			if (fetchStep < FETCH_STEPS.length - 1) fetchStep += 1;
+		}, 1100);
+		return () => clearInterval(timer);
+	});
 
 	const connected = $derived(!!studio.ig?.connected);
 
@@ -79,6 +101,7 @@
 		const clean = raw.replace(/^@/, '').trim();
 		if (!clean || busy) return;
 		busy = 'add';
+		fetchingHandle = clean;
 		suggestedHandle = '';
 		lookupNotice = '';
 		try {
@@ -100,6 +123,7 @@
 			toast(errMessage(err), 'alert');
 		} finally {
 			busy = '';
+			fetchingHandle = '';
 		}
 	}
 
@@ -264,6 +288,34 @@
 		{/if}
 	{/if}
 </div>
+
+{#if busy === 'add' || busy === 'refresh'}
+	<div class="bm-ov" use:portal aria-live="polite" role="status">
+		<section class="bm-ov-card">
+			<div class="bm-orb" aria-hidden="true">
+				<span class="bm-ring"></span>
+				<span class="bm-core"><Logo size={30} /></span>
+			</div>
+			<span class="bm-ov-eb">Peer Benchmarks</span>
+			<h2>{busy === 'add' ? `Scanning @${fetchingHandle}` : 'Refreshing your peers'}</h2>
+			<p class="bm-ov-sub">
+				{busy === 'add'
+					? 'Pulling public followers, posting pace, and breakout Reels automatically.'
+					: 'Syncing the latest public engagement and Reels across your tracked peers.'}
+			</p>
+			<div class="bm-steps">
+				{#each FETCH_STEPS as label, i (label)}
+					<div class="bm-step" class:done={i < fetchStep} class:active={i === fetchStep}>
+						<span class="bm-sdot" aria-hidden="true">
+							{#if i < fetchStep}<Icon name="check" />{:else}<i></i>{/if}
+						</span>
+						<span>{label}</span>
+					</div>
+				{/each}
+			</div>
+		</section>
+	</div>
+{/if}
 
 <style>
 	.bm {
@@ -550,5 +602,159 @@
 		font-weight: 700;
 		text-decoration: none;
 		white-space: nowrap;
+	}
+
+	@property --bm-rim {
+		syntax: '<angle>';
+		initial-value: 0deg;
+		inherits: false;
+	}
+	@keyframes bmSpin {
+		to { --bm-rim: 360deg; }
+	}
+	@keyframes bmPulse {
+		0%, 100% { transform: scale(1); opacity: 0.7; }
+		50% { transform: scale(1.16); opacity: 1; }
+	}
+	.bm-ov {
+		position: fixed;
+		inset: 0;
+		z-index: 220;
+		display: grid;
+		place-items: center;
+		padding: 24px 16px;
+		background: rgba(12, 8, 14, 0.88);
+		-webkit-backdrop-filter: blur(18px);
+		backdrop-filter: blur(18px);
+	}
+	.bm-ov-card {
+		position: relative;
+		width: 100%;
+		max-width: 390px;
+		padding: 30px 22px 26px;
+		border-radius: 24px;
+		background:
+			radial-gradient(120% 90% at 95% 0%, rgba(242, 90, 144, 0.16), transparent 55%),
+			radial-gradient(95% 95% at 5% 100%, rgba(156, 123, 255, 0.14), transparent 55%),
+			#19131e;
+		text-align: center;
+		display: grid;
+		justify-items: center;
+		gap: 10px;
+		box-shadow: 0 24px 50px -28px rgba(0, 0, 0, 0.75);
+	}
+	.bm-ov-card::before {
+		content: '';
+		position: absolute;
+		inset: 0;
+		border-radius: inherit;
+		padding: 1.25px;
+		background: conic-gradient(from var(--bm-rim), #9c7bff, #f25a90, #ffae6b, rgba(255, 255, 255, 0.08) 48%, #9c7bff);
+		-webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+		mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+		-webkit-mask-composite: xor;
+		mask-composite: exclude;
+		pointer-events: none;
+		animation: bmSpin 5s linear infinite;
+	}
+	.bm-orb {
+		position: relative;
+		width: 72px;
+		height: 72px;
+		margin-bottom: 4px;
+		display: grid;
+		place-items: center;
+	}
+	.bm-ring {
+		position: absolute;
+		inset: 0;
+		border-radius: 50%;
+		padding: 2.5px;
+		background: conic-gradient(from var(--bm-rim), #9c7bff, #f25a90, #ffae6b, transparent 62%, #9c7bff);
+		-webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+		mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+		-webkit-mask-composite: xor;
+		mask-composite: exclude;
+		animation: bmSpin 1.8s linear infinite;
+	}
+	.bm-core {
+		width: 56px;
+		height: 56px;
+		border-radius: 50%;
+		background: #140f17;
+		border: 1px solid rgba(255, 255, 255, 0.08);
+		display: grid;
+		place-items: center;
+	}
+	.bm-ov-eb {
+		font: 700 10px/1.2 var(--f-mono, ui-monospace, monospace);
+		letter-spacing: 0.14em;
+		text-transform: uppercase;
+		color: #9b8fa8;
+	}
+	.bm-ov-card h2 {
+		margin: 0;
+		font: 400 26px/1.1 var(--f-serif, Georgia, serif);
+		color: #faf7fc;
+		word-break: break-word;
+	}
+	.bm-ov-sub {
+		margin: 0;
+		font-size: 13px;
+		line-height: 1.5;
+		color: #cfc6d6;
+		max-width: 32ch;
+	}
+	.bm-steps {
+		width: 100%;
+		margin-top: 10px;
+		padding-top: 14px;
+		border-top: 1px solid rgba(255, 255, 255, 0.09);
+		display: grid;
+		gap: 10px;
+		text-align: left;
+	}
+	.bm-step {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		font-size: 13px;
+		color: #7d7288;
+		transition: color 0.2s;
+	}
+	.bm-step.active {
+		color: #faf7fc;
+		font-weight: 500;
+	}
+	.bm-step.done {
+		color: #4ade80;
+	}
+	.bm-sdot {
+		width: 22px;
+		height: 22px;
+		border-radius: 50%;
+		border: 1px solid rgba(255, 255, 255, 0.14);
+		display: grid;
+		place-items: center;
+		flex-shrink: 0;
+	}
+	.bm-step.active .bm-sdot {
+		border-color: #f25a90;
+	}
+	.bm-step.active .bm-sdot i {
+		width: 7px;
+		height: 7px;
+		border-radius: 50%;
+		background: linear-gradient(135deg, #9c7bff, #f25a90, #ffae6b);
+		animation: bmPulse 1.1s ease-in-out infinite;
+	}
+	.bm-step.done .bm-sdot {
+		border-color: rgba(74, 222, 128, 0.45);
+		background: rgba(74, 222, 128, 0.12);
+		color: #4ade80;
+	}
+	.bm-step.done .bm-sdot :global(.ic) {
+		width: 12px;
+		height: 12px;
 	}
 </style>
