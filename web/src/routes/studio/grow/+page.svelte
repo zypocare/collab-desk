@@ -10,6 +10,7 @@
 	import Icon from '#lib/components/Icon.svelte';
 	import HealthCard from '#lib/components/HealthCard.svelte';
 	import PhoneGrow from '#lib/components/PhoneGrow.svelte';
+	import GoldenHourBanner from '#lib/components/GoldenHourBanner.svelte';
 	import GrowthCoach from '#lib/components/GrowthCoach.svelte';
 	import DayPerformance from '#lib/components/DayPerformance.svelte';
 	import InstagramPanel from '#lib/components/InstagramPanel.svelte';
@@ -87,6 +88,13 @@
 			{:else if cu}<b>Growth check-up: nothing big holding you back</b><small>See what works and what to do more of</small>
 			{:else}<b>{checkups.running ? 'Reading your reels and audience…' : 'Run your growth check-up'}</b><small>Why you're not growing, and what to change</small>{/if}
 		</span>
+		<Icon name="chevR" />
+	</a>
+
+	<GoldenHourBanner />
+
+	<a class="gr-cu rv" href="/studio/grow/pulse">
+		<span class="gr-it"><b>Golden Hour Launch Pulse</b><small>Track your Reel's first 60 minutes vs your 90-day median with 1-tap comment replies &amp; Story hooks</small></span>
 		<Icon name="chevR" />
 	</a>
 

@@ -536,6 +536,6 @@ verify_jwt = false
 [functions.play-version]
 verify_jwt = false
 
-# Daily 12:00 PM IST push reminder to follow up on negotiating collabs (called by pg_cron with shared secret).
-[functions.negotiating-alerts]
+# Golden Hour Launch Pulse (cron every 10m + authenticated creator calls checked inside).
+[functions.golden-hour-pulse]
 verify_jwt = false

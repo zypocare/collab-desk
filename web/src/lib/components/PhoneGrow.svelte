@@ -8,6 +8,7 @@
 	import Avatar from './Avatar.svelte';
 	import HealthCard from './HealthCard.svelte';
 	import GrowthCoach from './GrowthCoach.svelte';
+	import GoldenHourBanner from './GoldenHourBanner.svelte';
 	import DayPerformance from './DayPerformance.svelte';
 	import Icon from './Icon.svelte';
 
@@ -102,12 +103,19 @@
 		</div>
 	{/if}
 
+	<GoldenHourBanner />
+
 	<!-- The tools -->
 	<div class="pg-tools rv" style="--i:1">
 		<a class="pg-tool pg-wide" href="/studio/grow/insights" style="--hue:var(--g1)">
 			<span class="pg-ti"><Icon name="chart" /></span>
 			<b>All your insights</b>
 			<small>Reach, views, audience, your best posts: everything brands see</small>
+		</a>
+		<a class="pg-tool" href="/studio/grow/pulse" style="--hue:var(--ok)">
+			<span class="pg-ti"><Icon name="clock" /></span>
+			<b>Golden Hour</b>
+			<small>First 60 min after posting</small>
 		</a>
 		<a class="pg-tool" href="/studio/grow/check" style="--hue:var(--g2)">
 			<span class="pg-ti"><Icon name="film" /></span>

@@ -43,6 +43,7 @@
 	import AwayMode from './AwayMode.svelte';
 	import Icon from './Icon.svelte';
 	import PlayUpdateCard from './PlayUpdateCard.svelte';
+	import GoldenHourBanner from './GoldenHourBanner.svelte';
 	import Mono from './Mono.svelte';
 	import Stories from './Stories.svelte';
 	import HomeMoneyCard from './HomeMoneyCard.svelte';
@@ -312,6 +313,7 @@
 </HomeGreeting>
 
 	<PlayUpdateCard />
+	<GoldenHourBanner />
 
 <TodayStories {monthName} {received} {paidN} {od} {nextPayout} />
 <Stories />
