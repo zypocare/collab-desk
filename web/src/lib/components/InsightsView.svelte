@@ -164,7 +164,7 @@
 			<section class="iv-panel rv">
 				<div class="iv-ph">
 					<h2>By format</h2>
-					<small>last 12 of each, leaving out posts under 3 days old</small>
+					<small>last 10 of each, leaving out posts under 3 days old</small>
 				</div>
 				<div class="iv-tw">
 					<table class="doc-table ins-table">

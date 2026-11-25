@@ -3,7 +3,7 @@
 	import { invokeFn, loadInstagram, studio } from '#lib/studio.svelte.ts';
 	import { supabase } from '#lib/supabase.ts';
 	import { toast } from '#lib/ui.svelte.ts';
-	import { calcPublicEngagementRate } from '#lib/engagement.ts';
+	import { calcEngagementRate } from '#lib/engagement.ts';
 	import { compact, errMessage } from '#lib/util.ts';
 	import { igImg } from '#lib/igImg.ts';
 	import { portal } from '#lib/portal.ts';
@@ -91,7 +91,7 @@
 		const followers = Number(studio.ig?.followers ?? 0);
 		const feed = studio.media.filter((m) => m.media_type !== 'STORY' && m.product_type !== 'STORY');
 		const recent = feed.slice(0, 10);
-		const er = calcPublicEngagementRate(studio.media, followers, 10) ?? Number(studio.ig?.engagement_rate ?? 0);
+		const er = calcEngagementRate(studio.media, followers, 10) ?? Number(studio.ig?.engagement_rate ?? 0);
 		const viewed = recent.map((m) => Number(m.views ?? 0)).filter((v) => v > 0);
 		const avgViews = viewed.length ? Math.round(viewed.reduce((a, b) => a + b, 0) / viewed.length) : 0;
 		let ppw = 0;
@@ -305,7 +305,7 @@
 		{#if peerAvg}
 			<section class="bm-vs">
 				<div class="bm-stat">
-					<small>Public ER</small>
+					<small>Engagement</small>
 					<b>{myStats.er}%</b>
 					<span class:good={myStats.er >= peerAvg.er} class:warn={myStats.er < peerAvg.er}>
 						Peers {peerAvg.er}%
