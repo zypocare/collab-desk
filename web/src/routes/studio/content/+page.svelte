@@ -537,24 +537,26 @@
 	}
 	.ct2-dayh {
 		display: flex;
-		align-items: center;
+		align-items: baseline;
 		gap: 8px;
-		padding: 4px 2px 6px;
+		padding: 8px 2px 6px;
 		font-size: 14px;
 		color: var(--ink-2);
 	}
 	.ct2-dayh :global(.ic) {
-		width: 16px;
-		height: 16px;
+		width: 15px;
+		height: 15px;
+		align-self: center;
 		color: var(--g2);
 	}
 	.ct2-dayh b {
-		font-size: 15px;
+		font: 400 20px/1.1 var(--f-serif, Georgia, serif);
 		color: var(--ink);
 	}
 	.ct2-dayh small {
+		margin-left: auto;
+		font: 600 11.5px/1 var(--f-mono, ui-monospace, monospace);
 		color: var(--ink-3);
-		font-size: 13px;
 	}
 	.ct2-dayh.today b { color: var(--g2); }
 	.ct2-dayh.late b, .ct2-dayh.late :global(.ic) { color: var(--bad); }

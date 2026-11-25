@@ -136,7 +136,8 @@ export async function runSync(db: SupabaseClient, creator: number, opts: SyncOpt
 
     // 4. Centralized industry-standard Engagement Rate from the last 10 non-Story posts:
     // Avg(Likes + Comments + Shares + Saves) ÷ Followers × 100.
-    const { data: last10 } = await db.from('ig_media').select('views, reach, interactions, likes, comments, saves, shares').eq('creator_id', creator).neq('product_type', 'STORY').neq('media_type', 'STORY').order('posted_at', { ascending: false }).limit(10);
+    const settledBefore = new Date(Date.now() - SETTLE).toISOString();
+    const { data: last10 } = await db.from('ig_media').select('views, reach, interactions, likes, comments, saves, shares').eq('creator_id', creator).neq('product_type', 'STORY').neq('media_type', 'STORY').lt('posted_at', settledBefore).order('posted_at', { ascending: false }).limit(10);
     const avg = (xs: (number | null)[]) => {
       const v = xs.filter((x): x is number => typeof x === 'number');
       return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null;

@@ -39,7 +39,7 @@
 		</summary>
 		{#if finalRate !== null}
 			<p>
-				Avg (Likes + Comments + Shares + Saves) across last 10 posts ÷ {followers ? `${compact(followers)} followers` : 'Followers'} × 100 = {shown}
+				Avg (Likes + Comments + Shares + Saves) across last 10 posts (3+ days old) ÷ {followers ? `${compact(followers)} followers` : 'Followers'} × 100 = {shown}
 			</p>
 		{:else if legacy}
 			<p>{legacy.engaged.toLocaleString('en-IN')} accounts engaged ÷ {legacy.reached.toLocaleString('en-IN')} accounts reached × 100 = {legacy.percent}%</p>
