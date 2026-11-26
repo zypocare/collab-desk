@@ -60,6 +60,20 @@ export default {
 				return new Response(JSON.stringify({ error: (e as Error)?.message || 'Audit unavailable' }), { status: 500, headers: corsH });
 			}
 		}
+		if (url.pathname === '/api/maps/search') {
+			const corsH = { 'content-type': 'application/json', 'cache-control': 'no-store', 'access-control-allow-origin': '*', 'access-control-allow-methods': 'POST, OPTIONS', 'access-control-allow-headers': 'content-type' };
+			if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: corsH });
+			if (req.method !== 'POST') return new Response(JSON.stringify({ error: 'Use POST.' }), { status: 405, headers: corsH });
+			try {
+				const body = (await req.json().catch(() => ({}))) as { query?: string; city?: string; lat?: number; lng?: number };
+				const q = String(body.query ?? '').trim();
+				if (!q) return new Response(JSON.stringify({ places: [] }), { status: 200, headers: corsH });
+				const places = await searchGoogleMapsPlaces(env, q, String(body.city ?? ''), body.lat, body.lng);
+				return new Response(JSON.stringify({ places }), { status: 200, headers: corsH });
+			} catch (e) {
+				return new Response(JSON.stringify({ places: [], error: (e as Error)?.message || 'Search failed' }), { status: 200, headers: corsH });
+			}
+		}
 		if (url.pathname === '/api/maps/resolve') {
 			const corsH = { 'content-type': 'application/json', 'cache-control': 'no-store', 'access-control-allow-origin': '*', 'access-control-allow-methods': 'POST, OPTIONS', 'access-control-allow-headers': 'content-type' };
 			if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: corsH });
@@ -1825,4 +1839,101 @@ async function resolveGoogleMapsUrl(raw: string): Promise<{ lat: number; lng: nu
 		label: label || 'Pinned Google Maps location',
 		resolvedUrl: finalUrl
 	};
+}
+
+type WorkerPlaceCandidate = { lat: number; lng: number; name: string; sub: string; label: string };
+
+async function searchGoogleMapsPlaces(
+	env: Env,
+	query: string,
+	city = '',
+	biasLat?: number,
+	biasLng?: number
+): Promise<WorkerPlaceCandidate[]> {
+	const fullQ = city && !query.toLowerCase().includes(city.toLowerCase()) ? `${query}, ${city}` : query;
+	const out: WorkerPlaceCandidate[] = [];
+
+	// 1. Direct Google Maps search scrape (gives exact pin coordinates for Indian cafes, venues & areas)
+	try {
+		const centerPart = typeof biasLat === 'number' && typeof biasLng === 'number' ? `/@${biasLat},${biasLng},13z` : '';
+		const gUrl = `https://www.google.com/maps/search/${encodeURIComponent(fullQ)}${centerPart}?hl=en`;
+		const res = await fetch(gUrl, {
+			headers: {
+				'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
+				'accept-language': 'en-IN,en;q=0.9'
+			}
+		});
+		if (res.ok) {
+			const html = (await res.text()).slice(0, 220_000);
+			// Single exact place redirect or embedded !3d!4d pins
+			const pins = [...html.matchAll(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/g)];
+			const og = html.match(/property="og:title"\s+content="([^"]+)"/i) || html.match(/content="([^"]+)"\s+property="og:title"/i);
+			const ogName = og?.[1]?.replace(/\s*[·\-–|]\s*Google Maps\s*$/i, '').replace(/&amp;/g, '&').replace(/&#39;/g, "'").trim();
+			if (pins.length) {
+				const p = pins[0];
+				const lat = +Number(p[1]).toFixed(6);
+				const lng = +Number(p[2]).toFixed(6);
+				if (Number.isFinite(lat) && Number.isFinite(lng)) {
+					const name = ogName && !ogName.toLowerCase().startsWith('google maps') ? ogName : query;
+					out.push({ lat, lng, name, sub: city || 'Google Maps', label: city && !name.toLowerCase().includes(city.toLowerCase()) ? `${name}, ${city}` : name });
+				}
+			} else {
+				// Fallback: @lat,lng in static map / meta URL
+				const at = html.match(/center=(-?\d+\.\d+)(?:,|%2C)(-?\d+\.\d+)/i) || html.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+				if (at) {
+					const lat = +Number(at[1]).toFixed(6);
+					const lng = +Number(at[2]).toFixed(6);
+					if (Number.isFinite(lat) && Number.isFinite(lng)) {
+						const name = ogName && !ogName.toLowerCase().startsWith('google maps') ? ogName : query;
+						out.push({ lat, lng, name, sub: city || 'Google Maps', label: city && !name.toLowerCase().includes(city.toLowerCase()) ? `${name}, ${city}` : name });
+					}
+				}
+			}
+		}
+	} catch {
+		// fall through to Gemini grounded search
+	}
+
+	// 2. If Google Maps HTML didn't yield a pin and GEMINI_API_KEY is available, use Gemini with Google Search grounding
+	if (!out.length && env.GEMINI_API_KEY) {
+		try {
+			const prompt = `Find the real location "${fullQ}" on Google Maps. Return ONLY valid JSON (no markdown) as an array of up to 3 objects: [{"name":"Exact place name","sub":"Area, City","lat":12.3456,"lng":77.6543}]. Only include real places you found.`;
+			const gRes = await fetch(
+				`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(env.GEMINI_API_KEY)}`,
+				{
+					method: 'POST',
+					headers: { 'content-type': 'application/json' },
+					body: JSON.stringify({
+						contents: [{ role: 'user', parts: [{ text: prompt }] }],
+						tools: [{ google_search: {} }],
+						generationConfig: { temperature: 0.1 }
+					})
+				}
+			);
+			if (gRes.ok) {
+				const gj = (await gRes.json()) as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }> };
+				const rawTxt = gj.candidates?.[0]?.content?.parts?.map((p) => p.text ?? '').join('') ?? '';
+				const jm = rawTxt.match(/\[[\s\S]*\]/);
+				if (jm) {
+					const arr = JSON.parse(jm[0]) as Array<{ name?: string; sub?: string; lat?: number; lng?: number }>;
+					for (const item of arr) {
+						if (typeof item.lat === 'number' && typeof item.lng === 'number' && item.name) {
+							const sub = String(item.sub ?? city ?? '').trim();
+							out.push({
+								lat: +item.lat.toFixed(6),
+								lng: +item.lng.toFixed(6),
+								name: String(item.name).trim(),
+								sub,
+								label: sub ? `${String(item.name).trim()}, ${sub}` : String(item.name).trim()
+							});
+						}
+					}
+				}
+			}
+		} catch {
+			// ignore
+		}
+	}
+
+	return out;
 }

@@ -256,6 +256,25 @@ async function queryNominatimMany(q: string): Promise<PlaceCandidate[]> {
 }
 
 /** Search up to 5 matching places biased near the creator's Home Base so they pick the exact right venue. */
+async function queryWorkerMapsSearch(
+	query: string,
+	city = '',
+	bias?: { lat: number; lng: number } | null
+): Promise<PlaceCandidate[]> {
+	try {
+		const res = await fetch('/api/maps/search', {
+			method: 'POST',
+			headers: { 'content-type': 'application/json' },
+			body: JSON.stringify({ query, city, lat: bias?.lat, lng: bias?.lng })
+		});
+		if (!res.ok) return [];
+		const data = (await res.json()) as { places?: PlaceCandidate[] };
+		return Array.isArray(data.places) ? data.places : [];
+	} catch {
+		return [];
+	}
+}
+
 export async function searchPlaces(
 	query: string,
 	opts?: { cityHint?: string; bias?: { lat: number; lng: number } | null }
@@ -278,11 +297,21 @@ export async function searchPlaces(
 		}
 	};
 
-	for (const cand of candidates.slice(0, 3)) {
+	// Query Miracle's server-side Google Maps search in parallel with Photon/Nominatim
+	const [gHits, pFirst, nFirst] = await Promise.all([
+		queryWorkerMapsSearch(clean, opts?.cityHint ?? '', opts?.bias),
+		queryPhotonMany(candidates[0] ?? clean, opts?.bias),
+		queryNominatimMany(candidates[0] ?? clean)
+	]);
+	addUnique(gHits);
+	addUnique(pFirst);
+	addUnique(nFirst);
+
+	for (const cand of candidates.slice(1, 3)) {
+		if (seen.length >= 5) break;
 		const [p, n] = await Promise.all([queryPhotonMany(cand, opts?.bias), queryNominatimMany(cand)]);
 		addUnique(p);
 		addUnique(n);
-		if (seen.length >= 5) break;
 	}
 
 	if (opts?.bias) {

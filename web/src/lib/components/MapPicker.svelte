@@ -118,10 +118,16 @@
 				zoomControl: false,
 				attributionControl: false
 			});
-			LRef.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-				maxZoom: 19,
-				subdomains: 'abcd'
+			const googleLayer = LRef.tileLayer('https://mt{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+				maxZoom: 20,
+				subdomains: '0123'
 			}).addTo(map);
+			let fellBack = false;
+			googleLayer.on('tileerror', () => {
+				if (fellBack || !map || !LRef) return;
+				fellBack = true;
+				LRef.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+			});
 			LRef.control.zoom({ position: 'bottomright' }).addTo(map);
 
 			await setPin(pickedLat, pickedLng, initialLabel || undefined);
