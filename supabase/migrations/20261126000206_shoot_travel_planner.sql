@@ -1,7 +1,7 @@
 -- Private Home Base (creator settings) + On-Location Shoot & Distance Planner (collabs)
--- Strictly private on settings (never exposed in public_page).
+-- Strictly private on creator_settings (never exposed in public_page).
 
-alter table public.settings
+alter table public.creator_settings
   add column if not exists home_address text not null default '',
   add column if not exists home_lat double precision,
   add column if not exists home_lng double precision,
