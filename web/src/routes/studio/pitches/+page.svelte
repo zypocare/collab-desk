@@ -37,19 +37,28 @@
 		sent_at: string | null;
 		next_follow_on: string | null;
 		collab_id: string | null;
+		found_on?: string | null;
 		created_at: string;
 	};
 
 	let list = $state<Pitch[]>([]);
 	let loaded = $state(false);
-	let stageFilter = $state<'all' | 'wishlist' | 'pitched' | 'active'>('all');
+	let stageFilter = $state<'new' | 'wishlist' | 'pitched' | 'replied'>('new');
+	let didInitStage = false;
+	let justFoundIds = $state<string[]>([]);
 	let open = $state<Partial<Pitch> | null>(null);
 	let busy = $state(false);
 	let writing = $state(false);
 
 	async function load() {
 		const { data } = await supabase.from('pitches').select('*').order('created_at', { ascending: false });
-		list = (data as Pitch[]) ?? [];
+		const rows = (data as Pitch[]) ?? [];
+		list = rows;
+		if (!didInitStage) {
+			didInitStage = true;
+			const hasNew = rows.some((p) => p.status === 'ready' && (!p.approved || !p.email));
+			stageFilter = hasNew ? 'new' : 'wishlist';
+		}
 		loaded = true;
 	}
 	onMount(load);
@@ -75,19 +84,42 @@
 		skipped: { t: 'Skipped', tone: 'muted' }
 	};
 
-	const ready = $derived(
-		list.filter((p) => p.status === 'ready').sort((a, b) => (a.send_after ?? '').localeCompare(b.send_after ?? ''))
+	const auto = $derived(s.pitch_mode === 'auto');
+	const isNewPitch = (p: Pitch) => p.status === 'ready' && (!p.approved || !p.email);
+	const isQueuedPitch = (p: Pitch) => p.status === 'ready' && !!p.approved && !!p.email;
+
+	const newList = $derived(
+		list.filter(isNewPitch).sort((a, b) => {
+			const aj = justFoundIds.includes(a.id) ? 1 : 0;
+			const bj = justFoundIds.includes(b.id) ? 1 : 0;
+			if (aj !== bj) return bj - aj;
+			return (b.created_at ?? '').localeCompare(a.created_at ?? '');
+		})
 	);
+	const wishlistList = $derived(list.filter((p) => p.status === 'idea' || p.status === 'not_now'));
+	const pitchedList = $derived(list.filter((p) => p.status === 'sent' || isQueuedPitch(p)));
+	const repliedList = $derived(list.filter((p) => p.status === 'replied' || p.status === 'won'));
+
 	const shown = $derived.by(() => {
-		const nonReady = list.filter((p) => p.status !== 'ready' && p.status !== 'skipped');
-		if (stageFilter === 'wishlist') return nonReady.filter((p) => p.status === 'idea' || p.status === 'not_now');
-		if (stageFilter === 'pitched') return nonReady.filter((p) => p.status === 'sent');
-		if (stageFilter === 'active') return nonReady.filter((p) => p.status === 'replied' || p.status === 'won');
-		return nonReady;
+		if (stageFilter === 'new') return newList;
+		if (stageFilter === 'wishlist') return wishlistList;
+		if (stageFilter === 'pitched') return pitchedList;
+		return repliedList;
 	});
 
-	const auto = $derived(s.pitch_mode === 'auto');
-	const waiting = $derived(ready.filter((p) => !p.approved && !auto));
+	const waiting = $derived(newList.filter((p) => !!p.email && !p.approved && !auto));
+
+	const todayKey = new Date(Date.now() + 5.5 * 3600e3).toISOString().slice(0, 10);
+	function ageInfo(p: Pitch): { label: string; fresh: boolean } {
+		if (justFoundIds.includes(p.id)) return { label: 'Just found', fresh: true };
+		const refDate = (p.found_on || p.created_at || '').slice(0, 10);
+		if (!refDate) return { label: '', fresh: false };
+		if (refDate === todayKey) return { label: 'New · Today', fresh: true };
+		const diff = Math.round((Date.parse(todayKey) - Date.parse(refDate)) / 864e5);
+		if (diff === 1) return { label: 'Yesterday', fresh: false };
+		if (diff > 1 && diff < 30) return { label: `${diff}d ago`, fresh: false };
+		return { label: fmt(refDate), fresh: false };
+	}
 	const at = (t: string | null | undefined) =>
 		t
 			? new Date(t).toLocaleString('en-IN', {
@@ -147,6 +179,7 @@
 	});
 
 	async function findNow() {
+		const prevIds = new Set(list.map((p) => p.id));
 		finding = true;
 		const { data, error } = await supabase.functions.invoke('pitch-finder', { body: {} });
 		finding = false;
@@ -162,10 +195,15 @@
 				? `${r.added} new brand${r.added === 1 ? '' : 's'} found${parts ? ` (${parts})` : ''}`
 				: r.skipped
 					? `Nothing new: ${r.skipped}`
-					: 'No new brands found today',
+					: 'No new brands found right now',
 			r.added ? 'check' : 'alert'
 		);
-		load();
+		await load();
+		if (r.added) {
+			justFoundIds = list.filter((p) => !prevIds.has(p.id)).map((p) => p.id);
+			tab = 'pitches';
+			stageFilter = 'new';
+		}
 	}
 
 	const handleOf = (p: Pitch) =>
@@ -223,12 +261,13 @@
 	}
 
 	const counts = $derived({
-		idea: list.filter((p) => p.status === 'idea' || p.status === 'not_now').length,
-		sent: list.filter((p) => p.status === 'sent').length,
-		replied: list.filter((p) => p.status === 'replied').length,
-		won: list.filter((p) => p.status === 'won').length
+		fresh: newList.length,
+		wishlist: wishlistList.length,
+		pitched: pitchedList.length,
+		replied: repliedList.length
 	});
-	const totalOutreach = $derived(counts.sent + counts.replied + counts.won);
+	const totalOutreach = $derived(counts.pitched + counts.replied);
+	const totalActive = $derived(counts.fresh + counts.wishlist + counts.pitched + counts.replied);
 
 	function template(p: Partial<Pitch>) {
 		const first = (p.contact_name ?? '').split(' ')[0] || 'there';
@@ -352,21 +391,21 @@
 		</div>
 
 		<div class="pt2-kpi4">
+			<button type="button" onclick={() => { tab = 'pitches'; stageFilter = 'new'; }}>
+				<small>New</small>
+				<b class="num rose">{counts.fresh}</b>
+			</button>
 			<button type="button" onclick={() => { tab = 'pitches'; stageFilter = 'wishlist'; }}>
 				<small>Wishlist</small>
-				<b class="num vio">{counts.idea}</b>
+				<b class="num vio">{counts.wishlist}</b>
 			</button>
 			<button type="button" onclick={() => { tab = 'pitches'; stageFilter = 'pitched'; }}>
 				<small>Pitched</small>
-				<b class="num warn">{counts.sent}</b>
+				<b class="num warn">{counts.pitched}</b>
 			</button>
-			<button type="button" onclick={() => { tab = 'pitches'; stageFilter = 'active'; }}>
+			<button type="button" onclick={() => { tab = 'pitches'; stageFilter = 'replied'; }}>
 				<small>Replied</small>
 				<b class="num ok">{counts.replied}</b>
-			</button>
-			<button type="button" onclick={() => { tab = 'pitches'; stageFilter = 'active'; }}>
-				<small>Won</small>
-				<b class="num ok">{counts.won}</b>
 			</button>
 		</div>
 
@@ -386,7 +425,7 @@
 			Open briefs ({briefs?.length ?? 0})
 		</button>
 		<button type="button" role="tab" aria-selected={view === 'pitches'} class:on={view === 'pitches'} onclick={() => (tab = 'pitches')}>
-			Your pitches ({shown.length + ready.length})
+			Your pitches ({totalActive})
 		</button>
 	</div>
 
@@ -400,7 +439,7 @@
 			<div class="pt2-auto-h">
 				<div>
 					<b>Pitch autopilot</b>
-					<small>Finds up to {s.pitch_daily ?? 10} brands a day via Instagram collabs, niche hashtags & Google. Email-ready brands queue for 10 AM–6 PM; IG-only brands land in Wishlist ready to DM.</small>
+					<small>Finds up to {s.pitch_daily ?? 10} brands a day via Instagram collabs, niche hashtags & Google. New finds land in New for you to pitch, DM, or save to Wishlist.</small>
 				</div>
 				<input
 					type="checkbox"
@@ -427,80 +466,30 @@
 			{/if}
 		</section>
 
-		<!-- Newly Discovered / Ready to Send Queue -->
-		{#if ready.length}
-			<section class="pt2-sec">
-				<div class="pt2-sh">
-					<h2>Found for you</h2>
-					<small>{ready.length} ready to review</small>
-				</div>
-				<div class="pt2-list">
-					{#each ready as p (p.id)}
-						<article class="pt2-card pt2-brand is-ready">
-							<div class="pt2-bh">
-								<Mono name={p.brand_name} size="sm" />
-								<div class="pt2-bid">
-									<button type="button" class="pt2-bname" onclick={() => (open = { ...p })}>{p.brand_name}</button>
-									<div class="pt2-bsub">
-										{#if handleOf(p)}<a href="https://www.instagram.com/{handleOf(p)}/" target="_blank" rel="noopener">@{handleOf(p)}</a>{/if}
-										{#if p.category}<span>{p.category}</span>{/if}
-									</div>
-								</div>
-								<span class="pt2-pill" class:ok={p.approved || auto} class:warn={!p.approved && !auto}>{goes(p)}</span>
-							</div>
-
-							{#if p.fit_note || p.subject}
-								<p class="pt2-why">{p.fit_note || p.subject}</p>
-							{/if}
-
-							{#if p.email || p.website}
-								<div class="pt2-contact">
-									{#if p.email}<span><Icon name="mail" />{p.email}</span>{/if}
-									{#if p.website}<a href={p.website} target="_blank" rel="noopener"><Icon name="globe" />{cleanUrl(p.website)}</a>{/if}
-								</div>
-							{/if}
-
-							<div class="pt2-bacts">
-								{#if !p.approved && !auto}
-									<button type="button" class="pt2-neo sm" onclick={() => approve([p])}>
-										<Icon name="check" /><span>Approve</span>
-									</button>
-								{/if}
-								{#if handleOf(p)}
-									<button type="button" class="pt2-btn" onclick={() => dm(p)}>
-										<Icon name="insta" /><span>{p.dm_sent_at ? 'DM again' : 'DM'}</span>
-									</button>
-								{/if}
-								<button type="button" class="pt2-btn" onclick={() => saveToWishlist(p)} title="Save to Wishlist for future reference">
-									<Icon name="pin" /><span>Wishlist</span>
-								</button>
-								<button type="button" class="pt2-icbtn" aria-label="Edit pitch" onclick={() => (open = { ...p })}>
-									<Icon name="edit" />
-								</button>
-								<button type="button" class="pt2-icbtn" aria-label="Skip brand" onclick={() => skip(p)}>
-									<Icon name="x" />
-								</button>
-							</div>
-						</article>
-					{/each}
-				</div>
-			</section>
-		{/if}
-
-		<!-- Stage Filter Tabs for Wishlist & Outreach History -->
-		<div class="pt2-tabs pt2-tabs-4" role="tablist" aria-label="Filter pitches">
-			<button type="button" role="tab" aria-selected={stageFilter === 'all'} class:on={stageFilter === 'all'} onclick={() => (stageFilter = 'all')}>All</button>
-			<button type="button" role="tab" aria-selected={stageFilter === 'wishlist'} class:on={stageFilter === 'wishlist'} onclick={() => (stageFilter = 'wishlist')}>Wishlist</button>
-			<button type="button" role="tab" aria-selected={stageFilter === 'pitched'} class:on={stageFilter === 'pitched'} onclick={() => (stageFilter = 'pitched')}>Pitched</button>
-			<button type="button" role="tab" aria-selected={stageFilter === 'active'} class:on={stageFilter === 'active'} onclick={() => (stageFilter = 'active')}>Replied</button>
+		<!-- Unified 4-Stage Sharp NeoPOP Tabs -->
+		<div class="pt2-tabs pt2-tabs-4" role="tablist" aria-label="Pitch stages">
+			<button type="button" role="tab" aria-selected={stageFilter === 'new'} class:on={stageFilter === 'new'} onclick={() => (stageFilter = 'new')}>
+				New{#if counts.fresh} ({counts.fresh}){/if}
+			</button>
+			<button type="button" role="tab" aria-selected={stageFilter === 'wishlist'} class:on={stageFilter === 'wishlist'} onclick={() => (stageFilter = 'wishlist')}>
+				Wishlist{#if counts.wishlist} ({counts.wishlist}){/if}
+			</button>
+			<button type="button" role="tab" aria-selected={stageFilter === 'pitched'} class:on={stageFilter === 'pitched'} onclick={() => (stageFilter = 'pitched')}>
+				Pitched{#if counts.pitched} ({counts.pitched}){/if}
+			</button>
+			<button type="button" role="tab" aria-selected={stageFilter === 'replied'} class:on={stageFilter === 'replied'} onclick={() => (stageFilter = 'replied')}>
+				Replied{#if counts.replied} ({counts.replied}){/if}
+			</button>
 		</div>
 
 		{#if shown.length}
 			<div class="pt2-list">
 				{#each shown as p (p.id)}
-					{@const meta = LABEL[p.status]}
 					{@const igH = handleOf(p)}
-					<article class="pt2-card pt2-brand">
+					{@const age = ageInfo(p)}
+					{@const freshCard = stageFilter === 'new' && age.fresh}
+					{@const meta = isQueuedPitch(p) ? { t: goes(p), tone: 'ok' } : isNewPitch(p) ? { t: p.email ? 'Email ready' : 'IG DM', tone: p.email ? 'warn' : 'vio' } : LABEL[p.status]}
+					<article class="pt2-card pt2-brand" class:is-fresh={freshCard}>
 						<div class="pt2-bh">
 							<Mono name={p.brand_name} size="sm" />
 							<div class="pt2-bid">
@@ -508,6 +497,7 @@
 								<div class="pt2-bsub">
 									{#if igH}<a href="https://www.instagram.com/{igH}/" target="_blank" rel="noopener">@{igH}</a>{/if}
 									{#if p.category}<span>{p.category}</span>{/if}
+									{#if age.label}<span class="pt2-age" class:fresh={age.fresh}>{age.label}</span>{/if}
 									{#if p.dm_sent_at}<span class="ok">DM {fmt(p.dm_sent_at.slice(0, 10))}</span>{/if}
 								</div>
 							</div>
@@ -530,7 +520,35 @@
 						{/if}
 
 						<div class="pt2-bacts">
-							{#if p.status === 'idea' || p.status === 'not_now'}
+							{#if isNewPitch(p)}
+								{#if p.email}
+									<button type="button" class="pt2-neo sm" onclick={() => approve([p])}>
+										<Icon name="check" /><span>Approve</span>
+									</button>
+									{#if igH}
+										<button type="button" class="pt2-btn" onclick={() => dm(p)}>
+											<Icon name="insta" /><span>{p.dm_sent_at ? 'DM again' : 'DM'}</span>
+										</button>
+									{/if}
+								{:else if igH}
+									<button type="button" class="pt2-neo sm" onclick={() => dm(p)}>
+										<Icon name="insta" /><span>{p.dm_sent_at ? 'DM again' : 'DM on IG'}</span>
+									</button>
+								{:else}
+									<button type="button" class="pt2-neo sm" onclick={() => (open = { ...p })}>
+										<Icon name="send" /><span>Pitch</span>
+									</button>
+								{/if}
+								<button type="button" class="pt2-btn" onclick={() => saveToWishlist(p)} title="Save to Wishlist for future reference">
+									<Icon name="pin" /><span>Wishlist</span>
+								</button>
+								<button type="button" class="pt2-icbtn" aria-label="Edit pitch" onclick={() => (open = { ...p })}>
+									<Icon name="edit" />
+								</button>
+								<button type="button" class="pt2-icbtn" aria-label="Skip brand" onclick={() => skip(p)}>
+									<Icon name="x" />
+								</button>
+							{:else if p.status === 'idea' || p.status === 'not_now'}
 								{#if p.email}
 									<button type="button" class="pt2-neo sm" onclick={() => (open = { ...p })}>
 										<Icon name="send" /><span>Email pitch</span>
@@ -554,6 +572,18 @@
 										<Icon name="edit" /><span>Edit</span>
 									</button>
 								{/if}
+							{:else if isQueuedPitch(p)}
+								{#if igH}
+									<button type="button" class="pt2-btn" onclick={() => dm(p)}>
+										<Icon name="insta" /><span>{p.dm_sent_at ? 'DM again' : 'DM'}</span>
+									</button>
+								{/if}
+								<button type="button" class="pt2-btn" onclick={() => saveToWishlist(p)}>
+									<Icon name="pin" /><span>Wishlist</span>
+								</button>
+								<button type="button" class="pt2-icbtn" aria-label="Edit pitch" onclick={() => (open = { ...p })}>
+									<Icon name="edit" />
+								</button>
 							{/if}
 
 							{#if p.status === 'sent'}
@@ -587,14 +617,16 @@
 								</button>
 							{/if}
 
-							{#if p.status !== 'won' && p.status !== 'idea'}
+							{#if !isNewPitch(p) && !isQueuedPitch(p) && p.status !== 'won' && p.status !== 'idea' && p.status !== 'not_now'}
 								<button type="button" class="pt2-icbtn" title="Save to Wishlist" aria-label="Save to Wishlist" onclick={() => saveToWishlist(p)}>
 									<Icon name="pin" />
 								</button>
 							{/if}
-							<button type="button" class="pt2-icbtn" title="Remove" aria-label="Remove" onclick={() => remove(p)}>
-								<Icon name="x" />
-							</button>
+							{#if !isNewPitch(p)}
+								<button type="button" class="pt2-icbtn" title="Remove" aria-label="Remove" onclick={() => remove(p)}>
+									<Icon name="x" />
+								</button>
+							{/if}
 						</div>
 					</article>
 				{/each}
@@ -603,8 +635,8 @@
 			<section class="pt2-card pt2-empty">
 				{#if loaded}
 					<span class="pt2-eic"><Icon name="send" /></span>
-					<b>{stageFilter === 'wishlist' ? 'Your wishlist is empty' : stageFilter === 'pitched' ? 'No pitches sent yet' : stageFilter === 'active' ? 'No replies or wins yet' : 'No pitches yet'}</b>
-					<small>Tap <b>Find brands</b> above to pull active brands from Instagram, or add a brand manually to pitch or save for later.</small>
+					<b>{stageFilter === 'new' ? 'No new brands waiting' : stageFilter === 'wishlist' ? 'Your wishlist is empty' : stageFilter === 'pitched' ? 'No pitches sent yet' : 'No replies or wins yet'}</b>
+					<small>{stageFilter === 'wishlist' ? 'Tap Wishlist on any brand in New to save it here for future reference.' : 'Tap Find brands above to pull active brands from Instagram, or add a brand manually.'}</small>
 					<div class="pt2-eacts">
 						<button type="button" class="pt2-neo sm" onclick={newPitch}><Icon name="plus" /><span>New pitch</span></button>
 						<button type="button" class="pt2-find sm" onclick={findNow} disabled={finding}><Icon name="insta" /><span>Find brands</span></button>
@@ -887,23 +919,6 @@
 	}
 	.pt2-auto-foot small { font-size: 12.5px; color: var(--ink-3); }
 
-	.pt2-sec { display: grid; gap: 8px; }
-	.pt2-sh {
-		display: flex;
-		align-items: baseline;
-		justify-content: space-between;
-		gap: 8px;
-		padding: 0 2px;
-	}
-	.pt2-sh h2 {
-		margin: 0;
-		font: 400 22px/1.1 var(--f-serif, Georgia, serif);
-		color: var(--ink);
-	}
-	.pt2-sh small {
-		font: 600 12px/1 var(--f-mono, ui-monospace, monospace);
-		color: var(--ink-3);
-	}
 
 	.pt2-list { display: grid; gap: 11px; }
 	.pt2-brand {
@@ -911,7 +926,7 @@
 			radial-gradient(200px 100px at 100% 0%, color-mix(in oklab, var(--g1) 10%, transparent), transparent 72%),
 			var(--surface);
 	}
-	.pt2-brand.is-ready {
+	.pt2-brand.is-fresh {
 		background:
 			radial-gradient(200px 100px at 100% 0%, color-mix(in oklab, var(--g2) 12%, transparent), transparent 72%),
 			var(--surface);
@@ -1119,4 +1134,8 @@
 	.pt2-step.active .pt2-sdot i { width: 7px; height: 7px; border-radius: 50%; background: linear-gradient(135deg, #9c7bff, #f25a90, #ffae6b); animation: ptPulse 1.1s ease-in-out infinite; }
 	.pt2-step.done .pt2-sdot { border-color: rgba(74, 222, 128, 0.45); background: rgba(74, 222, 128, 0.12); color: #4ade80; }
 	.pt2-step.done .pt2-sdot :global(.ic) { width: 12px; height: 12px; }
+	.pt2-kpi4 .num.rose { color: #f25a90; }
+	.pt2-brand.is-fresh { border-color: rgba(242, 90, 144, 0.36); background: linear-gradient(155deg, rgba(242, 90, 144, 0.08), rgba(156, 123, 255, 0.05) 45%, var(--paper) 100%); }
+	.pt2-age { font-family: var(--mono); font-size: 11px; color: var(--ink-3); }
+	.pt2-age.fresh { color: #f79fc0; font-weight: 600; }
 </style>

@@ -440,7 +440,7 @@ async function findFor(db: ReturnType<typeof admin>, s: Settings, opt: { manual:
       dmCount++;
       rows.push({
         creator_id: s.id, brand_name: b.name, instagram: b.instagram, category: b.category, email: '', website: b.website, subject, body,
-        status: 'idea', source: 'autopilot', fit_note: `${b.why} · DM on Instagram`, found_on: today, approved: false, send_after: null, auto_follow: false,
+        status: 'ready', source: 'autopilot', fit_note: `${b.why} · DM on Instagram`, found_on: today, approved: false, send_after: null, auto_follow: false,
       });
     }
   }
