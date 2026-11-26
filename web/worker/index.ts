@@ -407,12 +407,34 @@ async function embed(x: Run, b: Record<string, unknown>) {
 	return { vectors: (r.data ?? []).map((v) => v.map((n) => Math.round(n * 1e5) / 1e5)) };
 }
 
-/** Speech to text for browsers without their own (Whisper on Cloudflare; English, Hindi, Hinglish, Kannada). */
+/** Speech to text for mic recordings & uploaded WhatsApp voice notes (Whisper on Cloudflare, Gemini audio backup; English, Hindi, Hinglish, Kannada). */
 async function voice(x: Run, b: Record<string, unknown>) {
-	if (x.gemini) throw new Error('!Voice typing is used up for today. Type it instead.');
-	const audio = String(b.audio ?? '');
-	if (!audio) throw new Error('!Nothing was recorded.');
-	if (audio.length > 2_400_000) throw new Error('!That recording is too long. Keep it under a minute.');
+	const raw = String(b.audio ?? '').trim();
+	if (!raw) throw new Error('!Nothing was recorded or uploaded.');
+	const m = raw.match(/^data:([^;]+);base64,(.*)$/s);
+	const mime = String(b.mime ?? m?.[1] ?? 'audio/ogg').split(';')[0].trim() || 'audio/ogg';
+	const audio = m ? m[2] : raw;
+	if (audio.length > 6_500_000) throw new Error('!That voice note is too large (max ~4.5 MB / 5 min). Trim or split it.');
+	if (x.gemini) {
+		if (!x.env.GEMINI_API_KEY) throw new Error('!Voice transcription is used up for today. Type or paste it instead.');
+		const r = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent', {
+			method: 'POST',
+			headers: { 'content-type': 'application/json', 'x-goog-api-key': (x.env.GEMINI_API_KEY ?? '').trim().replace(/^["']+|["']+$/g, '') },
+			body: JSON.stringify({
+				contents: [{
+					role: 'user',
+					parts: [
+						{ inline_data: { mime_type: mime, data: audio } },
+						{ text: 'Transcribe this voice note accurately in the original spoken language (English, Hindi, Hinglish, or Kannada). Return ONLY the plain transcript text with no intro or formatting.' }
+					]
+				}],
+				generationConfig: { temperature: 0.1, maxOutputTokens: 2048 }
+			})
+		});
+		const j = (await r.json().catch(() => ({}))) as { candidates?: { content?: { parts?: { text?: string }[] } }[]; error?: { message?: string } };
+		if (!r.ok) throw new Error(j.error?.message ?? `!Couldn't transcribe that voice note (${r.status}).`);
+		return { text: (j.candidates?.[0]?.content?.parts ?? []).map((p) => p.text ?? '').join('').trim() };
+	}
 	const r = (await aiRun(x.env, '@cf/openai/whisper-large-v3-turbo', { audio, task: 'transcribe', vad_filter: true })) as { text?: string; transcription_info?: { duration?: number } };
 	// About 47 neurons per minute of audio.
 	x.neurons += Math.max(5, ((r.transcription_info?.duration ?? 30) / 60) * 47);

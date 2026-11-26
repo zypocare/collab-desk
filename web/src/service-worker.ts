@@ -40,11 +40,15 @@ async function shared(req: Request) {
 	try {
 		const form = await req.formData();
 		const text = ['title', 'text', 'url'].map((k) => form.get(k)).filter((v): v is string => typeof v === 'string' && !!v.trim()).join('\n');
-		const shot = form.getAll('shot').find((f): f is File => f instanceof File && f.size > 0);
+		const files = [...form.getAll('shot'), ...form.getAll('audio')].filter((f): f is File => f instanceof File && f.size > 0);
+		const shot = files.find((f) => f.type.startsWith('image/'));
+		const audio = files.find((f) => f.type.startsWith('audio/') || /\.(ogg|opus|m4a|aac|mp3|wav|amr)$/i.test(f.name));
 		const c = await caches.open('shared');
 		await c.put('/__shared/text', new Response(text));
 		if (shot) await c.put('/__shared/shot', new Response(shot, { headers: { 'content-type': shot.type || 'image/jpeg' } }));
 		else await c.delete('/__shared/shot');
+		if (audio) await c.put('/__shared/audio', new Response(audio, { headers: { 'content-type': audio.type || 'audio/ogg' } }));
+		else await c.delete('/__shared/audio');
 	} catch {
 		/* the share screen opens empty */
 	}

@@ -31,8 +31,9 @@
 	ui.fromIgUser = ui.fromIgName = '';
 	const igBrand = igUser ? (studio.brands.find((b) => (b.instagram ?? '').toLowerCase() === igUser.toLowerCase())?.name ?? (igName || igUser.replace(/[._]+/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()).trim())) : '';
 	const shared = ui.pasteImage;
+	const sharedAudio = ui.pasteAudio;
 	type Step = 'paste' | 'ask' | 'deal' | 'when';
-	let step = $state<Step>(startText.trim() || shared || fromIg ? 'ask' : 'paste');
+	let step = $state<Step>(startText.trim() || shared || sharedAudio || fromIg ? 'ask' : 'paste');
 	const STEPS: Step[] = ['ask', 'deal', 'when'];
 	const at = $derived(STEPS.indexOf(step));
 	let nameTouched = $state(false);
@@ -59,9 +60,11 @@
 			}
 		};
 		body?.addEventListener('focusin', onFocusIn);
-		// A screenshot shared into the app (Android Share): read it straight away.
+		// A screenshot or WhatsApp voice note shared into the app (Android Share): read it straight away.
 		ui.pasteImage = null;
+		ui.pasteAudio = null;
 		if (shared) shrinkImage(shared).then((img) => readWithAi(img), (err) => toast((err as Error).message, 'alert'));
+		else if (sharedAudio) readAudioFile(sharedAudio);
 		// A DM or pasted message: read it at once, so the details are there when she looks.
 		else if (startText.trim().length > 20) readWithAi();
 		return () => {
@@ -153,6 +156,7 @@
 		});
 	}
 	let shotInput = $state<HTMLInputElement>();
+	let audioInput = $state<HTMLInputElement>();
 	async function pickShot(e: Event) {
 		const f = (e.currentTarget as HTMLInputElement).files?.[0];
 		if (!f) return;
@@ -162,6 +166,55 @@
 		} catch (err) {
 			toast((err as Error).message, 'alert');
 		}
+		(e.currentTarget as HTMLInputElement).value = '';
+	}
+	function audioMimeOf(f: File): string {
+		if (f.type && f.type.startsWith('audio/')) return f.type.split(';')[0];
+		const ext = (f.name.split('.').pop() ?? '').toLowerCase();
+		if (ext === 'opus' || ext === 'ogg') return 'audio/ogg';
+		if (ext === 'm4a' || ext === 'mp4') return 'audio/mp4';
+		if (ext === 'mp3') return 'audio/mpeg';
+		if (ext === 'wav') return 'audio/wav';
+		if (ext === 'aac') return 'audio/aac';
+		if (ext === 'amr') return 'audio/amr';
+		return 'audio/ogg';
+	}
+	async function readAudioFile(f: File) {
+		if (f.size > 4_800_000) {
+			toast('That voice note is too large (max ~4.5 MB / 5 min). Trim or split it.', 'alert');
+			return;
+		}
+		aiBusy = true;
+		aiNote = 'Listening to the voice note…';
+		try {
+			const audio = await new Promise<string>((res, rej) => {
+				const r = new FileReader();
+				r.onload = () => res(String(r.result ?? ''));
+				r.onerror = () => rej(new Error("Couldn't read that audio file."));
+				r.readAsDataURL(f);
+			});
+			const { text } = await askAi<{ text: string }>('voice', { audio, mime: audioMimeOf(f) });
+			const clean = (text ?? '').trim();
+			if (!clean) {
+				toast("Couldn't hear any speech in that voice note.", 'alert');
+				aiNote = '';
+				aiBusy = false;
+				return;
+			}
+			const before = pasted.trim();
+			pasted = before ? `${before}\n${clean}` : clean;
+			await readWithAi();
+		} catch (err) {
+			toast((err as Error).message, 'alert');
+			aiNote = '';
+			aiBusy = false;
+		}
+	}
+	async function pickAudio(e: Event) {
+		const f = (e.currentTarget as HTMLInputElement).files?.[0];
+		if (!f) return;
+		go('ask');
+		await readAudioFile(f);
 		(e.currentTarget as HTMLInputElement).value = '';
 	}
 	function fromPaste() {
@@ -391,15 +444,17 @@
 		<div class="nc-body" bind:this={body}>
 			{#if step === 'paste'}
 				<h2 id="nc-title" class="nc-h">Add a <em class="nc-grad">collab</em></h2>
-				<p class="nc-sub">Paste their DM or email, read a screenshot, or say it. The details fill in for you.</p>
+				<p class="nc-sub">Paste their DM or email, upload a screenshot or WhatsApp voice note, or speak. The details fill in for you.</p>
 				<div class="nc-compose">
 					<label for="nc-paste" class="sr">Their message (optional)</label>
 					<textarea id="nc-paste" rows="8" placeholder={'Hi! I’m Asha from Lumière Skin. We’d love 1 reel + 3 stories for our Vitamin C launch, budget ₹30k, live by 25th…'} bind:value={pasted} bind:this={box}></textarea>
 					<div class="nc-tools">
 						<button type="button" class="nc-pill ai" disabled={aiBusy} onclick={() => shotInput?.click()}><Icon name="image" />Screenshot</button>
+						<button type="button" class="nc-pill ai" disabled={aiBusy} onclick={() => audioInput?.click()} title="Upload a WhatsApp or voice recording"><Icon name="clip" />Voice note</button>
 						{#if speakable}<button type="button" class="nc-pill ai" class:rec={speaking} disabled={aiBusy && !speaking} onclick={speak} aria-label={speaking ? 'Stop listening' : 'Speak the details'}><Icon name="mic" />{speaking ? 'Stop' : 'Speak'}</button>{/if}
 						{#if canPaste}<button type="button" class="nc-pill" onclick={pasteClip}><Icon name="copy" />Paste</button>{/if}
 						<input type="file" accept="image/*" hidden bind:this={shotInput} onchange={pickShot} />
+						<input type="file" accept="audio/*,.ogg,.opus,.m4a,.aac,.mp3,.wav,.amr" hidden bind:this={audioInput} onchange={pickAudio} />
 					</div>
 				</div>
 				{#if aiNote}<p class="nc-note"><AiThinking label={aiNote.replace('…', '')} /></p>{/if}

@@ -11,11 +11,15 @@
 			// Kept by the app's service worker for this moment (a screenshot can't travel in the address).
 			try {
 				const c = await caches.open('shared');
-				const [text, shot] = await Promise.all([c.match('/__shared/text'), c.match('/__shared/shot')]);
+				const [text, shot, audio] = await Promise.all([c.match('/__shared/text'), c.match('/__shared/shot'), c.match('/__shared/audio')]);
 				ui.pasteText = text ? await text.text() : '';
 				if (shot) {
 					const blob = await shot.blob();
 					ui.pasteImage = new File([blob], 'shared-screenshot', { type: blob.type || 'image/jpeg' });
+				}
+				if (audio) {
+					const blob = await audio.blob();
+					ui.pasteAudio = new File([blob], 'shared-voice-note.ogg', { type: blob.type || 'audio/ogg' });
 				}
 				await caches.delete('shared');
 			} catch {
