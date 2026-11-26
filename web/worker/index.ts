@@ -1833,6 +1833,7 @@ async function resolveGoogleMapsUrl(
 
 	// Try WhatsApp/preview UA first (gets clean 302 Location + og:image staticmap without JS walls), then Chrome UA
 	const userAgents = [
+		'curl/8.4.0',
 		'WhatsApp/2.23.20.0',
 		'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36'
 	];
@@ -1866,8 +1867,13 @@ async function resolveGoogleMapsUrl(
 
 				// Follow any embedded meta-refresh or google.com/maps link in the shortener HTML
 				const metaRef = html.match(/http-equiv=["']refresh["'][^>]*url=([^"'>\s]+)/i);
-				const embeddedMapUrl = html.match(/https:\/\/(?:www\.|maps\.)?google\.com\/maps\/(?:place|dir|search)[^"'\s<>\\]+/i);
-				const nextFromHtml = metaRef?.[1] || embeddedMapUrl?.[0];
+				const embeddedMapUrl = html.match(/https:\/\/(?:www\.|maps\.)?google\.[a-z.]+\/maps[^"'\s<>\\]+/i);
+				const encodedMapUrl = html.match(/https%3A%2F%2F(?:www\.|maps\.)?google\.[a-z.]+%2Fmaps[^"'\s<>\\&]+/i);
+				let decodedEmb = '';
+				if (encodedMapUrl?.[0]) {
+					try { decodedEmb = decodeURIComponent(encodedMapUrl[0]); } catch { /* ignore */ }
+				}
+				const nextFromHtml = metaRef?.[1] || embeddedMapUrl?.[0] || decodedEmb;
 				if (nextFromHtml) {
 					const cleanNext = unwrapConsent(normalizeText(nextFromHtml));
 					if (cleanNext !== hopUrl) {

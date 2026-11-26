@@ -102,31 +102,41 @@ export async function resolveMapsLink(
 				if (d && !isRawCoord(d)) return d;
 			} catch { /* ignore */ }
 		}
+		try {
+			const uObj = new URL(text);
+			const qParam = uObj.searchParams.get('q') || uObj.searchParams.get('query') || '';
+			if (qParam && !isRawCoord(qParam)) return qParam.trim();
+		} catch { /* ignore */ }
 		const firstLine = text.split('\n')[0]?.trim() || '';
 		if (firstLine && !/^https?:\/\//i.test(firstLine) && !isRawCoord(firstLine)) return firstLine;
 		return '';
 	};
 
-	// Direct pin (!3dLAT!4dLNG — use LAST match so /dir/origin/dest picks the destination!)
-	const pins = [...clean.matchAll(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/g)];
-	const pin = pins.length ? pins[pins.length - 1] : null;
-	const at = clean.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
-	const q = clean.match(/[?&](?:q|ll|destination)=(-?\d+\.\d+)(?:,|%2C)(-?\d+\.\d+)/i);
-	const directPair = isRawCoord(clean) ? clean.match(/^(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)$/) : null;
+	const parseDirect = async (str: string): Promise<{ lat: number; lng: number; label: string } | null> => {
+		const norm = str.replace(/%2C/gi, ',').replace(/%21/gi, '!');
+		const pins = [...norm.matchAll(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/g)];
+		const pin = pins.length ? pins[pins.length - 1] : null;
+		const at = norm.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+		const q = norm.match(/[?&](?:q|ll|destination|sll|cp)=(-?\d+\.\d+),(-?\d+\.\d+)/i);
+		const directPair = isRawCoord(norm) ? norm.match(/^(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)$/) : null;
+		if (pin || at || q || directPair) {
+			const m = (pin || at || q || directPair)!;
+			const lat = +Number(m[1]).toFixed(6);
+			const lng = +Number(m[2]).toFixed(6);
+			let label = extractName(norm);
+			if (!label || isRawCoord(label)) label = await reverseGeocode(lat, lng);
+			return { lat, lng, label };
+		}
+		return null;
+	};
 
-	if (pin || at || q || directPair) {
-		const m = (pin || at || q || directPair)!;
-		const lat = +Number(m[1]).toFixed(6);
-		const lng = +Number(m[2]).toFixed(6);
-		let label = extractName(clean);
-		if (!label || isRawCoord(label)) label = await reverseGeocode(lat, lng);
-		return { lat, lng, label };
-	}
+	const directHit = await parseDirect(clean);
+	if (directHit) return directHit;
 
 	const url = extractMapsUrl(clean);
 	if (!url) return null;
 
-	// Resolve short maps.app.goo.gl / goo.gl links server-side via Miracle's Cloudflare Worker
+	// Layer 1: Miracle's Cloudflare Worker (/api/maps/resolve)
 	try {
 		const res = await fetch('/api/maps/resolve', {
 			method: 'POST',
@@ -145,8 +155,35 @@ export async function resolveMapsLink(
 			}
 		}
 	} catch {
-		// ignore network failure
+		// fall through to Layer 2
 	}
+
+	// Layer 2: Public unshortener (unshorten.me) — resolves from a non-Cloudflare IP if Google blocks datacenter IPs
+	try {
+		const uRes = await fetch(`https://unshorten.me/json/${encodeURIComponent(url)}`);
+		if (uRes.ok) {
+			const uData = (await uRes.json()) as { resolved_url?: string; success?: boolean };
+			if (uData.resolved_url) {
+				const hit = await parseDirect(uData.resolved_url);
+				if (hit) return hit;
+				const name = extractName(uData.resolved_url);
+				if (name) {
+					const found = await searchPlaces(name);
+					if (found.length) return { lat: found[0].lat, lng: found[0].lng, label: found[0].label };
+				}
+			}
+		}
+	} catch {
+		// ignore
+	}
+
+	// Layer 3: If the user pasted a multi-line share ("Cafe Name\nhttps://maps.app.goo.gl/..."), search by that name!
+	const titleLine = extractName(clean);
+	if (titleLine) {
+		const found = await searchPlaces(titleLine);
+		if (found.length) return { lat: found[0].lat, lng: found[0].lng, label: found[0].label };
+	}
+
 	return null;
 }
 
