@@ -3,7 +3,9 @@
 	import { portal } from '../portal';
 	import { toast } from '../ui.svelte';
 	import {
+		extractMapsUrl,
 		googleMapsSearchUrl,
+		resolveMapsLink,
 		reverseGeocode,
 		searchPlaces,
 		type PlaceCandidate
@@ -35,6 +37,8 @@
 	let loadingMap = $state(true);
 	let mapError = $state(false);
 	let gpsBusy = $state(false);
+	let searchMissed = $state(false);
+	let waitingForMaps = $state(false);
 
 	let pickedLat = $state(12.9716);
 	let pickedLng = $state(77.5946);
@@ -150,24 +154,61 @@
 		}
 	});
 
+	async function applyResolvedText(raw: string): Promise<boolean> {
+		const pin = await resolveMapsLink(raw);
+		if (!pin) return false;
+		results = [];
+		searchMissed = false;
+		if (map) map.setView([pin.lat, pin.lng], 16, { animate: true });
+		await setPin(pin.lat, pin.lng, pin.label);
+		toast(`Pinned ${pin.label}`, 'check');
+		return true;
+	}
+
 	async function runSearch(e?: Event) {
 		e?.preventDefault();
 		const q = query.trim();
 		if (!q) return;
 		searching = true;
+		searchMissed = false;
 		try {
+			if (extractMapsUrl(q) || /@-?\d+\.\d+,-?\d+\.\d+/.test(q) || /!3d-?\d+\.\d+!4d-?\d+\.\d+/.test(q)) {
+				if (await applyResolvedText(q)) return;
+			}
 			results = await searchPlaces(q, {
 				cityHint,
 				bias: { lat: pickedLat, lng: pickedLng }
 			});
 			if (!results.length) {
-				toast('No exact match found. Tap directly on the map or use Google Maps.', 'alert');
+				searchMissed = true;
 			} else if (results.length === 1) {
 				pickSearchHit(results[0]);
 			}
 		} finally {
 			searching = false;
 		}
+	}
+
+	async function pasteFromClipboard(silent = false) {
+		try {
+			const clip = (await navigator.clipboard.readText()).trim();
+			if (!clip) {
+				if (!silent) toast('Clipboard is empty. Copy a Share link from Google Maps first.', 'alert');
+				return;
+			}
+			if (silent && !extractMapsUrl(clip) && !/@-?\d+\.\d+,-?\d+\.\d+/.test(clip)) return;
+			query = clip;
+			const ok = await applyResolvedText(clip);
+			if (!ok && !silent) toast("Couldn't read coordinates from that link.", 'alert');
+		} catch {
+			if (!silent) toast('Paste the Google Maps link into the search box above.', 'alert');
+		}
+	}
+
+	function onAppReturn() {
+		if (!waitingForMaps || document.visibilityState === 'hidden') return;
+		waitingForMaps = false;
+		void pasteFromClipboard(true);
 	}
 
 	function pickSearchHit(p: PlaceCandidate) {
@@ -206,7 +247,7 @@
 	}
 </script>
 
-<svelte:window onkeydown={(e) => e.key === 'Escape' && onclose()} />
+<svelte:window onkeydown={(e) => e.key === 'Escape' && onclose()} onfocus={onAppReturn} onvisibilitychange={onAppReturn} />
 
 <div class="mp-backdrop" use:portal role="dialog" aria-modal="true" aria-label={title}>
 	<div class="mp-sheet">
@@ -221,7 +262,7 @@
 		<form class="mp-search" onsubmit={runSearch}>
 			<input
 				type="text"
-				placeholder="Search cafe, area, landmark…"
+				placeholder="Search area or paste Google Maps link…"
 				aria-label="Search on map"
 				bind:value={query}
 			/>
@@ -238,6 +279,15 @@
 						{#if p.sub}<small>{p.sub}</small>{/if}
 					</button>
 				{/each}
+			</div>
+		{/if}
+		{#if searchMissed}
+			<div class="mp-miss">
+				<span>"{query.trim()}" isn't on the free map index. Pick it in Google Maps, copy the Share link, and return here:</span>
+				<div class="mp-miss-acts">
+					<a class="mp-miss-btn hi" href={googleMapsSearchUrl([query.trim(), cityHint].filter(Boolean).join(', '))} target="_blank" rel="noopener" onclick={() => (waitingForMaps = true)}>Open Google Maps</a>
+					<button type="button" class="mp-miss-btn" onclick={() => pasteFromClipboard(false)}>Paste Maps link</button>
+				</div>
 			</div>
 		{/if}
 
@@ -261,7 +311,7 @@
 				<small>{pickedLat.toFixed(5)}, {pickedLng.toFixed(5)}</small>
 			</div>
 			<div class="mp-btns">
-				<a class="mp-gmap" href={googleMapsSearchUrl(query.trim() || pickedLabel || cityHint || 'Bengaluru')} target="_blank" rel="noopener">
+				<a class="mp-gmap" href={googleMapsSearchUrl(query.trim() || pickedLabel || cityHint || 'Bengaluru')} target="_blank" rel="noopener" onclick={() => (waitingForMaps = true)}>
 					Google Maps
 				</a>
 				<button type="button" class="mp-confirm" onclick={confirmPin}>
@@ -396,6 +446,40 @@
 	}
 	.mp-res-item b { font-size: 13px; }
 	.mp-res-item small { font-size: 11.5px; color: var(--ink-3, #9f95a6); }
+
+	.mp-miss {
+		position: absolute;
+		top: 118px;
+		left: 14px;
+		right: 14px;
+		z-index: 600;
+		display: grid;
+		gap: 9px;
+		padding: 12px;
+		border-radius: 12px;
+		border: 1px solid rgba(251, 191, 36, 0.4);
+		background: #1a131c;
+		box-shadow: 0 14px 36px rgba(0, 0, 0, 0.72);
+		font-size: 12.5px;
+		line-height: 1.45;
+		color: #fef3c7;
+	}
+	.mp-miss-acts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+	.mp-miss-btn {
+		height: 34px;
+		border-radius: 8px;
+		border: 1px solid rgba(255, 255, 255, 0.16);
+		background: rgba(255, 255, 255, 0.06);
+		color: var(--ink, #f7f4f8);
+		font-size: 12px;
+		font-weight: 600;
+		text-decoration: none;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		cursor: pointer;
+	}
+	.mp-miss-btn.hi { border-color: rgba(242, 90, 144, 0.5); background: rgba(242, 90, 144, 0.16); }
 
 	.mp-map-wrap {
 		position: relative;

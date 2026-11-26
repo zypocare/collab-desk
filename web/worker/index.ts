@@ -1896,21 +1896,23 @@ async function searchGoogleMapsPlaces(
 
 	// 2. If Google Maps HTML didn't yield a pin and GEMINI_API_KEY is available, use Gemini with Google Search grounding
 	if (!out.length && env.GEMINI_API_KEY) {
-		try {
-			const prompt = `Find the real location "${fullQ}" on Google Maps. Return ONLY valid JSON (no markdown) as an array of up to 3 objects: [{"name":"Exact place name","sub":"Area, City","lat":12.3456,"lng":77.6543}]. Only include real places you found.`;
-			const gRes = await fetch(
-				`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(env.GEMINI_API_KEY)}`,
-				{
-					method: 'POST',
-					headers: { 'content-type': 'application/json' },
-					body: JSON.stringify({
-						contents: [{ role: 'user', parts: [{ text: prompt }] }],
-						tools: [{ google_search: {} }],
-						generationConfig: { temperature: 0.1 }
-					})
-				}
-			);
-			if (gRes.ok) {
+		const prompt = `Find the real location "${fullQ}" on Google Maps. Return ONLY valid JSON (no markdown) as an array of up to 3 objects: [{"name":"Exact place name","sub":"Area, City","lat":12.3456,"lng":77.6543}]. Only include real places you found.`;
+		for (const model of ['gemini-2.5-flash', 'gemini-2.0-flash']) {
+			if (out.length) break;
+			try {
+				const gRes = await fetch(
+					`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(env.GEMINI_API_KEY)}`,
+					{
+						method: 'POST',
+						headers: { 'content-type': 'application/json' },
+						body: JSON.stringify({
+							contents: [{ role: 'user', parts: [{ text: prompt }] }],
+							tools: [{ google_search: {} }],
+							generationConfig: { temperature: 0.1 }
+						})
+					}
+				);
+				if (!gRes.ok) continue;
 				const gj = (await gRes.json()) as { candidates?: Array<{ content?: { parts?: Array<{ text?: string }> } }> };
 				const rawTxt = gj.candidates?.[0]?.content?.parts?.map((p) => p.text ?? '').join('') ?? '';
 				const jm = rawTxt.match(/\[[\s\S]*\]/);
@@ -1929,9 +1931,9 @@ async function searchGoogleMapsPlaces(
 						}
 					}
 				}
+			} catch {
+				// try next model
 			}
-		} catch {
-			// ignore
 		}
 	}
 
