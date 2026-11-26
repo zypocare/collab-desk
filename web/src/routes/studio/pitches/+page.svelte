@@ -385,7 +385,7 @@
 			<div>
 				<b class="pt2-hnum num">{totalOutreach}</b>
 				<span class="pt2-hsub">
-					brand{totalOutreach === 1 ? '' : 's'} pitched{#if ready.length} · <em>{ready.length} ready now</em>{/if}
+					brand{totalOutreach === 1 ? '' : 's'} pitched{#if counts.fresh} · <em>{counts.fresh} new</em>{/if}
 				</span>
 			</div>
 		</div>
