@@ -54,6 +54,12 @@
 </script>
 
 <article class="pc2" class:focus class:open={expanded} id="post-{c.code}" bind:this={el} style="--h: var(--m{hueOf(c.brand.name)})">
+	<!-- Live Ready-to-Post Attention Strip -->
+	<div class="pc2-livebar">
+		<span class="pc2-live-tag"><i class="pc2-pulse" aria-hidden="true"></i>Ready to post</span>
+		<span class="pc2-live-when" class:urgent>{when}{#if c.live_time} · {timeLabel(c.live_time)}{/if}</span>
+	</div>
+
 	<!-- Compact Header Row (scales cleanly for 4-5+ collabs) -->
 	<div class="pc2-top">
 		<button type="button" class="pc2-who" onclick={() => (ui.openCollab = c.id)}>
@@ -63,21 +69,15 @@
 				<small>{delivText(c.deliverables)}{#if handle} · {handle}{/if}</small>
 			</span>
 		</button>
-		<div class="pc2-right">
-			<span class="pc2-when-pill" class:urgent>
-				<b>{when}</b>
-				{#if c.live_time}<small>{timeLabel(c.live_time)}</small>{/if}
-			</span>
-			<button
-				type="button"
-				class="pc2-tog"
-				aria-expanded={expanded}
-				aria-label={expanded ? 'Collapse posting checklist' : 'Expand posting checklist'}
-				onclick={() => (expanded = !expanded)}
-			>
-				<Icon name="chevR" />
-			</button>
-		</div>
+		<button
+			type="button"
+			class="pc2-tog"
+			aria-expanded={expanded}
+			aria-label={expanded ? 'Collapse posting checklist' : 'Expand posting checklist'}
+			onclick={() => (expanded = !expanded)}
+		>
+			<Icon name="chevR" />
+		</button>
 	</div>
 
 	<!-- Compact Readiness Rail -->
@@ -100,7 +100,7 @@
 			<button type="button" class="pc2-btn" onclick={() => (expanded = true)}>
 				<Icon name="edit" /><span>Checklist</span>
 			</button>
-			<button type="button" class="pc2-neo sm" disabled={busy} onclick={posted}>
+			<button type="button" class="pc2-neo sm shine" disabled={busy} onclick={posted}>
 				{#if busy}<span class="spinner"></span>{:else}<Icon name="check" />{/if}
 				<span>Posted</span>
 			</button>
@@ -158,23 +158,77 @@
 
 <style>
 	.pc2 {
+		position: relative;
 		display: grid;
-		gap: 11px;
-		padding: 14px 15px;
-		margin: 0 0 10px;
+		gap: 10px;
+		padding: 13px 15px 14px;
+		margin: 0 0 12px;
 		border-radius: 18px;
-		border: 1px solid rgba(156, 123, 255, 0.2);
+		border: 1px solid rgba(52, 211, 153, 0.42);
 		background:
-			radial-gradient(120% 80% at 0% 0%, color-mix(in oklab, var(--h) 14%, transparent), transparent 60%),
-			var(--paper, var(--surface));
+			radial-gradient(120% 85% at 0% 0%, rgba(16, 185, 129, 0.2), transparent 58%),
+			radial-gradient(90% 80% at 100% 100%, rgba(56, 189, 248, 0.1), transparent 55%),
+			linear-gradient(165deg, #10201b 0%, #111819 52%, #131117 100%);
 		color: var(--ink);
-		transition: border-color 0.18s ease;
+		animation: pc2Breathe 3.2s ease-in-out infinite;
 	}
 	.pc2.focus,
 	.pc2.open {
-		border-color: rgba(242, 90, 144, 0.36);
+		border-color: rgba(52, 211, 153, 0.72);
 	}
 
+	.pc2-livebar {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 8px;
+		padding-bottom: 8px;
+		border-bottom: 1px dashed rgba(52, 211, 153, 0.22);
+	}
+	.pc2-live-tag {
+		display: inline-flex;
+		align-items: center;
+		gap: 7px;
+		font-family: var(--mono);
+		font-size: 10.5px;
+		font-weight: 700;
+		letter-spacing: 0.14em;
+		text-transform: uppercase;
+		color: #6ee7b7;
+	}
+	.pc2-pulse {
+		position: relative;
+		display: inline-block;
+		width: 8px;
+		height: 8px;
+		border-radius: 999px;
+		background: #34d399;
+		box-shadow: 0 0 8px rgba(52, 211, 153, 0.85);
+	}
+	.pc2-pulse::after {
+		content: '';
+		position: absolute;
+		inset: -4px;
+		border-radius: 999px;
+		border: 1.5px solid rgba(52, 211, 153, 0.75);
+		animation: pc2Sonar 1.9s cubic-bezier(0.2, 0.7, 0.3, 1) infinite;
+	}
+	.pc2-live-when {
+		font-family: var(--mono);
+		font-size: 11px;
+		font-weight: 700;
+		text-transform: capitalize;
+		padding: 3px 9px;
+		border-radius: 999px;
+		border: 1px solid rgba(52, 211, 153, 0.3);
+		background: rgba(16, 185, 129, 0.14);
+		color: #a7f3d0;
+	}
+	.pc2-live-when.urgent {
+		border-color: rgba(242, 90, 144, 0.48);
+		background: rgba(242, 90, 144, 0.18);
+		color: #fbcfe8;
+	}
 	/* Compact Header */
 	.pc2-top {
 		display: flex;
@@ -202,11 +256,11 @@
 		display: grid;
 		place-items: center;
 		border-radius: 11px;
-		background: color-mix(in oklab, var(--h) 24%, rgba(255, 255, 255, 0.06));
-		border: 1px solid color-mix(in oklab, var(--h) 42%, rgba(255, 255, 255, 0.12));
+		background: rgba(16, 185, 129, 0.18);
+		border: 1px solid rgba(52, 211, 153, 0.42);
 		font-weight: 700;
 		font-size: 13.5px;
-		color: var(--ink);
+		color: #d1fae5;
 	}
 	.pc2-id {
 		min-width: 0;
@@ -222,53 +276,21 @@
 	}
 	.pc2-id small {
 		font-size: 12.5px;
-		color: var(--ink-2);
+		color: #a7c4bc;
 		white-space: nowrap;
 		overflow: hidden;
 		text-overflow: ellipsis;
 	}
-
-	.pc2-right {
-		flex: none;
-		display: flex;
-		align-items: center;
-		gap: 8px;
-	}
-	.pc2-when-pill {
-		display: grid;
-		justify-items: end;
-		padding: 5px 9px;
-		border-radius: 10px;
-		border: 1px solid rgba(255, 255, 255, 0.09);
-		background: rgba(255, 255, 255, 0.04);
-	}
-	.pc2-when-pill.urgent {
-		border-color: rgba(242, 90, 144, 0.36);
-		background: rgba(242, 90, 144, 0.12);
-	}
-	.pc2-when-pill b {
-		font-size: 12.5px;
-		font-weight: 700;
-		text-transform: capitalize;
-		color: var(--ink);
-	}
-	.pc2-when-pill.urgent b {
-		color: #f79fc0;
-	}
-	.pc2-when-pill small {
-		font-family: var(--mono);
-		font-size: 10.5px;
-		color: var(--ink-3);
-	}
 	.pc2-tog {
+		flex: none;
 		display: grid;
 		place-items: center;
 		width: 30px;
 		height: 30px;
 		border-radius: 9px;
-		border: 1px solid rgba(255, 255, 255, 0.1);
-		background: rgba(255, 255, 255, 0.04);
-		color: var(--ink-2);
+		border: 1px solid rgba(52, 211, 153, 0.28);
+		background: rgba(16, 185, 129, 0.1);
+		color: #a7f3d0;
 		cursor: pointer;
 	}
 	.pc2-tog :global(.ic) {
@@ -302,7 +324,7 @@
 		transition: background 0.25s ease;
 	}
 	.pc2-seg i.on {
-		background: linear-gradient(90deg, var(--g1), var(--g2), var(--g3));
+		background: linear-gradient(90deg, #10b981, #34d399, #6ee7b7);
 	}
 	.pc2-rmeta {
 		display: flex;
@@ -495,10 +517,41 @@
 		padding: 0 13px;
 		font-size: 13px;
 	}
+	.pc2-neo.shine {
+		position: relative;
+		overflow: hidden;
+		background: linear-gradient(115deg, #10b981, #34d399);
+		color: #062118;
+		box-shadow: 3px 3px 0 #065f46;
+	}
+	.pc2-neo.shine::after {
+		content: '';
+		position: absolute;
+		inset: 0;
+		background: linear-gradient(105deg, transparent 32%, rgba(255, 255, 255, 0.45) 50%, transparent 68%);
+		transform: translateX(-120%);
+		animation: pc2Sweep 3.8s ease-in-out infinite;
+		pointer-events: none;
+	}
 	.pc2-neo.go {
-		background: linear-gradient(110deg, var(--g1), var(--g2) 55%, var(--g3));
-		color: #fff;
-		box-shadow: 3px 3px 0 #5c3ea0;
+		background: linear-gradient(110deg, #10b981, #34d399 58%, #6ee7b7);
+		color: #062118;
+		box-shadow: 3px 3px 0 #065f46;
+	}
+	@keyframes pc2Sonar {
+		0% { transform: scale(0.8); opacity: 0.9; }
+		100% { transform: scale(2.2); opacity: 0; }
+	}
+	@keyframes pc2Breathe {
+		0%, 100% { box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.08), 0 8px 24px rgba(0, 0, 0, 0.25); }
+		50% { box-shadow: 0 0 18px 0 rgba(52, 211, 153, 0.22), 0 8px 24px rgba(0, 0, 0, 0.25); }
+	}
+	@keyframes pc2Sweep {
+		0%, 65% { transform: translateX(-120%); }
+		100% { transform: translateX(140%); }
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.pc2, .pc2-pulse::after, .pc2-neo.shine::after { animation: none; }
 	}
 	.pc2-neo:disabled {
 		opacity: 0.6;

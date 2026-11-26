@@ -44,7 +44,13 @@
 	export function openNeeds() {
 		row?.openStory(4);
 	}
-	const needs = $derived(mergeSteps(tasks(studio.collabs)));
+	const needs = $derived.by(() => {
+		const byCollab = new Map<string, ReturnType<typeof tasks>[number]>();
+		for (const task of mergeSteps(tasks(studio.collabs))) {
+			if (!byCollab.has(task.c.id)) byCollab.set(task.c.id, task);
+		}
+		return [...byCollab.values()].filter((t) => t.d <= 0);
+	});
 	const needsWhen = (d: number) => (d < 0 ? `${-d}d late` : d === 0 ? 'Today' : relWord(d));
 
 	const stories = $derived<Story[]>([
