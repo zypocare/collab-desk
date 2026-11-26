@@ -1752,20 +1752,51 @@ function workerHaversineKm(a: { lat: number; lng: number }, b: { lat: number; ln
 	return 2 * R * Math.asin(Math.sqrt(s));
 }
 
+function buildSmartAddressQueries(label: string): string[] {
+	const clean = label.replace(/\s+/g, ' ').trim();
+	if (!clean) return [];
+	const queries: string[] = [];
+	const push = (q: string) => {
+		const v = q.replace(/^,\s*|,\s*$/g, '').trim();
+		if (v.length >= 3 && !queries.includes(v)) queries.push(v);
+	};
+
+	const pinMatch = clean.match(/\b([1-9]\d{5})\b/);
+	// Strip pincode from parts so "KARNATAKA 560066" becomes "KARNATAKA"
+	const parts = clean
+		.split(',')
+		.map((s) => s.replace(/\b[1-9]\d{5}\b/g, '').replace(/\s+/g, ' ').trim())
+		.filter(Boolean);
+
+	// 1. Most specific reliable Indian area+city pairs from the END (e.g. "WHITEFIELD, BENGALURU")
+	if (parts.length >= 3) {
+		push(`${parts[parts.length - 3]}, ${parts[parts.length - 2]}`);
+	}
+	if (parts.length >= 4) {
+		push(`${parts[parts.length - 4]}, ${parts[parts.length - 3]}, ${parts[parts.length - 2]}`);
+	}
+	if (parts.length >= 2) {
+		push(`${parts[parts.length - 2]}, ${parts[parts.length - 1]}`);
+	}
+	// 2. Pincode + city / India
+	if (pinMatch) {
+		const cityPart = parts.length >= 2 ? parts[parts.length - 2] : '';
+		if (cityPart) push(`${pinMatch[1]}, ${cityPart}, India`);
+		push(`${pinMatch[1]}, India`);
+	}
+	// 3. Short suffix fallbacks (last 3..1 parts, NEVER starting from index 0 of a 10-part address)
+	for (let k = Math.min(4, parts.length); k >= 1; k--) {
+		push(parts.slice(-k).join(', '));
+	}
+	return queries.slice(0, 8);
+}
+
 async function geocodeWorkerAddress(env: Env, label: string): Promise<{ lat: number; lng: number } | null> {
 	const clean = label.replace(/\s+/g, ' ').trim();
 	if (!clean) return null;
+	const queries = buildSmartAddressQueries(clean);
 
-	const queries: string[] = [];
-	const parts = clean.split(',').map((s) => s.trim()).filter(Boolean);
-	for (let i = 0; i < parts.length; i++) {
-		const sub = parts.slice(i).join(', ');
-		if (sub.length >= 4 && !queries.includes(sub)) queries.push(sub);
-	}
-	const pinMatch = clean.match(/\b([1-9]\d{5})\b/);
-	if (pinMatch) queries.push(`${pinMatch[1]}, India`);
-
-	for (const q of queries.slice(0, 6)) {
+	for (const q of queries) {
 		try {
 			const pRes = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&limit=1`);
 			if (pRes.ok) {

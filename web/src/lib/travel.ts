@@ -84,19 +84,51 @@ export function cleanPlaceLabel(raw: string): string {
 }
 
 
+function buildSmartAddressQueries(label: string): string[] {
+	const clean = label.replace(/\s+/g, ' ').trim();
+	if (!clean) return [];
+	const queries: string[] = [];
+	const push = (q: string) => {
+		const v = q.replace(/^,\s*|,\s*$/g, '').trim();
+		if (v.length >= 3 && !queries.includes(v)) queries.push(v);
+	};
+
+	const pinMatch = clean.match(/\b([1-9]\d{5})\b/);
+	// Strip pincode from parts so "KARNATAKA 560066" becomes "KARNATAKA"
+	const parts = clean
+		.split(',')
+		.map((s) => s.replace(/\b[1-9]\d{5}\b/g, '').replace(/\s+/g, ' ').trim())
+		.filter(Boolean);
+
+	// 1. Most specific reliable Indian area+city pairs from the END (e.g. "WHITEFIELD, BENGALURU")
+	if (parts.length >= 3) {
+		push(`${parts[parts.length - 3]}, ${parts[parts.length - 2]}`);
+	}
+	if (parts.length >= 4) {
+		push(`${parts[parts.length - 4]}, ${parts[parts.length - 3]}, ${parts[parts.length - 2]}`);
+	}
+	if (parts.length >= 2) {
+		push(`${parts[parts.length - 2]}, ${parts[parts.length - 1]}`);
+	}
+	// 2. Pincode + city / India
+	if (pinMatch) {
+		const cityPart = parts.length >= 2 ? parts[parts.length - 2] : '';
+		if (cityPart) push(`${pinMatch[1]}, ${cityPart}, India`);
+		push(`${pinMatch[1]}, India`);
+	}
+	// 3. Short suffix fallbacks (last 3..1 parts, NEVER starting from index 0 of a 10-part address)
+	for (let k = Math.min(4, parts.length); k >= 1; k--) {
+		push(parts.slice(-k).join(', '));
+	}
+	return queries.slice(0, 8);
+}
+
 async function verifyPinWithAddress(
 	pin: { lat: number; lng: number; label: string }
 ): Promise<{ lat: number; lng: number; label: string }> {
 	const clean = (pin.label || '').replace(/\s+/g, ' ').trim();
 	if (!clean || clean === 'Pinned Google Maps location') return pin;
-	const parts = clean.split(',').map((s) => s.trim()).filter(Boolean);
-	const pinMatch = clean.match(/\b([1-9]\d{5})\b/);
-	const queries: string[] = [];
-	if (parts.length >= 2) {
-		queries.push(parts.slice(-3).join(', '));
-		queries.push(parts.slice(-2).join(', '));
-	}
-	if (pinMatch) queries.push(`${pinMatch[1]}, India`);
+	const queries = buildSmartAddressQueries(clean);
 	for (const q of queries) {
 		const hits = await queryPhotonMany(q);
 		const hit = hits[0] ?? (await queryNominatimMany(q))[0];
