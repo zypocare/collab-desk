@@ -66,10 +66,14 @@
 	const s = $derived(studio.settings!);
 	// Her birthday (day and month): saved once both are picked, since the database keeps them together.
 	const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-		let homeInput = $state('');
+	let homeInput = $state('');
+	let homeHydrated = $state(false);
 	let homeLocating = $state(false);
 	$effect(() => {
-		if (!homeInput && (s?.home_address || s?.home_area)) homeInput = s.home_address || s.home_area || '';
+		if (!homeHydrated && s && (s.home_address || s.home_area)) {
+			homeInput = s.home_address || s.home_area || '';
+			homeHydrated = true;
+		}
 	});
 	let homeGpsBusy = $state(false);
 	let homePicks = $state<PlaceCandidate[]>([]);
@@ -638,16 +642,22 @@
 									<div class="hb-pinned">
 										<Icon name="check" />
 										<span>Pinned: <b>{s.home_address || s.home_area}</b></span>
+										<button type="button" class="hb-rm" onclick={() => { homeInput = ''; homePicks = []; saveSettings({ home_area: '', home_address: '', home_lat: null, home_lng: null }); toast('Home Base cleared', 'check'); }}>Clear</button>
 									</div>
 								{/if}
 								<div class="hb-field">
 									<label for="hb-addr">Neighbourhood or address</label>
-									<input
-										id="hb-addr"
-										class="hb-inp"
-										placeholder="e.g. JP Nagar 7th Phase, Bengaluru"
-										bind:value={homeInput}
-									/>
+									<div class="hb-inp-wrap">
+										<input
+											id="hb-addr"
+											class="hb-inp"
+											placeholder="e.g. JP Nagar 7th Phase, Bengaluru or Google Maps link"
+											bind:value={homeInput}
+										/>
+										{#if homeInput}
+											<button type="button" class="hb-clr" aria-label="Clear address" onclick={() => { homeInput = ''; homePicks = []; }}>×</button>
+										{/if}
+									</div>
 									<div class="hb-actions">
 										<button type="button" class="hb-neo" disabled={homeLocating} onclick={saveHomeBase}>
 											{homeLocating ? 'Locating…' : 'Find & save'}
@@ -776,7 +786,11 @@
 	.hb-pinned :global(svg) { width: 15px; height: 15px; color: #34d399; flex-shrink: 0; }
 	.hb-field { display: grid; gap: 8px; }
 	.hb-field label, .hb-lbl { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
-	.hb-inp { width: 100%; min-width: 0; padding: 12px 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface, #161116); color: var(--ink); font-size: 14.5px; outline: none; }
+	.hb-inp-wrap { position: relative; display: flex; align-items: center; min-width: 0; }
+	.hb-inp { width: 100%; min-width: 0; padding: 12px 38px 12px 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface, #161116); color: var(--ink); font-size: 14.5px; outline: none; }
+	.hb-clr { position: absolute; right: 8px; width: 26px; height: 26px; border: 0; border-radius: 999px; background: rgba(255, 255, 255, 0.1); color: var(--muted); font-size: 17px; line-height: 1; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
+	.hb-pinned span { flex: 1; min-width: 0; overflow-wrap: anywhere; word-break: break-word; }
+	.hb-rm { border: 0; background: transparent; color: var(--muted); font-size: 12px; font-weight: 600; text-decoration: underline; cursor: pointer; flex-shrink: 0; }
 	.hb-inp:focus { border-color: var(--g1); }
 	.hb-actions { display: flex; gap: 10px; flex-wrap: wrap; }
 	.hb-neo { flex: 1; min-width: 140px; padding: 11px 16px; border: 0; border-radius: 0; background: var(--ink); color: var(--bg); font-size: 13px; font-weight: 700; letter-spacing: 0.02em; box-shadow: 3px 3px 0 var(--g2); cursor: pointer; }

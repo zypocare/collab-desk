@@ -3,6 +3,7 @@
 	import { toast } from '../ui.svelte';
 	import type { Collab } from '../types';
 	import {
+		cleanPlaceLabel,
 		estimateTrip,
 		extractMapsUrl,
 		googleMapsSearchUrl,
@@ -34,7 +35,7 @@
 	$effect(() => {
 		if (c.id !== lastCollabId) {
 			lastCollabId = c.id;
-			venueInput = c.venue_address || c.venue_name || '';
+			venueInput = cleanPlaceLabel(c.venue_address || c.venue_name || '');
 			candidates = [];
 			searchedEmpty = false;
 		}
@@ -187,18 +188,23 @@
 		{#if hasVenuePin && c.venue_address}
 			<div class="trv-pinned">
 				<Icon name="check" />
-				<span><b>Pinned:</b> {c.venue_address}</span>
+				<span><b>Pinned:</b> {cleanPlaceLabel(c.venue_address)}</span>
 			</div>
 		{/if}
 
 		<form class="trv-form" onsubmit={searchOrResolve}>
-			<input
-				class="trv-inp"
-				type="text"
-				placeholder="Paste Google Maps link or search venue…"
-				aria-label="Shoot venue location"
-				bind:value={venueInput}
-			/>
+			<div class="trv-inp-wrap">
+				<input
+					class="trv-inp"
+					type="text"
+					placeholder="Paste Google Maps link or search venue…"
+					aria-label="Shoot venue location"
+					bind:value={venueInput}
+				/>
+				{#if venueInput}
+					<button type="button" class="trv-clr" aria-label="Clear location" onclick={() => { venueInput = ''; candidates = []; searchedEmpty = false; }}>×</button>
+				{/if}
+			</div>
 			<button type="submit" class="trv-neo sm" disabled={locating || !venueInput.trim()}>
 				{#if locating}<span class="spinner"></span>{:else}<Icon name="search" />{/if}
 				<span>Find</span>
@@ -303,15 +309,19 @@
 <style>
 	.trv {
 		display: grid;
+		grid-template-columns: minmax(0, 1fr);
 		gap: 11px;
 		margin-top: 8px;
 		padding: 14px;
+		max-width: 100%;
+		overflow: hidden;
 		border-radius: 16px;
 		border: 1px solid rgba(156, 123, 255, 0.22);
 		background:
 			radial-gradient(120% 80% at 0% 0%, rgba(156, 123, 255, 0.1), transparent 58%),
 			var(--paper, var(--surface));
 	}
+	.trv > * { min-width: 0; max-width: 100%; }
 	.trv-top {
 		display: flex;
 		align-items: center;
@@ -386,6 +396,8 @@
 		display: flex;
 		align-items: flex-start;
 		gap: 7px;
+		min-width: 0;
+		max-width: 100%;
 		padding: 8px 10px;
 		border-radius: 10px;
 		border: 1px solid rgba(52, 211, 153, 0.28);
@@ -394,20 +406,38 @@
 		line-height: 1.4;
 		color: #d1fae5;
 	}
+	.trv-pinned span { min-width: 0; overflow-wrap: anywhere; word-break: break-word; }
 	.trv-pinned :global(.ic) { width: 14px; height: 14px; flex: none; margin-top: 2px; color: #34d399; }
 
-	.trv-form { display: flex; gap: 8px; align-items: center; }
+	.trv-form { display: flex; gap: 8px; align-items: center; min-width: 0; }
+	.trv-inp-wrap { position: relative; flex: 1; min-width: 0; display: flex; align-items: center; }
 	.trv-inp {
-		flex: 1;
+		width: 100%;
 		min-width: 0;
 		height: 38px;
-		padding: 0 11px;
+		padding: 0 32px 0 11px;
 		border-radius: 10px;
 		border: 1px solid rgba(255, 255, 255, 0.12);
 		background: rgba(13, 10, 14, 0.65);
 		color: var(--ink);
 		font: 400 13.5px/1 var(--f-sans, inherit);
 		outline: none;
+	}
+	.trv-clr {
+		position: absolute;
+		right: 6px;
+		width: 24px;
+		height: 24px;
+		border: 0;
+		border-radius: 999px;
+		background: rgba(255, 255, 255, 0.1);
+		color: var(--ink-2);
+		font-size: 16px;
+		line-height: 1;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		cursor: pointer;
 	}
 	.trv-inp:focus { border-color: rgba(156, 123, 255, 0.55); }
 

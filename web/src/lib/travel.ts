@@ -60,28 +60,67 @@ export function extractMapsUrl(raw: string): string | null {
 }
 
 /** Resolve any pasted Google Maps link (including short maps.app.goo.gl share links) to exact pin coordinates + place name. */
+/** Turn any raw Maps URL or noisy string into a short readable venue label (never an overflowing URL). */
+export function cleanPlaceLabel(raw: string): string {
+	const s = (raw || '').trim();
+	if (!s) return '';
+	if (!/^https?:\/\//i.test(s)) return s;
+	const pm = s.match(/\/place\/([^/@?]+)/i);
+	if (pm) {
+		try {
+			const d = decodeURIComponent(pm[1].replace(/\+/g, ' ')).trim();
+			if (d) return d;
+		} catch { /* ignore */ }
+	}
+	const dm = s.match(/\/dir\/[^/]+\/([^/@?]+)/i);
+	if (dm) {
+		try {
+			const d = decodeURIComponent(dm[1].replace(/\+/g, ' ')).trim();
+			if (d && !/^-?\d+\.\d+,-?\d+\.\d+$/.test(d)) return d;
+		} catch { /* ignore */ }
+	}
+	return 'Pinned Google Maps location';
+}
+
 export async function resolveMapsLink(
 	raw: string
 ): Promise<{ lat: number; lng: number; label: string } | null> {
 	const clean = raw.trim();
 	if (!clean) return null;
 
-	// Direct pin (!3dLAT!4dLNG) is more accurate than map center (@lat,lng)
-	const pin = clean.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/);
+	const isRawCoord = (v: string) => /^-?\d+\.\d+\s*,\s*-?\d+\.\d+$/.test(v.trim());
+	const extractName = (text: string) => {
+		const pm = text.match(/\/place\/([^/@?]+)/i);
+		if (pm) {
+			try { return decodeURIComponent(pm[1].replace(/\+/g, ' ')).trim(); }
+			catch { return pm[1].replace(/\+/g, ' ').trim(); }
+		}
+		const dm = text.match(/\/dir\/[^/]+\/([^/@?]+)/i);
+		if (dm) {
+			try {
+				const d = decodeURIComponent(dm[1].replace(/\+/g, ' ')).trim();
+				if (d && !isRawCoord(d)) return d;
+			} catch { /* ignore */ }
+		}
+		const firstLine = text.split('\n')[0]?.trim() || '';
+		if (firstLine && !/^https?:\/\//i.test(firstLine) && !isRawCoord(firstLine)) return firstLine;
+		return '';
+	};
+
+	// Direct pin (!3dLAT!4dLNG — use LAST match so /dir/origin/dest picks the destination!)
+	const pins = [...clean.matchAll(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/g)];
+	const pin = pins.length ? pins[pins.length - 1] : null;
 	const at = clean.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
 	const q = clean.match(/[?&](?:q|ll|destination)=(-?\d+\.\d+)(?:,|%2C)(-?\d+\.\d+)/i);
-	const pm = clean.match(/\/place\/([^/@?]+)/i);
-	const placeName = pm ? decodeURIComponent(pm[1].replace(/\+/g, ' ')).trim() : '';
+	const directPair = isRawCoord(clean) ? clean.match(/^(-?\d+\.\d+)\s*,\s*(-?\d+\.\d+)$/) : null;
 
-	if (pin || at || q) {
-		const m = (pin || at || q)!;
-		const firstLine = clean.split('\n')[0]?.trim();
-		const fallbackLabel = firstLine && !firstLine.startsWith('http') ? firstLine : 'Pinned Google Maps location';
-		return {
-			lat: +Number(m[1]).toFixed(6),
-			lng: +Number(m[2]).toFixed(6),
-			label: placeName || fallbackLabel
-		};
+	if (pin || at || q || directPair) {
+		const m = (pin || at || q || directPair)!;
+		const lat = +Number(m[1]).toFixed(6);
+		const lng = +Number(m[2]).toFixed(6);
+		let label = extractName(clean);
+		if (!label || isRawCoord(label)) label = await reverseGeocode(lat, lng);
+		return { lat, lng, label };
 	}
 
 	const url = extractMapsUrl(clean);
@@ -97,13 +136,12 @@ export async function resolveMapsLink(
 		if (res.ok) {
 			const data = (await res.json()) as { lat?: number; lng?: number; label?: string };
 			if (typeof data.lat === 'number' && typeof data.lng === 'number') {
-				const firstLine = clean.split('\n')[0]?.trim();
-				const userTitle = firstLine && !firstLine.startsWith('http') ? firstLine : '';
-				return {
-					lat: data.lat,
-					lng: data.lng,
-					label: data.label && data.label !== 'Pinned Google Maps location' ? data.label : userTitle || data.label || 'Pinned Google Maps location'
-				};
+				let label = cleanPlaceLabel(data.label || '');
+				if (!label || label === 'Pinned Google Maps location' || isRawCoord(label)) {
+					const userTitle = extractName(clean);
+					label = userTitle || (await reverseGeocode(data.lat, data.lng));
+				}
+				return { lat: data.lat, lng: data.lng, label };
 			}
 		}
 	} catch {

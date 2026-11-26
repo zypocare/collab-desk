@@ -1750,8 +1750,12 @@ async function resolveGoogleMapsUrl(raw: string): Promise<{ lat: number; lng: nu
 	if (!allowed) return null;
 
 	const extractFromText = (str: string) => {
-		const pin = str.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/);
-		if (pin) return { lat: Number(pin[1]), lng: Number(pin[2]) };
+		// Use the LAST !3d!4d match so /maps/dir/origin/dest picks the destination pin
+		const pins = [...str.matchAll(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/g)];
+		if (pins.length) {
+			const last = pins[pins.length - 1];
+			return { lat: Number(last[1]), lng: Number(last[2]) };
+		}
 		const at = str.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
 		if (at) return { lat: Number(at[1]), lng: Number(at[2]) };
 		const q = str.match(/[?&](?:q|ll|destination)=(-?\d+\.\d+)(?:,|%2C)(-?\d+\.\d+)/i);
@@ -1763,12 +1767,19 @@ async function resolveGoogleMapsUrl(raw: string): Promise<{ lat: number; lng: nu
 
 	const extractNameFromUrl = (u: string) => {
 		const pm = u.match(/\/place\/([^/@?]+)/i);
-		if (!pm) return '';
-		try {
-			return decodeURIComponent(pm[1].replace(/\+/g, ' ')).trim();
-		} catch {
-			return pm[1].replace(/\+/g, ' ').trim();
+		if (pm) {
+			try { return decodeURIComponent(pm[1].replace(/\+/g, ' ')).trim(); }
+			catch { return pm[1].replace(/\+/g, ' ').trim(); }
 		}
+		// Handle /maps/dir/<origin>/<destination>/...
+		const dm = u.match(/\/dir\/[^/]+\/([^/@?]+)/i);
+		if (dm) {
+			try {
+				const d = decodeURIComponent(dm[1].replace(/\+/g, ' ')).trim();
+				if (d && !/^-?\d+\.\d+,-?\d+\.\d+$/.test(d)) return d;
+			} catch { /* ignore */ }
+		}
+		return '';
 	};
 
 	let finalUrl = parsed.toString();
