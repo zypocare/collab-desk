@@ -1,6 +1,6 @@
 import type { Collab } from './types';
 
-export type TravelMode = 'auto' | 'cab' | 'own';
+export type TravelMode = 'car' | 'bike' | 'cab' | 'public';
 export type TravelSlotId = 'morning' | 'midday' | 'golden' | 'evening';
 
 export type TravelSlot = {
@@ -15,9 +15,10 @@ export type TravelSlot = {
 };
 
 export const TRAVEL_MODES: Record<TravelMode, { label: string; ratePerKm: number; base: number; speedKmh: number }> = {
-	auto: { label: 'Auto', ratePerKm: 18, base: 35, speedKmh: 21 },
-	cab: { label: 'Cab', ratePerKm: 24, base: 60, speedKmh: 22 },
-	own: { label: 'Own vehicle', ratePerKm: 8, base: 20, speedKmh: 24 }
+	car: { label: 'Own car', ratePerKm: 12, base: 20, speedKmh: 22 },
+	bike: { label: 'Scooter', ratePerKm: 4, base: 0, speedKmh: 26 },
+	cab: { label: 'Cab', ratePerKm: 22, base: 60, speedKmh: 22 },
+	public: { label: 'Metro / bus', ratePerKm: 3, base: 20, speedKmh: 18 }
 };
 
 export const TRAVEL_SLOTS: TravelSlot[] = [

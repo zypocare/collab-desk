@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { geocodePlace, TRAVEL_MODES, type TravelMode } from '#lib/travel.ts';
 	import { ask } from '#lib/confirm.svelte.ts';
 	import Logo from '#lib/components/Logo.svelte';
 	import { goto } from '$app/navigation';
@@ -68,7 +69,7 @@
 		let homeInput = $state('');
 	let homeLocating = $state(false);
 	$effect(() => {
-		if (!homeInput && s?.home_address) homeInput = s.home_address;
+		if (!homeInput && (s?.home_address || s?.home_area)) homeInput = s.home_address || s.home_area || '';
 	});
 	async function saveHomeBase() {
 		const q = homeInput.trim();
@@ -77,7 +78,7 @@
 		const geo = await geocodePlace(q, s?.city ?? '');
 		homeLocating = false;
 		if (!geo) return toast("Couldn't locate that address. Try your neighbourhood + city.", 'alert');
-		await saveSettings({ home_address: geo.label, home_lat: geo.lat, home_lng: geo.lng });
+		await saveSettings({ home_area: geo.label, home_address: geo.label, home_lat: geo.lat, home_lng: geo.lng });
 		homeInput = geo.label;
 		toast('Private Home Base saved', 'check');
 	}

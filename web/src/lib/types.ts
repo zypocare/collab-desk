@@ -119,7 +119,7 @@ export type ReelScript = {
 	made_at?: string;
 };
 
-export type BriefDetails = { message?: string; hashtags?: string[]; mentions?: string[]; link?: string; promo?: string; dos?: string; donts?: string; references?: string };
+export type BriefDetails = { message?: string; hashtags?: string[]; mentions?: string[]; link?: string; promo?: string; dos?: string; donts?: string; references?: string; cover_media_id?: string };
 
 export type PackageItem = { kind: string; qty: number };
 export type Package = { id: string; name: string; description: string; items: PackageItem[]; price: number; badge: string; active: boolean; position: number; created_at: string };
@@ -375,11 +375,6 @@ export type Settings = {
 	/** Her birthday, day and month only (migration 181): Today's birthday card, and a wish on the day. */
 	birth_day?: number | null;
 	birth_month?: number | null;
-	home_address?: string;
-	home_lat?: number | null;
-	home_lng?: number | null;
-	travel_mode?: 'auto' | 'cab' | 'own';
-	travel_buffer_mins?: number;
 	/** Package builder on her page: brands build a package from her rates, with a discount by size. */
 	bundle_on?: boolean;
 	bundle_tiers?: BundleTier[];
@@ -433,6 +428,8 @@ export type Settings = {
 	home_lng: number | null;
 	travel_mode: 'car' | 'bike' | 'cab' | 'public';
 	travel_max_min: number;
+	home_address?: string;
+	travel_buffer_mins?: number;
 	makeup_cost: number;
 	outfit_cost: number;
 	avoid_brands: string;

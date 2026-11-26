@@ -40,7 +40,7 @@
 
 	const mapsUrl = $derived(
 		mapsDirectionsUrl(
-			s?.home_address || s?.city || 'Bengaluru',
+			s?.home_address || s?.home_area || s?.city || 'Bengaluru',
 			c.venue_address || c.venue_name || c.brand.name
 		)
 	);
