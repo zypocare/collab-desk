@@ -21,13 +21,13 @@
 	let pick = $state('');
 
 	const syncedLabel = $derived.by(() => {
-		if (!ig?.synced_at) return 'Not synced yet';
-		const mins = Math.max(0, Math.round((Date.now() - Date.parse(ig.synced_at)) / 60_000));
+		if (!ig?.last_sync_at) return 'Not synced yet';
+		const mins = Math.max(0, Math.round((Date.now() - Date.parse(ig.last_sync_at)) / 60_000));
 		if (mins < 1) return 'Updated just now';
 		if (mins < 60) return `Updated ${mins}m ago`;
 		const hrs = Math.round(mins / 60);
 		if (hrs < 24) return `Updated ${hrs}h ago`;
-		return `Updated ${fmt(ig.synced_at.slice(0, 10))}`;
+		return `Updated ${fmt(ig.last_sync_at.slice(0, 10))}`;
 	});
 
 	async function syncNow() {
@@ -39,7 +39,7 @@
 
 	onMount(() => {
 		if (!ig?.connected || !c.posts.length) return;
-		const ageMs = ig.synced_at ? Date.now() - Date.parse(ig.synced_at) : Infinity;
+		const ageMs = ig.last_sync_at ? Date.now() - Date.parse(ig.last_sync_at) : Infinity;
 		if (ageMs > 2 * 60_000) syncNow();
 	});
 	let failedThumbs = $state<Record<string, boolean>>({});
