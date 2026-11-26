@@ -1767,7 +1767,19 @@ async function resolveGoogleMapsUrl(
 		host === 'google.co.in';
 	if (!allowed) return null;
 
-	const extractFromText = (str: string) => {
+	const normalizeText = (s: string) =>
+		s
+			.replace(/\\u0026/gi, '&')
+			.replace(/\\u003d/gi, '=')
+			.replace(/\\x26/gi, '&')
+			.replace(/\\x3d/gi, '=')
+			.replace(/&amp;/gi, '&')
+			.replace(/%252C/gi, ',')
+			.replace(/%2C/gi, ',')
+			.replace(/%21/gi, '!');
+
+	const extractFromText = (rawStr: string) => {
+		const str = normalizeText(rawStr);
 		const pins = [...str.matchAll(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/g)];
 		if (pins.length) {
 			const last = pins[pins.length - 1];
@@ -1775,10 +1787,10 @@ async function resolveGoogleMapsUrl(
 		}
 		const at = str.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
 		if (at) return { lat: Number(at[1]), lng: Number(at[2]) };
-		const q = str.match(/[?&](?:q|ll|destination)=(-?\d+\.\d+)(?:,|%2C)(-?\d+\.\d+)/i);
-		if (q) return { lat: Number(q[1]), lng: Number(q[2]) };
-		const ctr = str.match(/center=(-?\d+\.\d+)(?:,|%2C)(-?\d+\.\d+)/i);
+		const ctr = str.match(/center=(-?\d+\.\d+),(-?\d+\.\d+)/i);
 		if (ctr) return { lat: Number(ctr[1]), lng: Number(ctr[2]) };
+		const q = str.match(/[?&](?:q|ll|destination|sll|cp)=(-?\d+\.\d+),(-?\d+\.\d+)/i);
+		if (q) return { lat: Number(q[1]), lng: Number(q[2]) };
 		const appState = str.match(/\[null,null,(-?\d+\.\d+),(-?\d+\.\d+)\]/);
 		if (appState) return { lat: Number(appState[1]), lng: Number(appState[2]) };
 		return null;
@@ -1805,7 +1817,6 @@ async function resolveGoogleMapsUrl(
 		return '';
 	};
 
-	// Unwrap consent.google.com?continue=... if encountered
 	const unwrapConsent = (u: string) => {
 		try {
 			const obj = new URL(u);
@@ -1819,66 +1830,76 @@ async function resolveGoogleMapsUrl(
 	let finalUrl = parsed.toString();
 	let coords = extractFromText(finalUrl);
 	let label = extractNameFromUrl(finalUrl);
-	let lastHtml = '';
 
-	// Follow up to 6 redirects manually so we capture exact Google Maps URLs before any consent redirect
-	let hopUrl = finalUrl;
-	for (let hop = 0; hop < 6 && (!coords || !label); hop++) {
-		try {
-			const res = await fetch(hopUrl, {
-				method: 'GET',
-				redirect: 'manual',
-				headers: {
-					'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
-					'accept-language': 'en-IN,en;q=0.9',
-					cookie: 'SOCS=CAISHAgBEhJnd3NfMjAyNDAxMTAtMF9SQzIaAmVuIAEaBgiA_MCxBg'
+	// Try WhatsApp/preview UA first (gets clean 302 Location + og:image staticmap without JS walls), then Chrome UA
+	const userAgents = [
+		'WhatsApp/2.23.20.0',
+		'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36'
+	];
+
+	for (const ua of userAgents) {
+		if (coords && label) break;
+		let hopUrl = finalUrl;
+		let html = '';
+		for (let hop = 0; hop < 6 && (!coords || !label); hop++) {
+			try {
+				const res = await fetch(hopUrl, {
+					method: 'GET',
+					redirect: 'manual',
+					headers: {
+						'user-agent': ua,
+						'accept-language': 'en-IN,en;q=0.9',
+						cookie: 'SOCS=CAISHAgBEhJnd3NfMjAyNDAxMTAtMF9SQzIaAmVuIAEaBgiA_MCxBg'
+					}
+				});
+				const loc = res.headers.get('location');
+				if (loc) {
+					const abs = unwrapConsent(new URL(loc, hopUrl).toString());
+					finalUrl = abs;
+					hopUrl = abs;
+					if (!coords) coords = extractFromText(abs);
+					if (!label) label = extractNameFromUrl(abs);
+					continue;
 				}
-			});
-			const loc = res.headers.get('location');
-			if (loc) {
-				const abs = unwrapConsent(new URL(loc, hopUrl).toString());
-				finalUrl = abs;
-				hopUrl = abs;
-				if (!coords) coords = extractFromText(abs);
-				if (!label) label = extractNameFromUrl(abs);
-				continue;
-			}
-			lastHtml = (await res.text()).slice(0, 180_000);
-			// Check meta refresh or JS redirect inside short-link HTML
-			const metaRef = lastHtml.match(/http-equiv=["']refresh["'][^>]*url=([^"'>\s]+)/i);
-			if (metaRef?.[1]) {
-				const abs = unwrapConsent(new URL(metaRef[1].replace(/&amp;/g, '&'), hopUrl).toString());
-				finalUrl = abs;
-				hopUrl = abs;
-				if (!coords) coords = extractFromText(abs);
-				if (!label) label = extractNameFromUrl(abs);
-				continue;
-			}
-			break;
-		} catch {
-			break;
-		}
-	}
+				html = (await res.text()).slice(0, 220_000);
+				if (!coords) coords = extractFromText(html);
 
-	if (lastHtml) {
-		if (!coords) coords = extractFromText(lastHtml);
-		if (!label) {
+				// Follow any embedded meta-refresh or google.com/maps link in the shortener HTML
+				const metaRef = html.match(/http-equiv=["']refresh["'][^>]*url=([^"'>\s]+)/i);
+				const embeddedMapUrl = html.match(/https:\/\/(?:www\.|maps\.)?google\.com\/maps\/(?:place|dir|search)[^"'\s<>\\]+/i);
+				const nextFromHtml = metaRef?.[1] || embeddedMapUrl?.[0];
+				if (nextFromHtml) {
+					const cleanNext = unwrapConsent(normalizeText(nextFromHtml));
+					if (cleanNext !== hopUrl) {
+						finalUrl = cleanNext;
+						hopUrl = cleanNext;
+						if (!coords) coords = extractFromText(cleanNext);
+						if (!label) label = extractNameFromUrl(cleanNext);
+						continue;
+					}
+				}
+				break;
+			} catch {
+				break;
+			}
+		}
+
+		if (html && !label) {
 			const og =
-				lastHtml.match(/property="og:title"\s+content="([^"]+)"/i) ||
-				lastHtml.match(/content="([^"]+)"\s+property="og:title"/i) ||
-				lastHtml.match(/<title>([^<]+)<\/title>/i);
+				html.match(/property=["']og:title["']\s+content=["']([^"']+)["']/i) ||
+				html.match(/content=["']([^"']+)["']\s+property=["']og:title["']/i) ||
+				html.match(/<title>([^<]+)<\/title>/i);
 			if (og?.[1]) {
 				const cleaned = og[1]
 					.replace(/\s*[·\-–|]\s*Google Maps\s*$/i, '')
 					.replace(/&amp;/g, '&')
 					.replace(/&#39;/g, "'")
 					.trim();
-				if (cleaned && !/^(google maps|before you continue)/i.test(cleaned)) label = cleaned;
+				if (cleaned && !/^(google maps|before you continue|dynamic link)/i.test(cleaned)) label = cleaned;
 			}
 		}
 	}
 
-	// If we resolved a place name (from /place/Name or og:title) without inline coordinates, geocode it server-side
 	if ((!coords || !Number.isFinite(coords.lat)) && label) {
 		const hits = await searchGoogleMapsPlaces(env, label);
 		if (hits.length) {
