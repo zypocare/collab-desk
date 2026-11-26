@@ -12,6 +12,7 @@
 		type ExpensePreset
 	} from '../expenses';
 	import { estimateTrip, type TravelMode, type TravelSlotId } from '../travel';
+	import DatePicker from './DatePicker.svelte';
 	import Icon from './Icon.svelte';
 
 	let { c }: { c: Collab } = $props();
@@ -249,11 +250,10 @@
 				</div>
 				<div class="cp-field">
 					<label for="exp-dt-{c.id}">Date</label>
-					<input
+					<DatePicker
 						id="exp-dt-{c.id}"
-						class="cp-inp"
-						type="date"
-						bind:value={spentOn}
+						value={spentOn}
+						onchange={(v) => (spentOn = v || new Date().toISOString().slice(0, 10))}
 					/>
 				</div>
 			</div>
