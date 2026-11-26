@@ -34,9 +34,12 @@
 	.ghb {
 		display: flex;
 		align-items: center;
-		gap: 11px;
-		padding: 12px 14px;
-		border-radius: 16px;
+		gap: 12px;
+		width: 100%;
+		box-sizing: border-box;
+		margin: 14px 0 6px;
+		padding: 13px 15px;
+		border-radius: 18px;
 		border: 1px solid color-mix(in oklab, var(--gh-accent) 42%, var(--line));
 		background: linear-gradient(
 			115deg,
@@ -82,5 +85,11 @@
 		white-space: nowrap;
 		overflow: hidden;
 		text-overflow: ellipsis;
+	}
+	.ghb > :global(.ic) {
+		flex: none;
+		width: 16px;
+		height: 16px;
+		color: var(--ink-3);
 	}
 </style>
