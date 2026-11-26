@@ -1771,6 +1771,8 @@ async function resolveGoogleMapsUrl(
 		s
 			.replace(/\\u0026/gi, '&')
 			.replace(/\\u003d/gi, '=')
+			.replace(/\\u002f/gi, '/')
+			.replace(/\\\//g, '/')
 			.replace(/\\x26/gi, '&')
 			.replace(/\\x3d/gi, '=')
 			.replace(/&amp;/gi, '&')
@@ -1791,8 +1793,15 @@ async function resolveGoogleMapsUrl(
 		if (ctr) return { lat: Number(ctr[1]), lng: Number(ctr[2]) };
 		const q = str.match(/[?&](?:q|ll|destination|sll|cp)=(-?\d+\.\d+),(-?\d+\.\d+)/i);
 		if (q) return { lat: Number(q[1]), lng: Number(q[2]) };
-		const appState = str.match(/\[null,null,(-?\d+\.\d+),(-?\d+\.\d+)\]/);
-		if (appState) return { lat: Number(appState[1]), lng: Number(appState[2]) };
+		const appNull = str.match(/\[null,null,(-?\d+\.\d+),(-?\d+\.\d+)\]/);
+		if (appNull) return { lat: Number(appNull[1]), lng: Number(appNull[2]) };
+		// Google Maps APP_INITIALIZATION_STATE=[[[distance, lng, lat], ...
+		const appInit = str.match(/APP_INITIALIZATION_STATE\s*=\s*\[\[\[[\d.]+,(-?\d+\.\d+),(-?\d+\.\d+)/);
+		if (appInit) {
+			const lng = Number(appInit[1]);
+			const lat = Number(appInit[2]);
+			if (Math.abs(lat) <= 90 && Math.abs(lng) <= 180) return { lat, lng };
+		}
 		return null;
 	};
 
@@ -1827,20 +1836,29 @@ async function resolveGoogleMapsUrl(
 		return u;
 	};
 
-	let finalUrl = parsed.toString();
-	let coords = extractFromText(finalUrl);
-	let label = extractNameFromUrl(finalUrl);
+	const isShortener = (u: string) => {
+		try {
+			const h = new URL(u).hostname.toLowerCase();
+			return h === 'maps.app.goo.gl' || h === 'goo.gl' || h === 'g.co' || h.includes('consent.google.');
+		} catch {
+			return false;
+		}
+	};
 
-	// Try WhatsApp/preview UA first (gets clean 302 Location + og:image staticmap without JS walls), then Chrome UA
+	const origUrl = parsed.toString();
+	let finalUrl = origUrl;
+	let coords = extractFromText(origUrl);
+	let label = extractNameFromUrl(origUrl);
+
 	const userAgents = [
-		'curl/8.4.0',
 		'WhatsApp/2.23.20.0',
+		'curl/8.4.0',
 		'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36'
 	];
 
 	for (const ua of userAgents) {
 		if (coords && label) break;
-		let hopUrl = finalUrl;
+		let hopUrl = origUrl;
 		let html = '';
 		for (let hop = 0; hop < 6 && (!coords || !label); hop++) {
 			try {
@@ -1849,6 +1867,7 @@ async function resolveGoogleMapsUrl(
 					redirect: 'manual',
 					headers: {
 						'user-agent': ua,
+						'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
 						'accept-language': 'en-IN,en;q=0.9',
 						cookie: 'SOCS=CAISHAgBEhJnd3NfMjAyNDAxMTAtMF9SQzIaAmVuIAEaBgiA_MCxBg'
 					}
@@ -1862,26 +1881,28 @@ async function resolveGoogleMapsUrl(
 					if (!label) label = extractNameFromUrl(abs);
 					continue;
 				}
-				html = (await res.text()).slice(0, 220_000);
+				html = (await res.text()).slice(0, 750_000);
 				if (!coords) coords = extractFromText(html);
 
-				// Follow any embedded meta-refresh or google.com/maps link in the shortener HTML
-				const metaRef = html.match(/http-equiv=["']refresh["'][^>]*url=([^"'>\s]+)/i);
-				const embeddedMapUrl = html.match(/https:\/\/(?:www\.|maps\.)?google\.[a-z.]+\/maps[^"'\s<>\\]+/i);
-				const encodedMapUrl = html.match(/https%3A%2F%2F(?:www\.|maps\.)?google\.[a-z.]+%2Fmaps[^"'\s<>\\&]+/i);
-				let decodedEmb = '';
-				if (encodedMapUrl?.[0]) {
-					try { decodedEmb = decodeURIComponent(encodedMapUrl[0]); } catch { /* ignore */ }
-				}
-				const nextFromHtml = metaRef?.[1] || embeddedMapUrl?.[0] || decodedEmb;
-				if (nextFromHtml) {
-					const cleanNext = unwrapConsent(normalizeText(nextFromHtml));
-					if (cleanNext !== hopUrl) {
-						finalUrl = cleanNext;
-						hopUrl = cleanNext;
-						if (!coords) coords = extractFromText(cleanNext);
-						if (!label) label = extractNameFromUrl(cleanNext);
-						continue;
+				// Only follow embedded map links if we are still on a shortener / consent interstitial
+				if (isShortener(hopUrl)) {
+					const metaRef = html.match(/http-equiv=["']refresh["'][^>]*url=([^"'>\s]+)/i);
+					const embeddedMapUrl = html.match(/https:\/\/(?:www\.|maps\.)?google\.[a-z.]+\/maps[^"'\s<>\\]+/i);
+					const encodedMapUrl = html.match(/https%3A%2F%2F(?:www\.|maps\.)?google\.[a-z.]+%2Fmaps[^"'\s<>\\&]+/i);
+					let decodedEmb = '';
+					if (encodedMapUrl?.[0]) {
+						try { decodedEmb = decodeURIComponent(encodedMapUrl[0]); } catch { /* ignore */ }
+					}
+					const nextFromHtml = metaRef?.[1] || embeddedMapUrl?.[0] || decodedEmb;
+					if (nextFromHtml) {
+						const cleanNext = unwrapConsent(normalizeText(nextFromHtml));
+						if (cleanNext !== hopUrl) {
+							finalUrl = cleanNext;
+							hopUrl = cleanNext;
+							if (!coords) coords = extractFromText(cleanNext);
+							if (!label) label = extractNameFromUrl(cleanNext);
+							continue;
+						}
 					}
 				}
 				break;
@@ -1894,6 +1915,7 @@ async function resolveGoogleMapsUrl(
 			const og =
 				html.match(/property=["']og:title["']\s+content=["']([^"']+)["']/i) ||
 				html.match(/content=["']([^"']+)["']\s+property=["']og:title["']/i) ||
+				html.match(/itemprop=["']name["']\s+content=["']([^"']+)["']/i) ||
 				html.match(/<title>([^<]+)<\/title>/i);
 			if (og?.[1]) {
 				const cleaned = og[1]

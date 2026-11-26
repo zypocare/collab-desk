@@ -158,7 +158,7 @@ export async function resolveMapsLink(
 		// fall through to Layer 2
 	}
 
-	// Layer 2: Public unshortener (unshorten.me) — resolves from a non-Cloudflare IP if Google blocks datacenter IPs
+	// Layer 2: Public unshortener (unshorten.me + allorigins fallback) from non-Cloudflare IPs
 	try {
 		const uRes = await fetch(`https://unshorten.me/json/${encodeURIComponent(url)}`);
 		if (uRes.ok) {
@@ -171,6 +171,24 @@ export async function resolveMapsLink(
 					const found = await searchPlaces(name);
 					if (found.length) return { lat: found[0].lat, lng: found[0].lng, label: found[0].label };
 				}
+			}
+		}
+	} catch {
+		// try allorigins
+	}
+
+	try {
+		const aoRes = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`);
+		if (aoRes.ok) {
+			const aoData = (await aoRes.json()) as { contents?: string; status?: { url?: string } };
+			const finalU = aoData.status?.url || '';
+			if (finalU) {
+				const hit = await parseDirect(finalU);
+				if (hit) return hit;
+			}
+			if (aoData.contents) {
+				const hit = await parseDirect(aoData.contents);
+				if (hit) return hit;
 			}
 		}
 	} catch {
