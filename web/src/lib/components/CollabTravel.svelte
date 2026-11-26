@@ -489,7 +489,7 @@
 	.trv-pin-dot.idle :global(.ic) { color: #c8b6ff; }
 	.trv-pin-meta { display: grid; gap: 3px; min-width: 0; }
 	.trv-pin-meta small { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #6ee7b7; }
-	.trv-pinned-hero h3, .trv-empty-hero h3 { margin: 0; font: 400 19px/1.2 var(--f-serif, Georgia, serif); color: var(--ink); overflow-wrap: anywhere; }
+	.trv-pinned-hero h3, .trv-empty-hero h3 { margin: 0; font: 400 17px/1.28 var(--f-serif, Georgia, serif); color: var(--ink); overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 	.trv-pin-meta code { font-family: var(--mono); font-size: 11.5px; color: var(--ink-3); }
 	.trv-empty-hero p { margin: 4px 0 0; font-size: 12.5px; line-height: 1.45; color: var(--ink-2); }
 

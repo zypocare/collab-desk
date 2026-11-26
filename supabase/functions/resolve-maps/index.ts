@@ -1,5 +1,5 @@
-// Resolves short Google Maps links (maps.app.goo.gl / goo.gl) from Deno Deploy (non-Cloudflare IP)
-// and extracts exact coordinates + place name.
+// Resolves short Google Maps links (maps.app.goo.gl / goo.gl) from Deno Deploy
+// and extracts exact place pin coordinates + readable place name.
 
 const corsH = {
 	'access-control-allow-origin': '*',
@@ -19,8 +19,18 @@ const normalize = (s: string) =>
 		.replace(/%2C/gi, ',')
 		.replace(/%21/gi, '!');
 
-function extractCoords(raw: string): { lat: number; lng: number } | null {
-	const str = normalize(raw);
+function haversineKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }): number {
+	const R = 6371;
+	const dLat = ((b.lat - a.lat) * Math.PI) / 180;
+	const dLng = ((b.lng - a.lng) * Math.PI) / 180;
+	const s =
+		Math.sin(dLat / 2) ** 2 +
+		Math.cos((a.lat * Math.PI) / 180) * Math.cos((b.lat * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
+	return 2 * R * Math.asin(Math.sqrt(s));
+}
+
+function extractCoordsFromUrlOnly(rawUrl: string): { lat: number; lng: number } | null {
+	const str = normalize(rawUrl);
 	const pins = [...str.matchAll(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/g)];
 	if (pins.length) {
 		const last = pins[pins.length - 1];
@@ -28,18 +38,24 @@ function extractCoords(raw: string): { lat: number; lng: number } | null {
 	}
 	const at = str.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
 	if (at) return { lat: Number(at[1]), lng: Number(at[2]) };
-	const ctr = str.match(/center=(-?\d+\.\d+),(-?\d+\.\d+)/i);
-	if (ctr) return { lat: Number(ctr[1]), lng: Number(ctr[2]) };
 	const q = str.match(/[?&](?:q|ll|destination|sll|cp)=(-?\d+\.\d+),(-?\d+\.\d+)/i);
 	if (q) return { lat: Number(q[1]), lng: Number(q[2]) };
-	const appNull = str.match(/\[null,null,(-?\d+\.\d+),(-?\d+\.\d+)\]/);
-	if (appNull) return { lat: Number(appNull[1]), lng: Number(appNull[2]) };
-	const appInit = str.match(/APP_INITIALIZATION_STATE\s*=\s*\[\[\[[\d.]+,(-?\d+\.\d+),(-?\d+\.\d+)/);
-	if (appInit) {
-		const lng = Number(appInit[1]);
-		const lat = Number(appInit[2]);
-		if (Math.abs(lat) <= 90 && Math.abs(lng) <= 180) return { lat, lng };
+	return null;
+}
+
+function extractPinFromHtml(rawHtml: string): { lat: number; lng: number; strong: boolean } | null {
+	const str = normalize(rawHtml);
+	// !3dLAT!4dLNG is the true Google Maps place pin (never the PoP server viewport!)
+	const pins = [...str.matchAll(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/g)];
+	if (pins.length) {
+		const last = pins[pins.length - 1];
+		return { lat: Number(last[1]), lng: Number(last[2]), strong: true };
 	}
+	// Staticmap marker or center inside og:image
+	const marker = str.match(/staticmap\?[^"']*markers=[^"']*?(-?\d+\.\d+),(-?\d+\.\d+)/i);
+	if (marker) return { lat: Number(marker[1]), lng: Number(marker[2]), strong: true };
+	const ctr = str.match(/staticmap\?[^"']*center=(-?\d+\.\d+),(-?\d+\.\d+)/i);
+	if (ctr) return { lat: Number(ctr[1]), lng: Number(ctr[2]), strong: false };
 	return null;
 }
 
@@ -83,6 +99,50 @@ function unwrapConsent(u: string): string {
 	return u;
 }
 
+async function geocodeSmartAddress(label: string): Promise<{ lat: number; lng: number } | null> {
+	const clean = label.replace(/\s+/g, ' ').trim();
+	if (!clean) return null;
+
+	const queries: string[] = [];
+	const parts = clean.split(',').map((s) => s.trim()).filter(Boolean);
+	// Progressive suffixes: skip noisy floor/unit/opposite landmarks from the front
+	for (let i = 0; i < parts.length; i++) {
+		const sub = parts.slice(i).join(', ');
+		if (sub.length >= 4 && !queries.includes(sub)) queries.push(sub);
+	}
+	// If there is a 6-digit Indian pincode, try pincode + last 2 parts
+	const pinMatch = clean.match(/\b([1-9]\d{5})\b/);
+	if (pinMatch) {
+		queries.push(`${pinMatch[1]}, India`);
+	}
+
+	for (const q of queries.slice(0, 7)) {
+		try {
+			const pRes = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&limit=1`);
+			if (pRes.ok) {
+				const pData = (await pRes.json()) as { features?: Array<{ geometry?: { coordinates?: [number, number] } }> };
+				const c = pData.features?.[0]?.geometry?.coordinates;
+				if (c && c.length >= 2) return { lat: Number(c[1]), lng: Number(c[0]) };
+			}
+		} catch {
+			// ignore
+		}
+		try {
+			const nRes = await fetch(
+				`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(q)}`,
+				{ headers: { 'user-agent': 'MiracleApp/1.0' } }
+			);
+			if (nRes.ok) {
+				const rows = (await nRes.json()) as Array<{ lat: string; lon: string }>;
+				if (rows?.[0]) return { lat: Number(rows[0].lat), lng: Number(rows[0].lon) };
+			}
+		} catch {
+			// ignore
+		}
+	}
+	return null;
+}
+
 Deno.serve(async (req) => {
 	if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: corsH });
 	if (req.method !== 'POST') return new Response(JSON.stringify({ error: 'Use POST' }), { status: 405, headers: corsH });
@@ -95,14 +155,15 @@ Deno.serve(async (req) => {
 
 		const origUrl = new URL(m[0]).toString();
 		let finalUrl = origUrl;
-		let coords = extractCoords(origUrl);
+		let coords: { lat: number; lng: number } | null = extractCoordsFromUrlOnly(origUrl);
+		let strongCoords = !!coords;
 		let label = extractName(origUrl);
 
 		for (const ua of ['WhatsApp/2.23.20.0', 'curl/8.4.0', 'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/126.0.0.0 Mobile Safari/537.36']) {
-			if (coords && label) break;
+			if (strongCoords && label) break;
 			let hopUrl = origUrl;
 			let html = '';
-			for (let hop = 0; hop < 6 && (!coords || !label); hop++) {
+			for (let hop = 0; hop < 6 && (!strongCoords || !label); hop++) {
 				const res = await fetch(hopUrl, {
 					method: 'GET',
 					redirect: 'manual',
@@ -117,12 +178,22 @@ Deno.serve(async (req) => {
 					const abs = unwrapConsent(new URL(loc, hopUrl).toString());
 					finalUrl = abs;
 					hopUrl = abs;
-					if (!coords) coords = extractCoords(abs);
+					const urlCoords = extractCoordsFromUrlOnly(abs);
+					if (urlCoords) {
+						coords = urlCoords;
+						strongCoords = true;
+					}
 					if (!label) label = extractName(abs);
 					continue;
 				}
 				html = (await res.text()).slice(0, 700_000);
-				if (!coords) coords = extractCoords(html);
+				if (!strongCoords) {
+					const htmlHit = extractPinFromHtml(html);
+					if (htmlHit) {
+						coords = { lat: htmlHit.lat, lng: htmlHit.lng };
+						strongCoords = htmlHit.strong;
+					}
+				}
 				const metaRef = html.match(/http-equiv=["']refresh["'][^>]*url=([^"'>\s]+)/i);
 				const embUrl = html.match(/https:\/\/(?:www\.|maps\.)?google\.[a-z.]+\/maps[^"'\s<>\\]+/i);
 				const next = metaRef?.[1] || embUrl?.[0];
@@ -131,7 +202,11 @@ Deno.serve(async (req) => {
 					if (abs !== hopUrl) {
 						finalUrl = abs;
 						hopUrl = abs;
-						if (!coords) coords = extractCoords(abs);
+						const urlCoords = extractCoordsFromUrlOnly(abs);
+						if (urlCoords) {
+							coords = urlCoords;
+							strongCoords = true;
+						}
 						if (!label) label = extractName(abs);
 						continue;
 					}
@@ -150,13 +225,13 @@ Deno.serve(async (req) => {
 			}
 		}
 
-		if (!coords && label) {
-			const nRes = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(label)}`, {
-				headers: { 'user-agent': 'MiracleApp/1.0' }
-			});
-			if (nRes.ok) {
-				const rows = (await nRes.json()) as Array<{ lat: string; lon: string }>;
-				if (rows?.[0]) coords = { lat: Number(rows[0].lat), lng: Number(rows[0].lon) };
+		// Sanity check: if we have a rich label (with city/pincode) and weak/PoP coords, verify via address geocoder
+		if (label) {
+			const addrCoords = await geocodeSmartAddress(label);
+			if (addrCoords) {
+				if (!coords || !strongCoords || haversineKm(coords, addrCoords) > 40) {
+					coords = addrCoords;
+				}
 			}
 		}
 

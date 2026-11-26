@@ -1793,15 +1793,7 @@ async function resolveGoogleMapsUrl(
 		if (ctr) return { lat: Number(ctr[1]), lng: Number(ctr[2]) };
 		const q = str.match(/[?&](?:q|ll|destination|sll|cp)=(-?\d+\.\d+),(-?\d+\.\d+)/i);
 		if (q) return { lat: Number(q[1]), lng: Number(q[2]) };
-		const appNull = str.match(/\[null,null,(-?\d+\.\d+),(-?\d+\.\d+)\]/);
-		if (appNull) return { lat: Number(appNull[1]), lng: Number(appNull[2]) };
-		// Google Maps APP_INITIALIZATION_STATE=[[[distance, lng, lat], ...
-		const appInit = str.match(/APP_INITIALIZATION_STATE\s*=\s*\[\[\[[\d.]+,(-?\d+\.\d+),(-?\d+\.\d+)/);
-		if (appInit) {
-			const lng = Number(appInit[1]);
-			const lat = Number(appInit[2]);
-			if (Math.abs(lat) <= 90 && Math.abs(lng) <= 180) return { lat, lng };
-		}
+
 		return null;
 	};
 
