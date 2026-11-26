@@ -14,6 +14,7 @@
 	} from '../util';
 	import { rightsRows } from '../rights';
 	import { portal } from '../portal';
+	import { cleanPlaceLabel } from '../travel';
 	import Icon from './Icon.svelte';
 
 	// Exact implementation of the Collab Details workspace concept (collab-details-options.html):
@@ -71,7 +72,7 @@
 	);
 	const travelSub = $derived(
 		c.shoot_mode === 'location'
-			? [c.venue_address || c.venue_name || 'On-location', c.travel_km ? `${c.travel_km} km` : ''].filter(Boolean).join(' · ')
+			? [cleanPlaceLabel(c.venue_address || c.venue_name || '') || 'On-location', c.travel_km ? `${c.travel_km} km` : ''].filter(Boolean).join(' · ')
 			: 'At home · tap for on-location'
 	);
 

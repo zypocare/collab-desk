@@ -78,6 +78,7 @@
 	import Mono from './Mono.svelte';
 	import QuoteDialog from './QuoteDialog.svelte';
 	import CollabPosts from './CollabPosts.svelte';
+	import { cleanPlaceLabel } from '../travel';
 	import CollabTravel from './CollabTravel.svelte';
 	import LiveRecap from './LiveRecap.svelte';
 	import CollabCockpit from './CollabCockpit.svelte';
@@ -224,7 +225,7 @@
 			deal: [TYPE_LABEL[c.type], isPaid(c) && c.fee ? inr(c.fee) : '', c.usage].filter(Boolean).join(' · '),
 			quote: quote ? QUOTE_STATUS[quote.status].label : 'None yet',
 			dates: [c.draft_date ? `Draft ${fmt(c.draft_date)}` : '', c.live_date ? `live ${fmt(c.live_date)}` : ''].filter(Boolean).join(' · ') || 'Not set',
-			travel: c.shoot_mode === 'location' ? ([c.venue_name || c.venue_address || 'On-location', c.travel_km ? `${c.travel_km} km` : ''].filter(Boolean).join(' · ')) : 'At home',
+			travel: c.shoot_mode === 'location' ? ([cleanPlaceLabel(c.venue_address || c.venue_name || '') || 'On-location', c.travel_km ? `${c.travel_km} km` : ''].filter(Boolean).join(' · ')) : 'At home',
 			drafts: dr ? `${c.drafts.length} sent · ${dr.status === 'approved' ? 'approved' : dr.status === 'changes' ? 'changes asked' : 'waiting'}` : 'None yet',
 			check: `${CHECKLIST.length - checklistMissing(c).length} of ${CHECKLIST.length} done`,
 			pay: open.length ? `${open.length} open · ${inr(outstanding(c))} to come` : c.pay_status === 'paid' ? 'Paid' : c.invoices.length ? `${c.invoices.length} invoice${c.invoices.length === 1 ? '' : 's'}` : 'No invoice yet',
