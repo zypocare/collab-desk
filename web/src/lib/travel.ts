@@ -83,6 +83,33 @@ export function cleanPlaceLabel(raw: string): string {
 	return 'Pinned Google Maps location';
 }
 
+
+async function verifyPinWithAddress(
+	pin: { lat: number; lng: number; label: string }
+): Promise<{ lat: number; lng: number; label: string }> {
+	const clean = (pin.label || '').replace(/\s+/g, ' ').trim();
+	if (!clean || clean === 'Pinned Google Maps location') return pin;
+	const parts = clean.split(',').map((s) => s.trim()).filter(Boolean);
+	const pinMatch = clean.match(/\b([1-9]\d{5})\b/);
+	const queries: string[] = [];
+	if (parts.length >= 2) {
+		queries.push(parts.slice(-3).join(', '));
+		queries.push(parts.slice(-2).join(', '));
+	}
+	if (pinMatch) queries.push(`${pinMatch[1]}, India`);
+	for (const q of queries) {
+		const hits = await queryPhotonMany(q);
+		const hit = hits[0] ?? (await queryNominatimMany(q))[0];
+		if (hit) {
+			if (haversineKm(pin, hit) > 40) {
+				return { lat: hit.lat, lng: hit.lng, label: pin.label };
+			}
+			break;
+		}
+	}
+	return pin;
+}
+
 export async function resolveMapsLink(
 	raw: string
 ): Promise<{ lat: number; lng: number; label: string } | null> {
@@ -181,7 +208,7 @@ export async function resolveMapsLink(
 					const userTitle = extractName(clean);
 					label = userTitle || (await reverseGeocode(data.lat, data.lng));
 				}
-				return { lat: data.lat, lng: data.lng, label };
+				return await verifyPinWithAddress({ lat: data.lat, lng: data.lng, label });
 			}
 		}
 	} catch {

@@ -1742,6 +1742,54 @@ Use only facts from the page; never invent claims, ingredients, prices, offers o
 	};
 }
 
+function workerHaversineKm(a: { lat: number; lng: number }, b: { lat: number; lng: number }): number {
+	const R = 6371;
+	const dLat = ((b.lat - a.lat) * Math.PI) / 180;
+	const dLng = ((b.lng - a.lng) * Math.PI) / 180;
+	const s =
+		Math.sin(dLat / 2) ** 2 +
+		Math.cos((a.lat * Math.PI) / 180) * Math.cos((b.lat * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
+	return 2 * R * Math.asin(Math.sqrt(s));
+}
+
+async function geocodeWorkerAddress(env: Env, label: string): Promise<{ lat: number; lng: number } | null> {
+	const clean = label.replace(/\s+/g, ' ').trim();
+	if (!clean) return null;
+
+	const queries: string[] = [];
+	const parts = clean.split(',').map((s) => s.trim()).filter(Boolean);
+	for (let i = 0; i < parts.length; i++) {
+		const sub = parts.slice(i).join(', ');
+		if (sub.length >= 4 && !queries.includes(sub)) queries.push(sub);
+	}
+	const pinMatch = clean.match(/\b([1-9]\d{5})\b/);
+	if (pinMatch) queries.push(`${pinMatch[1]}, India`);
+
+	for (const q of queries.slice(0, 6)) {
+		try {
+			const pRes = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&limit=1`);
+			if (pRes.ok) {
+				const pData = (await pRes.json()) as { features?: Array<{ geometry?: { coordinates?: [number, number] } }> };
+				const c = pData.features?.[0]?.geometry?.coordinates;
+				if (c && c.length >= 2) return { lat: Number(c[1]), lng: Number(c[0]) };
+			}
+		} catch { /* ignore */ }
+		try {
+			const nRes = await fetch(
+				`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(q)}`,
+				{ headers: { 'user-agent': 'MiracleApp/1.0' } }
+			);
+			if (nRes.ok) {
+				const rows = (await nRes.json()) as Array<{ lat: string; lon: string }>;
+				if (rows?.[0]) return { lat: Number(rows[0].lat), lng: Number(rows[0].lon) };
+			}
+		} catch { /* ignore */ }
+	}
+	const gHits = await searchGoogleMapsPlaces(env, clean);
+	if (gHits.length) return { lat: gHits[0].lat, lng: gHits[0].lng };
+	return null;
+}
+
 async function resolveGoogleMapsUrl(
 	env: Env,
 	raw: string
@@ -1780,20 +1828,31 @@ async function resolveGoogleMapsUrl(
 			.replace(/%2C/gi, ',')
 			.replace(/%21/gi, '!');
 
-	const extractFromText = (rawStr: string) => {
+	const extractFromUrlOnly = (rawStr: string): { lat: number; lng: number; strong: boolean } | null => {
 		const str = normalizeText(rawStr);
 		const pins = [...str.matchAll(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/g)];
 		if (pins.length) {
 			const last = pins[pins.length - 1];
-			return { lat: Number(last[1]), lng: Number(last[2]) };
+			return { lat: Number(last[1]), lng: Number(last[2]), strong: true };
 		}
 		const at = str.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
-		if (at) return { lat: Number(at[1]), lng: Number(at[2]) };
-		const ctr = str.match(/center=(-?\d+\.\d+),(-?\d+\.\d+)/i);
-		if (ctr) return { lat: Number(ctr[1]), lng: Number(ctr[2]) };
+		if (at) return { lat: Number(at[1]), lng: Number(at[2]), strong: true };
 		const q = str.match(/[?&](?:q|ll|destination|sll|cp)=(-?\d+\.\d+),(-?\d+\.\d+)/i);
-		if (q) return { lat: Number(q[1]), lng: Number(q[2]) };
+		if (q) return { lat: Number(q[1]), lng: Number(q[2]), strong: true };
+		return null;
+	};
 
+	const extractFromHtml = (rawStr: string): { lat: number; lng: number; strong: boolean } | null => {
+		const str = normalizeText(rawStr);
+		const pins = [...str.matchAll(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/g)];
+		if (pins.length) {
+			const last = pins[pins.length - 1];
+			return { lat: Number(last[1]), lng: Number(last[2]), strong: true };
+		}
+		const marker = str.match(/staticmap\?[^"']*markers=[^"']*?(-?\d+\.\d+),(-?\d+\.\d+)/i);
+		if (marker) return { lat: Number(marker[1]), lng: Number(marker[2]), strong: true };
+		const ctr = str.match(/staticmap\?[^"']*center=(-?\d+\.\d+),(-?\d+\.\d+)/i);
+		if (ctr) return { lat: Number(ctr[1]), lng: Number(ctr[2]), strong: false };
 		return null;
 	};
 
@@ -1839,7 +1898,13 @@ async function resolveGoogleMapsUrl(
 
 	const origUrl = parsed.toString();
 	let finalUrl = origUrl;
-	let coords = extractFromText(origUrl);
+	let coords: { lat: number; lng: number } | null = null;
+	let strongCoords = false;
+	const initHit = extractFromUrlOnly(origUrl);
+	if (initHit) {
+		coords = { lat: initHit.lat, lng: initHit.lng };
+		strongCoords = initHit.strong;
+	}
 	let label = extractNameFromUrl(origUrl);
 
 	const userAgents = [
@@ -1849,10 +1914,10 @@ async function resolveGoogleMapsUrl(
 	];
 
 	for (const ua of userAgents) {
-		if (coords && label) break;
+		if (strongCoords && label) break;
 		let hopUrl = origUrl;
 		let html = '';
-		for (let hop = 0; hop < 6 && (!coords || !label); hop++) {
+		for (let hop = 0; hop < 6 && (!strongCoords || !label); hop++) {
 			try {
 				const res = await fetch(hopUrl, {
 					method: 'GET',
@@ -1869,18 +1934,27 @@ async function resolveGoogleMapsUrl(
 					const abs = unwrapConsent(new URL(loc, hopUrl).toString());
 					finalUrl = abs;
 					hopUrl = abs;
-					if (!coords) coords = extractFromText(abs);
+					const uh = extractFromUrlOnly(abs);
+					if (uh) {
+						coords = { lat: uh.lat, lng: uh.lng };
+						strongCoords = uh.strong;
+					}
 					if (!label) label = extractNameFromUrl(abs);
 					continue;
 				}
 				html = (await res.text()).slice(0, 750_000);
-				if (!coords) coords = extractFromText(html);
+				if (!strongCoords) {
+					const hh = extractFromHtml(html);
+					if (hh) {
+						coords = { lat: hh.lat, lng: hh.lng };
+						strongCoords = hh.strong;
+					}
+				}
 
-				// Only follow embedded map links if we are still on a shortener / consent interstitial
 				if (isShortener(hopUrl)) {
 					const metaRef = html.match(/http-equiv=["']refresh["'][^>]*url=([^"'>\s]+)/i);
 					const embeddedMapUrl = html.match(/https:\/\/(?:www\.|maps\.)?google\.[a-z.]+\/maps[^"'\s<>\\]+/i);
-					const encodedMapUrl = html.match(/https%3A%2F%2F(?:www\.|maps\.)?google\.[a-z.]+%2Fmaps[^"'\s<>\\&]+/i);
+					const encodedMapUrl = html.match(/https%3A%2F%2F(?:www\.|maps\\.)?google\.[a-z.]+%2Fmaps[^"'\s<>\\&]+/i);
 					let decodedEmb = '';
 					if (encodedMapUrl?.[0]) {
 						try { decodedEmb = decodeURIComponent(encodedMapUrl[0]); } catch { /* ignore */ }
@@ -1891,7 +1965,11 @@ async function resolveGoogleMapsUrl(
 						if (cleanNext !== hopUrl) {
 							finalUrl = cleanNext;
 							hopUrl = cleanNext;
-							if (!coords) coords = extractFromText(cleanNext);
+							const uh = extractFromUrlOnly(cleanNext);
+							if (uh) {
+								coords = { lat: uh.lat, lng: uh.lng };
+								strongCoords = uh.strong;
+							}
 							if (!label) label = extractNameFromUrl(cleanNext);
 							continue;
 						}
@@ -1920,21 +1998,13 @@ async function resolveGoogleMapsUrl(
 		}
 	}
 
-	if ((!coords || !Number.isFinite(coords.lat)) && label) {
-		const hits = await searchGoogleMapsPlaces(env, label);
-		if (hits.length) {
-			coords = { lat: hits[0].lat, lng: hits[0].lng };
-		} else {
-			try {
-				const nRes = await fetch(
-					`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(label)}`,
-					{ headers: { 'user-agent': 'MiracleApp/1.0' } }
-				);
-				if (nRes.ok) {
-					const rows = (await nRes.json()) as Array<{ lat: string; lon: string }>;
-					if (rows?.[0]) coords = { lat: Number(rows[0].lat), lng: Number(rows[0].lon) };
-				}
-			} catch { /* ignore */ }
+	// Cross-check weak/server-center coords against address/pincode so Mumbai PoP center never overrides a Bengaluru address!
+	if (label) {
+		const addrCoords = await geocodeWorkerAddress(env, label);
+		if (addrCoords) {
+			if (!coords || !strongCoords || workerHaversineKm(coords, addrCoords) > 40) {
+				coords = addrCoords;
+			}
 		}
 	}
 
