@@ -12,12 +12,38 @@
 		<meta name="mobile-web-app-capable" content="yes" />
 		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 		<meta name="apple-mobile-web-app-title" content="Miracle" />
+		<link rel="preconnect" href="https://qzsfuvcxpqaavmwkxutt.supabase.co" crossorigin />
 		<link rel="preconnect" href="https://fonts.googleapis.com" />
 		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 		<link
 			rel="stylesheet"
+			media="print"
+			onload="this.media='all'"
 			href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@500;600&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700;12..96,800&family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@500;600&display=swap"
 		/>
+		<noscript>
+			<link
+				rel="stylesheet"
+				href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=Geist+Mono:wght@500;600&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700;12..96,800&family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@500;600&display=swap"
+			/>
+		</noscript>
+		<script>
+			// Prefetch public invoice data in parallel with JS bundle download (0ms auth-lock wait).
+			try {
+				var m = location.pathname.match(/^\/invoice\/([a-f0-9]{24,})/i);
+				if (m && m[1]) {
+					var K = 'sb_publishable_UaW1ryl2S-gvm7worjrHJw_Hjr9k3wj';
+					window.__invPrefetch = {
+						token: m[1],
+						promise: fetch('https://qzsfuvcxpqaavmwkxutt.supabase.co/rest/v1/rpc/public_invoice', {
+							method: 'POST',
+							headers: { apikey: K, authorization: 'Bearer ' + K, 'content-type': 'application/json' },
+							body: JSON.stringify({ p_token: m[1] })
+						}).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; })
+					};
+				}
+			} catch (e) {}
+		</script>
 		<script>
 			// Apply the saved light/dark choice before the page paints.
 			try {
@@ -37,7 +63,15 @@
 		</script>
 		%sveltekit.head%
 	</head>
-	<body data-sveltekit-preload-data="hover">
+	<body data-sveltekit-preload-data="hover" style="margin:0;background:#110D11;color:#F8F4FA">
+		<div id="app-boot" style="position:fixed;inset:0;z-index:9999;display:grid;place-items:center;background:#110D11;font-family:system-ui,-apple-system,sans-serif">
+			<div style="display:grid;justify-items:center;gap:12px;text-align:center">
+				<div style="width:42px;height:42px;border-radius:50%;border:2.5px solid rgba(156,123,255,0.22);border-top-color:#F25A90;animation:abSpin .8s linear infinite"></div>
+				<span id="app-boot-msg" style="font-size:13.5px;color:#C9BECA;letter-spacing:.02em">Loading…</span>
+			</div>
+		</div>
+		<style>@keyframes abSpin{to{transform:rotate(360deg)}}</style>
+		<script>try{if(location.pathname.indexOf('/invoice/')===0)document.getElementById('app-boot-msg').textContent='Opening invoice…';}catch(e){}</script>
 		<div style="display: contents">%sveltekit.body%</div>
 	</body>
 </html>

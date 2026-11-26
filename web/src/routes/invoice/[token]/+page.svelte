@@ -14,14 +14,61 @@
 
 	let inv = $state<InvoiceView | null>(null);
 	let loaded = $state(false);
+	let loadErr = $state('');
 	let busy = $state(false);
 	let qrOpen = $state(true);
 	let upiCopied = $state(false);
 
-	onMount(async () => {
-		const { data } = await supabase.rpc('public_invoice', { p_token: page.params.token });
-		inv = data ? normaliseInvoice(data as InvoiceView) : null;
-		loaded = true;
+	async function fetchInvoiceDirect(token: string): Promise<InvoiceView | null> {
+		const url = import.meta.env.VITE_SUPABASE_URL as string;
+		const key = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+		if (!url || !key) {
+			const { data } = await supabase.rpc('public_invoice', { p_token: token });
+			return data ? normaliseInvoice(data as InvoiceView) : null;
+		}
+		const ctrl = new AbortController();
+		const timer = setTimeout(() => ctrl.abort(), 12_000);
+		try {
+			const r = await fetch(`${url}/rest/v1/rpc/public_invoice`, {
+				method: 'POST',
+				headers: { apikey: key, authorization: `Bearer ${key}`, 'content-type': 'application/json' },
+				body: JSON.stringify({ p_token: token }),
+				signal: ctrl.signal
+			});
+			if (!r.ok) throw new Error(`HTTP ${r.status}`);
+			const data = await r.json();
+			return data ? normaliseInvoice(data as InvoiceView) : null;
+		} finally {
+			clearTimeout(timer);
+		}
+	}
+
+	async function loadInvoice(usePrefetch = true) {
+		const token = page.params.token ?? '';
+		loaded = false;
+		loadErr = '';
+		try {
+			const w = window as unknown as { __invPrefetch?: { token: string; promise: Promise<unknown> } };
+			if (usePrefetch && w.__invPrefetch && w.__invPrefetch.token === token) {
+				const pre = await w.__invPrefetch.promise;
+				delete w.__invPrefetch;
+				if (pre) {
+					inv = normaliseInvoice(pre as InvoiceView);
+					loaded = true;
+					return;
+				}
+			}
+			inv = await fetchInvoiceDirect(token);
+		} catch {
+			loadErr = 'Connection was slow. Tap Retry to open the invoice.';
+		} finally {
+			loaded = true;
+		}
+	}
+
+	onMount(() => {
+		document.getElementById('app-boot')?.remove();
+		loadInvoice(true);
 	});
 
 	const due = $derived(inv ? balanceDue(inv) : 0);
@@ -91,7 +138,21 @@
 <div class="inv-page">
 	<div class="inv-shell">
 		{#if !loaded}
-			<div class="loader" style="min-height:50vh"><span class="ring"><span></span></span></div>
+			<div class="inv-skel" aria-busy="true" aria-label="Loading invoice">
+				<div class="inv-sk-h"><span></span><i></i></div>
+				<div class="inv-sk-card">
+					<b></b>
+					<em></em>
+					<u></u>
+					<p>Opening invoice…</p>
+				</div>
+			</div>
+		{:else if loadErr}
+			<div class="inv-empty">
+				<h2>Couldn’t load invoice</h2>
+				<p>{loadErr}</p>
+				<button type="button" class="inv-retry" onclick={() => loadInvoice(false)}>Retry</button>
+			</div>
 		{:else if !inv}
 			<div class="inv-empty">
 				<h2>Invoice not found</h2>
@@ -927,4 +988,17 @@
 		.inv-sheet { background: #fff; border: 0; padding: 0; }
 		.inv-seller h1, .inv-meta dd, .inv-billto b, .inv-table tbody td, .inv-table tfoot tr.inv-total-row td { color: #111; }
 	}
+
+	.inv-skel { display: grid; gap: 16px; padding: 24px 0; }
+	.inv-sk-h { display: flex; justify-content: space-between; align-items: center; }
+	.inv-sk-h span, .inv-sk-h i { display: block; height: 22px; border-radius: 8px; background: rgba(255, 255, 255, 0.07); }
+	.inv-sk-h span { width: 130px; }
+	.inv-sk-h i { width: 88px; }
+	.inv-sk-card { display: grid; gap: 14px; padding: 24px 20px; border-radius: 20px; border: 1px solid rgba(156, 123, 255, 0.2); background: rgba(255, 255, 255, 0.03); }
+	.inv-sk-card b, .inv-sk-card em, .inv-sk-card u { display: block; border-radius: 8px; background: rgba(255, 255, 255, 0.08); }
+	.inv-sk-card b { height: 34px; width: 55%; }
+	.inv-sk-card em { height: 18px; width: 82%; }
+	.inv-sk-card u { height: 96px; width: 100%; }
+	.inv-sk-card p { margin: 4px 0 0; font-size: 13.5px; color: var(--ink-2, #c9beca); text-align: center; }
+	.inv-retry { margin-top: 12px; height: 42px; padding: 0 20px; border: 0; border-radius: 0; background: var(--ink, #fff); color: var(--bg, #110d11); font-weight: 700; box-shadow: 3px 3px 0 var(--g2, #f25a90); cursor: pointer; }
 </style>

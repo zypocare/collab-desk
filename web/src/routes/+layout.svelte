@@ -44,6 +44,7 @@
 		return () => removeEventListener('error', broken, true);
 	});
 	onMount(() => {
+		document.getElementById('app-boot')?.remove();
 		initProblems();
 		initTheme();
 		initAuth();
