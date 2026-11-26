@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
 	import { ask } from '../confirm.svelte';
 	import { igImg } from '../igImg';
 	import { igSync, linkPost, sendReport, studio, unlinkPost } from '../studio.svelte';
@@ -16,7 +17,31 @@
 	const choices = $derived(studio.media.filter((m) => !linkedIds.has(m.id)).slice(0, 20));
 	const report = $derived(c.reports[0]);
 	let busy = $state(false);
+	let syncing = $state(false);
 	let pick = $state('');
+
+	const syncedLabel = $derived.by(() => {
+		if (!ig?.synced_at) return 'Not synced yet';
+		const mins = Math.max(0, Math.round((Date.now() - Date.parse(ig.synced_at)) / 60_000));
+		if (mins < 1) return 'Updated just now';
+		if (mins < 60) return `Updated ${mins}m ago`;
+		const hrs = Math.round(mins / 60);
+		if (hrs < 24) return `Updated ${hrs}h ago`;
+		return `Updated ${fmt(ig.synced_at.slice(0, 10))}`;
+	});
+
+	async function syncNow() {
+		if (syncing) return;
+		syncing = true;
+		await igSync();
+		syncing = false;
+	}
+
+	onMount(() => {
+		if (!ig?.connected || !c.posts.length) return;
+		const ageMs = ig.synced_at ? Date.now() - Date.parse(ig.synced_at) : Infinity;
+		if (ageMs > 2 * 60_000) syncNow();
+	});
 	let failedThumbs = $state<Record<string, boolean>>({});
 
 	const label = mediaLabel;
@@ -74,6 +99,15 @@
 {#if ig?.connected && ['confirmed', 'creating', 'live', 'wrapped'].includes(c.stage)}
 	<section class="sec cp2">
 		<h3>Instagram posts {#if c.posts.length}<span>{c.posts.length} linked</span>{/if}</h3>
+
+		<div class="cp2-stack">
+		<div class="cp2-syncbar">
+			<span class="cp2-syncmeta"><i class="cp2-sdot" class:live={syncing} aria-hidden="true"></i>{syncing ? 'Fetching live Instagram numbers…' : syncedLabel}</span>
+			<button type="button" class="cp2-syncbtn" disabled={syncing} onclick={syncNow}>
+				{#if syncing}<span class="spinner"></span>{:else}<Icon name="refresh" />{/if}
+				<span>Sync live</span>
+			</button>
+		</div>
 
 		{#each c.posts as p (p.media.id)}
 			{@const m = p.media}
@@ -179,7 +213,7 @@
 					aria-label="Instagram post link"
 					bind:value={url}
 				/>
-				<button class="cp2-neo sm" type="submit" disabled={!url.trim() || finding}>
+				<button class="cp2-neo sm cp2-linkbtn" type="submit" disabled={!url.trim() || finding}>
 					{#if finding}<span class="spinner"></span>{:else}<Icon name="link" />{/if}
 					<span>Link</span>
 				</button>
@@ -201,7 +235,7 @@
 					/>
 					<button
 						type="button"
-						class="cp2-btn"
+						class="cp2-btn cp2-linkbtn"
 						disabled={!pick}
 						onclick={() => {
 							const m = studio.media.find((x) => x.id === pick);
@@ -265,14 +299,60 @@
 				</div>
 			</div>
 		{/if}
+		</div>
 	</section>
 {/if}
 
 <style>
-	.cp2 {
-		display: grid;
+	.cp2-stack {
+		display: flex;
+		flex-direction: column;
 		gap: 14px;
+		padding-top: 4px;
 	}
+	.cp2-syncbar {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 10px;
+		padding: 9px 12px;
+		border-radius: 12px;
+		border: 1px solid rgba(255, 255, 255, 0.08);
+		background: rgba(255, 255, 255, 0.03);
+	}
+	.cp2-syncmeta {
+		display: inline-flex;
+		align-items: center;
+		gap: 7px;
+		font-family: var(--mono);
+		font-size: 11.5px;
+		color: var(--ink-2);
+	}
+	.cp2-sdot {
+		width: 7px;
+		height: 7px;
+		border-radius: 999px;
+		background: #7ee8a5;
+	}
+	.cp2-sdot.live {
+		background: #f25a90;
+	}
+	.cp2-syncbtn {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		height: 30px;
+		padding: 0 10px;
+		border-radius: 8px;
+		border: 1px solid rgba(156, 123, 255, 0.34);
+		background: rgba(156, 123, 255, 0.14);
+		color: #dfd3ff;
+		font-size: 12px;
+		font-weight: 600;
+		cursor: pointer;
+	}
+	.cp2-syncbtn:disabled { opacity: 0.6; cursor: wait; }
+	.cp2-syncbtn :global(.ic) { width: 13px; height: 13px; }
 
 	/* Linked Post Card */
 	.cp2-card {
@@ -541,6 +621,8 @@
 	.cp2-rpill.ok { background: rgba(74, 222, 128, 0.14); color: #7ee8a5; }
 	.cp2-rep small { display: block; font-size: 13px; line-height: 1.45; color: var(--ink-2); }
 	.cp2-rep-acts { display: flex; flex-wrap: wrap; gap: 8px; }
+	.cp2-rep-acts > :global(*) { flex: 1 1 120px; }
+	.cp2-linkbtn { flex: none; min-width: 82px; height: 38px; }
 
 	/* Shared Buttons */
 	.cp2-btn {
