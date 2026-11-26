@@ -151,29 +151,40 @@ export const ARTICLES: Article[] = [
 	},
 	{
 		slug: 'share-your-page',
-		title: 'Your link, QR codes, media kit and fan list',
-		summary: 'Ways to share your page, and what else it can show.',
+		title: 'Your link, QR codes, bio storefront and media kit',
+		summary: 'Ways to share your page, sell digital drops or 1:1 calls with 0% fee UPI, and filter inquiries.',
 		category: 'start',
 		audience: 'creator',
-		keywords: ['qr', 'qr code', 'media kit', 'pdf', 'rate card', 'whatsapp', 'links', 'youtube', 'shop', 'fan list', 'email list', 'newsletter', 'reviews', 'results', 'share', 'story', 'instagram story', 'share to story'],
+		keywords: ['share', 'qr', 'media kit', 'pdf', 'storefront', 'upi', 'shop', 'links', 'fan list', 'budget gate', 'bio link', 'sell', 'digital product'],
 		body: [
-			{ list: ['Your link: copy it from the Your link card on My page, or Brand page on a laptop. WhatsApp my rate card sends it with your rates.', 'Share to Story: a picture of your page (photo, live numbers and link) sized for an Instagram Story. Tap Share to Story on My page or Brand page, post it, and add a Link sticker with your link.', 'QR codes: make branded codes for events and print. Each is a short link that counts scans and requests.', 'Media kit PDF: your numbers, audience and rates in one file, kept up to date from Instagram.', 'Links & fan list: add your YouTube, shop and other links (each counts taps), and show Get my updates by email so followers can join your list. Write to your list from the same screen.', 'Results & reviews: Show results from past collabs puts your best collab posts, with real views and reach, on your page, next to brands’ star reviews.'] }
+			{ p: 'Your Miracle link (yourname.miracleapp.live) works as your live media kit, rate card, booking form and creator storefront in one place.' },
+			{ list: [
+				'QR code & Share kit (My page › QR & share): download a dark or light QR card for events, pop-ups and visiting cards, or export a live PDF media kit.',
+				'Bio storefront (0% fee UPI): add digital drops, 1:1 calls, templates or affiliate picks to your page links with a price in ₹. Buyers pay directly via your UPI QR and orders land in your storefront list with zero platform commission.',
+				'Bio link budget gate: set a minimum budget in Creator OS / Bookings so brands see your floor before submitting a request.',
+				'Fan list & custom links: collect follower emails and show your featured links right below your bio.'
+			] },
+			{ tip: 'Keep your UPI ID updated in My page › Invoices & payments — Miracle only displays it on paid storefront items.' }
 		],
-		links: [{ label: 'Links & fan list', href: '/studio/settings?s=links' }, { label: 'QR codes', href: '/studio/qr' }]
+		links: [{ label: 'Share & QR', href: '/studio/qr' }, { label: 'Your page', href: '/studio/page' }, { label: 'Creator OS', href: '/studio/suite' }]
 	},
 	{
 		slug: 'agency-roster',
-		title: 'Manage several creators (Agency)',
-		summary: 'One roster for every creator you manage, your commission ledger and pitch decks.',
+		title: 'Manage several creators (Agency & live pitch decks)',
+		summary: 'One roster for every creator you manage, live interactive pitch decks, and your commission ledger.',
 		category: 'start',
 		audience: 'creator',
-		keywords: ['agency', 'manager', 'talent', 'roster', 'several creators', 'many creators', 'commission', 'ledger', 'pitch deck', 'switch'],
+		keywords: ['agency', 'manager', 'roster', 'talent', 'commission', 'pitch deck', 'deck', 'shortlist', 'multiple creators'],
 		body: [
 			{ p: 'Ask each creator to add you as a manager in My page › Team. You can manage one creator free. Managing two or more from one roster is on the Agency plan (₹4,999 a month).' },
-			{ list: ['Roster (Your Creators on My page, Roster in the laptop menu): everyone you manage, and switching between their desks in one tap.', 'Commission ledger: your cut on each deal (0–50% per creator, changeable per deal), and what is settled, over the last 12 months. It only keeps track: brands pay creators directly and no money moves through Miracle.', 'Pitch deck: pick creators for a brand and get a deck with their live followers, engagement, views, on-time record and rates.', 'Client workspaces: if you also work inside brands’ teams, each client is kept apart and you see one at a time.'] },
-			{ tip: 'Agency also gives your own brand team Brand Pro and 15 seats, and removes the “Sent with Miracle” line.' }
+			{ list: [
+				'One roster view: switch between creators, track every active collab, and log your agency commission split.',
+				'Live interactive pitch decks (/deck/...): pick creators from your roster and publish a live shareable deck link instead of a static PDF. Miracle counts brand views and lets brands shortlist creators directly with zero login.',
+				'Brand inquiries from a deck land straight in your Roster so you can convert shortlisted creators into collabs in one tap.'
+			] },
+			{ p: 'Agency also gives your own brand team Brand Pro and 15 seats, and removes the “Sent with Miracle” line.' }
 		],
-		links: [{ label: 'Your roster', href: '/studio/roster' }]
+		links: [{ label: 'Agency roster', href: '/studio/roster' }]
 	},
 
 	// ------------------------------------------------------------------ requests & collabs
@@ -207,15 +218,20 @@ export const ARTICLES: Article[] = [
 	{
 		slug: 'collab-steps',
 		title: 'A collab, step by step',
-		summary: 'The board, the next-step card, Someday, and what each stage means.',
+		summary: 'The board, the next-step card, smart contracts, negotiating nudges, and what each stage means.',
 		category: 'collabs',
 		audience: 'creator',
-		keywords: ['collab', 'board', 'stage', 'next step', 'pipeline', 'someday', 'later', 'no dates', 'shoot', 'shoot done', 'confirmed', 'live', 'wrapped', 'declined', 'cancel', 'book again'],
+		keywords: ['stages', 'board', 'new', 'negotiating', 'confirmed', 'creating', 'live', 'wrapped', 'someday', 'smart contract', 'asci', 'alert', 'nudge'],
 		body: [
-			{ p: 'Collabs is your board: New request, Negotiating, Confirmed, Creating, Live and Wrapped (and Someday). Open a collab and the big card at the top always shows the next step, such as Send quote, Shoot done, I’ve posted it, Send invoice or Send results. Everything else sits in rows (the work, the money, the brand, more) that open as sheets.' },
-			{ list: ['Shoot done: once the shoot day comes, mark it, and the next step becomes editing and sending the draft.', 'Someday: a collab that might happen but has no dates (only a request or one you’re still talking about). Keep for someday moves it out of Today, reminders and the daily summary, into its own tab. Pick a day to check back, or tap Bring it back.', 'Book again: when a collab wraps, a Book again card sends the brand your thank-you, your repeat discount and a link to book the same pieces, by email or from your WhatsApp.', 'Live and wrapped collabs lead with their results: total views and a card per post.'] }
+			{ p: 'Every collab moves through six clear stages: New request → Negotiating → Confirmed → Creating → Live → Wrapped. Open any card to see the Next step banner telling you what is due right now.' },
+			{ list: [
+				'Negotiating alerts: if a deal sits in Negotiating without movement, Miracle nudges you to follow up before the brand goes cold.',
+				'1-tap Smart Contract & ASCI checklist: once terms are agreed, both sides sign a click-wrap agreement with India ASCI disclosure checks right inside the collab.',
+				'Someday: park a brand that isn’t ready yet without cluttering your active board.'
+			] },
+			{ tip: 'Tap the stage badge inside any collab to jump stages or cancel a deal that didn’t work out.' }
 		],
-		links: [{ label: 'Collabs', href: '/studio/collabs' }]
+		links: [{ label: 'Collab board', href: '/studio/collabs' }]
 	},
 	{
 		slug: 'send-a-quote',
@@ -232,16 +248,21 @@ export const ARTICLES: Article[] = [
 	},
 	{
 		slug: 'drafts',
-		title: 'Share drafts for approval',
-		summary: 'Send your draft, get comments on the exact second, and post once approved.',
+		title: 'Share drafts for approval (or log WhatsApp & IG DM drafts)',
+		summary: 'Upload a draft for frame-accurate comments, or log drafts you sent directly on WhatsApp or Instagram DM.',
 		category: 'collabs',
 		audience: 'creator',
-		keywords: ['draft', 'approval', 'review', 'feedback', 'changes', 'video', 'upload', 'watermark', 'caption', 'revisions', 'schedule', 'disclosure'],
+		keywords: ['draft', 'approval', 'video', 'review', 'revision', 'comments', 'resolve', 'whatsapp', 'instagram dm', 'sent via', 'schedule'],
 		body: [
-			{ steps: ['On the collab, open Drafts for approval. Upload the video or photo (up to 50 MB), or paste a Drive or WeTransfer link.', 'Write the caption, or use Write with AI. Before you send shows whether your #ad disclosure is right and ticks off what the brief asked for. Tap Check it against the brief for an AI read.', 'Tap Send draft for approval.'] },
-			{ p: 'The brand watches it, leaves comments at the exact moment in the video, and approves or asks for changes. Each round is kept, and the revisions used are counted against your quote. Until they pay, brands see a watermarked preview; you can send the clean file sooner if you choose.' },
-			{ tip: 'Once approved, Schedule on Instagram can post it for you, with the brand as collaborator (needs Allow DMs and posting).' }
-		]
+			{ p: 'Open any collab and tap Share draft. You have two ways to track a round:' },
+			{ list: [
+				'Share via Miracle: upload the video/photo (up to 50 MB) or paste a Drive/WeTransfer link. The brand watches a watermarked preview, leaves timestamped comments on the exact second, and taps Approve or Ask for changes. Either side can mark individual comments resolved or reopen them.',
+				'Log a direct WhatsApp or Instagram DM draft: if you already sent the video directly on WhatsApp or Instagram DM, choose Sent on WhatsApp or Sent on Instagram DM. Miracle logs the round with no file upload and without emailing the brand again. Once they reply in chat, tap Mark approved or Changes asked right on the round.'
+			] },
+			{ p: 'Each round is saved in your history and counted against the revisions included in your quote. Once approved, Schedule on Instagram can post it for you with the brand as collaborator (needs Allow DMs and posting).' },
+			{ tip: 'Need a no-login approval link for a brand that isn’t on Miracle? Create a 1-tap approval link from Creator OS.' }
+		],
+		links: [{ label: 'Collab board', href: '/studio/collabs' }, { label: 'Creator OS', href: '/studio/suite' }]
 	},
 	{
 		slug: 'go-live',
@@ -273,17 +294,58 @@ export const ARTICLES: Article[] = [
 	},
 	{
 		slug: 'pitches',
-		title: 'Pitch brands yourself',
-		summary: 'A wishlist of brands, pitches from your own email, follow-ups, and the pitch autopilot.',
+		title: 'Pitch brands yourself (Instagram-first discovery & Wishlist)',
+		summary: 'Discover brands via Instagram collabs and hashtags, sort New vs Wishlist, and contact brands by Email or IG DM.',
 		category: 'collabs',
 		audience: 'creator',
-		keywords: ['pitch', 'pitches', 'outreach', 'wishlist', 'find brands', 'autopilot', 'cold email', 'dm brand', 'instagram dm', 'follow up'],
+		keywords: ['pitch', 'pitches', 'outreach', 'wishlist', 'autopilot', 'find brands', 'instagram', 'dm', 'email', 'new', 'hashtags', 'follow-up'],
 		body: [
-			{ p: 'Collabs › Pitches keeps the brands you want to work with. Write a pitch with Write with AI or a template and send it from your own email, with polite follow-ups after 5 and 12 days. Track each one as Sent, They replied, Won or Not now.' },
-			{ p: 'Pitch autopilot: switch it on and every morning at 8:30 Miracle finds up to 10 brands that suit you and already work with creators, using only the public business email on their own website, and writes each pitch in your voice. With Ask me first each pitch waits for your tap (or Approve all); with Fully automatic they go out one at a time between 10 AM and 6 PM. A brand is never pitched twice. Find brands now runs it straight away.' },
-			{ tip: 'Prefer Instagram? DM on Instagram copies a short message and opens the brand’s chat: paste and send it from your own account. Instagram doesn’t let any app start a chat for you.' }
+			{ p: 'Collabs › Pitches is your Outreach Studio. Brands are organised into four clear tabs — New, Wishlist, Pitched and Replied — matching the four counters at the top.' },
+			{ list: [
+				'Instagram-first discovery: Pitch autopilot and Find brands discover active brands first from your tracked peers’ Instagram collab tags, then from daily-rotated niche and city Instagram hashtags (checking IG bios and websites for public emails), and finally Google as a fallback.',
+				'New vs Wishlist: every newly discovered brand (whether email-ready or Instagram DM-only) lands in New with a clear Just found / New · Today / days-ago stamp. Tap Wishlist on any card to bookmark it for future reference — Wishlist only holds brands you deliberately save.',
+				'Contact directly: tap Approve / Email pitch to send from your own email (with automatic polite follow-ups after 5 and 12 days), tap DM on IG to copy a tailored message and open their Instagram chat, or open their @handle and website right from the card.',
+				'Manual Find brands: tap Find brands anytime to pull up to 6 fresh brands immediately (up to 30/day) while rotating hashtags so you don’t see repeats.'
+			] },
+			{ p: 'With Pitch autopilot switched on, Miracle runs every morning at 8:30 AM. Choose Ask me first to review every email pitch before it sends, or Fully automatic to queue email-ready brands one at a time between 10 AM and 6 PM. A brand is never pitched twice.' },
+			{ tip: 'Instagram doesn’t let any app start a cold DM automatically, so DM on IG copies your personalised pitch and opens the brand’s chat ready to paste and send.' }
 		],
 		links: [{ label: 'Pitches', href: '/studio/pitches' }]
+	},
+	{
+		slug: 'creator-os-suite',
+		title: 'Creator OS: 1-tap sign-offs, rate builder & brand ledger',
+		summary: 'Send no-login approval links to WhatsApp brands, calculate quotes, track payment memory, and spot viral upsells.',
+		category: 'collabs',
+		audience: 'creator',
+		keywords: ['creator os', 'suite', 'approval link', 'whatsapp', 'contract link', 'quote builder', 'rate builder', 'brand ledger', 'payment memory', 'viral upsell', 'shorts', 'ugc'],
+		body: [
+			{ p: 'Creator OS (/studio/suite) gives you four daily tools for deals that happen both inside and outside Miracle:' },
+			{ list: [
+				'1-tap off-platform approval & contract links: send a clean link over WhatsApp or Instagram DM so a brand manager can approve your draft or sign terms with zero login, while Miracle tracks the sign-off status.',
+				'Quote & rate builder: enter deliverables, usage rights and exclusivity to get a recommended charge before sending a quote.',
+				'Private Brand Payment Memory (creator-only): log how fast a brand pays, red flags or contact notes in your private ledger for future negotiations.',
+				'Multi-platform post & viral upsell tracker: track live Reels, YouTube Shorts and raw UGC assets so you know when a post outperforms and it’s time to pitch usage rights or a sequel.'
+			] }
+		],
+		links: [{ label: 'Open Creator OS', href: '/studio/suite' }]
+	},
+	{
+		slug: 'smart-contracts-asci',
+		title: '1-tap smart contracts & ASCI disclosure checklist',
+		summary: 'Lock deliverables, payment terms and India ASCI disclosure rules in one tap with a click-wrap audit trail.',
+		category: 'collabs',
+		audience: 'all',
+		keywords: ['smart contract', 'asci', 'disclosure', 'ad', 'paid partnership', 'agreement', 'sign', 'compliance', 'india'],
+		body: [
+			{ p: 'Every confirmed collaboration includes a 1-tap Smart Contract with an India ASCI (Advertising Standards Council of India) disclosure checklist — no PDF printing or manual e-sign chasing.' },
+			{ steps: [
+				'The brand sets the deliverables, timeline, usage rights and required ASCI disclosure tags (#ad, #collab, #paidpartnership, etc.) and signs in 1 tap.',
+				'The creator reviews the terms, checks off the ASCI disclosure rules and countersigns in 1 tap.',
+				'Miracle stores the timestamped click-wrap audit trail right on the collaboration so both sides can reference or download it anytime.'
+			] }
+		],
+		links: [{ label: 'Collab board', href: '/studio/collabs', side: 'creator' }, { label: 'Brand requests', href: '/brand/requests', side: 'brand' }]
 	},
 	{
 		slug: 'brands-list',
@@ -456,30 +518,134 @@ export const ARTICLES: Article[] = [
 	// ------------------------------------------------------------------ growth
 	{
 		slug: 'grow-tools',
-		title: 'Grow: check-up, reel check and more',
-		summary: 'What brings you new followers, ideas for your next reels, and collab reels with other creators.',
+		title: 'Grow: check-up, Reel studio, benchmarks, pulse & automations',
+		summary: 'All your creator growth tools in one place: Peer Benchmarks, Viral Script Studio, Golden Hour Pulse, Trend Radar and Auto-DM.',
 		category: 'grow',
 		audience: 'creator',
-		keywords: ['grow', 'followers', 'reach', 'views', 'checkup', 'check-up', 'reel check', 'ideas', 'autopilot', 'not growing', 'boost', 'collab reels', 'growth plan'],
+		keywords: ['grow', 'check-up', 'reel check', 'benchmarks', 'viral script', 'studio', 'golden hour', 'pulse', 'trend radar', 'trends', 'automations', 'auto-dm', 'collab reels'],
 		body: [
-			{ p: 'Plan › Grow (Grow on a laptop) has your tools, and your Instagram numbers and latest posts at the bottom.' },
-			{ list: ['All your insights and Audience health: see their own articles.', 'Growth check-up reads your reels and audience and says what’s holding you back. Your growth plan follows on from it.', 'Check a reel looks at a reel before you post it (hook, length, captions), then can schedule it at your best time.', 'Growth autopilot suggests three reel ideas each week from what worked, on your best days. In Auto they go straight into your Calendar.', 'What’s working: your top reels of the last 90 days.', 'Boost picks the reel worth putting money behind, with the audience and a daily budget. You pay Instagram directly.', 'Collab reels: invite another creator on Miracle to post one reel together, so both audiences see it. Let other creators invite me is in My page › Inbox, replies & alerts.'] },
-			{ p: 'Miracle never buys followers or likes.' }
+			{ p: 'Plan › Grow (Grow on a laptop) brings together your Instagram growth toolkit, live performance numbers and latest posts.' },
+			{ list: [
+				'Peer Benchmarks: track creators in your niche automatically to compare Reel views, posting cadence, format mix, Comment-to-DM magnet lift and active brand collabs.',
+				'Viral Script & Series Studio: remix your highest-share Reels into repeatable series with 0–2s scroll-stop hooks, shot sheets and DM magnets.',
+				'Golden Hour Pulse: monitor first-hour velocity right after you post and follow the Golden Hour playbook.',
+				'Trend Radar: spot rising formats in your niche and mine the questions your followers keep asking in comments.',
+				'Instagram Automations: set up Comment-to-DM keyword triggers so commenters automatically get your link or offer.',
+				'Growth check-up, Reel check & Collab Reels: audit a Reel before posting, review your monthly check-up, and find creators to co-author Reels with.'
+			] },
+			{ p: 'Miracle never buys followers or likes — every tool is built on real Instagram insights and organic retention signals.' }
 		],
-		links: [{ label: 'Grow', href: '/studio/grow' }]
+		links: [
+			{ label: 'Grow hub', href: '/studio/grow' },
+			{ label: 'Peer Benchmarks', href: '/studio/grow/benchmarks' },
+			{ label: 'Viral Script Studio', href: '/studio/grow/studio' },
+			{ label: 'Automations', href: '/studio/grow/automations' }
+		]
 	},
 	{
 		slug: 'insights',
-		title: 'All your insights, and the page brands see',
-		summary: 'Your full Instagram numbers in one screen, and the insights link you share with brands.',
+		title: 'All your insights, engagement rate formula & Top Reel',
+		summary: 'How Miracle calculates your engagement rate identically across every screen, and what brands see on your page.',
 		category: 'grow',
 		audience: 'creator',
-		keywords: ['insights', 'stats', 'engagement', 'reels engagement', 'collab reels', 'stories', 'audience', 'insights link', 'media kit', 'numbers', 'share insights'],
+		keywords: ['insights', 'engagement rate', 'formula', 'last 10', '3 days', 'saves', 'shares', 'views', 'reach', 'top reel', 'media kit', 'story'],
 		body: [
-			{ p: 'Grow › All your insights shows your full set of numbers, the same layout brands see on your insights page, even if you hide parts from them. A line says whether brands can see it.' },
-			{ list: ['Today and the profile show the share of accounts reached that interacted in the last 30 days. Detailed Insights show Reels engagement by followers.', 'Two extra tiles compare your own Reels with your collab Reels (linked to a collab, or #ad / #collab in the first line of the caption).', 'Share an insights page with brands and Show Stories are in My page › Profile & Instagram. Add your story averages by hand there if Instagram doesn’t give them.'] }
+			{ p: 'Grow › All your insights shows your full Instagram numbers in the same layout brands see on your public insights page, even if you hide certain sections from brands.' },
+			{ list: [
+				'One consistent Engagement Rate everywhere: Today, My page, Your Insights and Peer Benchmarks all use the exact same industry-standard formula — average (Likes + Comments + Shares + Saves) across your last 10 non-Story posts that are at least 3 days old, divided by your Followers × 100.',
+				'Why 3+ days old? Brand-new posts are still gathering reach and saves; waiting 3 days keeps a fresh upload from dragging down your average.',
+				'Top Reel highlight: on Today, tapping the Top Reel story ring opens your winning Reel’s cover thumbnail, posted date, linked collab brand tag, caption and a direct Instagram link.'
+			] },
+			{ tip: 'Your synced engagement rate also stays aligned on brand-facing views so brands never see a mismatched number.' }
 		],
-		links: [{ label: 'All your insights', href: '/studio/grow/insights' }, { label: 'Profile & Instagram', href: '/studio/settings?s=profile' }]
+		links: [{ label: 'All your insights', href: '/studio/grow/insights' }, { label: 'Peer Benchmarks', href: '/studio/grow/benchmarks' }]
+	},
+	{
+		slug: 'peer-benchmarks',
+		title: 'Peer Benchmarks & competitor intelligence',
+		summary: 'Track creators in your niche automatically to compare Reel views, cadence, Comment-to-DM lift and brand collabs.',
+		category: 'grow',
+		audience: 'creator',
+		keywords: ['peer', 'benchmarks', 'competitor', 'intelligence', 'reel views', 'cadence', 'ist', 'comment-to-dm', 'collab brands', 'breakout', 'playbook'],
+		body: [
+			{ p: 'Plan › Grow › Peer Benchmarks turns any public Instagram creator handle into an automated competitor dossier — no manual stats entry required.' },
+			{ list: [
+				'Side-by-side comparison: compare your Public ER, posts per week and followers against your tracked peers using the same settled 10-post formula.',
+				'Deep format & cadence breakdown: see each peer’s average Reel views, format mix, peak IST posting windows and Comment-to-DM magnet lift.',
+				'Breakout posts & brand collabs: inspect their highest-multiplier Reels (× their normal average) and the exact brand handles they recently collaborated with — which Pitch autopilot can also mine for new leads.',
+				'What to act on: Miracle turns the gap between you and your peers into concrete action cards (like setting up Auto-DM or auditing your next Reel).'
+			] },
+			{ tip: 'Tap Refresh anytime to pull fresh Instagram numbers for all tracked peers.' }
+		],
+		links: [{ label: 'Peer Benchmarks', href: '/studio/grow/benchmarks' }, { label: 'Pitches', href: '/studio/pitches' }]
+	},
+	{
+		slug: 'viral-script-studio',
+		title: 'Viral Script & Series Studio',
+		summary: 'Remix your highest-share Reels into repeatable series with 0–2s scroll-stop hooks, shot sheets and DM magnets.',
+		category: 'grow',
+		audience: 'creator',
+		keywords: ['viral script', 'script studio', 'series', 'hook', 'shot sheet', 'shot list', 'remix', 'reel script', 'pinned comment', 'dm magnet'],
+		body: [
+			{ p: 'Plan › Grow › Viral Script Studio studies your highest-share Reels and helps you turn winning angles into repeatable content series.' },
+			{ steps: [
+				'Pick a winning Reel or topic to remix into a series blueprint.',
+				'Choose a 0–2 second scroll-stop hook tailored to your niche and audience.',
+				'Follow the second-by-second shot sheet while filming, then copy the generated caption, pinned comment and Comment-to-DM magnet.'
+			] }
+		],
+		links: [{ label: 'Viral Script Studio', href: '/studio/grow/studio' }, { label: 'Content plan', href: '/studio/content' }]
+	},
+	{
+		slug: 'golden-hour-pulse',
+		title: 'Golden Hour Pulse & Trend Radar',
+		summary: 'Track first-hour Reel velocity right after posting, spot rising formats, and mine follower questions from comments.',
+		category: 'grow',
+		audience: 'creator',
+		keywords: ['golden hour', 'pulse', 'velocity', 'first hour', 'trend radar', 'trends', 'rising formats', 'follower questions', 'comments'],
+		body: [
+			{ p: 'Two focused tools in Plan › Grow help you decide what to shoot next and maximise every post right after it goes live:' },
+			{ list: [
+				'Golden Hour Pulse: tracks your post’s first-hour velocity (views, likes, comments and shares) against your baseline, gives you a Golden Hour playbook to boost early engagement, and logs past Golden Hours so you see what spikes.',
+				'Trend Radar: surfaces rising Reel formats in your niche every week (with optional weekly alerts) and pulls out “What your followers keep asking” from your comments so you never run out of high-intent video ideas.'
+			] }
+		],
+		links: [{ label: 'Golden Hour Pulse', href: '/studio/grow/pulse' }, { label: 'Trend Radar', href: '/studio/grow/trends' }]
+	},
+	{
+		slug: 'instagram-automations',
+		title: 'Instagram Automations (Comment-to-DM)',
+		summary: 'Automatically DM anyone who comments a keyword on your Reel or post with your link, code or storefront drop.',
+		category: 'grow',
+		audience: 'creator',
+		keywords: ['automations', 'auto-dm', 'comment to dm', 'comment-to-dm', 'keyword', 'trigger', 'dm magnet', 'instagram'],
+		body: [
+			{ p: 'Plan › Grow › Instagram Automations lets you turn comments into instant DMs — great for product links, affiliate picks, coupon codes or brand collab CTAs.' },
+			{ steps: [
+				'Make sure Instagram is connected with Allow DMs and posting enabled.',
+				'Open Instagram Automations, pick a post (or apply to all posts), set your trigger keyword (like “LINK” or “LOCATION”), and write the DM reply.',
+				'Switch the rule on — Miracle replies automatically whenever a follower comments your keyword and tracks how many DMs went out.'
+			] },
+			{ tip: 'Pairing a clear “Comment LINK for details” CTA with Auto-DM boosts comments during your Golden Hour and drives more clicks.' }
+		],
+		links: [{ label: 'Instagram Automations', href: '/studio/grow/automations' }]
+	},
+	{
+		slug: 'free-tools',
+		title: 'Free CPV calculator & profile review tools',
+		summary: 'Estimate Cost Per View (CPV) for creator campaigns or run an instant Instagram profile review — no sign-in needed.',
+		category: 'grow',
+		audience: 'all',
+		keywords: ['tools', 'cpv', 'calculator', 'profile review', 'rate calculator', 'engagement calculator', 'free'],
+		body: [
+			{ p: 'Miracle includes free public tools you can share with teammates, managers or brands anytime:' },
+			{ list: [
+				'CPV Calculator (/tools/cpv-calculator): enter expected Reel views and creator fee to see Cost Per View and benchmark whether a quote is fair.',
+				'Profile Review (/tools/profile-review): get a quick read on an Instagram profile’s positioning, bio clarity and collab readiness.',
+				'Rate & Engagement calculators (miracleapp.live/tools): quick sanity checks for pricing and engagement.'
+			] }
+		],
+		links: [{ label: 'CPV Calculator', href: '/tools/cpv-calculator' }, { label: 'Profile Review', href: '/tools/profile-review' }]
 	},
 	{
 		slug: 'audience-health',
@@ -541,15 +707,16 @@ export const ARTICLES: Article[] = [
 	{
 		slug: 'brand-profile-grow',
 		title: 'Your brand profile, Instagram insights and Grow',
-		summary: 'Your own Instagram numbers, what creators’ posts brought you, and ideas.',
+		summary: 'Your own Instagram numbers, what creators’ posts brought you, synced engagement metrics, and ideas.',
 		category: 'brand-setup',
 		audience: 'brand',
-		keywords: ['profile', 'brand profile', 'grow', 'insights', 'followers', 'instagram', 'sync', 'sync now', 'best time', 'creators who grow you'],
+		keywords: ['brand profile', 'instagram', 'insights', 'grow', 'sync', 'engagement rate', 'views', 'analytics'],
 		body: [
-			{ p: 'With Instagram connected, Miracle syncs your brand’s own account every night (or tap Sync now): recent posts and their numbers, the last 30 days against the 30 before, averages per format, the best time to post, follower history and your audience.' },
-			{ list: ['Brand (on a phone): your profile, with your collabs, followers and spend on creators, Quick settings, and tabs for collabs, your own posts and Made for you by creators.', 'Plan › Grow: followers over 30 days, reel views, shares and a few ideas this week from your and your creators’ numbers, plus Creators who grow you and Competitor watch.', 'All your insights adds the followers each creator’s post brought you, counted 7 days after it went live.'] }
+			{ p: 'With Instagram connected, Miracle syncs your brand’s own account every night (or tap Sync now): recent posts and their numbers, the last 30 days against the 30 before, averages per format, and what creator collaborations contributed.' },
+			{ p: 'Engagement rates across creator profiles you view in Explore, unlocked dossiers and active requests stay synced to the same settled 10-post formula (Likes + Comments + Shares + Saves on posts 3+ days old ÷ Followers), so you can compare creators apples-to-apples.' },
+			{ tip: 'Want to check a creator’s cost-per-view or profile health before reaching out? Use the free CPV Calculator and Profile Review tools.' }
 		],
-		links: [{ label: 'Grow', href: '/brand/grow' }, { label: 'All your insights', href: '/brand/grow/insights' }]
+		links: [{ label: 'Brand Grow', href: '/brand/grow' }, { label: 'Brand Insights', href: '/brand/grow/insights' }]
 	},
 	{
 		slug: 'brand-team',
@@ -621,16 +788,20 @@ export const ARTICLES: Article[] = [
 	{
 		slug: 'brand-drafts',
 		title: 'Review and approve drafts',
-		summary: 'Watch the draft, comment on the exact moment, approve or ask for changes.',
+		summary: 'Watch watermarked drafts, leave and resolve timestamped comments, or track drafts shared on WhatsApp/IG DM.',
 		category: 'brand-start',
 		audience: 'brand',
-		keywords: ['draft', 'approve', 'review', 'changes', 'feedback', 'video', 'comment', 'brief', 'watermark', 'case study'],
+		keywords: ['draft', 'review', 'approve', 'changes', 'comments', 'resolve', 'watermark', 'whatsapp', 'instagram dm', 'checklist'],
 		body: [
-			{ p: 'When a creator sends a draft, the request shows Draft for your review (Review the draft on a phone). Watch it and comment at the exact second, check it against your brief checklist, then tap Approve draft or Ask for changes. Each round is kept.' },
-			{ p: 'The preview is watermarked until the collab is paid. After the post, the creator may send a case study; nothing goes on their page until you approve it with your own line.' },
-			{ tip: 'The Draft checker autopilot can check each caption against your brief for you, and on Auto approve drafts that pass every check.' }
+			{ p: 'When a creator sends a draft inside Miracle, the request shows Draft for your review (Review the draft on a phone). Watch the video, leave comments on the exact second, check it against your brief checklist, and tap Approve or Ask for changes.' },
+			{ list: [
+				'Resolve comments: both you and the creator can mark each timestamped comment Resolved (or reopen it) so nothing gets missed between rounds.',
+				'WhatsApp & Instagram DM drafts: if a creator shared the video directly on WhatsApp or Instagram DM, they can log that round on the request so your timeline and revision count stay accurate without duplicate emails.',
+				'Draft checker autopilot: automatically checks captions against your brief (tags, hashtags, deliverables) and can auto-approve drafts that pass every check.'
+			] },
+			{ p: 'The in-app preview stays watermarked until the collab is paid. After the post goes live, the creator may send a case study; nothing goes on their public page until you approve it.' }
 		],
-		links: [{ label: 'Your requests', href: '/brand/requests' }]
+		links: [{ label: 'Requests', href: '/brand/requests' }, { label: 'Brand Growth OS', href: '/brand/suite' }]
 	},
 	{
 		slug: 'brand-book-again',
@@ -690,6 +861,25 @@ export const ARTICLES: Article[] = [
 		links: [{ label: 'Autopilots', href: '/brand/autopilots' }]
 	},
 	{
+		slug: 'brand-growth-os',
+		title: 'Brand Growth OS: sign-off links, ROI mix & bulk payouts',
+		summary: 'Share 1-tap approval links, publish your Apply to Collab page, model creator ROI, monitor live posts and export Bulk NEFT + TDS CSVs.',
+		category: 'brand-campaigns',
+		audience: 'brand',
+		keywords: ['brand growth os', 'suite', 'approval link', 'sign-off', 'apply to collab', 'roi', 'budget mix', 'monitor', 'bulk neft', 'tds', 'csv'],
+		body: [
+			{ p: 'Brand Growth OS (/brand/suite) bundles five high-leverage workflow tools for brand marketing and finance teams:' },
+			{ list: [
+				'1-tap Approval Links & Sign-off Tracker: generate a shareable link for internal stakeholders or external partners to sign off on a draft or brief without creating an account.',
+				'Apply to Collab page (/apply/yourbrand): publish an always-on inbound creator application page you can drop in your brand bio or website footer.',
+				'Budget & Creator Mix ROI Planner: model nano, micro and mid-tier creator splits against your campaign budget to forecast reach and expected ROI.',
+				'Live Post & Asset Monitor: track published creator posts and deliverables in one watchlist.',
+				'Bank-ready Bulk NEFT + TDS CSV: export a single finance-ready payout sheet with creator bank details, TDS deductions and net payable amounts.'
+			] }
+		],
+		links: [{ label: 'Open Brand Growth OS', href: '/brand/suite' }, { label: 'Campaigns', href: '/brand/campaigns' }]
+	},
+	{
 		slug: 'brand-turnaround',
 		title: 'Turnaround: who owns each step',
 		summary: 'Targets for every handoff, and reminders up the line when one runs late.',
@@ -707,31 +897,39 @@ export const ARTICLES: Article[] = [
 	// ------------------------------------------------------------------ brands: money
 	{
 		slug: 'brand-quotes',
-		title: 'Accept a quote and the agreement',
-		summary: 'Review the quote, accept with your name, download the agreement.',
+		title: 'Accept a quote, smart contracts & ASCI checklist',
+		summary: 'Review a quote, configure a 1-tap Smart Contract with India ASCI disclosure rules, and download the agreement.',
 		category: 'brand-money',
 		audience: 'brand',
-		keywords: ['quote', 'accept', 'agreement', 'contract', 'changes', 'option', 'sign', 'button not working', 'expired', 'approval'],
+		keywords: ['quote', 'accept', 'agreement', 'contract', 'smart contract', 'asci', 'disclosure', 'usage rights', 'revisions'],
 		body: [
-			{ p: 'When a creator sends a quote, open the request (Review the quote on a phone). You’ll see each option’s pieces and total, usage rights, payment terms, revisions included and how long it’s valid. Tap Accept, type your full name (and a note if you like), then Accept quote. Or tap Ask for changes and say what you’d like changed.' },
-			{ list: ['Accepting creates a simple agreement: View agreement on the request, also under Documents.', 'If your team has approvals on and the quote is over the limit, it goes to your approvers and is accepted once one says yes.', 'An expired quote can’t be accepted: ask the creator for a new one.', 'For a campaign, compare quotes side by side on its Quotes tab.'] },
-			{ tip: 'A button not responding? Refresh the page; if it still doesn’t work, raise a ticket with a screenshot.' }
-		]
+			{ p: 'When a creator sends a quote, open the request (Review the quote on a phone). You’ll see each option’s deliverables and total, usage rights, payment terms, revisions included and validity.' },
+			{ steps: [
+				'Pick the option you want and accept with your name to confirm the collaboration.',
+				'Open the 1-tap Smart Contract inside the collab to set deliverable terms, payment timeline and required India ASCI disclosure tags (#ad, #paidpartnership, etc.), then sign in 1 tap.',
+				'The creator confirms the ASCI checklist and countersigns in 1 tap, locking a timestamped click-wrap audit trail both sides can download anytime.'
+			] },
+			{ tip: 'Need to get sign-off from a stakeholder or creator outside a formal request? Create a shareable 1-tap approval link in Brand Growth OS.' }
+		],
+		links: [{ label: 'Requests', href: '/brand/requests' }, { label: 'Brand Growth OS', href: '/brand/suite' }]
 	},
 	{
 		slug: 'brand-pay',
-		title: 'Paying creators',
-		summary: 'You pay the creator directly; Miracle takes no commission.',
+		title: 'Paying creators (UPI, bank transfer & Bulk NEFT + TDS CSV)',
+		summary: 'Pay creators directly with zero commission, track GST input credit, and export bank-ready Bulk NEFT + TDS CSVs.',
 		category: 'brand-money',
 		audience: 'brand',
-		keywords: ['pay', 'payment', 'invoice', 'gst', 'tds', 'upi', 'bank', 'commission', 'mark paid', 'utr', 'due', 'overdue', 'export', 'input credit'],
+		keywords: ['pay', 'payment', 'upi', 'neft', 'bulk neft', 'tds', 'csv', 'gst', 'invoice', 'utr', 'commission'],
 		body: [
-			{ p: 'The creator sends an invoice on the request (with GST if they’re registered); it also goes to your accounts email. Pay them directly by UPI or bank transfer using the details on it, then tap I’ve paid this invoice with the UTR so they can confirm. Deduct TDS as your accountant advises.' },
-			{ p: 'Money › Payments (Money on a laptop) lists every invoice with what’s still to pay, due and overdue, and the GST you can claim this year. Tap Paid? to mark one paid with its UTR or UPI reference, and Export for a CSV. Members can’t mark invoices paid.' },
-			{ p: 'Miracle never handles the money and takes no commission. Your payment record (how quickly you pay) shows to creators, so paying on time helps you book the best ones.' },
+			{ p: 'The creator sends an invoice on the request (with GST if they’re registered); it also goes to your accounts email. Pay them directly by UPI or bank transfer using the details on the invoice.' },
+			{ list: [
+				'Single payouts: Money › Payments (Money on a laptop) lists every invoice with what’s still to pay, due and overdue, and the GST you can claim this year. Tap Paid? to record the UTR or reference number.',
+				'Bulk payouts (Brand Growth OS): paying several creators at once? Open Brand Growth OS and export a bank-ready Bulk NEFT + TDS CSV with creator bank details, net payable amounts and TDS deductions ready for your finance team.'
+			] },
+			{ p: 'Miracle never handles the money and takes no commission. Your payment speed shows to creators, so paying on time helps you book the best talent.' },
 			{ tip: 'Add your GSTIN in Settings › Billing & GST so creators’ invoices carry it and you can claim input credit.' }
 		],
-		links: [{ label: 'Payments', href: '/brand/business/money' }]
+		links: [{ label: 'Payments', href: '/brand/business/money' }, { label: 'Brand Growth OS', href: '/brand/suite' }]
 	},
 	{
 		slug: 'brand-shipping',
