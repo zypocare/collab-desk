@@ -60,6 +60,19 @@ export default {
 				return new Response(JSON.stringify({ error: (e as Error)?.message || 'Audit unavailable' }), { status: 500, headers: corsH });
 			}
 		}
+		if (url.pathname === '/api/maps/resolve') {
+			const corsH = { 'content-type': 'application/json', 'cache-control': 'no-store', 'access-control-allow-origin': '*', 'access-control-allow-methods': 'POST, OPTIONS', 'access-control-allow-headers': 'content-type' };
+			if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: corsH });
+			if (req.method !== 'POST') return new Response(JSON.stringify({ error: 'Use POST.' }), { status: 405, headers: corsH });
+			try {
+				const body = (await req.json().catch(() => ({}))) as { url?: string };
+				const out = await resolveGoogleMapsUrl(String(body.url ?? ''));
+				if (!out) return new Response(JSON.stringify({ error: 'Could not read coordinates from that Google Maps link.' }), { status: 422, headers: corsH });
+				return new Response(JSON.stringify(out), { status: 200, headers: corsH });
+			} catch (e) {
+				return new Response(JSON.stringify({ error: (e as Error)?.message || 'Could not resolve link.' }), { status: 500, headers: corsH });
+			}
+		}
 		if (!url.pathname.startsWith('/api/ai/')) return env.ASSETS.fetch(req);
 		if (req.method !== 'POST') return json({ error: 'Use POST.' }, 405);
 		try {
@@ -1712,5 +1725,93 @@ Use only facts from the page; never invent claims, ingredients, prices, offers o
 		hashtags: tags(j.hashtags, '#'),
 		mentions: tags(j.mentions, '@'),
 		link: page.url
+	};
+}
+
+async function resolveGoogleMapsUrl(raw: string): Promise<{ lat: number; lng: number; label: string; resolvedUrl: string } | null> {
+	const uMatch = raw.match(/https?:\/\/[^\s"'<>]+/i);
+	if (!uMatch) return null;
+	let parsed: URL;
+	try {
+		parsed = new URL(uMatch[0]);
+	} catch {
+		return null;
+	}
+	const host = parsed.hostname.toLowerCase();
+	const allowed =
+		host === 'maps.app.goo.gl' ||
+		host === 'goo.gl' ||
+		host === 'maps.google.com' ||
+		host === 'maps.google.co.in' ||
+		host === 'www.google.com' ||
+		host === 'google.com' ||
+		host === 'www.google.co.in' ||
+		host === 'google.co.in';
+	if (!allowed) return null;
+
+	const extractFromText = (str: string) => {
+		const pin = str.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/);
+		if (pin) return { lat: Number(pin[1]), lng: Number(pin[2]) };
+		const at = str.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+		if (at) return { lat: Number(at[1]), lng: Number(at[2]) };
+		const q = str.match(/[?&](?:q|ll|destination)=(-?\d+\.\d+)(?:,|%2C)(-?\d+\.\d+)/i);
+		if (q) return { lat: Number(q[1]), lng: Number(q[2]) };
+		const ctr = str.match(/center=(-?\d+\.\d+)(?:,|%2C)(-?\d+\.\d+)/i);
+		if (ctr) return { lat: Number(ctr[1]), lng: Number(ctr[2]) };
+		return null;
+	};
+
+	const extractNameFromUrl = (u: string) => {
+		const pm = u.match(/\/place\/([^/@?]+)/i);
+		if (!pm) return '';
+		try {
+			return decodeURIComponent(pm[1].replace(/\+/g, ' ')).trim();
+		} catch {
+			return pm[1].replace(/\+/g, ' ').trim();
+		}
+	};
+
+	let finalUrl = parsed.toString();
+	let coords = extractFromText(finalUrl);
+	let label = extractNameFromUrl(finalUrl);
+
+	if (!coords || !label) {
+		const res = await fetch(finalUrl, {
+			method: 'GET',
+			redirect: 'follow',
+			headers: {
+				'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
+				'accept-language': 'en-IN,en;q=0.9'
+			}
+		});
+		finalUrl = res.url || finalUrl;
+		if (!coords) coords = extractFromText(finalUrl);
+		if (!label) label = extractNameFromUrl(finalUrl);
+
+		if (!coords || !label) {
+			const html = (await res.text()).slice(0, 120_000);
+			if (!coords) coords = extractFromText(html);
+			if (!label) {
+				const og =
+					html.match(/property="og:title"\s+content="([^"]+)"/i) ||
+					html.match(/content="([^"]+)"\s+property="og:title"/i) ||
+					html.match(/<title>([^<]+)<\/title>/i);
+				if (og?.[1]) {
+					label = og[1]
+						.replace(/\s*[·\-–|]\s*Google Maps\s*$/i, '')
+						.replace(/&amp;/g, '&')
+						.replace(/&#39;/g, "'")
+						.trim();
+				}
+			}
+		}
+	}
+
+	if (!coords || !Number.isFinite(coords.lat) || !Number.isFinite(coords.lng)) return null;
+	return {
+		lat: +coords.lat.toFixed(6),
+		lng: +coords.lng.toFixed(6),
+		label: label || 'Pinned Google Maps location',
+		resolvedUrl: finalUrl
 	};
 }

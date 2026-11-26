@@ -3,6 +3,14 @@ import type { Collab } from './types';
 export type TravelMode = 'car' | 'bike' | 'cab' | 'public';
 export type TravelSlotId = 'morning' | 'midday' | 'golden' | 'evening';
 
+export type PlaceCandidate = {
+	lat: number;
+	lng: number;
+	name: string;
+	sub: string;
+	label: string;
+};
+
 export type TravelSlot = {
 	id: TravelSlotId;
 	short: string;
@@ -35,18 +43,86 @@ export function haversineKm(a: { lat: number; lng: number }, b: { lat: number; l
 	const s =
 		Math.sin(dLat / 2) ** 2 +
 		Math.cos((a.lat * Math.PI) / 180) * Math.cos((b.lat * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
-	return Math.max(0.5, +(2 * R * Math.asin(Math.sqrt(s))).toFixed(1));
+	return Math.max(0.2, +(2 * R * Math.asin(Math.sqrt(s))).toFixed(1));
 }
 
-/** Normalize Indian/local address strings so OSM geocoders resolve them reliably. */
-function buildGeocodeCandidates(raw: string, cityHint = ''): string[] {
-	// Collapse spacing around commas and remove dots in short abbreviations like J.P., B.T.M., H.S.R.
-	const norm = raw
+export function googleMapsSearchUrl(query: string): string {
+	const q = query.trim();
+	return q
+		? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`
+		: 'https://www.google.com/maps';
+}
+
+/** Extract a Google Maps URL even from multi-line share text ("Koteishwaram\nhttps://maps.app.goo.gl/..."). */
+export function extractMapsUrl(raw: string): string | null {
+	const m = raw.match(/https?:\/\/(?:maps\.app\.goo\.gl|goo\.gl\/maps|(?:www\.|maps\.)?google\.[a-z.]+\/maps)[^\s"'<>]*/i);
+	return m ? m[0] : null;
+}
+
+/** Resolve any pasted Google Maps link (including short maps.app.goo.gl share links) to exact pin coordinates + place name. */
+export async function resolveMapsLink(
+	raw: string
+): Promise<{ lat: number; lng: number; label: string } | null> {
+	const clean = raw.trim();
+	if (!clean) return null;
+
+	// Direct pin (!3dLAT!4dLNG) is more accurate than map center (@lat,lng)
+	const pin = clean.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/);
+	const at = clean.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+	const q = clean.match(/[?&](?:q|ll|destination)=(-?\d+\.\d+)(?:,|%2C)(-?\d+\.\d+)/i);
+	const pm = clean.match(/\/place\/([^/@?]+)/i);
+	const placeName = pm ? decodeURIComponent(pm[1].replace(/\+/g, ' ')).trim() : '';
+
+	if (pin || at || q) {
+		const m = (pin || at || q)!;
+		const firstLine = clean.split('\n')[0]?.trim();
+		const fallbackLabel = firstLine && !firstLine.startsWith('http') ? firstLine : 'Pinned Google Maps location';
+		return {
+			lat: +Number(m[1]).toFixed(6),
+			lng: +Number(m[2]).toFixed(6),
+			label: placeName || fallbackLabel
+		};
+	}
+
+	const url = extractMapsUrl(clean);
+	if (!url) return null;
+
+	// Resolve short maps.app.goo.gl / goo.gl links server-side via Miracle's Cloudflare Worker
+	try {
+		const res = await fetch('/api/maps/resolve', {
+			method: 'POST',
+			headers: { 'content-type': 'application/json' },
+			body: JSON.stringify({ url })
+		});
+		if (res.ok) {
+			const data = (await res.json()) as { lat?: number; lng?: number; label?: string };
+			if (typeof data.lat === 'number' && typeof data.lng === 'number') {
+				const firstLine = clean.split('\n')[0]?.trim();
+				const userTitle = firstLine && !firstLine.startsWith('http') ? firstLine : '';
+				return {
+					lat: data.lat,
+					lng: data.lng,
+					label: data.label && data.label !== 'Pinned Google Maps location' ? data.label : userTitle || data.label || 'Pinned Google Maps location'
+				};
+			}
+		}
+	} catch {
+		// ignore network failure
+	}
+	return null;
+}
+
+function normalizeQuery(raw: string): string {
+	return raw
 		.replace(/\s*,\s*/g, ', ')
 		.replace(/\b([A-Za-z])\.([A-Za-z])\.?(?=\s|,|$)/g, '$1$2')
 		.replace(/\b([A-Za-z])\.([A-Za-z])\.([A-Za-z])\.?(?=\s|,|$)/g, '$1$2$3')
 		.replace(/\s+/g, ' ')
 		.trim();
+}
+
+function buildGeocodeCandidates(raw: string, cityHint = ''): string[] {
+	const norm = normalizeQuery(raw);
 	const city = cityHint.trim();
 	const withCity = (q: string) =>
 		city && !q.toLowerCase().includes(city.toLowerCase()) ? `${q}, ${city}` : q;
@@ -60,13 +136,11 @@ function buildGeocodeCandidates(raw: string, cityHint = ''): string[] {
 	push(withCity(norm));
 	if (city) push(norm);
 
-	// Progressive comma fallback: "Bank Of Baroda Colony, JP Nagar 7th Phase" -> "JP Nagar 7th Phase, Bengaluru"
 	const parts = norm.split(',').map((p) => p.trim()).filter(Boolean);
 	for (let i = 1; i < parts.length; i++) {
 		push(withCity(parts.slice(i).join(', ')));
 	}
 
-	// Neighbourhood fallback: strip phase/stage/sector/block/cross/main/layout numbers
 	const simplified = norm
 		.replace(/\b\d+(?:st|nd|rd|th)?\s+(?:phase|stage|block|sector|cross|main|floor)\b/gi, '')
 		.replace(/\b(?:phase|stage|block|sector)\s+\d+\b/gi, '')
@@ -78,82 +152,114 @@ function buildGeocodeCandidates(raw: string, cityHint = ''): string[] {
 		push(withCity(simplified));
 		if (sparts.length > 1) push(withCity(sparts.slice(1).join(', ')));
 	}
-	return out.slice(0, 6);
+	return out.slice(0, 5);
 }
 
-async function queryPhoton(q: string): Promise<{ lat: number; lng: number; label: string } | null> {
+async function queryPhotonMany(q: string, bias?: { lat: number; lng: number } | null): Promise<PlaceCandidate[]> {
 	try {
-		const res = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&limit=3`, {
+		const biasParam = bias ? `&lat=${bias.lat}&lon=${bias.lng}` : '';
+		const res = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&limit=5${biasParam}`, {
 			headers: { Accept: 'application/json' }
 		});
-		if (!res.ok) return null;
+		if (!res.ok) return [];
 		const data = (await res.json()) as {
 			features?: Array<{
 				geometry?: { coordinates?: [number, number] };
-				properties?: { name?: string; district?: string; locality?: string; city?: string; state?: string };
+				properties?: { name?: string; street?: string; district?: string; locality?: string; city?: string; state?: string; country?: string };
 			}>;
 		};
-		const f = data.features?.[0];
-		const coords = f?.geometry?.coordinates;
-		if (!coords || coords.length < 2) return null;
-		const p = f.properties ?? {};
-		const labelParts = [p.name, p.locality || p.district, p.city || p.state].filter(
-			(v, i, a): v is string => !!v && a.indexOf(v) === i
-		);
-		return {
-			lat: Number(coords[1]),
-			lng: Number(coords[0]),
-			label: labelParts.slice(0, 3).join(', ') || q
-		};
+		const out: PlaceCandidate[] = [];
+		for (const f of data.features ?? []) {
+			const coords = f.geometry?.coordinates;
+			if (!coords || coords.length < 2) continue;
+			const p = f.properties ?? {};
+			const name = p.name || p.locality || p.district || p.street || q;
+			const subParts = [p.locality || p.district, p.city, p.state].filter(
+				(v, i, a): v is string => !!v && v.toLowerCase() !== name.toLowerCase() && a.indexOf(v) === i
+			);
+			const sub = subParts.slice(0, 3).join(', ');
+			out.push({
+				lat: +Number(coords[1]).toFixed(6),
+				lng: +Number(coords[0]).toFixed(6),
+				name,
+				sub,
+				label: sub ? `${name}, ${sub}` : name
+			});
+		}
+		return out;
 	} catch {
-		return null;
+		return [];
 	}
 }
 
-async function queryNominatim(q: string): Promise<{ lat: number; lng: number; label: string } | null> {
+async function queryNominatimMany(q: string): Promise<PlaceCandidate[]> {
 	try {
 		const res = await fetch(
-			`https://nominatim.openstreetmap.org/search?format=json&limit=3&addressdetails=1&q=${encodeURIComponent(q)}`,
+			`https://nominatim.openstreetmap.org/search?format=json&limit=5&addressdetails=1&q=${encodeURIComponent(q)}`,
 			{ headers: { Accept: 'application/json' } }
 		);
-		if (!res.ok) return null;
-		const rows = (await res.json()) as Array<{ lat: string; lon: string; display_name: string }>;
-		if (!rows?.length) return null;
-		const best = rows[0];
-		const label = best.display_name.split(',').slice(0, 3).join(',').trim();
-		return { lat: Number(best.lat), lng: Number(best.lon), label };
+		if (!res.ok) return [];
+		const rows = (await res.json()) as Array<{ lat: string; lon: string; display_name: string; name?: string }>;
+		return (rows ?? []).map((r) => {
+			const parts = r.display_name.split(',').map((s) => s.trim()).filter(Boolean);
+			const name = r.name || parts[0] || q;
+			const sub = parts.slice(1, 4).join(', ');
+			return {
+				lat: +Number(r.lat).toFixed(6),
+				lng: +Number(r.lon).toFixed(6),
+				name,
+				sub,
+				label: parts.slice(0, 3).join(', ')
+			};
+		});
 	} catch {
-		return null;
+		return [];
 	}
 }
 
-/** Extract coordinates from a pasted Google Maps link or geocode via Photon + OpenStreetMap Nominatim with smart fallbacks. */
+/** Search up to 5 matching places biased near the creator's Home Base so they pick the exact right venue. */
+export async function searchPlaces(
+	query: string,
+	opts?: { cityHint?: string; bias?: { lat: number; lng: number } | null }
+): Promise<PlaceCandidate[]> {
+	const clean = query.trim();
+	if (!clean) return [];
+
+	// If it's a Google Maps link, resolve it directly as a single verified candidate
+	const resolved = await resolveMapsLink(clean);
+	if (resolved) {
+		return [{ lat: resolved.lat, lng: resolved.lng, name: resolved.label, sub: 'Google Maps pin', label: resolved.label }];
+	}
+
+	const candidates = buildGeocodeCandidates(clean, opts?.cityHint ?? '');
+	const seen: PlaceCandidate[] = [];
+	const addUnique = (items: PlaceCandidate[]) => {
+		for (const item of items) {
+			const dup = seen.some((s) => haversineKm(s, item) < 0.35 && s.name.toLowerCase() === item.name.toLowerCase());
+			if (!dup) seen.push(item);
+		}
+	};
+
+	for (const cand of candidates.slice(0, 3)) {
+		const [p, n] = await Promise.all([queryPhotonMany(cand, opts?.bias), queryNominatimMany(cand)]);
+		addUnique(p);
+		addUnique(n);
+		if (seen.length >= 5) break;
+	}
+
+	if (opts?.bias) {
+		seen.sort((a, b) => haversineKm(opts.bias!, a) - haversineKm(opts.bias!, b));
+	}
+	return seen.slice(0, 5);
+}
+
+/** Single-hit geocoder (used for quick fallbacks). */
 export async function geocodePlace(
 	query: string,
 	cityHint = ''
 ): Promise<{ lat: number; lng: number; label: string } | null> {
-	const clean = query.trim();
-	if (!clean) return null;
-
-	// 1. Direct coordinates inside Google Maps URL (@lat,lng or q=lat,lng)
-	const m =
-		clean.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/) ||
-		clean.match(/[?&](?:q|ll)=(-?\d+\.\d+),(-?\d+\.\d+)/);
-	if (m) {
-		return { lat: Number(m[1]), lng: Number(m[2]), label: clean.startsWith('http') ? 'Pinned Maps location' : clean };
-	}
-
-	// 2. If a Maps URL has a place name (/place/Name+Here/), extract it for geocoding
-	let searchText = clean;
-	const pm = clean.match(/\/place\/([^/@?]+)/i);
-	if (pm) searchText = decodeURIComponent(pm[1].replace(/\+/g, ' '));
-
-	const candidates = buildGeocodeCandidates(searchText, cityHint);
-	for (const cand of candidates) {
-		const hit = (await queryPhoton(cand)) ?? (await queryNominatim(cand));
-		if (hit) return hit;
-	}
-	return null;
+	const list = await searchPlaces(query, { cityHint });
+	return list[0] ? { lat: list[0].lat, lng: list[0].lng, label: list[0].label } : null;
 }
 
 /** Reverse-geocode GPS coordinates into a short readable neighbourhood + city label. */
@@ -192,60 +298,70 @@ export async function reverseGeocode(lat: number, lng: number): Promise<string> 
 	return `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
 }
 
+/** Free OSRM road routing (with haversine 1.28x city-road fallback). */
 export async function routeDistance(
-	from: { lat: number; lng: number },
-	to: { lat: number; lng: number }
-): Promise<{ km: number; mins: number }> {
+	origin: { lat: number; lng: number },
+	dest: { lat: number; lng: number }
+): Promise<{ km: number; mins: number; source: 'osrm' | 'est' }> {
 	try {
-		const res = await fetch(
-			`https://router.project-osrm.org/route/v1/driving/${from.lng},${from.lat};${to.lng},${to.lat}?overview=false`
-		);
+		const url = `https://router.project-osrm.org/route/v1/driving/${origin.lng},${origin.lat};${dest.lng},${dest.lat}?overview=false`;
+		const res = await fetch(url);
 		if (res.ok) {
-			const j = (await res.json()) as { routes?: { distance?: number; duration?: number }[] };
-			const route = j.routes?.[0];
-			if (route?.distance && route?.duration) {
+			const data = (await res.json()) as { routes?: Array<{ distance: number; duration: number }> };
+			const r = data.routes?.[0];
+			if (r && r.distance > 0) {
 				return {
-					km: Math.max(0.5, +(route.distance / 1000).toFixed(1)),
-					mins: Math.max(8, Math.round(route.duration / 60))
+					km: Math.max(0.5, +(r.distance / 1000).toFixed(1)),
+					mins: Math.max(5, Math.round(r.duration / 60)),
+					source: 'osrm'
 				};
 			}
 		}
 	} catch {
-		/* fall back to Haversine road factor */
+		// fall through to city road factor
 	}
-	const km = Math.max(0.8, +(haversineKm(from, to) * 1.32).toFixed(1));
-	const mins = Math.max(10, Math.round((km / 22) * 60));
-	return { km, mins };
+	const straight = haversineKm(origin, dest);
+	const roadKm = +(straight * 1.28).toFixed(1);
+	return { km: roadKm, mins: Math.max(8, Math.round((roadKm / 20) * 60)), source: 'est' };
 }
 
 export function estimateTrip(
 	distKm: number,
-	offPeakMins: number | null | undefined,
-	modeKey: TravelMode = 'cab',
-	slotId: TravelSlotId = 'midday',
+	baseMins: number | null | undefined,
+	mode: TravelMode,
+	slotId: TravelSlotId,
 	bufferMins = 15
 ) {
-	const mode = TRAVEL_MODES[modeKey] ?? TRAVEL_MODES.cab;
+	const m = TRAVEL_MODES[mode] ?? TRAVEL_MODES.cab;
 	const slot = TRAVEL_SLOTS.find((s) => s.id === slotId) ?? TRAVEL_SLOTS[1];
-	const baseMin = offPeakMins && offPeakMins > 0 ? offPeakMins : Math.max(10, Math.round((distKm / mode.speedKmh) * 60));
-	const estMin = Math.round(baseMin * slot.mult);
-	const peakMin = Math.round(baseMin * 1.65);
-	const roundTripCost = Math.round(((mode.base + distKm * mode.ratePerKm) * 2) / 10) * 10;
+	const offPeakMin = baseMins && baseMins > 0 ? baseMins : Math.max(8, Math.round((distKm / m.speedKmh) * 60));
+	const estMin = Math.max(8, Math.round(offPeakMin * slot.mult));
+	const peakMin = Math.max(estMin, Math.round(offPeakMin * 1.65));
+	const oneWayCost = Math.round(m.base + distKm * m.ratePerKm);
+	const roundTripCost = oneWayCost * 2;
+	const savedVsPeak = Math.max(0, peakMin - estMin);
 
 	const advice =
 		slot.id === 'midday'
-			? `Leave around ${slot.leaveAt} (plus ${bufferMins}m buffer). You save ~${Math.max(10, peakMin - estMin)} min vs peak traffic and get natural daylight before lunch rush.`
+			? `Leave around ${slot.leaveAt} (plus ${bufferMins}m buffer). You save ~${savedVsPeak} min vs peak traffic and get natural daylight before lunch rush.`
 			: slot.id === 'golden'
-				? `Leave by ${slot.leaveAt} to catch golden-hour light and finish before the evening jam builds up.`
+				? `Leave around ${slot.leaveAt} (plus ${bufferMins}m buffer) to arrive before 4:15 PM golden light and stay ahead of the 5:30 PM jam.`
 				: slot.id === 'morning'
-					? `Morning traffic adds ~${Math.max(8, estMin - baseMin)} min. Shift to 11:30 AM if the brand is flexible.`
-					: `Peak evening traffic (~${estMin} min each way). Keep +${bufferMins}m buffer or batch with a nearby shoot.`;
+					? `Leave by ${slot.leaveAt} (plus ${bufferMins}m buffer) — office rush adds ~${estMin - offPeakMin} min. Shift to 11:30 AM if flexible.`
+					: `Evening peak adds ~${estMin - offPeakMin} min. Leave by ${slot.leaveAt} (plus ${bufferMins}m buffer) or batch with a nearby shoot.`;
 
-	return { distKm, baseMin, estMin, peakMin, roundTripCost, slot, mode, advice };
+	return { distKm, estMin, baseMin: offPeakMin, peakMin, oneWayCost, roundTripCost, savedVsPeak, slot, mode: m, advice };
 }
 
-export function mapsDirectionsUrl(origin: string, destination: string): string {
-	return `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}`;
+export function mapsDirectionsUrl(
+	origin: string | { lat: number; lng: number },
+	dest: string | { lat: number; lng: number }
+): string {
+	const fmtPoint = (p: string | { lat: number; lng: number }) =>
+		typeof p === 'string' ? p : `${p.lat},${p.lng}`;
+	const o = encodeURIComponent(fmtPoint(origin));
+	const d = encodeURIComponent(fmtPoint(dest));
+	return `https://www.google.com/maps/dir/?api=1&origin=${o}&destination=${d}&travelmode=driving`;
 }
 
 export type NearbyPair = {

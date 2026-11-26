@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { geocodePlace, reverseGeocode, TRAVEL_MODES, type TravelMode } from '#lib/travel.ts';
+	import { extractMapsUrl, googleMapsSearchUrl, resolveMapsLink, reverseGeocode, searchPlaces, TRAVEL_MODES, type PlaceCandidate, type TravelMode } from '#lib/travel.ts';
 	import { ask } from '#lib/confirm.svelte.ts';
 	import Logo from '#lib/components/Logo.svelte';
 	import { goto } from '$app/navigation';
@@ -72,16 +72,45 @@
 		if (!homeInput && (s?.home_address || s?.home_area)) homeInput = s.home_address || s.home_area || '';
 	});
 	let homeGpsBusy = $state(false);
+	let homePicks = $state<PlaceCandidate[]>([]);
+	async function applyHomePin(place: { lat: number; lng: number; label: string }) {
+		await saveSettings({ home_area: place.label, home_address: place.label, home_lat: place.lat, home_lng: place.lng });
+		homeInput = place.label;
+		homePicks = [];
+		toast(`Private Home Base pinned to ${place.label}`, 'check');
+	}
 	async function saveHomeBase() {
 		const q = homeInput.trim();
-		if (!q) return toast('Enter your home or studio area first', 'alert');
+		if (!q) return toast('Enter your area or paste a Google Maps link', 'alert');
 		homeLocating = true;
-		const geo = await geocodePlace(q, s?.city ?? '');
-		homeLocating = false;
-		if (!geo) return toast("Couldn't locate that address. Try your neighbourhood + city, or tap Use GPS.", 'alert');
-		await saveSettings({ home_area: geo.label, home_address: geo.label, home_lat: geo.lat, home_lng: geo.lng });
-		homeInput = geo.label;
-		toast('Private Home Base saved', 'check');
+		homePicks = [];
+		try {
+			if (extractMapsUrl(q) || /@-?\d+\.\d+,-?\d+\.\d+/.test(q) || /!3d-?\d+\.\d+!4d-?\d+\.\d+/.test(q)) {
+				const pin = await resolveMapsLink(q);
+				if (!pin) return toast("Couldn't read that Google Maps link. Copy the Share link from Google Maps.", 'alert');
+				await applyHomePin(pin);
+				return;
+			}
+			const hits = await searchPlaces(q, { cityHint: s?.city ?? '' });
+			if (!hits.length) return toast("Couldn't find that address. Tap Pick on Google Maps, copy the Share link and paste it here.", 'alert');
+			if (hits.length === 1) {
+				await applyHomePin(hits[0]);
+			} else {
+				homePicks = hits;
+			}
+		} finally {
+			homeLocating = false;
+		}
+	}
+	async function pasteHomeMapsLink() {
+		try {
+			const clip = (await navigator.clipboard.readText()).trim();
+			if (!clip) return toast('Clipboard is empty. Copy a Share link from Google Maps first.', 'alert');
+			homeInput = clip;
+			await saveHomeBase();
+		} catch {
+			toast('Tap the address box and paste the Google Maps link directly.', 'alert');
+		}
 	}
 	async function useGpsHomeBase() {
 		if (typeof navigator === 'undefined' || !navigator.geolocation) {
@@ -101,9 +130,15 @@
 					homeGpsBusy = false;
 				}
 			},
-			() => {
+			(err) => {
 				homeGpsBusy = false;
-				toast('Location permission denied. Type your neighbourhood + city instead.', 'alert');
+				const msg =
+					err?.code === 1
+						? 'Location permission not granted. Allow Location in app settings, or tap Save home base.'
+						: err?.code === 3
+							? 'GPS timed out. Tap Save home base to locate by address.'
+							: 'GPS signal unavailable. Tap Save home base to locate by address.';
+				toast(msg, 'alert');
 			},
 			{ enableHighAccuracy: false, timeout: 10000 }
 		);
@@ -615,12 +650,31 @@
 									/>
 									<div class="hb-actions">
 										<button type="button" class="hb-neo" disabled={homeLocating} onclick={saveHomeBase}>
-											{homeLocating ? 'Locating…' : 'Save home base'}
+											{homeLocating ? 'Locating…' : 'Find & save'}
 										</button>
 										<button type="button" class="hb-gps" disabled={homeGpsBusy} onclick={useGpsHomeBase}>
 											<Icon name="pin" />{homeGpsBusy ? 'Getting GPS…' : 'Use GPS'}
 										</button>
 									</div>
+									<div class="hb-gmaps">
+										<a class="hb-gbtn" href={googleMapsSearchUrl(homeInput.trim() || s.city || 'Bengaluru')} target="_blank" rel="noopener">
+											<Icon name="pin" />Pick on Google Maps
+										</a>
+										<button type="button" class="hb-gbtn" disabled={homeLocating} onclick={pasteHomeMapsLink}>
+											<Icon name="link" />Paste Maps link
+										</button>
+									</div>
+									{#if homePicks.length}
+										<div class="hb-picks" role="listbox" aria-label="Matching home locations">
+											<span class="hb-picks-h">Tap the exact place to pin:</span>
+											{#each homePicks as p (p.lat + ',' + p.lng + p.name)}
+												<button type="button" class="hb-pick" onclick={() => applyHomePin(p)}>
+													<b>{p.name}</b>
+													{#if p.sub}<small>{p.sub}</small>{/if}
+												</button>
+											{/each}
+										</div>
+									{/if}
 								</div>
 
 								<div class="hb-field">
@@ -717,7 +771,7 @@
 </div>
 
 <style>
-	.hb-body { display: grid; gap: 18px; padding: 4px 0 6px; }
+	.hb-body { display: grid; gap: 18px; padding: 16px 18px 20px; }
 	.hb-pinned { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 10px; background: color-mix(in srgb, #34d399 10%, transparent); border: 1px solid color-mix(in srgb, #34d399 30%, transparent); font-size: 13px; color: var(--ink); }
 	.hb-pinned :global(svg) { width: 15px; height: 15px; color: #34d399; flex-shrink: 0; }
 	.hb-field { display: grid; gap: 8px; }
@@ -735,4 +789,12 @@
 	.hb-seg4 button:last-child, .hb-seg3 button:last-child { border-right: 0; }
 	.hb-seg4 button.on, .hb-seg3 button.on { background: var(--ink); color: var(--bg); box-shadow: inset 0 -3px 0 var(--g2); }
 	.hb-note { margin: 0; font-size: 12.5px; line-height: 1.5; color: var(--muted); }
+	.hb-gmaps { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+	.hb-gbtn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 36px; padding: 0 10px; border-radius: 9px; border: 1px solid rgba(156, 123, 255, 0.28); background: rgba(156, 123, 255, 0.08); color: var(--ink); font-size: 12px; font-weight: 600; text-decoration: none; cursor: pointer; }
+	.hb-gbtn :global(svg) { width: 14px; height: 14px; color: #c8b6ff; flex-shrink: 0; }
+	.hb-picks { display: grid; gap: 6px; padding: 10px; border-radius: 10px; border: 1px solid rgba(156, 123, 255, 0.3); background: rgba(13, 10, 14, 0.65); }
+	.hb-picks-h { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #c8b6ff; }
+	.hb-pick { display: grid; gap: 2px; padding: 9px 10px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.08); background: rgba(255, 255, 255, 0.03); color: var(--ink); text-align: left; cursor: pointer; }
+	.hb-pick b { font-size: 13px; font-weight: 600; }
+	.hb-pick small { font-size: 11.5px; color: var(--muted); }
 </style>

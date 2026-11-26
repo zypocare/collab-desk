@@ -27,10 +27,11 @@
                 <data android:mimeType="text/plain" />
             </intent-filter>
 
-            <!-- WhatsApp voice note › Share › Miracle: transcribes audio and opens in Add collab (MainActivity.openShared). -->
+            <!-- WhatsApp / Gallery screenshot or voice note › Share › Miracle: opens in Add collab (MainActivity.openShared). -->
             <intent-filter android:label="Add to Miracle">
                 <action android:name="android.intent.action.SEND" />
                 <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="image/*" />
                 <data android:mimeType="audio/*" />
                 <data android:mimeType="application/ogg" />
             </intent-filter>
@@ -81,6 +82,9 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
 
     <uses-feature android:name="android.hardware.microphone" android:required="false" />
+    <uses-feature android:name="android.hardware.location.gps" android:required="false" />
 </manifest>

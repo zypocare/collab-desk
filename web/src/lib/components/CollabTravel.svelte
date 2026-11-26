@@ -4,10 +4,15 @@
 	import type { Collab } from '../types';
 	import {
 		estimateTrip,
-		geocodePlace,
+		extractMapsUrl,
+		googleMapsSearchUrl,
+		haversineKm,
 		mapsDirectionsUrl,
+		resolveMapsLink,
 		routeDistance,
+		searchPlaces,
 		TRAVEL_SLOTS,
+		type PlaceCandidate,
 		type TravelMode,
 		type TravelSlotId
 	} from '../travel';
@@ -22,12 +27,23 @@
 
 	let venueInput = $state('');
 	let locating = $state(false);
+	let candidates = $state<PlaceCandidate[]>([]);
+	let searchedEmpty = $state(false);
+	let lastCollabId = $state('');
 
 	$effect(() => {
-		venueInput = c.venue_address || c.venue_name || '';
+		if (c.id !== lastCollabId) {
+			lastCollabId = c.id;
+			venueInput = c.venue_address || c.venue_name || '';
+			candidates = [];
+			searchedEmpty = false;
+		}
 	});
 
 	const hasHome = $derived(typeof s?.home_lat === 'number' && typeof s?.home_lng === 'number');
+	const homeCoords = $derived(hasHome ? { lat: s!.home_lat!, lng: s!.home_lng! } : null);
+	const hasVenuePin = $derived(typeof c.venue_lat === 'number' && typeof c.venue_lng === 'number');
+
 	const trip = $derived(
 		typeof c.travel_km === 'number' && c.travel_km > 0
 			? estimateTrip(c.travel_km, c.travel_mins, travelMode, slotId, bufferMins)
@@ -38,10 +54,16 @@
 	const costRatio = $derived(trip && dealVal > 0 ? Math.round((trip.roundTripCost / dealVal) * 100) : 0);
 	const tightBarter = $derived(!!trip && c.type === 'barter' && (costRatio >= 30 || trip.distKm >= 12));
 
+	const mapsSearchHref = $derived(
+		googleMapsSearchUrl(
+			[venueInput.trim() || c.brand.name, s?.city || ''].filter(Boolean).join(', ')
+		)
+	);
+
 	const mapsUrl = $derived(
 		mapsDirectionsUrl(
-			s?.home_address || s?.home_area || s?.city || 'Bengaluru',
-			c.venue_address || c.venue_name || c.brand.name
+			homeCoords ?? (s?.home_address || s?.home_area || s?.city || 'Bengaluru'),
+			hasVenuePin ? { lat: c.venue_lat!, lng: c.venue_lng! } : (c.venue_address || c.venue_name || c.brand.name)
 		)
 	);
 
@@ -51,36 +73,78 @@
 		if (next === 'home') toast('Set to At home — travel advisor hidden', 'check');
 	}
 
-	async function calcVenue(e?: Event) {
-		e?.preventDefault();
-		const q = venueInput.trim();
-		if (!q) return toast('Enter the venue name or paste a Google Maps link', 'alert');
+	async function applyPin(place: { lat: number; lng: number; label: string }) {
 		locating = true;
 		try {
-			const geo = await geocodePlace(q, s?.city ?? '');
-			if (!geo) {
-				locating = false;
-				return toast("Couldn't find that location. Try adding the area name or pasting a Google Maps link.", 'alert');
-			}
 			let km: number | null = null;
 			let mins: number | null = null;
-			if (hasHome) {
-				const r = await routeDistance({ lat: s!.home_lat!, lng: s!.home_lng! }, { lat: geo.lat, lng: geo.lng });
+			if (homeCoords) {
+				const r = await routeDistance(homeCoords, { lat: place.lat, lng: place.lng });
 				km = r.km;
 				mins = r.mins;
 			}
 			await updateCollab(c.id, {
 				shoot_mode: 'location',
 				venue_name: c.brand.name,
-				venue_address: geo.label,
-				venue_lat: geo.lat,
-				venue_lng: geo.lng,
+				venue_address: place.label,
+				venue_lat: place.lat,
+				venue_lng: place.lng,
 				travel_km: km,
 				travel_mins: mins
 			});
-			toast(km ? `Distance calculated: ${km} km (~${mins} min off-peak)` : 'Venue saved. Add your Home Base in Settings → Home base & travel to calculate distance.', 'check');
+			venueInput = place.label;
+			candidates = [];
+			searchedEmpty = false;
+			toast(
+				km
+					? `Pinned ${place.label} · ${km} km (~${mins} min)`
+					: 'Venue pinned. Add your Home Base in Settings → Home base & travel to calculate distance.',
+				'check'
+			);
 		} finally {
 			locating = false;
+		}
+	}
+
+	async function searchOrResolve(e?: Event) {
+		e?.preventDefault();
+		const q = venueInput.trim();
+		if (!q) return toast('Type a venue name or paste a Google Maps share link', 'alert');
+		locating = true;
+		searchedEmpty = false;
+		candidates = [];
+		try {
+			// 1. If it's a Google Maps link (including maps.app.goo.gl), resolve pin directly
+			if (extractMapsUrl(q) || /@-?\d+\.\d+,-?\d+\.\d+/.test(q) || /!3d-?\d+\.\d+!4d-?\d+\.\d+/.test(q)) {
+				const pin = await resolveMapsLink(q);
+				if (!pin) {
+					toast("Couldn't read that Google Maps link. Copy the Share link from Google Maps and try again.", 'alert');
+					return;
+				}
+				await applyPin(pin);
+				return;
+			}
+
+			// 2. Otherwise search matching places biased near Home Base and let user pick the exact one
+			const hits = await searchPlaces(q, { cityHint: s?.city ?? '', bias: homeCoords });
+			if (!hits.length) {
+				searchedEmpty = true;
+				return;
+			}
+			candidates = hits;
+		} finally {
+			locating = false;
+		}
+	}
+
+	async function pasteMapsLink() {
+		try {
+			const clip = (await navigator.clipboard.readText()).trim();
+			if (!clip) return toast('Clipboard is empty. Copy a Share link from Google Maps first.', 'alert');
+			venueInput = clip;
+			await searchOrResolve();
+		} catch {
+			toast('Tap the box above and paste the Google Maps link directly.', 'alert');
 		}
 	}
 
@@ -120,19 +184,56 @@
 			</a>
 		{/if}
 
-		<form class="trv-form" onsubmit={calcVenue}>
+		{#if hasVenuePin && c.venue_address}
+			<div class="trv-pinned">
+				<Icon name="check" />
+				<span><b>Pinned:</b> {c.venue_address}</span>
+			</div>
+		{/if}
+
+		<form class="trv-form" onsubmit={searchOrResolve}>
 			<input
 				class="trv-inp"
 				type="text"
-				placeholder="Venue name, area, or Google Maps link…"
+				placeholder="Paste Google Maps link or search venue…"
 				aria-label="Shoot venue location"
 				bind:value={venueInput}
 			/>
 			<button type="submit" class="trv-neo sm" disabled={locating || !venueInput.trim()}>
-				{#if locating}<span class="spinner"></span>{:else}<Icon name="pin" />{/if}
-				<span>{trip ? 'Update' : 'Calculate'}</span>
+				{#if locating}<span class="spinner"></span>{:else}<Icon name="search" />{/if}
+				<span>Find</span>
 			</button>
 		</form>
+
+		<div class="trv-gmaps-row">
+			<a class="trv-gbtn" href={mapsSearchHref} target="_blank" rel="noopener">
+				<Icon name="pin" /><span>Pick on Google Maps</span>
+			</a>
+			<button type="button" class="trv-gbtn" disabled={locating} onclick={pasteMapsLink}>
+				<Icon name="link" /><span>Paste Maps link</span>
+			</button>
+		</div>
+
+		{#if candidates.length}
+			<div class="trv-picks" role="listbox" aria-label="Matching places">
+				<span class="trv-picks-h">Tap the exact place to pin:</span>
+				{#each candidates as p (p.lat + ',' + p.lng + p.name)}
+					<button type="button" class="trv-pick" disabled={locating} onclick={() => applyPin(p)}>
+						<span class="trv-pick-t">
+							<b>{p.name}</b>
+							{#if p.sub}<small>{p.sub}</small>{/if}
+						</span>
+						{#if homeCoords}
+							<em class="trv-pick-km">~{Math.round(haversineKm(homeCoords, p) * 1.25)} km</em>
+						{/if}
+					</button>
+				{/each}
+			</div>
+		{:else if searchedEmpty}
+			<div class="trv-empty">
+				<span>Couldn't find "{venueInput.trim()}" on OpenStreetMap. Tap <b>Pick on Google Maps</b> above, copy the Share link, and tap <b>Paste Maps link</b> for exact accuracy.</span>
+			</div>
+		{/if}
 
 		{#if trip}
 			<div class="trv-kpis">
@@ -203,7 +304,7 @@
 	.trv {
 		display: grid;
 		gap: 11px;
-		margin-top: 14px;
+		margin-top: 8px;
 		padding: 14px;
 		border-radius: 16px;
 		border: 1px solid rgba(156, 123, 255, 0.22);
@@ -281,6 +382,20 @@
 	.trv-warn :global(.ic) { width: 15px; height: 15px; flex: none; }
 	.trv-warn span { flex: 1; }
 
+	.trv-pinned {
+		display: flex;
+		align-items: flex-start;
+		gap: 7px;
+		padding: 8px 10px;
+		border-radius: 10px;
+		border: 1px solid rgba(52, 211, 153, 0.28);
+		background: rgba(16, 185, 129, 0.08);
+		font-size: 12.5px;
+		line-height: 1.4;
+		color: #d1fae5;
+	}
+	.trv-pinned :global(.ic) { width: 14px; height: 14px; flex: none; margin-top: 2px; color: #34d399; }
+
 	.trv-form { display: flex; gap: 8px; align-items: center; }
 	.trv-inp {
 		flex: 1;
@@ -295,6 +410,75 @@
 		outline: none;
 	}
 	.trv-inp:focus { border-color: rgba(156, 123, 255, 0.55); }
+
+	.trv-gmaps-row {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 7px;
+	}
+	.trv-gbtn {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 6px;
+		height: 34px;
+		padding: 0 10px;
+		border-radius: 9px;
+		border: 1px solid rgba(156, 123, 255, 0.28);
+		background: rgba(156, 123, 255, 0.08);
+		color: var(--ink);
+		font-size: 12px;
+		font-weight: 600;
+		text-decoration: none;
+		cursor: pointer;
+	}
+	.trv-gbtn:disabled { opacity: 0.5; cursor: not-allowed; }
+	.trv-gbtn :global(.ic) { width: 13px; height: 13px; color: #c8b6ff; flex: none; }
+
+	.trv-picks {
+		display: grid;
+		gap: 6px;
+		padding: 10px;
+		border-radius: 12px;
+		border: 1px solid rgba(156, 123, 255, 0.3);
+		background: rgba(13, 10, 14, 0.72);
+	}
+	.trv-picks-h {
+		font-family: var(--mono);
+		font-size: 10px;
+		font-weight: 700;
+		letter-spacing: 0.1em;
+		text-transform: uppercase;
+		color: #c8b6ff;
+	}
+	.trv-pick {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 10px;
+		padding: 9px 10px;
+		border-radius: 9px;
+		border: 1px solid rgba(255, 255, 255, 0.08);
+		background: rgba(255, 255, 255, 0.03);
+		color: var(--ink);
+		text-align: left;
+		cursor: pointer;
+	}
+	.trv-pick:hover { border-color: rgba(242, 90, 144, 0.45); background: rgba(242, 90, 144, 0.08); }
+	.trv-pick-t { display: grid; gap: 2px; min-width: 0; }
+	.trv-pick-t b { font-size: 13px; font-weight: 600; color: var(--ink); }
+	.trv-pick-t small { font-size: 11.5px; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+	.trv-pick-km { font-style: normal; font-family: var(--mono); font-size: 11px; color: #6ee7b7; flex: none; }
+
+	.trv-empty {
+		padding: 10px 12px;
+		border-radius: 10px;
+		border: 1px dashed rgba(251, 191, 36, 0.35);
+		background: rgba(251, 191, 36, 0.08);
+		font-size: 12.5px;
+		line-height: 1.45;
+		color: #fef3c7;
+	}
 
 	.trv-kpis { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; }
 	.trv-kpi {

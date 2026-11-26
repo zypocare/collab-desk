@@ -17,6 +17,8 @@ How to ship one:
 5. Fill in the "Build" and "Sent" lines below.
 
 ## Planned
+## 1.1.7
+-  Added Location and GPS Permission
 ## 1.1.6
 -  Added Share to miracle from whatsapp.
 -
