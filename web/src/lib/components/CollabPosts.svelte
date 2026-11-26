@@ -72,13 +72,8 @@
 </script>
 
 {#if ig?.connected && ['confirmed', 'creating', 'live', 'wrapped'].includes(c.stage)}
-	<section class="cp2">
-		<header class="cp2-head">
-			<h3>Instagram posts</h3>
-			{#if c.posts.length}
-				<span class="cp2-cnt">{c.posts.length} linked</span>
-			{/if}
-		</header>
+	<section class="sec cp2">
+		<h3>Instagram posts {#if c.posts.length}<span>{c.posts.length} linked</span>{/if}</h3>
 
 		{#each c.posts as p (p.media.id)}
 			{@const m = p.media}
@@ -277,27 +272,6 @@
 	.cp2 {
 		display: grid;
 		gap: 14px;
-	}
-	.cp2-head {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 10px;
-	}
-	.cp2-head h3 {
-		margin: 0;
-		font: 400 22px/1.1 var(--f-serif, Georgia, serif);
-		color: var(--ink);
-	}
-	.cp2-cnt {
-		font-family: var(--mono);
-		font-size: 11px;
-		font-weight: 600;
-		color: #7ee8a5;
-		padding: 3px 9px;
-		border-radius: 999px;
-		border: 1px solid rgba(74, 222, 128, 0.28);
-		background: rgba(74, 222, 128, 0.1);
 	}
 
 	/* Linked Post Card */
