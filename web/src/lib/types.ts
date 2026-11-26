@@ -119,7 +119,7 @@ export type ReelScript = {
 	made_at?: string;
 };
 
-export type BriefDetails = { message?: string; hashtags?: string[]; mentions?: string[]; link?: string; promo?: string; dos?: string; donts?: string; references?: string; cover_media_id?: string };
+export type BriefDetails = { message?: string; hashtags?: string[]; mentions?: string[]; link?: string; promo?: string; dos?: string; donts?: string; references?: string };
 
 export type PackageItem = { kind: string; qty: number };
 export type Package = { id: string; name: string; description: string; items: PackageItem[]; price: number; badge: string; active: boolean; position: number; created_at: string };
@@ -223,6 +223,15 @@ export type Collab = {
 	ad_code?: string;
 	ad_code_at?: string | null;
 	territory?: string;
+	shoot_mode?: 'home' | 'location';
+	venue_name?: string;
+	venue_address?: string;
+	venue_lat?: number | null;
+	venue_lng?: number | null;
+	travel_km?: number | null;
+	travel_mins?: number | null;
+	travel_slot?: 'morning' | 'midday' | 'golden' | 'evening';
+	leave_nudge?: boolean;
 	/** What the exclusivity covers (a category or named competitors). */
 	excl_scope?: string;
 	counter_fee: number | null;
@@ -366,6 +375,11 @@ export type Settings = {
 	/** Her birthday, day and month only (migration 181): Today's birthday card, and a wish on the day. */
 	birth_day?: number | null;
 	birth_month?: number | null;
+	home_address?: string;
+	home_lat?: number | null;
+	home_lng?: number | null;
+	travel_mode?: 'auto' | 'cab' | 'own';
+	travel_buffer_mins?: number;
 	/** Package builder on her page: brands build a package from her rates, with a discount by size. */
 	bundle_on?: boolean;
 	bundle_tiers?: BundleTier[];

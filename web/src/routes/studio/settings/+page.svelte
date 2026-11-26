@@ -65,6 +65,22 @@
 	const s = $derived(studio.settings!);
 	// Her birthday (day and month): saved once both are picked, since the database keeps them together.
 	const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+		let homeInput = $state('');
+	let homeLocating = $state(false);
+	$effect(() => {
+		if (!homeInput && s?.home_address) homeInput = s.home_address;
+	});
+	async function saveHomeBase() {
+		const q = homeInput.trim();
+		if (!q) return toast('Enter your home or studio area first', 'alert');
+		homeLocating = true;
+		const geo = await geocodePlace(q, s?.city ?? '');
+		homeLocating = false;
+		if (!geo) return toast("Couldn't locate that address. Try your neighbourhood + city.", 'alert');
+		await saveSettings({ home_address: geo.label, home_lat: geo.lat, home_lng: geo.lng });
+		homeInput = geo.label;
+		toast('Private Home Base saved', 'check');
+	}
 	let bdPending = $state<{ d: number | null; m: number | null }>({ d: null, m: null });
 	const bdMonth = $derived(bdPending.m ?? s.birth_month ?? null);
 	const bdayDays = $derived(Array.from({ length: bdMonth === 2 ? 29 : bdMonth && [4, 6, 9, 11].includes(bdMonth) ? 30 : 31 }, (_, i) => i + 1));
@@ -446,6 +462,20 @@
 										{#if s.birth_day || s.birth_month}<button class="lnk" onclick={() => ((bdPending = { d: null, m: null }), saveSettings({ birth_day: null, birth_month: null }))}>Remove</button>{/if}
 									</div>
 									<small class="hint">On your birthday your Today screen celebrates with you, and we send you a little note.</small>
+								</div>
+								<div class="f span2">
+									<span class="lbl-t">Home / Studio Base <span class="hint">(private, never shown to brands)</span></span>
+									<div style="display:flex;gap:8px;align-items:center">
+										<input class="inp" style="flex:1;min-width:0" placeholder="Area or address (e.g. Indiranagar, Bengaluru)" bind:value={homeInput} />
+										<button type="button" class="btn sm primary" disabled={homeLocating} onclick={saveHomeBase}>{homeLocating ? 'Locating…' : 'Save base'}</button>
+									</div>
+									<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:8px">
+										{#each Object.entries(TRAVEL_MODES) as [k, m] (k)}
+											<button type="button" class="btn sm" class:primary={(s.travel_mode || 'cab') === k} onclick={() => saveSettings({ travel_mode: k as TravelMode })}>{m.label}</button>
+										{/each}
+										<span class="hint" style="margin-left:auto">Leave buffer: +{s.travel_buffer_mins ?? 15}m</span>
+									</div>
+									<small class="hint">Used only to calculate on-location shoot distance, travel cost estimates and shoot-day leave nudges.</small>
 								</div>
 								<div class="f span2">
 									<span class="lbl-t">Languages you create content in</span>

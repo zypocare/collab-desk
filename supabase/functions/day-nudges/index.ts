@@ -172,7 +172,7 @@ const tooSame = (l: Line, past: Line[]) => past.some((p) => norm(p.title + ' ' +
 async function herDay(db: ReturnType<typeof admin>, creator: number, today: string, tomorrow: string, goal: number): Promise<Fact[]> {
   const { data: rows } = await db
     .from('collabs')
-    .select('id, code, stage, type, fee, pay_received, pay_status, pay_due, draft_date, shoot_date, live_date, product_date, follow_date, paid_on, brand:brands(name)')
+    .select('id, code, stage, type, fee, pay_received, pay_status, pay_due, draft_date, shoot_date, live_date, product_date, follow_date, paid_on, shoot_mode, venue_name, venue_address, travel_km, travel_mins, leave_nudge, brand:brands(name)')
     .eq('creator_id', creator)
     .eq('someday', false)
     .not('stage', 'in', '(declined,paused,cancelled)');
@@ -184,7 +184,13 @@ async function herDay(db: ReturnType<typeof admin>, creator: number, today: stri
   const d0 = at('draft_date', today);
   if (d0) facts.push({ topic: 'draft_today', prio: 100, text: `The draft for ${d0.b} is due today`, url: `/studio/c/${d0.code}`, vars: { brand: d0.b } });
   const s0 = at('shoot_date', today);
-  if (s0) facts.push({ topic: 'shoot_today', prio: 96, text: `Shoot for ${s0.b} is today`, url: `/studio/c/${s0.code}`, vars: { brand: s0.b } });
+  if (s0) {
+    const onLoc = s0.shoot_mode === 'location' && s0.leave_nudge;
+    const travelNote = onLoc
+      ? ` at ${s0.venue_address || s0.venue_name || s0.b}${s0.travel_km ? ` (${s0.travel_km} km, ~${s0.travel_mins ?? Math.round(Number(s0.travel_km) * 3)} min drive — leave early to beat traffic)` : ''}`
+      : '';
+    facts.push({ topic: 'shoot_today', prio: onLoc ? 102 : 96, text: `Shoot for ${s0.b} is today${travelNote}`, url: `/studio/c/${s0.code}`, vars: { brand: s0.b } });
+  }
   const l0 = at('live_date', today);
   if (l0) facts.push({ topic: 'live_today', prio: 95, text: `${l0.b}'s content goes live today`, url: `/studio/c/${l0.code}`, vars: { brand: l0.b } });
 

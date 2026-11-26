@@ -1,5 +1,7 @@
 <script lang="ts">
-	import { studio } from '#lib/studio.svelte.ts';
+	import { studio, updateCollab } from '#lib/studio.svelte.ts';
+	import { toast } from '#lib/ui.svelte.ts';
+	import { findNearbyPairs, type NearbyPair, type TravelMode } from '#lib/travel.ts';
 	import { contentState, hoursLeft, suggestShoot, weekOf } from '#lib/content.ts';
 	import { ui } from '#lib/ui.svelte.ts';
 	import { diff, fmt, fmtLong, latestDraft, relWord, todayIso } from '#lib/util.ts';
@@ -22,6 +24,15 @@
 	const withBrand = $derived(active.filter((x) => x.st === 'with_brand').map((x) => x.c));
 	const toPost = $derived(active.filter((x) => x.st === 'to_post').map((x) => x.c).sort((a, b) => (a.live_date ?? '9').localeCompare(b.live_date ?? '9')));
 
+	const nearbyPairs = $derived(findNearbyPairs([...toMake, ...waitingProduct], (s.travel_mode as TravelMode) || 'cab'));
+	async function batchPair(pair: NearbyPair) {
+		const targetDate = pair.a.shoot_date || pair.b.shoot_date || suggestShoot(pair.a);
+		await Promise.all([
+			updateCollab(pair.a.id, { shoot_date: targetDate }),
+			updateCollab(pair.b.id, { shoot_date: targetDate })
+		]);
+		toast(`Batched ${pair.a.brand.name} & ${pair.b.brand.name} on ${fmt(targetDate)}`, 'check');
+	}
 	const unplanned = $derived(toMake.filter((c) => !c.shoot_date).sort((a, b) => suggestShoot(a).localeCompare(suggestShoot(b))));
 	const days = $derived.by(() => {
 		const m = new Map<string, typeof toMake>();
@@ -149,6 +160,22 @@
 	<div class="ct2-grid">
 		{#if showShoots}
 			<div class="ct2-sec" id="m-shoots">
+			{#if nearbyPairs.length}
+				{#each nearbyPairs as pair (pair.a.id + pair.b.id)}
+					<section class="ct2-batch">
+						<div class="ct2-bh">
+							<span class="ct2-beb"><Icon name="pin" />Nearby shoots · {pair.gapKm} km apart</span>
+							<span class="ct2-bsave">Save ~₹{pair.savedCost} · {pair.savedMins}m</span>
+						</div>
+						<b>{pair.a.brand.name} + {pair.b.brand.name}</b>
+						<small>Shoot both on the same day to cut a second round trip across the city.</small>
+						<button type="button" class="ct2-bcta" onclick={() => batchPair(pair)}>
+							<Icon name="cal" /><span>Batch on {fmt(pair.a.shoot_date || pair.b.shoot_date || suggestShoot(pair.a))}</span>
+						</button>
+					</section>
+				{/each}
+			{/if}
+
 				{#each days.filter((d) => diff(d.date) <= 0) as d (d.date)}
 					<div class="ct2-dayh" class:late={diff(d.date) < 0} class:today={diff(d.date) === 0}>
 						<Icon name="cal" />
@@ -652,4 +679,39 @@
 		line-height: 1.4;
 		margin-top: 2px;
 	}
+
+	.ct2-batch {
+		display: grid;
+		gap: 8px;
+		padding: 14px 15px;
+		margin-bottom: 12px;
+		border-radius: 18px;
+		border: 1px solid rgba(52, 211, 153, 0.36);
+		background:
+			radial-gradient(120% 80% at 0% 0%, rgba(16, 185, 129, 0.16), transparent 60%),
+			linear-gradient(165deg, #101f1b 0%, #151118 70%);
+	}
+	.ct2-bh { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px; }
+	.ct2-beb { display: inline-flex; align-items: center; gap: 5px; font-family: var(--mono); font-size: 10.5px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #6ee7b7; }
+	.ct2-beb :global(.ic) { width: 13px; height: 13px; }
+	.ct2-bsave { font-family: var(--mono); font-size: 11px; font-weight: 700; color: #a7f3d0; padding: 2px 8px; border-radius: 999px; background: rgba(16, 185, 129, 0.16); }
+	.ct2-batch b { font: 400 21px/1.1 var(--f-serif, Georgia, serif); color: var(--ink); }
+	.ct2-batch small { font-size: 13px; color: var(--ink-2); }
+	.ct2-bcta {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 7px;
+		height: 38px;
+		padding: 0 14px;
+		width: fit-content;
+		border: 0;
+		border-radius: 0;
+		background: linear-gradient(110deg, #10b981, #34d399);
+		color: #062118;
+		font: 700 13px/1 var(--f-sans, inherit);
+		box-shadow: 3px 3px 0 #065f46;
+		cursor: pointer;
+	}
+	.ct2-bcta :global(.ic) { width: 14px; height: 14px; }
 </style>

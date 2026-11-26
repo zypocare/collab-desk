@@ -78,6 +78,7 @@
 	import Mono from './Mono.svelte';
 	import QuoteDialog from './QuoteDialog.svelte';
 	import CollabPosts from './CollabPosts.svelte';
+	import CollabTravel from './CollabTravel.svelte';
 	import LiveRecap from './LiveRecap.svelte';
 	import CollabCockpit from './CollabCockpit.svelte';
 	import { folds, openOnly } from '../folds';
@@ -901,6 +902,7 @@
 						<button class="btn sm" onclick={() => best && save('live_time', best.value)}>Use {timeLabel(best.value)}</button>
 					</div>
 				{/if}
+				<CollabTravel {c} />
 			</section>
 
 			<section data-g="work" data-ic="film" class="sec" id="sec-drafts" hidden={!sh('drafts')}>
@@ -1154,20 +1156,78 @@
 
 			<section data-g="brand" data-ic="link" class="sec" id="sec-brand" hidden={!sh('brand')}>
 				<h3>Brand access {#if c.track_sent_at}<span>link sent {fmt(c.track_sent_at.slice(0, 10))}</span>{/if}</h3>
-				<div class="trk-box">
-					<span class="lbl-t">Private tracking link</span>
-					<p class="hint" style="margin:0 0 10px">The brand sees the status, dates and what's next, without signing up. Send it in their DM or by email.</p>
-					<div class="row-btns" style="border:0;padding:0">
-						<button class="btn sm" onclick={() => c && copyText(statusMessage(c), 'Message with the link copied. Paste it in their DM')}><Icon name="copy" />Copy for DM</button>
-						<button class="btn sm ghost" onclick={() => c && copyText(trackUrl(c), 'Link copied')}><Icon name="link" />Link only</button>
-						{#if c.contact_email}<button class="btn sm primary" disabled={trackBusy} onclick={() => c && emailTrack(c)}>{#if trackBusy}<span class="spinner"></span>{:else}<Icon name="send" />{/if}{c.track_sent_at ? 'Email again' : 'Email it'}</button>{:else}<span class="hint" style="margin:0;align-self:center">Add their email below to send it by email</span>{/if}
+				<div class="ba2-stack">
+					<!-- Private Tracking Link Hero Card -->
+					<div class="ba2-card hero">
+						<div class="ba2-top">
+							<span class="ba2-eb">Private tracking link</span>
+							<span class="ba2-pill" class:ok={!!c.track_sent_at}>
+								{c.track_sent_at ? `Sent ${fmt(c.track_sent_at.slice(0, 10))}` : 'Zero-login · Live'}
+							</span>
+						</div>
+						<p class="ba2-desc">The brand sees live status, dates, drafts and what’s next without signing up.</p>
+						<div class="ba2-url">
+							<Icon name="link" />
+							<span>{trackUrl(c).replace(/^https?:\/\//, '')}</span>
+							<a href={trackUrl(c)} target="_blank" rel="noopener" aria-label="Preview brand tracking page">
+								<Icon name="eye" /><span>Preview</span>
+							</a>
+						</div>
+						<div class="ba2-acts">
+							<button type="button" class="ba2-neo" onclick={() => c && copyText(statusMessage(c), 'Message with the link copied. Paste it in their DM')}>
+								<Icon name="copy" /><span>Copy for DM</span>
+							</button>
+							<button type="button" class="ba2-btn" onclick={() => c && copyText(trackUrl(c), 'Link copied')}>
+								<Icon name="link" /><span>Link only</span>
+							</button>
+							{#if c.contact_email}
+								<button type="button" class="ba2-btn pri" disabled={trackBusy} onclick={() => c && emailTrack(c)}>
+									{#if trackBusy}<span class="spinner"></span>{:else}<Icon name="send" />{/if}
+									<span>{c.track_sent_at ? 'Email again' : 'Email it'}</span>
+								</button>
+							{/if}
+						</div>
+						{#if !c.contact_email}
+							<small class="ba2-subhint">Add the brand’s email under Brand contact to send this link by email.</small>
+						{/if}
 					</div>
-				</div>
-				<p class="hint" style="margin-top:14px">Update for the brand: shown on their tracking page.</p>
-				<textarea class="inp" id="f-note" placeholder="Draft coming your way on Friday." value={c.note_for_brand} onchange={(e) => save('note_for_brand', val(e))}></textarea>
-				<div class="switch-row" style="padding:12px 0 0;border:0">
-					<div><b>Email the brand when the stage changes</b><small>Sent to {c.contact_email || 'no email yet'}</small></div>
-					<input type="checkbox" class="tgl" checked={c.notify_brand} aria-label="Email the brand on stage changes" onchange={(e) => save('notify_brand', (e.currentTarget as HTMLInputElement).checked)} />
+
+					<!-- Live Status Update Card -->
+					<div class="ba2-card">
+						<div class="ba2-top">
+							<label class="ba2-eb" for="f-note">Live update for brand</label>
+							<small class="ba2-meta">Shown on tracking page</small>
+						</div>
+						<div class="ba2-chips">
+							{#each ['Shoot wrapped', 'Editing draft now', 'Draft coming soon', 'Ready to post'] as quick (quick)}
+								<button type="button" class="ba2-chip" class:on={c.note_for_brand === quick} onclick={() => save('note_for_brand', quick)}>{quick}</button>
+							{/each}
+						</div>
+						<textarea
+							class="ba2-ta"
+							id="f-note"
+							rows="3"
+							placeholder="e.g. Draft coming your way on Friday."
+							value={c.note_for_brand}
+							onchange={(e) => save('note_for_brand', val(e))}
+						></textarea>
+					</div>
+
+					<!-- Automatic Stage Email Toggle Card -->
+					<div class="ba2-card ba2-tglrow">
+						<span class="ba2-ic"><Icon name="mail" /></span>
+						<div class="ba2-tglbody">
+							<b>Email brand on stage changes</b>
+							<small class:missing={!c.contact_email}>{c.contact_email ? `Sends to ${c.contact_email}` : 'No brand email added yet'}</small>
+						</div>
+						<input
+							type="checkbox"
+							class="tgl"
+							checked={c.notify_brand}
+							aria-label="Email the brand on stage changes"
+							onchange={(e) => save('notify_brand', (e.currentTarget as HTMLInputElement).checked)}
+						/>
+					</div>
 				</div>
 			</section>
 
@@ -1366,4 +1426,155 @@
 	.df-dec-ok :global(.ic), .df-dec-chg :global(.ic) { width: 14px; height: 14px; }
 	.df-dec-form { display: flex; gap: 8px; align-items: center; }
 	.df-dec-form .inp { flex: 1; min-width: 0; }
+
+	/* Redesigned Brand Access Sheet */
+	.ba2-stack { display: flex; flex-direction: column; gap: 14px; padding-top: 4px; }
+	.ba2-card {
+		display: grid;
+		gap: 11px;
+		padding: 15px;
+		border-radius: 18px;
+		border: 1px solid rgba(255, 255, 255, 0.09);
+		background: var(--paper, var(--surface));
+	}
+	.ba2-card.hero {
+		border-color: rgba(156, 123, 255, 0.28);
+		background:
+			radial-gradient(120% 85% at 0% 0%, rgba(156, 123, 255, 0.16), transparent 60%),
+			radial-gradient(90% 80% at 100% 100%, rgba(242, 90, 144, 0.1), transparent 55%),
+			var(--paper, var(--surface));
+	}
+	.ba2-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+	.ba2-eb { font-family: var(--mono); font-size: 10.5px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-3); }
+	.ba2-meta { font-size: 11.5px; color: var(--ink-3); }
+	.ba2-pill {
+		font-family: var(--mono);
+		font-size: 10px;
+		font-weight: 700;
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		padding: 3px 9px;
+		border-radius: 999px;
+		border: 1px solid rgba(156, 123, 255, 0.3);
+		background: rgba(156, 123, 255, 0.12);
+		color: #d6c8ff;
+	}
+	.ba2-pill.ok { border-color: rgba(74, 222, 128, 0.32); background: rgba(74, 222, 128, 0.12); color: #7ee8a5; }
+	.ba2-desc { margin: 0; font-size: 13.5px; line-height: 1.5; color: var(--ink-2); }
+	.ba2-url {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		padding: 8px 10px;
+		border-radius: 11px;
+		border: 1px solid rgba(255, 255, 255, 0.1);
+		background: rgba(13, 10, 14, 0.65);
+	}
+	.ba2-url > :global(.ic) { width: 14px; height: 14px; flex: none; color: #c8b6ff; }
+	.ba2-url > span {
+		flex: 1;
+		min-width: 0;
+		font-family: var(--mono);
+		font-size: 11.5px;
+		color: var(--ink-2);
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+	.ba2-url a {
+		flex: none;
+		display: inline-flex;
+		align-items: center;
+		gap: 5px;
+		padding: 4px 9px;
+		border-radius: 8px;
+		background: rgba(156, 123, 255, 0.16);
+		color: #e2d8ff;
+		font-size: 12px;
+		font-weight: 600;
+		text-decoration: none;
+	}
+	.ba2-url a :global(.ic) { width: 13px; height: 13px; }
+	.ba2-acts { display: flex; flex-wrap: wrap; gap: 8px; }
+	.ba2-neo {
+		flex: 1 1 130px;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 7px;
+		height: 40px;
+		padding: 0 14px;
+		border: 0;
+		border-radius: 0;
+		background: var(--ink);
+		color: var(--bg);
+		font: 700 13.5px/1 var(--f-sans, inherit);
+		box-shadow: 3px 3px 0 var(--g2);
+		cursor: pointer;
+	}
+	.ba2-neo :global(.ic) { width: 14px; height: 14px; }
+	.ba2-btn {
+		flex: 1 1 100px;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 6px;
+		height: 40px;
+		padding: 0 12px;
+		border-radius: 10px;
+		border: 1px solid rgba(255, 255, 255, 0.13);
+		background: rgba(255, 255, 255, 0.04);
+		color: var(--ink);
+		font-size: 13px;
+		font-weight: 600;
+		cursor: pointer;
+	}
+	.ba2-btn.pri { border-color: rgba(156, 123, 255, 0.36); background: rgba(156, 123, 255, 0.15); color: #e2d8ff; }
+	.ba2-btn:disabled { opacity: 0.55; cursor: wait; }
+	.ba2-btn :global(.ic) { width: 14px; height: 14px; }
+	.ba2-subhint { font-size: 12px; color: var(--ink-3); }
+
+	.ba2-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+	.ba2-chip {
+		padding: 5px 10px;
+		border-radius: 999px;
+		border: 1px solid rgba(255, 255, 255, 0.1);
+		background: rgba(255, 255, 255, 0.04);
+		color: var(--ink-2);
+		font-size: 12px;
+		font-weight: 500;
+		cursor: pointer;
+	}
+	.ba2-chip.on { border-color: rgba(242, 90, 144, 0.48); background: rgba(242, 90, 144, 0.14); color: #fbcfe8; }
+	.ba2-ta {
+		width: 100%;
+		box-sizing: border-box;
+		padding: 12px 13px;
+		border-radius: 12px;
+		border: 1px solid rgba(255, 255, 255, 0.12);
+		background: rgba(13, 10, 14, 0.65);
+		color: var(--ink);
+		font: 400 14px/1.5 var(--f-sans, inherit);
+		resize: vertical;
+		outline: none;
+	}
+	.ba2-ta:focus { border-color: rgba(156, 123, 255, 0.55); }
+
+	.ba2-tglrow { display: flex; align-items: center; gap: 12px; }
+	.ba2-ic {
+		flex: none;
+		display: grid;
+		place-items: center;
+		width: 38px;
+		height: 38px;
+		border-radius: 11px;
+		background: rgba(156, 123, 255, 0.14);
+		border: 1px solid rgba(156, 123, 255, 0.28);
+		color: #c8b6ff;
+	}
+	.ba2-ic :global(.ic) { width: 17px; height: 17px; }
+	.ba2-tglbody { flex: 1; min-width: 0; display: grid; gap: 2px; }
+	.ba2-tglbody b { font-size: 14.5px; color: var(--ink); }
+	.ba2-tglbody small { font-size: 12.5px; color: var(--ink-2); }
+	.ba2-tglbody small.missing { color: #ffc896; }
 </style>
