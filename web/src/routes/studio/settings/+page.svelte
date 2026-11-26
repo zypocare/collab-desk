@@ -78,6 +78,11 @@
 	});
 	let homeGpsBusy = $state(false);
 	let homeMapOpen = $state(false);
+	const onLocationCollabs = $derived(
+		studio.collabs.filter(
+			(c) => c.shoot_mode === 'location' && !['wrapped', 'declined', 'cancelled'].includes(c.stage)
+		)
+	);
 	let homePicks = $state<PlaceCandidate[]>([]);
 	async function applyHomePin(place: { lat: number; lng: number; label: string }) {
 		await saveSettings({ home_area: place.label, home_address: place.label, home_lat: place.lat, home_lng: place.lng });
@@ -634,30 +639,68 @@
 					{:else if active === 'offers'}
 						<OffersSettings />
 					{:else if active === 'travel'}
-						<section class="panel rv hb-panel" style="--i:1">
-							<div class="panel-h">
-								<h2>Home / Studio Base</h2>
-								<small>private · never shown to brands</small>
-							</div>
-							<div class="hb-body">
+						<div class="hb-page rv" style="--i:1">
+							<!-- 1. Hero Card: Private Home / Studio Base -->
+							<section class="panel hb-hero">
+								<div class="hb-hero-top">
+									<div class="hb-privacy">
+										<Icon name="shield" />
+										<span>Private · never shown to brands</span>
+									</div>
+									{#if typeof s.home_lat === 'number' && typeof s.home_lng === 'number'}
+										<button
+											type="button"
+											class="hb-rm"
+											onclick={() => {
+												homeInput = '';
+												homePicks = [];
+												saveSettings({ home_area: '', home_address: '', home_lat: null, home_lng: null });
+												toast('Home Base cleared', 'check');
+											}}
+										>
+											Clear pin
+										</button>
+									{/if}
+								</div>
+
 								{#if typeof s.home_lat === 'number' && typeof s.home_lng === 'number'}
-									<div class="hb-pinned">
-										<Icon name="check" />
-										<span>Pinned: <b>{s.home_address || s.home_area}</b></span>
-										<button type="button" class="hb-rm" onclick={() => { homeInput = ''; homePicks = []; saveSettings({ home_area: '', home_address: '', home_lat: null, home_lng: null }); toast('Home Base cleared', 'check'); }}>Clear</button>
+									<div class="hb-pinned-hero">
+										<div class="hb-pin-dot" aria-hidden="true"><Icon name="pin" /></div>
+										<div class="hb-pin-meta">
+											<small>Pinned home / studio</small>
+											<h3>{s.home_address || s.home_area || 'Pinned location'}</h3>
+											<code>{s.home_lat.toFixed(4)}, {s.home_lng.toFixed(4)}</code>
+										</div>
+									</div>
+								{:else}
+									<div class="hb-empty-hero">
+										<div class="hb-pin-dot idle" aria-hidden="true"><Icon name="pin" /></div>
+										<div>
+											<h3>Set your starting point</h3>
+											<p>Calculate exact road distance, cab fares and traffic-smart leave times for every on-location shoot.</p>
+										</div>
 									</div>
 								{/if}
+
 								<div class="hb-field">
-									<label for="hb-addr">Neighbourhood or address</label>
+									<label for="hb-addr">Search neighbourhood or paste Google Maps link</label>
 									<div class="hb-inp-wrap">
 										<input
 											id="hb-addr"
 											class="hb-inp"
-											placeholder="e.g. JP Nagar 7th Phase, Bengaluru or Google Maps link"
+											placeholder="e.g. JP Nagar 7th Phase, Bengaluru"
 											bind:value={homeInput}
 										/>
 										{#if homeInput}
-											<button type="button" class="hb-clr" aria-label="Clear address" onclick={() => { homeInput = ''; homePicks = []; }}>×</button>
+											<button
+												type="button"
+												class="hb-clr"
+												aria-label="Clear address"
+												onclick={() => {
+													homeInput = '';
+													homePicks = [];
+												}}
+											>×</button>
 										{/if}
 									</div>
 									<div class="hb-actions">
@@ -670,12 +713,13 @@
 									</div>
 									<div class="hb-gmaps">
 										<button type="button" class="hb-gbtn hi" onclick={() => (homeMapOpen = true)}>
-											<Icon name="pin" />Pick on map
+											<Icon name="pin" />Pick on interactive map
 										</button>
 										<button type="button" class="hb-gbtn" disabled={homeLocating} onclick={pasteHomeMapsLink}>
 											<Icon name="link" />Paste Maps link
 										</button>
 									</div>
+
 									{#if homePicks.length}
 										<div class="hb-picks" role="listbox" aria-label="Matching home locations">
 											<span class="hb-picks-h">Tap the exact place to pin:</span>
@@ -688,36 +732,86 @@
 										</div>
 									{/if}
 								</div>
+							</section>
 
-								<div class="hb-field">
-									<span class="hb-lbl">Default travel mode</span>
-									<div class="hb-seg4" role="radiogroup" aria-label="Default travel mode">
-										{#each Object.entries(TRAVEL_MODES) as [k, m] (k)}
-											<button
-												type="button"
-												class:on={(s.travel_mode || 'cab') === k}
-												onclick={() => saveSettings({ travel_mode: k as TravelMode })}
-											>{m.label}</button>
+							<!-- 2. Transport & Cost Estimator -->
+							<section class="panel hb-card">
+								<div class="panel-h">
+									<h2>How you travel to shoots</h2>
+									<small>used for round-trip cost &amp; time</small>
+								</div>
+								<div class="hb-mode-grid" role="radiogroup" aria-label="Default travel mode">
+									{#each Object.entries(TRAVEL_MODES) as [k, m] (k)}
+										<button
+											type="button"
+											class="hb-mode-card"
+											class:on={(s.travel_mode || 'cab') === k}
+											onclick={() => saveSettings({ travel_mode: k as TravelMode })}
+										>
+											<div class="hb-mc-top">
+												<b>{m.label}</b>
+												{#if (s.travel_mode || 'cab') === k}<span class="hb-mc-dot" aria-hidden="true"></span>{/if}
+											</div>
+											<small>~₹{m.ratePerKm}/km{m.base ? ` + ₹${m.base} base` : ''} · {m.speedKmh} km/h avg</small>
+										</button>
+									{/each}
+								</div>
+							</section>
+
+							<!-- 3. Arrival Buffer -->
+							<section class="panel hb-card">
+								<div class="panel-h">
+									<h2>Arrival buffer before shoot</h2>
+									<small>added to leave-early nudges</small>
+								</div>
+								<div class="hb-buf-grid" role="radiogroup" aria-label="Arrival buffer">
+									{#each [
+										{ mins: 10, tag: 'Quick', note: 'Minimal parking time' },
+										{ mins: 15, tag: 'Ideal', note: 'Parking & setup cushion' },
+										{ mins: 25, tag: 'Relaxed', note: 'Extra gear & check-in' }
+									] as b (b.mins)}
+										<button
+											type="button"
+											class="hb-buf-card"
+											class:on={(s.travel_buffer_mins ?? 15) === b.mins}
+											onclick={() => saveSettings({ travel_buffer_mins: b.mins })}
+										>
+											<strong>+{b.mins}m</strong>
+											<span>{b.tag}</span>
+											<small>{b.note}</small>
+										</button>
+									{/each}
+								</div>
+							</section>
+
+							<!-- 4. Active On-Location Collabs -->
+							<section class="panel hb-card">
+								<div class="panel-h">
+									<h2>On-location shoots</h2>
+									<small>{onLocationCollabs.length} active</small>
+								</div>
+								{#if onLocationCollabs.length}
+									<div class="hb-shoots">
+										{#each onLocationCollabs as col (col.id)}
+											<a class="hb-shoot-row" href="/studio/collabs?open={col.id}">
+												<div class="hb-shoot-l">
+													<b>{col.brand.name}</b>
+													<small>{col.venue_address || col.venue_name || 'Location set'}</small>
+												</div>
+												<div class="hb-shoot-r">
+													{#if col.travel_km}
+														<em>{col.travel_km} km</em>
+													{/if}
+													<Icon name="chevR" />
+												</div>
+											</a>
 										{/each}
 									</div>
-								</div>
-
-								<div class="hb-field">
-									<span class="hb-lbl">Arrival buffer before shoot</span>
-									<div class="hb-seg3" role="radiogroup" aria-label="Arrival buffer">
-										{#each [10, 15, 25] as mins (mins)}
-											<button
-												type="button"
-												class:on={(s.travel_buffer_mins ?? 15) === mins}
-												onclick={() => saveSettings({ travel_buffer_mins: mins })}
-											>+{mins} min</button>
-										{/each}
-									</div>
-								</div>
-
-								<p class="hb-note">Used only to calculate road distance, travel cost estimates and shoot-day leave reminders for on-location collabs.</p>
-							</div>
-						</section>
+								{:else}
+									<p class="hb-note">No collabs marked on-location yet. Open any collab under <b>Work → Shoot location &amp; travel</b> and switch to <b>On-location</b>.</p>
+								{/if}
+							</section>
+						</div>
 					{:else if active === 'autopilot'}
 						<AutopilotSettings />
 						<CommentDmSettings />
@@ -798,35 +892,143 @@
 {/if}
 
 <style>
-	.hb-body { display: grid; gap: 18px; padding: 16px 18px 20px; }
-	.hb-pinned { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 10px; background: color-mix(in srgb, #34d399 10%, transparent); border: 1px solid color-mix(in srgb, #34d399 30%, transparent); font-size: 13px; color: var(--ink); }
-	.hb-pinned :global(svg) { width: 15px; height: 15px; color: #34d399; flex-shrink: 0; }
-	.hb-field { display: grid; gap: 8px; }
-	.hb-field label, .hb-lbl { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+	.hb-page { display: grid; gap: 14px; padding-bottom: 18px; }
+	.hb-hero {
+		padding: 18px;
+		display: grid;
+		gap: 16px;
+		background:
+			radial-gradient(120% 80% at 0% 0%, rgba(156, 123, 255, 0.14), transparent 58%),
+			radial-gradient(90% 70% at 100% 100%, rgba(242, 90, 144, 0.08), transparent 60%),
+			var(--surface, #161116);
+		border: 1px solid rgba(156, 123, 255, 0.25);
+	}
+	.hb-hero-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+	.hb-privacy { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--muted); }
+	.hb-privacy :global(svg) { width: 14px; height: 14px; color: #c8b6ff; }
+	.hb-rm { border: 0; background: transparent; color: #fda4af; font-size: 12px; font-weight: 600; text-decoration: underline; cursor: pointer; flex-shrink: 0; }
+
+	.hb-pinned-hero, .hb-empty-hero {
+		display: flex;
+		align-items: flex-start;
+		gap: 12px;
+		padding: 14px;
+		border-radius: 14px;
+		border: 1px solid rgba(52, 211, 153, 0.28);
+		background: rgba(16, 185, 129, 0.08);
+	}
+	.hb-empty-hero {
+		border-style: dashed;
+		border-color: rgba(156, 123, 255, 0.35);
+		background: rgba(156, 123, 255, 0.06);
+	}
+	.hb-pin-dot {
+		width: 38px;
+		height: 38px;
+		border-radius: 11px;
+		background: rgba(52, 211, 153, 0.18);
+		border: 1px solid rgba(52, 211, 153, 0.4);
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		flex-shrink: 0;
+	}
+	.hb-pin-dot :global(svg) { width: 18px; height: 18px; color: #6ee7b7; }
+	.hb-pin-dot.idle { background: rgba(156, 123, 255, 0.16); border-color: rgba(156, 123, 255, 0.38); }
+	.hb-pin-dot.idle :global(svg) { color: #c8b6ff; }
+	.hb-pin-meta { display: grid; gap: 3px; min-width: 0; }
+	.hb-pin-meta small { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #6ee7b7; }
+	.hb-pinned-hero h3, .hb-empty-hero h3 { margin: 0; font: 400 20px/1.2 var(--f-serif, Georgia, serif); color: var(--ink); overflow-wrap: anywhere; }
+	.hb-pin-meta code { font-family: var(--mono); font-size: 11.5px; color: var(--muted); }
+	.hb-empty-hero p { margin: 4px 0 0; font-size: 13px; line-height: 1.45; color: var(--muted); }
+
+	.hb-field { display: grid; gap: 9px; }
+	.hb-field label { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
 	.hb-inp-wrap { position: relative; display: flex; align-items: center; min-width: 0; }
-	.hb-inp { width: 100%; min-width: 0; padding: 12px 38px 12px 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface, #161116); color: var(--ink); font-size: 14.5px; outline: none; }
-	.hb-clr { position: absolute; right: 8px; width: 26px; height: 26px; border: 0; border-radius: 999px; background: rgba(255, 255, 255, 0.1); color: var(--muted); font-size: 17px; line-height: 1; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
-	.hb-pinned span { flex: 1; min-width: 0; overflow-wrap: anywhere; word-break: break-word; }
-	.hb-rm { border: 0; background: transparent; color: var(--muted); font-size: 12px; font-weight: 600; text-decoration: underline; cursor: pointer; flex-shrink: 0; }
+	.hb-inp { width: 100%; min-width: 0; padding: 12px 38px 12px 14px; border-radius: 10px; border: 1px solid var(--line); background: #0d0a0e; color: var(--ink); font-size: 14.5px; outline: none; }
 	.hb-inp:focus { border-color: var(--g1); }
+	.hb-clr { position: absolute; right: 8px; width: 26px; height: 26px; border: 0; border-radius: 999px; background: rgba(255, 255, 255, 0.1); color: var(--muted); font-size: 17px; line-height: 1; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
+
 	.hb-actions { display: flex; gap: 10px; flex-wrap: wrap; }
-	.hb-neo { flex: 1; min-width: 140px; padding: 11px 16px; border: 0; border-radius: 0; background: var(--ink); color: var(--bg); font-size: 13px; font-weight: 700; letter-spacing: 0.02em; box-shadow: 3px 3px 0 var(--g2); cursor: pointer; }
+	.hb-neo { flex: 1; min-width: 140px; padding: 12px 16px; border: 0; border-radius: 0; background: var(--ink); color: var(--bg); font-size: 13.5px; font-weight: 700; letter-spacing: 0.02em; box-shadow: 3px 3px 0 var(--g2); cursor: pointer; }
 	.hb-neo:disabled { opacity: 0.55; cursor: wait; }
-	.hb-gps { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 11px 14px; border-radius: 0; border: 1px solid var(--line); background: transparent; color: var(--ink); font-size: 13px; font-weight: 600; cursor: pointer; }
+	.hb-gps { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 12px 14px; border-radius: 0; border: 1px solid var(--line); background: transparent; color: var(--ink); font-size: 13px; font-weight: 600; cursor: pointer; }
 	.hb-gps :global(svg) { width: 15px; height: 15px; }
-	.hb-seg4 { display: grid; grid-template-columns: repeat(4, 1fr); border: 1px solid var(--line); }
-	.hb-seg3 { display: grid; grid-template-columns: repeat(3, 1fr); border: 1px solid var(--line); }
-	.hb-seg4 button, .hb-seg3 button { padding: 10px 6px; border: 0; border-right: 1px solid var(--line); background: transparent; color: var(--muted); font-size: 12.5px; font-weight: 600; cursor: pointer; transition: background 0.15s, color 0.15s; }
-	.hb-seg4 button:last-child, .hb-seg3 button:last-child { border-right: 0; }
-	.hb-seg4 button.on, .hb-seg3 button.on { background: var(--ink); color: var(--bg); box-shadow: inset 0 -3px 0 var(--g2); }
-	.hb-note { margin: 0; font-size: 12.5px; line-height: 1.5; color: var(--muted); }
+
 	.hb-gmaps { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+	.hb-gbtn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 38px; padding: 0 10px; border-radius: 10px; border: 1px solid rgba(156, 123, 255, 0.28); background: rgba(156, 123, 255, 0.08); color: var(--ink); font-size: 12.5px; font-weight: 600; text-decoration: none; cursor: pointer; }
 	.hb-gbtn.hi { border-color: rgba(242, 90, 144, 0.42); background: rgba(242, 90, 144, 0.12); }
-	.hb-gbtn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 36px; padding: 0 10px; border-radius: 9px; border: 1px solid rgba(156, 123, 255, 0.28); background: rgba(156, 123, 255, 0.08); color: var(--ink); font-size: 12px; font-weight: 600; text-decoration: none; cursor: pointer; }
 	.hb-gbtn :global(svg) { width: 14px; height: 14px; color: #c8b6ff; flex-shrink: 0; }
-	.hb-picks { display: grid; gap: 6px; padding: 10px; border-radius: 10px; border: 1px solid rgba(156, 123, 255, 0.3); background: rgba(13, 10, 14, 0.65); }
+
+	.hb-picks { display: grid; gap: 6px; padding: 10px; border-radius: 12px; border: 1px solid rgba(156, 123, 255, 0.3); background: rgba(13, 10, 14, 0.72); }
 	.hb-picks-h { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #c8b6ff; }
 	.hb-pick { display: grid; gap: 2px; padding: 9px 10px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.08); background: rgba(255, 255, 255, 0.03); color: var(--ink); text-align: left; cursor: pointer; }
 	.hb-pick b { font-size: 13px; font-weight: 600; }
 	.hb-pick small { font-size: 11.5px; color: var(--muted); }
+
+	.hb-card { padding: 16px 18px; display: grid; gap: 12px; }
+	.hb-mode-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+	.hb-mode-card {
+		display: grid;
+		gap: 4px;
+		padding: 12px 13px;
+		border-radius: 12px;
+		border: 1px solid var(--line);
+		background: rgba(255, 255, 255, 0.02);
+		color: var(--ink);
+		text-align: left;
+		cursor: pointer;
+	}
+	.hb-mode-card.on {
+		border-color: var(--g2);
+		background: rgba(242, 90, 144, 0.1);
+		box-shadow: inset 0 -3px 0 var(--g2);
+	}
+	.hb-mc-top { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+	.hb-mc-top b { font-size: 13.5px; font-weight: 700; }
+	.hb-mc-dot { width: 8px; height: 8px; border-radius: 999px; background: var(--g2); }
+	.hb-mode-card small { font-size: 11.5px; color: var(--muted); line-height: 1.35; }
+
+	.hb-buf-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+	.hb-buf-card {
+		display: grid;
+		gap: 2px;
+		padding: 11px 10px;
+		border-radius: 12px;
+		border: 1px solid var(--line);
+		background: rgba(255, 255, 255, 0.02);
+		color: var(--ink);
+		text-align: left;
+		cursor: pointer;
+	}
+	.hb-buf-card.on {
+		border-color: var(--g1);
+		background: rgba(156, 123, 255, 0.12);
+		box-shadow: inset 0 -3px 0 var(--g1);
+	}
+	.hb-buf-card strong { font: 400 20px/1.1 var(--f-serif, Georgia, serif); }
+	.hb-buf-card span { font-size: 12px; font-weight: 600; color: var(--ink); }
+	.hb-buf-card small { font-size: 11px; color: var(--muted); line-height: 1.3; }
+
+	.hb-shoots { display: grid; gap: 8px; }
+	.hb-shoot-row {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 10px;
+		padding: 11px 12px;
+		border-radius: 11px;
+		border: 1px solid var(--line);
+		background: rgba(255, 255, 255, 0.02);
+		text-decoration: none;
+		color: var(--ink);
+	}
+	.hb-shoot-l { display: grid; gap: 2px; min-width: 0; }
+	.hb-shoot-l b { font-size: 13.5px; }
+	.hb-shoot-l small { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+	.hb-shoot-r { display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0; }
+	.hb-shoot-r em { font-style: normal; font-family: var(--mono); font-size: 11.5px; color: #6ee7b7; }
+	.hb-shoot-r :global(svg) { width: 15px; height: 15px; color: var(--muted); }
+
+	.hb-note { margin: 0; font-size: 13px; line-height: 1.5; color: var(--muted); }
 </style>
