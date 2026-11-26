@@ -25,6 +25,23 @@
 			} catch {
 				/* opens empty */
 			}
+		} else if (q.has('nativeAudio')) {
+			try {
+				const bridge = (window as unknown as { MiracleShare?: { consumeSharedAudio?: () => string } }).MiracleShare;
+				const raw = bridge?.consumeSharedAudio?.() ?? '';
+				if (raw) {
+					const payload = JSON.parse(raw) as { name?: string; mime?: string; data?: string };
+					if (payload.data) {
+						const bin = atob(payload.data);
+						const bytes = new Uint8Array(bin.length);
+						for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+						const mime = payload.mime || 'audio/ogg';
+						ui.pasteAudio = new File([bytes], payload.name || 'shared-voice-note.ogg', { type: mime });
+					}
+				}
+			} catch {
+				/* opens empty */
+			}
 		} else ui.pasteText = [q.get('title'), q.get('text'), q.get('url')].filter(Boolean).join('\n').trim();
 		ui.newCollab = true;
 		goto('/studio/collabs', { replaceState: true });

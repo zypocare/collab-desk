@@ -15,11 +15,13 @@ import androidx.activity.EdgeToEdge;
 import androidx.activity.SystemBarStyle;
 import com.getcapacitor.BridgeActivity;
 import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
 public class MainActivity extends BridgeActivity {
     private volatile String pendingSharedReelJson = null;
+    private volatile String pendingSharedAudioJson = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -50,6 +52,13 @@ public class MainActivity extends BridgeActivity {
         public String consumeSharedReel() {
             String out = pendingSharedReelJson;
             pendingSharedReelJson = null;
+            return out != null ? out : "";
+        }
+
+        @JavascriptInterface
+        public String consumeSharedAudio() {
+            String out = pendingSharedAudioJson;
+            pendingSharedAudioJson = null;
             return out != null ? out : "";
         }
     }
@@ -92,6 +101,22 @@ public class MainActivity extends BridgeActivity {
             String url = link.build().toString();
             web.post(() -> web.loadUrl(url));
             intent.setAction(Intent.ACTION_MAIN);
+            return;
+        }
+
+        if (type.startsWith("audio/") || "application/ogg".equals(type)) {
+            Uri audioUri = intent.getParcelableExtra(Intent.EXTRA_STREAM);
+            if (audioUri == null) return;
+            intent.setAction(Intent.ACTION_MAIN);
+            final String base = resolveBaseUrl(web);
+            final String mime = type;
+            new Thread(() -> {
+                String payload = extractAudioPayload(audioUri, mime);
+                if (payload == null) return;
+                pendingSharedAudioJson = payload;
+                String url = base + "/studio/share?nativeAudio=1&t=" + System.currentTimeMillis();
+                web.post(() -> web.loadUrl(url));
+            }).start();
             return;
         }
 
@@ -167,6 +192,37 @@ public class MainActivity extends BridgeActivity {
             return null;
         } finally {
             try { mmr.release(); } catch (Exception ignored) {}
+        }
+    }
+
+    private String extractAudioPayload(Uri uri, String intentMime) {
+        final int MAX_BYTES = 4_800_000;
+        try (InputStream in = getContentResolver().openInputStream(uri)) {
+            if (in == null) return null;
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            byte[] buf = new byte[16384];
+            int total = 0;
+            int n;
+            while ((n = in.read(buf)) != -1) {
+                total += n;
+                if (total > MAX_BYTES) return null;
+                baos.write(buf, 0, n);
+            }
+            if (total == 0) return null;
+            String mime = getContentResolver().getType(uri);
+            if (mime == null || mime.isEmpty() || "application/octet-stream".equals(mime)) {
+                mime = (intentMime != null && !intentMime.isEmpty()) ? intentMime : "audio/ogg";
+            }
+            if ("application/ogg".equals(mime)) mime = "audio/ogg";
+            String name = queryDisplayName(uri);
+            if ("Edits Reel.mp4".equals(name)) name = "shared-voice-note.ogg";
+            JSONObject out = new JSONObject();
+            out.put("name", name);
+            out.put("mime", mime);
+            out.put("data", Base64.encodeToString(baos.toByteArray(), Base64.NO_WRAP));
+            return out.toString();
+        } catch (Exception e) {
+            return null;
         }
     }
 }

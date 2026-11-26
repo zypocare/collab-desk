@@ -17,7 +17,8 @@ How to ship one:
 5. Fill in the "Build" and "Sent" lines below.
 
 ## Planned
-
+## 1.1.6
+-  Added Share to miracle from whatsapp.
 -
 ## 1.1.5
 -  Fixed Dual Header in Android App

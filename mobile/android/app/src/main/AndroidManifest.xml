@@ -27,6 +27,14 @@
                 <data android:mimeType="text/plain" />
             </intent-filter>
 
+            <!-- WhatsApp voice note › Share › Miracle: transcribes audio and opens in Add collab (MainActivity.openShared). -->
+            <intent-filter android:label="Add to Miracle">
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="audio/*" />
+                <data android:mimeType="application/ogg" />
+            </intent-filter>
+
             <!-- Instagram Edits / CapCut / VN / Gallery › Share › Check Reel in Miracle: opens /studio/grow/check. -->
             <intent-filter android:label="Check Reel in Miracle">
                 <action android:name="android.intent.action.SEND" />
