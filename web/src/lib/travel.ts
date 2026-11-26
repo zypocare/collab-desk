@@ -1,4 +1,5 @@
 import type { Collab } from './types';
+import { supabase } from './supabase';
 
 export type TravelMode = 'car' | 'bike' | 'cab' | 'public';
 export type TravelSlotId = 'morning' | 'midday' | 'golden' | 'evening';
@@ -136,6 +137,35 @@ export async function resolveMapsLink(
 	const url = extractMapsUrl(clean);
 	if (!url) return null;
 
+	// Layer 0: Native Android bridge (runs on the phone's own IP — Google Maps never blocks it)
+	try {
+		const bridge = (window as unknown as { MiracleShare?: { resolveUrl?: (u: string) => string } }).MiracleShare;
+		if (bridge?.resolveUrl) {
+			const rawJson = bridge.resolveUrl(url);
+			if (rawJson) {
+				const parsedNative = JSON.parse(rawJson) as { finalUrl?: string; html?: string; title?: string };
+				if (parsedNative.finalUrl) {
+					const hit = await parseDirect(parsedNative.finalUrl);
+					if (hit) return hit;
+				}
+				if (parsedNative.html) {
+					const hit = await parseDirect(parsedNative.html);
+					if (hit) {
+						if (parsedNative.title) hit.label = parsedNative.title;
+						return hit;
+					}
+				}
+				const name = parsedNative.title || (parsedNative.finalUrl ? extractName(parsedNative.finalUrl) : '');
+				if (name) {
+					const found = await searchPlaces(name);
+					if (found.length) return { lat: found[0].lat, lng: found[0].lng, label: found[0].label };
+				}
+			}
+		}
+	} catch {
+		// fall through to server layers
+	}
+
 	// Layer 1: Miracle's Cloudflare Worker (/api/maps/resolve)
 	try {
 		const res = await fetch('/api/maps/resolve', {
@@ -156,6 +186,21 @@ export async function resolveMapsLink(
 		}
 	} catch {
 		// fall through to Layer 2
+	}
+
+	// Layer 1.5: Supabase Edge Function (Deno Deploy / AWS IP — bypasses Cloudflare IP blocks)
+	try {
+		const { data, error } = await supabase.functions.invoke('resolve-maps', { body: { url } });
+		if (!error && data && typeof data.lat === 'number' && typeof data.lng === 'number') {
+			let label = cleanPlaceLabel(String(data.label || ''));
+			if (!label || label === 'Pinned Google Maps location' || isRawCoord(label)) {
+				const userTitle = extractName(clean);
+				label = userTitle || (await reverseGeocode(data.lat, data.lng));
+			}
+			return { lat: data.lat, lng: data.lng, label };
+		}
+	} catch {
+		// fall through to public unshorteners
 	}
 
 	// Layer 2: Public unshortener (unshorten.me + allorigins fallback) from non-Cloudflare IPs

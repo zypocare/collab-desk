@@ -15,7 +15,11 @@ import androidx.activity.EdgeToEdge;
 import androidx.activity.SystemBarStyle;
 import com.getcapacitor.BridgeActivity;
 import java.io.ByteArrayOutputStream;
+import java.io.BufferedReader;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -48,6 +52,51 @@ public class MainActivity extends BridgeActivity {
     }
 
     public class ShareBridge {
+
+        @JavascriptInterface
+        public String resolveUrl(String rawUrl) {
+            if (rawUrl == null || (!rawUrl.startsWith("https://") && !rawUrl.startsWith("http://"))) return "";
+            String current = rawUrl.trim();
+            String lastHtml = "";
+            String ogTitle = "";
+            try {
+                for (int hop = 0; hop < 6; hop++) {
+                    HttpURLConnection conn = (HttpURLConnection) new URL(current).openConnection();
+                    conn.setInstanceFollowRedirects(false);
+                    conn.setConnectTimeout(6000);
+                    conn.setReadTimeout(6000);
+                    conn.setRequestProperty("User-Agent", "WhatsApp/2.23.20.0");
+                    conn.setRequestProperty("Accept-Language", "en-IN,en;q=0.9");
+                    int code = conn.getResponseCode();
+                    String loc = conn.getHeaderField("Location");
+                    if (loc != null && !loc.isEmpty()) {
+                        current = new URL(new URL(current), loc).toString();
+                        conn.disconnect();
+                        continue;
+                    }
+                    if (code >= 200 && code < 300) {
+                        BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+                        StringBuilder sb = new StringBuilder();
+                        String line;
+                        while ((line = br.readLine()) != null && sb.length() < 200000) {
+                            sb.append(line).append('\n');
+                        }
+                        br.close();
+                        lastHtml = sb.toString();
+                    }
+                    conn.disconnect();
+                    break;
+                }
+                JSONObject out = new JSONObject();
+                out.put("finalUrl", current);
+                out.put("html", lastHtml);
+                out.put("title", ogTitle);
+                return out.toString();
+            } catch (Exception e) {
+                return "";
+            }
+        }
+
         @JavascriptInterface
         public String consumeSharedReel() {
             String out = pendingSharedReelJson;
