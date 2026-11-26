@@ -1583,4 +1583,12 @@
 	.ba2-tglbody b { font-size: 14.5px; color: var(--ink); }
 	.ba2-tglbody small { font-size: 12.5px; color: var(--ink-2); }
 	.ba2-tglbody small.missing { color: #ffc896; }
+
+	@media (max-width: 900px) {
+		:global(.drawer.as-page section.sec.open) {
+			overscroll-behavior: contain;
+			overflow-anchor: none;
+			transition: none !important;
+		}
+	}
 </style>

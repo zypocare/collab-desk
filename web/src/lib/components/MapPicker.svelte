@@ -398,7 +398,7 @@
 		border: 1px solid rgba(255, 255, 255, 0.14);
 		background: #0d0a0e;
 		color: var(--ink, #f7f4f8);
-		font-size: 13.5px;
+		font-size: 16px;
 		outline: none;
 	}
 	.mp-search input:focus { border-color: var(--g1, #9c7bff); }
@@ -544,7 +544,7 @@
 		color: #6ee7b7;
 	}
 	.mp-info b {
-		font-size: 13.5px;
+		font-size: 16px;
 		color: var(--ink, #f7f4f8);
 		white-space: nowrap;
 		overflow: hidden;
@@ -581,7 +581,7 @@
 		border-radius: 0;
 		background: var(--ink, #f7f4f8);
 		color: var(--bg, #0d0a0e);
-		font-size: 13.5px;
+		font-size: 16px;
 		font-weight: 700;
 		box-shadow: 3px 3px 0 var(--g2, #f25a90);
 		cursor: pointer;

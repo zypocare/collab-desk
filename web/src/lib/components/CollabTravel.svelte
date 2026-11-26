@@ -144,6 +144,22 @@
 		}
 	}
 
+
+	async function clearVenuePin() {
+		venueInput = '';
+		candidates = [];
+		searchedEmpty = false;
+		await updateCollab(c.id, {
+			venue_name: '',
+			venue_address: '',
+			venue_lat: null,
+			venue_lng: null,
+			travel_km: null,
+			travel_mins: null
+		});
+		toast('Shoot location cleared', 'check');
+	}
+
 	async function pickSlot(id: TravelSlotId) {
 		await updateCollab(c.id, { travel_slot: id });
 	}
@@ -155,88 +171,127 @@
 	}
 </script>
 
-<div class="trv">
-	<div class="trv-top">
-		<span class="trv-eb">Shoot location</span>
-		<span class="trv-hint">{mode === 'home' ? 'No travel needed' : 'Travel advisor active'}</span>
-	</div>
-
-	<div class="trv-tabs" role="radiogroup" aria-label="Where are you shooting">
-		<button type="button" class:on={mode === 'home'} onclick={() => setMode('home')}>At home</button>
-		<button type="button" class:on={mode === 'location'} onclick={() => setMode('location')}>On-location</button>
-	</div>
-
-	{#if mode === 'home'}
-		<div class="trv-home">
-			<Icon name="home" />
-			<span>Shooting at home / studio — distance &amp; travel planning stay hidden.</span>
-		</div>
-	{:else}
-		{#if !hasHome}
-			<a class="trv-warn" href="/studio/settings?s=travel">
-				<Icon name="pin" />
-				<span>Set your private <b>Home Base</b> in Settings to calculate distance &amp; travel cost.</span>
-				<Icon name="chevR" />
-			</a>
-		{/if}
-
-		{#if hasVenuePin && c.venue_address}
-			<div class="trv-pinned">
-				<Icon name="check" />
-				<span><b>Pinned:</b> {cleanPlaceLabel(c.venue_address)}</span>
-			</div>
-		{/if}
-
-		<form class="trv-form" onsubmit={searchOrResolve}>
-			<div class="trv-inp-wrap">
-				<input
-					class="trv-inp"
-					type="text"
-					placeholder="Paste Google Maps link or search venue…"
-					aria-label="Shoot venue location"
-					bind:value={venueInput}
-				/>
-				{#if venueInput}
-					<button type="button" class="trv-clr" aria-label="Clear location" onclick={() => { venueInput = ''; candidates = []; searchedEmpty = false; }}>×</button>
-				{/if}
-			</div>
-			<button type="submit" class="trv-neo sm" disabled={locating || !venueInput.trim()}>
-				{#if locating}<span class="spinner"></span>{:else}<Icon name="search" />{/if}
-				<span>Find</span>
-			</button>
-		</form>
-
-		<div class="trv-gmaps-row">
-			<button type="button" class="trv-gbtn hi" onclick={() => (mapOpen = true)}>
-				<Icon name="pin" /><span>Pick on map</span>
-			</button>
-			<button type="button" class="trv-gbtn" disabled={locating} onclick={pasteMapsLink}>
-				<Icon name="link" /><span>Paste Maps link</span>
-			</button>
+<div class="trv-page">
+	<!-- 1. Hero Card: Identical to Home Base & Travel -->
+	<section class="trv-hero">
+		<div class="trv-hero-top">
+			<span class="trv-eb">Shoot location</span>
+			{#if mode === 'location' && hasVenuePin}
+				<button type="button" class="trv-rm" onclick={clearVenuePin}>Clear pin</button>
+			{:else}
+				<span class="trv-hint">{mode === 'home' ? 'No travel needed' : 'Travel advisor active'}</span>
+			{/if}
 		</div>
 
-		{#if candidates.length}
-			<div class="trv-picks" role="listbox" aria-label="Matching places">
-				<span class="trv-picks-h">Tap the exact place to pin:</span>
-				{#each candidates as p (p.lat + ',' + p.lng + p.name)}
-					<button type="button" class="trv-pick" disabled={locating} onclick={() => applyPin(p)}>
-						<span class="trv-pick-t">
-							<b>{p.name}</b>
-							{#if p.sub}<small>{p.sub}</small>{/if}
-						</span>
-						{#if homeCoords}
-							<em class="trv-pick-km">~{Math.round(haversineKm(homeCoords, p) * 1.25)} km</em>
-						{/if}
+		<div class="trv-tabs" role="radiogroup" aria-label="Where are you shooting">
+			<button type="button" class:on={mode === 'home'} onclick={() => setMode('home')}>At home</button>
+			<button type="button" class:on={mode === 'location'} onclick={() => setMode('location')}>On-location</button>
+		</div>
+
+		{#if mode === 'home'}
+			<div class="trv-empty-hero">
+				<div class="trv-pin-dot idle" aria-hidden="true"><Icon name="home" /></div>
+				<div>
+					<h3>Shooting at home / studio</h3>
+					<p>Distance, traffic estimates and leave-early nudges stay hidden for home collabs.</p>
+				</div>
+			</div>
+		{:else}
+			{#if !hasHome}
+				<a class="trv-warn" href="/studio/settings?s=travel">
+					<Icon name="pin" />
+					<span>Set your private <b>Home Base</b> in Settings to calculate distance &amp; travel cost.</span>
+					<Icon name="chevR" />
+				</a>
+			{/if}
+
+			{#if hasVenuePin && c.venue_address}
+				<div class="trv-pinned-hero">
+					<div class="trv-pin-dot" aria-hidden="true"><Icon name="pin" /></div>
+					<div class="trv-pin-meta">
+						<small>Pinned shoot venue</small>
+						<h3>{cleanPlaceLabel(c.venue_address)}</h3>
+						<code>{c.venue_lat!.toFixed(4)}, {c.venue_lng!.toFixed(4)}</code>
+					</div>
+				</div>
+			{:else}
+				<div class="trv-empty-hero">
+					<div class="trv-pin-dot idle" aria-hidden="true"><Icon name="pin" /></div>
+					<div>
+						<h3>Pin the shoot venue</h3>
+						<p>Calculate road distance, round-trip {trip?.mode.label.toLowerCase() ?? 'travel'} cost and the best time to leave.</p>
+					</div>
+				</div>
+			{/if}
+
+			<form class="trv-field" onsubmit={searchOrResolve}>
+				<label for="trv-addr-{c.id}">Search venue or paste Google Maps link</label>
+				<div class="trv-inp-wrap">
+					<input
+						id="trv-addr-{c.id}"
+						class="trv-inp"
+						type="text"
+						placeholder="e.g. Indiranagar cafe or Google Maps link…"
+						bind:value={venueInput}
+					/>
+					{#if venueInput}
+						<button
+							type="button"
+							class="trv-clr"
+							aria-label="Clear location"
+							onclick={() => {
+								venueInput = '';
+								candidates = [];
+								searchedEmpty = false;
+							}}
+						>×</button>
+					{/if}
+				</div>
+				<button type="submit" class="trv-neo full" disabled={locating || !venueInput.trim()}>
+					{#if locating}<span class="spinner"></span>{:else}<Icon name="search" />{/if}
+					<span>{trip ? 'Find & update route' : 'Find & calculate'}</span>
+				</button>
+				<div class="trv-gmaps-row">
+					<button type="button" class="trv-gbtn hi" onclick={() => (mapOpen = true)}>
+						<Icon name="pin" /><span>Pick on interactive map</span>
 					</button>
-				{/each}
-			</div>
-		{:else if searchedEmpty}
-			<div class="trv-empty">
-				<span>Couldn't find "{venueInput.trim()}" on OpenStreetMap. Tap <b>Pick on Google Maps</b> above, copy the Share link, and tap <b>Paste Maps link</b> for exact accuracy.</span>
-			</div>
-		{/if}
+					<button type="button" class="trv-gbtn" disabled={locating} onclick={pasteMapsLink}>
+						<Icon name="link" /><span>Paste Maps link</span>
+					</button>
+				</div>
+			</form>
 
-		{#if trip}
+			{#if candidates.length}
+				<div class="trv-picks" role="listbox" aria-label="Matching places">
+					<span class="trv-picks-h">Tap the exact place to pin:</span>
+					{#each candidates as p (p.lat + ',' + p.lng + p.name)}
+						<button type="button" class="trv-pick" disabled={locating} onclick={() => applyPin(p)}>
+							<span class="trv-pick-t">
+								<b>{p.name}</b>
+								{#if p.sub}<small>{p.sub}</small>{/if}
+							</span>
+							{#if homeCoords}
+								<em class="trv-pick-km">~{Math.round(haversineKm(homeCoords, p) * 1.25)} km</em>
+							{/if}
+						</button>
+					{/each}
+				</div>
+			{:else if searchedEmpty}
+				<div class="trv-empty">
+					<span>Couldn't find "{venueInput.trim()}" on the free index. Tap <b>Pick on interactive map</b> above or copy a Share link from Google Maps and tap <b>Paste Maps link</b>.</span>
+				</div>
+			{/if}
+		{/if}
+	</section>
+
+	{#if mode === 'location' && trip}
+		<!-- 2. Route & Timing Card -->
+		<section class="trv-card">
+			<div class="trv-card-h">
+				<h2>Route &amp; timing</h2>
+				<small>{trip.mode.label} · +{bufferMins}m buffer</small>
+			</div>
+
 			<div class="trv-kpis">
 				<div class="trv-kpi hi">
 					<small>Distance</small>
@@ -266,7 +321,10 @@
 					</button>
 				{/each}
 			</div>
+		</section>
 
+		<!-- 3. AI Leave Advisor & Actions -->
+		<section class="trv-card">
 			<div class="trv-ai">
 				<div class="trv-ai-h">
 					<span><Icon name="spark" />AI Leave-Time Advisor</span>
@@ -297,10 +355,9 @@
 					<span>{c.leave_nudge ? 'Nudge set' : 'Leave nudge'}</span>
 				</button>
 			</div>
-		{/if}
+		</section>
 	{/if}
 </div>
-
 
 {#if mapOpen}
 	<MapPicker
@@ -318,27 +375,44 @@
 {/if}
 
 <style>
-	.trv {
+	.trv-page {
 		display: grid;
 		grid-template-columns: minmax(0, 1fr);
-		gap: 11px;
-		margin-top: 8px;
-		padding: 14px;
+		gap: 12px;
+		margin-top: 6px;
 		max-width: 100%;
-		overflow: hidden;
-		border-radius: 16px;
-		border: 1px solid rgba(156, 123, 255, 0.22);
-		background:
-			radial-gradient(120% 80% at 0% 0%, rgba(156, 123, 255, 0.1), transparent 58%),
-			var(--paper, var(--surface));
 	}
-	.trv > * { min-width: 0; max-width: 100%; }
-	.trv-top {
+	.trv-page > * { min-width: 0; max-width: 100%; }
+
+	.trv-hero, .trv-card {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr);
+		gap: 14px;
+		padding: 16px;
+		border-radius: 18px;
+		border: 1px solid rgba(255, 255, 255, 0.08);
+		background: var(--surface, #161116);
+		overflow: hidden;
+	}
+	.trv-hero {
+		border-color: rgba(156, 123, 255, 0.25);
+		background:
+			radial-gradient(120% 80% at 0% 0%, rgba(156, 123, 255, 0.14), transparent 58%),
+			radial-gradient(90% 70% at 100% 100%, rgba(242, 90, 144, 0.08), transparent 60%),
+			var(--surface, #161116);
+	}
+	.trv-hero-top, .trv-card-h {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
 		gap: 8px;
 	}
+	.trv-card-h h2 {
+		margin: 0;
+		font: 400 18px/1.15 var(--f-serif, Georgia, serif);
+		color: var(--ink);
+	}
+	.trv-card-h small { font-size: 11.5px; color: var(--muted, var(--ink-3)); }
 	.trv-eb {
 		font-family: var(--mono);
 		font-size: 10.5px;
@@ -348,15 +422,25 @@
 		color: var(--ink-3);
 	}
 	.trv-hint { font-size: 11.5px; color: var(--ink-3); }
+	.trv-rm {
+		border: 0;
+		background: transparent;
+		color: #fda4af;
+		font-size: 12px;
+		font-weight: 600;
+		text-decoration: underline;
+		cursor: pointer;
+		flex-shrink: 0;
+	}
 
 	.trv-tabs {
 		display: grid;
 		grid-template-columns: 1fr 1fr;
-		border: 1px solid rgba(255, 255, 255, 0.1);
-		background: rgba(13, 10, 14, 0.55);
+		border: 1px solid rgba(255, 255, 255, 0.12);
+		background: rgba(13, 10, 14, 0.6);
 	}
 	.trv-tabs button {
-		height: 36px;
+		height: 38px;
 		border: 0;
 		border-right: 1px solid rgba(255, 255, 255, 0.08);
 		background: transparent;
@@ -375,18 +459,39 @@
 		box-shadow: inset 0 -3px 0 var(--g2);
 	}
 
-	.trv-home {
+	.trv-pinned-hero, .trv-empty-hero {
 		display: flex;
-		align-items: center;
-		gap: 9px;
-		padding: 10px 12px;
-		border-radius: 11px;
-		border: 1px dashed rgba(156, 123, 255, 0.28);
-		background: rgba(156, 123, 255, 0.05);
-		font-size: 12.5px;
-		color: var(--ink-2);
+		align-items: flex-start;
+		gap: 12px;
+		padding: 13px;
+		border-radius: 14px;
+		border: 1px solid rgba(52, 211, 153, 0.28);
+		background: rgba(16, 185, 129, 0.08);
 	}
-	.trv-home :global(.ic) { width: 15px; height: 15px; flex: none; color: #c8b6ff; }
+	.trv-empty-hero {
+		border-style: dashed;
+		border-color: rgba(156, 123, 255, 0.35);
+		background: rgba(156, 123, 255, 0.06);
+	}
+	.trv-pin-dot {
+		width: 36px;
+		height: 36px;
+		border-radius: 10px;
+		background: rgba(52, 211, 153, 0.18);
+		border: 1px solid rgba(52, 211, 153, 0.4);
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		flex-shrink: 0;
+	}
+	.trv-pin-dot :global(.ic) { width: 17px; height: 17px; color: #6ee7b7; }
+	.trv-pin-dot.idle { background: rgba(156, 123, 255, 0.16); border-color: rgba(156, 123, 255, 0.38); }
+	.trv-pin-dot.idle :global(.ic) { color: #c8b6ff; }
+	.trv-pin-meta { display: grid; gap: 3px; min-width: 0; }
+	.trv-pin-meta small { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #6ee7b7; }
+	.trv-pinned-hero h3, .trv-empty-hero h3 { margin: 0; font: 400 19px/1.2 var(--f-serif, Georgia, serif); color: var(--ink); overflow-wrap: anywhere; }
+	.trv-pin-meta code { font-family: var(--mono); font-size: 11.5px; color: var(--ink-3); }
+	.trv-empty-hero p { margin: 4px 0 0; font-size: 12.5px; line-height: 1.45; color: var(--ink-2); }
 
 	.trv-warn {
 		display: flex;
@@ -403,40 +508,26 @@
 	.trv-warn :global(.ic) { width: 15px; height: 15px; flex: none; }
 	.trv-warn span { flex: 1; }
 
-	.trv-pinned {
-		display: flex;
-		align-items: flex-start;
-		gap: 7px;
-		min-width: 0;
-		max-width: 100%;
-		padding: 8px 10px;
-		border-radius: 10px;
-		border: 1px solid rgba(52, 211, 153, 0.28);
-		background: rgba(16, 185, 129, 0.08);
-		font-size: 12.5px;
-		line-height: 1.4;
-		color: #d1fae5;
-	}
-	.trv-pinned span { min-width: 0; overflow-wrap: anywhere; word-break: break-word; }
-	.trv-pinned :global(.ic) { width: 14px; height: 14px; flex: none; margin-top: 2px; color: #34d399; }
-
-	.trv-form { display: flex; gap: 8px; align-items: center; min-width: 0; }
-	.trv-inp-wrap { position: relative; flex: 1; min-width: 0; display: flex; align-items: center; }
+	.trv-field { display: grid; gap: 9px; min-width: 0; }
+	.trv-field label { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); }
+	.trv-inp-wrap { position: relative; display: flex; align-items: center; min-width: 0; }
 	.trv-inp {
 		width: 100%;
 		min-width: 0;
-		height: 38px;
-		padding: 0 32px 0 11px;
+		height: 42px;
+		padding: 0 36px 0 13px;
 		border-radius: 10px;
-		border: 1px solid rgba(255, 255, 255, 0.12);
-		background: rgba(13, 10, 14, 0.65);
+		border: 1px solid rgba(255, 255, 255, 0.14);
+		background: #0d0a0e;
 		color: var(--ink);
-		font: 400 13.5px/1 var(--f-sans, inherit);
+		font: 400 16px/1 var(--f-sans, inherit);
+		scroll-margin: 80px;
 		outline: none;
 	}
+	.trv-inp:focus { border-color: var(--g1); }
 	.trv-clr {
 		position: absolute;
-		right: 6px;
+		right: 8px;
 		width: 24px;
 		height: 24px;
 		border: 0;
@@ -450,27 +541,25 @@
 		justify-content: center;
 		cursor: pointer;
 	}
-	.trv-inp:focus { border-color: rgba(156, 123, 255, 0.55); }
 
 	.trv-gmaps-row {
 		display: grid;
 		grid-template-columns: 1fr 1fr;
-		gap: 7px;
+		gap: 8px;
 	}
 	.trv-gbtn {
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
 		gap: 6px;
-		height: 34px;
+		height: 38px;
 		padding: 0 10px;
-		border-radius: 9px;
+		border-radius: 10px;
 		border: 1px solid rgba(156, 123, 255, 0.28);
 		background: rgba(156, 123, 255, 0.08);
 		color: var(--ink);
 		font-size: 12px;
 		font-weight: 600;
-		text-decoration: none;
 		cursor: pointer;
 	}
 	.trv-gbtn.hi { border-color: rgba(242, 90, 144, 0.42); background: rgba(242, 90, 144, 0.12); }
@@ -506,7 +595,6 @@
 		text-align: left;
 		cursor: pointer;
 	}
-	.trv-pick:hover { border-color: rgba(242, 90, 144, 0.45); background: rgba(242, 90, 144, 0.08); }
 	.trv-pick-t { display: grid; gap: 2px; min-width: 0; }
 	.trv-pick-t b { font-size: 13px; font-weight: 600; color: var(--ink); }
 	.trv-pick-t small { font-size: 11.5px; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -526,7 +614,7 @@
 	.trv-kpi {
 		display: grid;
 		gap: 2px;
-		padding: 9px 10px;
+		padding: 10px;
 		border-radius: 12px;
 		border: 1px solid rgba(255, 255, 255, 0.08);
 		background: rgba(13, 10, 14, 0.5);
@@ -537,21 +625,25 @@
 	.trv-kpi.hi b { color: #6ee7b7; }
 	.trv-kpi span { font-size: 11px; color: var(--ink-2); }
 
-	.trv-slots { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
+	.trv-slots { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
 	.trv-slot {
 		display: grid;
-		gap: 2px;
-		padding: 9px 10px;
-		border-radius: 11px;
+		gap: 3px;
+		padding: 10px 11px;
+		border-radius: 12px;
 		border: 1px solid rgba(255, 255, 255, 0.08);
-		background: rgba(255, 255, 255, 0.03);
+		background: rgba(255, 255, 255, 0.02);
 		color: var(--ink);
 		text-align: left;
 		cursor: pointer;
 	}
-	.trv-slot.on { border-color: var(--g2); background: rgba(242, 90, 144, 0.12); }
+	.trv-slot.on {
+		border-color: var(--g2);
+		background: rgba(242, 90, 144, 0.1);
+		box-shadow: inset 0 -3px 0 var(--g2);
+	}
 	.trv-st { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
-	.trv-st b { font-size: 12.5px; font-weight: 600; }
+	.trv-st b { font-size: 13px; font-weight: 700; }
 	.trv-st em { font-style: normal; font-family: var(--mono); font-size: 9.5px; font-weight: 700; text-transform: uppercase; padding: 2px 6px; border-radius: 999px; }
 	.trv-st em.ok { background: rgba(52, 211, 153, 0.16); color: #6ee7b7; }
 	.trv-st em.mid { background: rgba(251, 191, 36, 0.16); color: #fcd34d; }
@@ -561,7 +653,7 @@
 	.trv-ai {
 		display: grid;
 		gap: 5px;
-		padding: 11px 12px;
+		padding: 12px 13px;
 		border-radius: 12px;
 		border: 1px solid rgba(156, 123, 255, 0.3);
 		background: linear-gradient(145deg, rgba(156, 123, 255, 0.12), rgba(242, 90, 144, 0.06) 60%, rgba(13, 10, 14, 0.5));
@@ -594,18 +686,18 @@
 		align-items: center;
 		justify-content: center;
 		gap: 6px;
-		height: 38px;
-		padding: 0 13px;
+		height: 40px;
+		padding: 0 14px;
 		border: 0;
 		border-radius: 0;
 		background: var(--ink);
 		color: var(--bg);
-		font: 700 13px/1 var(--f-sans, inherit);
+		font: 700 13.5px/1 var(--f-sans, inherit);
 		text-decoration: none;
 		box-shadow: 3px 3px 0 var(--g2);
 		cursor: pointer;
 	}
-	.trv-neo.sm { flex: none; }
+	.trv-neo.full { width: 100%; }
 	.trv-neo:disabled { opacity: 0.55; cursor: not-allowed; }
 	.trv-neo :global(.ic) { width: 14px; height: 14px; }
 
@@ -614,8 +706,8 @@
 		align-items: center;
 		justify-content: center;
 		gap: 6px;
-		height: 38px;
-		padding: 0 12px;
+		height: 40px;
+		padding: 0 13px;
 		border-radius: 10px;
 		border: 1px solid rgba(255, 255, 255, 0.14);
 		background: rgba(255, 255, 255, 0.04);

@@ -80,7 +80,7 @@ export default {
 			if (req.method !== 'POST') return new Response(JSON.stringify({ error: 'Use POST.' }), { status: 405, headers: corsH });
 			try {
 				const body = (await req.json().catch(() => ({}))) as { url?: string };
-				const out = await resolveGoogleMapsUrl(String(body.url ?? ''));
+				const out = await resolveGoogleMapsUrl(env, String(body.url ?? ''));
 				if (!out) return new Response(JSON.stringify({ error: 'Could not read coordinates from that Google Maps link.' }), { status: 422, headers: corsH });
 				return new Response(JSON.stringify(out), { status: 200, headers: corsH });
 			} catch (e) {
@@ -1742,7 +1742,10 @@ Use only facts from the page; never invent claims, ingredients, prices, offers o
 	};
 }
 
-async function resolveGoogleMapsUrl(raw: string): Promise<{ lat: number; lng: number; label: string; resolvedUrl: string } | null> {
+async function resolveGoogleMapsUrl(
+	env: Env,
+	raw: string
+): Promise<{ lat: number; lng: number; label: string; resolvedUrl: string } | null> {
 	const uMatch = raw.match(/https?:\/\/[^\s"'<>]+/i);
 	if (!uMatch) return null;
 	let parsed: URL;
@@ -1755,6 +1758,7 @@ async function resolveGoogleMapsUrl(raw: string): Promise<{ lat: number; lng: nu
 	const allowed =
 		host === 'maps.app.goo.gl' ||
 		host === 'goo.gl' ||
+		host === 'g.co' ||
 		host === 'maps.google.com' ||
 		host === 'maps.google.co.in' ||
 		host === 'www.google.com' ||
@@ -1764,7 +1768,6 @@ async function resolveGoogleMapsUrl(raw: string): Promise<{ lat: number; lng: nu
 	if (!allowed) return null;
 
 	const extractFromText = (str: string) => {
-		// Use the LAST !3d!4d match so /maps/dir/origin/dest picks the destination pin
 		const pins = [...str.matchAll(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/g)];
 		if (pins.length) {
 			const last = pins[pins.length - 1];
@@ -1776,6 +1779,8 @@ async function resolveGoogleMapsUrl(raw: string): Promise<{ lat: number; lng: nu
 		if (q) return { lat: Number(q[1]), lng: Number(q[2]) };
 		const ctr = str.match(/center=(-?\d+\.\d+)(?:,|%2C)(-?\d+\.\d+)/i);
 		if (ctr) return { lat: Number(ctr[1]), lng: Number(ctr[2]) };
+		const appState = str.match(/\[null,null,(-?\d+\.\d+),(-?\d+\.\d+)\]/);
+		if (appState) return { lat: Number(appState[1]), lng: Number(appState[2]) };
 		return null;
 	};
 
@@ -1785,7 +1790,6 @@ async function resolveGoogleMapsUrl(raw: string): Promise<{ lat: number; lng: nu
 			try { return decodeURIComponent(pm[1].replace(/\+/g, ' ')).trim(); }
 			catch { return pm[1].replace(/\+/g, ' ').trim(); }
 		}
-		// Handle /maps/dir/<origin>/<destination>/...
 		const dm = u.match(/\/dir\/[^/]+\/([^/@?]+)/i);
 		if (dm) {
 			try {
@@ -1793,42 +1797,103 @@ async function resolveGoogleMapsUrl(raw: string): Promise<{ lat: number; lng: nu
 				if (d && !/^-?\d+\.\d+,-?\d+\.\d+$/.test(d)) return d;
 			} catch { /* ignore */ }
 		}
+		try {
+			const uObj = new URL(u);
+			const qParam = uObj.searchParams.get('q') || uObj.searchParams.get('query') || '';
+			if (qParam && !/^-?\d+\.\d+,-?\d+\.\d+$/.test(qParam.trim())) return qParam.trim();
+		} catch { /* ignore */ }
 		return '';
+	};
+
+	// Unwrap consent.google.com?continue=... if encountered
+	const unwrapConsent = (u: string) => {
+		try {
+			const obj = new URL(u);
+			if (obj.hostname.includes('consent.google.') && obj.searchParams.get('continue')) {
+				return obj.searchParams.get('continue')!;
+			}
+		} catch { /* ignore */ }
+		return u;
 	};
 
 	let finalUrl = parsed.toString();
 	let coords = extractFromText(finalUrl);
 	let label = extractNameFromUrl(finalUrl);
+	let lastHtml = '';
 
-	if (!coords || !label) {
-		const res = await fetch(finalUrl, {
-			method: 'GET',
-			redirect: 'follow',
-			headers: {
-				'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
-				'accept-language': 'en-IN,en;q=0.9'
-			}
-		});
-		finalUrl = res.url || finalUrl;
-		if (!coords) coords = extractFromText(finalUrl);
-		if (!label) label = extractNameFromUrl(finalUrl);
-
-		if (!coords || !label) {
-			const html = (await res.text()).slice(0, 120_000);
-			if (!coords) coords = extractFromText(html);
-			if (!label) {
-				const og =
-					html.match(/property="og:title"\s+content="([^"]+)"/i) ||
-					html.match(/content="([^"]+)"\s+property="og:title"/i) ||
-					html.match(/<title>([^<]+)<\/title>/i);
-				if (og?.[1]) {
-					label = og[1]
-						.replace(/\s*[·\-–|]\s*Google Maps\s*$/i, '')
-						.replace(/&amp;/g, '&')
-						.replace(/&#39;/g, "'")
-						.trim();
+	// Follow up to 6 redirects manually so we capture exact Google Maps URLs before any consent redirect
+	let hopUrl = finalUrl;
+	for (let hop = 0; hop < 6 && (!coords || !label); hop++) {
+		try {
+			const res = await fetch(hopUrl, {
+				method: 'GET',
+				redirect: 'manual',
+				headers: {
+					'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
+					'accept-language': 'en-IN,en;q=0.9',
+					cookie: 'SOCS=CAISHAgBEhJnd3NfMjAyNDAxMTAtMF9SQzIaAmVuIAEaBgiA_MCxBg'
 				}
+			});
+			const loc = res.headers.get('location');
+			if (loc) {
+				const abs = unwrapConsent(new URL(loc, hopUrl).toString());
+				finalUrl = abs;
+				hopUrl = abs;
+				if (!coords) coords = extractFromText(abs);
+				if (!label) label = extractNameFromUrl(abs);
+				continue;
 			}
+			lastHtml = (await res.text()).slice(0, 180_000);
+			// Check meta refresh or JS redirect inside short-link HTML
+			const metaRef = lastHtml.match(/http-equiv=["']refresh["'][^>]*url=([^"'>\s]+)/i);
+			if (metaRef?.[1]) {
+				const abs = unwrapConsent(new URL(metaRef[1].replace(/&amp;/g, '&'), hopUrl).toString());
+				finalUrl = abs;
+				hopUrl = abs;
+				if (!coords) coords = extractFromText(abs);
+				if (!label) label = extractNameFromUrl(abs);
+				continue;
+			}
+			break;
+		} catch {
+			break;
+		}
+	}
+
+	if (lastHtml) {
+		if (!coords) coords = extractFromText(lastHtml);
+		if (!label) {
+			const og =
+				lastHtml.match(/property="og:title"\s+content="([^"]+)"/i) ||
+				lastHtml.match(/content="([^"]+)"\s+property="og:title"/i) ||
+				lastHtml.match(/<title>([^<]+)<\/title>/i);
+			if (og?.[1]) {
+				const cleaned = og[1]
+					.replace(/\s*[·\-–|]\s*Google Maps\s*$/i, '')
+					.replace(/&amp;/g, '&')
+					.replace(/&#39;/g, "'")
+					.trim();
+				if (cleaned && !/^(google maps|before you continue)/i.test(cleaned)) label = cleaned;
+			}
+		}
+	}
+
+	// If we resolved a place name (from /place/Name or og:title) without inline coordinates, geocode it server-side
+	if ((!coords || !Number.isFinite(coords.lat)) && label) {
+		const hits = await searchGoogleMapsPlaces(env, label);
+		if (hits.length) {
+			coords = { lat: hits[0].lat, lng: hits[0].lng };
+		} else {
+			try {
+				const nRes = await fetch(
+					`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(label)}`,
+					{ headers: { 'user-agent': 'MiracleApp/1.0' } }
+				);
+				if (nRes.ok) {
+					const rows = (await nRes.json()) as Array<{ lat: string; lon: string }>;
+					if (rows?.[0]) coords = { lat: Number(rows[0].lat), lng: Number(rows[0].lon) };
+				}
+			} catch { /* ignore */ }
 		}
 	}
 
