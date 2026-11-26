@@ -3,7 +3,7 @@
 	import { bestSlot, postingEvidence, slotLabel } from '../postTime';
 	import { studio } from '../studio.svelte';
 	import type { Collab } from '../types';
-	import { compact, diff, fmt, inr, inrS, isActive, outstanding, today } from '../util';
+	import { compact, diff, fmt, inr, inrS, isActive, outstanding, today, mergeSteps, tasks, relWord } from '../util';
 	import HomeStoryRow, { type Story } from './HomeStoryRow.svelte';
 
 	let { monthName, received, paidN, od, nextPayout }: {
@@ -39,6 +39,13 @@
 			.slice(0, 3)
 	);
 	const payment = $derived(od[0] ?? nextPayout ?? pendingPay[0]);
+
+	let row = $state<HomeStoryRow>();
+	export function openNeeds() {
+		row?.openStory(4);
+	}
+	const needs = $derived(mergeSteps(tasks(studio.collabs)));
+	const needsWhen = (d: number) => (d < 0 ? `${-d}d late` : d === 0 ? 'Today' : relWord(d));
 
 	const stories = $derived<Story[]>([
 		{
@@ -153,21 +160,29 @@
 			href: '/studio/grow/insights'
 		},
 		{
-			label: 'Briefs',
-			icon: 'inbox',
+			label: 'Needs you',
+			icon: 'bell',
 			animation: 'briefs',
-			color: 'var(--sky, #75bbef)',
-			stamp: 'OPEN OPPORTUNITIES',
-			title: 'Open brand briefs',
-			body: 'Browse live brand briefs, see budgets upfront, and pitch your idea in one tap.',
-			stats: [
-				{ label: 'Active collabs', value: String(activeCollabs.length) },
-				{ label: 'In talks', value: String(studio.collabs.filter((c) => c.stage === 'negotiating' && !c.someday).length) }
-			],
-			action: 'Explore briefs',
-			href: '/studio/pitches'
+			color: needs.length ? '#f25a90' : '#4ade80',
+			badge: needs.length,
+			stamp: needs.length ? `${needs.length} action${needs.length === 1 ? '' : 's'}` : 'All clear',
+			title: needs.length ? `${needs.length} collab${needs.length === 1 ? '' : 's'} need you` : 'Nothing urgent right now',
+			heroNumeric: needs.length,
+			heroFormat: 'number',
+			heroSub: needs.length ? 'Waiting on you right now' : 'Everything is on track',
+			body: needs.length
+				? 'Tap any brand below to jump straight into the collab and clear it.'
+				: 'No overdue drafts, replies, or payments waiting on you today.',
+			items: needs.slice(0, 6).map((t) => ({
+				title: t.c.brand.name,
+				sub: t.title,
+				right: needsWhen(t.d),
+				href: `/studio/c/${t.c.code}`
+			})),
+			action: needs.length ? 'Open collab board' : 'View collabs',
+			href: '/studio/collabs'
 		}
 	]);
 </script>
 
-<HomeStoryRow label="Creator stories" {stories} />
+<HomeStoryRow bind:this={row} label="Creator stories" {stories} />

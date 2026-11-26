@@ -11,7 +11,6 @@
 	import Icon from './Icon.svelte';
 	import Select from './Select.svelte';
 
-	// Everything she needs at posting time on one card: when, the approved caption, the code and link to copy.
 	let { c, focus = false }: { c: Collab; focus?: boolean } = $props();
 
 	const approved = $derived(latestDraft(c)?.status === 'approved' ? latestDraft(c)?.caption.trim() : '');
@@ -21,116 +20,491 @@
 	const promo = $derived(d.promo?.trim().split(/\s/)[0].toUpperCase() ?? '');
 	let el = $state<HTMLElement>();
 	let busy = $state(false);
+	let expanded = $state(false);
 
 	onMount(() => {
-		if (focus) setTimeout(() => el?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300);
+		if (focus) {
+			expanded = true;
+			setTimeout(() => el?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300);
+		}
 	});
-	// The same disclosure checklist as the collab page: ask before skipping it.
+
 	const missing = $derived(checklistMissing(c));
 	async function posted() {
-		if (missing.length && !(await ask({ title: 'Posting checklist not finished', body: `Still unticked: ${missing.join('; ')}. Indian ad rules need paid posts clearly marked.`, ok: 'Mark posted anyway', cancel: 'Go back' }))) return;
+		if (
+			missing.length &&
+			!(await ask({
+				title: 'Posting checklist not finished',
+				body: `Still unticked: ${missing.join('; ')}. Indian ad rules need paid posts clearly marked.`,
+				ok: 'Mark posted anyway',
+				cancel: 'Go back'
+			}))
+		)
+			return;
 		busy = true;
 		await setStage(c, 'live');
 		busy = false;
 	}
+
 	const ticked = $derived(CHECKLIST.filter((x) => !!c.checklist?.[x.key]).length);
+	const allTicked = $derived(ticked === CHECKLIST.length);
+	const daysDiff = $derived(c.live_date ? diff(c.live_date) : null);
+	const urgent = $derived(daysDiff !== null && daysDiff <= 1);
 	const when = $derived(c.live_date ? relWord(diff(c.live_date)) : 'No date');
 </script>
 
-<!-- Ready to post, as a ticket: the brand on its band with the day, then the caption to copy,
-     the checklist with its progress and one big button. -->
-<article class="pc" class:focus id="post-{c.code}" bind:this={el} style="--h: var(--m{hueOf(c.brand.name)})">
-	<button class="pc-band" onclick={() => (ui.openCollab = c.id)}>
-		<span class="pc-tile">{initials(c.brand.name)}</span>
-		<span class="pc-who"><b>{c.brand.name}</b><small>{delivText(c.deliverables)}</small></span>
-		<span class="pc-day"><b>{when}</b><small>{c.live_time ? timeLabel(c.live_time) : 'goes live'}</small></span>
-	</button>
-	<div class="pc-cut" aria-hidden="true"></div>
-
-	<div class="pc-body">
-		<div class="pc-when">
-			<DatePicker size="sm" ariaLabel="Go-live date" placeholder="Go-live date" value={c.live_date} onchange={(v) => updateCollab(c.id, { live_date: v || null })} />
-			<Select size="sm" ariaLabel="Post at" placeholder="Time" value={c.live_time?.slice(0, 5) ?? undefined} options={timeOptions(c.live_time)} onchange={(v) => updateCollab(c.id, { live_time: v })} />
+<article class="pc2" class:focus class:open={expanded} id="post-{c.code}" bind:this={el} style="--h: var(--m{hueOf(c.brand.name)})">
+	<!-- Compact Header Row (scales cleanly for 4-5+ collabs) -->
+	<div class="pc2-top">
+		<button type="button" class="pc2-who" onclick={() => (ui.openCollab = c.id)}>
+			<span class="pc2-tile">{initials(c.brand.name)}</span>
+			<span class="pc2-id">
+				<b>{c.brand.name}</b>
+				<small>{delivText(c.deliverables)}{#if handle} · {handle}{/if}</small>
+			</span>
+		</button>
+		<div class="pc2-right">
+			<span class="pc2-when-pill" class:urgent>
+				<b>{when}</b>
+				{#if c.live_time}<small>{timeLabel(c.live_time)}</small>{/if}
+			</span>
+			<button
+				type="button"
+				class="pc2-tog"
+				aria-expanded={expanded}
+				aria-label={expanded ? 'Collapse posting checklist' : 'Expand posting checklist'}
+				onclick={() => (expanded = !expanded)}
+			>
+				<Icon name="chevR" />
+			</button>
 		</div>
-
-		<section class="pc-cap">
-			<span class="pc-eb">Caption <i class:ok={!!approved}>{approved ? 'Approved by the brand' : 'From the brief · not approved yet'}</i></span>
-			<p>{caption}</p>
-			<div class="pc-copy">
-				<button class="pc-neo pc-ink" onclick={() => copyText(caption, 'Caption copied. Paste it in Instagram')}><Icon name="copy" />Copy caption</button>
-				{#if handle}<button class="pc-chip" onclick={() => copyText(handle, `${handle} copied`)}>{handle}</button>{/if}
-				{#if promo}<button class="pc-chip" onclick={() => copyText(promo, 'Code copied')}>Code {promo}</button>{/if}
-				{#if d.link}<button class="pc-chip" onclick={() => copyText(d.link!, 'Link copied')}><Icon name="link" />Link</button>{/if}
-			</div>
-		</section>
-
-		<section class="pc-check">
-			<div class="pc-ch"><span class="pc-eb">Before you post</span><span class="pc-n">{ticked} of {CHECKLIST.length}</span></div>
-			<div class="pc-bar" aria-hidden="true">{#each CHECKLIST as item, i (item.key)}<i class:on={i < ticked}></i>{/each}</div>
-			{#each CHECKLIST as item (item.key)}
-				<label class="pc-row" class:done={!!c.checklist?.[item.key]}>
-					<input type="checkbox" checked={!!c.checklist?.[item.key]} onchange={(e) => setChecklist(c, { [item.key]: (e.currentTarget as HTMLInputElement).checked })} />
-					<span class="pc-box" aria-hidden="true"><Icon name="check" /></span>
-					<span>{item.label}</span>
-				</label>
-			{/each}
-		</section>
-
-		<button class="pc-neo pc-go" disabled={busy} onclick={posted}>{#if busy}<span class="spinner"></span>{:else}<Icon name="check" />{/if}I've posted it</button>
 	</div>
+
+	<!-- Compact Readiness Rail -->
+	<button type="button" class="pc2-rail" onclick={() => (expanded = !expanded)}>
+		<span class="pc2-seg" aria-hidden="true">
+			{#each CHECKLIST as item, i (item.key)}<i class:on={i < ticked}></i>{/each}
+		</span>
+		<span class="pc2-rmeta">
+			<b class:ok={allTicked}>{ticked}/{CHECKLIST.length} checks</b>
+			<em class:ok={!!approved}>{approved ? 'Caption approved' : 'Brief caption'}</em>
+		</span>
+	</button>
+
+	<!-- Compact Quick Action Bar (always visible) -->
+	{#if !expanded}
+		<div class="pc2-qacts">
+			<button type="button" class="pc2-btn" onclick={() => copyText(caption, 'Caption copied. Paste it in Instagram')}>
+				<Icon name="copy" /><span>Copy caption</span>
+			</button>
+			<button type="button" class="pc2-btn" onclick={() => (expanded = true)}>
+				<Icon name="edit" /><span>Checklist</span>
+			</button>
+			<button type="button" class="pc2-neo sm" disabled={busy} onclick={posted}>
+				{#if busy}<span class="spinner"></span>{:else}<Icon name="check" />{/if}
+				<span>Posted</span>
+			</button>
+		</div>
+	{/if}
+
+	<!-- Expandable Full Posting Drawer -->
+	{#if expanded}
+		<div class="pc2-drawer">
+			<div class="pc2-when">
+				<DatePicker size="sm" ariaLabel="Go-live date" placeholder="Go-live date" value={c.live_date} onchange={(v) => updateCollab(c.id, { live_date: v || null })} />
+				<Select size="sm" ariaLabel="Post at" placeholder="Time" value={c.live_time?.slice(0, 5) ?? undefined} options={timeOptions(c.live_time)} onchange={(v) => updateCollab(c.id, { live_time: v })} />
+			</div>
+
+			<section class="pc2-cap">
+				<div class="pc2-eb">
+					<span>Caption</span>
+					<i class:ok={!!approved}>{approved ? 'Approved by brand' : 'From brief · not approved yet'}</i>
+				</div>
+				<p>{caption}</p>
+				<div class="pc2-copy">
+					<button type="button" class="pc2-neo sm" onclick={() => copyText(caption, 'Caption copied. Paste it in Instagram')}>
+						<Icon name="copy" /><span>Copy caption</span>
+					</button>
+					{#if handle}<button type="button" class="pc2-btn" onclick={() => copyText(handle, `${handle} copied`)}>{handle}</button>{/if}
+					{#if promo}<button type="button" class="pc2-btn" onclick={() => copyText(promo, 'Code copied')}>Code {promo}</button>{/if}
+					{#if d.link}<button type="button" class="pc2-btn" onclick={() => copyText(d.link!, 'Link copied')}><Icon name="link" /><span>Link</span></button>{/if}
+				</div>
+			</section>
+
+			<section class="pc2-check">
+				<div class="pc2-eb">
+					<span>Before you post</span>
+					<b>{ticked} of {CHECKLIST.length}</b>
+				</div>
+				{#each CHECKLIST as item (item.key)}
+					<label class="pc2-row" class:done={!!c.checklist?.[item.key]}>
+						<input type="checkbox" checked={!!c.checklist?.[item.key]} onchange={(e) => setChecklist(c, { [item.key]: (e.currentTarget as HTMLInputElement).checked })} />
+						<span class="pc2-box" aria-hidden="true"><Icon name="check" /></span>
+						<span>{item.label}</span>
+					</label>
+				{/each}
+			</section>
+
+			<div class="pc2-foot">
+				<button type="button" class="pc2-btn" onclick={() => (expanded = false)}>Collapse</button>
+				<button type="button" class="pc2-neo go" disabled={busy} onclick={posted}>
+					{#if busy}<span class="spinner"></span>{:else}<Icon name="check" />{/if}
+					<span>I've posted it</span>
+				</button>
+			</div>
+		</div>
+	{/if}
 </article>
 
 <style>
-	.pc { position: relative; border-radius: 22px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); margin: 6px 0 14px; }
-	.pc.focus { box-shadow: 0 0 0 2px var(--g2); }
-	.pc-band { display: flex; align-items: flex-start; gap: 12px; width: 100%; padding: 16px 18px 18px; border: 0; border-radius: 21px 21px 0 0; color: #fff; font: inherit; text-align: left; cursor: pointer;
-		background: linear-gradient(135deg, color-mix(in oklab, var(--h) 82%, #1a0d18) 0%, color-mix(in oklab, var(--h) 45%, #140a12) 70%, #140a12 100%); }
-	.pc-tile { flex: none; width: 40px; height: 40px; display: grid; place-items: center; border-radius: 12px; background: rgba(255, 255, 255, .18); border: 1px solid rgba(255, 255, 255, .25); font-weight: 800; font-size: 15px; }
-	.pc-who { flex: 1; min-width: 0; display: grid; gap: 3px; }
-	.pc-who b { font: italic 400 28px/1.05 var(--f-serif, Georgia, serif); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-	.pc-who small, .pc-day small { font-size: 10.5px; font-weight: 700; letter-spacing: .13em; text-transform: uppercase; color: rgba(255, 255, 255, .75); }
-	.pc-day { flex: none; display: grid; gap: 3px; text-align: right; }
-	.pc-day b { font-size: 17px; font-weight: 700; text-transform: capitalize; }
-	.pc-cut { position: relative; height: 0; margin: 0 16px; border-top: 2px dashed var(--line-strong); }
-	.pc-cut::before, .pc-cut::after { content: ''; position: absolute; top: -12px; width: 22px; height: 22px; border-radius: 50%; background: var(--bg); border: 1px solid var(--line); }
-	.pc-cut::before { left: -29px; clip-path: inset(0 0 0 50%); }
-	.pc-cut::after { right: -29px; clip-path: inset(0 50% 0 0); }
+	.pc2 {
+		display: grid;
+		gap: 11px;
+		padding: 14px 15px;
+		margin: 0 0 10px;
+		border-radius: 18px;
+		border: 1px solid rgba(156, 123, 255, 0.2);
+		background:
+			radial-gradient(120% 80% at 0% 0%, color-mix(in oklab, var(--h) 14%, transparent), transparent 60%),
+			var(--paper, var(--surface));
+		color: var(--ink);
+		transition: border-color 0.18s ease;
+	}
+	.pc2.focus,
+	.pc2.open {
+		border-color: rgba(242, 90, 144, 0.36);
+	}
 
-	.pc-body { display: flex; flex-direction: column; gap: 18px; padding: 18px 18px 20px; }
-	.pc-when { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-	.pc-eb { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 10.5px; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; color: var(--ink-3); }
-	.pc-eb i { font-style: normal; letter-spacing: .1em; color: var(--warn, #e0a23a); }
-	.pc-eb i.ok { color: var(--ok); }
+	/* Compact Header */
+	.pc2-top {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 10px;
+	}
+	.pc2-who {
+		flex: 1;
+		min-width: 0;
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		padding: 0;
+		border: 0;
+		background: transparent;
+		color: inherit;
+		text-align: left;
+		cursor: pointer;
+	}
+	.pc2-tile {
+		flex: none;
+		width: 38px;
+		height: 38px;
+		display: grid;
+		place-items: center;
+		border-radius: 11px;
+		background: color-mix(in oklab, var(--h) 24%, rgba(255, 255, 255, 0.06));
+		border: 1px solid color-mix(in oklab, var(--h) 42%, rgba(255, 255, 255, 0.12));
+		font-weight: 700;
+		font-size: 13.5px;
+		color: var(--ink);
+	}
+	.pc2-id {
+		min-width: 0;
+		display: grid;
+		gap: 2px;
+	}
+	.pc2-id b {
+		font: 400 22px/1.08 var(--f-serif, Georgia, serif);
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		color: var(--ink);
+	}
+	.pc2-id small {
+		font-size: 12.5px;
+		color: var(--ink-2);
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
 
-	/* The caption as it will read on Instagram, with what to copy under it. */
-	.pc-cap { display: grid; gap: 10px; }
-	.pc-cap p { margin: 0; padding: 14px 16px; border: 1px solid var(--line); background: color-mix(in oklab, var(--ink) 4%, transparent); font-size: 15px; line-height: 1.5; white-space: pre-wrap; max-height: 168px; overflow: auto; scrollbar-width: none; }
-	.pc-copy { display: flex; flex-wrap: wrap; gap: 8px; padding-right: 4px; }
-	.pc-neo { position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 8px; border: 0; border-radius: 0; font: 700 14px var(--f-body, inherit); cursor: pointer; transition: transform .07s, box-shadow .07s; }
-	.pc-neo:active:not(:disabled) { transform: translate(3px, 3px); box-shadow: none !important; }
-	.pc-neo :global(.ic) { width: 16px; height: 16px; }
-	.pc-ink { height: 40px; padding: 0 16px; background: var(--ink); color: var(--bg); box-shadow: 3px 3px 0 var(--g2); }
-	.pc-ink :global(.ic) { color: var(--g3); }
-	.pc-chip { height: 40px; padding: 0 14px; display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line-strong); border-radius: 0; background: transparent; color: var(--ink); font: 600 13.5px var(--f-body, inherit); cursor: pointer; }
-	.pc-chip:active { transform: translate(2px, 2px); }
-	.pc-chip :global(.ic) { width: 15px; height: 15px; }
+	.pc2-right {
+		flex: none;
+		display: flex;
+		align-items: center;
+		gap: 8px;
+	}
+	.pc2-when-pill {
+		display: grid;
+		justify-items: end;
+		padding: 5px 9px;
+		border-radius: 10px;
+		border: 1px solid rgba(255, 255, 255, 0.09);
+		background: rgba(255, 255, 255, 0.04);
+	}
+	.pc2-when-pill.urgent {
+		border-color: rgba(242, 90, 144, 0.36);
+		background: rgba(242, 90, 144, 0.12);
+	}
+	.pc2-when-pill b {
+		font-size: 12.5px;
+		font-weight: 700;
+		text-transform: capitalize;
+		color: var(--ink);
+	}
+	.pc2-when-pill.urgent b {
+		color: #f79fc0;
+	}
+	.pc2-when-pill small {
+		font-family: var(--mono);
+		font-size: 10.5px;
+		color: var(--ink-3);
+	}
+	.pc2-tog {
+		display: grid;
+		place-items: center;
+		width: 30px;
+		height: 30px;
+		border-radius: 9px;
+		border: 1px solid rgba(255, 255, 255, 0.1);
+		background: rgba(255, 255, 255, 0.04);
+		color: var(--ink-2);
+		cursor: pointer;
+	}
+	.pc2-tog :global(.ic) {
+		width: 15px;
+		height: 15px;
+		transition: transform 0.18s ease;
+	}
+	.pc2.open .pc2-tog :global(.ic) {
+		transform: rotate(90deg);
+	}
 
-	/* Before you post: progress in four blocks, then square ticks. */
-	.pc-check { display: grid; gap: 4px; }
-	.pc-ch { display: flex; align-items: center; }
-	.pc-n { margin-left: auto; font-size: 12px; font-weight: 700; color: var(--ink-2); }
-	.pc-bar { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; margin: 6px 0 4px; }
-	.pc-bar i { height: 6px; background: color-mix(in oklab, var(--ink) 9%, transparent); transition: background .3s; }
-	.pc-bar i.on { background: linear-gradient(90deg, var(--g1), var(--g2), var(--g3)); }
-	.pc-row { position: relative; display: grid; grid-template-columns: 24px minmax(0, 1fr); align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 14.5px; line-height: 1.35; cursor: pointer; }
-	.pc-row:last-of-type { border-bottom: 0; }
-	.pc-row input { position: absolute; opacity: 0; pointer-events: none; }
-	.pc-box { width: 22px; height: 22px; display: grid; place-items: center; border: 1.5px solid var(--line-strong); color: transparent; transition: background .2s, border-color .2s, transform .3s cubic-bezier(.2, 1.6, .4, 1); }
-	.pc-box :global(.ic) { width: 14px; height: 14px; stroke-width: 3; }
-	.pc-row.done .pc-box { border-color: transparent; background: linear-gradient(135deg, var(--g1), var(--g2)); color: #fff; transform: scale(1.06); }
-	.pc-row.done > span:last-child { color: var(--ink-3); text-decoration: line-through; text-decoration-color: color-mix(in oklab, var(--ink-3) 60%, transparent); }
-	.pc-row input:focus-visible + .pc-box { outline: 2px solid var(--g2); outline-offset: 2px; }
+	/* Compact Readiness Rail */
+	.pc2-rail {
+		display: grid;
+		gap: 6px;
+		padding: 0;
+		border: 0;
+		background: transparent;
+		text-align: left;
+		cursor: pointer;
+	}
+	.pc2-seg {
+		display: grid;
+		grid-template-columns: repeat(4, minmax(0, 1fr));
+		gap: 4px;
+	}
+	.pc2-seg i {
+		height: 4px;
+		border-radius: 999px;
+		background: rgba(255, 255, 255, 0.09);
+		transition: background 0.25s ease;
+	}
+	.pc2-seg i.on {
+		background: linear-gradient(90deg, var(--g1), var(--g2), var(--g3));
+	}
+	.pc2-rmeta {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 8px;
+		font-family: var(--mono);
+		font-size: 11px;
+	}
+	.pc2-rmeta b {
+		font-weight: 600;
+		color: var(--ink-2);
+	}
+	.pc2-rmeta b.ok,
+	.pc2-rmeta em.ok {
+		color: #7ee8a5;
+	}
+	.pc2-rmeta em {
+		font-style: normal;
+		color: #ffc896;
+	}
 
-	.pc-go { height: 50px; width: calc(100% - 4px); color: #fff; font-size: 15px; background: linear-gradient(110deg, var(--g1), var(--g2) 55%, var(--g3)); box-shadow: 4px 4px 0 #5c3ea0; }
-	.pc-go:disabled { opacity: .6; }
+	/* Quick Action Bar (Collapsed) */
+	.pc2-qacts {
+		display: flex;
+		align-items: center;
+		gap: 7px;
+		padding-top: 2px;
+	}
+	.pc2-qacts .pc2-neo {
+		margin-left: auto;
+	}
+
+	/* Expandable Drawer */
+	.pc2-drawer {
+		display: grid;
+		gap: 14px;
+		padding-top: 12px;
+		border-top: 1px dashed rgba(255, 255, 255, 0.12);
+	}
+	.pc2-when {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 8px;
+	}
+	.pc2-eb {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 8px;
+		font-family: var(--mono);
+		font-size: 10.5px;
+		font-weight: 700;
+		letter-spacing: 0.13em;
+		text-transform: uppercase;
+		color: var(--ink-3);
+	}
+	.pc2-eb i {
+		font-style: normal;
+		letter-spacing: 0.06em;
+		color: #ffc896;
+	}
+	.pc2-eb i.ok {
+		color: #7ee8a5;
+	}
+	.pc2-eb b {
+		color: var(--ink-2);
+	}
+
+	.pc2-cap {
+		display: grid;
+		gap: 8px;
+	}
+	.pc2-cap p {
+		margin: 0;
+		padding: 12px 13px;
+		border-radius: 12px;
+		border: 1px solid rgba(255, 255, 255, 0.08);
+		background: rgba(255, 255, 255, 0.03);
+		font-size: 14px;
+		line-height: 1.5;
+		color: var(--ink);
+		white-space: pre-wrap;
+		max-height: 140px;
+		overflow: auto;
+	}
+	.pc2-copy {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 7px;
+	}
+
+	.pc2-check {
+		display: grid;
+		gap: 4px;
+	}
+	.pc2-row {
+		position: relative;
+		display: grid;
+		grid-template-columns: 22px minmax(0, 1fr);
+		align-items: center;
+		gap: 10px;
+		padding: 8px 0;
+		border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+		font-size: 14px;
+		line-height: 1.35;
+		color: var(--ink);
+		cursor: pointer;
+	}
+	.pc2-row:last-of-type {
+		border-bottom: 0;
+	}
+	.pc2-row input {
+		position: absolute;
+		opacity: 0;
+		pointer-events: none;
+	}
+	.pc2-box {
+		width: 20px;
+		height: 20px;
+		display: grid;
+		place-items: center;
+		border-radius: 5px;
+		border: 1.5px solid rgba(255, 255, 255, 0.24);
+		color: transparent;
+		transition: background 0.18s ease, border-color 0.18s ease;
+	}
+	.pc2-box :global(.ic) {
+		width: 13px;
+		height: 13px;
+		stroke-width: 3;
+	}
+	.pc2-row.done .pc2-box {
+		border-color: transparent;
+		background: linear-gradient(135deg, var(--g1), var(--g2));
+		color: #fff;
+	}
+	.pc2-row.done > span:last-child {
+		color: var(--ink-3);
+		text-decoration: line-through;
+	}
+
+	.pc2-foot {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		padding-top: 2px;
+	}
+	.pc2-foot .pc2-neo.go {
+		flex: 1;
+	}
+
+	/* Buttons */
+	.pc2-btn {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 6px;
+		height: 36px;
+		padding: 0 11px;
+		border-radius: 10px;
+		border: 1px solid rgba(255, 255, 255, 0.12);
+		background: rgba(255, 255, 255, 0.04);
+		color: var(--ink);
+		font-size: 13px;
+		font-weight: 600;
+		cursor: pointer;
+	}
+	.pc2-btn :global(.ic) {
+		width: 14px;
+		height: 14px;
+	}
+	.pc2-neo {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 7px;
+		height: 42px;
+		padding: 0 15px;
+		border: 0;
+		border-radius: 0;
+		background: var(--ink);
+		color: var(--bg);
+		font: 700 13.5px/1 var(--f-sans, inherit);
+		box-shadow: 3px 3px 0 var(--g2);
+		cursor: pointer;
+	}
+	.pc2-neo.sm {
+		height: 36px;
+		padding: 0 13px;
+		font-size: 13px;
+	}
+	.pc2-neo.go {
+		background: linear-gradient(110deg, var(--g1), var(--g2) 55%, var(--g3));
+		color: #fff;
+		box-shadow: 3px 3px 0 #5c3ea0;
+	}
+	.pc2-neo:disabled {
+		opacity: 0.6;
+	}
+	.pc2-neo :global(.ic) {
+		width: 14px;
+		height: 14px;
+	}
 </style>

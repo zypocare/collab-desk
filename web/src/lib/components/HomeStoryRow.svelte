@@ -4,7 +4,7 @@
 	import Icon from './Icon.svelte';
 
 	export type StoryStat = { label: string; value: string };
-	export type StoryItem = { title: string; sub?: string; right?: string };
+	export type StoryItem = { title: string; sub?: string; right?: string; href?: string };
 	export type StoryMedia = {
 		thumbnail?: string;
 		permalink?: string;
@@ -31,6 +31,7 @@
 		progress?: { label: string; valueText: string; pct: number };
 		media?: StoryMedia;
 		stats?: StoryStat[];
+		badge?: number;
 		items?: StoryItem[];
 	};
 
@@ -59,7 +60,7 @@
 							: 'celebrate')
 	);
 
-	function openStory(index: number) {
+	export function openStory(index: number) {
 		selected = index;
 		thumbFailed = false;
 		animKey += 1;
@@ -285,7 +286,12 @@
 <nav class="creator-stories" aria-label={label}>
 	{#each stories as item, i (item.label)}
 		<button type="button" aria-haspopup="dialog" style:--story-color={item.color} style:--story-index={i} onclick={() => openStory(i)}>
-			<span class="story-ring"><span><Icon name={item.icon} /></span></span>
+			<span class="story-ring" class:has-badge={!!item.badge && item.badge > 0}>
+				<span><Icon name={item.icon} /></span>
+				{#if item.badge && item.badge > 0}
+					<em class="story-badge" aria-label="{item.badge} pending">{item.badge > 9 ? '9+' : item.badge}</em>
+				{/if}
+			</span>
 			<small>{item.label}</small>
 		</button>
 	{/each}
@@ -438,13 +444,23 @@
 							{#if story.items?.length}
 								<div class="hs-items">
 									{#each story.items as it, idx (idx)}
-										<div class="hs-item" style:--i={idx}>
-											<div>
-												<b>{it.title}</b>
-												{#if it.sub}<small>{it.sub}</small>{/if}
+										{#if it.href}
+											<a class="hs-item hs-item-link" href={it.href} style:--i={idx} onclick={closeStory}>
+												<div>
+													<b>{it.title}</b>
+													{#if it.sub}<small>{it.sub}</small>{/if}
+												</div>
+												{#if it.right}<span class="hs-item-r">{it.right}</span>{/if}
+											</a>
+										{:else}
+											<div class="hs-item" style:--i={idx}>
+												<div>
+													<b>{it.title}</b>
+													{#if it.sub}<small>{it.sub}</small>{/if}
+												</div>
+												{#if it.right}<span class="hs-item-r">{it.right}</span>{/if}
 											</div>
-											{#if it.right}<span class="hs-item-r">{it.right}</span>{/if}
-										</div>
+										{/if}
 									{/each}
 								</div>
 							{/if}
@@ -883,5 +899,41 @@
 	@keyframes hs-fade { from { opacity: 0; } }
 	@media (prefers-reduced-motion: reduce) {
 		.hs-medal, .hs-stage, .hs-rays, .hs-shock, .hs-sweep, .hs-pulse-ring, .hs-aperture, .hs-orbit-dot, .hs-stamp, .hs-card, .hs-item, .hs-acts { animation: none; opacity: 1; transform: none; }
+	}
+
+	.story-ring.has-badge {
+		box-shadow: 0 0 0 2px rgba(242, 90, 144, 0.28), 0 0 14px rgba(242, 90, 144, 0.35);
+	}
+	.story-badge {
+		position: absolute;
+		top: -3px;
+		right: -3px;
+		z-index: 3;
+		min-width: 18px;
+		height: 18px;
+		padding: 0 5px;
+		border-radius: 999px;
+		background: #f25a90;
+		color: #fff;
+		border: 2px solid var(--bg, #110d11);
+		font-style: normal;
+		font-family: var(--mono, ui-monospace, monospace);
+		font-size: 10px;
+		font-weight: 800;
+		line-height: 14px;
+		display: grid;
+		place-items: center;
+		box-shadow: 0 2px 8px rgba(242, 90, 144, 0.5);
+	}
+	.hs-item-link {
+		color: inherit;
+		text-decoration: none;
+		border-radius: 10px;
+		padding: 6px 8px;
+		margin: -6px -8px;
+		transition: background 0.15s ease;
+	}
+	.hs-item-link:hover {
+		background: rgba(255, 255, 255, 0.06);
 	}
 </style>

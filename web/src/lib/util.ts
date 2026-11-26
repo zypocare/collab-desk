@@ -182,6 +182,14 @@ export const payState = (c: Collab) =>
 	c.pay_status === 'paid' || (isPaid(c) && Number(c.fee) > 0 && (Number(c.pay_received) || 0) >= Number(c.fee) - 1) ? 'paid' : overdue(c) ? 'overdue' : 'due';
 
 export type NextLine = { text: string; tone: '' | 'late' | 'soon'; icon: string };
+/** True only when a draft still needs to be submitted (not already pending/approved, and not superseded by a postponed go-live date). */
+export function draftStillNeeded(c: Collab): boolean {
+	const dr = latestDraft(c);
+	if (dr && (dr.status === 'approved' || dr.status === 'pending')) return false;
+	if (c.live_date && diff(c.live_date) > 3 && c.draft_date && diff(c.draft_date) < 0) return false;
+	return true;
+}
+
 export function nextLine(c: Collab): NextLine {
 	const tone = (d: number) => (d < 0 ? 'late' : d <= 2 ? 'soon' : '') as NextLine['tone'];
 	const r = (text: string, d: number | null, icon = 'clock'): NextLine => ({ text, tone: d === null ? '' : tone(d), icon });
@@ -199,7 +207,7 @@ export function nextLine(c: Collab): NextLine {
 			if (c.product_date && diff(c.product_date) >= 0) return r(`Product arrives ${relWord(diff(c.product_date))}`, diff(c.product_date), 'box');
 			return c.draft_date ? r(`Draft due ${relWord(diff(c.draft_date))}`, diff(c.draft_date), 'film') : r('Set a draft date', null);
 		case 'creating':
-			if (c.draft_date && !allDone(c)) {
+			if (c.draft_date && !allDone(c) && draftStillNeeded(c)) {
 				const d = diff(c.draft_date);
 				return r(d < 0 ? `Draft overdue by ${-d} day${-d > 1 ? 's' : ''}` : `Draft due ${relWord(d)}`, d, 'film');
 			}
@@ -266,7 +274,7 @@ export function tasks(collabs: Collab[]): Task[] {
 		// A shoot she has marked done isn't late: what's left is editing, which shows as the draft coming due.
 		if (['confirmed', 'creating'].includes(c.stage) && c.shoot_date && !c.shot_at && !allDone(c) && diff(c.shoot_date) <= 1)
 			out.push({ c, kind: 'shoot', d: diff(c.shoot_date), title: diff(c.shoot_date) < 0 ? `Shoot done? Mark it, then edit · ${delivText(c.deliverables.filter((x) => !x.done))}` : `Shoot · ${delivText(c.deliverables.filter((x) => !x.done))}`, order: 2 });
-		if (!pieces.length && ['confirmed', 'creating'].includes(c.stage) && c.draft_date && !allDone(c) && diff(c.draft_date) <= 3)
+		if (!pieces.length && ['confirmed', 'creating'].includes(c.stage) && c.draft_date && !allDone(c) && draftStillNeeded(c) && diff(c.draft_date) <= 3)
 			out.push({ c, kind: 'draft', d: diff(c.draft_date), title: `${c.shot_at ? 'Edit and send the draft' : 'Send draft'} · ${delivText(c.deliverables)}`, order: 2 });
 		if (['confirmed', 'creating'].includes(c.stage) && c.live_date && diff(c.live_date) <= 3 && diff(c.live_date) >= 0)
 			out.push({ c, kind: 'live', d: diff(c.live_date), title: `Goes live · ${delivText(c.deliverables)}`, order: 3 });

@@ -106,6 +106,7 @@
 	);
 	let moneyView = $state(0);
 	let tickerPaused = $state(false);
+	let storiesRef = $state<TodayStories>();
 	const moneyLabels = $derived([`Received in ${monthName}`, 'Yet to come', 'Overdue payments', 'Next payout']);
 	const moneyValue = $derived([received, outs, odSum, nextPayout ? outstanding(nextPayout) : 0][moneyView]);
 	const moneyCaption = $derived([
@@ -266,10 +267,10 @@
 		{/if}
 	{/snippet}
 	{#snippet chips()}
-		<a class="ht-chip" class:urgent={urgent > 0} href="#sec-needs" aria-label={urgent ? `${urgent} collaboration${urgent === 1 ? '' : 's'} needing attention today` : 'All caught up today'}>
+		<button type="button" class="ht-chip" class:urgent={urgent > 0} onclick={() => storiesRef?.openNeeds()} aria-label={urgent ? `${urgent} collaboration${urgent === 1 ? '' : 's'} needing attention today` : 'All caught up today'}>
 			<span class="dot-ping" class:calm={!urgent}></span>
 			<span>{#if urgent > 0}<b>{urgent}</b> need{urgent === 1 ? 's' : ''} you{:else}<b>Caught up</b>{/if}</span>
-		</a>
+		</button>
 		<a class="ht-chip" href="#sec-collabs" aria-label="{active.length} active collab{active.length === 1 ? '' : 's'}">
 			{#if active.length}
 				<span class="mini-avs" aria-hidden="true">
@@ -315,7 +316,7 @@
 	<PlayUpdateCard />
 	<GoldenHourBanner />
 
-<TodayStories {monthName} {received} {paidN} {od} {nextPayout} />
+<TodayStories bind:this={storiesRef} {monthName} {received} {paidN} {od} {nextPayout} />
 <Stories />
 
 {#if ticker.length > 1}
@@ -381,87 +382,6 @@
 	{/snippet}
 </HomeMoneyCard>
 
-<section class="hs" id="sec-needs">
-	<header class="hs-h">
-		<h2>Needs you</h2>
-		{#if ts.length}<span class="hs-n">{ts.length}</span>{/if}
-		{#if ts.length > 2}
-			<button type="button" class="sec-link-btn" onclick={() => (fanned = !fanned)}>
-				{fanned ? 'Collapse' : `Show all ${ts.length}`}
-			</button>
-		{/if}
-	</header>
-	{#if ts.length}
-		<!-- Tickets: the brand on a band in its colour, a torn line, then what to do and by when. -->
-		<div class="tks">
-			{#each fanned ? ts : ts.slice(0, 2) as t, i (t.c.id)}
-				{@const key = t.c.id + t.kind}
-				{@const chips = ticketChips(t)}
-				{@const latest = t.c.messages?.at(-1)}
-				<article class="tk" class:leaving={leaving === key} style="--h:var(--m{hueOf(t.c.brand.name)});--i:{i}">
-					<a class="tk-band" href="/studio/c/{t.c.code}">
-						<span class="tk-tile">{t.c.brand.name.trim().slice(0, 1).toUpperCase()}</span>
-						<span class="tk-who"><b>{t.c.brand.name}</b><small>{stageLabel(t.c.stage)}</small></span>
-						<span class="tk-money"><b>{ticketMoney(t)}</b><small>{delivText(t.c.deliverables) || TYPE_LABEL[t.c.type]}</small></span>
-					</a>
-					<div class="tk-cut" aria-hidden="true"></div>
-					<div class="tk-body">
-						{#if latest}
-							<a class="tk-latest" href="/studio/inbox/{t.c.code}">
-								<Icon name="inbox" />
-								<span><strong>{latest.sender === 'creator' ? 'You' : t.c.brand.name}:</strong> {latest.body?.trim() || 'Sent an attachment'}</span>
-							</a>
-						{/if}
-						{#if chips.length}
-							<div class="tk-chips tk-chips-row">
-								{#each chips as ch (ch.text)}
-									<em class={ch.tone}>{ch.text}</em>
-								{/each}
-							</div>
-						{/if}
-						<div class="tk-foot">
-							<span class="tk-task"><b>{t.title}</b><small class:hot={hot(t)}><i></i>{when(t)}</small></span>
-							{#if t.kind === 'follow' && t.c.stage !== 'paused'}
-								<button class="btn" onclick={() => leaveThen(key, () => completeFollow(t.c))}>Done ✓</button>
-							{:else if t.kind === 'pay'}
-								<button class="btn grad" onclick={async () => (await askPaid(t.c)) && leaveThen(key, () => markPaid(t.c, false, true))}>Mark paid ✓</button>
-							{:else if t.kind === 'product' && inTransit(t.c)}
-								<button class="btn" onclick={() => leaveThen(key, () => markReceived(t.c))}>Received ✓</button>
-							{:else if t.kind === 'msg'}
-								<a class="btn grad" href="/studio/inbox/{t.c.code}">Reply ↗</a>
-							{:else}
-								<a class="btn grad" href="/studio/c/{t.c.code}">{t.kind === 'new' ? 'Review ↗' : 'Open ↗'}</a>
-							{/if}
-						</div>
-					</div>
-				</article>
-			{/each}
-		</div>
-		{#if !fanned && ts.length > 2}
-			<div class="tk-stack-edges" aria-hidden="true">
-				<span class="tk-edge-1"></span>
-				{#if ts.length > 3}<span class="tk-edge-2"></span>{/if}
-			</div>
-		{/if}
-		{#if ts.length > 2}
-			<button class="cr-more" aria-expanded={fanned} onclick={() => (fanned = !fanned)}>
-				{#if !fanned}<span class="cr-dots" aria-hidden="true">{#each ts.slice(2, 5) as t (t.c.id + t.kind)}<i style="--h:var(--m{hueOf(t.c.brand.name)})"></i>{/each}</span>+{ts.length - 2} more{:else}Show less{/if}
-			</button>
-		{/if}
-	{:else}
-		<!-- Nothing to do: the same glowing card as the money one, with two good next steps. -->
-		<div class="clear hero-card glow">
-			<div class="mesh" aria-hidden="true"></div>
-			<span class="clear-ic"><Icon name="check" /></span>
-			<b>You're all caught up</b>
-			<small>New requests, payments and follow-ups land here.</small>
-			<div class="clear-acts">
-				<a class="glass-chip" href="/studio/calendar"><Icon name="cal" />Plan your week</a>
-				<a class="glass-chip" href="/studio/pitches"><Icon name="send" />Pitch a brand</a>
-			</div>
-		</div>
-	{/if}
-</section>
 
 <AiDesk phone />
 
