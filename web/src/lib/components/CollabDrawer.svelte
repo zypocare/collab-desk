@@ -111,18 +111,18 @@
 
 	// page: shown as its own full page (/studio/c/CODE) instead of a side drawer.
 	// Full-page jump bar: only for sections this collab actually shows.
-	const JUMPS = [['sec-msg', 'Messages'], ['sec-deal', 'Deal'], ['sec-drafts', 'Drafts'], ['sec-dates', 'Dates'], ['sec-pay', 'Payment'], ['sec-brand', 'Brand'], ['sec-brief', 'Brief'], ['sec-activity', 'Activity']];
+	const JUMPS = [['sec-msg', 'Messages'], ['sec-deal', 'Deal'], ['sec-drafts', 'Drafts'], ['sec-dates', 'Dates'], ['sec-travel', 'Travel'], ['sec-pay', 'Payment'], ['sec-brand', 'Brand'], ['sec-brief', 'Brief'], ['sec-activity', 'Activity']];
 	let present = $state<string[]>([]);
 	let { page = false }: { page?: boolean } = $props();
 	// Full page: only the parts that matter at this stage; everything else one tap away.
 	const FOCUS: Record<string, string[]> = {
-		request: ['deal', 'quote', 'deliv', 'brief', 'contact'],
-		negotiating: ['deal', 'quote', 'deliv', 'brief', 'contact'],
-		confirmed: ['quote', 'deliv', 'product', 'dates', 'drafts', 'pay', 'brand', 'brief', 'rights'],
-		creating: ['deliv', 'product', 'dates', 'drafts', 'check', 'link', 'files', 'brand', 'brief', 'rights'],
-		live: ['deliv', 'check', 'posts', 'link', 'pay', 'dates', 'files', 'usage', 'rights', 'costs'],
+		request: ['deal', 'quote', 'deliv', 'brief', 'contact', 'travel'],
+		negotiating: ['deal', 'quote', 'deliv', 'brief', 'contact', 'travel'],
+		confirmed: ['quote', 'deliv', 'product', 'dates', 'drafts', 'pay', 'brand', 'brief', 'rights', 'travel'],
+		creating: ['deliv', 'product', 'dates', 'drafts', 'check', 'link', 'files', 'brand', 'brief', 'rights', 'travel'],
+		live: ['deliv', 'check', 'posts', 'link', 'pay', 'dates', 'files', 'usage', 'rights', 'costs', 'travel'],
 		wrapped: ['deliv', 'pay', 'posts', 'link', 'review', 'costs', 'files', 'usage', 'rights'],
-		paused: ['deliv', 'dates', 'pay', 'activity'],
+		paused: ['deliv', 'dates', 'pay', 'activity', 'travel'],
 		cancelled: ['deliv', 'pay', 'costs', 'activity'],
 		declined: ['deal', 'activity']
 	};
@@ -224,6 +224,7 @@
 			deal: [TYPE_LABEL[c.type], isPaid(c) && c.fee ? inr(c.fee) : '', c.usage].filter(Boolean).join(' · '),
 			quote: quote ? QUOTE_STATUS[quote.status].label : 'None yet',
 			dates: [c.draft_date ? `Draft ${fmt(c.draft_date)}` : '', c.live_date ? `live ${fmt(c.live_date)}` : ''].filter(Boolean).join(' · ') || 'Not set',
+			travel: c.shoot_mode === 'location' ? ([c.venue_name || c.venue_address || 'On-location', c.travel_km ? `${c.travel_km} km` : ''].filter(Boolean).join(' · ')) : 'At home',
 			drafts: dr ? `${c.drafts.length} sent · ${dr.status === 'approved' ? 'approved' : dr.status === 'changes' ? 'changes asked' : 'waiting'}` : 'None yet',
 			check: `${CHECKLIST.length - checklistMissing(c).length} of ${CHECKLIST.length} done`,
 			pay: open.length ? `${open.length} open · ${inr(outstanding(c))} to come` : c.pay_status === 'paid' ? 'Paid' : c.invoices.length ? `${c.invoices.length} invoice${c.invoices.length === 1 ? '' : 's'}` : 'No invoice yet',
@@ -902,6 +903,10 @@
 						<button class="btn sm" onclick={() => best && save('live_time', best.value)}>Use {timeLabel(best.value)}</button>
 					</div>
 				{/if}
+			</section>
+
+			<section data-g="work" data-ic="pin" class="sec" id="sec-travel" hidden={!sh('travel')}>
+				<h3 data-sum={sums.travel}>Shoot location &amp; travel</h3>
 				<CollabTravel {c} />
 			</section>
 

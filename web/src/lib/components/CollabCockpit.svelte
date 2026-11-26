@@ -69,6 +69,11 @@
 	const datesSub = $derived(
 		[c.draft_date ? `Draft ${fmt(c.draft_date)}` : '', c.live_date ? `Live ${fmt(c.live_date)}` : ''].filter(Boolean).join(' · ') || 'No dates set'
 	);
+	const travelSub = $derived(
+		c.shoot_mode === 'location'
+			? [c.venue_address || c.venue_name || 'On-location', c.travel_km ? `${c.travel_km} km` : ''].filter(Boolean).join(' · ')
+			: 'At home · tap for on-location'
+	);
 
 	const toolMap = $derived<Record<string, ToolMeta>>({
 		pieces: {
@@ -80,6 +85,7 @@
 			aliases: 'deliverable content reels stories'
 		},
 		dates: { id: 'dates', secId: 'sec-dates', title: 'Dates', sub: datesSub, tab: 'Work', aliases: 'schedule shoot live calendar' },
+		travel: { id: 'travel', secId: 'sec-travel', title: 'Shoot location & travel', sub: travelSub, tab: 'Work', aliases: 'location venue distance map drive commute on-location home' },
 		files: {
 			id: 'files',
 			secId: 'sec-files',
@@ -230,6 +236,7 @@
 				action: 'View pieces',
 				art: 'film',
 				groups: [
+					{ title: 'Shoot location & travel', note: travelSub, ic: 'pin', ids: ['travel'] },
 					{ title: 'Schedule & files', note: 'Dates and campaign assets', ic: 'cal', ids: workSched },
 					{ title: 'Review & approval', note: 'Drafts and posting checklist', ic: 'check', ids: workReview },
 					{ title: 'Publishing', note: 'Instagram posts and promo links', ic: 'insta', ids: workPub }
@@ -263,7 +270,7 @@
 	const searchResults = $derived.by(() => {
 		const q = query.trim().toLowerCase();
 		const all = Object.values(toolMap);
-		if (!q) return ['pieces', 'checklist', 'quote', 'payment', 'messages', 'brief'].map((id) => toolMap[id]).filter(Boolean);
+		if (!q) return ['pieces', 'travel', 'quote', 'payment', 'messages', 'brief'].map((id) => toolMap[id]).filter(Boolean);
 		return all.filter((t) => `${t.title} ${t.sub} ${t.tab} ${t.aliases ?? ''}`.toLowerCase().includes(q));
 	});
 

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { geocodePlace, TRAVEL_MODES, type TravelMode } from '#lib/travel.ts';
+	import { geocodePlace, reverseGeocode, TRAVEL_MODES, type TravelMode } from '#lib/travel.ts';
 	import { ask } from '#lib/confirm.svelte.ts';
 	import Logo from '#lib/components/Logo.svelte';
 	import { goto } from '$app/navigation';
@@ -71,16 +71,42 @@
 	$effect(() => {
 		if (!homeInput && (s?.home_address || s?.home_area)) homeInput = s.home_address || s.home_area || '';
 	});
+	let homeGpsBusy = $state(false);
 	async function saveHomeBase() {
 		const q = homeInput.trim();
 		if (!q) return toast('Enter your home or studio area first', 'alert');
 		homeLocating = true;
 		const geo = await geocodePlace(q, s?.city ?? '');
 		homeLocating = false;
-		if (!geo) return toast("Couldn't locate that address. Try your neighbourhood + city.", 'alert');
+		if (!geo) return toast("Couldn't locate that address. Try your neighbourhood + city, or tap Use GPS.", 'alert');
 		await saveSettings({ home_area: geo.label, home_address: geo.label, home_lat: geo.lat, home_lng: geo.lng });
 		homeInput = geo.label;
 		toast('Private Home Base saved', 'check');
+	}
+	async function useGpsHomeBase() {
+		if (typeof navigator === 'undefined' || !navigator.geolocation) {
+			return toast('GPS is not available on this device', 'alert');
+		}
+		homeGpsBusy = true;
+		navigator.geolocation.getCurrentPosition(
+			async (pos) => {
+				try {
+					const lat = +pos.coords.latitude.toFixed(5);
+					const lng = +pos.coords.longitude.toFixed(5);
+					const label = await reverseGeocode(lat, lng);
+					await saveSettings({ home_area: label, home_address: label, home_lat: lat, home_lng: lng });
+					homeInput = label;
+					toast(`Home Base pinned to ${label}`, 'check');
+				} finally {
+					homeGpsBusy = false;
+				}
+			},
+			() => {
+				homeGpsBusy = false;
+				toast('Location permission denied. Type your neighbourhood + city instead.', 'alert');
+			},
+			{ enableHighAccuracy: false, timeout: 10000 }
+		);
 	}
 	let bdPending = $state<{ d: number | null; m: number | null }>({ d: null, m: null });
 	const bdMonth = $derived(bdPending.m ?? s.birth_month ?? null);
@@ -211,7 +237,7 @@
 
 	// Settings are split into a few sections and only the one she picks is shown.
 	// On phones the menu is its own screen: tap a section, and "All settings" (or Back) returns.
-	type Sec = 'profile' | 'found' | 'links' | 'rates' | 'bookings' | 'offers' | 'autopilot' | 'payments' | 'reviews' | 'alerts' | 'team' | 'plan' | 'blocked' | 'account';
+	type Sec = 'profile' | 'found' | 'links' | 'rates' | 'bookings' | 'offers' | 'travel' | 'autopilot' | 'payments' | 'reviews' | 'alerts' | 'team' | 'plan' | 'blocked' | 'account';
 	const autoOn = $derived([s.autopilot_packages, s.autopilot_counter, s.autopilot_nudge, s.autopilot_brief, s.autopilot_review].filter(Boolean).length);
 	const hasPay = $derived(!!(s.upi_id || s.bank_details));
 	const sections = $derived<{ id: Sec; label: string; icon: string; sub: string; warn?: string }[]>([
@@ -237,6 +263,14 @@
 			label: 'Pricing & offers',
 			icon: 'gift',
 			sub: [s.rebook_offer ? 'Book again on' : 'Book again off', s.demand_pricing ? 'demand pricing on' : 'demand pricing off', s.instant_booking ? 'instant booking on' : 'instant booking off'].join(' · ')
+		},
+		{
+			id: 'travel',
+			label: 'Home base & travel',
+			icon: 'pin',
+			sub: (s.home_address || s.home_area)
+				? `${s.home_address || s.home_area} · ${TRAVEL_MODES[(s.travel_mode as TravelMode) || 'cab']?.label ?? 'Cab'}`
+				: 'Set private home base for on-location shoots'
 		},
 		{ id: 'autopilot', label: 'Auto-pilot', icon: 'spark', sub: autoOn ? `${autoOn} of 5 rules on` : 'All rules off' },
 		{
@@ -278,7 +312,7 @@
 	const GROUPS: { label: string; ids: Sec[] }[] = [
 		{ label: 'Your page', ids: ['profile', 'found', 'links', 'rates', 'reviews'] },
 		{ label: 'Bookings & money', ids: ['bookings', 'offers', 'payments'] },
-		{ label: 'How your desk works', ids: ['autopilot', 'alerts', 'team'] },
+		{ label: 'How your desk works', ids: ['travel', 'autopilot', 'alerts', 'team'] },
 		{ label: 'Account', ids: ['plan', 'blocked', 'account'] }
 	];
 	const byId = (id: Sec) => sections.find((x) => x.id === id)!;
@@ -465,20 +499,6 @@
 									<small class="hint">On your birthday your Today screen celebrates with you, and we send you a little note.</small>
 								</div>
 								<div class="f span2">
-									<span class="lbl-t">Home / Studio Base <span class="hint">(private, never shown to brands)</span></span>
-									<div style="display:flex;gap:8px;align-items:center">
-										<input class="inp" style="flex:1;min-width:0" placeholder="Area or address (e.g. Indiranagar, Bengaluru)" bind:value={homeInput} />
-										<button type="button" class="btn sm primary" disabled={homeLocating} onclick={saveHomeBase}>{homeLocating ? 'Locating…' : 'Save base'}</button>
-									</div>
-									<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:8px">
-										{#each Object.entries(TRAVEL_MODES) as [k, m] (k)}
-											<button type="button" class="btn sm" class:primary={(s.travel_mode || 'cab') === k} onclick={() => saveSettings({ travel_mode: k as TravelMode })}>{m.label}</button>
-										{/each}
-										<span class="hint" style="margin-left:auto">Leave buffer: +{s.travel_buffer_mins ?? 15}m</span>
-									</div>
-									<small class="hint">Used only to calculate on-location shoot distance, travel cost estimates and shoot-day leave nudges.</small>
-								</div>
-								<div class="f span2">
 									<span class="lbl-t">Languages you create content in</span>
 									<LanguagePicker label="Languages you create content in" options={LANGUAGES} value={s.content_languages ?? []} onchange={(v) => (v.length ? saveSettings({ content_languages: v }) : toast('Keep at least one language.', 'alert'))} />
 									<small class="hint">Shown on your brand page. Brands pick one, or several for mixed-language content.</small>
@@ -572,6 +592,66 @@
 						<DecisionSettings />
 					{:else if active === 'offers'}
 						<OffersSettings />
+					{:else if active === 'travel'}
+						<section class="panel rv hb-panel" style="--i:1">
+							<div class="panel-h">
+								<h2>Home / Studio Base</h2>
+								<small>private · never shown to brands</small>
+							</div>
+							<div class="hb-body">
+								{#if typeof s.home_lat === 'number' && typeof s.home_lng === 'number'}
+									<div class="hb-pinned">
+										<Icon name="check" />
+										<span>Pinned: <b>{s.home_address || s.home_area}</b></span>
+									</div>
+								{/if}
+								<div class="hb-field">
+									<label for="hb-addr">Neighbourhood or address</label>
+									<input
+										id="hb-addr"
+										class="hb-inp"
+										placeholder="e.g. JP Nagar 7th Phase, Bengaluru"
+										bind:value={homeInput}
+									/>
+									<div class="hb-actions">
+										<button type="button" class="hb-neo" disabled={homeLocating} onclick={saveHomeBase}>
+											{homeLocating ? 'Locating…' : 'Save home base'}
+										</button>
+										<button type="button" class="hb-gps" disabled={homeGpsBusy} onclick={useGpsHomeBase}>
+											<Icon name="pin" />{homeGpsBusy ? 'Getting GPS…' : 'Use GPS'}
+										</button>
+									</div>
+								</div>
+
+								<div class="hb-field">
+									<span class="hb-lbl">Default travel mode</span>
+									<div class="hb-seg4" role="radiogroup" aria-label="Default travel mode">
+										{#each Object.entries(TRAVEL_MODES) as [k, m] (k)}
+											<button
+												type="button"
+												class:on={(s.travel_mode || 'cab') === k}
+												onclick={() => saveSettings({ travel_mode: k as TravelMode })}
+											>{m.label}</button>
+										{/each}
+									</div>
+								</div>
+
+								<div class="hb-field">
+									<span class="hb-lbl">Arrival buffer before shoot</span>
+									<div class="hb-seg3" role="radiogroup" aria-label="Arrival buffer">
+										{#each [10, 15, 25] as mins (mins)}
+											<button
+												type="button"
+												class:on={(s.travel_buffer_mins ?? 15) === mins}
+												onclick={() => saveSettings({ travel_buffer_mins: mins })}
+											>+{mins} min</button>
+										{/each}
+									</div>
+								</div>
+
+								<p class="hb-note">Used only to calculate road distance, travel cost estimates and shoot-day leave reminders for on-location collabs.</p>
+							</div>
+						</section>
 					{:else if active === 'autopilot'}
 						<AutopilotSettings />
 						<CommentDmSettings />
@@ -635,3 +715,24 @@
 		</div>
 	{/if}
 </div>
+
+<style>
+	.hb-body { display: grid; gap: 18px; padding: 4px 0 6px; }
+	.hb-pinned { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 10px; background: color-mix(in srgb, #34d399 10%, transparent); border: 1px solid color-mix(in srgb, #34d399 30%, transparent); font-size: 13px; color: var(--ink); }
+	.hb-pinned :global(svg) { width: 15px; height: 15px; color: #34d399; flex-shrink: 0; }
+	.hb-field { display: grid; gap: 8px; }
+	.hb-field label, .hb-lbl { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+	.hb-inp { width: 100%; min-width: 0; padding: 12px 14px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface, #161116); color: var(--ink); font-size: 14.5px; outline: none; }
+	.hb-inp:focus { border-color: var(--g1); }
+	.hb-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+	.hb-neo { flex: 1; min-width: 140px; padding: 11px 16px; border: 0; border-radius: 0; background: var(--ink); color: var(--bg); font-size: 13px; font-weight: 700; letter-spacing: 0.02em; box-shadow: 3px 3px 0 var(--g2); cursor: pointer; }
+	.hb-neo:disabled { opacity: 0.55; cursor: wait; }
+	.hb-gps { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 11px 14px; border-radius: 0; border: 1px solid var(--line); background: transparent; color: var(--ink); font-size: 13px; font-weight: 600; cursor: pointer; }
+	.hb-gps :global(svg) { width: 15px; height: 15px; }
+	.hb-seg4 { display: grid; grid-template-columns: repeat(4, 1fr); border: 1px solid var(--line); }
+	.hb-seg3 { display: grid; grid-template-columns: repeat(3, 1fr); border: 1px solid var(--line); }
+	.hb-seg4 button, .hb-seg3 button { padding: 10px 6px; border: 0; border-right: 1px solid var(--line); background: transparent; color: var(--muted); font-size: 12.5px; font-weight: 600; cursor: pointer; transition: background 0.15s, color 0.15s; }
+	.hb-seg4 button:last-child, .hb-seg3 button:last-child { border-right: 0; }
+	.hb-seg4 button.on, .hb-seg3 button.on { background: var(--ink); color: var(--bg); box-shadow: inset 0 -3px 0 var(--g2); }
+	.hb-note { margin: 0; font-size: 12.5px; line-height: 1.5; color: var(--muted); }
+</style>

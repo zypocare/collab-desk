@@ -78,7 +78,7 @@
 				travel_km: km,
 				travel_mins: mins
 			});
-			toast(km ? `Distance calculated: ${km} km (~${mins} min off-peak)` : 'Venue saved. Add your Home Base in Profile to calculate distance.', 'check');
+			toast(km ? `Distance calculated: ${km} km (~${mins} min off-peak)` : 'Venue saved. Add your Home Base in Settings → Home base & travel to calculate distance.', 'check');
 		} finally {
 			locating = false;
 		}
@@ -113,9 +113,9 @@
 		</div>
 	{:else}
 		{#if !hasHome}
-			<a class="trv-warn" href="/studio/settings?s=profile">
+			<a class="trv-warn" href="/studio/settings?s=travel">
 				<Icon name="pin" />
-				<span>Set your private <b>Home Base</b> in Profile to calculate distance &amp; cab cost.</span>
+				<span>Set your private <b>Home Base</b> in Settings to calculate distance &amp; travel cost.</span>
 				<Icon name="chevR" />
 			</a>
 		{/if}
