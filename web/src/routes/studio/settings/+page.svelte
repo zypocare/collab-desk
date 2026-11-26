@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { extractMapsUrl, googleMapsSearchUrl, resolveMapsLink, reverseGeocode, searchPlaces, TRAVEL_MODES, type PlaceCandidate, type TravelMode } from '#lib/travel.ts';
+	import { extractMapsUrl, resolveMapsLink, reverseGeocode, searchPlaces, TRAVEL_MODES, type PlaceCandidate, type TravelMode } from '#lib/travel.ts';
 	import { ask } from '#lib/confirm.svelte.ts';
 	import Logo from '#lib/components/Logo.svelte';
 	import { goto } from '$app/navigation';
@@ -21,6 +21,7 @@
 	import Select from '#lib/components/Select.svelte';
 	import { rateCheck, suggestRates } from '#lib/rateSuggest.ts';
 	import Icon from '#lib/components/Icon.svelte';
+	import MapPicker from '#lib/components/MapPicker.svelte';
 	import RingIcons from '#lib/components/RingIcons.svelte';
 	import Avatar from '#lib/components/Avatar.svelte';
 	import Ticket from '#lib/components/Ticket.svelte';
@@ -76,6 +77,7 @@
 		}
 	});
 	let homeGpsBusy = $state(false);
+	let homeMapOpen = $state(false);
 	let homePicks = $state<PlaceCandidate[]>([]);
 	async function applyHomePin(place: { lat: number; lng: number; label: string }) {
 		await saveSettings({ home_area: place.label, home_address: place.label, home_lat: place.lat, home_lng: place.lng });
@@ -667,9 +669,9 @@
 										</button>
 									</div>
 									<div class="hb-gmaps">
-										<a class="hb-gbtn" href={googleMapsSearchUrl(homeInput.trim() || s.city || 'Bengaluru')} target="_blank" rel="noopener">
-											<Icon name="pin" />Pick on Google Maps
-										</a>
+										<button type="button" class="hb-gbtn hi" onclick={() => (homeMapOpen = true)}>
+											<Icon name="pin" />Pick on map
+										</button>
 										<button type="button" class="hb-gbtn" disabled={homeLocating} onclick={pasteHomeMapsLink}>
 											<Icon name="link" />Paste Maps link
 										</button>
@@ -780,6 +782,21 @@
 	{/if}
 </div>
 
+{#if homeMapOpen}
+	<MapPicker
+		title="Pin your Home Base"
+		initialLat={typeof s.home_lat === 'number' ? s.home_lat : 12.9716}
+		initialLng={typeof s.home_lng === 'number' ? s.home_lng : 77.5946}
+		initialLabel={s.home_address || s.home_area || ''}
+		cityHint={s.city ?? ''}
+		onclose={() => (homeMapOpen = false)}
+		onpick={(place) => {
+			homeMapOpen = false;
+			void applyHomePin(place);
+		}}
+	/>
+{/if}
+
 <style>
 	.hb-body { display: grid; gap: 18px; padding: 16px 18px 20px; }
 	.hb-pinned { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 10px; background: color-mix(in srgb, #34d399 10%, transparent); border: 1px solid color-mix(in srgb, #34d399 30%, transparent); font-size: 13px; color: var(--ink); }
@@ -804,6 +821,7 @@
 	.hb-seg4 button.on, .hb-seg3 button.on { background: var(--ink); color: var(--bg); box-shadow: inset 0 -3px 0 var(--g2); }
 	.hb-note { margin: 0; font-size: 12.5px; line-height: 1.5; color: var(--muted); }
 	.hb-gmaps { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+	.hb-gbtn.hi { border-color: rgba(242, 90, 144, 0.42); background: rgba(242, 90, 144, 0.12); }
 	.hb-gbtn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 36px; padding: 0 10px; border-radius: 9px; border: 1px solid rgba(156, 123, 255, 0.28); background: rgba(156, 123, 255, 0.08); color: var(--ink); font-size: 12px; font-weight: 600; text-decoration: none; cursor: pointer; }
 	.hb-gbtn :global(svg) { width: 14px; height: 14px; color: #c8b6ff; flex-shrink: 0; }
 	.hb-picks { display: grid; gap: 6px; padding: 10px; border-radius: 10px; border: 1px solid rgba(156, 123, 255, 0.3); background: rgba(13, 10, 14, 0.65); }

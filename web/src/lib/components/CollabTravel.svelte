@@ -6,7 +6,6 @@
 		cleanPlaceLabel,
 		estimateTrip,
 		extractMapsUrl,
-		googleMapsSearchUrl,
 		haversineKm,
 		mapsDirectionsUrl,
 		resolveMapsLink,
@@ -18,6 +17,7 @@
 		type TravelSlotId
 	} from '../travel';
 	import Icon from './Icon.svelte';
+	import MapPicker from './MapPicker.svelte';
 
 	let { c }: { c: Collab } = $props();
 	const s = $derived(studio.settings);
@@ -31,6 +31,7 @@
 	let candidates = $state<PlaceCandidate[]>([]);
 	let searchedEmpty = $state(false);
 	let lastCollabId = $state('');
+	let mapOpen = $state(false);
 
 	$effect(() => {
 		if (c.id !== lastCollabId) {
@@ -54,12 +55,6 @@
 	const dealVal = $derived(c.type === 'barter' ? Number(c.product_value || 0) : Number(c.fee || 0));
 	const costRatio = $derived(trip && dealVal > 0 ? Math.round((trip.roundTripCost / dealVal) * 100) : 0);
 	const tightBarter = $derived(!!trip && c.type === 'barter' && (costRatio >= 30 || trip.distKm >= 12));
-
-	const mapsSearchHref = $derived(
-		googleMapsSearchUrl(
-			[venueInput.trim() || c.brand.name, s?.city || ''].filter(Boolean).join(', ')
-		)
-	);
 
 	const mapsUrl = $derived(
 		mapsDirectionsUrl(
@@ -212,9 +207,9 @@
 		</form>
 
 		<div class="trv-gmaps-row">
-			<a class="trv-gbtn" href={mapsSearchHref} target="_blank" rel="noopener">
-				<Icon name="pin" /><span>Pick on Google Maps</span>
-			</a>
+			<button type="button" class="trv-gbtn hi" onclick={() => (mapOpen = true)}>
+				<Icon name="pin" /><span>Pick on map</span>
+			</button>
 			<button type="button" class="trv-gbtn" disabled={locating} onclick={pasteMapsLink}>
 				<Icon name="link" /><span>Paste Maps link</span>
 			</button>
@@ -305,6 +300,22 @@
 		{/if}
 	{/if}
 </div>
+
+
+{#if mapOpen}
+	<MapPicker
+		title="Pick shoot location"
+		initialLat={hasVenuePin ? c.venue_lat! : (homeCoords?.lat ?? 12.9716)}
+		initialLng={hasVenuePin ? c.venue_lng! : (homeCoords?.lng ?? 77.5946)}
+		initialLabel={cleanPlaceLabel(c.venue_address || c.venue_name || '')}
+		cityHint={s?.city ?? ''}
+		onclose={() => (mapOpen = false)}
+		onpick={(place) => {
+			mapOpen = false;
+			void applyPin(place);
+		}}
+	/>
+{/if}
 
 <style>
 	.trv {
@@ -462,6 +473,7 @@
 		text-decoration: none;
 		cursor: pointer;
 	}
+	.trv-gbtn.hi { border-color: rgba(242, 90, 144, 0.42); background: rgba(242, 90, 144, 0.12); }
 	.trv-gbtn:disabled { opacity: 0.5; cursor: not-allowed; }
 	.trv-gbtn :global(.ic) { width: 13px; height: 13px; color: #c8b6ff; flex: none; }
 
