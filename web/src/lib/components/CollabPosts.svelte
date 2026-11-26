@@ -2,7 +2,7 @@
 	import { onMount } from 'svelte';
 	import { ask } from '../confirm.svelte';
 	import { igImg } from '../igImg';
-	import { igSync, linkPost, sendReport, studio, unlinkPost } from '../studio.svelte';
+	import { igSync, linkPost, sendReport, studio, unlinkPost, updateCollab } from '../studio.svelte';
 	import { supabase } from '../supabase';
 	import { toast } from '../ui.svelte';
 	import type { Collab, IgMedia } from '../types';
@@ -43,6 +43,20 @@
 		if (ageMs > 2 * 60_000) syncNow();
 	});
 	let failedThumbs = $state<Record<string, boolean>>({});
+
+	const activeCoverId = $derived.by(() => {
+		const list = c.posts.filter((x) => !!x.media?.thumbnail_url);
+		if (!list.length) return '';
+		const picked = c.brief_details?.cover_media_id;
+		if (picked && list.some((x) => x.media.id === picked)) return picked;
+		const nonStory = list.filter((x) => x.media.product_type !== 'STORY');
+		const pool = nonStory.length ? nonStory : list;
+		return [...pool].sort((a, b) => (b.media.views ?? b.media.reach ?? 0) - (a.media.views ?? a.media.reach ?? 0))[0].media.id;
+	});
+	async function setAsCover(mediaId: string) {
+		await updateCollab(c.id, { brief_details: { ...(c.brief_details ?? {}), cover_media_id: mediaId } });
+		toast('Profile cover thumbnail updated', 'check');
+	}
 
 	const label = mediaLabel;
 
@@ -183,11 +197,23 @@
 
 				<!-- Footer Actions -->
 				<div class="cp2-acts">
+					{#if m.thumbnail_url}
+						<button
+							type="button"
+							class="cp2-btn"
+							class:cover-on={m.id === activeCoverId}
+							disabled={m.id === activeCoverId}
+							onclick={() => setAsCover(m.id)}
+						>
+							<Icon name={m.id === activeCoverId ? 'check' : 'image'} />
+							<span>{m.id === activeCoverId ? 'Cover' : 'Set cover'}</span>
+						</button>
+					{/if}
 					<button type="button" class="cp2-btn" onclick={() => disclosureRecord(c, m)}>
-						<Icon name="shield" /><span>Disclosure PDF</span>
+						<Icon name="shield" /><span>PDF</span>
 					</button>
 					<a class="cp2-btn primary" href={m.permalink} target="_blank" rel="noopener">
-						<Icon name="insta" /><span>Open on IG</span>
+						<Icon name="insta" /><span>Open IG</span>
 					</a>
 				</div>
 			</article>
@@ -641,6 +667,7 @@
 		text-decoration: none;
 		cursor: pointer;
 	}
+	.cp2-btn.cover-on { border-color: rgba(74, 222, 128, 0.36); background: rgba(74, 222, 128, 0.12); color: #7ee8a5; opacity: 1; }
 	.cp2-btn.primary {
 		border-color: rgba(156, 123, 255, 0.34);
 		background: rgba(156, 123, 255, 0.14);

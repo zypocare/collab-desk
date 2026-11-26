@@ -119,7 +119,7 @@ export type ReelScript = {
 	made_at?: string;
 };
 
-export type BriefDetails = { message?: string; hashtags?: string[]; mentions?: string[]; link?: string; promo?: string; dos?: string; donts?: string; references?: string };
+export type BriefDetails = { message?: string; hashtags?: string[]; mentions?: string[]; link?: string; promo?: string; dos?: string; donts?: string; references?: string; cover_media_id?: string };
 
 export type PackageItem = { kind: string; qty: number };
 export type Package = { id: string; name: string; description: string; items: PackageItem[]; price: number; badge: string; active: boolean; position: number; created_at: string };
