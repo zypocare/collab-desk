@@ -676,7 +676,7 @@ const mmss = (t: number) => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).
  * across it (made on this device); the brand sees only that until the collab is paid. Files go up
  * in resumable pieces, so a dropped signal doesn't start them over.
  */
-export async function shareDraft(c: Collab, d: { link: string; caption: string; note: string }, file?: File | null, onProgress?: (p: DraftProgress) => void, signal?: AbortSignal) {
+export async function shareDraft(c: Collab, d: { link: string; caption: string; note: string; sent_via?: 'miracle' | 'whatsapp' | 'instagram' | 'email' | 'other' }, file?: File | null, onProgress?: (p: DraftProgress) => void, signal?: AbortSignal) {
 	let file_path: string | null = null;
 	let preview_path: string | null = null;
 	let preview_type = '';
@@ -709,13 +709,15 @@ export async function shareDraft(c: Collab, d: { link: string; caption: string; 
 			return false;
 		}
 	}
-	const { error } = await supabase.from('drafts').insert({ collab_id: c.id, ...d, file_path, file_type: file?.type ?? '', preview_path, preview_type });
+	const via = d.sent_via ?? 'miracle';
+	const { error } = await supabase.from('drafts').insert({ collab_id: c.id, link: d.link, caption: d.caption, note: d.note, sent_via: via, file_path, file_type: file?.type ?? '', preview_path, preview_type });
 	if (error) {
 		toast(`Couldn't share the draft: ${errMessage(error)}`, 'alert');
 		return false;
 	}
 	await reloadOne(c.id);
-	toast(preview_path ? `Draft sent to ${c.brand.name}, with their watermarked preview` : `Draft sent to ${c.brand.name} for approval`, 'send');
+	const viaMsg = via === 'whatsapp' ? `Logged as sent to ${c.brand.name} on WhatsApp` : via === 'instagram' ? `Logged as sent to ${c.brand.name} on Instagram DM` : preview_path ? `Draft sent to ${c.brand.name}, with their watermarked preview` : `Draft sent to ${c.brand.name} for approval`;
+	toast(viaMsg, 'send');
 	return true;
 }
 
@@ -725,6 +727,29 @@ export async function releaseDraft(id: string, collabId: string) {
 	if (error) return toast(`Couldn't send it: ${errMessage(error)}`, 'alert');
 	await reloadOne(collabId);
 	toast('The brand can now open the clean file', 'send');
+}
+
+/** Record the brand's decision when they approved or requested changes on WhatsApp or Instagram DM. */
+export async function recordDraftDecision(d: { id: string; round: number; sent_via?: string }, collabId: string, status: 'approved' | 'changes', feedback = '') {
+	const viaLabel = d.sent_via === 'whatsapp' ? 'WhatsApp' : d.sent_via === 'instagram' ? 'Instagram DM' : 'direct chat';
+	const responded_by = `Logged from ${viaLabel}`;
+	const { error } = await supabase
+		.from('drafts')
+		.update({ status, feedback: feedback.trim(), responded_at: new Date().toISOString(), responded_by })
+		.eq('id', d.id);
+	if (error) {
+		toast(`Couldn't update draft: ${errMessage(error)}`, 'alert');
+		return false;
+	}
+	await supabase.from('collab_events').insert({
+		collab_id: collabId,
+		kind: 'draft',
+		text: status === 'approved' ? `Round ${d.round} marked approved (${viaLabel})` : `Round ${d.round} changes noted (${viaLabel})${feedback.trim() ? `: ${feedback.trim().slice(0, 120)}` : ''}`,
+		visible_to_brand: false
+	});
+	await reloadOne(collabId);
+	toast(status === 'approved' ? `Round ${d.round} marked approved — ready to post` : `Changes logged for Round ${d.round}`, status === 'approved' ? 'check' : 'film');
+	return true;
 }
 
 export async function setChecklist(c: Collab, patch: Checklist) {

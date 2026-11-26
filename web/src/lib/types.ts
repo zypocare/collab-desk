@@ -76,6 +76,7 @@ export type Quote = {
 };
 
 export type DraftStatus = 'pending' | 'approved' | 'changes';
+export type DraftChannel = 'miracle' | 'whatsapp' | 'instagram' | 'email' | 'other';
 export type Draft = {
 	id: string;
 	collab_id: string;
@@ -90,6 +91,7 @@ export type Draft = {
 	responded_by: string | null;
 	file_path: string | null;
 	file_type: string;
+	sent_via?: DraftChannel;
 	/** The brand's watermarked copy (made on her device), and when the clean file was opened to them. */
 	preview_path?: string | null;
 	preview_type?: string;

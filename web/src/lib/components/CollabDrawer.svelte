@@ -94,7 +94,8 @@
 		payTerms,
 		waLink
 	} from '../util';
-	import { DRAFT_MAX_MB, cancelInvoice, recordPayment, reloadCollabs, setChecklist, setInvoiceFlags, setSomeday, shareDraft, releaseDraft, withdrawQuote, type DraftProgress } from '../studio.svelte';
+	import { DRAFT_MAX_MB, cancelInvoice, recordPayment, reloadCollabs, setChecklist, setInvoiceFlags, setSomeday, shareDraft, recordDraftDecision,
+		releaseDraft, withdrawQuote, type DraftProgress } from '../studio.svelte';
 	import { emailOk, errMessage, rel, todayIso, unreadFor, waShare } from '../util';
 	import type { Quote } from '../types';
 	import { INVOICE_STATUS, KIND_LABEL, balanceDue, type Invoice } from '../invoice';
@@ -312,7 +313,11 @@
 	let paymentOpen = $state<Invoice | null>(null);
 	const issuedInvoices = $derived(c ? c.invoices.filter((i) => i.status !== 'draft' && i.status !== 'cancelled') : []);
 	let confirmLive = $state(false);
-	let draftForm = $state({ link: '', caption: '', note: '' });
+	let draftForm = $state<{ link: string; caption: string; note: string; sent_via: 'miracle' | 'whatsapp' | 'instagram' }>({ link: '', caption: '', note: '', sent_via: 'miracle' });
+	let changeDraftId = $state<string | null>(null);
+	let changeNote = $state('');
+	let decisionBusy = $state(false);
+	const viaLabel = (v?: string) => (v === 'whatsapp' ? 'WhatsApp' : v === 'instagram' ? 'Instagram DM' : v === 'email' ? 'Email' : '');
 	let draftFile = $state<File | null>(null);
 	let draftBusy = $state(false);
 	let showOld = $state(false);
@@ -321,7 +326,9 @@
 		void ui.openCollab;
 		confirmLive = false;
 		quoteOpen = null;
-		draftForm = { link: '', caption: '', note: '' };
+		draftForm = { link: '', caption: '', note: '', sent_via: 'miracle' };
+		changeDraftId = null;
+		changeNote = '';
 	});
 
 	let draftProg = $state<DraftProgress | null>(null);
@@ -331,11 +338,13 @@
 		if (!c) return;
 		draftBusy = true;
 		draftStop = new AbortController();
-		const ok = await shareDraft(c, draftForm, draftFile, (p) => (draftProg = p), draftStop.signal);
+		const ok = await shareDraft(c, draftForm, draftForm.sent_via === 'miracle' ? draftFile : null, (p) => (draftProg = p), draftStop.signal);
 		draftBusy = false;
 		draftProg = null;
 		if (ok) {
-			draftForm = { link: '', caption: '', note: '' };
+			draftForm = { link: '', caption: '', note: '', sent_via: 'miracle' };
+		changeDraftId = null;
+		changeNote = '';
 			draftFile = null;
 		}
 	}
@@ -903,6 +912,7 @@
 					<div class="draft-row">
 						<div class="draft-h">
 							<b>Round {d.round}</b>
+							{#if viaLabel(d.sent_via)}<span class="df-via-pill">{viaLabel(d.sent_via)}</span>{/if}
 							<span class="pill tint {DRAFT_STATUS[d.status].k}">{DRAFT_STATUS[d.status].label}</span>
 							<span class="hint">{fmt(d.submitted_at)}</span>
 						</div>
@@ -911,6 +921,22 @@
 						{#if d.link}<a class="lnk draft-link" href={d.link} target="_blank" rel="noopener">{d.link}</a>{/if}
 						{#if d.caption}<p class="draft-cap">{d.caption}</p>{/if}
 						{#if d.feedback}<blockquote class="note" style="margin:8px 0 0"><span>{d.status === 'approved' ? 'Brand note' : 'Changes asked'} · {d.responded_by}</span><p>{d.feedback}</p></blockquote>{/if}
+						{#if d.note && !d.file_path && !d.link}<p class="hint" style="margin:6px 0 0">{d.note}</p>{/if}
+						{#if d.status === 'pending'}
+							<div class="df-dec">
+								<small>Brand replied on {viaLabel(d.sent_via) || 'WhatsApp / IG'}?</small>
+								<div class="df-dec-acts">
+									<button type="button" class="df-dec-ok" disabled={decisionBusy} onclick={async () => { decisionBusy = true; await recordDraftDecision(d, c.id, 'approved'); decisionBusy = false; }}><Icon name="check" />Mark approved</button>
+									<button type="button" class="df-dec-chg" disabled={decisionBusy} onclick={() => { changeDraftId = changeDraftId === d.id ? null : d.id; changeNote = ''; }}><Icon name="edit" />Changes asked</button>
+								</div>
+								{#if changeDraftId === d.id}
+									<div class="df-dec-form">
+										<input class="inp" placeholder="What changes did they ask for? (optional)" bind:value={changeNote} />
+										<button type="button" class="btn sm" disabled={decisionBusy} onclick={async () => { decisionBusy = true; const ok = await recordDraftDecision(d, c.id, 'changes', changeNote); decisionBusy = false; if (ok) { changeDraftId = null; changeNote = ''; } }}>Save</button>
+									</div>
+								{/if}
+							</div>
+						{/if}
 						<SchedulePost {c} {d} />
 					</div>
 				{/each}
@@ -920,7 +946,13 @@
 					{/if}
 					<form class="draft-form" onsubmit={sendDraft}>
 						<div class="df-h"><span>New draft</span><b>Round {c.drafts.length + 1}</b></div>
-						<div class="df-file">
+						<div class="df-via" role="tablist" aria-label="How are you sharing this draft?">
+							<button type="button" role="tab" aria-selected={draftForm.sent_via === 'miracle'} class:on={draftForm.sent_via === 'miracle'} onclick={() => (draftForm.sent_via = 'miracle')}>Upload / link</button>
+							<button type="button" role="tab" aria-selected={draftForm.sent_via === 'whatsapp'} class:on={draftForm.sent_via === 'whatsapp'} onclick={() => (draftForm.sent_via = 'whatsapp')}>WhatsApp</button>
+							<button type="button" role="tab" aria-selected={draftForm.sent_via === 'instagram'} class:on={draftForm.sent_via === 'instagram'} onclick={() => (draftForm.sent_via = 'instagram')}>Instagram DM</button>
+						</div>
+						{#if draftForm.sent_via === 'miracle'}
+							<div class="df-file">
 							<input id="dr-file" type="file" accept="video/mp4,video/quicktime,video/webm,image/jpeg,image/png,image/webp,image/heic" onchange={(e) => (draftFile = (e.currentTarget as HTMLInputElement).files?.[0] ?? null)} />
 							<label for="dr-file" class="df-drop" class:has={!!draftFile}>
 								<span class="df-ic"><Icon name={draftFile ? 'check' : 'plus'} /></span>
@@ -930,6 +962,15 @@
 							{#if draftFile && draftFile.size > DRAFT_MAX_MB * 1024 * 1024}<p class="hint warn-text" style="margin-top:6px">{Math.round(draftFile.size / 1048576)} MB is too big. Add a Drive link below instead.</p>{/if}
 						</div>
 						<div class="f"><label for="dr-link">Or a link to it</label><input class="inp" id="dr-link" placeholder="Google Drive or WeTransfer link" bind:value={draftForm.link} /></div>
+						{:else}
+							<div class="df-off">
+								<Icon name={draftForm.sent_via === 'whatsapp' ? 'send' : 'insta'} />
+								<div>
+									<b>Track draft sent on {draftForm.sent_via === 'whatsapp' ? 'WhatsApp' : 'Instagram DM'}</b>
+									<small>No file upload needed. Logging this moves the collab to "With the brand" and lets you mark it approved once they reply.</small>
+								</div>
+							</div>
+						{/if}
 						<div class="f"><label for="dr-cap">Caption</label><div class="df-starts"><span>Start from the brief</span><button type="button" onclick={() => c && (draftForm.caption = captionStarter(c, 'short'))}>Short</button><button type="button" onclick={() => c && (draftForm.caption = captionStarter(c, 'detailed'))}>Detailed</button><button type="button" class="ai" disabled={capBusy} onclick={writeCaption}><Icon name="spark" />{capBusy ? 'Writing…' : 'Write with AI'}</button></div><textarea class="inp" id="dr-cap" rows="3" placeholder="#ad The caption you plan to post, with @brand tag" bind:value={draftForm.caption}></textarea>{#if shots.length}<div class="ai-shots"><span class="lbl-t">Shot list</span><ol>{#each shots as sh, i (i)}<li>{sh}</li>{/each}</ol></div>{/if}
 							{#if draftForm.caption.trim()}
 								{@const bc = briefCheck(draftForm.caption, c.brand.instagram, c.brief_details, c.type)}
@@ -947,7 +988,14 @@
 								<small>Keep this screen open. If the signal drops, the upload carries on from where it stopped.</small>
 							</div>
 						{:else}
-							<button class="btn df-send" type="submit" disabled={draftBusy || (!draftFile && !draftForm.link.trim() && !draftForm.caption.trim())}><Icon name="send" />Send draft {c.drafts.length + 1} for approval</button>
+							<button class="btn df-send" type="submit" disabled={draftBusy || (draftForm.sent_via === 'miracle' && !draftFile && !draftForm.link.trim() && !draftForm.caption.trim())}>
+								<Icon name={draftForm.sent_via === 'instagram' ? 'insta' : 'send'} />
+								{draftForm.sent_via === 'whatsapp'
+									? `Log round ${c.drafts.length + 1} sent on WhatsApp`
+									: draftForm.sent_via === 'instagram'
+										? `Log round ${c.drafts.length + 1} sent on Instagram DM`
+										: `Send draft ${c.drafts.length + 1} for approval`}
+							</button>
 						{/if}
 					</form>
 				{:else}
@@ -1235,4 +1283,87 @@
 	.dr-b.has-cockpit > :global(.dr-all) {
 		display: none !important;
 	}
+
+	.df-via {
+		display: grid;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		border: 1px solid var(--line-strong);
+		background: var(--surface-2);
+	}
+	.df-via button {
+		min-height: 38px;
+		padding: 7px 4px;
+		border: 0;
+		border-right: 1px solid var(--line);
+		background: transparent;
+		color: var(--ink-2);
+		font: 700 10.5px/1 var(--f-body, inherit);
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+		cursor: pointer;
+	}
+	.df-via button:last-child { border-right: 0; }
+	.df-via button.on {
+		background: var(--ink);
+		color: var(--bg);
+		box-shadow: inset 0 -3px 0 var(--g2);
+	}
+	.df-off {
+		display: flex;
+		align-items: flex-start;
+		gap: 10px;
+		padding: 12px;
+		border-radius: 12px;
+		background: color-mix(in oklab, var(--g1) 10%, var(--surface-2));
+		border: 1px solid color-mix(in oklab, var(--g1) 32%, var(--line));
+	}
+	.df-off :global(.ic) { width: 17px; height: 17px; color: var(--g1); flex: none; margin-top: 2px; }
+	.df-off b { display: block; font-size: 13.5px; color: var(--ink); }
+	.df-off small { display: block; margin-top: 2px; font-size: 12.5px; line-height: 1.4; color: var(--ink-2); }
+	.df-via-pill {
+		padding: 2px 8px;
+		border-radius: 99px;
+		font: 700 10.5px/1.2 var(--f-mono, ui-monospace, monospace);
+		color: var(--g1);
+		background: color-mix(in oklab, var(--g1) 13%, transparent);
+		border: 1px solid color-mix(in oklab, var(--g1) 34%, var(--line));
+	}
+	.df-dec {
+		margin-top: 10px;
+		padding: 10px 11px;
+		border-radius: 12px;
+		background: var(--surface-2);
+		border: 1px solid var(--line);
+		display: grid;
+		gap: 8px;
+	}
+	.df-dec small { font-size: 12px; color: var(--ink-3); }
+	.df-dec-acts { display: flex; gap: 8px; flex-wrap: wrap; }
+	.df-dec-ok, .df-dec-chg {
+		flex: 1;
+		min-height: 36px;
+		padding: 0 11px;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 6px;
+		font: 600 12.5px var(--f-body, inherit);
+		cursor: pointer;
+	}
+	.df-dec-ok {
+		border-radius: 0;
+		border: 1px solid var(--ink);
+		background: var(--ink);
+		color: var(--bg);
+		box-shadow: 2.5px 2.5px 0 var(--ok);
+	}
+	.df-dec-chg {
+		border-radius: 9px;
+		border: 1px solid var(--line-strong);
+		background: var(--surface);
+		color: var(--ink);
+	}
+	.df-dec-ok :global(.ic), .df-dec-chg :global(.ic) { width: 14px; height: 14px; }
+	.df-dec-form { display: flex; gap: 8px; align-items: center; }
+	.df-dec-form .inp { flex: 1; min-width: 0; }
 </style>
