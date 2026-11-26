@@ -24,11 +24,19 @@ export type TravelSlot = {
 };
 
 export const TRAVEL_MODES: Record<TravelMode, { label: string; ratePerKm: number; base: number; speedKmh: number }> = {
-	car: { label: 'Own car', ratePerKm: 12, base: 20, speedKmh: 22 },
-	bike: { label: 'Scooter', ratePerKm: 4, base: 0, speedKmh: 26 },
-	cab: { label: 'Cab', ratePerKm: 22, base: 60, speedKmh: 22 },
-	public: { label: 'Metro / bus', ratePerKm: 3, base: 20, speedKmh: 18 }
+	car: { label: 'Own car', ratePerKm: 12, base: 20, speedKmh: 27 },
+	bike: { label: 'Scooter', ratePerKm: 4, base: 0, speedKmh: 30 },
+	cab: { label: 'Cab', ratePerKm: 22, base: 60, speedKmh: 27 },
+	public: { label: 'Metro / bus', ratePerKm: 3, base: 20, speedKmh: 20 }
 };
+
+export function formatMins(mins: number): string {
+	const m = Math.max(1, Math.round(mins));
+	if (m < 60) return `${m}m`;
+	const h = Math.floor(m / 60);
+	const rem = m % 60;
+	return rem ? `${h}h ${rem}m` : `${h}h`;
+}
 
 export const TRAVEL_SLOTS: TravelSlot[] = [
 	{ id: 'morning', short: '9:00 AM', label: '9:00 – 11:00 AM', traffic: 'bad', tLabel: 'Heavy', mult: 1.55, leaveAt: '8:15 AM', light: 'Peak office rush; softer indoor light.' },
@@ -560,9 +568,12 @@ export function estimateTrip(
 ) {
 	const m = TRAVEL_MODES[mode] ?? TRAVEL_MODES.cab;
 	const slot = TRAVEL_SLOTS.find((s) => s.id === slotId) ?? TRAVEL_SLOTS[1];
-	const offPeakMin = baseMins && baseMins > 0 ? baseMins : Math.max(8, Math.round((distKm / m.speedKmh) * 60));
+	// OSRM returns ideal zero-traffic speed (~50 km/h); floor to realistic city road speed
+	const cityFloorMin = Math.max(8, Math.round((distKm / m.speedKmh) * 60));
+	const osrmAdjusted = baseMins && baseMins > 0 ? Math.round(baseMins * 1.55) : 0;
+	const offPeakMin = Math.max(cityFloorMin, osrmAdjusted);
 	const estMin = Math.max(8, Math.round(offPeakMin * slot.mult));
-	const peakMin = Math.max(estMin, Math.round(offPeakMin * 1.65));
+	const peakMin = Math.max(estMin, Math.round(offPeakMin * 1.55));
 	const oneWayCost = Math.round(m.base + distKm * m.ratePerKm);
 	const roundTripCost = oneWayCost * 2;
 	const savedVsPeak = Math.max(0, peakMin - estMin);

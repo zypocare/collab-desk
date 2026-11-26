@@ -5,6 +5,7 @@
 	import {
 		cleanPlaceLabel,
 		estimateTrip,
+		formatMins,
 		extractMapsUrl,
 		haversineKm,
 		mapsDirectionsUrl,
@@ -300,7 +301,7 @@
 				</div>
 				<div class="trv-kpi">
 					<small>Drive time</small>
-					<b>{trip.estMin}m</b>
+					<b>{formatMins(trip.estMin)}</b>
 					<span>{trip.slot.tLabel}</span>
 				</div>
 				<div class="trv-kpi">
@@ -328,7 +329,7 @@
 			<div class="trv-ai">
 				<div class="trv-ai-h">
 					<span><Icon name="spark" />AI Leave-Time Advisor</span>
-					<small>{trip.baseMin}m – {trip.peakMin}m range</small>
+					<small>{formatMins(trip.baseMin)} – {formatMins(trip.peakMin)} range</small>
 				</div>
 				<p>{trip.advice}</p>
 			</div>
