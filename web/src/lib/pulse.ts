@@ -64,10 +64,17 @@ export function isGoldenHour(isoStr: string): boolean {
 	return m >= 0 && m <= 60;
 }
 
+/** Golden Hour applies only to feed Posts, Carousels, and Reels — never Stories. */
+export function isEligiblePulseMedia(m: { product_type?: string | null; media_type?: string | null; media_product_type?: string | null }): boolean {
+	const pt = String(m.product_type ?? m.media_product_type ?? '').toUpperCase();
+	const mt = String(m.media_type ?? '').toUpperCase();
+	if (pt === 'STORY' || pt === 'STORIES' || mt === 'STORY') return false;
+	return pt === 'REELS' || pt === 'FEED' || mt === 'VIDEO' || mt === 'IMAGE' || mt === 'CAROUSEL_ALBUM' || (!pt && !mt);
+}
+
 export function activeReelFromMedia(media: IgMedia[]): IgMedia | null {
-	const reels = media.filter((m) => m.product_type === 'REELS' || m.media_type === 'VIDEO' || (m.views ?? 0) > 0);
-	const newest = reels[0] ?? media[0] ?? null;
-	return newest;
+	const eligible = media.filter(isEligiblePulseMedia);
+	return eligible[0] ?? null;
 }
 
 export function suggestKeywordFromCaption(caption: string): string {
@@ -96,7 +103,7 @@ export function buildFallbackPulse(media: IgMedia[]): LaunchPulse | null {
 	const newest = activeReelFromMedia(media);
 	if (!newest) return null;
 
-	const others = media.filter((m) => m.id !== newest.id);
+	const others = media.filter((m) => m.id !== newest.id && isEligiblePulseMedia(m));
 	const fullMedViews = median(others.map((m) => Number(m.views ?? m.reach ?? 0))) || 2000;
 	const hour1MedViews = Math.max(250, Math.round(fullMedViews * 0.28));
 	const medShares1k = Number(

@@ -76,9 +76,11 @@ async function computeBaselines(db: SupabaseClient, creatorId: number) {
     .order('posted_at', { ascending: false })
     .limit(60);
 
-  const reels = (rows ?? []).filter(
-    (m) => m.product_type === 'REELS' || m.media_type === 'VIDEO' || (m.views ?? 0) > 0,
-  );
+  const reels = (rows ?? []).filter((m) => {
+    const pt = String(m.product_type ?? '').toUpperCase();
+    const mt = String(m.media_type ?? '').toUpperCase();
+    return pt !== 'STORY' && pt !== 'STORIES' && mt !== 'STORY';
+  });
   const viewsList = reels.map((m) => Number(m.views ?? m.reach ?? 0));
   const sharesPer1k = reels
     .map((m) => {
@@ -176,7 +178,12 @@ async function syncCreatorPulse(db: SupabaseClient, creatorId: number, notify: b
 
   // Fetch 5 newest posts from Instagram Graph API.
   const recent = await ig.media(token, 5);
-  const candidate = recent.find((m) => m.media_product_type === 'REELS' || m.media_type === 'VIDEO') ?? recent[0];
+  const eligible = recent.filter((m) => {
+    const pt = String(m.media_product_type ?? '').toUpperCase();
+    const mt = String(m.media_type ?? '').toUpperCase();
+    return pt !== 'STORY' && pt !== 'STORIES' && mt !== 'STORY';
+  });
+  const candidate = eligible[0];
   if (!candidate) return { skipped: 'No recent media', pulse: null, comments: [], needsPerm: false };
 
   const postedMs = Date.parse(candidate.timestamp);
